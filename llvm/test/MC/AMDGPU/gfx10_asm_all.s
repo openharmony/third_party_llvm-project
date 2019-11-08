@@ -32199,6 +32199,9 @@ v_movrelsd_b32_e64 v255, v1
 v_movrelsd_b32_e64 v5, v255
 // GFX10: encoding: [0x05,0x00,0xc4,0xd5,0xff,0x01,0x00,0x00]
 
+v_movrelsd_b32 v5, s1
+// GFX10-ERR: error: invalid operand for instruction
+
 v_movrelsd_2_b32 v5, v1
 // GFX10: encoding: [0x01,0x91,0x0a,0x7e]
 
@@ -32216,6 +32219,9 @@ v_movrelsd_2_b32_e64 v255, v1
 
 v_movrelsd_2_b32_e64 v5, v255
 // GFX10: encoding: [0x05,0x00,0xc8,0xd5,0xff,0x01,0x00,0x00]
+
+v_movrelsd_2_b32 v5, s1
+// GFX10-ERR: error: invalid operand for instruction
 
 v_cvt_f16_u16_e32 v5, v1
 // GFX10: encoding: [0x01,0xa1,0x0a,0x7e]
