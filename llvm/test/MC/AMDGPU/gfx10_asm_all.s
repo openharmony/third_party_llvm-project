@@ -32163,6 +32163,18 @@ v_movreld_b32_e64 v5, 0.5
 v_movreld_b32_e64 v5, -4.0
 // GFX10: encoding: [0x05,0x00,0xc2,0xd5,0xf7,0x00,0x00,0x00]
 
+v_movreld_b32_sdwa v0, v2 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10: encoding: [0xf9,0x84,0x00,0x7e,0x02,0x06,0x06,0x00]
+
+v_movreld_b32_sdwa v0, s2 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10: encoding: [0xf9,0x84,0x00,0x7e,0x02,0x06,0x86,0x00]
+
+v_movreld_b32_sdwa v0, 64 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10: encoding: [0xf9,0x84,0x00,0x7e,0xc0,0x06,0x86,0x00]
+
+v_movreld_b32_sdwa v0, sext(v0) dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10: encoding: [0xf9,0x84,0x00,0x7e,0x00,0x06,0x0e,0x00]
+
 v_movrels_b32 v5, v1
 // GFX10: encoding: [0x01,0x87,0x0a,0x7e]
 
@@ -32180,6 +32192,30 @@ v_movrels_b32_e64 v255, v1
 
 v_movrels_b32_e64 v5, v255
 // GFX10: encoding: [0x05,0x00,0xc3,0xd5,0xff,0x01,0x00,0x00]
+
+v_movrels_b32_sdwa v0, v2 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10: encoding: [0xf9,0x86,0x00,0x7e,0x02,0x06,0x06,0x00]
+
+v_movrels_b32_sdwa v0, sext(v0) dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10: encoding: [0xf9,0x86,0x00,0x7e,0x00,0x06,0x0e,0x00]
+
+v_movrels_b32_e32 v5, s1
+// GFX10-ERR: error: invalid operand for instruction
+
+v_movrels_b32_e32 v5, 1
+// GFX10-ERR: error: invalid operand for instruction
+
+v_movrels_b32_e64 v5, s1
+// GFX10-ERR: error: invalid operand for instruction
+
+v_movrels_b32_e64 v5, 1
+// GFX10-ERR: error: invalid operand for instruction
+
+v_movrels_b32_sdwa v0, s2 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10-ERR: error: source operand must be a VGPR
+
+v_movrels_b32_sdwa v0, 1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10-ERR: error: source operand must be a VGPR
 
 v_movrelsd_b32 v5, v1
 // GFX10: encoding: [0x01,0x89,0x0a,0x7e]
@@ -32199,8 +32235,32 @@ v_movrelsd_b32_e64 v255, v1
 v_movrelsd_b32_e64 v5, v255
 // GFX10: encoding: [0x05,0x00,0xc4,0xd5,0xff,0x01,0x00,0x00]
 
-v_movrelsd_b32 v5, s1
+v_movrelsd_b32_sdwa v0, v2 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10: encoding: [0xf9,0x88,0x00,0x7e,0x02,0x06,0x06,0x00]
+
+v_movrelsd_b32_sdwa v0, v0 dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10: encoding: [0xf9,0x88,0x00,0x7e,0x00,0x06,0x06,0x00]
+
+v_movrelsd_b32_sdwa v0, sext(v0) dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10: encoding: [0xf9,0x88,0x00,0x7e,0x00,0x06,0x0e,0x00]
+
+v_movrelsd_b32_e32 v5, s1
 // GFX10-ERR: error: invalid operand for instruction
+
+v_movrelsd_b32_e32 v5, 1
+// GFX10-ERR: error: invalid operand for instruction
+
+v_movrelsd_b32_e64 v5, s1
+// GFX10-ERR: error: invalid operand for instruction
+
+v_movrelsd_b32_e64 v5, 1
+// GFX10-ERR: error: invalid operand for instruction
+
+v_movrelsd_b32_sdwa v0, s2 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10-ERR: error: source operand must be a VGPR
+
+v_movrelsd_b32_sdwa v0, 1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10-ERR: error: source operand must be a VGPR
 
 v_movrelsd_2_b32 v5, v1
 // GFX10: encoding: [0x01,0x91,0x0a,0x7e]
@@ -32220,8 +32280,35 @@ v_movrelsd_2_b32_e64 v255, v1
 v_movrelsd_2_b32_e64 v5, v255
 // GFX10: encoding: [0x05,0x00,0xc8,0xd5,0xff,0x01,0x00,0x00]
 
-v_movrelsd_2_b32 v5, s1
+v_movrelsd_2_b32_sdwa v0, v2 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10: encoding: [0xf9,0x90,0x00,0x7e,0x02,0x06,0x06,0x00]
+
+v_movrelsd_2_b32_sdwa v0, v0 dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10: encoding: [0xf9,0x90,0x00,0x7e,0x00,0x06,0x06,0x00]
+
+v_movrelsd_2_b32_sdwa v0, sext(v0) dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10: encoding: [0xf9,0x90,0x00,0x7e,0x00,0x06,0x0e,0x00]
+
+v_movrelsd_2_b32_e32 v5, s1
 // GFX10-ERR: error: invalid operand for instruction
+
+v_movrelsd_2_b32_e32 v5, 1
+// GFX10-ERR: error: invalid operand for instruction
+
+v_movrelsd_2_b32_e64 v5, s1
+// GFX10-ERR: error: invalid operand for instruction
+
+v_movrelsd_2_b32_e64 v5, 1
+// GFX10-ERR: error: invalid operand for instruction
+
+v_movrelsd_2_b32_sdwa v0, s2 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10-ERR: error: source operand must be a VGPR
+
+v_movrelsd_2_b32_sdwa v0, 0 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10-ERR: error: source operand must be a VGPR
+
+v_movrelsd_2_b32_sdwa v0, null dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
+// GFX10-ERR: error: source operand must be a VGPR
 
 v_cvt_f16_u16_e32 v5, v1
 // GFX10: encoding: [0x01,0xa1,0x0a,0x7e]
