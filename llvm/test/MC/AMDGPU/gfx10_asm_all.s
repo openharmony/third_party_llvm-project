@@ -1495,21 +1495,6 @@ ds_write2_b32 v255, v1, v253 offset0:255 offset1:255
 ds_write2_b32 v255, v254, v2 offset0:255 offset1:255
 // GFX10: encoding: [0xff,0xff,0x38,0xd8,0xff,0xfe,0x02,0x00]
 
-ds_write2_b32 v0, v1, v2 offset0:255 offset1:255
-// GFX10: encoding: [0xff,0xff,0x38,0xd8,0x00,0x01,0x02,0x00]
-
-ds_write2_b32 v255, v254, v253 offset0:255 offset1:255
-// GFX10: encoding: [0xff,0xff,0x38,0xd8,0xff,0xfe,0xfd,0x00]
-
-ds_write2_b32 v0, v254, v253 offset0:255 offset1:255
-// GFX10: encoding: [0xff,0xff,0x38,0xd8,0x00,0xfe,0xfd,0x00]
-
-ds_write2_b32 v255, v1, v253 offset0:255 offset1:255
-// GFX10: encoding: [0xff,0xff,0x38,0xd8,0xff,0x01,0xfd,0x00]
-
-ds_write2_b32 v255, v254, v2 offset0:255 offset1:255
-// GFX10: encoding: [0xff,0xff,0x38,0xd8,0xff,0xfe,0x02,0x00]
-
 ds_write2_b32 v0, v1, v2 gds
 // GFX10: encoding: [0x00,0x00,0x3a,0xd8,0x00,0x01,0x02,0x00]
 
@@ -1614,21 +1599,6 @@ ds_write2_b32 v255, v1, v253 offset0:255 offset1:64 gds
 
 ds_write2_b32 v255, v254, v2 offset0:255 offset1:64 gds
 // GFX10: encoding: [0xff,0x40,0x3a,0xd8,0xff,0xfe,0x02,0x00]
-
-ds_write2_b32 v0, v1, v2 offset0:255 offset1:255 gds
-// GFX10: encoding: [0xff,0xff,0x3a,0xd8,0x00,0x01,0x02,0x00]
-
-ds_write2_b32 v255, v254, v253 offset0:255 offset1:255 gds
-// GFX10: encoding: [0xff,0xff,0x3a,0xd8,0xff,0xfe,0xfd,0x00]
-
-ds_write2_b32 v0, v254, v253 offset0:255 offset1:255 gds
-// GFX10: encoding: [0xff,0xff,0x3a,0xd8,0x00,0xfe,0xfd,0x00]
-
-ds_write2_b32 v255, v1, v253 offset0:255 offset1:255 gds
-// GFX10: encoding: [0xff,0xff,0x3a,0xd8,0xff,0x01,0xfd,0x00]
-
-ds_write2_b32 v255, v254, v2 offset0:255 offset1:255 gds
-// GFX10: encoding: [0xff,0xff,0x3a,0xd8,0xff,0xfe,0x02,0x00]
 
 ds_write2_b32 v0, v1, v2 offset0:255 offset1:255 gds
 // GFX10: encoding: [0xff,0xff,0x3a,0xd8,0x00,0x01,0x02,0x00]
@@ -1765,21 +1735,6 @@ ds_write2st64_b32 v255, v1, v253 offset0:255 offset1:255
 ds_write2st64_b32 v255, v254, v2 offset0:255 offset1:255
 // GFX10: encoding: [0xff,0xff,0x3c,0xd8,0xff,0xfe,0x02,0x00]
 
-ds_write2st64_b32 v0, v1, v2 offset0:255 offset1:255
-// GFX10: encoding: [0xff,0xff,0x3c,0xd8,0x00,0x01,0x02,0x00]
-
-ds_write2st64_b32 v255, v254, v253 offset0:255 offset1:255
-// GFX10: encoding: [0xff,0xff,0x3c,0xd8,0xff,0xfe,0xfd,0x00]
-
-ds_write2st64_b32 v0, v254, v253 offset0:255 offset1:255
-// GFX10: encoding: [0xff,0xff,0x3c,0xd8,0x00,0xfe,0xfd,0x00]
-
-ds_write2st64_b32 v255, v1, v253 offset0:255 offset1:255
-// GFX10: encoding: [0xff,0xff,0x3c,0xd8,0xff,0x01,0xfd,0x00]
-
-ds_write2st64_b32 v255, v254, v2 offset0:255 offset1:255
-// GFX10: encoding: [0xff,0xff,0x3c,0xd8,0xff,0xfe,0x02,0x00]
-
 ds_write2st64_b32 v0, v1, v2 gds
 // GFX10: encoding: [0x00,0x00,0x3e,0xd8,0x00,0x01,0x02,0x00]
 
@@ -1884,21 +1839,6 @@ ds_write2st64_b32 v255, v1, v253 offset0:255 offset1:64 gds
 
 ds_write2st64_b32 v255, v254, v2 offset0:255 offset1:64 gds
 // GFX10: encoding: [0xff,0x40,0x3e,0xd8,0xff,0xfe,0x02,0x00]
-
-ds_write2st64_b32 v0, v1, v2 offset0:255 offset1:255 gds
-// GFX10: encoding: [0xff,0xff,0x3e,0xd8,0x00,0x01,0x02,0x00]
-
-ds_write2st64_b32 v255, v254, v253 offset0:255 offset1:255 gds
-// GFX10: encoding: [0xff,0xff,0x3e,0xd8,0xff,0xfe,0xfd,0x00]
-
-ds_write2st64_b32 v0, v254, v253 offset0:255 offset1:255 gds
-// GFX10: encoding: [0xff,0xff,0x3e,0xd8,0x00,0xfe,0xfd,0x00]
-
-ds_write2st64_b32 v255, v1, v253 offset0:255 offset1:255 gds
-// GFX10: encoding: [0xff,0xff,0x3e,0xd8,0xff,0x01,0xfd,0x00]
-
-ds_write2st64_b32 v255, v254, v2 offset0:255 offset1:255 gds
-// GFX10: encoding: [0xff,0xff,0x3e,0xd8,0xff,0xfe,0x02,0x00]
 
 ds_write2st64_b32 v0, v1, v2 offset0:255 offset1:255 gds
 // GFX10: encoding: [0xff,0xff,0x3e,0xd8,0x00,0x01,0x02,0x00]
@@ -6544,9 +6484,6 @@ ds_write_addtid_b32 v5 offset:65535
 ds_write_addtid_b32 v255 offset:65535
 // GFX10: encoding: [0xff,0xff,0xc0,0xda,0x00,0xff,0x00,0x00]
 
-ds_write_addtid_b32 v5 offset:65535
-// GFX10: encoding: [0xff,0xff,0xc0,0xda,0x00,0x05,0x00,0x00]
-
 ds_write_addtid_b32 v5
 // GFX10: encoding: [0x00,0x00,0xc0,0xda,0x00,0x05,0x00,0x00]
 
@@ -6564,9 +6501,6 @@ ds_read_addtid_b32 v5 offset:65535
 
 ds_read_addtid_b32 v255 offset:65535
 // GFX10: encoding: [0xff,0xff,0xc4,0xda,0x00,0x00,0x00,0xff]
-
-ds_read_addtid_b32 v5 offset:65535
-// GFX10: encoding: [0xff,0xff,0xc4,0xda,0x00,0x00,0x00,0x05]
 
 ds_read_addtid_b32 v5
 // GFX10: encoding: [0x00,0x00,0xc4,0xda,0x00,0x00,0x00,0x05]
@@ -7223,9 +7157,6 @@ buffer_load_format_x v5, v0, s[8:11], s3 offen offset:4095
 buffer_load_format_x v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x00,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_load_format_x v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x00,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_load_format_x v5, off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0x00,0xe0,0x00,0x05,0x02,0x03]
 
@@ -7276,9 +7207,6 @@ buffer_load_format_xy v[5:6], v0, s[8:11], s3 idxen offset:4095
 
 buffer_load_format_xy v[5:6], v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x04,0xe0,0x00,0x05,0x02,0x03]
-
-buffer_load_format_xy v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x04,0xe0,0x00,0x05,0x02,0x03]
 
 buffer_load_format_xy v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x04,0xe0,0x00,0x05,0x02,0x03]
@@ -7337,9 +7265,6 @@ buffer_load_format_xyz v[5:7], v0, s[8:11], s3 offen offset:4095
 buffer_load_format_xyz v[5:7], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x08,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_load_format_xyz v[5:7], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x08,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_load_format_xyz v[5:7], off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0x08,0xe0,0x00,0x05,0x02,0x03]
 
@@ -7390,9 +7315,6 @@ buffer_load_format_xyzw v[5:8], v0, s[8:11], s3 idxen offset:4095
 
 buffer_load_format_xyzw v[5:8], v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x0c,0xe0,0x00,0x05,0x02,0x03]
-
-buffer_load_format_xyzw v[5:8], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x0c,0xe0,0x00,0x05,0x02,0x03]
 
 buffer_load_format_xyzw v[5:8], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x0c,0xe0,0x00,0x05,0x02,0x03]
@@ -7451,9 +7373,6 @@ buffer_store_format_x v1, v0, s[12:15], s4 offen offset:4095
 buffer_store_format_x v1, off, s[12:15], s4
 // GFX10: encoding: [0x00,0x00,0x10,0xe0,0x00,0x01,0x03,0x04]
 
-buffer_store_format_x v1, off, s[12:15], s4
-// GFX10: encoding: [0x00,0x00,0x10,0xe0,0x00,0x01,0x03,0x04]
-
 buffer_store_format_x v1, off, s[12:15], s4 offset:7
 // GFX10: encoding: [0x07,0x00,0x10,0xe0,0x00,0x01,0x03,0x04]
 
@@ -7504,9 +7423,6 @@ buffer_store_format_xy v[1:2], v0, s[12:15], s4 idxen offset:4095
 
 buffer_store_format_xy v[1:2], v0, s[12:15], s4 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x14,0xe0,0x00,0x01,0x03,0x04]
-
-buffer_store_format_xy v[1:2], off, s[12:15], s4
-// GFX10: encoding: [0x00,0x00,0x14,0xe0,0x00,0x01,0x03,0x04]
 
 buffer_store_format_xy v[1:2], off, s[12:15], s4
 // GFX10: encoding: [0x00,0x00,0x14,0xe0,0x00,0x01,0x03,0x04]
@@ -7565,9 +7481,6 @@ buffer_store_format_xyz v[1:3], v0, s[12:15], s4 offen offset:4095
 buffer_store_format_xyz v[1:3], off, s[12:15], s4
 // GFX10: encoding: [0x00,0x00,0x18,0xe0,0x00,0x01,0x03,0x04]
 
-buffer_store_format_xyz v[1:3], off, s[12:15], s4
-// GFX10: encoding: [0x00,0x00,0x18,0xe0,0x00,0x01,0x03,0x04]
-
 buffer_store_format_xyz v[1:3], off, s[12:15], s4 offset:7
 // GFX10: encoding: [0x07,0x00,0x18,0xe0,0x00,0x01,0x03,0x04]
 
@@ -7618,9 +7531,6 @@ buffer_store_format_xyzw v[1:4], v0, s[12:15], s4 idxen offset:4095
 
 buffer_store_format_xyzw v[1:4], v0, s[12:15], s4 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x1c,0xe0,0x00,0x01,0x03,0x04]
-
-buffer_store_format_xyzw v[1:4], off, s[12:15], s4
-// GFX10: encoding: [0x00,0x00,0x1c,0xe0,0x00,0x01,0x03,0x04]
 
 buffer_store_format_xyzw v[1:4], off, s[12:15], s4
 // GFX10: encoding: [0x00,0x00,0x1c,0xe0,0x00,0x01,0x03,0x04]
@@ -7679,9 +7589,6 @@ buffer_load_ubyte v5, v0, s[8:11], s3 offen offset:4095
 buffer_load_ubyte v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x20,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_load_ubyte v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x20,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_load_ubyte v5, off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0x20,0xe0,0x00,0x05,0x02,0x03]
 
@@ -7732,9 +7639,6 @@ buffer_load_sbyte v5, v0, s[8:11], s3 idxen offset:4095
 
 buffer_load_sbyte v5, v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x24,0xe0,0x00,0x05,0x02,0x03]
-
-buffer_load_sbyte v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x24,0xe0,0x00,0x05,0x02,0x03]
 
 buffer_load_sbyte v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x24,0xe0,0x00,0x05,0x02,0x03]
@@ -7793,9 +7697,6 @@ buffer_load_ushort v5, v0, s[8:11], s3 offen offset:4095
 buffer_load_ushort v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x28,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_load_ushort v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x28,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_load_ushort v5, off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0x28,0xe0,0x00,0x05,0x02,0x03]
 
@@ -7846,9 +7747,6 @@ buffer_load_sshort v5, v0, s[8:11], s3 idxen offset:4095
 
 buffer_load_sshort v5, v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x2c,0xe0,0x00,0x05,0x02,0x03]
-
-buffer_load_sshort v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x2c,0xe0,0x00,0x05,0x02,0x03]
 
 buffer_load_sshort v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x2c,0xe0,0x00,0x05,0x02,0x03]
@@ -7907,9 +7805,6 @@ buffer_load_dword v5, v0, s[8:11], s3 offen offset:4095
 buffer_load_dword v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x30,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_load_dword v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x30,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_load_dword v5, off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0x30,0xe0,0x00,0x05,0x02,0x03]
 
@@ -7960,9 +7855,6 @@ buffer_load_dwordx2 v[5:6], v0, s[8:11], s3 idxen offset:4095
 
 buffer_load_dwordx2 v[5:6], v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x34,0xe0,0x00,0x05,0x02,0x03]
-
-buffer_load_dwordx2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x34,0xe0,0x00,0x05,0x02,0x03]
 
 buffer_load_dwordx2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x34,0xe0,0x00,0x05,0x02,0x03]
@@ -8021,9 +7913,6 @@ buffer_load_dwordx3 v[5:7], v0, s[8:11], s3 offen offset:4095
 buffer_load_dwordx3 v[5:7], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x3c,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_load_dwordx3 v[5:7], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x3c,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_load_dwordx3 v[5:7], off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0x3c,0xe0,0x00,0x05,0x02,0x03]
 
@@ -8074,9 +7963,6 @@ buffer_load_dwordx4 v[5:8], v0, s[8:11], s3 idxen offset:4095
 
 buffer_load_dwordx4 v[5:8], v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x38,0xe0,0x00,0x05,0x02,0x03]
-
-buffer_load_dwordx4 v[5:8], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x38,0xe0,0x00,0x05,0x02,0x03]
 
 buffer_load_dwordx4 v[5:8], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x38,0xe0,0x00,0x05,0x02,0x03]
@@ -8135,9 +8021,6 @@ buffer_store_byte v1, v0, s[12:15], s4 offen offset:4095
 buffer_store_byte v1, off, s[12:15], s4
 // GFX10: encoding: [0x00,0x00,0x60,0xe0,0x00,0x01,0x03,0x04]
 
-buffer_store_byte v1, off, s[12:15], s4
-// GFX10: encoding: [0x00,0x00,0x60,0xe0,0x00,0x01,0x03,0x04]
-
 buffer_store_byte v1, off, s[12:15], s4 offset:7
 // GFX10: encoding: [0x07,0x00,0x60,0xe0,0x00,0x01,0x03,0x04]
 
@@ -8188,9 +8071,6 @@ buffer_store_short v1, v0, s[12:15], s4 idxen offset:4095
 
 buffer_store_short v1, v0, s[12:15], s4 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x68,0xe0,0x00,0x01,0x03,0x04]
-
-buffer_store_short v1, off, s[12:15], s4
-// GFX10: encoding: [0x00,0x00,0x68,0xe0,0x00,0x01,0x03,0x04]
 
 buffer_store_short v1, off, s[12:15], s4
 // GFX10: encoding: [0x00,0x00,0x68,0xe0,0x00,0x01,0x03,0x04]
@@ -8249,9 +8129,6 @@ buffer_store_dword v1, v0, s[12:15], s4 offen offset:4095
 buffer_store_dword v1, off, s[12:15], s4
 // GFX10: encoding: [0x00,0x00,0x70,0xe0,0x00,0x01,0x03,0x04]
 
-buffer_store_dword v1, off, s[12:15], s4
-// GFX10: encoding: [0x00,0x00,0x70,0xe0,0x00,0x01,0x03,0x04]
-
 buffer_store_dword v1, off, s[12:15], s4 offset:7
 // GFX10: encoding: [0x07,0x00,0x70,0xe0,0x00,0x01,0x03,0x04]
 
@@ -8302,9 +8179,6 @@ buffer_store_dwordx2 v[1:2], v0, s[12:15], s4 idxen offset:4095
 
 buffer_store_dwordx2 v[1:2], v0, s[12:15], s4 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x74,0xe0,0x00,0x01,0x03,0x04]
-
-buffer_store_dwordx2 v[1:2], off, s[12:15], s4
-// GFX10: encoding: [0x00,0x00,0x74,0xe0,0x00,0x01,0x03,0x04]
 
 buffer_store_dwordx2 v[1:2], off, s[12:15], s4
 // GFX10: encoding: [0x00,0x00,0x74,0xe0,0x00,0x01,0x03,0x04]
@@ -8363,9 +8237,6 @@ buffer_store_dwordx3 v[1:3], v0, s[12:15], s4 offen offset:4095
 buffer_store_dwordx3 v[1:3], off, s[12:15], s4
 // GFX10: encoding: [0x00,0x00,0x7c,0xe0,0x00,0x01,0x03,0x04]
 
-buffer_store_dwordx3 v[1:3], off, s[12:15], s4
-// GFX10: encoding: [0x00,0x00,0x7c,0xe0,0x00,0x01,0x03,0x04]
-
 buffer_store_dwordx3 v[1:3], off, s[12:15], s4 offset:7
 // GFX10: encoding: [0x07,0x00,0x7c,0xe0,0x00,0x01,0x03,0x04]
 
@@ -8413,9 +8284,6 @@ buffer_store_dwordx4 v[1:4], v0, s[12:15], s4 idxen offset:4095
 
 buffer_store_dwordx4 v[1:4], v0, s[12:15], s4 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x78,0xe0,0x00,0x01,0x03,0x04]
-
-buffer_store_dwordx4 v[1:4], off, s[12:15], s4
-// GFX10: encoding: [0x00,0x00,0x78,0xe0,0x00,0x01,0x03,0x04]
 
 buffer_store_dwordx4 v[1:4], off, s[12:15], s4
 // GFX10: encoding: [0x00,0x00,0x78,0xe0,0x00,0x01,0x03,0x04]
@@ -8468,9 +8336,6 @@ buffer_atomic_swap v5, v0, s[8:11], s3 offen offset:4095
 buffer_atomic_swap v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xc0,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_atomic_swap v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xc0,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_atomic_swap v5, off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0xc0,0xe0,0x00,0x05,0x02,0x03]
 
@@ -8509,9 +8374,6 @@ buffer_atomic_cmpswap v[5:6], v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_cmpswap v[5:6], v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0xc4,0xe0,0x00,0x05,0x02,0x03]
-
-buffer_atomic_cmpswap v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xc4,0xe0,0x00,0x05,0x02,0x03]
 
 buffer_atomic_cmpswap v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xc4,0xe0,0x00,0x05,0x02,0x03]
@@ -8558,9 +8420,6 @@ buffer_atomic_add v5, v0, s[8:11], s3 offen offset:4095
 buffer_atomic_add v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xc8,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_atomic_add v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xc8,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_atomic_add v5, off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0xc8,0xe0,0x00,0x05,0x02,0x03]
 
@@ -8599,9 +8458,6 @@ buffer_atomic_sub v5, v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_sub v5, v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0xcc,0xe0,0x00,0x05,0x02,0x03]
-
-buffer_atomic_sub v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xcc,0xe0,0x00,0x05,0x02,0x03]
 
 buffer_atomic_sub v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xcc,0xe0,0x00,0x05,0x02,0x03]
@@ -8648,9 +8504,6 @@ buffer_atomic_smin v5, v0, s[8:11], s3 offen offset:4095
 buffer_atomic_smin v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xd4,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_atomic_smin v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xd4,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_atomic_smin v5, off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0xd4,0xe0,0x00,0x05,0x02,0x03]
 
@@ -8689,9 +8542,6 @@ buffer_atomic_umin v5, v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_umin v5, v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0xd8,0xe0,0x00,0x05,0x02,0x03]
-
-buffer_atomic_umin v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xd8,0xe0,0x00,0x05,0x02,0x03]
 
 buffer_atomic_umin v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xd8,0xe0,0x00,0x05,0x02,0x03]
@@ -8738,9 +8588,6 @@ buffer_atomic_smax v5, v0, s[8:11], s3 offen offset:4095
 buffer_atomic_smax v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xdc,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_atomic_smax v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xdc,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_atomic_smax v5, off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0xdc,0xe0,0x00,0x05,0x02,0x03]
 
@@ -8779,9 +8626,6 @@ buffer_atomic_umax v5, v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_umax v5, v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0xe0,0xe0,0x00,0x05,0x02,0x03]
-
-buffer_atomic_umax v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xe0,0xe0,0x00,0x05,0x02,0x03]
 
 buffer_atomic_umax v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xe0,0xe0,0x00,0x05,0x02,0x03]
@@ -8828,9 +8672,6 @@ buffer_atomic_and v5, v0, s[8:11], s3 offen offset:4095
 buffer_atomic_and v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xe4,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_atomic_and v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xe4,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_atomic_and v5, off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0xe4,0xe0,0x00,0x05,0x02,0x03]
 
@@ -8869,9 +8710,6 @@ buffer_atomic_or v5, v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_or v5, v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0xe8,0xe0,0x00,0x05,0x02,0x03]
-
-buffer_atomic_or v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xe8,0xe0,0x00,0x05,0x02,0x03]
 
 buffer_atomic_or v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xe8,0xe0,0x00,0x05,0x02,0x03]
@@ -8918,9 +8756,6 @@ buffer_atomic_xor v5, v0, s[8:11], s3 offen offset:4095
 buffer_atomic_xor v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xec,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_atomic_xor v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xec,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_atomic_xor v5, off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0xec,0xe0,0x00,0x05,0x02,0x03]
 
@@ -8959,9 +8794,6 @@ buffer_atomic_inc v5, v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_inc v5, v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0xf0,0xe0,0x00,0x05,0x02,0x03]
-
-buffer_atomic_inc v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xf0,0xe0,0x00,0x05,0x02,0x03]
 
 buffer_atomic_inc v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xf0,0xe0,0x00,0x05,0x02,0x03]
@@ -9008,9 +8840,6 @@ buffer_atomic_dec v5, v0, s[8:11], s3 offen offset:4095
 buffer_atomic_dec v5, off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0xf4,0xe0,0x00,0x05,0x02,0x03]
 
-buffer_atomic_dec v5, off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0xf4,0xe0,0x00,0x05,0x02,0x03]
-
 buffer_atomic_dec v5, off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0xf4,0xe0,0x00,0x05,0x02,0x03]
 
@@ -9049,9 +8878,6 @@ buffer_atomic_swap_x2 v[5:6], v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_swap_x2 v[5:6], v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x40,0xe1,0x00,0x05,0x02,0x03]
-
-buffer_atomic_swap_x2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x40,0xe1,0x00,0x05,0x02,0x03]
 
 buffer_atomic_swap_x2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x40,0xe1,0x00,0x05,0x02,0x03]
@@ -9098,9 +8924,6 @@ buffer_atomic_cmpswap_x2 v[5:8], v0, s[8:11], s3 offen offset:4095
 buffer_atomic_cmpswap_x2 v[5:8], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x44,0xe1,0x00,0x05,0x02,0x03]
 
-buffer_atomic_cmpswap_x2 v[5:8], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x44,0xe1,0x00,0x05,0x02,0x03]
-
 buffer_atomic_cmpswap_x2 v[5:8], off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0x44,0xe1,0x00,0x05,0x02,0x03]
 
@@ -9139,9 +8962,6 @@ buffer_atomic_add_x2 v[5:6], v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_add_x2 v[5:6], v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x48,0xe1,0x00,0x05,0x02,0x03]
-
-buffer_atomic_add_x2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x48,0xe1,0x00,0x05,0x02,0x03]
 
 buffer_atomic_add_x2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x48,0xe1,0x00,0x05,0x02,0x03]
@@ -9188,9 +9008,6 @@ buffer_atomic_sub_x2 v[5:6], v0, s[8:11], s3 offen offset:4095
 buffer_atomic_sub_x2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x4c,0xe1,0x00,0x05,0x02,0x03]
 
-buffer_atomic_sub_x2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x4c,0xe1,0x00,0x05,0x02,0x03]
-
 buffer_atomic_sub_x2 v[5:6], off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0x4c,0xe1,0x00,0x05,0x02,0x03]
 
@@ -9229,9 +9046,6 @@ buffer_atomic_smin_x2 v[5:6], v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_smin_x2 v[5:6], v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x54,0xe1,0x00,0x05,0x02,0x03]
-
-buffer_atomic_smin_x2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x54,0xe1,0x00,0x05,0x02,0x03]
 
 buffer_atomic_smin_x2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x54,0xe1,0x00,0x05,0x02,0x03]
@@ -9278,9 +9092,6 @@ buffer_atomic_umin_x2 v[5:6], v0, s[8:11], s3 offen offset:4095
 buffer_atomic_umin_x2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x58,0xe1,0x00,0x05,0x02,0x03]
 
-buffer_atomic_umin_x2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x58,0xe1,0x00,0x05,0x02,0x03]
-
 buffer_atomic_umin_x2 v[5:6], off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0x58,0xe1,0x00,0x05,0x02,0x03]
 
@@ -9319,9 +9130,6 @@ buffer_atomic_smax_x2 v[5:6], v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_smax_x2 v[5:6], v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x5c,0xe1,0x00,0x05,0x02,0x03]
-
-buffer_atomic_smax_x2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x5c,0xe1,0x00,0x05,0x02,0x03]
 
 buffer_atomic_smax_x2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x5c,0xe1,0x00,0x05,0x02,0x03]
@@ -9368,9 +9176,6 @@ buffer_atomic_umax_x2 v[5:6], v0, s[8:11], s3 offen offset:4095
 buffer_atomic_umax_x2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x60,0xe1,0x00,0x05,0x02,0x03]
 
-buffer_atomic_umax_x2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x60,0xe1,0x00,0x05,0x02,0x03]
-
 buffer_atomic_umax_x2 v[5:6], off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0x60,0xe1,0x00,0x05,0x02,0x03]
 
@@ -9409,9 +9214,6 @@ buffer_atomic_and_x2 v[5:6], v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_and_x2 v[5:6], v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x64,0xe1,0x00,0x05,0x02,0x03]
-
-buffer_atomic_and_x2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x64,0xe1,0x00,0x05,0x02,0x03]
 
 buffer_atomic_and_x2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x64,0xe1,0x00,0x05,0x02,0x03]
@@ -9458,9 +9260,6 @@ buffer_atomic_or_x2 v[5:6], v0, s[8:11], s3 offen offset:4095
 buffer_atomic_or_x2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x68,0xe1,0x00,0x05,0x02,0x03]
 
-buffer_atomic_or_x2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x68,0xe1,0x00,0x05,0x02,0x03]
-
 buffer_atomic_or_x2 v[5:6], off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0x68,0xe1,0x00,0x05,0x02,0x03]
 
@@ -9499,9 +9298,6 @@ buffer_atomic_xor_x2 v[5:6], v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_xor_x2 v[5:6], v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x6c,0xe1,0x00,0x05,0x02,0x03]
-
-buffer_atomic_xor_x2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x6c,0xe1,0x00,0x05,0x02,0x03]
 
 buffer_atomic_xor_x2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x6c,0xe1,0x00,0x05,0x02,0x03]
@@ -9548,9 +9344,6 @@ buffer_atomic_inc_x2 v[5:6], v0, s[8:11], s3 offen offset:4095
 buffer_atomic_inc_x2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x70,0xe1,0x00,0x05,0x02,0x03]
 
-buffer_atomic_inc_x2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x70,0xe1,0x00,0x05,0x02,0x03]
-
 buffer_atomic_inc_x2 v[5:6], off, s[8:11], s3 offset:7
 // GFX10: encoding: [0x07,0x00,0x70,0xe1,0x00,0x05,0x02,0x03]
 
@@ -9589,9 +9382,6 @@ buffer_atomic_dec_x2 v[5:6], v0, s[8:11], s3 idxen offset:4095
 
 buffer_atomic_dec_x2 v[5:6], v0, s[8:11], s3 offen offset:4095
 // GFX10: encoding: [0xff,0x1f,0x74,0xe1,0x00,0x05,0x02,0x03]
-
-buffer_atomic_dec_x2 v[5:6], off, s[8:11], s3
-// GFX10: encoding: [0x00,0x00,0x74,0xe1,0x00,0x05,0x02,0x03]
 
 buffer_atomic_dec_x2 v[5:6], off, s[8:11], s3
 // GFX10: encoding: [0x00,0x00,0x74,0xe1,0x00,0x05,0x02,0x03]
@@ -32455,9 +32245,6 @@ v_cvt_f16_u16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWOR
 v_cvt_f16_u16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa0,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_cvt_f16_u16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa0,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_cvt_f16_u16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa0,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -32481,12 +32268,6 @@ v_cvt_f16_u16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_cvt_f16_u16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa0,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cvt_f16_u16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa0,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cvt_f16_u16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa0,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_cvt_f16_u16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xa0,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -32710,9 +32491,6 @@ v_cvt_f16_i16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWOR
 v_cvt_f16_i16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa2,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_cvt_f16_i16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa2,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_cvt_f16_i16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa2,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -32736,12 +32514,6 @@ v_cvt_f16_i16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_cvt_f16_i16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa2,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cvt_f16_i16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa2,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cvt_f16_i16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa2,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_cvt_f16_i16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xa2,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -32971,9 +32743,6 @@ v_cvt_u16_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWOR
 v_cvt_u16_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa4,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_cvt_u16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa4,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_cvt_u16_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa4,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -32997,12 +32766,6 @@ v_cvt_u16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_cvt_u16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa4,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cvt_u16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa4,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cvt_u16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa4,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_cvt_u16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xa4,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -33235,9 +32998,6 @@ v_cvt_i16_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWOR
 v_cvt_i16_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa6,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_cvt_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa6,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_cvt_i16_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa6,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -33261,12 +33021,6 @@ v_cvt_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_cvt_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa6,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cvt_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa6,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cvt_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa6,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_cvt_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xa6,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -33499,9 +33253,6 @@ v_rcp_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 v_rcp_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa8,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_rcp_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa8,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_rcp_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa8,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -33525,12 +33276,6 @@ v_rcp_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_rcp_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xa8,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_rcp_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa8,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_rcp_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xa8,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_rcp_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xa8,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -33763,9 +33508,6 @@ v_sqrt_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 v_sqrt_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xaa,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_sqrt_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xaa,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_sqrt_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xaa,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -33789,12 +33531,6 @@ v_sqrt_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_sqrt_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xaa,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_sqrt_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xaa,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_sqrt_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xaa,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_sqrt_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xaa,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -34027,9 +33763,6 @@ v_rsq_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 v_rsq_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xac,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_rsq_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xac,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_rsq_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xac,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -34053,12 +33786,6 @@ v_rsq_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_rsq_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xac,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_rsq_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xac,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_rsq_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xac,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_rsq_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xac,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -34291,9 +34018,6 @@ v_log_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 v_log_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xae,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_log_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xae,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_log_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xae,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -34317,12 +34041,6 @@ v_log_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_log_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xae,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_log_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xae,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_log_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xae,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_log_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xae,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -34555,9 +34273,6 @@ v_exp_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 v_exp_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb0,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_exp_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb0,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_exp_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb0,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -34581,12 +34296,6 @@ v_exp_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_exp_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb0,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_exp_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb0,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_exp_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb0,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_exp_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xb0,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -34819,9 +34528,6 @@ v_frexp_mant_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:D
 v_frexp_mant_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb2,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_frexp_mant_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb2,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_frexp_mant_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb2,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -34845,12 +34551,6 @@ v_frexp_mant_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_frexp_mant_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb2,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_frexp_mant_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb2,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_frexp_mant_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb2,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_frexp_mant_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xb2,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -35083,9 +34783,6 @@ v_frexp_exp_i16_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_se
 v_frexp_exp_i16_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb4,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_frexp_exp_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb4,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_frexp_exp_i16_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb4,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -35109,12 +34806,6 @@ v_frexp_exp_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DW
 
 v_frexp_exp_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb4,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_frexp_exp_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb4,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_frexp_exp_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb4,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_frexp_exp_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xb4,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -35347,9 +35038,6 @@ v_floor_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 v_floor_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb6,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_floor_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb6,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_floor_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb6,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -35373,12 +35061,6 @@ v_floor_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_floor_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb6,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_floor_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb6,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_floor_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb6,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_floor_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xb6,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -35611,9 +35293,6 @@ v_ceil_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 v_ceil_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb8,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_ceil_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb8,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_ceil_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb8,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -35637,12 +35316,6 @@ v_ceil_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_ceil_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xb8,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_ceil_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb8,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_ceil_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xb8,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_ceil_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xb8,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -35875,9 +35548,6 @@ v_trunc_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 v_trunc_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xba,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_trunc_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xba,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_trunc_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xba,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -35901,12 +35571,6 @@ v_trunc_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_trunc_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xba,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_trunc_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xba,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_trunc_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xba,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_trunc_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xba,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -36139,9 +35803,6 @@ v_rndne_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 v_rndne_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xbc,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_rndne_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xbc,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_rndne_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xbc,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -36165,12 +35826,6 @@ v_rndne_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_rndne_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xbc,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_rndne_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xbc,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_rndne_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xbc,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_rndne_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xbc,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -36403,9 +36058,6 @@ v_fract_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 v_fract_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xbe,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_fract_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xbe,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_fract_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xbe,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -36429,12 +36081,6 @@ v_fract_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_fract_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xbe,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_fract_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xbe,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_fract_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xbe,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_fract_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xbe,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -36667,9 +36313,6 @@ v_sin_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 v_sin_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xc0,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_sin_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xc0,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_sin_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xc0,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -36693,12 +36336,6 @@ v_sin_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_sin_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xc0,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_sin_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xc0,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_sin_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xc0,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_sin_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xc0,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -36931,9 +36568,6 @@ v_cos_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 v_cos_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xc2,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_cos_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xc2,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_cos_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xc2,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -36957,12 +36591,6 @@ v_cos_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWORD
 
 v_cos_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xc2,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cos_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xc2,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cos_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xc2,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_cos_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xc2,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -37195,9 +36823,6 @@ v_cvt_norm_i16_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel
 v_cvt_norm_i16_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xc6,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_cvt_norm_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xc6,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_cvt_norm_i16_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xc6,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -37221,12 +36846,6 @@ v_cvt_norm_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWO
 
 v_cvt_norm_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xc6,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cvt_norm_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xc6,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cvt_norm_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xc6,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_cvt_norm_i16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xc6,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -37459,9 +37078,6 @@ v_cvt_norm_u16_f16_sdwa v5, exec_hi dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel
 v_cvt_norm_u16_f16_sdwa v5, v1 clamp dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xc8,0x0a,0x7e,0x01,0x26,0x06,0x00]
 
-v_cvt_norm_u16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xc8,0x0a,0x7e,0x01,0x06,0x06,0x00]
-
 v_cvt_norm_u16_f16_sdwa v5, v1 dst_sel:BYTE_0 dst_unused:UNUSED_PAD src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xc8,0x0a,0x7e,0x01,0x00,0x06,0x00]
 
@@ -37485,12 +37101,6 @@ v_cvt_norm_u16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_SEXT src0_sel:DWO
 
 v_cvt_norm_u16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
 // GFX10: encoding: [0xf9,0xc8,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cvt_norm_u16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PRESERVE src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xc8,0x0a,0x7e,0x01,0x16,0x06,0x00]
-
-v_cvt_norm_u16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:DWORD
-// GFX10: encoding: [0xf9,0xc8,0x0a,0x7e,0x01,0x06,0x06,0x00]
 
 v_cvt_norm_u16_f16_sdwa v5, v1 dst_sel:DWORD dst_unused:UNUSED_PAD src0_sel:BYTE_0
 // GFX10: encoding: [0xf9,0xc8,0x0a,0x7e,0x01,0x06,0x00,0x00]
@@ -38179,17 +37789,11 @@ v_add_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_add_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x06,0x01,0xe4,0x00,0xf0]
 
-v_add_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x06,0x01,0xe4,0x00,0xf0]
-
 v_add_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x06,0x01,0xe4,0x00,0x01]
 
 v_add_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x06,0x01,0xe4,0x00,0x03]
-
-v_add_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x06,0x01,0xe4,0x00,0x0f]
 
 v_add_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x06,0x01,0xe4,0x00,0x0f]
@@ -38557,17 +38161,11 @@ v_sub_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_sub_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x08,0x01,0xe4,0x00,0xf0]
 
-v_sub_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x08,0x01,0xe4,0x00,0xf0]
-
 v_sub_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x08,0x01,0xe4,0x00,0x01]
 
 v_sub_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x08,0x01,0xe4,0x00,0x03]
-
-v_sub_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x08,0x01,0xe4,0x00,0x0f]
 
 v_sub_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x08,0x01,0xe4,0x00,0x0f]
@@ -38935,17 +38533,11 @@ v_subrev_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_subrev_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x0a,0x01,0xe4,0x00,0xf0]
 
-v_subrev_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x0a,0x01,0xe4,0x00,0xf0]
-
 v_subrev_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x0a,0x01,0xe4,0x00,0x01]
 
 v_subrev_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x0a,0x01,0xe4,0x00,0x03]
-
-v_subrev_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x0a,0x01,0xe4,0x00,0x0f]
 
 v_subrev_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x0a,0x01,0xe4,0x00,0x0f]
@@ -39481,17 +39073,11 @@ v_mul_legacy_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_mul_legacy_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x0e,0x01,0xe4,0x00,0xf0]
 
-v_mul_legacy_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x0e,0x01,0xe4,0x00,0xf0]
-
 v_mul_legacy_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x0e,0x01,0xe4,0x00,0x01]
 
 v_mul_legacy_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x0e,0x01,0xe4,0x00,0x03]
-
-v_mul_legacy_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x0e,0x01,0xe4,0x00,0x0f]
 
 v_mul_legacy_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x0e,0x01,0xe4,0x00,0x0f]
@@ -39862,17 +39448,11 @@ v_mul_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_mul_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x10,0x01,0xe4,0x00,0xf0]
 
-v_mul_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x10,0x01,0xe4,0x00,0xf0]
-
 v_mul_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x10,0x01,0xe4,0x00,0x01]
 
 v_mul_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x10,0x01,0xe4,0x00,0x03]
-
-v_mul_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x10,0x01,0xe4,0x00,0x0f]
 
 v_mul_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x10,0x01,0xe4,0x00,0x0f]
@@ -40198,17 +39778,11 @@ v_mul_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_mul_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x12,0x01,0xe4,0x00,0xf0]
 
-v_mul_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x12,0x01,0xe4,0x00,0xf0]
-
 v_mul_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x12,0x01,0xe4,0x00,0x01]
 
 v_mul_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x12,0x01,0xe4,0x00,0x03]
-
-v_mul_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x12,0x01,0xe4,0x00,0x0f]
 
 v_mul_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x12,0x01,0xe4,0x00,0x0f]
@@ -40522,17 +40096,11 @@ v_mul_hi_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_mul_hi_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x14,0x01,0xe4,0x00,0xf0]
 
-v_mul_hi_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x14,0x01,0xe4,0x00,0xf0]
-
 v_mul_hi_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x14,0x01,0xe4,0x00,0x01]
 
 v_mul_hi_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x14,0x01,0xe4,0x00,0x03]
-
-v_mul_hi_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x14,0x01,0xe4,0x00,0x0f]
 
 v_mul_hi_i32_i24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x14,0x01,0xe4,0x00,0x0f]
@@ -40846,17 +40414,11 @@ v_mul_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_mul_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x16,0x01,0xe4,0x00,0xf0]
 
-v_mul_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x16,0x01,0xe4,0x00,0xf0]
-
 v_mul_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x16,0x01,0xe4,0x00,0x01]
 
 v_mul_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x16,0x01,0xe4,0x00,0x03]
-
-v_mul_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x16,0x01,0xe4,0x00,0x0f]
 
 v_mul_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x16,0x01,0xe4,0x00,0x0f]
@@ -41170,17 +40732,11 @@ v_mul_hi_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_mul_hi_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x18,0x01,0xe4,0x00,0xf0]
 
-v_mul_hi_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x18,0x01,0xe4,0x00,0xf0]
-
 v_mul_hi_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x18,0x01,0xe4,0x00,0x01]
 
 v_mul_hi_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x18,0x01,0xe4,0x00,0x03]
-
-v_mul_hi_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x18,0x01,0xe4,0x00,0x0f]
 
 v_mul_hi_u32_u24_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x18,0x01,0xe4,0x00,0x0f]
@@ -41539,17 +41095,11 @@ v_min_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_min_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x1e,0x01,0xe4,0x00,0xf0]
 
-v_min_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x1e,0x01,0xe4,0x00,0xf0]
-
 v_min_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x1e,0x01,0xe4,0x00,0x01]
 
 v_min_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x1e,0x01,0xe4,0x00,0x03]
-
-v_min_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x1e,0x01,0xe4,0x00,0x0f]
 
 v_min_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x1e,0x01,0xe4,0x00,0x0f]
@@ -41920,17 +41470,11 @@ v_max_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_max_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x20,0x01,0xe4,0x00,0xf0]
 
-v_max_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x20,0x01,0xe4,0x00,0xf0]
-
 v_max_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x20,0x01,0xe4,0x00,0x01]
 
 v_max_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x20,0x01,0xe4,0x00,0x03]
-
-v_max_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x20,0x01,0xe4,0x00,0x0f]
 
 v_max_f32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x20,0x01,0xe4,0x00,0x0f]
@@ -42256,17 +41800,11 @@ v_min_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_min_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x22,0x01,0xe4,0x00,0xf0]
 
-v_min_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x22,0x01,0xe4,0x00,0xf0]
-
 v_min_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x22,0x01,0xe4,0x00,0x01]
 
 v_min_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x22,0x01,0xe4,0x00,0x03]
-
-v_min_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x22,0x01,0xe4,0x00,0x0f]
 
 v_min_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x22,0x01,0xe4,0x00,0x0f]
@@ -42580,17 +42118,11 @@ v_max_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_max_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x24,0x01,0xe4,0x00,0xf0]
 
-v_max_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x24,0x01,0xe4,0x00,0xf0]
-
 v_max_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x24,0x01,0xe4,0x00,0x01]
 
 v_max_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x24,0x01,0xe4,0x00,0x03]
-
-v_max_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x24,0x01,0xe4,0x00,0x0f]
 
 v_max_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x24,0x01,0xe4,0x00,0x0f]
@@ -42904,17 +42436,11 @@ v_min_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_min_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x26,0x01,0xe4,0x00,0xf0]
 
-v_min_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x26,0x01,0xe4,0x00,0xf0]
-
 v_min_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x26,0x01,0xe4,0x00,0x01]
 
 v_min_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x26,0x01,0xe4,0x00,0x03]
-
-v_min_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x26,0x01,0xe4,0x00,0x0f]
 
 v_min_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x26,0x01,0xe4,0x00,0x0f]
@@ -43228,17 +42754,11 @@ v_max_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_max_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x28,0x01,0xe4,0x00,0xf0]
 
-v_max_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x28,0x01,0xe4,0x00,0xf0]
-
 v_max_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x28,0x01,0xe4,0x00,0x01]
 
 v_max_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x28,0x01,0xe4,0x00,0x03]
-
-v_max_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x28,0x01,0xe4,0x00,0x0f]
 
 v_max_u32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x28,0x01,0xe4,0x00,0x0f]
@@ -43549,17 +43069,11 @@ v_lshrrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_lshrrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x2c,0x01,0xe4,0x00,0xf0]
 
-v_lshrrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x2c,0x01,0xe4,0x00,0xf0]
-
 v_lshrrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x2c,0x01,0xe4,0x00,0x01]
 
 v_lshrrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x2c,0x01,0xe4,0x00,0x03]
-
-v_lshrrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x2c,0x01,0xe4,0x00,0x0f]
 
 v_lshrrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x2c,0x01,0xe4,0x00,0x0f]
@@ -43870,17 +43384,11 @@ v_ashrrev_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_ashrrev_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x30,0x01,0xe4,0x00,0xf0]
 
-v_ashrrev_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x30,0x01,0xe4,0x00,0xf0]
-
 v_ashrrev_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x30,0x01,0xe4,0x00,0x01]
 
 v_ashrrev_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x30,0x01,0xe4,0x00,0x03]
-
-v_ashrrev_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x30,0x01,0xe4,0x00,0x0f]
 
 v_ashrrev_i32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x30,0x01,0xe4,0x00,0x0f]
@@ -44191,17 +43699,11 @@ v_lshlrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_lshlrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x34,0x01,0xe4,0x00,0xf0]
 
-v_lshlrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x34,0x01,0xe4,0x00,0xf0]
-
 v_lshlrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x34,0x01,0xe4,0x00,0x01]
 
 v_lshlrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x34,0x01,0xe4,0x00,0x03]
-
-v_lshlrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x34,0x01,0xe4,0x00,0x0f]
 
 v_lshlrev_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x34,0x01,0xe4,0x00,0x0f]
@@ -44512,17 +44014,11 @@ v_and_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_and_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x36,0x01,0xe4,0x00,0xf0]
 
-v_and_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x36,0x01,0xe4,0x00,0xf0]
-
 v_and_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x36,0x01,0xe4,0x00,0x01]
 
 v_and_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x36,0x01,0xe4,0x00,0x03]
-
-v_and_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x36,0x01,0xe4,0x00,0x0f]
 
 v_and_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x36,0x01,0xe4,0x00,0x0f]
@@ -44833,17 +44329,11 @@ v_or_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_or_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x38,0x01,0xe4,0x00,0xf0]
 
-v_or_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x38,0x01,0xe4,0x00,0xf0]
-
 v_or_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x38,0x01,0xe4,0x00,0x01]
 
 v_or_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x38,0x01,0xe4,0x00,0x03]
-
-v_or_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x38,0x01,0xe4,0x00,0x0f]
 
 v_or_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x38,0x01,0xe4,0x00,0x0f]
@@ -45154,17 +44644,11 @@ v_xor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_xor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x3a,0x01,0xe4,0x00,0xf0]
 
-v_xor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x3a,0x01,0xe4,0x00,0xf0]
-
 v_xor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x3a,0x01,0xe4,0x00,0x01]
 
 v_xor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x3a,0x01,0xe4,0x00,0x03]
-
-v_xor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x3a,0x01,0xe4,0x00,0x0f]
 
 v_xor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x3a,0x01,0xe4,0x00,0x0f]
@@ -45475,17 +44959,11 @@ v_xnor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_xnor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x3c,0x01,0xe4,0x00,0xf0]
 
-v_xnor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x3c,0x01,0xe4,0x00,0xf0]
-
 v_xnor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x3c,0x01,0xe4,0x00,0x01]
 
 v_xnor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x3c,0x01,0xe4,0x00,0x03]
-
-v_xnor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x3c,0x01,0xe4,0x00,0x0f]
 
 v_xnor_b32_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x3c,0x01,0xe4,0x00,0x0f]
@@ -48850,17 +48328,11 @@ v_add_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_add_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x64,0x01,0xe4,0x00,0xf0]
 
-v_add_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x64,0x01,0xe4,0x00,0xf0]
-
 v_add_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x64,0x01,0xe4,0x00,0x01]
 
 v_add_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x64,0x01,0xe4,0x00,0x03]
-
-v_add_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x64,0x01,0xe4,0x00,0x0f]
 
 v_add_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x64,0x01,0xe4,0x00,0x0f]
@@ -49204,17 +48676,11 @@ v_sub_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_sub_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x66,0x01,0xe4,0x00,0xf0]
 
-v_sub_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x66,0x01,0xe4,0x00,0xf0]
-
 v_sub_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x66,0x01,0xe4,0x00,0x01]
 
 v_sub_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x66,0x01,0xe4,0x00,0x03]
-
-v_sub_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x66,0x01,0xe4,0x00,0x0f]
 
 v_sub_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x66,0x01,0xe4,0x00,0x0f]
@@ -49558,17 +49024,11 @@ v_subrev_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_subrev_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x68,0x01,0xe4,0x00,0xf0]
 
-v_subrev_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x68,0x01,0xe4,0x00,0xf0]
-
 v_subrev_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x68,0x01,0xe4,0x00,0x01]
 
 v_subrev_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x68,0x01,0xe4,0x00,0x03]
-
-v_subrev_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x68,0x01,0xe4,0x00,0x0f]
 
 v_subrev_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x68,0x01,0xe4,0x00,0x0f]
@@ -49912,17 +49372,11 @@ v_mul_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_mul_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x6a,0x01,0xe4,0x00,0xf0]
 
-v_mul_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x6a,0x01,0xe4,0x00,0xf0]
-
 v_mul_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x6a,0x01,0xe4,0x00,0x01]
 
 v_mul_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x6a,0x01,0xe4,0x00,0x03]
-
-v_mul_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x6a,0x01,0xe4,0x00,0x0f]
 
 v_mul_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x6a,0x01,0xe4,0x00,0x0f]
@@ -50479,17 +49933,11 @@ v_max_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_max_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x72,0x01,0xe4,0x00,0xf0]
 
-v_max_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x72,0x01,0xe4,0x00,0xf0]
-
 v_max_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x72,0x01,0xe4,0x00,0x01]
 
 v_max_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x72,0x01,0xe4,0x00,0x03]
-
-v_max_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x72,0x01,0xe4,0x00,0x0f]
 
 v_max_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x72,0x01,0xe4,0x00,0x0f]
@@ -50833,17 +50281,11 @@ v_min_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_min_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x74,0x01,0xe4,0x00,0xf0]
 
-v_min_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x74,0x01,0xe4,0x00,0xf0]
-
 v_min_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x74,0x01,0xe4,0x00,0x01]
 
 v_min_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x74,0x01,0xe4,0x00,0x03]
-
-v_min_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x74,0x01,0xe4,0x00,0x0f]
 
 v_min_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x74,0x01,0xe4,0x00,0x0f]
@@ -51169,17 +50611,11 @@ v_ldexp_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x3 bank_mask:0x0
 v_ldexp_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
 // GFX10: encoding: [0xfa,0x04,0x0a,0x76,0x01,0xe4,0x00,0xf0]
 
-v_ldexp_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0xf bank_mask:0x0
-// GFX10: encoding: [0xfa,0x04,0x0a,0x76,0x01,0xe4,0x00,0xf0]
-
 v_ldexp_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x1
 // GFX10: encoding: [0xfa,0x04,0x0a,0x76,0x01,0xe4,0x00,0x01]
 
 v_ldexp_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0x3
 // GFX10: encoding: [0xfa,0x04,0x0a,0x76,0x01,0xe4,0x00,0x03]
-
-v_ldexp_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
-// GFX10: encoding: [0xfa,0x04,0x0a,0x76,0x01,0xe4,0x00,0x0f]
 
 v_ldexp_f16_dpp v5, v1, v2  quad_perm:[0,1,2,3] row_mask:0x0 bank_mask:0xf
 // GFX10: encoding: [0xfa,0x04,0x0a,0x76,0x01,0xe4,0x00,0x0f]
@@ -64310,9 +63746,6 @@ v_permlane16_b32 v5, v1, exec_lo, s2
 v_permlane16_b32 v5, v1, exec_hi, s2
 // GFX10: encoding: [0x05,0x00,0x77,0xd7,0x01,0xff,0x08,0x00]
 
-v_permlane16_b32 v5, v1, s2, s3
-// GFX10: encoding: [0x05,0x00,0x77,0xd7,0x01,0x05,0x0c,0x00]
-
 v_permlane16_b32 v5, v1, s103, s3
 // GFX10: encoding: [0x05,0x00,0x77,0xd7,0x01,0xcf,0x0c,0x00]
 
@@ -64345,9 +63778,6 @@ v_permlane16_b32 v5, v1, 0.5, s3
 
 v_permlane16_b32 v5, v1, -4.0, s3
 // GFX10: encoding: [0x05,0x00,0x77,0xd7,0x01,0xef,0x0d,0x00]
-
-v_permlane16_b32 v5, v1, s2, s3
-// GFX10: encoding: [0x05,0x00,0x77,0xd7,0x01,0x05,0x0c,0x00]
 
 v_permlane16_b32 v5, v1, s2, s103
 // GFX10: encoding: [0x05,0x00,0x77,0xd7,0x01,0x05,0x9c,0x01]
@@ -64449,9 +63879,6 @@ v_permlanex16_b32 v5, v1, exec_lo, s2
 v_permlanex16_b32 v5, v1, exec_hi, s2
 // GFX10: encoding: [0x05,0x00,0x78,0xd7,0x01,0xff,0x08,0x00]
 
-v_permlanex16_b32 v5, v1, s2, s3
-// GFX10: encoding: [0x05,0x00,0x78,0xd7,0x01,0x05,0x0c,0x00]
-
 v_permlanex16_b32 v5, v1, s103, s3
 // GFX10: encoding: [0x05,0x00,0x78,0xd7,0x01,0xcf,0x0c,0x00]
 
@@ -64484,9 +63911,6 @@ v_permlanex16_b32 v5, v1, 0.5, s3
 
 v_permlanex16_b32 v5, v1, -4.0, s3
 // GFX10: encoding: [0x05,0x00,0x78,0xd7,0x01,0xef,0x0d,0x00]
-
-v_permlanex16_b32 v5, v1, s2, s3
-// GFX10: encoding: [0x05,0x00,0x78,0xd7,0x01,0x05,0x0c,0x00]
 
 v_permlanex16_b32 v5, v1, s2, s103
 // GFX10: encoding: [0x05,0x00,0x78,0xd7,0x01,0x05,0x9c,0x01]
@@ -64979,11 +64403,6 @@ v_cmp_f_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_f_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_f_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x00,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_f_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_f_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x00,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -65023,11 +64442,6 @@ v_cmp_f_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x00,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_f_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_f_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x00,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_f_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_f_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x00,0x7c,0x01,0x86,0x06,0x00]
@@ -65374,11 +64788,6 @@ v_cmp_f_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_f_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_f_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x00,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_f_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_f_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x00,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -65418,11 +64827,6 @@ v_cmp_f_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x00,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_f_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_f_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x00,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_f_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_f_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x00,0x7c,0x01,0x86,0x06,0x00]
@@ -65769,11 +65173,6 @@ v_cmp_lt_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_lt_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x02,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_lt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lt_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x02,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -65813,11 +65212,6 @@ v_cmp_lt_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x02,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_lt_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x02,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_lt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x02,0x7c,0x01,0x86,0x06,0x00]
@@ -66164,11 +65558,6 @@ v_cmp_lt_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_lt_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x02,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_lt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lt_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x02,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -66208,11 +65597,6 @@ v_cmp_lt_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x02,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_lt_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x02,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_lt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x02,0x7c,0x01,0x86,0x06,0x00]
@@ -66559,11 +65943,6 @@ v_cmp_eq_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_eq_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_eq_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x04,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_eq_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_eq_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x04,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -66603,11 +65982,6 @@ v_cmp_eq_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x04,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_eq_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_eq_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x04,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_eq_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_eq_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x04,0x7c,0x01,0x86,0x06,0x00]
@@ -66954,11 +66328,6 @@ v_cmp_eq_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_eq_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_eq_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x04,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_eq_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_eq_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x04,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -66998,11 +66367,6 @@ v_cmp_eq_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x04,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_eq_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_eq_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x04,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_eq_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_eq_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x04,0x7c,0x01,0x86,0x06,0x00]
@@ -67349,11 +66713,6 @@ v_cmp_le_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_le_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_le_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x06,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_le_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_le_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x06,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -67393,11 +66752,6 @@ v_cmp_le_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x06,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_le_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_le_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x06,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_le_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_le_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x06,0x7c,0x01,0x86,0x06,0x00]
@@ -67744,11 +67098,6 @@ v_cmp_le_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_le_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_le_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x06,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_le_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_le_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x06,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -67788,11 +67137,6 @@ v_cmp_le_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x06,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_le_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_le_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x06,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_le_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_le_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x06,0x7c,0x01,0x86,0x06,0x00]
@@ -68139,11 +67483,6 @@ v_cmp_gt_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_gt_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_gt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x08,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_gt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_gt_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x08,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -68183,11 +67522,6 @@ v_cmp_gt_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x08,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_gt_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_gt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x08,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_gt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_gt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x08,0x7c,0x01,0x86,0x06,0x00]
@@ -68534,11 +67868,6 @@ v_cmp_gt_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_gt_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_gt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x08,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_gt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_gt_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x08,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -68578,11 +67907,6 @@ v_cmp_gt_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x08,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_gt_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_gt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x08,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_gt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_gt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x08,0x7c,0x01,0x86,0x06,0x00]
@@ -68929,11 +68253,6 @@ v_cmp_lg_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_lg_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lg_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x0a,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_lg_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lg_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x0a,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -68973,11 +68292,6 @@ v_cmp_lg_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x0a,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_lg_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lg_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x0a,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_lg_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lg_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x0a,0x7c,0x01,0x86,0x06,0x00]
@@ -69324,11 +68638,6 @@ v_cmp_lg_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_lg_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lg_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x0a,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_lg_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lg_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x0a,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -69368,11 +68677,6 @@ v_cmp_lg_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x0a,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_lg_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lg_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x0a,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_lg_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lg_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x0a,0x7c,0x01,0x86,0x06,0x00]
@@ -69719,11 +69023,6 @@ v_cmp_ge_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_ge_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ge_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x0c,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_ge_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ge_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x0c,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -69763,11 +69062,6 @@ v_cmp_ge_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x0c,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_ge_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ge_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x0c,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_ge_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ge_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x0c,0x7c,0x01,0x86,0x06,0x00]
@@ -70114,11 +69408,6 @@ v_cmp_ge_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_ge_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ge_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x0c,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_ge_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ge_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x0c,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -70158,11 +69447,6 @@ v_cmp_ge_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x0c,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_ge_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ge_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x0c,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_ge_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ge_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x0c,0x7c,0x01,0x86,0x06,0x00]
@@ -70509,11 +69793,6 @@ v_cmp_o_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_o_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_o_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x0e,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_o_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_o_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x0e,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -70553,11 +69832,6 @@ v_cmp_o_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x0e,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_o_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_o_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x0e,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_o_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_o_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x0e,0x7c,0x01,0x86,0x06,0x00]
@@ -70904,11 +70178,6 @@ v_cmp_o_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_o_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_o_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x0e,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_o_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_o_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x0e,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -70948,11 +70217,6 @@ v_cmp_o_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x0e,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_o_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_o_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x0e,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_o_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_o_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x0e,0x7c,0x01,0x86,0x06,0x00]
@@ -71299,11 +70563,6 @@ v_cmp_u_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_u_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_u_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x10,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_u_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_u_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x10,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -71343,11 +70602,6 @@ v_cmp_u_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x10,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_u_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_u_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x10,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_u_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_u_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x10,0x7c,0x01,0x86,0x06,0x00]
@@ -71694,11 +70948,6 @@ v_cmp_u_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_u_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_u_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x10,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_u_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_u_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x10,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -71738,11 +70987,6 @@ v_cmp_u_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x10,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_u_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_u_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x10,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_u_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_u_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x10,0x7c,0x01,0x86,0x06,0x00]
@@ -72089,11 +71333,6 @@ v_cmp_nge_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_nge_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nge_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x12,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_nge_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nge_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x12,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -72133,11 +71372,6 @@ v_cmp_nge_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x12,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_nge_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nge_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x12,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_nge_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nge_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x12,0x7c,0x01,0x86,0x06,0x00]
@@ -72484,11 +71718,6 @@ v_cmp_nge_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_nge_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nge_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x12,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_nge_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nge_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x12,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -72528,11 +71757,6 @@ v_cmp_nge_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x12,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_nge_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nge_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x12,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_nge_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nge_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x12,0x7c,0x01,0x86,0x06,0x00]
@@ -72879,11 +72103,6 @@ v_cmp_nlg_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_nlg_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nlg_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x14,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_nlg_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nlg_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x14,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -72923,11 +72142,6 @@ v_cmp_nlg_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x14,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_nlg_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nlg_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x14,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_nlg_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nlg_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x14,0x7c,0x01,0x86,0x06,0x00]
@@ -73274,11 +72488,6 @@ v_cmp_nlg_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_nlg_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nlg_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x14,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_nlg_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nlg_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x14,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -73318,11 +72527,6 @@ v_cmp_nlg_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x14,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_nlg_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nlg_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x14,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_nlg_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nlg_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x14,0x7c,0x01,0x86,0x06,0x00]
@@ -73669,11 +72873,6 @@ v_cmp_ngt_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_ngt_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ngt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x16,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_ngt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ngt_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x16,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -73713,11 +72912,6 @@ v_cmp_ngt_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x16,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_ngt_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ngt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x16,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_ngt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ngt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x16,0x7c,0x01,0x86,0x06,0x00]
@@ -74064,11 +73258,6 @@ v_cmp_ngt_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_ngt_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ngt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x16,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_ngt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ngt_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x16,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -74108,11 +73297,6 @@ v_cmp_ngt_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x16,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_ngt_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ngt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x16,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_ngt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ngt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x16,0x7c,0x01,0x86,0x06,0x00]
@@ -74459,11 +73643,6 @@ v_cmp_nle_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_nle_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nle_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x18,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_nle_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nle_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x18,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -74503,11 +73682,6 @@ v_cmp_nle_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x18,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_nle_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nle_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x18,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_nle_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nle_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x18,0x7c,0x01,0x86,0x06,0x00]
@@ -74854,11 +74028,6 @@ v_cmp_nle_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_nle_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nle_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x18,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_nle_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nle_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x18,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -74898,11 +74067,6 @@ v_cmp_nle_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x18,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_nle_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nle_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x18,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_nle_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nle_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x18,0x7c,0x01,0x86,0x06,0x00]
@@ -75249,11 +74413,6 @@ v_cmp_neq_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_neq_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_neq_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x1a,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_neq_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_neq_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x1a,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -75293,11 +74452,6 @@ v_cmp_neq_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x1a,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_neq_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_neq_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x1a,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_neq_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_neq_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x1a,0x7c,0x01,0x86,0x06,0x00]
@@ -75644,11 +74798,6 @@ v_cmp_neq_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_neq_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_neq_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x1a,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_neq_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_neq_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x1a,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -75688,11 +74837,6 @@ v_cmp_neq_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x1a,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_neq_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_neq_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x1a,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_neq_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_neq_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x1a,0x7c,0x01,0x86,0x06,0x00]
@@ -76039,11 +75183,6 @@ v_cmp_nlt_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_nlt_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nlt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x1c,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_nlt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nlt_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x1c,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -76083,11 +75222,6 @@ v_cmp_nlt_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x1c,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_nlt_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nlt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x1c,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_nlt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nlt_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x1c,0x7c,0x01,0x86,0x06,0x00]
@@ -76434,11 +75568,6 @@ v_cmp_nlt_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_nlt_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nlt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x1c,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_nlt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nlt_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x1c,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -76478,11 +75607,6 @@ v_cmp_nlt_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x1c,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_nlt_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nlt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x1c,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_nlt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nlt_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x1c,0x7c,0x01,0x86,0x06,0x00]
@@ -76829,11 +75953,6 @@ v_cmp_tru_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_tru_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_tru_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x1e,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_tru_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_tru_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x1e,0x7c,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -76873,11 +75992,6 @@ v_cmp_tru_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x1e,0x7c,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_tru_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_tru_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x1e,0x7c,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_tru_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_tru_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x1e,0x7c,0x01,0x86,0x06,0x00]
@@ -77224,11 +76338,6 @@ v_cmp_tru_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_tru_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_tru_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x1e,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_tru_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_tru_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x1e,0x7c,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -77268,11 +76377,6 @@ v_cmp_tru_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x1e,0x7c,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_tru_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_tru_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x1e,0x7c,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_tru_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_tru_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x1e,0x7c,0x01,0x86,0x06,0x00]
@@ -77361,18 +76465,6 @@ v_cmpx_f_f32 0x3f717273, v2
 
 v_cmpx_f_f32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x21,0x7c]
-
-v_cmpx_f_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x10,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x10,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x10,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x10,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_f_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x10,0xd4,0x01,0x05,0x02,0x00]
@@ -77509,18 +76601,6 @@ v_cmpx_lt_f32 v1, v255
 v_cmpx_lt_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x11,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_lt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x11,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x11,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x11,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x11,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_lt_f32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x11,0xd4,0xff,0x05,0x02,0x00]
 
@@ -77649,18 +76729,6 @@ v_cmpx_eq_f32 0x3f717273, v2
 
 v_cmpx_eq_f32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x25,0x7c]
-
-v_cmpx_eq_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x12,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x12,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x12,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x12,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_eq_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x12,0xd4,0x01,0x05,0x02,0x00]
@@ -77797,18 +76865,6 @@ v_cmpx_le_f32 v1, v255
 v_cmpx_le_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x13,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_le_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x13,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x13,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x13,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x13,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_le_f32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x13,0xd4,0xff,0x05,0x02,0x00]
 
@@ -77937,18 +76993,6 @@ v_cmpx_gt_f32 0x3f717273, v2
 
 v_cmpx_gt_f32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x29,0x7c]
-
-v_cmpx_gt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x14,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x14,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x14,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x14,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_gt_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x14,0xd4,0x01,0x05,0x02,0x00]
@@ -78085,18 +77129,6 @@ v_cmpx_lg_f32 v1, v255
 v_cmpx_lg_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x15,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_lg_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x15,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lg_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x15,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lg_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x15,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lg_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x15,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_lg_f32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x15,0xd4,0xff,0x05,0x02,0x00]
 
@@ -78225,18 +77257,6 @@ v_cmpx_ge_f32 0x3f717273, v2
 
 v_cmpx_ge_f32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x2d,0x7c]
-
-v_cmpx_ge_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x16,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x16,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x16,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x16,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_ge_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x16,0xd4,0x01,0x05,0x02,0x00]
@@ -78373,18 +77393,6 @@ v_cmpx_o_f32 v1, v255
 v_cmpx_o_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x17,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_o_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x17,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_o_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x17,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_o_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x17,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_o_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x17,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_o_f32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x17,0xd4,0xff,0x05,0x02,0x00]
 
@@ -78513,18 +77521,6 @@ v_cmpx_u_f32 0x3f717273, v2
 
 v_cmpx_u_f32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x31,0x7c]
-
-v_cmpx_u_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x18,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_u_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x18,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_u_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x18,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_u_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x18,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_u_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x18,0xd4,0x01,0x05,0x02,0x00]
@@ -78661,18 +77657,6 @@ v_cmpx_nge_f32 v1, v255
 v_cmpx_nge_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x19,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_nge_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x19,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nge_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x19,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nge_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x19,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nge_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x19,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_nge_f32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x19,0xd4,0xff,0x05,0x02,0x00]
 
@@ -78801,18 +77785,6 @@ v_cmpx_nlg_f32 0x3f717273, v2
 
 v_cmpx_nlg_f32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x35,0x7c]
-
-v_cmpx_nlg_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1a,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlg_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1a,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlg_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1a,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlg_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1a,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_nlg_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x1a,0xd4,0x01,0x05,0x02,0x00]
@@ -78949,18 +77921,6 @@ v_cmpx_ngt_f32 v1, v255
 v_cmpx_ngt_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x1b,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_ngt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1b,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ngt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1b,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ngt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1b,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ngt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1b,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_ngt_f32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x1b,0xd4,0xff,0x05,0x02,0x00]
 
@@ -79089,18 +78049,6 @@ v_cmpx_nle_f32 0x3f717273, v2
 
 v_cmpx_nle_f32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x39,0x7c]
-
-v_cmpx_nle_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1c,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nle_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1c,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nle_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1c,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nle_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1c,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_nle_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x1c,0xd4,0x01,0x05,0x02,0x00]
@@ -79237,18 +78185,6 @@ v_cmpx_neq_f32 v1, v255
 v_cmpx_neq_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x1d,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_neq_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1d,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_neq_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1d,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_neq_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1d,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_neq_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1d,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_neq_f32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x1d,0xd4,0xff,0x05,0x02,0x00]
 
@@ -79377,18 +78313,6 @@ v_cmpx_nlt_f32 0x3f717273, v2
 
 v_cmpx_nlt_f32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x3d,0x7c]
-
-v_cmpx_nlt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1e,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1e,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1e,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlt_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1e,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_nlt_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x1e,0xd4,0x01,0x05,0x02,0x00]
@@ -79525,18 +78449,6 @@ v_cmpx_tru_f32 v1, v255
 v_cmpx_tru_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x1f,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_tru_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1f,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_tru_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1f,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_tru_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1f,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_tru_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x1f,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_tru_f32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x1f,0xd4,0xff,0x05,0x02,0x00]
 
@@ -79621,15 +78533,6 @@ v_cmpx_tru_f32_e64 -v1, -v2
 v_cmpx_f_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x20,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_f_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x20,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_f_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x20,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_f_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x20,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_f_f32_sdwa v255, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x20,0x7c,0xff,0x00,0x06,0x06]
 
@@ -79657,9 +78560,6 @@ v_cmpx_f_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_f_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x21,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_f_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x20,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_f_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x20,0x7c,0x01,0x00,0x00,0x06]
 
@@ -79684,9 +78584,6 @@ v_cmpx_f_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_f_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x20,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_f_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x20,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_f_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x20,0x7c,0x01,0x00,0x06,0x00]
 
@@ -79710,15 +78607,6 @@ v_cmpx_f_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_f_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x20,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_lt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x22,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x22,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x22,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_lt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x22,0x7c,0x01,0x00,0x06,0x06]
@@ -79750,9 +78638,6 @@ v_cmpx_lt_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_lt_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x23,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_lt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x22,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_lt_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x22,0x7c,0x01,0x00,0x00,0x06]
 
@@ -79777,9 +78662,6 @@ v_cmpx_lt_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_lt_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x22,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_lt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x22,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_lt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x22,0x7c,0x01,0x00,0x06,0x00]
 
@@ -79803,15 +78685,6 @@ v_cmpx_lt_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_lt_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x22,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_eq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x24,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x24,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x24,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_eq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x24,0x7c,0x01,0x00,0x06,0x06]
@@ -79843,9 +78716,6 @@ v_cmpx_eq_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_eq_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x25,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_eq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x24,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_eq_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x24,0x7c,0x01,0x00,0x00,0x06]
 
@@ -79870,9 +78740,6 @@ v_cmpx_eq_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_eq_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x24,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_eq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x24,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_eq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x24,0x7c,0x01,0x00,0x06,0x00]
 
@@ -79896,15 +78763,6 @@ v_cmpx_eq_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_eq_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x24,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_le_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x26,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x26,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x26,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_le_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x26,0x7c,0x01,0x00,0x06,0x06]
@@ -79936,9 +78794,6 @@ v_cmpx_le_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_le_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x27,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_le_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x26,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_le_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x26,0x7c,0x01,0x00,0x00,0x06]
 
@@ -79963,9 +78818,6 @@ v_cmpx_le_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_le_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x26,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_le_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x26,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_le_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x26,0x7c,0x01,0x00,0x06,0x00]
 
@@ -79989,15 +78841,6 @@ v_cmpx_le_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_le_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x26,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_gt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x28,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x28,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x28,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_gt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x28,0x7c,0x01,0x00,0x06,0x06]
@@ -80029,9 +78872,6 @@ v_cmpx_gt_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_gt_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x29,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_gt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x28,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_gt_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x28,0x7c,0x01,0x00,0x00,0x06]
 
@@ -80056,9 +78896,6 @@ v_cmpx_gt_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_gt_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x28,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_gt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x28,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_gt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x28,0x7c,0x01,0x00,0x06,0x00]
 
@@ -80082,15 +78919,6 @@ v_cmpx_gt_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_gt_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x28,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_lg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2a,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_lg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2a,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_lg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2a,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_lg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2a,0x7c,0x01,0x00,0x06,0x06]
@@ -80122,9 +78950,6 @@ v_cmpx_lg_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_lg_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x2b,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_lg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2a,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_lg_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2a,0x7c,0x01,0x00,0x00,0x06]
 
@@ -80149,9 +78974,6 @@ v_cmpx_lg_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_lg_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2a,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_lg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2a,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_lg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x2a,0x7c,0x01,0x00,0x06,0x00]
 
@@ -80175,15 +78997,6 @@ v_cmpx_lg_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_lg_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2a,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_ge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2c,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2c,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2c,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_ge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2c,0x7c,0x01,0x00,0x06,0x06]
@@ -80215,9 +79028,6 @@ v_cmpx_ge_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ge_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x2d,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_ge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2c,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_ge_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2c,0x7c,0x01,0x00,0x00,0x06]
 
@@ -80242,9 +79052,6 @@ v_cmpx_ge_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ge_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2c,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_ge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2c,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_ge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x2c,0x7c,0x01,0x00,0x06,0x00]
 
@@ -80268,15 +79075,6 @@ v_cmpx_ge_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_ge_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2c,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_o_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2e,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_o_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2e,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_o_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2e,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_o_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2e,0x7c,0x01,0x00,0x06,0x06]
@@ -80308,9 +79106,6 @@ v_cmpx_o_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_o_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x2f,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_o_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2e,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_o_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2e,0x7c,0x01,0x00,0x00,0x06]
 
@@ -80335,9 +79130,6 @@ v_cmpx_o_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_o_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2e,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_o_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2e,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_o_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x2e,0x7c,0x01,0x00,0x06,0x00]
 
@@ -80361,15 +79153,6 @@ v_cmpx_o_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_o_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2e,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_u_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x30,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_u_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x30,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_u_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x30,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_u_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x30,0x7c,0x01,0x00,0x06,0x06]
@@ -80401,9 +79184,6 @@ v_cmpx_u_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_u_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x31,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_u_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x30,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_u_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x30,0x7c,0x01,0x00,0x00,0x06]
 
@@ -80428,9 +79208,6 @@ v_cmpx_u_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_u_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x30,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_u_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x30,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_u_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x30,0x7c,0x01,0x00,0x06,0x00]
 
@@ -80454,15 +79231,6 @@ v_cmpx_u_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_u_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x30,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_nge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x32,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_nge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x32,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_nge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x32,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_nge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x32,0x7c,0x01,0x00,0x06,0x06]
@@ -80494,9 +79262,6 @@ v_cmpx_nge_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nge_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x33,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_nge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x32,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_nge_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x32,0x7c,0x01,0x00,0x00,0x06]
 
@@ -80521,9 +79286,6 @@ v_cmpx_nge_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nge_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x32,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_nge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x32,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_nge_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x32,0x7c,0x01,0x00,0x06,0x00]
 
@@ -80547,15 +79309,6 @@ v_cmpx_nge_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_nge_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x32,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_nlg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x34,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_nlg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x34,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_nlg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x34,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_nlg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x34,0x7c,0x01,0x00,0x06,0x06]
@@ -80587,9 +79340,6 @@ v_cmpx_nlg_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nlg_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x35,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_nlg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x34,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_nlg_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x34,0x7c,0x01,0x00,0x00,0x06]
 
@@ -80614,9 +79364,6 @@ v_cmpx_nlg_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nlg_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x34,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_nlg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x34,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_nlg_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x34,0x7c,0x01,0x00,0x06,0x00]
 
@@ -80640,15 +79387,6 @@ v_cmpx_nlg_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_nlg_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x34,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_ngt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x36,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_ngt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x36,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_ngt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x36,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_ngt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x36,0x7c,0x01,0x00,0x06,0x06]
@@ -80680,9 +79418,6 @@ v_cmpx_ngt_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ngt_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x37,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_ngt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x36,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_ngt_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x36,0x7c,0x01,0x00,0x00,0x06]
 
@@ -80707,9 +79442,6 @@ v_cmpx_ngt_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ngt_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x36,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_ngt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x36,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_ngt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x36,0x7c,0x01,0x00,0x06,0x00]
 
@@ -80733,15 +79465,6 @@ v_cmpx_ngt_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_ngt_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x36,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_nle_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x38,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_nle_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x38,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_nle_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x38,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_nle_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x38,0x7c,0x01,0x00,0x06,0x06]
@@ -80773,9 +79496,6 @@ v_cmpx_nle_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nle_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x39,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_nle_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x38,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_nle_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x38,0x7c,0x01,0x00,0x00,0x06]
 
@@ -80800,9 +79520,6 @@ v_cmpx_nle_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nle_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x38,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_nle_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x38,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_nle_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x38,0x7c,0x01,0x00,0x06,0x00]
 
@@ -80826,15 +79543,6 @@ v_cmpx_nle_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_nle_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x38,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_neq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3a,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_neq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3a,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_neq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3a,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_neq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3a,0x7c,0x01,0x00,0x06,0x06]
@@ -80866,9 +79574,6 @@ v_cmpx_neq_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_neq_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x3b,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_neq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3a,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_neq_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3a,0x7c,0x01,0x00,0x00,0x06]
 
@@ -80893,9 +79598,6 @@ v_cmpx_neq_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_neq_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3a,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_neq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3a,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_neq_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x3a,0x7c,0x01,0x00,0x06,0x00]
 
@@ -80919,15 +79621,6 @@ v_cmpx_neq_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_neq_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3a,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_nlt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3c,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_nlt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3c,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_nlt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3c,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_nlt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3c,0x7c,0x01,0x00,0x06,0x06]
@@ -80959,9 +79652,6 @@ v_cmpx_nlt_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nlt_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x3d,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_nlt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3c,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_nlt_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3c,0x7c,0x01,0x00,0x00,0x06]
 
@@ -80986,9 +79676,6 @@ v_cmpx_nlt_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nlt_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3c,0x7c,0x01,0x00,0x26,0x06]
 
-v_cmpx_nlt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3c,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_nlt_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x3c,0x7c,0x01,0x00,0x06,0x00]
 
@@ -81012,15 +79699,6 @@ v_cmpx_nlt_f32_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_nlt_f32_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3c,0x7c,0x01,0x00,0x06,0x26]
-
-v_cmpx_tru_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3e,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_tru_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3e,0x7c,0x01,0x00,0x06,0x06]
-
-v_cmpx_tru_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3e,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_tru_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3e,0x7c,0x01,0x00,0x06,0x06]
@@ -81052,9 +79730,6 @@ v_cmpx_tru_f32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_tru_f32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x3f,0x7c,0x01,0x00,0x06,0x06]
 
-v_cmpx_tru_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3e,0x7c,0x01,0x00,0x06,0x06]
-
 v_cmpx_tru_f32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3e,0x7c,0x01,0x00,0x00,0x06]
 
@@ -81078,9 +79753,6 @@ v_cmpx_tru_f32_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_tru_f32_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3e,0x7c,0x01,0x00,0x26,0x06]
-
-v_cmpx_tru_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3e,0x7c,0x01,0x00,0x06,0x06]
 
 v_cmpx_tru_f32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x3e,0x7c,0x01,0x00,0x06,0x00]
@@ -87871,12 +86543,6 @@ v_cmpx_f_f64 v[1:2], v[254:255]
 v_cmpx_f_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x30,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_f_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x30,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x30,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_f_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x30,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -87894,9 +86560,6 @@ v_cmpx_f_f64_e64 exec, v[2:3]
 
 v_cmpx_f_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x30,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_f_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x30,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_f_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x30,0xd4,0x80,0x04,0x02,0x00]
@@ -87994,15 +86657,6 @@ v_cmpx_lt_f64 v[1:2], v[254:255]
 v_cmpx_lt_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x31,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_lt_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x31,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x31,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x31,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_lt_f64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x31,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -88017,9 +86671,6 @@ v_cmpx_lt_f64_e64 exec, v[2:3]
 
 v_cmpx_lt_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x31,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_lt_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x31,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_lt_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x31,0xd4,0x80,0x04,0x02,0x00]
@@ -88117,15 +86768,6 @@ v_cmpx_eq_f64 v[1:2], v[254:255]
 v_cmpx_eq_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x32,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_eq_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x32,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x32,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x32,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_eq_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x32,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -88143,9 +86785,6 @@ v_cmpx_eq_f64_e64 exec, v[2:3]
 
 v_cmpx_eq_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x32,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_eq_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x32,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_eq_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x32,0xd4,0x80,0x04,0x02,0x00]
@@ -88243,15 +86882,6 @@ v_cmpx_le_f64 v[1:2], v[254:255]
 v_cmpx_le_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x33,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_le_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x33,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x33,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x33,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_le_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x33,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -88269,9 +86899,6 @@ v_cmpx_le_f64_e64 exec, v[2:3]
 
 v_cmpx_le_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x33,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_le_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x33,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_le_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x33,0xd4,0x80,0x04,0x02,0x00]
@@ -88369,15 +86996,6 @@ v_cmpx_gt_f64 v[1:2], v[254:255]
 v_cmpx_gt_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x34,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_gt_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x34,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x34,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x34,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_gt_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x34,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -88395,9 +87013,6 @@ v_cmpx_gt_f64_e64 exec, v[2:3]
 
 v_cmpx_gt_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x34,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_gt_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x34,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_gt_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x34,0xd4,0x80,0x04,0x02,0x00]
@@ -88495,15 +87110,6 @@ v_cmpx_lg_f64 v[1:2], v[254:255]
 v_cmpx_lg_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x35,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_lg_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x35,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lg_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x35,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lg_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x35,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_lg_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x35,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -88521,9 +87127,6 @@ v_cmpx_lg_f64_e64 exec, v[2:3]
 
 v_cmpx_lg_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x35,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_lg_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x35,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_lg_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x35,0xd4,0x80,0x04,0x02,0x00]
@@ -88621,15 +87224,6 @@ v_cmpx_ge_f64 v[1:2], v[254:255]
 v_cmpx_ge_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x36,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_ge_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x36,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x36,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x36,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_ge_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x36,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -88647,9 +87241,6 @@ v_cmpx_ge_f64_e64 exec, v[2:3]
 
 v_cmpx_ge_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x36,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_ge_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x36,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_ge_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x36,0xd4,0x80,0x04,0x02,0x00]
@@ -88747,15 +87338,6 @@ v_cmpx_o_f64 v[1:2], v[254:255]
 v_cmpx_o_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x37,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_o_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x37,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_o_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x37,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_o_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x37,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_o_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x37,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -88773,9 +87355,6 @@ v_cmpx_o_f64_e64 exec, v[2:3]
 
 v_cmpx_o_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x37,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_o_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x37,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_o_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x37,0xd4,0x80,0x04,0x02,0x00]
@@ -88873,15 +87452,6 @@ v_cmpx_u_f64 v[1:2], v[254:255]
 v_cmpx_u_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x38,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_u_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x38,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_u_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x38,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_u_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x38,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_u_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x38,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -88899,9 +87469,6 @@ v_cmpx_u_f64_e64 exec, v[2:3]
 
 v_cmpx_u_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x38,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_u_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x38,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_u_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x38,0xd4,0x80,0x04,0x02,0x00]
@@ -88999,15 +87566,6 @@ v_cmpx_nge_f64 v[1:2], v[254:255]
 v_cmpx_nge_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x39,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_nge_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x39,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nge_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x39,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nge_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x39,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_nge_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x39,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -89025,9 +87583,6 @@ v_cmpx_nge_f64_e64 exec, v[2:3]
 
 v_cmpx_nge_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x39,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_nge_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x39,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_nge_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x39,0xd4,0x80,0x04,0x02,0x00]
@@ -89125,15 +87680,6 @@ v_cmpx_nlg_f64 v[1:2], v[254:255]
 v_cmpx_nlg_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3a,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_nlg_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3a,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlg_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3a,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlg_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3a,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_nlg_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x3a,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -89151,9 +87697,6 @@ v_cmpx_nlg_f64_e64 exec, v[2:3]
 
 v_cmpx_nlg_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3a,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_nlg_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3a,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_nlg_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3a,0xd4,0x80,0x04,0x02,0x00]
@@ -89251,15 +87794,6 @@ v_cmpx_ngt_f64 v[1:2], v[254:255]
 v_cmpx_ngt_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3b,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_ngt_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3b,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ngt_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3b,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ngt_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3b,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_ngt_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x3b,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -89277,9 +87811,6 @@ v_cmpx_ngt_f64_e64 exec, v[2:3]
 
 v_cmpx_ngt_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3b,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_ngt_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3b,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_ngt_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3b,0xd4,0x80,0x04,0x02,0x00]
@@ -89377,15 +87908,6 @@ v_cmpx_nle_f64 v[1:2], v[254:255]
 v_cmpx_nle_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3c,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_nle_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3c,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nle_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3c,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nle_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3c,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_nle_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x3c,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -89403,9 +87925,6 @@ v_cmpx_nle_f64_e64 exec, v[2:3]
 
 v_cmpx_nle_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3c,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_nle_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3c,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_nle_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3c,0xd4,0x80,0x04,0x02,0x00]
@@ -89503,15 +88022,6 @@ v_cmpx_neq_f64 v[1:2], v[254:255]
 v_cmpx_neq_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3d,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_neq_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3d,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_neq_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3d,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_neq_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3d,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_neq_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x3d,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -89529,9 +88039,6 @@ v_cmpx_neq_f64_e64 exec, v[2:3]
 
 v_cmpx_neq_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3d,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_neq_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3d,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_neq_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3d,0xd4,0x80,0x04,0x02,0x00]
@@ -89629,15 +88136,6 @@ v_cmpx_nlt_f64 v[1:2], v[254:255]
 v_cmpx_nlt_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3e,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_nlt_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3e,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlt_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3e,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlt_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3e,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_nlt_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x3e,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -89655,9 +88153,6 @@ v_cmpx_nlt_f64_e64 exec, v[2:3]
 
 v_cmpx_nlt_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3e,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_nlt_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3e,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_nlt_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3e,0xd4,0x80,0x04,0x02,0x00]
@@ -89755,15 +88250,6 @@ v_cmpx_tru_f64 v[1:2], v[254:255]
 v_cmpx_tru_f64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3f,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_tru_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3f,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_tru_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3f,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_tru_f64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3f,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_tru_f64_e64 exec, v[1:2]
 // GFX10: encoding: [0x00,0x00,0x3f,0xd4,0x7e,0x02,0x02,0x00]
 
@@ -89781,9 +88267,6 @@ v_cmpx_tru_f64_e64 exec, v[2:3]
 
 v_cmpx_tru_f64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3f,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_tru_f64_e64 exec, v[2:3]
-// GFX10: encoding: [0x00,0x00,0x3f,0xd4,0x7e,0x04,0x02,0x00]
 
 v_cmpx_tru_f64_e64 0, v[2:3]
 // GFX10: encoding: [0x00,0x00,0x3f,0xd4,0x80,0x04,0x02,0x00]
@@ -91661,11 +90144,6 @@ v_cmp_f_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_f_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_f_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x00,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_f_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_f_i32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x00,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -91700,11 +90178,6 @@ v_cmp_f_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x00,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_f_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_f_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x00,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_f_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_f_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x00,0x7d,0x01,0x86,0x06,0x00]
@@ -91806,11 +90279,6 @@ v_cmp_lt_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_lt_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lt_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x02,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_lt_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lt_i32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x02,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -91845,11 +90313,6 @@ v_cmp_lt_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x02,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_lt_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lt_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x02,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_lt_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lt_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x02,0x7d,0x01,0x86,0x06,0x00]
@@ -91951,11 +90414,6 @@ v_cmp_eq_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_eq_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_eq_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x04,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_eq_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_eq_i32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x04,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -91990,11 +90448,6 @@ v_cmp_eq_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x04,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_eq_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_eq_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x04,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_eq_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_eq_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x04,0x7d,0x01,0x86,0x06,0x00]
@@ -92096,11 +90549,6 @@ v_cmp_le_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_le_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_le_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x06,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_le_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_le_i32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x06,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -92135,11 +90583,6 @@ v_cmp_le_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x06,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_le_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_le_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x06,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_le_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_le_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x06,0x7d,0x01,0x86,0x06,0x00]
@@ -92241,11 +90684,6 @@ v_cmp_gt_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_gt_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_gt_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x08,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_gt_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_gt_i32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x08,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -92280,11 +90718,6 @@ v_cmp_gt_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x08,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_gt_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_gt_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x08,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_gt_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_gt_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x08,0x7d,0x01,0x86,0x06,0x00]
@@ -92386,11 +90819,6 @@ v_cmp_ne_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_ne_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ne_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x0a,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_ne_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ne_i32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x0a,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -92425,11 +90853,6 @@ v_cmp_ne_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x0a,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_ne_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ne_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x0a,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_ne_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ne_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x0a,0x7d,0x01,0x86,0x06,0x00]
@@ -92531,11 +90954,6 @@ v_cmp_ge_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_ge_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ge_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x0c,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_ge_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ge_i32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x0c,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -92570,11 +90988,6 @@ v_cmp_ge_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x0c,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_ge_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ge_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x0c,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_ge_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ge_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x0c,0x7d,0x01,0x86,0x06,0x00]
@@ -92676,11 +91089,6 @@ v_cmp_t_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_t_i32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_t_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x0e,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_t_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_t_i32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x0e,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -92715,11 +91123,6 @@ v_cmp_t_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x0e,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_t_i32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_t_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x0e,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_t_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_t_i32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x0e,0x7d,0x01,0x86,0x06,0x00]
@@ -94581,11 +92984,6 @@ v_cmp_f_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_f_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_f_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x00,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_f_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_f_i32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x00,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -94620,11 +93018,6 @@ v_cmp_f_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x00,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_f_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_f_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x00,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_f_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_f_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x00,0x7d,0x01,0x86,0x06,0x00]
@@ -94726,11 +93119,6 @@ v_cmp_lt_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_lt_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lt_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x02,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_lt_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lt_i32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x02,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -94765,11 +93153,6 @@ v_cmp_lt_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x02,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_lt_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lt_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x02,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_lt_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lt_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x02,0x7d,0x01,0x86,0x06,0x00]
@@ -94871,11 +93254,6 @@ v_cmp_eq_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_eq_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_eq_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x04,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_eq_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_eq_i32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x04,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -94910,11 +93288,6 @@ v_cmp_eq_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x04,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_eq_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_eq_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x04,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_eq_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_eq_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x04,0x7d,0x01,0x86,0x06,0x00]
@@ -95016,11 +93389,6 @@ v_cmp_le_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_le_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_le_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x06,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_le_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_le_i32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x06,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -95055,11 +93423,6 @@ v_cmp_le_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x06,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_le_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_le_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x06,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_le_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_le_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x06,0x7d,0x01,0x86,0x06,0x00]
@@ -95161,11 +93524,6 @@ v_cmp_gt_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_gt_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_gt_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x08,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_gt_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_gt_i32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x08,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -95200,11 +93558,6 @@ v_cmp_gt_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x08,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_gt_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_gt_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x08,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_gt_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_gt_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x08,0x7d,0x01,0x86,0x06,0x00]
@@ -95306,11 +93659,6 @@ v_cmp_ne_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_ne_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ne_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x0a,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_ne_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ne_i32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x0a,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -95345,11 +93693,6 @@ v_cmp_ne_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x0a,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_ne_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ne_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x0a,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_ne_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ne_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x0a,0x7d,0x01,0x86,0x06,0x00]
@@ -95451,11 +93794,6 @@ v_cmp_ge_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_ge_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ge_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x0c,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_ge_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ge_i32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x0c,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -95490,11 +93828,6 @@ v_cmp_ge_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x0c,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_ge_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ge_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x0c,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_ge_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ge_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x0c,0x7d,0x01,0x86,0x06,0x00]
@@ -95596,11 +93929,6 @@ v_cmp_t_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_t_i32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_t_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x0e,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_t_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_t_i32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x0e,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -95635,11 +93963,6 @@ v_cmp_t_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x0e,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_t_i32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_t_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x0e,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_t_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_t_i32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x0e,0x7d,0x01,0x86,0x06,0x00]
@@ -95966,11 +94289,6 @@ v_cmp_class_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_class_f32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_class_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x10,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_class_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_class_f32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x10,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -96010,11 +94328,6 @@ v_cmp_class_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x10,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_class_f32_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_class_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x10,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_class_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_class_f32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x10,0x7d,0x01,0x86,0x06,0x00]
@@ -96341,11 +94654,6 @@ v_cmp_class_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_class_f32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_class_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x10,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_class_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_class_f32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x10,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -96385,11 +94693,6 @@ v_cmp_class_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x10,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_class_f32_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_class_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x10,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_class_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_class_f32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x10,0x7d,0x01,0x86,0x06,0x00]
@@ -97811,11 +96114,6 @@ v_cmp_lt_i16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_lt_i16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lt_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x12,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_lt_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lt_i16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x12,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -97850,11 +96148,6 @@ v_cmp_lt_i16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x12,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_lt_i16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lt_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x12,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_lt_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lt_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x12,0x7d,0x01,0x86,0x06,0x00]
@@ -97956,11 +96249,6 @@ v_cmp_eq_i16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_eq_i16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_eq_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x14,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_eq_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_eq_i16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x14,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -97995,11 +96283,6 @@ v_cmp_eq_i16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x14,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_eq_i16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_eq_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x14,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_eq_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_eq_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x14,0x7d,0x01,0x86,0x06,0x00]
@@ -98101,11 +96384,6 @@ v_cmp_le_i16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_le_i16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_le_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x16,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_le_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_le_i16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x16,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -98140,11 +96418,6 @@ v_cmp_le_i16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x16,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_le_i16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_le_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x16,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_le_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_le_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x16,0x7d,0x01,0x86,0x06,0x00]
@@ -98246,11 +96519,6 @@ v_cmp_gt_i16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_gt_i16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_gt_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x18,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_gt_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_gt_i16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x18,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -98285,11 +96553,6 @@ v_cmp_gt_i16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x18,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_gt_i16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_gt_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x18,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_gt_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_gt_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x18,0x7d,0x01,0x86,0x06,0x00]
@@ -98391,11 +96654,6 @@ v_cmp_ne_i16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_ne_i16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ne_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x1a,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_ne_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ne_i16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x1a,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -98430,11 +96688,6 @@ v_cmp_ne_i16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x1a,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_ne_i16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ne_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x1a,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_ne_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ne_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x1a,0x7d,0x01,0x86,0x06,0x00]
@@ -98536,11 +96789,6 @@ v_cmp_ge_i16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_ge_i16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ge_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x1c,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_ge_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ge_i16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x1c,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -98575,11 +96823,6 @@ v_cmp_ge_i16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x1c,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_ge_i16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ge_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x1c,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_ge_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ge_i16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x1c,0x7d,0x01,0x86,0x06,0x00]
@@ -100001,11 +98244,6 @@ v_cmp_lt_i16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_lt_i16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lt_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x12,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_lt_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lt_i16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x12,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -100040,11 +98278,6 @@ v_cmp_lt_i16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x12,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_lt_i16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lt_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x12,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_lt_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lt_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x12,0x7d,0x01,0x86,0x06,0x00]
@@ -100146,11 +98379,6 @@ v_cmp_eq_i16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_eq_i16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_eq_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x14,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_eq_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_eq_i16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x14,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -100185,11 +98413,6 @@ v_cmp_eq_i16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x14,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_eq_i16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_eq_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x14,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_eq_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_eq_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x14,0x7d,0x01,0x86,0x06,0x00]
@@ -100291,11 +98514,6 @@ v_cmp_le_i16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_le_i16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_le_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x16,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_le_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_le_i16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x16,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -100330,11 +98548,6 @@ v_cmp_le_i16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x16,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_le_i16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_le_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x16,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_le_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_le_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x16,0x7d,0x01,0x86,0x06,0x00]
@@ -100436,11 +98649,6 @@ v_cmp_gt_i16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_gt_i16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_gt_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x18,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_gt_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_gt_i16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x18,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -100475,11 +98683,6 @@ v_cmp_gt_i16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x18,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_gt_i16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_gt_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x18,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_gt_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_gt_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x18,0x7d,0x01,0x86,0x06,0x00]
@@ -100581,11 +98784,6 @@ v_cmp_ne_i16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_ne_i16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ne_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x1a,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_ne_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ne_i16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x1a,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -100620,11 +98818,6 @@ v_cmp_ne_i16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x1a,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_ne_i16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ne_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x1a,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_ne_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ne_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x1a,0x7d,0x01,0x86,0x06,0x00]
@@ -100726,11 +98919,6 @@ v_cmp_ge_i16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_ge_i16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ge_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x1c,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_ge_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ge_i16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x1c,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: invalid operand for instruction
@@ -100765,11 +98953,6 @@ v_cmp_ge_i16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x1c,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_ge_i16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ge_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x1c,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: invalid operand for instruction
-// W64-ERR-NEXT: v_cmp_ge_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ge_i16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x1c,0x7d,0x01,0x86,0x06,0x00]
@@ -101096,11 +99279,6 @@ v_cmp_class_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_class_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_class_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x1e,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_class_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_class_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x1e,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: invalid operand for instruction
@@ -101140,11 +99318,6 @@ v_cmp_class_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x1e,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: invalid operand for instruction
 // W32-ERR-NEXT: v_cmp_class_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_class_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x1e,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: invalid operand for instruction
-// W32-ERR-NEXT: v_cmp_class_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_class_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x1e,0x7d,0x01,0x86,0x06,0x00]
@@ -101228,21 +99401,6 @@ v_cmpx_f_i32 0x3f717273, v2
 
 v_cmpx_f_i32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x21,0x7d]
-
-v_cmpx_f_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x90,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x90,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x90,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x90,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x90,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_f_i32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x90,0xd4,0x01,0x05,0x02,0x00]
@@ -101370,21 +99528,6 @@ v_cmpx_lt_i32 v1, v255
 v_cmpx_lt_i32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x91,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_lt_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x91,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x91,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x91,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x91,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x91,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_lt_i32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x91,0xd4,0xff,0x05,0x02,0x00]
 
@@ -101504,21 +99647,6 @@ v_cmpx_eq_i32 0x3f717273, v2
 
 v_cmpx_eq_i32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x25,0x7d]
-
-v_cmpx_eq_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x92,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x92,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x92,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x92,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x92,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_eq_i32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x92,0xd4,0x01,0x05,0x02,0x00]
@@ -101646,21 +99774,6 @@ v_cmpx_le_i32 v1, v255
 v_cmpx_le_i32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x93,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_le_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x93,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x93,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x93,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x93,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x93,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_le_i32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x93,0xd4,0xff,0x05,0x02,0x00]
 
@@ -101780,21 +99893,6 @@ v_cmpx_gt_i32 0x3f717273, v2
 
 v_cmpx_gt_i32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x29,0x7d]
-
-v_cmpx_gt_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x94,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x94,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x94,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x94,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x94,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_gt_i32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x94,0xd4,0x01,0x05,0x02,0x00]
@@ -101922,21 +100020,6 @@ v_cmpx_ne_i32 v1, v255
 v_cmpx_ne_i32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x95,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_ne_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x95,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x95,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x95,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x95,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x95,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_ne_i32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x95,0xd4,0xff,0x05,0x02,0x00]
 
@@ -102056,21 +100139,6 @@ v_cmpx_ge_i32 0x3f717273, v2
 
 v_cmpx_ge_i32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x2d,0x7d]
-
-v_cmpx_ge_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x96,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x96,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x96,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x96,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x96,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_ge_i32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x96,0xd4,0x01,0x05,0x02,0x00]
@@ -102198,21 +100266,6 @@ v_cmpx_t_i32 v1, v255
 v_cmpx_t_i32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x97,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_t_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x97,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x97,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x97,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x97,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_i32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x97,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_t_i32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x97,0xd4,0xff,0x05,0x02,0x00]
 
@@ -102332,21 +100385,6 @@ v_cmpx_class_f32 0x3f717273, v2
 
 v_cmpx_class_f32 v1, v255
 // GFX10: encoding: [0x01,0xff,0x31,0x7d]
-
-v_cmpx_class_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x98,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_class_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x98,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_class_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x98,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_class_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x98,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_class_f32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x98,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_class_f32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x98,0xd4,0x01,0x05,0x02,0x00]
@@ -102477,21 +100515,6 @@ v_cmpx_lt_i16 v1, v255
 v_cmpx_lt_i16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x99,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_lt_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x99,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x99,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x99,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x99,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x99,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_lt_i16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x99,0xd4,0xff,0x05,0x02,0x00]
 
@@ -102611,21 +100634,6 @@ v_cmpx_eq_i16 0x3456, v2
 
 v_cmpx_eq_i16 v1, v255
 // GFX10: encoding: [0x01,0xff,0x35,0x7d]
-
-v_cmpx_eq_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9a,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9a,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9a,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9a,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9a,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_eq_i16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x9a,0xd4,0x01,0x05,0x02,0x00]
@@ -102753,21 +100761,6 @@ v_cmpx_le_i16 v1, v255
 v_cmpx_le_i16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x9b,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_le_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9b,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9b,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9b,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9b,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9b,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_le_i16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x9b,0xd4,0xff,0x05,0x02,0x00]
 
@@ -102887,21 +100880,6 @@ v_cmpx_gt_i16 0x3456, v2
 
 v_cmpx_gt_i16 v1, v255
 // GFX10: encoding: [0x01,0xff,0x39,0x7d]
-
-v_cmpx_gt_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9c,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9c,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9c,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9c,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9c,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_gt_i16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x9c,0xd4,0x01,0x05,0x02,0x00]
@@ -103029,21 +101007,6 @@ v_cmpx_ne_i16 v1, v255
 v_cmpx_ne_i16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x9d,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_ne_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9d,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9d,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9d,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9d,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9d,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_ne_i16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x9d,0xd4,0xff,0x05,0x02,0x00]
 
@@ -103163,21 +101126,6 @@ v_cmpx_ge_i16 0x3456, v2
 
 v_cmpx_ge_i16 v1, v255
 // GFX10: encoding: [0x01,0xff,0x3d,0x7d]
-
-v_cmpx_ge_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9e,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9e,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9e,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9e,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_i16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9e,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_ge_i16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x9e,0xd4,0x01,0x05,0x02,0x00]
@@ -103305,21 +101253,6 @@ v_cmpx_class_f16 v1, v255
 v_cmpx_class_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0x9f,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_class_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9f,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_class_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9f,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_class_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9f,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_class_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9f,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_class_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0x9f,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_class_f16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0x9f,0xd4,0xff,0x05,0x02,0x00]
 
@@ -103440,21 +101373,6 @@ v_cmpx_f_i64 v[1:2], v[254:255]
 v_cmpx_f_i64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb0,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_f_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb0,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_f_i64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb0,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -103550,21 +101468,6 @@ v_cmpx_lt_i64 0x3f717273, v[2:3]
 
 v_cmpx_lt_i64 v[1:2], v[254:255]
 // GFX10: encoding: [0x01,0xfd,0x63,0x7d]
-
-v_cmpx_lt_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb1,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_lt_i64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb1,0xd4,0x01,0x05,0x02,0x00]
@@ -103668,21 +101571,6 @@ v_cmpx_eq_i64 v[1:2], v[254:255]
 v_cmpx_eq_i64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb2,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_eq_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb2,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_eq_i64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb2,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -103691,15 +101579,6 @@ v_cmpx_eq_i64_e64 s[2:3], v[2:3]
 
 v_cmpx_eq_i64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb2,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_eq_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb2,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_eq_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb2,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_eq_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb2,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_eq_i64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb2,0xd4,0x6a,0x04,0x02,0x00]
@@ -103791,21 +101670,6 @@ v_cmpx_le_i64 v[1:2], v[254:255]
 v_cmpx_le_i64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb3,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_le_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb3,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_le_i64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb3,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -103814,15 +101678,6 @@ v_cmpx_le_i64_e64 s[2:3], v[2:3]
 
 v_cmpx_le_i64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb3,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_le_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb3,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_le_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb3,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_le_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb3,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_le_i64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb3,0xd4,0x6a,0x04,0x02,0x00]
@@ -103914,21 +101769,6 @@ v_cmpx_gt_i64 v[1:2], v[254:255]
 v_cmpx_gt_i64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb4,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_gt_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb4,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_gt_i64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb4,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -103937,15 +101777,6 @@ v_cmpx_gt_i64_e64 s[2:3], v[2:3]
 
 v_cmpx_gt_i64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb4,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_gt_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb4,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_gt_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb4,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_gt_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb4,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_gt_i64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb4,0xd4,0x6a,0x04,0x02,0x00]
@@ -104037,21 +101868,6 @@ v_cmpx_ne_i64 v[1:2], v[254:255]
 v_cmpx_ne_i64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb5,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_ne_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb5,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_ne_i64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb5,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -104060,15 +101876,6 @@ v_cmpx_ne_i64_e64 s[2:3], v[2:3]
 
 v_cmpx_ne_i64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb5,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_ne_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb5,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_ne_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb5,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_ne_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb5,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_ne_i64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb5,0xd4,0x6a,0x04,0x02,0x00]
@@ -104160,21 +101967,6 @@ v_cmpx_ge_i64 v[1:2], v[254:255]
 v_cmpx_ge_i64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb6,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_ge_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb6,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_ge_i64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb6,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -104183,15 +101975,6 @@ v_cmpx_ge_i64_e64 s[2:3], v[2:3]
 
 v_cmpx_ge_i64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb6,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_ge_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb6,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_ge_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb6,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_ge_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb6,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_ge_i64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb6,0xd4,0x6a,0x04,0x02,0x00]
@@ -104283,21 +102066,6 @@ v_cmpx_t_i64 v[1:2], v[254:255]
 v_cmpx_t_i64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb7,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_t_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_i64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb7,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_t_i64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb7,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -104306,15 +102074,6 @@ v_cmpx_t_i64_e64 s[2:3], v[2:3]
 
 v_cmpx_t_i64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb7,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_t_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb7,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_t_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb7,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_t_i64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xb7,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_t_i64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xb7,0xd4,0x6a,0x04,0x02,0x00]
@@ -104402,21 +102161,6 @@ v_cmpx_class_f64 0x3f717273, v2
 
 v_cmpx_class_f64 v[1:2], v255
 // GFX10: encoding: [0x01,0xff,0x71,0x7d]
-
-v_cmpx_class_f64_e64 v[1:2], v2
-// GFX10: encoding: [0x00,0x00,0xb8,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_class_f64_e64 v[1:2], v2
-// GFX10: encoding: [0x00,0x00,0xb8,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_class_f64_e64 v[1:2], v2
-// GFX10: encoding: [0x00,0x00,0xb8,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_class_f64_e64 v[1:2], v2
-// GFX10: encoding: [0x00,0x00,0xb8,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_class_f64_e64 v[1:2], v2
-// GFX10: encoding: [0x00,0x00,0xb8,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_class_f64_e64 v[1:2], v2
 // GFX10: encoding: [0x00,0x00,0xb8,0xd4,0x01,0x05,0x02,0x00]
@@ -104531,21 +102275,6 @@ v_cmpx_lt_u16 0x3456, v2
 
 v_cmpx_lt_u16 v1, v255
 // GFX10: encoding: [0x01,0xff,0x73,0x7d]
-
-v_cmpx_lt_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xb9,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xb9,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xb9,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xb9,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xb9,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_lt_u16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xb9,0xd4,0x01,0x05,0x02,0x00]
@@ -104673,21 +102402,6 @@ v_cmpx_eq_u16 v1, v255
 v_cmpx_eq_u16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xba,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_eq_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xba,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xba,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xba,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xba,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xba,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_eq_u16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xba,0xd4,0xff,0x05,0x02,0x00]
 
@@ -104807,21 +102521,6 @@ v_cmpx_le_u16 0x3456, v2
 
 v_cmpx_le_u16 v1, v255
 // GFX10: encoding: [0x01,0xff,0x77,0x7d]
-
-v_cmpx_le_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbb,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbb,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbb,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbb,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbb,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_le_u16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xbb,0xd4,0x01,0x05,0x02,0x00]
@@ -104949,21 +102648,6 @@ v_cmpx_gt_u16 v1, v255
 v_cmpx_gt_u16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xbc,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_gt_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbc,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbc,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbc,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbc,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbc,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_gt_u16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xbc,0xd4,0xff,0x05,0x02,0x00]
 
@@ -105083,21 +102767,6 @@ v_cmpx_ne_u16 0x3456, v2
 
 v_cmpx_ne_u16 v1, v255
 // GFX10: encoding: [0x01,0xff,0x7b,0x7d]
-
-v_cmpx_ne_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbd,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbd,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbd,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbd,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbd,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_ne_u16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xbd,0xd4,0x01,0x05,0x02,0x00]
@@ -105225,21 +102894,6 @@ v_cmpx_ge_u16 v1, v255
 v_cmpx_ge_u16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xbe,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_ge_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbe,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbe,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbe,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbe,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xbe,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_ge_u16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xbe,0xd4,0xff,0x05,0x02,0x00]
 
@@ -105359,21 +103013,6 @@ v_cmpx_f_u32 0x3f717273, v2
 
 v_cmpx_f_u32 v1, v255
 // GFX10: encoding: [0x01,0xff,0xa1,0x7d]
-
-v_cmpx_f_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd0,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_f_u32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xd0,0xd4,0x01,0x05,0x02,0x00]
@@ -105501,21 +103140,6 @@ v_cmpx_lt_u32 v1, v255
 v_cmpx_lt_u32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xd1,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_lt_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd1,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_lt_u32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xd1,0xd4,0xff,0x05,0x02,0x00]
 
@@ -105635,21 +103259,6 @@ v_cmpx_eq_u32 0x3f717273, v2
 
 v_cmpx_eq_u32 v1, v255
 // GFX10: encoding: [0x01,0xff,0xa5,0x7d]
-
-v_cmpx_eq_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd2,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_eq_u32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xd2,0xd4,0x01,0x05,0x02,0x00]
@@ -105777,21 +103386,6 @@ v_cmpx_le_u32 v1, v255
 v_cmpx_le_u32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xd3,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_le_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd3,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_le_u32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xd3,0xd4,0xff,0x05,0x02,0x00]
 
@@ -105911,21 +103505,6 @@ v_cmpx_gt_u32 0x3f717273, v2
 
 v_cmpx_gt_u32 v1, v255
 // GFX10: encoding: [0x01,0xff,0xa9,0x7d]
-
-v_cmpx_gt_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd4,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_gt_u32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xd4,0xd4,0x01,0x05,0x02,0x00]
@@ -106053,21 +103632,6 @@ v_cmpx_ne_u32 v1, v255
 v_cmpx_ne_u32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xd5,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_ne_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd5,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_ne_u32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xd5,0xd4,0xff,0x05,0x02,0x00]
 
@@ -106187,21 +103751,6 @@ v_cmpx_ge_u32 0x3f717273, v2
 
 v_cmpx_ge_u32 v1, v255
 // GFX10: encoding: [0x01,0xff,0xad,0x7d]
-
-v_cmpx_ge_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd6,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_ge_u32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xd6,0xd4,0x01,0x05,0x02,0x00]
@@ -106329,21 +103878,6 @@ v_cmpx_t_u32 v1, v255
 v_cmpx_t_u32_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xd7,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_t_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_u32_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd7,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_t_u32_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xd7,0xd4,0xff,0x05,0x02,0x00]
 
@@ -106463,21 +103997,6 @@ v_cmpx_f_f16 0x3456, v2
 
 v_cmpx_f_f16 v1, v255
 // GFX10: encoding: [0x01,0xff,0xb1,0x7d]
-
-v_cmpx_f_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd8,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd8,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd8,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd8,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd8,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_f_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xd8,0xd4,0x01,0x05,0x02,0x00]
@@ -106614,21 +104133,6 @@ v_cmpx_lt_f16 v1, v255
 v_cmpx_lt_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xd9,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_lt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd9,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd9,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd9,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd9,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xd9,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_lt_f16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xd9,0xd4,0xff,0x05,0x02,0x00]
 
@@ -106757,21 +104261,6 @@ v_cmpx_eq_f16 0x3456, v2
 
 v_cmpx_eq_f16 v1, v255
 // GFX10: encoding: [0x01,0xff,0xb5,0x7d]
-
-v_cmpx_eq_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xda,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xda,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xda,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xda,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xda,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_eq_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xda,0xd4,0x01,0x05,0x02,0x00]
@@ -106908,21 +104397,6 @@ v_cmpx_le_f16 v1, v255
 v_cmpx_le_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xdb,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_le_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdb,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdb,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdb,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdb,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdb,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_le_f16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xdb,0xd4,0xff,0x05,0x02,0x00]
 
@@ -107051,21 +104525,6 @@ v_cmpx_gt_f16 0x3456, v2
 
 v_cmpx_gt_f16 v1, v255
 // GFX10: encoding: [0x01,0xff,0xb9,0x7d]
-
-v_cmpx_gt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdc,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdc,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdc,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdc,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdc,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_gt_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xdc,0xd4,0x01,0x05,0x02,0x00]
@@ -107202,21 +104661,6 @@ v_cmpx_lg_f16 v1, v255
 v_cmpx_lg_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xdd,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_lg_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdd,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lg_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdd,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lg_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdd,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lg_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdd,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lg_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdd,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_lg_f16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xdd,0xd4,0xff,0x05,0x02,0x00]
 
@@ -107345,21 +104789,6 @@ v_cmpx_ge_f16 0x3456, v2
 
 v_cmpx_ge_f16 v1, v255
 // GFX10: encoding: [0x01,0xff,0xbd,0x7d]
-
-v_cmpx_ge_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xde,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xde,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xde,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xde,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xde,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_ge_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xde,0xd4,0x01,0x05,0x02,0x00]
@@ -107496,21 +104925,6 @@ v_cmpx_o_f16 v1, v255
 v_cmpx_o_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xdf,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_o_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdf,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_o_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdf,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_o_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdf,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_o_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdf,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_o_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xdf,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_o_f16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xdf,0xd4,0xff,0x05,0x02,0x00]
 
@@ -107637,21 +105051,6 @@ v_cmpx_f_u64 v[1:2], v[254:255]
 v_cmpx_f_u64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_f_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_f_u64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf0,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -107660,15 +105059,6 @@ v_cmpx_f_u64_e64 s[2:3], v[2:3]
 
 v_cmpx_f_u64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_f_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_f_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_f_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_f_u64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x6a,0x04,0x02,0x00]
@@ -107760,21 +105150,6 @@ v_cmpx_lt_u64 v[1:2], v[254:255]
 v_cmpx_lt_u64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_lt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_lt_u64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf1,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -107783,15 +105158,6 @@ v_cmpx_lt_u64_e64 s[2:3], v[2:3]
 
 v_cmpx_lt_u64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_lt_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_lt_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_lt_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_lt_u64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x6a,0x04,0x02,0x00]
@@ -107883,21 +105249,6 @@ v_cmpx_eq_u64 v[1:2], v[254:255]
 v_cmpx_eq_u64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_eq_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_eq_u64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf2,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -107906,15 +105257,6 @@ v_cmpx_eq_u64_e64 s[2:3], v[2:3]
 
 v_cmpx_eq_u64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_eq_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_eq_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_eq_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_eq_u64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x6a,0x04,0x02,0x00]
@@ -108006,21 +105348,6 @@ v_cmpx_le_u64 v[1:2], v[254:255]
 v_cmpx_le_u64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_le_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_le_u64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf3,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -108029,15 +105356,6 @@ v_cmpx_le_u64_e64 s[2:3], v[2:3]
 
 v_cmpx_le_u64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_le_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_le_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_le_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_le_u64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x6a,0x04,0x02,0x00]
@@ -108129,21 +105447,6 @@ v_cmpx_gt_u64 v[1:2], v[254:255]
 v_cmpx_gt_u64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_gt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_gt_u64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf4,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -108152,15 +105455,6 @@ v_cmpx_gt_u64_e64 s[2:3], v[2:3]
 
 v_cmpx_gt_u64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_gt_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_gt_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_gt_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_gt_u64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x6a,0x04,0x02,0x00]
@@ -108252,21 +105546,6 @@ v_cmpx_ne_u64 v[1:2], v[254:255]
 v_cmpx_ne_u64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_ne_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_ne_u64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf5,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -108275,15 +105554,6 @@ v_cmpx_ne_u64_e64 s[2:3], v[2:3]
 
 v_cmpx_ne_u64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_ne_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_ne_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_ne_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_ne_u64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x6a,0x04,0x02,0x00]
@@ -108375,21 +105645,6 @@ v_cmpx_ge_u64 v[1:2], v[254:255]
 v_cmpx_ge_u64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_ge_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_ge_u64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf6,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -108398,15 +105653,6 @@ v_cmpx_ge_u64_e64 s[2:3], v[2:3]
 
 v_cmpx_ge_u64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_ge_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_ge_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_ge_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_ge_u64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x6a,0x04,0x02,0x00]
@@ -108498,21 +105744,6 @@ v_cmpx_t_u64 v[1:2], v[254:255]
 v_cmpx_t_u64_e64 v[1:2], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_t_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_t_u64_e64 v[254:255], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf7,0xd4,0xfe,0x05,0x02,0x00]
 
@@ -108521,15 +105752,6 @@ v_cmpx_t_u64_e64 s[2:3], v[2:3]
 
 v_cmpx_t_u64_e64 s[4:5], v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_t_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_t_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x6a,0x04,0x02,0x00]
-
-v_cmpx_t_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_t_u64_e64 vcc, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x6a,0x04,0x02,0x00]
@@ -108623,21 +105845,6 @@ v_cmpx_u_f16 0x3456, v2
 
 v_cmpx_u_f16 v1, v255
 // GFX10: encoding: [0x01,0xff,0xf1,0x7d]
-
-v_cmpx_u_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xf8,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_u_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xf8,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_u_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xf8,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_u_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xf8,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_u_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xf8,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_u_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xf8,0xd4,0x01,0x05,0x02,0x00]
@@ -108774,21 +105981,6 @@ v_cmpx_nge_f16 v1, v255
 v_cmpx_nge_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xf9,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_nge_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xf9,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nge_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xf9,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nge_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xf9,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nge_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xf9,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nge_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xf9,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_nge_f16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xf9,0xd4,0xff,0x05,0x02,0x00]
 
@@ -108917,21 +106109,6 @@ v_cmpx_nlg_f16 0x3456, v2
 
 v_cmpx_nlg_f16 v1, v255
 // GFX10: encoding: [0x01,0xff,0xf5,0x7d]
-
-v_cmpx_nlg_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfa,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlg_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfa,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlg_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfa,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlg_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfa,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlg_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfa,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_nlg_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xfa,0xd4,0x01,0x05,0x02,0x00]
@@ -109068,21 +106245,6 @@ v_cmpx_ngt_f16 v1, v255
 v_cmpx_ngt_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xfb,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_ngt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfb,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ngt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfb,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ngt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfb,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ngt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfb,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ngt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfb,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_ngt_f16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xfb,0xd4,0xff,0x05,0x02,0x00]
 
@@ -109211,21 +106373,6 @@ v_cmpx_nle_f16 0x3456, v2
 
 v_cmpx_nle_f16 v1, v255
 // GFX10: encoding: [0x01,0xff,0xf9,0x7d]
-
-v_cmpx_nle_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfc,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nle_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfc,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nle_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfc,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nle_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfc,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nle_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfc,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_nle_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xfc,0xd4,0x01,0x05,0x02,0x00]
@@ -109362,21 +106509,6 @@ v_cmpx_neq_f16 v1, v255
 v_cmpx_neq_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xfd,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_neq_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfd,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_neq_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfd,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_neq_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfd,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_neq_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfd,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_neq_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfd,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_neq_f16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xfd,0xd4,0xff,0x05,0x02,0x00]
 
@@ -109505,21 +106637,6 @@ v_cmpx_nlt_f16 0x3456, v2
 
 v_cmpx_nlt_f16 v1, v255
 // GFX10: encoding: [0x01,0xff,0xfd,0x7d]
-
-v_cmpx_nlt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfe,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfe,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfe,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfe,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_nlt_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xfe,0xd4,0x01,0x05,0x02,0x00]
 
 v_cmpx_nlt_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xfe,0xd4,0x01,0x05,0x02,0x00]
@@ -109656,21 +106773,6 @@ v_cmpx_tru_f16 v1, v255
 v_cmpx_tru_f16_e64 v1, v2
 // GFX10: encoding: [0x00,0x00,0xff,0xd4,0x01,0x05,0x02,0x00]
 
-v_cmpx_tru_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xff,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_tru_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xff,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_tru_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xff,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_tru_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xff,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_tru_f16_e64 v1, v2
-// GFX10: encoding: [0x00,0x00,0xff,0xd4,0x01,0x05,0x02,0x00]
-
 v_cmpx_tru_f16_e64 v255, v2
 // GFX10: encoding: [0x00,0x00,0xff,0xd4,0xff,0x05,0x02,0x00]
 
@@ -109755,18 +106857,6 @@ v_cmpx_tru_f16_e64 -v1, -v2
 v_cmpx_f_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x20,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_f_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x20,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_f_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x20,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_f_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x20,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_f_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x20,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_f_i32_sdwa v255, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x20,0x7d,0xff,0x00,0x06,0x06]
 
@@ -109794,9 +106884,6 @@ v_cmpx_f_i32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_f_i32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x21,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_f_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x20,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_f_i32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x20,0x7d,0x01,0x00,0x00,0x06]
 
@@ -109818,9 +106905,6 @@ v_cmpx_f_i32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_f_i32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x20,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_f_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x20,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_f_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x20,0x7d,0x01,0x00,0x06,0x00]
 
@@ -109841,18 +106925,6 @@ v_cmpx_f_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_f_i32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x20,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_lt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x22,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x22,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x22,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x22,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_lt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x22,0x7d,0x01,0x00,0x06,0x06]
@@ -109884,9 +106956,6 @@ v_cmpx_lt_i32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_lt_i32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x23,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_lt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x22,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_lt_i32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x22,0x7d,0x01,0x00,0x00,0x06]
 
@@ -109908,9 +106977,6 @@ v_cmpx_lt_i32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_lt_i32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x22,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_lt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x22,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_lt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x22,0x7d,0x01,0x00,0x06,0x00]
 
@@ -109931,18 +106997,6 @@ v_cmpx_lt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_lt_i32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x22,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_eq_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x24,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x24,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x24,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x24,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_eq_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x24,0x7d,0x01,0x00,0x06,0x06]
@@ -109974,9 +107028,6 @@ v_cmpx_eq_i32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_eq_i32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x25,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_eq_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x24,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_eq_i32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x24,0x7d,0x01,0x00,0x00,0x06]
 
@@ -109998,9 +107049,6 @@ v_cmpx_eq_i32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_eq_i32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x24,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_eq_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x24,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_eq_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x24,0x7d,0x01,0x00,0x06,0x00]
 
@@ -110021,18 +107069,6 @@ v_cmpx_eq_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_eq_i32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x24,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_le_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x26,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x26,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x26,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x26,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_le_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x26,0x7d,0x01,0x00,0x06,0x06]
@@ -110064,9 +107100,6 @@ v_cmpx_le_i32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_le_i32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x27,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_le_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x26,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_le_i32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x26,0x7d,0x01,0x00,0x00,0x06]
 
@@ -110088,9 +107121,6 @@ v_cmpx_le_i32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_le_i32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x26,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_le_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x26,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_le_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x26,0x7d,0x01,0x00,0x06,0x00]
 
@@ -110111,18 +107141,6 @@ v_cmpx_le_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_le_i32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x26,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_gt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x28,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x28,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x28,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x28,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_gt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x28,0x7d,0x01,0x00,0x06,0x06]
@@ -110154,9 +107172,6 @@ v_cmpx_gt_i32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_gt_i32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x29,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_gt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x28,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_gt_i32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x28,0x7d,0x01,0x00,0x00,0x06]
 
@@ -110178,9 +107193,6 @@ v_cmpx_gt_i32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_gt_i32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x28,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_gt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x28,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_gt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x28,0x7d,0x01,0x00,0x06,0x00]
 
@@ -110201,18 +107213,6 @@ v_cmpx_gt_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_gt_i32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x28,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_ne_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2a,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ne_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2a,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ne_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2a,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ne_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2a,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_ne_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2a,0x7d,0x01,0x00,0x06,0x06]
@@ -110244,9 +107244,6 @@ v_cmpx_ne_i32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ne_i32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x2b,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_ne_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2a,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ne_i32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2a,0x7d,0x01,0x00,0x00,0x06]
 
@@ -110268,9 +107265,6 @@ v_cmpx_ne_i32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_ne_i32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2a,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_ne_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2a,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ne_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x2a,0x7d,0x01,0x00,0x06,0x00]
 
@@ -110291,18 +107285,6 @@ v_cmpx_ne_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_ne_i32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2a,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_ge_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2c,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2c,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2c,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2c,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_ge_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2c,0x7d,0x01,0x00,0x06,0x06]
@@ -110334,9 +107316,6 @@ v_cmpx_ge_i32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ge_i32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x2d,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_ge_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2c,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ge_i32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2c,0x7d,0x01,0x00,0x00,0x06]
 
@@ -110358,9 +107337,6 @@ v_cmpx_ge_i32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_ge_i32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2c,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_ge_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2c,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ge_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x2c,0x7d,0x01,0x00,0x06,0x00]
 
@@ -110381,18 +107357,6 @@ v_cmpx_ge_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_ge_i32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2c,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_t_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2e,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_t_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2e,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_t_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2e,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_t_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2e,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_t_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2e,0x7d,0x01,0x00,0x06,0x06]
@@ -110424,9 +107388,6 @@ v_cmpx_t_i32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_t_i32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x2f,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_t_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2e,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_t_i32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2e,0x7d,0x01,0x00,0x00,0x06]
 
@@ -110448,9 +107409,6 @@ v_cmpx_t_i32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_t_i32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2e,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_t_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x2e,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_t_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x2e,0x7d,0x01,0x00,0x06,0x00]
 
@@ -110471,18 +107429,6 @@ v_cmpx_t_i32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_t_i32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x2e,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_lt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x32,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x32,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x32,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x32,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_lt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x32,0x7d,0x01,0x00,0x06,0x06]
@@ -110514,9 +107460,6 @@ v_cmpx_lt_i16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_lt_i16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x33,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_lt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x32,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_lt_i16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x32,0x7d,0x01,0x00,0x00,0x06]
 
@@ -110538,9 +107481,6 @@ v_cmpx_lt_i16_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_lt_i16_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x32,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_lt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x32,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_lt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x32,0x7d,0x01,0x00,0x06,0x00]
 
@@ -110561,18 +107501,6 @@ v_cmpx_lt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_lt_i16_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x32,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_eq_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x34,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x34,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x34,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x34,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_eq_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x34,0x7d,0x01,0x00,0x06,0x06]
@@ -110604,9 +107532,6 @@ v_cmpx_eq_i16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_eq_i16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x35,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_eq_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x34,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_eq_i16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x34,0x7d,0x01,0x00,0x00,0x06]
 
@@ -110628,9 +107553,6 @@ v_cmpx_eq_i16_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_eq_i16_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x34,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_eq_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x34,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_eq_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x34,0x7d,0x01,0x00,0x06,0x00]
 
@@ -110651,18 +107573,6 @@ v_cmpx_eq_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_eq_i16_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x34,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_le_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x36,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x36,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x36,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x36,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_le_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x36,0x7d,0x01,0x00,0x06,0x06]
@@ -110694,9 +107604,6 @@ v_cmpx_le_i16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_le_i16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x37,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_le_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x36,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_le_i16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x36,0x7d,0x01,0x00,0x00,0x06]
 
@@ -110718,9 +107625,6 @@ v_cmpx_le_i16_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_le_i16_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x36,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_le_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x36,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_le_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x36,0x7d,0x01,0x00,0x06,0x00]
 
@@ -110741,18 +107645,6 @@ v_cmpx_le_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_le_i16_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x36,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_gt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x38,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x38,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x38,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x38,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_gt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x38,0x7d,0x01,0x00,0x06,0x06]
@@ -110784,9 +107676,6 @@ v_cmpx_gt_i16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_gt_i16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x39,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_gt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x38,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_gt_i16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x38,0x7d,0x01,0x00,0x00,0x06]
 
@@ -110808,9 +107697,6 @@ v_cmpx_gt_i16_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_gt_i16_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x38,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_gt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x38,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_gt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x38,0x7d,0x01,0x00,0x06,0x00]
 
@@ -110831,18 +107717,6 @@ v_cmpx_gt_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_gt_i16_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x38,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_ne_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3a,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ne_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3a,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ne_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3a,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ne_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3a,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_ne_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3a,0x7d,0x01,0x00,0x06,0x06]
@@ -110874,9 +107748,6 @@ v_cmpx_ne_i16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ne_i16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x3b,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_ne_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3a,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ne_i16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3a,0x7d,0x01,0x00,0x00,0x06]
 
@@ -110898,9 +107769,6 @@ v_cmpx_ne_i16_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_ne_i16_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3a,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_ne_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3a,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ne_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x3a,0x7d,0x01,0x00,0x06,0x00]
 
@@ -110921,18 +107789,6 @@ v_cmpx_ne_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_ne_i16_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3a,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_ge_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3c,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3c,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3c,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3c,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_ge_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3c,0x7d,0x01,0x00,0x06,0x06]
@@ -110964,9 +107820,6 @@ v_cmpx_ge_i16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ge_i16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x3d,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_ge_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3c,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ge_i16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3c,0x7d,0x01,0x00,0x00,0x06]
 
@@ -110988,9 +107841,6 @@ v_cmpx_ge_i16_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_ge_i16_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3c,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_ge_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x3c,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ge_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x3c,0x7d,0x01,0x00,0x06,0x00]
 
@@ -111011,18 +107861,6 @@ v_cmpx_ge_i16_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_ge_i16_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x3c,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_lt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x72,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x72,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x72,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x72,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_lt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x72,0x7d,0x01,0x00,0x06,0x06]
@@ -111054,9 +107892,6 @@ v_cmpx_lt_u16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_lt_u16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x73,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_lt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x72,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_lt_u16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x72,0x7d,0x01,0x00,0x00,0x06]
 
@@ -111078,9 +107913,6 @@ v_cmpx_lt_u16_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_lt_u16_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x72,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_lt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x72,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_lt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x72,0x7d,0x01,0x00,0x06,0x00]
 
@@ -111101,18 +107933,6 @@ v_cmpx_lt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_lt_u16_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x72,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_eq_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x74,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x74,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x74,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x74,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_eq_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x74,0x7d,0x01,0x00,0x06,0x06]
@@ -111144,9 +107964,6 @@ v_cmpx_eq_u16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_eq_u16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x75,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_eq_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x74,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_eq_u16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x74,0x7d,0x01,0x00,0x00,0x06]
 
@@ -111168,9 +107985,6 @@ v_cmpx_eq_u16_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_eq_u16_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x74,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_eq_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x74,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_eq_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x74,0x7d,0x01,0x00,0x06,0x00]
 
@@ -111191,18 +108005,6 @@ v_cmpx_eq_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_eq_u16_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x74,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_le_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x76,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x76,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x76,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x76,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_le_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x76,0x7d,0x01,0x00,0x06,0x06]
@@ -111234,9 +108036,6 @@ v_cmpx_le_u16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_le_u16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x77,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_le_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x76,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_le_u16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x76,0x7d,0x01,0x00,0x00,0x06]
 
@@ -111258,9 +108057,6 @@ v_cmpx_le_u16_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_le_u16_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x76,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_le_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x76,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_le_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x76,0x7d,0x01,0x00,0x06,0x00]
 
@@ -111281,18 +108077,6 @@ v_cmpx_le_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_le_u16_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x76,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_gt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x78,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x78,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x78,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x78,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_gt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x78,0x7d,0x01,0x00,0x06,0x06]
@@ -111324,9 +108108,6 @@ v_cmpx_gt_u16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_gt_u16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x79,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_gt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x78,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_gt_u16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x78,0x7d,0x01,0x00,0x00,0x06]
 
@@ -111348,9 +108129,6 @@ v_cmpx_gt_u16_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_gt_u16_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x78,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_gt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x78,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_gt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x78,0x7d,0x01,0x00,0x06,0x00]
 
@@ -111371,18 +108149,6 @@ v_cmpx_gt_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_gt_u16_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x78,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_ne_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x7a,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ne_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x7a,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ne_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x7a,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ne_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x7a,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_ne_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x7a,0x7d,0x01,0x00,0x06,0x06]
@@ -111414,9 +108180,6 @@ v_cmpx_ne_u16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ne_u16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x7b,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_ne_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x7a,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ne_u16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x7a,0x7d,0x01,0x00,0x00,0x06]
 
@@ -111438,9 +108201,6 @@ v_cmpx_ne_u16_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_ne_u16_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x7a,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_ne_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x7a,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ne_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x7a,0x7d,0x01,0x00,0x06,0x00]
 
@@ -111461,18 +108221,6 @@ v_cmpx_ne_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_ne_u16_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x7a,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_ge_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x7c,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x7c,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x7c,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x7c,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_ge_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x7c,0x7d,0x01,0x00,0x06,0x06]
@@ -111504,9 +108252,6 @@ v_cmpx_ge_u16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ge_u16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0x7d,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_ge_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x7c,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ge_u16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x7c,0x7d,0x01,0x00,0x00,0x06]
 
@@ -111528,9 +108273,6 @@ v_cmpx_ge_u16_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_ge_u16_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x7c,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_ge_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0x7c,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ge_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0x7c,0x7d,0x01,0x00,0x06,0x00]
 
@@ -111551,18 +108293,6 @@ v_cmpx_ge_u16_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_ge_u16_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0x7c,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_f_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa0,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_f_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa0,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_f_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa0,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_f_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa0,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_f_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa0,0x7d,0x01,0x00,0x06,0x06]
@@ -111594,9 +108324,6 @@ v_cmpx_f_u32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_f_u32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xa1,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_f_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa0,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_f_u32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa0,0x7d,0x01,0x00,0x00,0x06]
 
@@ -111618,9 +108345,6 @@ v_cmpx_f_u32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_f_u32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa0,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_f_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa0,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_f_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xa0,0x7d,0x01,0x00,0x06,0x00]
 
@@ -111641,18 +108365,6 @@ v_cmpx_f_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_f_u32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa0,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_lt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa2,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa2,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa2,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa2,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_lt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa2,0x7d,0x01,0x00,0x06,0x06]
@@ -111684,9 +108396,6 @@ v_cmpx_lt_u32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_lt_u32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xa3,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_lt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa2,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_lt_u32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa2,0x7d,0x01,0x00,0x00,0x06]
 
@@ -111708,9 +108417,6 @@ v_cmpx_lt_u32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_lt_u32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa2,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_lt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa2,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_lt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xa2,0x7d,0x01,0x00,0x06,0x00]
 
@@ -111731,18 +108437,6 @@ v_cmpx_lt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_lt_u32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa2,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_eq_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa4,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa4,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa4,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa4,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_eq_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa4,0x7d,0x01,0x00,0x06,0x06]
@@ -111774,9 +108468,6 @@ v_cmpx_eq_u32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_eq_u32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xa5,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_eq_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa4,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_eq_u32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa4,0x7d,0x01,0x00,0x00,0x06]
 
@@ -111798,9 +108489,6 @@ v_cmpx_eq_u32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_eq_u32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa4,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_eq_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa4,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_eq_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xa4,0x7d,0x01,0x00,0x06,0x00]
 
@@ -111821,18 +108509,6 @@ v_cmpx_eq_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_eq_u32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa4,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_le_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa6,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa6,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa6,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa6,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_le_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa6,0x7d,0x01,0x00,0x06,0x06]
@@ -111864,9 +108540,6 @@ v_cmpx_le_u32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_le_u32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xa7,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_le_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa6,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_le_u32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa6,0x7d,0x01,0x00,0x00,0x06]
 
@@ -111888,9 +108561,6 @@ v_cmpx_le_u32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_le_u32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa6,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_le_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa6,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_le_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xa6,0x7d,0x01,0x00,0x06,0x00]
 
@@ -111911,18 +108581,6 @@ v_cmpx_le_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_le_u32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa6,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_gt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa8,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa8,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa8,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa8,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_gt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa8,0x7d,0x01,0x00,0x06,0x06]
@@ -111954,9 +108612,6 @@ v_cmpx_gt_u32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_gt_u32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xa9,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_gt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa8,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_gt_u32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa8,0x7d,0x01,0x00,0x00,0x06]
 
@@ -111978,9 +108633,6 @@ v_cmpx_gt_u32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_gt_u32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa8,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_gt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xa8,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_gt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xa8,0x7d,0x01,0x00,0x06,0x00]
 
@@ -112001,18 +108653,6 @@ v_cmpx_gt_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_gt_u32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xa8,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_ne_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xaa,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ne_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xaa,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ne_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xaa,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ne_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xaa,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_ne_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xaa,0x7d,0x01,0x00,0x06,0x06]
@@ -112044,9 +108684,6 @@ v_cmpx_ne_u32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ne_u32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xab,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_ne_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xaa,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ne_u32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xaa,0x7d,0x01,0x00,0x00,0x06]
 
@@ -112068,9 +108705,6 @@ v_cmpx_ne_u32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_ne_u32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xaa,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_ne_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xaa,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ne_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xaa,0x7d,0x01,0x00,0x06,0x00]
 
@@ -112091,18 +108725,6 @@ v_cmpx_ne_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_ne_u32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xaa,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_ge_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xac,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xac,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xac,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xac,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_ge_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xac,0x7d,0x01,0x00,0x06,0x06]
@@ -112134,9 +108756,6 @@ v_cmpx_ge_u32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ge_u32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xad,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_ge_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xac,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ge_u32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xac,0x7d,0x01,0x00,0x00,0x06]
 
@@ -112158,9 +108777,6 @@ v_cmpx_ge_u32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_ge_u32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xac,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_ge_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xac,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ge_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xac,0x7d,0x01,0x00,0x06,0x00]
 
@@ -112181,18 +108797,6 @@ v_cmpx_ge_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_ge_u32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xac,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_t_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xae,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_t_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xae,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_t_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xae,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_t_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xae,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_t_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xae,0x7d,0x01,0x00,0x06,0x06]
@@ -112224,9 +108828,6 @@ v_cmpx_t_u32_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_t_u32_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xaf,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_t_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xae,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_t_u32_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xae,0x7d,0x01,0x00,0x00,0x06]
 
@@ -112248,9 +108849,6 @@ v_cmpx_t_u32_sdwa v1, v2 src0_sel:WORD_1 src1_sel:DWORD
 v_cmpx_t_u32_sdwa sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xae,0x7d,0x01,0x00,0x0e,0x06]
 
-v_cmpx_t_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xae,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_t_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xae,0x7d,0x01,0x00,0x06,0x00]
 
@@ -112271,18 +108869,6 @@ v_cmpx_t_u32_sdwa v1, v2 src0_sel:DWORD src1_sel:WORD_1
 
 v_cmpx_t_u32_sdwa v1, sext(v2) src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xae,0x7d,0x01,0x00,0x06,0x0e]
-
-v_cmpx_f_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb0,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_f_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb0,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_f_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb0,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_f_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb0,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_f_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb0,0x7d,0x01,0x00,0x06,0x06]
@@ -112314,9 +108900,6 @@ v_cmpx_f_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_f_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xb1,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_f_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb0,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_f_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb0,0x7d,0x01,0x00,0x00,0x06]
 
@@ -112341,9 +108924,6 @@ v_cmpx_f_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_f_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb0,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_f_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb0,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_f_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xb0,0x7d,0x01,0x00,0x06,0x00]
 
@@ -112367,18 +108947,6 @@ v_cmpx_f_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_f_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb0,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_lt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb2,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb2,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb2,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb2,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_lt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb2,0x7d,0x01,0x00,0x06,0x06]
@@ -112410,9 +108978,6 @@ v_cmpx_lt_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_lt_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xb3,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_lt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb2,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_lt_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb2,0x7d,0x01,0x00,0x00,0x06]
 
@@ -112437,9 +109002,6 @@ v_cmpx_lt_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_lt_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb2,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_lt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb2,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_lt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xb2,0x7d,0x01,0x00,0x06,0x00]
 
@@ -112463,18 +109025,6 @@ v_cmpx_lt_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_lt_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb2,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_eq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb4,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb4,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb4,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_eq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb4,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_eq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb4,0x7d,0x01,0x00,0x06,0x06]
@@ -112506,9 +109056,6 @@ v_cmpx_eq_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_eq_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xb5,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_eq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb4,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_eq_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb4,0x7d,0x01,0x00,0x00,0x06]
 
@@ -112533,9 +109080,6 @@ v_cmpx_eq_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_eq_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb4,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_eq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb4,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_eq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xb4,0x7d,0x01,0x00,0x06,0x00]
 
@@ -112559,18 +109103,6 @@ v_cmpx_eq_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_eq_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb4,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_le_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb6,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb6,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb6,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_le_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb6,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_le_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb6,0x7d,0x01,0x00,0x06,0x06]
@@ -112602,9 +109134,6 @@ v_cmpx_le_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_le_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xb7,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_le_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb6,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_le_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb6,0x7d,0x01,0x00,0x00,0x06]
 
@@ -112629,9 +109158,6 @@ v_cmpx_le_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_le_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb6,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_le_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb6,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_le_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xb6,0x7d,0x01,0x00,0x06,0x00]
 
@@ -112655,18 +109181,6 @@ v_cmpx_le_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_le_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb6,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_gt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb8,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb8,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb8,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_gt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb8,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_gt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb8,0x7d,0x01,0x00,0x06,0x06]
@@ -112698,9 +109212,6 @@ v_cmpx_gt_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_gt_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xb9,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_gt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb8,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_gt_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb8,0x7d,0x01,0x00,0x00,0x06]
 
@@ -112725,9 +109236,6 @@ v_cmpx_gt_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_gt_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb8,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_gt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xb8,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_gt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xb8,0x7d,0x01,0x00,0x06,0x00]
 
@@ -112751,18 +109259,6 @@ v_cmpx_gt_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_gt_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xb8,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_lg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xba,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xba,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xba,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_lg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xba,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_lg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xba,0x7d,0x01,0x00,0x06,0x06]
@@ -112794,9 +109290,6 @@ v_cmpx_lg_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_lg_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xbb,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_lg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xba,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_lg_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xba,0x7d,0x01,0x00,0x00,0x06]
 
@@ -112821,9 +109314,6 @@ v_cmpx_lg_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_lg_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xba,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_lg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xba,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_lg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xba,0x7d,0x01,0x00,0x06,0x00]
 
@@ -112847,18 +109337,6 @@ v_cmpx_lg_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_lg_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xba,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_ge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xbc,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xbc,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xbc,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xbc,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_ge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xbc,0x7d,0x01,0x00,0x06,0x06]
@@ -112890,9 +109368,6 @@ v_cmpx_ge_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ge_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xbd,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_ge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xbc,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ge_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xbc,0x7d,0x01,0x00,0x00,0x06]
 
@@ -112917,9 +109392,6 @@ v_cmpx_ge_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ge_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xbc,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_ge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xbc,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xbc,0x7d,0x01,0x00,0x06,0x00]
 
@@ -112943,18 +109415,6 @@ v_cmpx_ge_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_ge_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xbc,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_o_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xbe,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_o_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xbe,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_o_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xbe,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_o_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xbe,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_o_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xbe,0x7d,0x01,0x00,0x06,0x06]
@@ -112986,9 +109446,6 @@ v_cmpx_o_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_o_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xbf,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_o_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xbe,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_o_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xbe,0x7d,0x01,0x00,0x00,0x06]
 
@@ -113013,9 +109470,6 @@ v_cmpx_o_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_o_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xbe,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_o_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xbe,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_o_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xbe,0x7d,0x01,0x00,0x06,0x00]
 
@@ -113039,18 +109493,6 @@ v_cmpx_o_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_o_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xbe,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_u_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf0,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_u_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf0,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_u_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf0,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_u_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf0,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_u_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf0,0x7d,0x01,0x00,0x06,0x06]
@@ -113082,9 +109524,6 @@ v_cmpx_u_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_u_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xf1,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_u_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf0,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_u_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf0,0x7d,0x01,0x00,0x00,0x06]
 
@@ -113109,9 +109548,6 @@ v_cmpx_u_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_u_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf0,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_u_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf0,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_u_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xf0,0x7d,0x01,0x00,0x06,0x00]
 
@@ -113135,18 +109571,6 @@ v_cmpx_u_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_u_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf0,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_nge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf2,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_nge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf2,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_nge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf2,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_nge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf2,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_nge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf2,0x7d,0x01,0x00,0x06,0x06]
@@ -113178,9 +109602,6 @@ v_cmpx_nge_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nge_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xf3,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_nge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf2,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_nge_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf2,0x7d,0x01,0x00,0x00,0x06]
 
@@ -113205,9 +109626,6 @@ v_cmpx_nge_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nge_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf2,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_nge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf2,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_nge_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xf2,0x7d,0x01,0x00,0x06,0x00]
 
@@ -113231,18 +109649,6 @@ v_cmpx_nge_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_nge_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf2,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_nlg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf4,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_nlg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf4,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_nlg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf4,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_nlg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf4,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_nlg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf4,0x7d,0x01,0x00,0x06,0x06]
@@ -113274,9 +109680,6 @@ v_cmpx_nlg_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nlg_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xf5,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_nlg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf4,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_nlg_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf4,0x7d,0x01,0x00,0x00,0x06]
 
@@ -113301,9 +109704,6 @@ v_cmpx_nlg_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nlg_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf4,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_nlg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf4,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_nlg_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xf4,0x7d,0x01,0x00,0x06,0x00]
 
@@ -113327,18 +109727,6 @@ v_cmpx_nlg_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_nlg_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf4,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_ngt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf6,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ngt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf6,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ngt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf6,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_ngt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf6,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_ngt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf6,0x7d,0x01,0x00,0x06,0x06]
@@ -113370,9 +109758,6 @@ v_cmpx_ngt_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ngt_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xf7,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_ngt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf6,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ngt_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf6,0x7d,0x01,0x00,0x00,0x06]
 
@@ -113397,9 +109782,6 @@ v_cmpx_ngt_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_ngt_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf6,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_ngt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf6,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_ngt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xf6,0x7d,0x01,0x00,0x06,0x00]
 
@@ -113423,18 +109805,6 @@ v_cmpx_ngt_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_ngt_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf6,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_nle_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf8,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_nle_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf8,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_nle_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf8,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_nle_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf8,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_nle_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf8,0x7d,0x01,0x00,0x06,0x06]
@@ -113466,9 +109836,6 @@ v_cmpx_nle_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nle_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xf9,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_nle_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf8,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_nle_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf8,0x7d,0x01,0x00,0x00,0x06]
 
@@ -113493,9 +109860,6 @@ v_cmpx_nle_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nle_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf8,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_nle_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xf8,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_nle_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xf8,0x7d,0x01,0x00,0x06,0x00]
 
@@ -113519,18 +109883,6 @@ v_cmpx_nle_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_nle_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xf8,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_neq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfa,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_neq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfa,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_neq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfa,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_neq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfa,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_neq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xfa,0x7d,0x01,0x00,0x06,0x06]
@@ -113562,9 +109914,6 @@ v_cmpx_neq_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_neq_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xfb,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_neq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfa,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_neq_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xfa,0x7d,0x01,0x00,0x00,0x06]
 
@@ -113589,9 +109938,6 @@ v_cmpx_neq_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_neq_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xfa,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_neq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfa,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_neq_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xfa,0x7d,0x01,0x00,0x06,0x00]
 
@@ -113615,18 +109961,6 @@ v_cmpx_neq_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_neq_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xfa,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_nlt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfc,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_nlt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfc,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_nlt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfc,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_nlt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfc,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_nlt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xfc,0x7d,0x01,0x00,0x06,0x06]
@@ -113658,9 +109992,6 @@ v_cmpx_nlt_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nlt_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xfd,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_nlt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfc,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_nlt_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xfc,0x7d,0x01,0x00,0x00,0x06]
 
@@ -113685,9 +110016,6 @@ v_cmpx_nlt_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_nlt_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xfc,0x7d,0x01,0x00,0x26,0x06]
 
-v_cmpx_nlt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfc,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_nlt_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xfc,0x7d,0x01,0x00,0x06,0x00]
 
@@ -113711,18 +110039,6 @@ v_cmpx_nlt_f16_sdwa v1, -v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_nlt_f16_sdwa v1, |v2| src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xfc,0x7d,0x01,0x00,0x06,0x26]
-
-v_cmpx_tru_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfe,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_tru_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfe,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_tru_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfe,0x7d,0x01,0x00,0x06,0x06]
-
-v_cmpx_tru_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfe,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_tru_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xfe,0x7d,0x01,0x00,0x06,0x06]
@@ -113754,9 +110070,6 @@ v_cmpx_tru_f16_sdwa exec_hi, v2 src0_sel:DWORD src1_sel:DWORD
 v_cmpx_tru_f16_sdwa v1, v255 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0xfe,0xff,0x7d,0x01,0x00,0x06,0x06]
 
-v_cmpx_tru_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfe,0x7d,0x01,0x00,0x06,0x06]
-
 v_cmpx_tru_f16_sdwa v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xfe,0x7d,0x01,0x00,0x00,0x06]
 
@@ -113780,9 +110093,6 @@ v_cmpx_tru_f16_sdwa -v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmpx_tru_f16_sdwa |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // GFX10: encoding: [0xf9,0x04,0xfe,0x7d,0x01,0x00,0x26,0x06]
-
-v_cmpx_tru_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:DWORD
-// GFX10: encoding: [0xf9,0x04,0xfe,0x7d,0x01,0x00,0x06,0x06]
 
 v_cmpx_tru_f16_sdwa v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // GFX10: encoding: [0xf9,0x04,0xfe,0x7d,0x01,0x00,0x06,0x00]
@@ -120298,893 +116608,29 @@ v_cmp_t_u64_e64 s10, v[1:2], -4.0
 // W64-ERR: error: invalid operand for instruction
 // W64-ERR-NEXT: v_cmp_t_u64_e64 s10, v[1:2], -4.0
 
-v_cmpx_f_u64 v[1:2], v[2:3]
-// GFX10: encoding: [0x01,0x05,0xe0,0x7d]
-
-v_cmpx_f_u64 v[254:255], v[2:3]
-// GFX10: encoding: [0xfe,0x05,0xe0,0x7d]
-
-v_cmpx_f_u64 s[2:3], v[2:3]
-// GFX10: encoding: [0x02,0x04,0xe0,0x7d]
-
-v_cmpx_f_u64 s[4:5], v[2:3]
-// GFX10: encoding: [0x04,0x04,0xe0,0x7d]
-
-v_cmpx_f_u64 s[100:101], v[2:3]
-// GFX10: encoding: [0x64,0x04,0xe0,0x7d]
-
-v_cmpx_f_u64 vcc, v[2:3]
-// GFX10: encoding: [0x6a,0x04,0xe0,0x7d]
-
-v_cmpx_f_u64 exec, v[2:3]
-// GFX10: encoding: [0x7e,0x04,0xe0,0x7d]
-
-v_cmpx_f_u64 0, v[2:3]
-// GFX10: encoding: [0x80,0x04,0xe0,0x7d]
-
-v_cmpx_f_u64 -1, v[2:3]
-// GFX10: encoding: [0xc1,0x04,0xe0,0x7d]
-
-v_cmpx_f_u64 0.5, v[2:3]
-// GFX10: encoding: [0xf0,0x04,0xe0,0x7d]
-
-v_cmpx_f_u64 -4.0, v[2:3]
-// GFX10: encoding: [0xf7,0x04,0xe0,0x7d]
-
-v_cmpx_f_u64 0xaf123456, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xe0,0x7d,0x56,0x34,0x12,0xaf]
-
-v_cmpx_f_u64 0x3f717273, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xe0,0x7d,0x73,0x72,0x71,0x3f]
-
-v_cmpx_f_u64 v[1:2], v[254:255]
-// GFX10: encoding: [0x01,0xfd,0xe1,0x7d]
-
-v_cmpx_f_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_f_u64_e64 v[254:255], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0xfe,0x05,0x02,0x00]
-
-v_cmpx_f_u64_e64 s[2:3], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x02,0x04,0x02,0x00]
-
-v_cmpx_f_u64_e64 s[4:5], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_f_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x6a,0x04,0x02,0x00]
-
 v_cmpx_f_u64_e64 exec, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x7e,0x04,0x02,0x00]
-
-v_cmpx_f_u64_e64 0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x80,0x04,0x02,0x00]
-
-v_cmpx_f_u64_e64 -1, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0xc1,0x04,0x02,0x00]
-
-v_cmpx_f_u64_e64 0.5, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0xf0,0x04,0x02,0x00]
-
-v_cmpx_f_u64_e64 -4.0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0xf7,0x04,0x02,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], v[254:255]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0xfd,0x03,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], s[4:5]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x09,0x00,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], s[6:7]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x0d,0x00,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], s[100:101]
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0xc9,0x00,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], vcc
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0xd5,0x00,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], exec
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0xfd,0x00,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], 0
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x01,0x01,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], -1
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0x83,0x01,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], 0.5
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0xe1,0x01,0x00]
-
-v_cmpx_f_u64_e64 v[1:2], -4.0
-// GFX10: encoding: [0x00,0x00,0xf0,0xd4,0x01,0xef,0x01,0x00]
-
-v_cmpx_lt_u64 v[1:2], v[2:3]
-// GFX10: encoding: [0x01,0x05,0xe2,0x7d]
-
-v_cmpx_lt_u64 v[254:255], v[2:3]
-// GFX10: encoding: [0xfe,0x05,0xe2,0x7d]
-
-v_cmpx_lt_u64 s[2:3], v[2:3]
-// GFX10: encoding: [0x02,0x04,0xe2,0x7d]
-
-v_cmpx_lt_u64 s[4:5], v[2:3]
-// GFX10: encoding: [0x04,0x04,0xe2,0x7d]
-
-v_cmpx_lt_u64 s[100:101], v[2:3]
-// GFX10: encoding: [0x64,0x04,0xe2,0x7d]
-
-v_cmpx_lt_u64 vcc, v[2:3]
-// GFX10: encoding: [0x6a,0x04,0xe2,0x7d]
-
-v_cmpx_lt_u64 exec, v[2:3]
-// GFX10: encoding: [0x7e,0x04,0xe2,0x7d]
-
-v_cmpx_lt_u64 0, v[2:3]
-// GFX10: encoding: [0x80,0x04,0xe2,0x7d]
-
-v_cmpx_lt_u64 -1, v[2:3]
-// GFX10: encoding: [0xc1,0x04,0xe2,0x7d]
-
-v_cmpx_lt_u64 0.5, v[2:3]
-// GFX10: encoding: [0xf0,0x04,0xe2,0x7d]
-
-v_cmpx_lt_u64 -4.0, v[2:3]
-// GFX10: encoding: [0xf7,0x04,0xe2,0x7d]
-
-v_cmpx_lt_u64 0xaf123456, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xe2,0x7d,0x56,0x34,0x12,0xaf]
-
-v_cmpx_lt_u64 0x3f717273, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xe2,0x7d,0x73,0x72,0x71,0x3f]
-
-v_cmpx_lt_u64 v[1:2], v[254:255]
-// GFX10: encoding: [0x01,0xfd,0xe3,0x7d]
-
-v_cmpx_lt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_lt_u64_e64 v[254:255], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0xfe,0x05,0x02,0x00]
-
-v_cmpx_lt_u64_e64 s[2:3], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x02,0x04,0x02,0x00]
-
-v_cmpx_lt_u64_e64 s[4:5], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_lt_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_lt_u64_e64 exec, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x7e,0x04,0x02,0x00]
 
-v_cmpx_lt_u64_e64 0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x80,0x04,0x02,0x00]
-
-v_cmpx_lt_u64_e64 -1, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0xc1,0x04,0x02,0x00]
-
-v_cmpx_lt_u64_e64 0.5, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0xf0,0x04,0x02,0x00]
-
-v_cmpx_lt_u64_e64 -4.0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0xf7,0x04,0x02,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], v[254:255]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0xfd,0x03,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], s[4:5]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x09,0x00,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], s[6:7]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x0d,0x00,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], s[100:101]
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0xc9,0x00,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], vcc
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0xd5,0x00,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], exec
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0xfd,0x00,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], 0
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x01,0x01,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], -1
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0x83,0x01,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], 0.5
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0xe1,0x01,0x00]
-
-v_cmpx_lt_u64_e64 v[1:2], -4.0
-// GFX10: encoding: [0x00,0x00,0xf1,0xd4,0x01,0xef,0x01,0x00]
-
-v_cmpx_eq_u64 v[1:2], v[2:3]
-// GFX10: encoding: [0x01,0x05,0xe4,0x7d]
-
-v_cmpx_eq_u64 v[254:255], v[2:3]
-// GFX10: encoding: [0xfe,0x05,0xe4,0x7d]
-
-v_cmpx_eq_u64 s[2:3], v[2:3]
-// GFX10: encoding: [0x02,0x04,0xe4,0x7d]
-
-v_cmpx_eq_u64 s[4:5], v[2:3]
-// GFX10: encoding: [0x04,0x04,0xe4,0x7d]
-
-v_cmpx_eq_u64 s[100:101], v[2:3]
-// GFX10: encoding: [0x64,0x04,0xe4,0x7d]
-
-v_cmpx_eq_u64 vcc, v[2:3]
-// GFX10: encoding: [0x6a,0x04,0xe4,0x7d]
-
-v_cmpx_eq_u64 exec, v[2:3]
-// GFX10: encoding: [0x7e,0x04,0xe4,0x7d]
-
-v_cmpx_eq_u64 0, v[2:3]
-// GFX10: encoding: [0x80,0x04,0xe4,0x7d]
-
-v_cmpx_eq_u64 -1, v[2:3]
-// GFX10: encoding: [0xc1,0x04,0xe4,0x7d]
-
-v_cmpx_eq_u64 0.5, v[2:3]
-// GFX10: encoding: [0xf0,0x04,0xe4,0x7d]
-
-v_cmpx_eq_u64 -4.0, v[2:3]
-// GFX10: encoding: [0xf7,0x04,0xe4,0x7d]
-
-v_cmpx_eq_u64 0xaf123456, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xe4,0x7d,0x56,0x34,0x12,0xaf]
-
-v_cmpx_eq_u64 0x3f717273, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xe4,0x7d,0x73,0x72,0x71,0x3f]
-
-v_cmpx_eq_u64 v[1:2], v[254:255]
-// GFX10: encoding: [0x01,0xfd,0xe5,0x7d]
-
-v_cmpx_eq_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_eq_u64_e64 v[254:255], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0xfe,0x05,0x02,0x00]
-
-v_cmpx_eq_u64_e64 s[2:3], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x02,0x04,0x02,0x00]
-
-v_cmpx_eq_u64_e64 s[4:5], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_eq_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x6a,0x04,0x02,0x00]
-
 v_cmpx_eq_u64_e64 exec, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x7e,0x04,0x02,0x00]
-
-v_cmpx_eq_u64_e64 0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x80,0x04,0x02,0x00]
-
-v_cmpx_eq_u64_e64 -1, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0xc1,0x04,0x02,0x00]
-
-v_cmpx_eq_u64_e64 0.5, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0xf0,0x04,0x02,0x00]
-
-v_cmpx_eq_u64_e64 -4.0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0xf7,0x04,0x02,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], v[254:255]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0xfd,0x03,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], s[4:5]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x09,0x00,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], s[6:7]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x0d,0x00,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], s[100:101]
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0xc9,0x00,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], vcc
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0xd5,0x00,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], exec
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0xfd,0x00,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], 0
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x01,0x01,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], -1
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0x83,0x01,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], 0.5
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0xe1,0x01,0x00]
-
-v_cmpx_eq_u64_e64 v[1:2], -4.0
-// GFX10: encoding: [0x00,0x00,0xf2,0xd4,0x01,0xef,0x01,0x00]
-
-v_cmpx_le_u64 v[1:2], v[2:3]
-// GFX10: encoding: [0x01,0x05,0xe6,0x7d]
-
-v_cmpx_le_u64 v[254:255], v[2:3]
-// GFX10: encoding: [0xfe,0x05,0xe6,0x7d]
-
-v_cmpx_le_u64 s[2:3], v[2:3]
-// GFX10: encoding: [0x02,0x04,0xe6,0x7d]
-
-v_cmpx_le_u64 s[4:5], v[2:3]
-// GFX10: encoding: [0x04,0x04,0xe6,0x7d]
-
-v_cmpx_le_u64 s[100:101], v[2:3]
-// GFX10: encoding: [0x64,0x04,0xe6,0x7d]
-
-v_cmpx_le_u64 vcc, v[2:3]
-// GFX10: encoding: [0x6a,0x04,0xe6,0x7d]
-
-v_cmpx_le_u64 exec, v[2:3]
-// GFX10: encoding: [0x7e,0x04,0xe6,0x7d]
-
-v_cmpx_le_u64 0, v[2:3]
-// GFX10: encoding: [0x80,0x04,0xe6,0x7d]
-
-v_cmpx_le_u64 -1, v[2:3]
-// GFX10: encoding: [0xc1,0x04,0xe6,0x7d]
-
-v_cmpx_le_u64 0.5, v[2:3]
-// GFX10: encoding: [0xf0,0x04,0xe6,0x7d]
-
-v_cmpx_le_u64 -4.0, v[2:3]
-// GFX10: encoding: [0xf7,0x04,0xe6,0x7d]
-
-v_cmpx_le_u64 0xaf123456, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xe6,0x7d,0x56,0x34,0x12,0xaf]
-
-v_cmpx_le_u64 0x3f717273, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xe6,0x7d,0x73,0x72,0x71,0x3f]
-
-v_cmpx_le_u64 v[1:2], v[254:255]
-// GFX10: encoding: [0x01,0xfd,0xe7,0x7d]
-
-v_cmpx_le_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_le_u64_e64 v[254:255], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0xfe,0x05,0x02,0x00]
-
-v_cmpx_le_u64_e64 s[2:3], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x02,0x04,0x02,0x00]
-
-v_cmpx_le_u64_e64 s[4:5], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_le_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_le_u64_e64 exec, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x7e,0x04,0x02,0x00]
 
-v_cmpx_le_u64_e64 0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x80,0x04,0x02,0x00]
-
-v_cmpx_le_u64_e64 -1, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0xc1,0x04,0x02,0x00]
-
-v_cmpx_le_u64_e64 0.5, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0xf0,0x04,0x02,0x00]
-
-v_cmpx_le_u64_e64 -4.0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0xf7,0x04,0x02,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], v[254:255]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0xfd,0x03,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], s[4:5]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x09,0x00,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], s[6:7]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x0d,0x00,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], s[100:101]
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0xc9,0x00,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], vcc
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0xd5,0x00,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], exec
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0xfd,0x00,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], 0
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x01,0x01,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], -1
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0x83,0x01,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], 0.5
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0xe1,0x01,0x00]
-
-v_cmpx_le_u64_e64 v[1:2], -4.0
-// GFX10: encoding: [0x00,0x00,0xf3,0xd4,0x01,0xef,0x01,0x00]
-
-v_cmpx_gt_u64 v[1:2], v[2:3]
-// GFX10: encoding: [0x01,0x05,0xe8,0x7d]
-
-v_cmpx_gt_u64 v[254:255], v[2:3]
-// GFX10: encoding: [0xfe,0x05,0xe8,0x7d]
-
-v_cmpx_gt_u64 s[2:3], v[2:3]
-// GFX10: encoding: [0x02,0x04,0xe8,0x7d]
-
-v_cmpx_gt_u64 s[4:5], v[2:3]
-// GFX10: encoding: [0x04,0x04,0xe8,0x7d]
-
-v_cmpx_gt_u64 s[100:101], v[2:3]
-// GFX10: encoding: [0x64,0x04,0xe8,0x7d]
-
-v_cmpx_gt_u64 vcc, v[2:3]
-// GFX10: encoding: [0x6a,0x04,0xe8,0x7d]
-
-v_cmpx_gt_u64 exec, v[2:3]
-// GFX10: encoding: [0x7e,0x04,0xe8,0x7d]
-
-v_cmpx_gt_u64 0, v[2:3]
-// GFX10: encoding: [0x80,0x04,0xe8,0x7d]
-
-v_cmpx_gt_u64 -1, v[2:3]
-// GFX10: encoding: [0xc1,0x04,0xe8,0x7d]
-
-v_cmpx_gt_u64 0.5, v[2:3]
-// GFX10: encoding: [0xf0,0x04,0xe8,0x7d]
-
-v_cmpx_gt_u64 -4.0, v[2:3]
-// GFX10: encoding: [0xf7,0x04,0xe8,0x7d]
-
-v_cmpx_gt_u64 0xaf123456, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xe8,0x7d,0x56,0x34,0x12,0xaf]
-
-v_cmpx_gt_u64 0x3f717273, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xe8,0x7d,0x73,0x72,0x71,0x3f]
-
-v_cmpx_gt_u64 v[1:2], v[254:255]
-// GFX10: encoding: [0x01,0xfd,0xe9,0x7d]
-
-v_cmpx_gt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_gt_u64_e64 v[254:255], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0xfe,0x05,0x02,0x00]
-
-v_cmpx_gt_u64_e64 s[2:3], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x02,0x04,0x02,0x00]
-
-v_cmpx_gt_u64_e64 s[4:5], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_gt_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x6a,0x04,0x02,0x00]
-
 v_cmpx_gt_u64_e64 exec, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x7e,0x04,0x02,0x00]
-
-v_cmpx_gt_u64_e64 0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x80,0x04,0x02,0x00]
-
-v_cmpx_gt_u64_e64 -1, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0xc1,0x04,0x02,0x00]
-
-v_cmpx_gt_u64_e64 0.5, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0xf0,0x04,0x02,0x00]
-
-v_cmpx_gt_u64_e64 -4.0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0xf7,0x04,0x02,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], v[254:255]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0xfd,0x03,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], s[4:5]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x09,0x00,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], s[6:7]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x0d,0x00,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], s[100:101]
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0xc9,0x00,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], vcc
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0xd5,0x00,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], exec
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0xfd,0x00,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], 0
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x01,0x01,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], -1
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0x83,0x01,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], 0.5
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0xe1,0x01,0x00]
-
-v_cmpx_gt_u64_e64 v[1:2], -4.0
-// GFX10: encoding: [0x00,0x00,0xf4,0xd4,0x01,0xef,0x01,0x00]
-
-v_cmpx_ne_u64 v[1:2], v[2:3]
-// GFX10: encoding: [0x01,0x05,0xea,0x7d]
-
-v_cmpx_ne_u64 v[254:255], v[2:3]
-// GFX10: encoding: [0xfe,0x05,0xea,0x7d]
-
-v_cmpx_ne_u64 s[2:3], v[2:3]
-// GFX10: encoding: [0x02,0x04,0xea,0x7d]
-
-v_cmpx_ne_u64 s[4:5], v[2:3]
-// GFX10: encoding: [0x04,0x04,0xea,0x7d]
-
-v_cmpx_ne_u64 s[100:101], v[2:3]
-// GFX10: encoding: [0x64,0x04,0xea,0x7d]
-
-v_cmpx_ne_u64 vcc, v[2:3]
-// GFX10: encoding: [0x6a,0x04,0xea,0x7d]
-
-v_cmpx_ne_u64 exec, v[2:3]
-// GFX10: encoding: [0x7e,0x04,0xea,0x7d]
-
-v_cmpx_ne_u64 0, v[2:3]
-// GFX10: encoding: [0x80,0x04,0xea,0x7d]
-
-v_cmpx_ne_u64 -1, v[2:3]
-// GFX10: encoding: [0xc1,0x04,0xea,0x7d]
-
-v_cmpx_ne_u64 0.5, v[2:3]
-// GFX10: encoding: [0xf0,0x04,0xea,0x7d]
-
-v_cmpx_ne_u64 -4.0, v[2:3]
-// GFX10: encoding: [0xf7,0x04,0xea,0x7d]
-
-v_cmpx_ne_u64 0xaf123456, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xea,0x7d,0x56,0x34,0x12,0xaf]
-
-v_cmpx_ne_u64 0x3f717273, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xea,0x7d,0x73,0x72,0x71,0x3f]
-
-v_cmpx_ne_u64 v[1:2], v[254:255]
-// GFX10: encoding: [0x01,0xfd,0xeb,0x7d]
-
-v_cmpx_ne_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ne_u64_e64 v[254:255], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0xfe,0x05,0x02,0x00]
-
-v_cmpx_ne_u64_e64 s[2:3], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x02,0x04,0x02,0x00]
-
-v_cmpx_ne_u64_e64 s[4:5], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_ne_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x6a,0x04,0x02,0x00]
 
 v_cmpx_ne_u64_e64 exec, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x7e,0x04,0x02,0x00]
 
-v_cmpx_ne_u64_e64 0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x80,0x04,0x02,0x00]
-
-v_cmpx_ne_u64_e64 -1, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0xc1,0x04,0x02,0x00]
-
-v_cmpx_ne_u64_e64 0.5, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0xf0,0x04,0x02,0x00]
-
-v_cmpx_ne_u64_e64 -4.0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0xf7,0x04,0x02,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], v[254:255]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0xfd,0x03,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], s[4:5]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x09,0x00,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], s[6:7]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x0d,0x00,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], s[100:101]
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0xc9,0x00,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], vcc
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0xd5,0x00,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], exec
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0xfd,0x00,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], 0
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x01,0x01,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], -1
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0x83,0x01,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], 0.5
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0xe1,0x01,0x00]
-
-v_cmpx_ne_u64_e64 v[1:2], -4.0
-// GFX10: encoding: [0x00,0x00,0xf5,0xd4,0x01,0xef,0x01,0x00]
-
-v_cmpx_ge_u64 v[1:2], v[2:3]
-// GFX10: encoding: [0x01,0x05,0xec,0x7d]
-
-v_cmpx_ge_u64 v[254:255], v[2:3]
-// GFX10: encoding: [0xfe,0x05,0xec,0x7d]
-
-v_cmpx_ge_u64 s[2:3], v[2:3]
-// GFX10: encoding: [0x02,0x04,0xec,0x7d]
-
-v_cmpx_ge_u64 s[4:5], v[2:3]
-// GFX10: encoding: [0x04,0x04,0xec,0x7d]
-
-v_cmpx_ge_u64 s[100:101], v[2:3]
-// GFX10: encoding: [0x64,0x04,0xec,0x7d]
-
-v_cmpx_ge_u64 vcc, v[2:3]
-// GFX10: encoding: [0x6a,0x04,0xec,0x7d]
-
-v_cmpx_ge_u64 exec, v[2:3]
-// GFX10: encoding: [0x7e,0x04,0xec,0x7d]
-
-v_cmpx_ge_u64 0, v[2:3]
-// GFX10: encoding: [0x80,0x04,0xec,0x7d]
-
-v_cmpx_ge_u64 -1, v[2:3]
-// GFX10: encoding: [0xc1,0x04,0xec,0x7d]
-
-v_cmpx_ge_u64 0.5, v[2:3]
-// GFX10: encoding: [0xf0,0x04,0xec,0x7d]
-
-v_cmpx_ge_u64 -4.0, v[2:3]
-// GFX10: encoding: [0xf7,0x04,0xec,0x7d]
-
-v_cmpx_ge_u64 0xaf123456, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xec,0x7d,0x56,0x34,0x12,0xaf]
-
-v_cmpx_ge_u64 0x3f717273, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xec,0x7d,0x73,0x72,0x71,0x3f]
-
-v_cmpx_ge_u64 v[1:2], v[254:255]
-// GFX10: encoding: [0x01,0xfd,0xed,0x7d]
-
-v_cmpx_ge_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_ge_u64_e64 v[254:255], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0xfe,0x05,0x02,0x00]
-
-v_cmpx_ge_u64_e64 s[2:3], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x02,0x04,0x02,0x00]
-
-v_cmpx_ge_u64_e64 s[4:5], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_ge_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x6a,0x04,0x02,0x00]
-
 v_cmpx_ge_u64_e64 exec, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x7e,0x04,0x02,0x00]
 
-v_cmpx_ge_u64_e64 0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x80,0x04,0x02,0x00]
-
-v_cmpx_ge_u64_e64 -1, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0xc1,0x04,0x02,0x00]
-
-v_cmpx_ge_u64_e64 0.5, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0xf0,0x04,0x02,0x00]
-
-v_cmpx_ge_u64_e64 -4.0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0xf7,0x04,0x02,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], v[254:255]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0xfd,0x03,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], s[4:5]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x09,0x00,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], s[6:7]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x0d,0x00,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], s[100:101]
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0xc9,0x00,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], vcc
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0xd5,0x00,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], exec
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0xfd,0x00,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], 0
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x01,0x01,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], -1
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0x83,0x01,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], 0.5
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0xe1,0x01,0x00]
-
-v_cmpx_ge_u64_e64 v[1:2], -4.0
-// GFX10: encoding: [0x00,0x00,0xf6,0xd4,0x01,0xef,0x01,0x00]
-
-v_cmpx_t_u64 v[1:2], v[2:3]
-// GFX10: encoding: [0x01,0x05,0xee,0x7d]
-
-v_cmpx_t_u64 v[254:255], v[2:3]
-// GFX10: encoding: [0xfe,0x05,0xee,0x7d]
-
-v_cmpx_t_u64 s[2:3], v[2:3]
-// GFX10: encoding: [0x02,0x04,0xee,0x7d]
-
-v_cmpx_t_u64 s[4:5], v[2:3]
-// GFX10: encoding: [0x04,0x04,0xee,0x7d]
-
-v_cmpx_t_u64 s[100:101], v[2:3]
-// GFX10: encoding: [0x64,0x04,0xee,0x7d]
-
-v_cmpx_t_u64 vcc, v[2:3]
-// GFX10: encoding: [0x6a,0x04,0xee,0x7d]
-
-v_cmpx_t_u64 exec, v[2:3]
-// GFX10: encoding: [0x7e,0x04,0xee,0x7d]
-
-v_cmpx_t_u64 0, v[2:3]
-// GFX10: encoding: [0x80,0x04,0xee,0x7d]
-
-v_cmpx_t_u64 -1, v[2:3]
-// GFX10: encoding: [0xc1,0x04,0xee,0x7d]
-
-v_cmpx_t_u64 0.5, v[2:3]
-// GFX10: encoding: [0xf0,0x04,0xee,0x7d]
-
-v_cmpx_t_u64 -4.0, v[2:3]
-// GFX10: encoding: [0xf7,0x04,0xee,0x7d]
-
-v_cmpx_t_u64 0xaf123456, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xee,0x7d,0x56,0x34,0x12,0xaf]
-
-v_cmpx_t_u64 0x3f717273, v[2:3]
-// GFX10: encoding: [0xff,0x04,0xee,0x7d,0x73,0x72,0x71,0x3f]
-
-v_cmpx_t_u64 v[1:2], v[254:255]
-// GFX10: encoding: [0x01,0xfd,0xef,0x7d]
-
-v_cmpx_t_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x05,0x02,0x00]
-
-v_cmpx_t_u64_e64 v[254:255], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0xfe,0x05,0x02,0x00]
-
-v_cmpx_t_u64_e64 s[2:3], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x02,0x04,0x02,0x00]
-
-v_cmpx_t_u64_e64 s[4:5], v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x04,0x04,0x02,0x00]
-
-v_cmpx_t_u64_e64 vcc, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x6a,0x04,0x02,0x00]
-
 v_cmpx_t_u64_e64 exec, v[2:3]
 // GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x7e,0x04,0x02,0x00]
-
-v_cmpx_t_u64_e64 0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x80,0x04,0x02,0x00]
-
-v_cmpx_t_u64_e64 -1, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0xc1,0x04,0x02,0x00]
-
-v_cmpx_t_u64_e64 0.5, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0xf0,0x04,0x02,0x00]
-
-v_cmpx_t_u64_e64 -4.0, v[2:3]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0xf7,0x04,0x02,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], v[254:255]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0xfd,0x03,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], s[4:5]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x09,0x00,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], s[6:7]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x0d,0x00,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], s[100:101]
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0xc9,0x00,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], vcc
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0xd5,0x00,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], exec
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0xfd,0x00,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], 0
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x01,0x01,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], -1
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0x83,0x01,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], 0.5
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0xe1,0x01,0x00]
-
-v_cmpx_t_u64_e64 v[1:2], -4.0
-// GFX10: encoding: [0x00,0x00,0xf7,0xd4,0x01,0xef,0x01,0x00]
 
 v_cmp_lt_u16 vcc, v1, v2
 // W64: encoding: [0x01,0x05,0x52,0x7d]
@@ -135091,11 +130537,6 @@ v_cmp_lt_u16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_lt_u16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lt_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x52,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_lt_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lt_u16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x52,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -135130,11 +130571,6 @@ v_cmp_lt_u16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x52,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_lt_u16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lt_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x52,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_lt_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lt_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x52,0x7d,0x01,0x86,0x06,0x00]
@@ -135236,11 +130672,6 @@ v_cmp_eq_u16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_eq_u16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_eq_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x54,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_eq_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_eq_u16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x54,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -135275,11 +130706,6 @@ v_cmp_eq_u16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x54,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_eq_u16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_eq_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x54,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_eq_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_eq_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x54,0x7d,0x01,0x86,0x06,0x00]
@@ -135381,11 +130807,6 @@ v_cmp_le_u16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_le_u16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_le_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x56,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_le_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_le_u16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x56,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -135420,11 +130841,6 @@ v_cmp_le_u16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x56,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_le_u16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_le_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x56,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_le_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_le_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x56,0x7d,0x01,0x86,0x06,0x00]
@@ -135526,11 +130942,6 @@ v_cmp_gt_u16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_gt_u16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_gt_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x58,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_gt_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_gt_u16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x58,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -135565,11 +130976,6 @@ v_cmp_gt_u16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x58,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_gt_u16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_gt_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x58,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_gt_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_gt_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x58,0x7d,0x01,0x86,0x06,0x00]
@@ -135671,11 +131077,6 @@ v_cmp_ne_u16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_ne_u16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ne_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x5a,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_ne_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ne_u16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x5a,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -135710,11 +131111,6 @@ v_cmp_ne_u16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x5a,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_ne_u16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ne_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x5a,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_ne_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ne_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x5a,0x7d,0x01,0x86,0x06,0x00]
@@ -135816,11 +131212,6 @@ v_cmp_ge_u16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_ge_u16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ge_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x5c,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_ge_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ge_u16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x5c,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -135855,11 +131246,6 @@ v_cmp_ge_u16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x5c,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_ge_u16_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ge_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x5c,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_ge_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ge_u16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x5c,0x7d,0x01,0x86,0x06,0x00]
@@ -135961,11 +131347,6 @@ v_cmp_f_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_f_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_f_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x80,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_f_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_f_u32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x80,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -136000,11 +131381,6 @@ v_cmp_f_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x80,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_f_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_f_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x80,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_f_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_f_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x80,0x7d,0x01,0x86,0x06,0x00]
@@ -136106,11 +131482,6 @@ v_cmp_lt_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_lt_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lt_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x82,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_lt_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lt_u32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x82,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -136145,11 +131516,6 @@ v_cmp_lt_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x82,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_lt_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lt_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x82,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_lt_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lt_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x82,0x7d,0x01,0x86,0x06,0x00]
@@ -136251,11 +131617,6 @@ v_cmp_eq_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_eq_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_eq_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x84,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_eq_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_eq_u32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x84,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -136290,11 +131651,6 @@ v_cmp_eq_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x84,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_eq_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_eq_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x84,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_eq_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_eq_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x84,0x7d,0x01,0x86,0x06,0x00]
@@ -136396,11 +131752,6 @@ v_cmp_le_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_le_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_le_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x86,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_le_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_le_u32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x86,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -136435,11 +131786,6 @@ v_cmp_le_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x86,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_le_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_le_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x86,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_le_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_le_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x86,0x7d,0x01,0x86,0x06,0x00]
@@ -136541,11 +131887,6 @@ v_cmp_gt_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_gt_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_gt_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x88,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_gt_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_gt_u32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x88,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -136580,11 +131921,6 @@ v_cmp_gt_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x88,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_gt_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_gt_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x88,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_gt_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_gt_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x88,0x7d,0x01,0x86,0x06,0x00]
@@ -136686,11 +132022,6 @@ v_cmp_ne_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_ne_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ne_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x8a,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_ne_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ne_u32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x8a,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -136725,11 +132056,6 @@ v_cmp_ne_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x8a,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_ne_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ne_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x8a,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_ne_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ne_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x8a,0x7d,0x01,0x86,0x06,0x00]
@@ -136831,11 +132157,6 @@ v_cmp_ge_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_ge_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ge_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x8c,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_ge_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ge_u32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x8c,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -136870,11 +132191,6 @@ v_cmp_ge_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x8c,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_ge_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ge_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x8c,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_ge_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ge_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x8c,0x7d,0x01,0x86,0x06,0x00]
@@ -136976,11 +132292,6 @@ v_cmp_t_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_t_u32_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_t_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x8e,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_t_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_t_u32_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x8e,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -137015,11 +132326,6 @@ v_cmp_t_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x8e,0x7d,0x01,0x86,0x0e,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_t_u32_sdwa s[6:7], sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_t_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x8e,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_t_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_t_u32_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x8e,0x7d,0x01,0x86,0x06,0x00]
@@ -137121,11 +132427,6 @@ v_cmp_f_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_f_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_f_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x90,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_f_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_f_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x90,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -137165,11 +132466,6 @@ v_cmp_f_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x90,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_f_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_f_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x90,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_f_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_f_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x90,0x7d,0x01,0x86,0x06,0x00]
@@ -137276,11 +132572,6 @@ v_cmp_lt_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_lt_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x92,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_lt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lt_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x92,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -137320,11 +132611,6 @@ v_cmp_lt_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x92,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_lt_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x92,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_lt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x92,0x7d,0x01,0x86,0x06,0x00]
@@ -137431,11 +132717,6 @@ v_cmp_eq_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_eq_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_eq_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x94,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_eq_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_eq_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x94,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -137475,11 +132756,6 @@ v_cmp_eq_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x94,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_eq_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_eq_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x94,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_eq_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_eq_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x94,0x7d,0x01,0x86,0x06,0x00]
@@ -137586,11 +132862,6 @@ v_cmp_le_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_le_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_le_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x96,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_le_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_le_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x96,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -137630,11 +132901,6 @@ v_cmp_le_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x96,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_le_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_le_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x96,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_le_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_le_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x96,0x7d,0x01,0x86,0x06,0x00]
@@ -137741,11 +133007,6 @@ v_cmp_gt_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_gt_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_gt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x98,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_gt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_gt_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x98,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -137785,11 +133046,6 @@ v_cmp_gt_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x98,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_gt_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_gt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x98,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_gt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_gt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x98,0x7d,0x01,0x86,0x06,0x00]
@@ -137896,11 +133152,6 @@ v_cmp_lg_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_lg_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lg_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x9a,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_lg_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lg_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x9a,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -137940,11 +133191,6 @@ v_cmp_lg_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x9a,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_lg_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lg_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x9a,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_lg_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lg_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x9a,0x7d,0x01,0x86,0x06,0x00]
@@ -138051,11 +133297,6 @@ v_cmp_ge_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_ge_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ge_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x9c,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_ge_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ge_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x9c,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -138095,11 +133336,6 @@ v_cmp_ge_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x9c,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_ge_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ge_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x9c,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_ge_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ge_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x9c,0x7d,0x01,0x86,0x06,0x00]
@@ -138206,11 +133442,6 @@ v_cmp_o_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_o_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_o_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x9e,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_o_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_o_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x9e,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -138250,11 +133481,6 @@ v_cmp_o_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0x9e,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_o_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_o_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0x9e,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_o_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_o_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0x9e,0x7d,0x01,0x86,0x06,0x00]
@@ -138361,11 +133587,6 @@ v_cmp_u_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_u_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_u_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xd0,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_u_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_u_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xd0,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -138405,11 +133626,6 @@ v_cmp_u_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xd0,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_u_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_u_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xd0,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_u_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_u_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0xd0,0x7d,0x01,0x86,0x06,0x00]
@@ -138516,11 +133732,6 @@ v_cmp_nge_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_nge_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nge_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xd2,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_nge_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nge_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xd2,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -138560,11 +133771,6 @@ v_cmp_nge_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xd2,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_nge_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nge_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xd2,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_nge_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nge_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0xd2,0x7d,0x01,0x86,0x06,0x00]
@@ -138671,11 +133877,6 @@ v_cmp_nlg_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_nlg_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nlg_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xd4,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_nlg_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nlg_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xd4,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -138715,11 +133916,6 @@ v_cmp_nlg_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xd4,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_nlg_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nlg_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xd4,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_nlg_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nlg_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0xd4,0x7d,0x01,0x86,0x06,0x00]
@@ -138826,11 +134022,6 @@ v_cmp_ngt_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_ngt_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ngt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xd6,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_ngt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ngt_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xd6,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -138870,11 +134061,6 @@ v_cmp_ngt_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xd6,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_ngt_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ngt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xd6,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_ngt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ngt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0xd6,0x7d,0x01,0x86,0x06,0x00]
@@ -138981,11 +134167,6 @@ v_cmp_nle_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_nle_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nle_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xd8,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_nle_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nle_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xd8,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -139025,11 +134206,6 @@ v_cmp_nle_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xd8,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_nle_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nle_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xd8,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_nle_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nle_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0xd8,0x7d,0x01,0x86,0x06,0x00]
@@ -139136,11 +134312,6 @@ v_cmp_neq_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_neq_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_neq_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xda,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_neq_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_neq_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xda,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -139180,11 +134351,6 @@ v_cmp_neq_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xda,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_neq_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_neq_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xda,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_neq_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_neq_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0xda,0x7d,0x01,0x86,0x06,0x00]
@@ -139291,11 +134457,6 @@ v_cmp_nlt_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_nlt_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nlt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xdc,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_nlt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nlt_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xdc,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -139335,11 +134496,6 @@ v_cmp_nlt_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xdc,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_nlt_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nlt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xdc,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_nlt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nlt_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0xdc,0x7d,0x01,0x86,0x06,0x00]
@@ -139446,11 +134602,6 @@ v_cmp_tru_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_tru_f16_sdwa s[6:7], v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_tru_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xde,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_tru_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_tru_f16_sdwa s[6:7], v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xde,0x7d,0x01,0x86,0x00,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -139490,11 +134641,6 @@ v_cmp_tru_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W64: encoding: [0xf9,0x04,0xde,0x7d,0x01,0x86,0x26,0x06]
 // W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W32-ERR-NEXT: v_cmp_tru_f16_sdwa s[6:7], |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_tru_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W64: encoding: [0xf9,0x04,0xde,0x7d,0x01,0x86,0x06,0x06]
-// W32-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W32-ERR-NEXT: v_cmp_tru_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_tru_f16_sdwa s[6:7], v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W64: encoding: [0xf9,0x04,0xde,0x7d,0x01,0x86,0x06,0x00]
@@ -139601,11 +134747,6 @@ v_cmp_lt_u16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_lt_u16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lt_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x52,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_lt_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lt_u16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x52,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -139640,11 +134781,6 @@ v_cmp_lt_u16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x52,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_lt_u16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lt_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x52,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_lt_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lt_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x52,0x7d,0x01,0x86,0x06,0x00]
@@ -139746,11 +134882,6 @@ v_cmp_eq_u16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_eq_u16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_eq_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x54,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_eq_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_eq_u16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x54,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -139785,11 +134916,6 @@ v_cmp_eq_u16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x54,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_eq_u16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_eq_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x54,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_eq_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_eq_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x54,0x7d,0x01,0x86,0x06,0x00]
@@ -139891,11 +135017,6 @@ v_cmp_le_u16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_le_u16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_le_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x56,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_le_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_le_u16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x56,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -139930,11 +135051,6 @@ v_cmp_le_u16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x56,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_le_u16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_le_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x56,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_le_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_le_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x56,0x7d,0x01,0x86,0x06,0x00]
@@ -140036,11 +135152,6 @@ v_cmp_gt_u16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_gt_u16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_gt_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x58,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_gt_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_gt_u16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x58,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -140075,11 +135186,6 @@ v_cmp_gt_u16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x58,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_gt_u16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_gt_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x58,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_gt_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_gt_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x58,0x7d,0x01,0x86,0x06,0x00]
@@ -140181,11 +135287,6 @@ v_cmp_ne_u16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_ne_u16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ne_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x5a,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_ne_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ne_u16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x5a,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -140220,11 +135321,6 @@ v_cmp_ne_u16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x5a,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_ne_u16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ne_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x5a,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_ne_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ne_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x5a,0x7d,0x01,0x86,0x06,0x00]
@@ -140326,11 +135422,6 @@ v_cmp_ge_u16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_ge_u16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ge_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x5c,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_ge_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ge_u16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x5c,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -140365,11 +135456,6 @@ v_cmp_ge_u16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x5c,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_ge_u16_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ge_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x5c,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_ge_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ge_u16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x5c,0x7d,0x01,0x86,0x06,0x00]
@@ -140471,11 +135557,6 @@ v_cmp_f_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_f_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_f_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x80,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_f_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_f_u32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x80,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -140510,11 +135591,6 @@ v_cmp_f_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x80,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_f_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_f_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x80,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_f_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_f_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x80,0x7d,0x01,0x86,0x06,0x00]
@@ -140616,11 +135692,6 @@ v_cmp_lt_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_lt_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lt_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x82,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_lt_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lt_u32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x82,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -140655,11 +135726,6 @@ v_cmp_lt_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x82,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_lt_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lt_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x82,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_lt_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lt_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x82,0x7d,0x01,0x86,0x06,0x00]
@@ -140761,11 +135827,6 @@ v_cmp_eq_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_eq_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_eq_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x84,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_eq_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_eq_u32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x84,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -140800,11 +135861,6 @@ v_cmp_eq_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x84,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_eq_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_eq_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x84,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_eq_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_eq_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x84,0x7d,0x01,0x86,0x06,0x00]
@@ -140906,11 +135962,6 @@ v_cmp_le_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_le_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_le_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x86,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_le_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_le_u32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x86,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -140945,11 +135996,6 @@ v_cmp_le_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x86,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_le_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_le_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x86,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_le_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_le_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x86,0x7d,0x01,0x86,0x06,0x00]
@@ -141051,11 +136097,6 @@ v_cmp_gt_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_gt_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_gt_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x88,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_gt_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_gt_u32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x88,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -141090,11 +136131,6 @@ v_cmp_gt_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x88,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_gt_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_gt_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x88,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_gt_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_gt_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x88,0x7d,0x01,0x86,0x06,0x00]
@@ -141196,11 +136232,6 @@ v_cmp_ne_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_ne_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ne_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x8a,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_ne_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ne_u32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x8a,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -141235,11 +136266,6 @@ v_cmp_ne_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x8a,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_ne_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ne_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x8a,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_ne_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ne_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x8a,0x7d,0x01,0x86,0x06,0x00]
@@ -141341,11 +136367,6 @@ v_cmp_ge_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_ge_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ge_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x8c,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_ge_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ge_u32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x8c,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -141380,11 +136401,6 @@ v_cmp_ge_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x8c,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_ge_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ge_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x8c,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_ge_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ge_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x8c,0x7d,0x01,0x86,0x06,0x00]
@@ -141486,11 +136502,6 @@ v_cmp_t_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_t_u32_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_t_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x8e,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_t_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_t_u32_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x8e,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -141525,11 +136536,6 @@ v_cmp_t_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x8e,0x7d,0x01,0x86,0x0e,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_t_u32_sdwa s6, sext(v1), v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_t_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x8e,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_t_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_t_u32_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x8e,0x7d,0x01,0x86,0x06,0x00]
@@ -141631,11 +136637,6 @@ v_cmp_f_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_f_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_f_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x90,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_f_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_f_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x90,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -141675,11 +136676,6 @@ v_cmp_f_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x90,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_f_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_f_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x90,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_f_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_f_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x90,0x7d,0x01,0x86,0x06,0x00]
@@ -141786,11 +136782,6 @@ v_cmp_lt_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_lt_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x92,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_lt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lt_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x92,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -141830,11 +136821,6 @@ v_cmp_lt_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x92,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_lt_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x92,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_lt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x92,0x7d,0x01,0x86,0x06,0x00]
@@ -141941,11 +136927,6 @@ v_cmp_eq_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_eq_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_eq_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x94,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_eq_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_eq_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x94,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -141985,11 +136966,6 @@ v_cmp_eq_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x94,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_eq_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_eq_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x94,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_eq_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_eq_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x94,0x7d,0x01,0x86,0x06,0x00]
@@ -142096,11 +137072,6 @@ v_cmp_le_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_le_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_le_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x96,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_le_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_le_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x96,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -142140,11 +137111,6 @@ v_cmp_le_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x96,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_le_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_le_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x96,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_le_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_le_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x96,0x7d,0x01,0x86,0x06,0x00]
@@ -142251,11 +137217,6 @@ v_cmp_gt_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_gt_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_gt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x98,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_gt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_gt_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x98,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -142295,11 +137256,6 @@ v_cmp_gt_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x98,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_gt_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_gt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x98,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_gt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_gt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x98,0x7d,0x01,0x86,0x06,0x00]
@@ -142406,11 +137362,6 @@ v_cmp_lg_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_lg_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_lg_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x9a,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_lg_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_lg_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x9a,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -142450,11 +137401,6 @@ v_cmp_lg_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x9a,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_lg_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_lg_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x9a,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_lg_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_lg_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x9a,0x7d,0x01,0x86,0x06,0x00]
@@ -142561,11 +137507,6 @@ v_cmp_ge_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_ge_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ge_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x9c,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_ge_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ge_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x9c,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -142605,11 +137546,6 @@ v_cmp_ge_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x9c,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_ge_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ge_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x9c,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_ge_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ge_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x9c,0x7d,0x01,0x86,0x06,0x00]
@@ -142716,11 +137652,6 @@ v_cmp_o_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_o_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_o_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x9e,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_o_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_o_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x9e,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -142760,11 +137691,6 @@ v_cmp_o_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0x9e,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_o_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_o_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0x9e,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_o_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_o_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0x9e,0x7d,0x01,0x86,0x06,0x00]
@@ -142871,11 +137797,6 @@ v_cmp_u_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_u_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_u_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xd0,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_u_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_u_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xd0,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -142915,11 +137836,6 @@ v_cmp_u_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xd0,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_u_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_u_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xd0,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_u_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_u_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0xd0,0x7d,0x01,0x86,0x06,0x00]
@@ -143026,11 +137942,6 @@ v_cmp_nge_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_nge_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nge_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xd2,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_nge_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nge_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xd2,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -143070,11 +137981,6 @@ v_cmp_nge_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xd2,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_nge_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nge_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xd2,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_nge_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nge_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0xd2,0x7d,0x01,0x86,0x06,0x00]
@@ -143181,11 +138087,6 @@ v_cmp_nlg_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_nlg_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nlg_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xd4,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_nlg_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nlg_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xd4,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -143225,11 +138126,6 @@ v_cmp_nlg_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xd4,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_nlg_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nlg_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xd4,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_nlg_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nlg_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0xd4,0x7d,0x01,0x86,0x06,0x00]
@@ -143336,11 +138232,6 @@ v_cmp_ngt_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_ngt_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_ngt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xd6,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_ngt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_ngt_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xd6,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -143380,11 +138271,6 @@ v_cmp_ngt_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xd6,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_ngt_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_ngt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xd6,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_ngt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_ngt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0xd6,0x7d,0x01,0x86,0x06,0x00]
@@ -143491,11 +138377,6 @@ v_cmp_nle_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_nle_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nle_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xd8,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_nle_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nle_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xd8,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -143535,11 +138416,6 @@ v_cmp_nle_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xd8,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_nle_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nle_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xd8,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_nle_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nle_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0xd8,0x7d,0x01,0x86,0x06,0x00]
@@ -143646,11 +138522,6 @@ v_cmp_neq_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_neq_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_neq_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xda,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_neq_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_neq_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xda,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -143690,11 +138561,6 @@ v_cmp_neq_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xda,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_neq_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_neq_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xda,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_neq_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_neq_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0xda,0x7d,0x01,0x86,0x06,0x00]
@@ -143801,11 +138667,6 @@ v_cmp_nlt_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_nlt_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_nlt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xdc,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_nlt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_nlt_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xdc,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -143845,11 +138706,6 @@ v_cmp_nlt_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xdc,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_nlt_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_nlt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xdc,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_nlt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_nlt_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0xdc,0x7d,0x01,0x86,0x06,0x00]
@@ -143956,11 +138812,6 @@ v_cmp_tru_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_tru_f16_sdwa s6, v1, v255 src0_sel:DWORD src1_sel:DWORD
 
-v_cmp_tru_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xde,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_tru_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-
 v_cmp_tru_f16_sdwa s6, v1, v2 src0_sel:BYTE_0 src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xde,0x7d,0x01,0x86,0x00,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
@@ -144000,11 +138851,6 @@ v_cmp_tru_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
 // W32: encoding: [0xf9,0x04,0xde,0x7d,0x01,0x86,0x26,0x06]
 // W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
 // W64-ERR-NEXT: v_cmp_tru_f16_sdwa s6, |v1|, v2 src0_sel:DWORD src1_sel:DWORD
-
-v_cmp_tru_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
-// W32: encoding: [0xf9,0x04,0xde,0x7d,0x01,0x86,0x06,0x06]
-// W64-ERR: error: {{instruction not supported on this GPU|invalid operand for instruction}}
-// W64-ERR-NEXT: v_cmp_tru_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:DWORD
 
 v_cmp_tru_f16_sdwa s6, v1, v2 src0_sel:DWORD src1_sel:BYTE_0
 // W32: encoding: [0xf9,0x04,0xde,0x7d,0x01,0x86,0x06,0x00]
