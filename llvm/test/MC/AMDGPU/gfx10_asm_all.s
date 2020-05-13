@@ -62887,6 +62887,9 @@ v_sub_nc_i32 v5, v1, 0.5
 v_sub_nc_i32 v5, v1, -4.0
 // GFX10: encoding: [0x05,0x00,0x76,0xd7,0x01,0xef,0x01,0x00]
 
+v_sub_nc_i32 v5, v1, -4.0 clamp
+// GFX10: v_sub_nc_i32 v5, v1, -4.0 clamp ; encoding: [0x05,0x80,0x76,0xd7,0x01,0xef,0x01,0x00]
+
 v_permlane16_b32 v5, v1, v2, v3
 // GFX10-ERR: :[[@LINE-1]]:{{[0-9]+}}: error: invalid operand for instruction
 
@@ -63222,6 +63225,9 @@ v_add_nc_i32 v5, v1, 0.5
 
 v_add_nc_i32 v5, v1, -4.0
 // GFX10: encoding: [0x05,0x00,0x7f,0xd7,0x01,0xef,0x01,0x00]
+
+v_add_nc_i32 v5, v1, -4.0 clamp
+// GFX10: v_add_nc_i32 v5, v1, -4.0 clamp ; encoding: [0x05,0x80,0x7f,0xd7,0x01,0xef,0x01,0x00]
 
 v_pk_fmac_f16 v5, v1, v2
 // GFX10: encoding: [0x01,0x05,0x0a,0x78]
