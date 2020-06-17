@@ -1,3 +1,4 @@
+// XFAIL: *
 // RUN: not llvm-mc -arch=amdgcn -mcpu=gfx1010 -mattr=+WavefrontSize32,-WavefrontSize64 -show-encoding %s | FileCheck --check-prefixes=GFX10,W32 %s
 // RUN: not llvm-mc -arch=amdgcn -mcpu=gfx1010 -mattr=-WavefrontSize32,+WavefrontSize64 -show-encoding %s | FileCheck --check-prefixes=GFX10,W64 %s
 // RUN: not llvm-mc -arch=amdgcn -mcpu=gfx1010 -mattr=+WavefrontSize32,-WavefrontSize64 -show-encoding %s 2>&1 | FileCheck --check-prefixes=GFX10-ERR,W32-ERR %s
