@@ -451,8 +451,9 @@ private:
         // on top of. FIXME: spill locations created before this pass runs
         // are not recognized, and not handled here.
         auto *TRI = MF.getSubtarget().getRegisterInfo();
+        auto Deref = Indirect ? DIExpression::DerefAfter : 0;
         auto *SpillExpr = TRI->prependOffsetExpression(
-            DIExpr, DIExpression::ApplyOffset, Loc.SpillLocation.SpillOffset);
+            DIExpr, DIExpression::ApplyOffset | Deref, Loc.SpillLocation.SpillOffset);	
         unsigned Base = Loc.SpillLocation.SpillBase;
         return BuildMI(MF, DbgLoc, IID, true, Base, Var, SpillExpr);
       }
