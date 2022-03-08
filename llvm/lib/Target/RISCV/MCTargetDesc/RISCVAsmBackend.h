@@ -27,15 +27,18 @@ class RISCVAsmBackend : public MCAsmBackend {
   bool Is64Bit;
   bool ForceRelocs = false;
   const MCTargetOptions &TargetOptions;
-  RISCVABI::ABI TargetABI = RISCVABI::ABI_Unknown;
+  // OHOS_LOCAL removal backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+  // RISCVABI::ABI TargetABI = RISCVABI::ABI_Unknown;
 
 public:
   RISCVAsmBackend(const MCSubtargetInfo &STI, uint8_t OSABI, bool Is64Bit,
                   const MCTargetOptions &Options)
       : MCAsmBackend(support::little), STI(STI), OSABI(OSABI), Is64Bit(Is64Bit),
         TargetOptions(Options) {
-    TargetABI = RISCVABI::computeTargetABI(
-        STI.getTargetTriple(), STI.getFeatureBits(), Options.getABIName());
+    // OHOS_LOCAL removal backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+    // TargetABI = RISCVABI::computeTargetABI(
+    //     STI.getTargetTriple(), STI.getFeatureBits(), Options.getABIName());
+
     RISCVFeatures::validate(STI.getTargetTriple(), STI.getFeatureBits());
   }
   ~RISCVAsmBackend() override {}
@@ -111,7 +114,8 @@ public:
   bool writeNopData(raw_ostream &OS, uint64_t Count) const override;
 
   const MCTargetOptions &getTargetOptions() const { return TargetOptions; }
-  RISCVABI::ABI getTargetABI() const { return TargetABI; }
+  // OHOS_LOCAL removal backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+  // RISCVABI::ABI getTargetABI() const { return TargetABI; }
 };
 }
 

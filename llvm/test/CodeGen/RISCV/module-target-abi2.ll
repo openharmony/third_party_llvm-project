@@ -8,8 +8,8 @@
 
 ; RV32IF-ILP32: -target-abi option != target-abi module flag
 
-; FLAGS: Flags: 0x0
-; // this should be "Flags :0x2, single-float ABI", it will be fixed later.
+; OHOS_LOCAL backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+; FLAGS: Flags: 0x2, single-float ABI
 
 define float @foo(i32 %a) nounwind #0 {
 ; DEFAULT: # %bb.0:
