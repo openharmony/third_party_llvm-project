@@ -10991,6 +10991,14 @@ ARMTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
     llvm_unreachable("Unexpected instr type to insert");
   }
 
+#ifdef ARK_GC_SUPPORT
+  case TargetOpcode::STATEPOINT:
+  case TargetOpcode::STACKMAP:
+  case TargetOpcode::PATCHPOINT:
+    MI.addOperand(*BB->getParent(), MachineOperand::CreateReg(ARM::LR, true, true));
+    return emitPatchPoint(MI, BB);
+#endif
+
   // Thumb1 post-indexed loads are really just single-register LDMs.
   case ARM::tLDR_postidx: {
     MachineOperand Def(MI.getOperand(1));

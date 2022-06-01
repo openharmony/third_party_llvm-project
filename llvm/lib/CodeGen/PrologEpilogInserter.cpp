@@ -69,6 +69,11 @@
 #include <limits>
 #include <utility>
 #include <vector>
+#include <iostream>
+
+#ifdef ARK_GC_SUPPORT
+#include <string>
+#endif
 
 using namespace llvm;
 
@@ -876,6 +881,62 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
   // stack area.
   int64_t FixedCSEnd = Offset;
   Align MaxAlign = MFI.getMaxAlign();
+
+#ifdef ARK_GC_SUPPORT
+  int CalleeSavedFrameSize = 0;
+  Triple::ArchType archType = TFI.GetArkSupportTarget();
+  if (archType != Triple::UnknownArch && TFI.hasFP(MF)) {
+    int fpPosition = TFI.GetFixedFpPosition();
+    int slotSize = sizeof(uint64_t);
+    int fpToCallerSpDelta = 0;
+    // 0:not exist  +:count from head -:count from tail
+    //   for x86-64
+    //   +--------------------------+
+    //   |       caller Frame       |
+    //   +--------------------------+---
+    //   |       returnAddr         |  ^
+    //   +--------------------------+  2 slot(fpToCallerSpDelta)
+    //   |       Fp                 |  V  fpPosition = 2
+    //   +--------------------------+---
+    //   |       type               |
+    //   +--------------------------+
+    //   |       ReServeSize        |
+    //   +--------------------------+
+    //   |          R14             |
+    //   +--------------------------+
+    //   |          R13             |
+    //   +--------------------------+
+    //   |          R12             |
+    //   +--------------------------+
+    //   |          RBX             |
+    //   +--------------------------+
+    //   for ARM64
+    //   +--------------------------+
+    //   |       caller Frame       |
+    //   +--------------------------+---
+    //   |  callee save registers   |  ^
+    //   |      (exclude Fp)        |  |
+    //   |                          |  callee save registers size(fpToCallerSpDelta)
+    //   +--------------------------+  |
+    //   |          Fp              |  V  fpPosition = -1
+    //   +--------------------------+--- FixedCSEnd
+    //   |         type             |
+    //   +--------------------------+
+    //   |       ReServeSize        |
+    //   +--------------------------+
+    if (fpPosition >= 0) {
+      fpToCallerSpDelta = fpPosition * slotSize;
+    } else {
+      fpToCallerSpDelta = FixedCSEnd + (fpPosition + 1) * slotSize;
+    }
+    Function &func = const_cast<Function &>(MF.getFunction());
+    Attribute attr = Attribute::get(func.getContext(), "fpToCallerSpDelta", std::to_string(fpToCallerSpDelta).c_str());
+    func.addAttribute(AttributeList::FunctionIndex, attr);
+
+    CalleeSavedFrameSize = TFI.GetFrameReserveSize(MF);
+    Offset += CalleeSavedFrameSize;
+  }
+#endif
 
   // Make sure the special register scavenging spill slot is closest to the
   // incoming stack pointer if a frame pointer is required and is closer

@@ -4987,7 +4987,11 @@ SDValue AArch64TargetLowering::LowerCallResult(
 
 /// Return true if the calling convention is one that we can guarantee TCO for.
 static bool canGuaranteeTCO(CallingConv::ID CC) {
+#ifdef ARK_GC_SUPPORT
+  return (CC == CallingConv::GHC) || (CC == CallingConv::Fast);
+#else
   return CC == CallingConv::Fast;
+#endif
 }
 
 /// Return true if we might ever do TCO for calls with this calling convention.
@@ -5183,7 +5187,11 @@ SDValue AArch64TargetLowering::addTokenForArgument(SDValue Chain,
 
 bool AArch64TargetLowering::DoesCalleeRestoreStack(CallingConv::ID CallCC,
                                                    bool TailCallOpt) const {
+#ifdef ARK_GC_SUPPORT
+  return (CallCC == CallingConv::GHC || (CallCC == CallingConv::Fast)) && TailCallOpt;
+#else
   return CallCC == CallingConv::Fast && TailCallOpt;
+#endif
 }
 
 /// LowerCall - Lower a call to a callseq_start + CALL + callseq_end chain,
