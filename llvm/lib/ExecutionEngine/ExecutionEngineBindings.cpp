@@ -198,6 +198,7 @@ LLVMBool LLVMCreateMCJITCompilerForModule(
   builder.setEngineKind(EngineKind::JIT)
          .setErrorStr(&Error)
          .setOptLevel((CodeGenOpt::Level)options.OptLevel)
+         .setRelocationModel(unwrap(options.RelMode))
          .setTargetOptions(targetOptions);
   bool JIT;
   if (Optional<CodeModel::Model> CM = unwrap(options.CodeModel, JIT))

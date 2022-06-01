@@ -1588,6 +1588,7 @@ static unsigned estimateRSStackSizeLimit(MachineFunction &MF,
           Limit = std::min(Limit, ((1U << 7) - 1) * 4);
           break;
         default:
+          break;
           llvm_unreachable("Unhandled addressing mode in stack size limit calculation");
         }
         break; // At most one FI per instruction

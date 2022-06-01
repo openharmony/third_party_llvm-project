@@ -198,6 +198,12 @@ getReservedRegs(const MachineFunction &MF) const {
   markSuperRegs(Reserved, ARM::APSR_NZCV);
   if (TFI->hasFP(MF))
     markSuperRegs(Reserved, getFramePointerReg(STI));
+#ifdef ARK_GC_SUPPORT
+  if (MF.getFunction().getCallingConv() == CallingConv::GHC) {
+    markSuperRegs(Reserved, ARM::R11);
+    markSuperRegs(Reserved, ARM::LR);
+  }
+#endif
   if (hasBasePointer(MF))
     markSuperRegs(Reserved, BasePtr);
   // Some targets reserve R9.

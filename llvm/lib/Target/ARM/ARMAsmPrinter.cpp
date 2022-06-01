@@ -55,7 +55,11 @@ using namespace llvm;
 ARMAsmPrinter::ARMAsmPrinter(TargetMachine &TM,
                              std::unique_ptr<MCStreamer> Streamer)
     : AsmPrinter(TM, std::move(Streamer)), Subtarget(nullptr), AFI(nullptr),
+#ifdef ARK_GC_SUPPORT
+      MCP(nullptr), InConstantPool(false), OptimizationGoals(-1), SM(*this) {}
+#else
       MCP(nullptr), InConstantPool(false), OptimizationGoals(-1) {}
+#endif
 
 void ARMAsmPrinter::emitFunctionBodyEnd() {
   // Make sure to terminate any constant pools that were at the end
@@ -577,6 +581,9 @@ void ARMAsmPrinter::emitEndOfAsmFile(Module &M) {
   OptimizationGoals = -1;
 
   ATS.finishAttributeSection();
+#ifdef ARK_GC_SUPPORT
+  SM.serializeToStackMapSection();
+#endif
 }
 
 //===----------------------------------------------------------------------===//
@@ -2180,6 +2187,14 @@ void ARMAsmPrinter::emitInstruction(const MachineInstr *MI) {
   case ARM::PATCHABLE_TAIL_CALL:
     LowerPATCHABLE_TAIL_CALL(*MI);
     return;
+  #ifdef ARK_GC_SUPPORT
+  case TargetOpcode::STACKMAP:
+    return LowerSTACKMAP(*OutStreamer, SM, *MI);
+  case TargetOpcode::PATCHPOINT:
+    return LowerPATCHPOINT(*OutStreamer, SM, *MI);
+  case TargetOpcode::STATEPOINT:
+    return LowerSTATEPOINT(*OutStreamer, SM, *MI);
+  #endif
   case ARM::SpeculationBarrierISBDSBEndBB: {
     // Print DSB SYS + ISB
     MCInst TmpInstDSB;
@@ -2229,6 +2244,76 @@ void ARMAsmPrinter::emitInstruction(const MachineInstr *MI) {
 
   EmitToStreamer(*OutStreamer, TmpInst);
 }
+
+#ifdef ARK_GC_SUPPORT
+static unsigned roundUpTo4ByteAligned(unsigned n) {
+  unsigned mask = 3;
+  unsigned rev = ~3;
+  n = (n & rev) + (((n & mask) + mask) & rev);
+  return n;
+}
+
+void ARMAsmPrinter::LowerSTACKMAP(MCStreamer &OutStreamer, StackMaps &SM,
+                                  const MachineInstr &MI) {
+  llvm_unreachable("Stackmap lowering is not implemented");
+}
+
+void ARMAsmPrinter::LowerPATCHPOINT(MCStreamer &OutStreamer, StackMaps &SM,
+                                    const MachineInstr &MI) {
+  llvm_unreachable("Patchpoint lowering is not implemented");
+}
+
+void ARMAsmPrinter::LowerSTATEPOINT(MCStreamer &OutStreamer, StackMaps &SM,
+                                    const MachineInstr &MI) {
+  assert(!AFI->isThumbFunction());
+
+  StatepointOpers SOpers(&MI);
+  MCInst Noop;
+  Subtarget->getInstrInfo()->getNoop(Noop);
+  if (unsigned PatchBytes = SOpers.getNumPatchBytes()) {
+    unsigned NumBytes = roundUpTo4ByteAligned(PatchBytes);
+    unsigned EncodedBytes = 0;
+    assert(NumBytes >= EncodedBytes &&
+    "Statepoint can't request size less than the length of a call.");
+    assert((NumBytes - EncodedBytes) % 4 == 0 &&
+    "Invalid number of NOP bytes requested!");
+    MCInst Noop;
+    Subtarget->getInstrInfo()->getNoop(Noop);
+    for (unsigned i = EncodedBytes; i < NumBytes; i += 4)
+      EmitToStreamer(OutStreamer, Noop);
+  } else {
+      const MachineOperand &CallTarget = SOpers.getCallTarget();
+      MCOperand CallTargetMCOp;
+      unsigned CallOpcode;
+      switch (CallTarget.getType()) {
+        case MachineOperand::MO_GlobalAddress:
+        case MachineOperand::MO_ExternalSymbol:
+          ARMAsmPrinter::lowerOperand(CallTarget, CallTargetMCOp);
+          CallOpcode = ARM::BL;
+          break;
+        case MachineOperand::MO_Immediate:
+          CallTargetMCOp = MCOperand::createImm(CallTarget.getImm());
+          CallOpcode = ARM::BL;
+          break;
+        case MachineOperand::MO_Register:
+          CallTargetMCOp = MCOperand::createReg(CallTarget.getReg());
+          CallOpcode = ARM::BLX;
+          break;
+        default:
+          llvm_unreachable("Unsupported operand type in statepoint call target");
+          break;
+      }
+
+      EmitToStreamer(OutStreamer,
+                     MCInstBuilder(CallOpcode).addOperand(CallTargetMCOp));
+  }
+
+  auto &Ctx = OutStreamer.getContext();
+  MCSymbol *MILabel = Ctx.createTempSymbol();
+  OutStreamer.emitLabel(MILabel);
+  SM.recordStatepoint(*MILabel, MI);
+}
+#endif
 
 //===----------------------------------------------------------------------===//
 // Target Registry Stuff

@@ -162,3 +162,17 @@ TargetFrameLowering::getDwarfFrameBase(const MachineFunction &MF) const {
   const TargetRegisterInfo *RI = MF.getSubtarget().getRegisterInfo();
   return DwarfFrameBase{DwarfFrameBase::Register, {RI->getFrameRegister(MF)}};
 }
+
+#ifdef ARK_GC_SUPPORT
+int TargetFrameLowering::GetFrameReserveSize(MachineFunction &MF) const
+{
+    int slotSize = sizeof(uint64_t);
+    int64_t marker = 0x0;
+    int reserveSize = 0;
+    MF.getFunction()
+      .getFnAttribute("frame-reserved-slots")
+      .getValueAsString()
+      .getAsInteger(10, marker);
+    return marker;
+}
+#endif

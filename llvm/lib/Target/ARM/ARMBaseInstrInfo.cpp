@@ -763,6 +763,11 @@ unsigned ARMBaseInstrInfo::getInstSizeInBytes(const MachineInstr &MI) const {
     return 0;
   case TargetOpcode::BUNDLE:
     return getInstBundleLength(MI);
+#ifdef ARK_GC_SUPPORT
+  case TargetOpcode::PATCHPOINT:
+  case TargetOpcode::STATEPOINT:
+    return MI.getOperand(1).getImm();
+#endif
   case ARM::MOVi16_ga_pcrel:
   case ARM::MOVTi16_ga_pcrel:
   case ARM::t2MOVi16_ga_pcrel:

@@ -359,7 +359,7 @@ def CC_AArch64_GHC : CallingConv<[
   CCIfType<[i8, i16, i32], CCPromoteToType<i64>>,
 
   // Pass in STG registers: Base, Sp, Hp, R1, R2, R3, R4, R5, R6, SpLim
-  CCIfType<[i64], CCAssignToReg<[X19, X20, X21, X22, X23, X24, X25, X26, X27, X28]>>
+  CCIfType<[i64], CCAssignToReg<[X19, FP, X20, X21, X22, X23, X24, X25, X26, X27, X28]>>
 ]>;
 
 // The order of the callee-saves in this file is important, because the
@@ -377,9 +377,10 @@ def CC_AArch64_GHC : CallingConv<[
 // vreg on entry, use it in RET & tail call generation; make that vreg def if we
 // end up saving LR as part of a call frame). Watch this space...
 def CSR_AArch64_AAPCS : CalleeSavedRegs<(add X19, X20, X21, X22, X23, X24,
-                                           X25, X26, X27, X28, LR, FP,
+                                           X25, X26, X27, X28,
                                            D8,  D9,  D10, D11,
-                                           D12, D13, D14, D15)>;
+                                           D12, D13, D14, D15,
+                                           LR, FP)>;
 
 // A variant for treating X18 as callee saved, when interfacing with
 // code that needs X18 to be preserved.

@@ -873,6 +873,11 @@ initializeFunctionInfo(const std::vector<MachineInstr*> &CPEMIs) {
             NegOk = true;
             break;
           }
+          // Decrease a bit here to workaround the out of range pc-relative
+          // fixup value error during the MCJIT compilation process
+          if (Bits > 0) {
+            Bits--;
+          }
 
           // Remember that this is a user of a CP entry.
           unsigned CPI = I.getOperand(op).getIndex();
