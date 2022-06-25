@@ -3922,7 +3922,6 @@ LLVMValueRef LLVMBuildCall3(LLVMBuilderRef B, LLVMTypeRef Ty, LLVMValueRef Fn,
   FunctionType *FTy = unwrap<FunctionType>(Ty);
   std::vector<Value*> vals;
   for (int i = 0; i < NumVals; i++) {
-    LLVMDumpValue(deoptVals[i]);
     vals.push_back(unwrap(deoptVals[i]));
   }
   OperandBundleDefT<Value *> deoptBundle("deopt", vals);
