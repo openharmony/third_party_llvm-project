@@ -317,6 +317,9 @@ AArch64RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     markSuperRegs(Reserved, AArch64::W29);
     markSuperRegs(Reserved, AArch64::W30);
   }
+  if (MF.getFunction().getCallingConv() == CallingConv::WebKit_JS) {
+    markSuperRegs(Reserved, AArch64::W30);
+  }
 #endif
 
   for (size_t i = 0; i < AArch64::GPR32commonRegClass.getNumRegs(); ++i) {
