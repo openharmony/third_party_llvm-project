@@ -1,6 +1,6 @@
 add_compiler_rt_component(cfi)
 
-if(OS_NAME MATCHES "Linux" OR OS_NAME MATCHES "FreeBSD" OR OS_NAME MATCHES "NetBSD")
+if(OS_NAME MATCHES "Linux" OR OS_NAME MATCHES "FreeBSD" OR OS_NAME MATCHES "NetBSD" OR OS_NAME MATCHES "OHOS")
   set(CFI_SOURCES
     cfi.cpp
     )

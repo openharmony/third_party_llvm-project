@@ -16,7 +16,7 @@
 
 #if defined(CRT_HAS_128BIT) && defined(CRT_LDBL_128BIT)
 
-#define NUMBER_OF_HALF_ITERATIONS 4
+#define NUMBER_OF_HALF_ITERATIONS 5
 #define NUMBER_OF_FULL_ITERATIONS 1
 
 #include "fp_div_impl.inc"

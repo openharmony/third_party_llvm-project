@@ -6,6 +6,7 @@ add_lldb_unittest(TargetTests
   PathMappingListTest.cpp
   RemoteAwarePlatformTest.cpp
   StackFrameRecognizerTest.cpp
+  FindFileTest.cpp
 
   LINK_LIBS
       lldbCore

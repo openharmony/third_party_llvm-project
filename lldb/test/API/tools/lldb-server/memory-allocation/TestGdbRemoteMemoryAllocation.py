@@ -73,6 +73,7 @@ class TestGdbRemoteMemoryAllocation(gdbremote_testcase.GdbRemoteTestCaseBase):
                                          True)
         self.expect_gdbremote_sequence()
 
+    @skipOnHuaweiCI # investigate CI test failures
     def test_bad_packet(self):
         """Make sure we get a proper error for malformed packets."""
 

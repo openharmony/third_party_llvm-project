@@ -19,14 +19,14 @@
 ; RUN:   FileCheck --check-prefix=INVALID1 %s
 ; RUN: not ld.lld -o /dev/null -e main --plugin-opt=Ofoo %t.o 2>&1 | \
 ; RUN:   FileCheck --check-prefix=INVALID2 %s
-; INVALID2: --plugin-opt=Ofoo: number expected, but got 'foo'
+; INVALID2: invalid optimization level for LTO: foo
 
 ; RUN: not ld.lld -o /dev/null -e main --lto-O-1 %t.o 2>&1 | \
 ; RUN:   FileCheck --check-prefix=INVALIDNEGATIVE1 %s
-; INVALIDNEGATIVE1: invalid optimization level for LTO: 4294967295
+; INVALIDNEGATIVE1: invalid optimization level for LTO: -1
 ; RUN: not ld.lld -o /dev/null -e main --plugin-opt=O-1 %t.o 2>&1 | \
 ; RUN:   FileCheck --check-prefix=INVALIDNEGATIVE2 %s
-; INVALIDNEGATIVE2: invalid optimization level for LTO: 4294967295
+; INVALIDNEGATIVE2: invalid optimization level for LTO: -1
 
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"

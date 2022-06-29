@@ -753,7 +753,7 @@ void tools::linkSanitizerRuntimeDeps(const ToolChain &TC,
   CmdArgs.push_back(getAsNeededOption(TC, false));
   // There's no libpthread or librt on RTEMS & Android.
   if (TC.getTriple().getOS() != llvm::Triple::RTEMS &&
-      !TC.getTriple().isAndroid()) {
+      !TC.getTriple().isAndroid() && !TC.getTriple().isOHOSFamily()) {
     CmdArgs.push_back("-lpthread");
     if (!TC.getTriple().isOSOpenBSD())
       CmdArgs.push_back("-lrt");
@@ -1132,6 +1132,18 @@ tools::ParsePICArgs(const ToolChain &ToolChain, const ArgList &Args) {
     }
   }
 
+  // OHOS-specific defaults for PIC/PIE
+  if (Triple.isOHOSFamily()) {
+    switch (Triple.getArch()) {
+    case llvm::Triple::aarch64:
+      PIC = true; // "-fpic"
+      break;
+
+    default:
+      break;
+    }
+  }
+
   // OpenBSD-specific defaults for PIE
   if (Triple.isOSOpenBSD()) {
     switch (ToolChain.getArch()) {
@@ -1391,6 +1403,11 @@ static LibGccType getLibGccType(const Driver &D, const ArgList &Args) {
 static void AddUnwindLibrary(const ToolChain &TC, const Driver &D,
                              ArgStringList &CmdArgs, const ArgList &Args) {
   ToolChain::UnwindLibType UNW = TC.GetUnwindLibType(Args);
+  if (TC.getTriple().isOHOSFamily() && UNW != ToolChain::UNW_None) {
+    CmdArgs.push_back("-l:libunwind.a");
+    return;
+  }
+
   // Targets that don't use unwind libraries.
   if (TC.getTriple().isAndroid() || TC.getTriple().isOSIAMCU() ||
       TC.getTriple().isOSBinFormatWasm() ||

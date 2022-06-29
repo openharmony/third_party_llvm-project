@@ -1322,7 +1322,9 @@ TEST(AddressSanitizer, LongDoubleNegativeTest) {
   memcpy(Ident(&c), Ident(&b), sizeof(long double));
 }
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(__OHOS__)
+// On OHOS/Musl sched_param is not int.
+// See __interceptor_pthread_getschedparam
 TEST(AddressSanitizer, pthread_getschedparam) {
   int policy;
   struct sched_param param;

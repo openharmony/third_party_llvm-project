@@ -185,6 +185,11 @@ int main()
                      UINT64_C(0)))
         return 1;
 
+    if (test__divtf3(-1L,
+                     -0.999999999999999999999999999999999904L,
+                     UINT64_C(0x1),
+                     UINT64_C(0x3fff000000000000)))
+        return 1;
 #else
     printf("skipped\n");
 

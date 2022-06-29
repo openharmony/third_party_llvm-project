@@ -39,6 +39,9 @@
 #if defined(__ANDROID__)
 #include "lldb/Host/android/HostInfoAndroid.h"
 #define HOST_INFO_TYPE HostInfoAndroid
+#elif defined(__OHOS_FAMILY__)
+#include "lldb/Host/ohos/HostInfoOHOS.h"
+#define HOST_INFO_TYPE HostInfoOHOS
 #else
 #include "lldb/Host/linux/HostInfoLinux.h"
 #define HOST_INFO_TYPE HostInfoLinux

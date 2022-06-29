@@ -195,7 +195,7 @@ class BuildUtils(object):
         self.CMAKE_BIN_DIR = os.path.abspath(
             os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts/cmake', self.use_platform()[:-3], 'bin'))
 
-    def open_hos_triple(self, arch):
+    def open_ohos_triple(self, arch):
         return arch + self.build_config.OPENHOS_SFX
 
     def liteos_triple(self, arch):
@@ -815,13 +815,13 @@ class LlvmLibs(BuildUtils):
             ('arm', self.liteos_triple('arm'),
              '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=hard -mfpu=neon-vfpv4', 'a7_hard_neon-vfpv4'),
 
-            ('arm', self.open_hos_triple('arm'), '-march=armv7-a -mfloat-abi=soft', ''),
-            ('arm', self.open_hos_triple('arm'), '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=soft', 'a7_soft'),
-            ('arm', self.open_hos_triple('arm'),
+            ('arm', self.open_ohos_triple('arm'), '-march=armv7-a -mfloat-abi=soft', ''),
+            ('arm', self.open_ohos_triple('arm'), '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=soft', 'a7_soft'),
+            ('arm', self.open_ohos_triple('arm'),
              '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4', 'a7_softfp_neon-vfpv4'),
-            ('arm', self.open_hos_triple('arm'),
+            ('arm', self.open_ohos_triple('arm'),
              '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=hard -mfpu=neon-vfpv4', 'a7_hard_neon-vfpv4'),
-            ('aarch64', self.open_hos_triple('aarch64'), '', ''), ]
+            ('aarch64', self.open_ohos_triple('aarch64'), '', ''), ]
 
         cc = os.path.join(llvm_install, 'bin', 'clang')
         cxx = os.path.join(llvm_install, 'bin', 'clang++')
@@ -840,7 +840,7 @@ class LlvmLibs(BuildUtils):
             self.build_libs_defines(llvm_triple, defines, cc, cxx, llvm_config, ldflags, cflags, extra_flags)
 
             llvm_path = self.merge_out_path('llvm_make')
-            arch_list = [self.liteos_triple('arm'), self.open_hos_triple('arm'), self.open_hos_triple('aarch64')]
+            arch_list = [self.liteos_triple('arm'), self.open_ohos_triple('arm'), self.open_ohos_triple('aarch64')]
             if precompilation:
                 self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
                 continue
@@ -1951,10 +1951,10 @@ def main():
     configs = []
     if not build_config.no_build_arm:
         configs.append(('arm', build_utils.liteos_triple('arm')))
-        configs.append(('arm', build_utils.open_hos_triple('arm')))
+        configs.append(('arm', build_utils.open_ohos_triple('arm')))
 
     if not build_config.no_build_aarch64:
-        configs.append(('arm64', build_utils.open_hos_triple('aarch64')))
+        configs.append(('arm64', build_utils.open_ohos_triple('aarch64')))
 
     if build_config.do_build and need_host:
         llvm_core.llvm_compile(

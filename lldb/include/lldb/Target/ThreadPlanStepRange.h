@@ -44,6 +44,7 @@ protected:
   bool InRange();
   lldb::FrameComparison CompareCurrentFrameToStartFrame();
   bool InSymbol();
+  bool MaybeAArch32Or64FunctionTail();
   void DumpRanges(Stream *s);
 
   Disassembler *GetDisassembler();

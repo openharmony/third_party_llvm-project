@@ -136,7 +136,7 @@ void PathMappingList::Dump(Stream *s, int pair_index) {
   }
 }
 
-void PathMappingList::Clear(bool notify) {
+void PathMappingList::Clear (bool notify) {
   if (!m_pairs.empty())
     ++m_mod_id;
   m_pairs.clear();
@@ -196,7 +196,7 @@ PathMappingList::RemapPath(llvm::StringRef path) const {
   return {};
 }
 
-bool PathMappingList::ReverseRemapPath(const FileSpec &file, FileSpec &fixed) const {
+bool PathMappingList::ReverseRemapPath (const FileSpec &file, FileSpec &fixed) const {
   std::string path = file.GetPath();
   llvm::StringRef path_ref(path);
   for (const auto &it : m_pairs) {
@@ -214,7 +214,8 @@ bool PathMappingList::ReverseRemapPath(const FileSpec &file, FileSpec &fixed) co
 
 
 llvm::Optional<FileSpec> PathMappingList::FindFile(const FileSpec &orig_spec) const {
-  if (auto remapped = RemapPath(orig_spec.GetPath()))
+  std::string normalized_path = FileSpec(orig_spec.GetPath()).GetPath();
+  if (auto remapped = RemapPath(normalized_path))
     if (FileSystem::Instance().Exists(*remapped))
       return remapped;
 

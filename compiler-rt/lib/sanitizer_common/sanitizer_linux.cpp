@@ -49,7 +49,6 @@
 #include <asm/stat.h>
 #undef stat
 #endif
-
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -74,7 +73,7 @@
 #include <sys/utsname.h>
 #endif
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID
+#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
 #include <sys/personality.h>
 #endif
 
@@ -489,7 +488,7 @@ int TgKill(pid_t pid, tid_t tid, int sig) {
 }
 #endif
 
-#if !SANITIZER_SOLARIS && !SANITIZER_NETBSD
+#if !SANITIZER_SOLARIS && !SANITIZER_NETBSD && !SANITIZER_OHOS
 u64 NanoTime() {
 #if SANITIZER_FREEBSD
   timeval tv;
@@ -501,10 +500,19 @@ u64 NanoTime() {
   return (u64)tv.tv_sec * 1000*1000*1000 + tv.tv_usec * 1000;
 }
 
+#elif SANITIZER_OHOS
+u64 NanoTime() {
+  struct timespec ts;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  return (u64)ts.tv_sec * 1000 * 1000 * 1000 + ts.tv_nsec;
+}
+#endif  // !SANITIZER_SOLARIS && !SANITIZER_NETBSD
+
+#if !SANITIZER_SOLARIS && !SANITIZER_NETBSD && !SANITIZER_OHOS
 uptr internal_clock_gettime(__sanitizer_clockid_t clk_id, void *tp) {
   return internal_syscall(SYSCALL(clock_gettime), clk_id, tp);
 }
-#endif  // !SANITIZER_SOLARIS && !SANITIZER_NETBSD
+#endif
 
 // Like getenv, but reads env directly from /proc (on Linux) or parses the
 // 'environ' array (on some others) and does not use libc. This function
@@ -822,7 +830,7 @@ int internal_sigaction_norestorer(int signum, const void *act, void *oldact) {
     // rt_sigaction, so we need to do the same (we'll need to reimplement the
     // restorers; for x86_64 the restorer address can be obtained from
     // oldact->sa_restorer upon a call to sigaction(xxx, NULL, oldact).
-#if !SANITIZER_ANDROID || !SANITIZER_MIPS32
+#if (!SANITIZER_ANDROID && !SANITIZER_OHOS) || !SANITIZER_MIPS32
     k_act.sa_restorer = u_act->sa_restorer;
 #endif
   }
@@ -838,7 +846,7 @@ int internal_sigaction_norestorer(int signum, const void *act, void *oldact) {
     internal_memcpy(&u_oldact->sa_mask, &k_oldact.sa_mask,
                     sizeof(__sanitizer_kernel_sigset_t));
     u_oldact->sa_flags = k_oldact.sa_flags;
-#if !SANITIZER_ANDROID || !SANITIZER_MIPS32
+#if (!SANITIZER_ANDROID && !SANITIZER_OHOS) || !SANITIZER_MIPS32
     u_oldact->sa_restorer = k_oldact.sa_restorer;
 #endif
   }
@@ -1004,7 +1012,7 @@ static uptr GetKernelAreaSize() {
     if ((segment.end >= 3 * gbyte) && segment.IsWritable()) return 0;
   }
 
-#if !SANITIZER_ANDROID
+#if !SANITIZER_ANDROID && !SANITIZER_OHOS
   // Even if nothing is mapped, top Gb may still be accessible
   // if we are running on 64-bit kernel.
   // Uname may report misleading results if personality type
@@ -1765,7 +1773,7 @@ void *internal_start_thread(void *(*func)(void *arg), void *arg) {
   // Start the thread with signals blocked, otherwise it can steal user signals.
   __sanitizer_sigset_t set, old;
   internal_sigfillset(&set);
-#if SANITIZER_LINUX && !SANITIZER_ANDROID
+#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
   // Glibc uses SIGSETXID signal during setuid call. If this signal is blocked
   // on any thread, setuid call hangs (see test/tsan/setuid.c).
   internal_sigdelset(&set, 33);
@@ -1795,7 +1803,7 @@ struct __sanitizer_esr_context {
 
 static bool Aarch64GetESR(ucontext_t *ucontext, u64 *esr) {
   static const u32 kEsrMagic = 0x45535201;
-  u8 *aux = ucontext->uc_mcontext.__reserved;
+  u8 *aux = (u8 *)ucontext->uc_mcontext.__reserved;
   while (true) {
     _aarch64_ctx *ctx = (_aarch64_ctx *)aux;
     if (ctx->size == 0) break;

@@ -69,7 +69,9 @@
 #include <malloc.h>
 #include <mntent.h>
 #include <netinet/ether.h>
+#if !SANITIZER_OHOS
 #include <sys/sysinfo.h>
+#endif
 #include <sys/vt.h>
 #include <linux/cdrom.h>
 #include <linux/fd.h>
@@ -91,8 +93,17 @@
 #if SANITIZER_LINUX
 # include <utime.h>
 # include <sys/ptrace.h>
+
+#if SANITIZER_OHOS
+// Do not include asm/sigcontext.h on behalf of asm/ptrace.h
+// to avoid multiple definiton errors.
+#define __ASM_SIGCONTEXT_H 1
+#include <sys/user.h>
+#endif
+
 #if defined(__mips64) || defined(__aarch64__) || defined(__arm__) || \
     SANITIZER_RISCV64
+
 #  include <asm/ptrace.h>
 #  ifdef __arm__
 typedef struct user_fpregs elf_fpregset_t;
@@ -131,6 +142,13 @@ typedef struct user_fpregs elf_fpregset_t;
 
 #if SANITIZER_ANDROID
 #include <linux/mtio.h>
+#elif SANITIZER_OHOS
+#include <crypt.h>
+#include <linux/mtio.h>
+#include <mqueue.h>
+#include <sys/msg.h>
+#include <sys/shm.h>
+#include <sys/timex.h>
 #else
 #include <glob.h>
 #include <mqueue.h>
@@ -251,7 +269,7 @@ namespace __sanitizer {
   unsigned struct_rlimit64_sz = sizeof(struct rlimit64);
   unsigned struct_statvfs64_sz = sizeof(struct statvfs64);
   unsigned struct_crypt_data_sz = sizeof(struct crypt_data);
-#endif // SANITIZER_LINUX && !SANITIZER_ANDROID
+#endif  // SANITIZER_LINUX && !SANITIZER_ANDROID
 
 #if SANITIZER_LINUX && !SANITIZER_ANDROID
   unsigned struct_timex_sz = sizeof(struct timex);
@@ -268,7 +286,6 @@ namespace __sanitizer {
 #if SANITIZER_LINUX
   int e_tabsz = (int)E_TABSZ;
 #endif
-
 
 #if SANITIZER_LINUX && !SANITIZER_ANDROID
   unsigned struct_shminfo_sz = sizeof(struct shminfo);
@@ -483,7 +500,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
   unsigned struct_ppp_stats_sz = sizeof(struct ppp_stats);
 #endif  // SANITIZER_GLIBC
 
-#if !SANITIZER_ANDROID && !SANITIZER_MAC
+#if !SANITIZER_ANDROID && !SANITIZER_MAC && !SANITIZER_OHOS
   unsigned struct_sioc_sg_req_sz = sizeof(struct sioc_sg_req);
   unsigned struct_sioc_vif_req_sz = sizeof(struct sioc_vif_req);
 #endif
@@ -536,7 +553,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
   unsigned IOCTL_TIOCSPGRP = TIOCSPGRP;
   unsigned IOCTL_TIOCSTI = TIOCSTI;
   unsigned IOCTL_TIOCSWINSZ = TIOCSWINSZ;
-#if SANITIZER_LINUX && !SANITIZER_ANDROID
+#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
   unsigned IOCTL_SIOCGETSGCNT = SIOCGETSGCNT;
   unsigned IOCTL_SIOCGETVIFCNT = SIOCGETVIFCNT;
 #endif
@@ -820,7 +837,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
   unsigned IOCTL_VT_WAITACTIVE = VT_WAITACTIVE;
 #endif // SANITIZER_LINUX
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID
+#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
   unsigned IOCTL_EQL_EMANCIPATE = EQL_EMANCIPATE;
   unsigned IOCTL_EQL_ENSLAVE = EQL_ENSLAVE;
   unsigned IOCTL_EQL_GETMASTRCFG = EQL_GETMASTRCFG;
@@ -904,7 +921,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
   unsigned IOCTL_TIOCSSERIAL = TIOCSSERIAL;
 #endif // SANITIZER_LINUX && !SANITIZER_ANDROID
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID
+#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
   unsigned IOCTL_GIO_SCRNMAP = GIO_SCRNMAP;
   unsigned IOCTL_KDDISABIO = KDDISABIO;
   unsigned IOCTL_KDENABIO = KDENABIO;
@@ -1072,7 +1089,8 @@ CHECK_STRUCT_SIZE_AND_OFFSET(sigaction, sa_mask);
 // didn't exist.
 CHECK_STRUCT_SIZE_AND_OFFSET(sigaction, sa_flags);
 #endif
-#if SANITIZER_LINUX && (!SANITIZER_ANDROID || !SANITIZER_MIPS32)
+#if SANITIZER_LINUX && (!SANITIZER_ANDROID || !SANITIZER_MIPS32) && \
+    !SANITIZER_OHOS
 CHECK_STRUCT_SIZE_AND_OFFSET(sigaction, sa_restorer);
 #endif
 
@@ -1166,7 +1184,7 @@ CHECK_TYPE_SIZE(clock_t);
 CHECK_TYPE_SIZE(clockid_t);
 #endif
 
-#if !SANITIZER_ANDROID
+#if !SANITIZER_ANDROID && !SANITIZER_OHOS
 CHECK_TYPE_SIZE(ifaddrs);
 CHECK_SIZE_AND_OFFSET(ifaddrs, ifa_next);
 CHECK_SIZE_AND_OFFSET(ifaddrs, ifa_name);

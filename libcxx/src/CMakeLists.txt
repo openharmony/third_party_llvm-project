@@ -178,11 +178,14 @@ if (LIBCXX_ENABLE_SHARED)
   add_library(cxx_shared SHARED ${exclude_from_all} ${LIBCXX_SOURCES} ${LIBCXX_HEADERS})
   target_link_libraries(cxx_shared PUBLIC cxx-headers
                                    PRIVATE ${LIBCXX_LIBRARIES})
+  if (NOT DEFINED LIBCXX_OUTPUT_NAME)
+    set (LIBCXX_OUTPUT_NAME "c++")
+  endif()
   set_target_properties(cxx_shared
     PROPERTIES
       COMPILE_FLAGS "${LIBCXX_COMPILE_FLAGS}"
       LINK_FLAGS    "${LIBCXX_LINK_FLAGS}"
-      OUTPUT_NAME   "c++"
+      OUTPUT_NAME   "${LIBCXX_OUTPUT_NAME}"
       VERSION       "${LIBCXX_ABI_VERSION}.0"
       SOVERSION     "${LIBCXX_ABI_VERSION}"
       DEFINE_SYMBOL ""
@@ -254,11 +257,14 @@ if (LIBCXX_ENABLE_STATIC)
   target_link_libraries(cxx_static PUBLIC cxx-headers
                                    PRIVATE ${LIBCXX_LIBRARIES})
   set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
+  if (NOT DEFINED LIBCXX_OUTPUT_STATIC_NAME)
+    set (LIBCXX_OUTPUT_STATIC_NAME "c++")
+  endif()
   set_target_properties(cxx_static
     PROPERTIES
       COMPILE_FLAGS "${LIBCXX_COMPILE_FLAGS}"
       LINK_FLAGS    "${LIBCXX_LINK_FLAGS}"
-      OUTPUT_NAME   "c++"
+      OUTPUT_NAME   "${LIBCXX_OUTPUT_STATIC_NAME}"
   )
   cxx_add_common_build_flags(cxx_static)
   cxx_set_common_defines(cxx_static)

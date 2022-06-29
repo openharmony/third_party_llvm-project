@@ -1,4 +1,5 @@
 ; RUN: opt -safe-stack -S -mtriple=aarch64-linux-android < %s -o - | FileCheck --check-prefixes=TLS,ANDROID %s
+; RUN: opt -safe-stack -S -mtriple=aarch64-linux-ohos < %s -o - | FileCheck --check-prefix=OHOS %s
 ; RUN: opt -safe-stack -S -mtriple=aarch64-unknown-fuchsia < %s -o - | FileCheck --check-prefixes=TLS,FUCHSIA %s
 
 define void @foo() nounwind uwtable safestack sspreq {
@@ -6,6 +7,7 @@ entry:
 ; The first @llvm.thread.pointer is for the unsafe stack pointer, skip it.
 ; TLS: call i8* @llvm.thread.pointer()
 
+; OHOS-NOT: call i8* @llvm.thread.pointer()
 ; TLS: %[[TP2:.*]] = call i8* @llvm.thread.pointer()
 ; ANDROID: %[[B:.*]] = getelementptr i8, i8* %[[TP2]], i32 40
 ; FUCHSIA: %[[B:.*]] = getelementptr i8, i8* %[[TP2]], i32 -16

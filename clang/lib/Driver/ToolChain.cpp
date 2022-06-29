@@ -823,7 +823,13 @@ std::string ToolChain::ComputeLLVMTriple(const ArgList &Args,
       Triple.setEnvironment(isHardFloat ? Triple::MuslEABIHF
                                         : Triple::MuslEABI);
       break;
+    case Triple::OpenHOS:
+      break;
     default: {
+      if (Triple.isOSLiteOS()) {
+        Triple.setEnvironment(Triple::OpenHOS);
+        break;
+      }
       arm::FloatABI DefaultABI = arm::getDefaultFloatABI(Triple);
       if (DefaultABI != arm::FloatABI::Invalid &&
           isHardFloat != (DefaultABI == arm::FloatABI::Hard)) {

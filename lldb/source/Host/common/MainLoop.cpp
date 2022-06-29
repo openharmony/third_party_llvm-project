@@ -86,7 +86,7 @@ private:
   int num_events = -1;
 
 #else
-#ifdef __ANDROID__
+#if defined(__ANDROID__)
   fd_set read_fd_set;
 #else
   std::vector<struct pollfd> read_fds;
@@ -140,7 +140,7 @@ void MainLoop::RunImpl::ProcessEvents() {
 }
 #else
 MainLoop::RunImpl::RunImpl(MainLoop &loop) : loop(loop) {
-#ifndef __ANDROID__
+#if !defined(__ANDROID__)
   read_fds.reserve(loop.m_read_fds.size());
 #endif
 }
@@ -162,7 +162,7 @@ sigset_t MainLoop::RunImpl::get_sigmask() {
   return sigmask;
 }
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__)
 Status MainLoop::RunImpl::Poll() {
   // ppoll(2) is not supported on older all android versions. Also, older
   // versions android (API <= 19) implemented pselect in a non-atomic way, as a
@@ -218,7 +218,7 @@ Status MainLoop::RunImpl::Poll() {
 #endif
 
 void MainLoop::RunImpl::ProcessEvents() {
-#ifdef __ANDROID__
+#if defined(__ANDROID__)
   // Collect first all readable file descriptors into a separate vector and
   // then iterate over it to invoke callbacks. Iterating directly over
   // loop.m_read_fds is not possible because the callbacks can modify the
