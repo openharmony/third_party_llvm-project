@@ -41,6 +41,7 @@ public:
 protected:
   std::string m_device_id;
   std::map<lldb::pid_t, std::pair<uint16_t, uint16_t>> m_port_forwards;
+  std::map<lldb::pid_t, std::pair<uint16_t, std::string>> m_remote_socket_name;
   llvm::Optional<HdcClient::UnixSocketNamespace> m_socket_namespace;
 
   bool LaunchGDBServer(lldb::pid_t &pid, std::string &connect_url) override;
