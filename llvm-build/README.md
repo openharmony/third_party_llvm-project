@@ -32,7 +32,7 @@ Here is an example of starting build process on Linux or MacOS:
 # update prebuilts, no need to run each time
 ./toolchain/llvm-project/llvm-build/env_prepare.sh
 # build
-python3 ./toolchain/llvm-project/llvm-build/build.py
+python3 ./toolchain/llvm-build/build.py
 ```
 
 1. env_prepare (one time only)
@@ -108,7 +108,7 @@ License: Apache License v2.0 with LLVM Exceptions
 
 ### Functionality
 
-The LLVM toolchain is built based on LLVM 12.0.1. It is used to provide capability of building ohos image. For detailed information about LLVM 10.0.1, please refer to [LLVM 12.0.1](https://lists.llvm.org/pipermail/llvm-announce/2021-July/000093.html).
+The LLVM toolchain is built based on LLVM 12.0.1. It is used to provide capability of building ohos image. For detailed information about LLVM 12.0.1, please refer to [LLVM 12.0.1](https://lists.llvm.org/pipermail/llvm-announce/2021-July/000093.html).
 </br>
 
 ### Specifically Included Triplets
