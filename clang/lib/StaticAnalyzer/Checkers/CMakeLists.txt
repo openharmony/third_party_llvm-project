@@ -129,6 +129,8 @@ add_clang_library(clangStaticAnalyzerCheckers
   WebKit/UncountedCallArgsChecker.cpp
   WebKit/UncountedLambdaCapturesChecker.cpp
   WebKit/UncountedLocalVarsChecker.cpp
+  OpenHarmony/UnixAPIArgsChecker.cpp
+  OpenHarmony/MemcpyChecker.cpp
 
   LINK_LIBS
   clangAST

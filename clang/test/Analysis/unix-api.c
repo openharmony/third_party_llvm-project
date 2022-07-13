@@ -1,7 +1,17 @@
+//===----------------------------------------------------------------------===//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//===----------------------------------------------------------------------===//
+
 // RUN: %clang_analyze_cc1 -analyzer-checker=core,unix.API -verify %s
 
 #ifndef O_RDONLY
 #define O_RDONLY 0
+#endif
+
+#ifndef O_CREAT
+#define O_CREAT 0100
 #endif
 
 #ifndef NULL
@@ -87,6 +97,22 @@ void open_7(const char *path) {
 void open_8(const char *path) {
   int fd;
   fd = open(path, O_RDONLY, 0.0f); // expected-warning{{The 3rd argument to 'open' is not an integer}}
+  if (fd > -1)
+    close(fd);
+}
+
+void open_9(const char *path) {
+  int fd;
+  int mode = 0631;
+  fd = open(path, O_CREAT, mode); // expected-warning{{Open() system call, GROUP/OTHER should not have write or execute permission}}
+  if (fd > -1)
+    close(fd);
+}
+
+void open_10(const char *path) {
+  int fd;
+  int mode = 0644;
+  fd = open(path, O_CREAT, mode); // no-warning
   if (fd > -1)
     close(fd);
 }
