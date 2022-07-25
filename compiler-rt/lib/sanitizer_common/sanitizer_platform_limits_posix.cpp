@@ -98,7 +98,6 @@
 // Do not include asm/sigcontext.h on behalf of asm/ptrace.h
 // to avoid multiple definiton errors.
 #define __ASM_SIGCONTEXT_H 1
-#include <sys/user.h>
 #endif
 
 #if defined(__mips64) || defined(__aarch64__) || defined(__arm__) || \
@@ -143,6 +142,7 @@ typedef struct user_fpregs elf_fpregset_t;
 #if SANITIZER_ANDROID
 #include <linux/mtio.h>
 #elif SANITIZER_OHOS
+#include <sys/user.h>
 #include <crypt.h>
 #include <linux/mtio.h>
 #include <mqueue.h>

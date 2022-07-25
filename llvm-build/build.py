@@ -193,7 +193,7 @@ class BuildUtils(object):
         self.build_config = build_config
 
         self.CMAKE_BIN_DIR = os.path.abspath(
-            os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts/cmake', self.use_platform()[:-3], 'bin'))
+            os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts/cmake', self.platform_prefix(), 'bin'))
 
     def open_ohos_triple(self, arch):
         return arch + self.build_config.OPENHOS_SFX
@@ -293,17 +293,21 @@ class BuildUtils(object):
 
     @staticmethod
     def use_platform():
-        sysstr = platform.system()
-        if (sysstr == "Linux"):
-            return 'linux-x86_64'
-        else:
-            return 'darwin-x86_64'
+        sysstr = platform.system().lower()
+        arch = platform.machine()
+        return "%s-%s" % (sysstr, arch)
+
+    def platform_prefix(self):
+        prefix = self.use_platform()
+        if (prefix.endswith('x86_64')):
+            return prefix[:-3]
+        return prefix
 
     def host_is_linux(self):
-        return self.use_platform() == 'linux-x86_64'
+        return self.use_platform().startswith('linux-')
 
     def host_is_darwin(self):
-        return self.use_platform() == 'darwin-x86_64'
+        return self.use_platform().startswith('darwin-')
 
     def rm_cmake_cache(self, cache_dir):
         for dirpath, dirs, files in os.walk(cache_dir):
@@ -694,7 +698,7 @@ class SysrootComposer(BuildUtils):
         # but it didn't contain these two lines, so we still need OHOS.cmake.
         ohos_cmake = 'OHOS.cmake'
         dst_dir = self.merge_out_path(
-            '../prebuilts/cmake/linux-x86/share/cmake-3.16/Modules/Platform')
+            '../prebuilts/cmake/%s/share/cmake-3.16/Modules/Platform' % self.platform_prefix())
         src_file = '%s/%s' % (self.build_config.CURRENT_DIR, ohos_cmake)
         if os.path.exists(os.path.join(dst_dir, ohos_cmake)):
             os.remove(os.path.join(dst_dir, ohos_cmake))
@@ -711,13 +715,14 @@ class SysrootComposer(BuildUtils):
         os.chdir(cur_dir)
 
     def install_linux_headers(self, arch, target):
+        dir_sufix = 'x86' if arch == 'x86_64' else arch
         linux_kernel_dir = os.path.join('kernel_linux_patches', 'linux-5.10')
         linux_kernel_path = os.path.join(self.build_config.OUT_PATH, '..', linux_kernel_dir)
         ohosmusl_sysroot_dst = self.merge_out_path('sysroot', target, 'usr')
         headers_tmp_dir = os.path.join(linux_kernel_path, 'prebuilts', 'usr', 'include')
         self.check_copy_tree(os.path.join(headers_tmp_dir, 'linux'),
                              os.path.join(ohosmusl_sysroot_dst, 'include/linux'))
-        self.check_copy_tree(os.path.join(headers_tmp_dir, 'asm-%s' % arch, 'asm'),
+        self.check_copy_tree(os.path.join(headers_tmp_dir, 'asm-%s' % dir_sufix,'asm'),
                              os.path.join(ohosmusl_sysroot_dst, 'include', 'asm'))
         self.check_copy_tree(os.path.join(headers_tmp_dir, 'asm-generic'),
                              os.path.join(ohosmusl_sysroot_dst, 'include/asm-generic'))
@@ -765,6 +770,7 @@ class LlvmLibs(BuildUtils):
                            defines,
                            cc,
                            cxx,
+                           ar,
                            llvm_config,
                            ldflags,
                            cflags,
@@ -774,6 +780,7 @@ class LlvmLibs(BuildUtils):
 
         defines['CMAKE_C_COMPILER'] = cc
         defines['CMAKE_CXX_COMPILER'] = cxx
+        defines['CMAKE_AR'] = ar
         defines['LLVM_CONFIG_PATH'] = llvm_config
         defines['CMAKE_SYSROOT'] = sysroot
         defines['CMAKE_FIND_ROOT_PATH_MODE_INCLUDE'] = 'ONLY'
@@ -821,10 +828,12 @@ class LlvmLibs(BuildUtils):
              '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4', 'a7_softfp_neon-vfpv4'),
             ('arm', self.open_ohos_triple('arm'),
              '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=hard -mfpu=neon-vfpv4', 'a7_hard_neon-vfpv4'),
-            ('aarch64', self.open_ohos_triple('aarch64'), '', ''), ]
+            ('aarch64', self.open_ohos_triple('aarch64'), '', ''),
+            ('x86_64', self.open_ohos_triple('x86_64'), '', ''),]
 
         cc = os.path.join(llvm_install, 'bin', 'clang')
         cxx = os.path.join(llvm_install, 'bin', 'clang++')
+        ar = os.path.join(llvm_install, 'bin', 'llvm-ar')
         llvm_config = os.path.join(llvm_install, 'bin', 'llvm-config')
         seen_arch_list = [self.liteos_triple('arm')]
 
@@ -837,10 +846,11 @@ class LlvmLibs(BuildUtils):
             ldflags = []
             cflags = []
             self.logger().info('Build libs for %s', llvm_triple)
-            self.build_libs_defines(llvm_triple, defines, cc, cxx, llvm_config, ldflags, cflags, extra_flags)
+            self.build_libs_defines(llvm_triple, defines, cc, cxx, ar, llvm_config, ldflags, cflags, extra_flags)
 
             llvm_path = self.merge_out_path('llvm_make')
-            arch_list = [self.liteos_triple('arm'), self.open_ohos_triple('arm'), self.open_ohos_triple('aarch64')]
+            arch_list = [self.liteos_triple('arm'), self.open_ohos_triple('arm'), self.open_ohos_triple('aarch64'),
+                         self.open_ohos_triple('x86_64')]
             if precompilation:
                 self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
                 continue
@@ -1063,7 +1073,7 @@ class LlvmLibs(BuildUtils):
         else:
             libcxx_defines['LIBCXX_ABI_NAMESPACE'] = '__n1'
             libcxx_defines['CMAKE_INSTALL_PREFIX'] = libcxx_ndk_install
-            libcxx_defines['LIBCXX_INSTALL_HEADER_PREFIX'] = libcxx_ndk_install + '/'
+            libcxx_defines['LIBCXX_INSTALL_HEADER_PREFIX'] = os.path.join(libcxx_ndk_install, 'include', 'libcxx-ohos', '')
             libcxx_defines['LIBCXX_OUTPUT_NAME'] = 'c++_shared'
             libcxx_defines['LIBCXX_OUTPUT_STATIC_NAME'] = 'c++_static'
 
@@ -1404,18 +1414,21 @@ class LldbMi(BuildUtils):
 
         if self.host_is_darwin():
             cflags = []
+            cxxflags =[]
             ldflags = ['-Wl,-rpath,%s' % '@loader_path/../lib']
         else:
             cflags = []
+            cxxflags =[]
             ldflags = ['-fuse-ld=lld', '-Wl,-rpath,%s' % '\$ORIGIN/../lib']
 
         ldflags.append('-L%s' % os.path.join(llvm_path, 'lib'))
+        cxxflags.append('-std=c++14')
 
         lldb_mi_defines = {}
         lldb_mi_defines['CMAKE_C_COMPILER'] = os.path.join(llvm_path, 'bin', 'clang')
         lldb_mi_defines['CMAKE_CXX_COMPILER'] = os.path.join(llvm_path, 'bin', 'clang++')
         lldb_mi_defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
-        lldb_mi_defines['CMAKE_CXX_FLAGS'] = ' '.join(cflags)
+        lldb_mi_defines['CMAKE_CXX_FLAGS'] = ' '.join(cxxflags)
         lldb_mi_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(ldflags)
         lldb_mi_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
         lldb_mi_defines['CMAKE_MODULE_LINKER_FLAGS'] = ' '.join(ldflags)
@@ -1573,8 +1586,8 @@ class LlvmPackage(BuildUtils):
 
     def package_libcxx(self):
         libcxx_ndk_install=self.merge_out_path('libcxx-ndk')
-        libcxx_ndk_install_include=self.merge_out_path(libcxx_ndk_install, 'include', 'c++', 'v1')
-        hosts_list=['linux-x86_64', 'darwin-x86_64', 'windows-x86_64']
+        libcxx_ndk_install_include=self.merge_out_path(libcxx_ndk_install, 'include', 'libcxx-ohos', 'include', 'c++', 'v1')
+        hosts_list=['linux-x86_64', 'darwin-x86_64', 'windows-x86_64', 'darwin-arm64']
 
         if os.path.exists(libcxx_ndk_install):
             for headerfile in os.listdir(libcxx_ndk_install_include):
@@ -1650,7 +1663,7 @@ class LlvmPackage(BuildUtils):
     def strip_lldb_server(self, host, install_dir):
         clang_version_bin_dir = os.path.join(install_dir, 'lib', 'clang', '10.0.1', 'bin')
 
-        if not host == 'linux-x86_64' or not os.path.exists(clang_version_bin_dir):
+        if not host.startswith('linux') or not os.path.exists(clang_version_bin_dir):
             return
         llvm_strip = os.path.join(install_dir, 'bin', 'llvm-strip')
         for llvm_triple_dir in os.listdir(clang_version_bin_dir):
@@ -1680,7 +1693,7 @@ class LlvmPackage(BuildUtils):
         with open(zlib_license_file) as notice_file:
             notices.append(notice_file.read())
 
-        if host == 'windows-x86_64':
+        if host.startswith('windows'):
             mingw_license_file = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 
                                                                 'third_party/mingw-w64/COPYING'))
             with open(mingw_license_file) as notice_file:
@@ -1692,7 +1705,7 @@ class LlvmPackage(BuildUtils):
 
     def tar_windows_mingw(self, host):
 
-        if host == 'windows-x86_64':
+        if host.startswith('windows'):
             windows64_install = self.merge_out_path('windows-x86_64-install')
             clang_mingw_dir = self.merge_out_path('clang_mingw')
             clang_mingw_sysroot_dir = os.path.join(clang_mingw_dir, 'clang-10.0.1', 'x86_64-w64-mingw32')
@@ -1820,7 +1833,7 @@ class LlvmPackage(BuildUtils):
         lib_files = []
         if os.path.isdir(lib_dir):
                 lib_files = os.listdir(lib_dir)
-        if host == 'windows-x86_64':
+        if host.startswith('windows'):
             vers_major = int(self.build_config.VERSION.split('.')[0])
             # Redefining necessary bin files for Windows.
             windows_forbidden_list_bin_files = ['clang-%s%s' % (vers_major, ext), 'scan-build%s' % ext,
@@ -1847,7 +1860,7 @@ class LlvmPackage(BuildUtils):
         package_path = '%s%s' % (self.merge_out_path(tarball_name), '.tar.bz2')
         self.logger().info('Packaging %s', package_path)
         args = ['tar', '-cjC', install_host_dir, '-f', package_path, package_name]
-        if host == 'windows-x86_64':
+        if host.startswith('windows'):
             # windows do not support symlinks,
             # replace them with file copies
             args.insert(1, '--dereference')
@@ -1855,7 +1868,7 @@ class LlvmPackage(BuildUtils):
         self.check_call(args)
 
         # Package ohos NDK
-        if host == 'linux-x86_64' and os.path.exists(self.merge_out_path('sysroot')):
+        if os.path.exists(self.merge_out_path('sysroot')):
             tarball_ndk_name = 'ohos-sysroot-%s' % self.build_config.build_name
             package_ndk_path = '%s%s' % (self.merge_out_path(tarball_ndk_name), '.tar.bz2')
             self.logger().info('Packaging %s', package_ndk_path)
@@ -1870,10 +1883,10 @@ class LlvmPackage(BuildUtils):
         package_name = 'clang-%s' % self.build_config.build_name
         self.set_clang_version(build_dir)
 
-        if host == 'windows-x86_64':
+        if host.startswith('windows'):
             ext = '.exe'
             shlib_ext = '.dll'
-        elif host == 'linux-x86_64':
+        elif host.startswith('linux'):
             ext = ''
             shlib_ext = '.so'
         else:
@@ -1955,6 +1968,10 @@ def main():
 
     if not build_config.no_build_aarch64:
         configs.append(('arm64', build_utils.open_ohos_triple('aarch64')))
+
+    if not build_config.no_build_x86_64:
+        configs.append(('x86_64', build_utils.open_ohos_triple('x86_64')))
+
 
     if build_config.do_build and need_host:
         llvm_core.llvm_compile(
