@@ -36,7 +36,7 @@ function download_and_archive() {
     archive_dir=$1
     download_source_url=$2
     bin_file=$(basename ${download_source_url})
-    #wget -t3 -T10 -O "${bin_dir}/${bin_file}" "${download_source_url}"
+    wget -t3 -T10 -O "${bin_dir}/${bin_file}" "${download_source_url}"
     if [ ! -d "${code_dir}/${archive_dir}" ];then
         mkdir -p "${code_dir}/${archive_dir}"
     fi
