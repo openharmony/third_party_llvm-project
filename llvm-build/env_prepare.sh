@@ -113,9 +113,9 @@ if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-${host_cpu}/clang-530132" ];the
     fi
 fi
 
-if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang+llvm-10.0.1-x86_64-gnu-ubuntu-16.04.tar.xz" ];then
+if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang+llvm-10.0.1-x86_64-linux-gnu-ubuntu-16.04" ];then
     rm -rf "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-10.0.1"
-    mv "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang+llvm-10.0.1-x86_64-gnu-ubuntu-16.04" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-10.0.1"
+    mv "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang+llvm-10.0.1-x86_64-linux-gnu-ubuntu-16.04" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-10.0.1"
 fi
 
 if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang+llvm-10.0.1-x86_64-apple-darwin" ];then
