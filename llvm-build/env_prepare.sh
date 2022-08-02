@@ -51,20 +51,20 @@ function download_and_archive() {
 
 
 copy_config="""
-prebuilts/clang/ohos/${host_platform}-${host_cpu},https://mirrors.huaweicloud.com/openharmony/compiler/clang/12.0.1-530132/${host_platform}/clang-530132-${host_platform}-x86_64.tar.bz2
 """
 
 copy_config_linux_x86_64="""
 prebuilts/cmake,https://mirrors.huaweicloud.com/harmonyos/compiler/cmake/3.16.5/${host_platform}/cmake-${host_platform}-x86-3.16.5.tar.gz
+prebuilts/clang/ohos/${host_platform}-${host_cpu},https://mirrors.huaweicloud.com/openharmony/compiler/clang/10.0.1-62608/${host_platform}/llvm.tar.gz
 prebuilts/clang/ohos/${host_platform}-${host_cpu},https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/clang+llvm-10.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
 """
 
 copy_config_darwin_x86_64="""
 prebuilts/cmake,https://mirrors.huaweicloud.com/harmonyos/compiler/cmake/3.16.5/${host_platform}/cmake-${host_platform}-x86-3.16.5.tar.gz
-prebuilts/clang/ohos/${host_platform}-${host_cpu},https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/clang+llvm-10.0.1-x86_64-apple-darwin.tar.xz
+prebuilts/clang/ohos/${host_platform}-${host_cpu},https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
 """
 
-# 
+
 if [[ "${host_platform}" == "linux" ]]; then
     if [[ "${host_cpu}" == "x86_64" ]]; then
         copy_config+=${copy_config_linux_x86_64}
@@ -86,7 +86,6 @@ else
 fi
 
 
-
 for i in $(echo ${copy_config})
 do
     unzip_dir=$(echo $i|awk -F ',' '{print $1}')
@@ -95,30 +94,19 @@ do
 done
 
 
-if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-530132" ];then
+if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-62608" ];then
     rm -rf "${code_dir}/prebuilts/clang/ohos/linux-x86_64/llvm"
-    mv "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-530132" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/llvm"
-    ln -snf 12.0.1 "${code_dir}/prebuilts/clang/ohos/linux-x86_64/llvm/lib/clang/current"
+    mv "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-62608" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/llvm"
+    ln -snf 10.0.1 "${code_dir}/prebuilts/clang/ohos/linux-x86_64/llvm/lib/clang/current"
 fi
 
-if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-${host_cpu}/clang-530132" ];then
-    if [[ "${host_cpu}" == "arm64" ]]; then
-        rm -rf "${code_dir}/prebuilts/clang/ohos/darwin-arm64/llvm"
-        mv "${code_dir}/prebuilts/clang/ohos/darwin-arm64/clang-530132" "${code_dir}/prebuilts/clang/ohos/darwin-arm64/llvm"
-        ln -snf 12.0.1 "${code_dir}/prebuilts/clang/ohos/darwin-arm64/llvm/lib/clang/current"
-    else
-        rm -rf "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/llvm"
-        mv "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-530132" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/llvm"
-        ln -snf 12.0.1 "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/llvm/lib/clang/current"
-    fi
-fi
 
 if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang+llvm-10.0.1-x86_64-linux-gnu-ubuntu-16.04" ];then
     rm -rf "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-10.0.1"
     mv "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang+llvm-10.0.1-x86_64-linux-gnu-ubuntu-16.04" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-10.0.1"
 fi
 
-if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang+llvm-10.0.1-x86_64-apple-darwin" ];then
+if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang+llvm-12.0.0-x86_64-apple-darwin" ];then
     rm -rf "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-10.0.1"
-    mv "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang+llvm-10.0.1-x86_64-apple-darwin" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-10.0.1"
+    mv "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang+llvm-12.0.0-x86_64-apple-darwin" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-10.0.1"
 fi
