@@ -45,12 +45,15 @@
 #include "lldb/Host/android/HostInfoAndroid.h"
 #endif
 
+#if defined(__OHOS_FAMILY__)
+#include "lldb/Host/ohos/HostInfoOHOS.h"
+#endif
 
 using namespace lldb;
 using namespace lldb_private::process_gdb_remote;
 using namespace lldb_private;
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) || defined(__OHOS_FAMILY__)
 const static uint32_t g_default_packet_timeout_sec = 20; // seconds
 #else
 const static uint32_t g_default_packet_timeout_sec = 0; // not specified
@@ -181,7 +184,6 @@ GDBRemoteCommunicationServerCommon::Handle_qHostInfo(
   StreamString response;
 
   // $cputype:16777223;cpusubtype:3;ostype:Darwin;vendor:apple;endian:little;ptrsize:8;#00
-
   ArchSpec host_arch(HostInfo::GetArchitecture());
   const llvm::Triple &host_triple = host_arch.GetTriple();
   response.PutCString("triple:");
@@ -1309,6 +1311,8 @@ FileSpec GDBRemoteCommunicationServerCommon::FindModuleFile(
     const std::string &module_path, const ArchSpec &arch) {
 #ifdef __ANDROID__
   return HostInfoAndroid::ResolveLibraryPath(module_path, arch);
+#elif defined(__OHOS_FAMILY__)
+  return HostInfoOHOS::ResolveLibraryPath(module_path, arch);
 #else
   FileSpec file_spec(module_path);
   FileSystem::Instance().Resolve(file_spec);
@@ -1320,7 +1324,6 @@ ModuleSpec
 GDBRemoteCommunicationServerCommon::GetModuleInfo(llvm::StringRef module_path,
                                                   llvm::StringRef triple) {
   ArchSpec arch(triple);
-
   FileSpec req_module_path_spec(module_path);
   FileSystem::Instance().Resolve(req_module_path_spec);
 
@@ -1336,7 +1339,6 @@ GDBRemoteCommunicationServerCommon::GetModuleInfo(llvm::StringRef module_path,
   ModuleSpec matched_module_spec;
   if (!module_specs.FindMatchingModuleSpec(module_spec, matched_module_spec))
     return ModuleSpec();
-
   return matched_module_spec;
 }
 

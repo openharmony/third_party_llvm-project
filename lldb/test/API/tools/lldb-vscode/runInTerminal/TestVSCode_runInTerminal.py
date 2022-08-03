@@ -46,6 +46,7 @@ class TestVSCode_runInTerminal(lldbvscode_testcase.VSCodeTestCaseBase):
             return False
 
     @skipIfWindows
+    @skipIfLinux
     @skipIfRemote
     @skipIf(archs=no_match(['x86_64']))
     def test_runInTerminal(self):

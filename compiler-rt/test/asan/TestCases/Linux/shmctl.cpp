@@ -1,5 +1,5 @@
 // FIXME: https://code.google.com/p/address-sanitizer/issues/detail?id=316
-// XFAIL: android
+// XFAIL: android && !ohos_family
 //
 // RUN: %clangxx_asan -O1 %s -o %t && %run %t 2>&1
 // Regression test for
@@ -22,6 +22,6 @@ int main() {
   struct shm_info shmInfo;
   res = shmctl(0, SHM_INFO, (struct shmid_ds *)&shmInfo);
   assert(res > -1);
-  
+
   return 0;
 }

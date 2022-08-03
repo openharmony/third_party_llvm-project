@@ -12,7 +12,7 @@ from lit.llvm.subst import ToolSubst
 
 lit_path_displayed = False
 
-class LLVMConfig(object):
+class LLVMConfig (object):
 
     def __init__(self, lit_config, config):
         self.lit_config = lit_config
@@ -78,6 +78,8 @@ class LLVMConfig(object):
             features.add('system-windows')
         elif platform.system() == 'Linux':
             features.add('system-linux')
+            if os.path.exists('/.dockerenv'):
+                features.add('ohos-ci')
         elif platform.system() in ['FreeBSD']:
             features.add('system-freebsd')
         elif platform.system() == 'NetBSD':

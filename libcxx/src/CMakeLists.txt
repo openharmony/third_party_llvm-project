@@ -194,6 +194,9 @@ endfunction()
 split_list(LIBCXX_COMPILE_FLAGS)
 split_list(LIBCXX_LINK_FLAGS)
 
+if (NOT DEFINED LIBCXX_OUTPUT_NAME)
+  set (LIBCXX_OUTPUT_NAME "c++")
+endif()
 # Build the shared library.
 if (LIBCXX_ENABLE_SHARED)
   add_library(cxx_shared SHARED ${exclude_from_all} ${LIBCXX_SOURCES} ${LIBCXX_HEADERS})
@@ -204,7 +207,7 @@ if (LIBCXX_ENABLE_SHARED)
     PROPERTIES
       COMPILE_FLAGS "${LIBCXX_COMPILE_FLAGS}"
       LINK_FLAGS    "${LIBCXX_LINK_FLAGS}"
-      OUTPUT_NAME   "c++"
+      OUTPUT_NAME   "${LIBCXX_OUTPUT_NAME}"
       VERSION       "${LIBCXX_LIBRARY_VERSION}"
       SOVERSION     "${LIBCXX_ABI_VERSION}"
       DEFINE_SYMBOL ""
@@ -278,6 +281,9 @@ endif()
 
 set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
 
+if (NOT DEFINED LIBCXX_OUTPUT_STATIC_NAME)
+  set (LIBCXX_OUTPUT_STATIC_NAME "c++")
+endif()
 # Build the static library.
 if (LIBCXX_ENABLE_STATIC)
   add_library(cxx_static STATIC ${exclude_from_all} ${LIBCXX_SOURCES} ${LIBCXX_HEADERS})
@@ -289,7 +295,7 @@ if (LIBCXX_ENABLE_STATIC)
     PROPERTIES
       COMPILE_FLAGS "${LIBCXX_COMPILE_FLAGS}"
       LINK_FLAGS    "${LIBCXX_LINK_FLAGS}"
-      OUTPUT_NAME   "c++"
+      OUTPUT_NAME   "${LIBCXX_OUTPUT_STATIC_NAME}"
   )
   cxx_add_common_build_flags(cxx_static)
   cxx_set_common_defines(cxx_static)

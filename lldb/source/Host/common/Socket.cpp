@@ -38,7 +38,7 @@
 #include "lldb/Host/linux/AbstractSocket.h"
 #endif
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__)
 #include <arpa/inet.h>
 #include <asm-generic/errno-base.h>
 #include <cerrno>

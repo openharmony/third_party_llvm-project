@@ -61,6 +61,8 @@ if (C_SUPPORTS_NODEFAULTLIBS_FLAG)
                         shell32 user32 kernel32 mingw32 ${MINGW_RUNTIME}
                         moldname mingwex msvcrt)
     list(APPEND CMAKE_REQUIRED_LIBRARIES ${MINGW_LIBRARIES})
+  elseif (OHOS)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES unwind)
   endif()
 endif ()
 
@@ -148,9 +150,13 @@ check_include_files("sys/auxv.h"    COMPILER_RT_HAS_AUXV)
 
 # Libraries.
 check_library_exists(dl dlopen "" COMPILER_RT_HAS_LIBDL)
-check_library_exists(rt shm_open "" COMPILER_RT_HAS_LIBRT)
+if (NOT OHOS)
+    check_library_exists(rt shm_open "" COMPILER_RT_HAS_LIBRT)
+endif()
 check_library_exists(m pow "" COMPILER_RT_HAS_LIBM)
-check_library_exists(pthread pthread_create "" COMPILER_RT_HAS_LIBPTHREAD)
+if (NOT OHOS)
+    check_library_exists(pthread pthread_create "" COMPILER_RT_HAS_LIBPTHREAD)
+endif()
 check_library_exists(execinfo backtrace "" COMPILER_RT_HAS_LIBEXECINFO)
 
 # Look for terminfo library, used in unittests that depend on LLVMSupport.
@@ -692,7 +698,7 @@ set(COMPILER_RT_SANITIZERS_TO_BUILD all CACHE STRING
 list_replace(COMPILER_RT_SANITIZERS_TO_BUILD all "${ALL_SANITIZERS}")
 
 if (SANITIZER_COMMON_SUPPORTED_ARCH AND NOT LLVM_USE_SANITIZER AND
-    (OS_NAME MATCHES "Android|Darwin|Linux|FreeBSD|NetBSD|Fuchsia|SunOS" OR
+    (OS_NAME MATCHES "Android|Darwin|Linux|FreeBSD|NetBSD|Fuchsia|SunOS|OHOS" OR
     (OS_NAME MATCHES "Windows" AND NOT CYGWIN AND
         (NOT MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"))))
   set(COMPILER_RT_HAS_SANITIZER_COMMON TRUE)
@@ -712,7 +718,7 @@ else()
   set(COMPILER_RT_HAS_ASAN FALSE)
 endif()
 
-if (OS_NAME MATCHES "Linux|FreeBSD|Windows|NetBSD|SunOS")
+if (OS_NAME MATCHES "Linux|FreeBSD|Windows|NetBSD|SunOS|OHOS")
   set(COMPILER_RT_ASAN_HAS_STATIC_RUNTIME TRUE)
 else()
   set(COMPILER_RT_ASAN_HAS_STATIC_RUNTIME FALSE)
@@ -742,7 +748,7 @@ else()
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND HWASAN_SUPPORTED_ARCH AND
-    OS_NAME MATCHES "Linux|Android|Fuchsia")
+    OS_NAME MATCHES "Linux|Android|Fuchsia|OHOS")
   set(COMPILER_RT_HAS_HWASAN TRUE)
 else()
   set(COMPILER_RT_HAS_HWASAN FALSE)
@@ -756,14 +762,14 @@ else()
 endif()
 
 if (PROFILE_SUPPORTED_ARCH AND NOT LLVM_USE_SANITIZER AND
-    OS_NAME MATCHES "Darwin|Linux|FreeBSD|Windows|Android|Fuchsia|SunOS|NetBSD|AIX")
+    OS_NAME MATCHES "Darwin|Linux|FreeBSD|Windows|Android|Fuchsia|SunOS|NetBSD|AIX|OHOS")
   set(COMPILER_RT_HAS_PROFILE TRUE)
 else()
   set(COMPILER_RT_HAS_PROFILE FALSE)
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND TSAN_SUPPORTED_ARCH)
-  if (OS_NAME MATCHES "Linux|Darwin|FreeBSD|NetBSD")
+  if (OS_NAME MATCHES "Linux|Darwin|FreeBSD|NetBSD|OHOS")
     set(COMPILER_RT_HAS_TSAN TRUE)
   elseif (OS_NAME MATCHES "Android" AND ANDROID_PLATFORM_LEVEL GREATER 23)
     set(COMPILER_RT_HAS_TSAN TRUE)
@@ -781,14 +787,14 @@ else()
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND UBSAN_SUPPORTED_ARCH AND
-    OS_NAME MATCHES "Darwin|Linux|FreeBSD|NetBSD|Windows|Android|Fuchsia|SunOS")
+    OS_NAME MATCHES "Darwin|Linux|FreeBSD|NetBSD|Windows|Android|Fuchsia|SunOS|OHOS")
   set(COMPILER_RT_HAS_UBSAN TRUE)
 else()
   set(COMPILER_RT_HAS_UBSAN FALSE)
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND UBSAN_SUPPORTED_ARCH AND
-    OS_NAME MATCHES "Linux|FreeBSD|NetBSD|Android|Darwin")
+    OS_NAME MATCHES "Linux|FreeBSD|NetBSD|Android|Darwin|OHOS")
   set(COMPILER_RT_HAS_UBSAN_MINIMAL TRUE)
 else()
   set(COMPILER_RT_HAS_UBSAN_MINIMAL FALSE)
@@ -816,7 +822,7 @@ else()
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND SCUDO_SUPPORTED_ARCH AND
-    OS_NAME MATCHES "Linux|Fuchsia")
+    OS_NAME MATCHES "Linux|Fuchsia|OHOS")
   set(COMPILER_RT_HAS_SCUDO TRUE)
 else()
   set(COMPILER_RT_HAS_SCUDO FALSE)
@@ -836,14 +842,14 @@ else()
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND FUZZER_SUPPORTED_ARCH AND
-    OS_NAME MATCHES "Android|Darwin|Linux|NetBSD|FreeBSD|Fuchsia|Windows")
+    OS_NAME MATCHES "Android|Darwin|Linux|NetBSD|FreeBSD|Fuchsia|Windows|OHOS")
   set(COMPILER_RT_HAS_FUZZER TRUE)
 else()
   set(COMPILER_RT_HAS_FUZZER FALSE)
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND SHADOWCALLSTACK_SUPPORTED_ARCH AND
-    OS_NAME MATCHES "Linux|Android")
+    OS_NAME MATCHES "Linux|Android|OHOS")
   set(COMPILER_RT_HAS_SHADOWCALLSTACK TRUE)
 else()
   set(COMPILER_RT_HAS_SHADOWCALLSTACK FALSE)

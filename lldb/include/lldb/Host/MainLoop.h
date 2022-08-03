@@ -16,7 +16,8 @@
 #include <list>
 #include <vector>
 
-#if !HAVE_PPOLL && !HAVE_SYS_EVENT_H && !defined(__ANDROID__)
+#if !HAVE_PPOLL && !HAVE_SYS_EVENT_H && !defined(__ANDROID__) &&               \
+    !defined(__OHOS_FAMILY__)
 #define SIGNAL_POLLING_UNSUPPORTED 1
 #endif
 

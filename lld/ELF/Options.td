@@ -557,6 +557,10 @@ def lto_newpm_passes: JJ<"lto-newpm-passes=">,
   HelpText<"Passes to run during LTO">;
 def lto_O: JJ<"lto-O">, MetaVarName<"<opt-level>">,
   HelpText<"Optimization level for LTO">;
+def lto_S: J<"lto-S">, MetaVarName<"<opt-size-level>">,
+  HelpText<"Size Optimization level for LTO, works only with -lto-O2">;
+def lto_mf: F<"lto-mf">,
+  HelpText<"Enable Merge Functions pass for link time optimizations.">;
 def lto_partitions: JJ<"lto-partitions=">,
   HelpText<"Number of LTO codegen partitions">;
 def lto_cs_profile_generate: FF<"lto-cs-profile-generate">,

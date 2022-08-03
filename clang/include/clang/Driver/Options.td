@@ -2910,6 +2910,8 @@ def ffinite_loops: Flag<["-"],  "ffinite-loops">, Group<f_Group>,
 def fno_finite_loops: Flag<["-"], "fno-finite-loops">, Group<f_Group>,
   HelpText<"Do not assume that any loop is finite.">, Flags<[CC1Option]>;
 
+def fenable_merge_functions : Flag<["-"], "fenable-merge-functions">, Group<f_Group>,
+  HelpText<"Enables Merge Functions optimization">;
 def ftrigraphs : Flag<["-"], "ftrigraphs">, Group<f_Group>,
   HelpText<"Process trigraph sequences">, Flags<[CC1Option]>;
 def fno_trigraphs : Flag<["-"], "fno-trigraphs">, Group<f_Group>,

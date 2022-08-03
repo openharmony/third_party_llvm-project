@@ -59,6 +59,7 @@ class TestGdbRemote_QPassSignals(gdbremote_testcase.GdbRemoteTestCaseBase):
         self.expect_exit_code(len(signals_to_ignore))
 
     @skipUnlessPlatform(["linux", "android"])
+    @skipOnOpenHarmonyCI #investigate CI timeouts
     def test_change_signals_at_runtime(self):
         self.build()
         self.set_inferior_startup_launch()

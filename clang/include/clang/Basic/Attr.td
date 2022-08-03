@@ -901,6 +901,7 @@ def Availability : InheritableAttr {
              .Case("maccatalyst", "macCatalyst")
              .Case("maccatalyst_app_extension", "macCatalyst (App Extension)")
              .Case("swift", "Swift")
+             .Case("ohos", "OpenHOS")
              .Default(llvm::StringRef());
 }
 static llvm::StringRef getPlatformNameSourceSpelling(llvm::StringRef Platform) {

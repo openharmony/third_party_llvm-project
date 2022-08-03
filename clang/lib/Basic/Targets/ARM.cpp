@@ -317,7 +317,7 @@ ARMTargetInfo::ARMTargetInfo(const llvm::Triple &Triple,
     default:
       if (IsNetBSD)
         setABI("apcs-gnu");
-      else if (IsOpenBSD)
+      else if (IsOpenBSD || Triple.isOHOSFamily())
         setABI("aapcs-linux");
       else
         setABI("aapcs");

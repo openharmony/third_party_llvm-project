@@ -5,5 +5,5 @@ def getRoot(config):
 
 root = getRoot(config)
 
-if root.host_os not in ['Linux']:
+if root.host_os not in ['Linux', 'OHOS']:
   config.unsupported = True

@@ -1093,7 +1093,7 @@ class CapturedStream {
     // directory, so we create the temporary file in the /tmp directory
     // instead. We use /tmp on most systems, and /sdcard on Android.
     // That's because Android doesn't have /tmp.
-#  if GTEST_OS_LINUX_ANDROID
+#if GTEST_OS_LINUX_ANDROID || GTEST_OS_LINUX_OHOS_FAMILY
     // Note: Android applications are expected to call the framework's
     // Context.getExternalStorageDirectory() method through JNI to get
     // the location of the world-writable SD Card directory. However,

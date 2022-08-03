@@ -116,7 +116,14 @@ if ("${COMPILER_RT_DEFAULT_TARGET_TRIPLE}" MATCHES ".*android.*")
   string(REGEX MATCH "-target(=| +)[^ ]+android[a-z]*([0-9]+)" ANDROID_API_LEVEL "${CMAKE_C_FLAGS}")
   set(ANDROID_API_LEVEL ${CMAKE_MATCH_2})
 endif()
+
+# We define OHOS for ohos targets for now
+if (OHOS)
+  set(OHOS_FAMILY 1)
+endif()
+
 pythonize_bool(ANDROID)
+pythonize_bool(OHOS_FAMILY)
 
 set(COMPILER_RT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(COMPILER_RT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -127,7 +134,7 @@ pythonize_bool(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR)
 # and target a UNIX-like system or Windows.
 # We can run tests on Android even when we are cross-compiling.
 if(("${CMAKE_HOST_SYSTEM}" STREQUAL "${CMAKE_SYSTEM}" AND (UNIX OR WIN32)) OR ANDROID
-   OR COMPILER_RT_EMULATOR)
+ OR COMPILER_RT_EMULATOR OR OHOS)
   option(COMPILER_RT_CAN_EXECUTE_TESTS "Can we execute instrumented tests" ON)
 else()
   option(COMPILER_RT_CAN_EXECUTE_TESTS "Can we execute instrumented tests" OFF)
@@ -258,7 +265,7 @@ cmake_dependent_option(COMPILER_RT_STATIC_CXX_LIBRARY
   "COMPILER_RT_CXX_LIBRARY" OFF)
 
 set(DEFAULT_COMPILER_RT_USE_BUILTINS_LIBRARY OFF)
-if (FUCHSIA)
+if (FUCHSIA OR OHOS)
   set(DEFAULT_COMPILER_RT_USE_BUILTINS_LIBRARY ON)
 endif()
 
@@ -510,24 +517,9 @@ if (SANITIZER_NO_UNDEFINED_SYMBOLS)
   list(APPEND SANITIZER_COMMON_LINK_FLAGS -Wl,-z,defs)
 endif()
 
-# TODO: COMPILER_RT_COMMON_CFLAGS and COMPILER_RT_COMMON_LINK_FLAGS are
-# intended for use in non-sanitizer runtimes such as libFuzzer, profile or XRay,
-# move these higher to include common flags, then derive SANITIZER_COMMON_CFLAGS
-# and SANITIZER_COMMON_LINK_FLAGS from those and append sanitizer-specific flags.
-set(COMPILER_RT_COMMON_CFLAGS ${SANITIZER_COMMON_CFLAGS})
-set(COMPILER_RT_COMMON_LINK_FLAGS ${SANITIZER_COMMON_LINK_FLAGS})
-
-# We don't use the C++ standard library, so avoid including it by mistake.
-append_list_if(COMPILER_RT_HAS_NOSTDINCXX_FLAG -nostdinc++ SANITIZER_COMMON_CFLAGS)
-append_list_if(COMPILER_RT_HAS_NOSTDLIBXX_FLAG -nostdlib++ SANITIZER_COMMON_LINK_FLAGS)
-
-# Remove -stdlib= which is unused when passing -nostdinc++...
-string(REGEX MATCHALL "-stdlib=[a-zA-Z+]*" stdlib_flag "${CMAKE_CXX_FLAGS}")
-string(REGEX REPLACE "-stdlib=[a-zA-Z+]*" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-
-# ...we need it to build some runtimes and tests so readd it where appropriate.
-list(APPEND COMPILER_RT_COMMON_CFLAGS ${stdlib_flag})
-list(APPEND COMPILER_RT_COMMON_LINK_FLAGS ${stdlib_flag})
+if (OHOS)
+  list(APPEND SANITIZER_COMMON_LINK_LIBS unwind)
+endif()
 
 # TODO: There's a lot of duplication across lib/*/tests/CMakeLists.txt files,
 # move some of the common flags to COMPILER_RT_UNITTEST_CFLAGS.

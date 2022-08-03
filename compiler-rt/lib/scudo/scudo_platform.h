@@ -24,10 +24,10 @@
 
 #ifndef SCUDO_TSD_EXCLUSIVE
 // SCUDO_TSD_EXCLUSIVE wasn't defined, use a default TSD model for the platform.
-# if SANITIZER_ANDROID || SANITIZER_FUCHSIA
+#if SANITIZER_ANDROID || SANITIZER_FUCHSIA
 // Android and Fuchsia use a pool of TSDs shared between threads.
 #  define SCUDO_TSD_EXCLUSIVE 0
-# elif SANITIZER_LINUX && !SANITIZER_ANDROID
+#elif SANITIZER_LINUX && !SANITIZER_ANDROID
 // Non-Android Linux use an exclusive TSD per thread.
 #  define SCUDO_TSD_EXCLUSIVE 1
 # else
@@ -42,7 +42,7 @@
 
 // Maximum number of TSDs that can be created for the Shared model.
 #ifndef SCUDO_SHARED_TSD_POOL_SIZE
-# if SANITIZER_ANDROID
+#if SANITIZER_ANDROID
 #  define SCUDO_SHARED_TSD_POOL_SIZE 2U
 # else
 #  define SCUDO_SHARED_TSD_POOL_SIZE 32U
@@ -67,7 +67,7 @@
 namespace __scudo {
 
 #if SANITIZER_CAN_USE_ALLOCATOR64
-# if defined(__aarch64__) && SANITIZER_ANDROID
+#if defined(__aarch64__) && SANITIZER_ANDROID
 const uptr AllocatorSize = 0x4000000000ULL;  // 256G.
 # elif defined(__aarch64__)
 const uptr AllocatorSize = 0x10000000000ULL;  // 1T.

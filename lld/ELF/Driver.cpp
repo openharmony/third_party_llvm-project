@@ -63,6 +63,7 @@
 #include "llvm/Support/TimeProfiler.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cstdlib>
+#include <tuple>
 #include <utility>
 
 using namespace llvm;
@@ -1018,6 +1019,47 @@ static bool isValidReportString(StringRef arg) {
   return arg == "none" || arg == "warning" || arg == "error";
 }
 
+static std::pair<unsigned, unsigned>
+parseLTOOptArg(opt::InputArgList &args, unsigned key, StringRef defaultValue) {
+  auto *a = args.getLastArg(key);
+  llvm::StringRef value = a ? a->getValue() : defaultValue;
+
+  unsigned optLevel = 0;
+  unsigned sizeLevel = 0;
+
+  if (value.size() != 1) {
+    error("invalid optimization level for LTO: " + value);
+    return {optLevel, sizeLevel};
+  }
+
+  char c = value[0];
+
+  switch (c) {
+
+  case '0':
+  case '1':
+  case '2':
+  case '3':
+    optLevel = c - '0';
+    break;
+
+  case 's':
+    optLevel = 2;
+    sizeLevel = 1;
+    break;
+
+  case 'z':
+    optLevel = 2;
+    sizeLevel = 2;
+    break;
+
+  default:
+    error("invalid optimization level for LTO: " + value);
+  }
+
+  return {optLevel, sizeLevel};
+}
+
 // Initializes Config members by the command line options.
 static void readConfigs(opt::InputArgList &args) {
   errorHandler().verbose = args.hasArg(OPT_verbose);
@@ -1104,8 +1146,9 @@ static void readConfigs(opt::InputArgList &args) {
   config->ltoWholeProgramVisibility =
       args.hasFlag(OPT_lto_whole_program_visibility,
                    OPT_no_lto_whole_program_visibility, false);
-  config->ltoo = args::getInteger(args, OPT_lto_O, 2);
   config->ltoObjPath = args.getLastArgValue(OPT_lto_obj_path_eq);
+  std::tie(config->ltoo, config->ltos) = parseLTOOptArg(args, OPT_lto_O, "2");
+  config->mergeFunctions = args.hasArg(OPT_lto_mf);
   config->ltoPartitions = args::getInteger(args, OPT_lto_partitions, 1);
   config->ltoSampleProfile = args.getLastArgValue(OPT_lto_sample_profile);
   config->ltoBasicBlockSections =

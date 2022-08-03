@@ -190,7 +190,7 @@ public:
     IOS,
     KFreeBSD,
     Linux,
-    Lv2,        // PS3
+    Lv2, // PS3
     MacOSX,
     NetBSD,
     OpenBSD,
@@ -219,6 +219,7 @@ public:
     WASI,       // Experimental WebAssembly OS
     Emscripten,
     ShaderModel, // DirectX ShaderModel
+    LiteOS,
     LastOSType = ShaderModel
   };
   enum EnvironmentType {
@@ -263,8 +264,8 @@ public:
     Callable,
     Mesh,
     Amplification,
-
-    LastEnvironmentType = Amplification
+    OpenHOS,
+    LastEnvironmentType = OpenHOS
   };
   enum ObjectFormatType {
     UnknownObjectFormat,
@@ -717,8 +718,18 @@ public:
     return getEnvironment() == Triple::Musl ||
            getEnvironment() == Triple::MuslEABI ||
            getEnvironment() == Triple::MuslEABIHF ||
-           getEnvironment() == Triple::MuslX32;
+           getEnvironment() == Triple::MuslX32 ||
+           getEnvironment() == Triple::OpenHOS ||
+           isOSLiteOS();
   }
+
+  /// Tests whether the target is OHOS
+  /// LiteOS default enviroment is also OHOS, but omited on triple.
+  bool isOHOSFamily() const { return isOpenHOS() || isOSLiteOS(); }
+
+  bool isOpenHOS() const { return getEnvironment() == Triple::OpenHOS; }
+
+  bool isOSLiteOS() const { return getOS() == Triple::LiteOS; }
 
   /// Tests whether the target is DXIL.
   bool isDXIL() const {

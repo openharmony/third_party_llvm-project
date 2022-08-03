@@ -663,6 +663,9 @@ def skipIfPlatform(oslist):
     return unittest2.skipIf(lldbplatformutil.getPlatform() in oslist,
                             "skip on %s" % (", ".join(oslist)))
 
+def skipOnOpenHarmonyCI(func):
+    return unittest2.skipIf(lldbplatformutil.isOpenHarmonyCI(), "skip on OpenHarmony CI")(func)
+
 
 def skipUnlessPlatform(oslist):
     """Decorate the item to skip tests unless running on one of the listed platforms."""

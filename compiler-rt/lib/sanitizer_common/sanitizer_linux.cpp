@@ -49,7 +49,6 @@
 #include <asm/stat.h>
 #undef stat
 #endif
-
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -74,7 +73,7 @@
 #include <sys/utsname.h>
 #endif
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID
+#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
 #include <sys/personality.h>
 #endif
 
@@ -163,7 +162,7 @@ void SetSigProcMask(__sanitizer_sigset_t *set, __sanitizer_sigset_t *old) {
 ScopedBlockSignals::ScopedBlockSignals(__sanitizer_sigset_t *copy) {
   __sanitizer_sigset_t set;
   internal_sigfillset(&set);
-#  if SANITIZER_LINUX && !SANITIZER_ANDROID
+#  if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
   // Glibc uses SIGSETXID signal during setuid call. If this signal is blocked
   // on any thread, setuid call hangs.
   // See test/sanitizer_common/TestCases/Linux/setuid.c.
@@ -895,7 +894,7 @@ int internal_sigaction_norestorer(int signum, const void *act, void *oldact) {
     // rt_sigaction, so we need to do the same (we'll need to reimplement the
     // restorers; for x86_64 the restorer address can be obtained from
     // oldact->sa_restorer upon a call to sigaction(xxx, NULL, oldact).
-#if !SANITIZER_ANDROID || !SANITIZER_MIPS32
+#if (!SANITIZER_ANDROID && !SANITIZER_OHOS) || !SANITIZER_MIPS32
     k_act.sa_restorer = u_act->sa_restorer;
 #endif
   }
@@ -911,7 +910,7 @@ int internal_sigaction_norestorer(int signum, const void *act, void *oldact) {
     internal_memcpy(&u_oldact->sa_mask, &k_oldact.sa_mask,
                     sizeof(__sanitizer_kernel_sigset_t));
     u_oldact->sa_flags = k_oldact.sa_flags;
-#if !SANITIZER_ANDROID || !SANITIZER_MIPS32
+#if (!SANITIZER_ANDROID && !SANITIZER_OHOS) || !SANITIZER_MIPS32
     u_oldact->sa_restorer = k_oldact.sa_restorer;
 #endif
   }
@@ -1081,7 +1080,7 @@ static uptr GetKernelAreaSize() {
     if ((segment.end >= 3 * gbyte) && segment.IsWritable()) return 0;
   }
 
-#if !SANITIZER_ANDROID
+#if !SANITIZER_ANDROID && !SANITIZER_OHOS
   // Even if nothing is mapped, top Gb may still be accessible
   // if we are running on 64-bit kernel.
   // Uname may report misleading results if personality type

@@ -393,8 +393,9 @@ public:
   }
   bool isTargetMuslAEABI() const {
     return (TargetTriple.getEnvironment() == Triple::MuslEABI ||
-            TargetTriple.getEnvironment() == Triple::MuslEABIHF) &&
-           !isTargetDarwin() && !isTargetWindows();
+            TargetTriple.getEnvironment() == Triple::MuslEABIHF ||
+            TargetTriple.getEnvironment() == Triple::OpenHOS) &&
+            !isTargetDarwin() && !isTargetWindows();
   }
 
   // ARM Targets that support EHABI exception handling standard

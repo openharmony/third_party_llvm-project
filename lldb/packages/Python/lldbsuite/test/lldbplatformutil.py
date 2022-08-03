@@ -149,6 +149,8 @@ def platformIsDarwin():
     """Returns true if the OS triple for the selected platform is any valid apple OS"""
     return getPlatform() in getDarwinOSTriples()
 
+def isOpenHarmonyCI():
+    return getPlatform() == 'linux' and os.path.exists('/.dockerenv')
 
 def findMainThreadCheckerDylib():
     if not platformIsDarwin():

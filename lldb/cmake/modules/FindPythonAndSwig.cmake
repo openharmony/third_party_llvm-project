@@ -35,6 +35,17 @@ macro(FindPython3)
   endif()
 endmacro()
 
+#OHOS specific: copy LLVM-10 definitions if new Python3_*** are not set
+if(NOT Python3_EXECUTABLE AND PYTHON_EXECUTABLE)
+  set(Python3_EXECUTABLE ${PYTHON_EXECUTABLE})
+endif()
+if(NOT Python3_LIBRARIES AND PYTHON_LIBRARIES)
+  set(Python3_LIBRARIES ${PYTHON_LIBRARIES})
+endif()
+if(NOT Python3_INCLUDE_DIRS AND PYTHON_INCLUDE_DIRS)
+  set(Python3_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS})
+endif()
+
 if(Python3_LIBRARIES AND Python3_INCLUDE_DIRS AND Python3_EXECUTABLE AND SWIG_EXECUTABLE)
   set(PYTHONANDSWIG_FOUND TRUE)
 else()

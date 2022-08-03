@@ -42,7 +42,9 @@ struct anon {
 };
 }
 
-kmp_int32 __kmp_hidden_helper_threads_num;
+// OHOS specific: we use static libomp and get link error on this symbol
+// probably push this to mainline
+__attribute__((weak)) kmp_int32 __kmp_hidden_helper_threads_num;
 
 kmp_int32 omp_task_entry(kmp_int32 gtid, kmp_task_t_with_privates *task) {
   auto shareds = reinterpret_cast<anon *>(task->task.shareds);

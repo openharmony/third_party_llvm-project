@@ -83,6 +83,9 @@ def find_compiler_libdir():
   return None
 
 
+def is_ohos_family_mobile():
+  return config.ohos_family and config.target_arch != 'x86_64'
+
 # Choose between lit's internal shell pipeline runner and a real shell.  If
 # LIT_USE_INTERNAL_SHELL is in the environment, we use that as an override.
 use_lit_shell = os.environ.get("LIT_USE_INTERNAL_SHELL")
@@ -232,10 +235,10 @@ if config.host_os == 'NetBSD':
   config.netbsd_nomprotect_prefix = ('sh ' +
                                      os.path.join(nb_commands_dir,
                                                   'run_nomprotect.sh'))
-  config.substitutions.append( ('%run_nomprotect',
-                                config.netbsd_nomprotect_prefix) )
+  config.substitutions.append(('%run_nomprotect',
+                                config.netbsd_nomprotect_prefix))
 else:
-  config.substitutions.append( ('%run_nomprotect', '%run') )
+  config.substitutions.append(('%run_nomprotect', '%run'))
 
 # Copied from libcxx's config.py
 def get_lit_conf(name, default=None):
@@ -254,13 +257,26 @@ def get_ios_commands_dir():
 
 # Allow tests to be executed on a simulator or remotely.
 if emulator:
-  config.substitutions.append( ('%run', emulator) )
-  config.substitutions.append( ('%env ', "env ") )
+  config.substitutions.append(('%run', emulator))
+  config.substitutions.append(('%env ', "env "))
   # TODO: Implement `%device_rm` to perform removal of files in the emulator.
   # For now just make it a no-op.
   lit_config.warning('%device_rm is not implemented')
-  config.substitutions.append( ('%device_rm', 'echo ') )
+  config.substitutions.append(('%device_rm', 'echo '))
   config.compile_wrapper = ""
+elif is_ohos_family_mobile():
+  config.available_features.add('ohos_family')
+  # FIXME: some tests for hos also need this now,
+  # probably this shouldn't be added for ohos
+  config.available_features.add('android')
+  compile_wrapper = os.path.join(config.compiler_rt_src_root, "test", "sanitizer_common", "ohos_family_commands", "ohos_compile.py") + " "
+  config.compile_wrapper = compile_wrapper
+  config.substitutions.append( ('%run', "") )
+  config.substitutions.append( ('%env ', "env ") )
+  # TODO: Implement `%device_rm` to perform removal of files on a device.  For
+  # now just make it a no-op.
+  lit_config.warning('%device_rm is not implemented')
+  config.substitutions.append( ('%device_rm', 'echo ') )
 elif config.host_os == 'Darwin' and config.apple_platform != "osx":
   # Darwin tests can be targetting macOS, a device or a simulator. All devices
   # are declared as "ios", even for iOS derivatives (tvOS, watchOS). Similarly,
@@ -321,20 +337,20 @@ elif config.android:
   config.available_features.add('android')
   compile_wrapper = os.path.join(config.compiler_rt_src_root, "test", "sanitizer_common", "android_commands", "android_compile.py") + " "
   config.compile_wrapper = compile_wrapper
-  config.substitutions.append( ('%run', "") )
-  config.substitutions.append( ('%env ', "env ") )
+  config.substitutions.append(('%run', ""))
+  config.substitutions.append(('%env ', "env "))
 else:
-  config.substitutions.append( ('%run', "") )
-  config.substitutions.append( ('%env ', "env ") )
+  config.substitutions.append(('%run', ""))
+  config.substitutions.append(('%env ', "env "))
   # When running locally %device_rm is a no-op.
-  config.substitutions.append( ('%device_rm', 'echo ') )
+  config.substitutions.append(('%device_rm', 'echo '))
   config.compile_wrapper = ""
 
 # Define CHECK-%os to check for OS-dependent output.
-config.substitutions.append( ('CHECK-%os', ("CHECK-" + config.host_os)))
+config.substitutions.append(('CHECK-%os', ("CHECK-" + config.host_os)))
 
 # Define %arch to check for architecture-dependent output.
-config.substitutions.append( ('%arch', (config.host_arch)))
+config.substitutions.append(('%arch', (config.host_arch)))
 
 if config.host_os == 'Windows':
   # FIXME: This isn't quite right. Specifically, it will succeed if the program
@@ -345,7 +361,7 @@ if config.host_os == 'Windows':
 else:
   config.expect_crash = "not --crash "
 
-config.substitutions.append( ("%expect_crash ", config.expect_crash) )
+config.substitutions.append(("%expect_crash ", config.expect_crash))
 
 target_arch = getattr(config, 'target_arch', None)
 if target_arch:
@@ -475,26 +491,27 @@ if config.android:
   # These are needed for tests to upload/download temp files, such as
   # suppression-files, to device.
   config.substitutions.append( ('%device_rundir/', "/data/local/tmp/Output/") )
-  config.substitutions.append( ('%push_to_device', "%s -s '%s' push " % (adb, env['ANDROID_SERIAL']) ) )
-  config.substitutions.append( ('%adb_shell ', "%s -s '%s' shell " % (adb, env['ANDROID_SERIAL']) ) )
-  config.substitutions.append( ('%device_rm', "%s -s '%s' shell 'rm ' " % (adb, env['ANDROID_SERIAL']) ) )
+  if not config.host_os == 'OHOS':
+    config.substitutions.append( ('%push_to_device', "%s -s '%s' push " % (adb, env['ANDROID_SERIAL']) ) )
+    config.substitutions.append( ('%adb_shell ', "%s -s '%s' shell " % (adb, env['ANDROID_SERIAL']) ) )
+    config.substitutions.append( ('%device_rm', "%s -s '%s' shell 'rm ' " % (adb, env['ANDROID_SERIAL']) ) )
 
-  try:
-    android_api_level_str = subprocess.check_output([adb, "shell", "getprop", "ro.build.version.sdk"], env=env).rstrip()
-    android_api_codename = subprocess.check_output([adb, "shell", "getprop", "ro.build.version.codename"], env=env).rstrip().decode("utf-8")
-  except (subprocess.CalledProcessError, OSError):
-    lit_config.fatal("Failed to read ro.build.version.sdk (using '%s' as adb)" % adb)
-  try:
-    android_api_level = int(android_api_level_str)
-  except ValueError:
-    lit_config.fatal("Failed to read ro.build.version.sdk (using '%s' as adb): got '%s'" % (adb, android_api_level_str))
-  android_api_level = min(android_api_level, int(config.android_api_level))
-  for required in [26, 28, 29, 30]:
-    if android_api_level >= required:
-      config.available_features.add('android-%s' % required)
-  # FIXME: Replace with appropriate version when availible.
-  if android_api_level > 30 or (android_api_level == 30 and android_api_codename == 'S'):
-    config.available_features.add('android-thread-properties-api')
+    try:
+      android_api_level_str = subprocess.check_output([adb, "shell", "getprop", "ro.build.version.sdk"], env=env).rstrip()
+      android_api_codename = subprocess.check_output([adb, "shell", "getprop", "ro.build.version.codename"], env=env).rstrip().decode("utf-8")
+    except (subprocess.CalledProcessError, OSError):
+      lit_config.fatal("Failed to read ro.build.version.sdk (using '%s' as adb)" % adb)
+    try:
+      android_api_level = int(android_api_level_str)
+    except ValueError:
+      lit_config.fatal("Failed to read ro.build.version.sdk (using '%s' as adb): got '%s'" % (adb, android_api_level_str))
+    android_api_level = min(android_api_level, int(config.android_api_level))
+    for required in [26, 28, 29, 30]:
+      if android_api_level >= required:
+        config.available_features.add('android-%s' % required)
+    # FIXME: Replace with appropriate version when availible.
+    if android_api_level > 30 or (android_api_level == 30 and android_api_codename == 'S'):
+      config.available_features.add('android-thread-properties-api')
 
   # Prepare the device.
   android_tmpdir = '/data/local/tmp/Output'
@@ -636,7 +653,7 @@ for postfix in ["2", "1", ""]:
   elif config.host_os in ('FreeBSD', 'NetBSD', 'OpenBSD'):
     config.substitutions.append( ("%ld_flags_rpath_exe" + postfix, "-Wl,-z,origin -Wl,-rpath,\$ORIGIN -L%T -l%xdynamiclib_namespec" + postfix) )
     config.substitutions.append( ("%ld_flags_rpath_so" + postfix, '') )
-  elif config.host_os == 'Linux':
+  elif config.host_os in ['Linux', 'OHOS']:
     config.substitutions.append( ("%ld_flags_rpath_exe" + postfix, "-Wl,-rpath,\$ORIGIN -L%T -l%xdynamiclib_namespec" + postfix) )
     config.substitutions.append( ("%ld_flags_rpath_so" + postfix, '') )
   elif config.host_os == 'SunOS':
@@ -675,7 +692,7 @@ if config.host_os == 'Darwin':
       lit_config.warning('log command found but cannot queried')
   else:
     lit_config.warning('log command not found. Some tests will be skipped.')
-elif config.android:
+elif config.android or is_ohos_family_mobile():
   config.default_sanitizer_opts += ['abort_on_error=0']
 
 # Allow tests to use REQUIRES=stable-runtime.  For use when you cannot use XFAIL
