@@ -98,7 +98,7 @@ static void ioctl_table_fill() {
   _(SIOCSIFNETMASK, READ, struct_ifreq_sz);
 #endif
 
-#if (SANITIZER_LINUX && !SANITIZER_ANDROID)
+#  if (SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS)
   _(SIOCGETSGCNT, WRITE, struct_sioc_sg_req_sz);
   _(SIOCGETVIFCNT, WRITE, struct_sioc_vif_req_sz);
 #endif

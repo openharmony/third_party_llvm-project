@@ -84,10 +84,10 @@ struct __sanitizer::linux_dirent {
 #    endif
 #  endif
 
-#  if !SANITIZER_ANDROID
-#    include <elf.h>
-#    include <unistd.h>
-#  endif
+#if !SANITIZER_ANDROID && !SANITIZER_OHOS
+#include <elf.h>
+#include <unistd.h>
+#endif
 
 namespace __sanitizer {
 
