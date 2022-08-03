@@ -27,7 +27,7 @@ struct StackDepotNode {
   u32 link;
   StackStore::Id store_id;
 
-  static const u32 kTabSizeLog = SANITIZER_ANDROID ? 16 : 20;
+  static const u32 kTabSizeLog = (SANITIZER_ANDROID || SANITIZER_OHOS) ? 16 : 20;
 
   typedef StackTrace args_type;
   bool eq(hash_type hash, const args_type &args) const {

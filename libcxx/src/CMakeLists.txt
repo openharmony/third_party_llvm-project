@@ -195,6 +195,9 @@ endif()
 split_list(LIBCXX_COMPILE_FLAGS)
 split_list(LIBCXX_LINK_FLAGS)
 
+if (NOT DEFINED LIBCXX_OUTPUT_NAME)
+  set (LIBCXX_OUTPUT_NAME "c++")
+endif()
 # Build the shared library.
 if (LIBCXX_ENABLE_SHARED)
   add_library(cxx_shared SHARED ${exclude_from_all} ${LIBCXX_SOURCES} ${LIBCXX_HEADERS})
@@ -284,6 +287,9 @@ endif()
 
 set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
 
+if (NOT DEFINED LIBCXX_OUTPUT_STATIC_NAME)
+  set (LIBCXX_OUTPUT_STATIC_NAME "c++")
+endif()
 # Build the static library.
 if (LIBCXX_ENABLE_STATIC)
   add_library(cxx_static STATIC ${exclude_from_all} ${LIBCXX_SOURCES} ${LIBCXX_HEADERS})
