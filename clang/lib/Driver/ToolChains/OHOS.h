@@ -42,9 +42,6 @@ public:
   UnwindLibType GetUnwindLibType(const llvm::opt::ArgList &Args) const override;
   UnwindLibType GetDefaultUnwindLibType() const override { return UNW_CompilerRT; }
 
-  std::string ComputeEffectiveClangTriple(const llvm::opt::ArgList &Args,
-                                          types::ID InputType = types::TY_INVALID) const override;
-
   RuntimeLibType
   GetRuntimeLibType(const llvm::opt::ArgList &Args) const override;
   CXXStdlibType

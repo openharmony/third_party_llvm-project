@@ -276,6 +276,11 @@ void arm::setArchNameInTriple(const Driver &D, const ArgList &Args,
 
 void arm::setFloatABIInTriple(const Driver &D, const ArgList &Args,
                               llvm::Triple &Triple) {
+  if (Triple.isOSLiteOS()) {
+    Triple.setEnvironment(llvm::Triple::OpenHOS);
+    return;
+  }
+  
   bool isHardFloat =
       (arm::getARMFloatABI(D, Triple, Args) == arm::FloatABI::Hard);
 
