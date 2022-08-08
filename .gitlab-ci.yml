@@ -4,5 +4,5 @@ variables:
 
 include:
   - project: 'rus-os-team/compilers/testing/automation/llvm-ci'
-    ref: 'master-opensource'
+    ref: 'master-opensource-llvm-15'
     file: '/pipelines/llvm/ohos/main.yml'
