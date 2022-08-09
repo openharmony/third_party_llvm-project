@@ -128,6 +128,9 @@ private:
 
   void calculateCallFrameInfo(MachineFunction &MF);
   void calculateSaveRestoreBlocks(MachineFunction &MF);
+#ifdef ARK_GC_SUPPORT
+  void RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, std::vector<CalleeSavedInfo> &CSI);
+#endif
   void spillCalleeSavedRegs(MachineFunction &MF);
 
   void calculateFrameObjectOffsets(MachineFunction &MF);
@@ -594,6 +597,26 @@ static void insertCSRRestores(MachineBasicBlock &RestoreBlock,
   }
 }
 
+#ifdef ARK_GC_SUPPORT
+void PEI::RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, std::vector<CalleeSavedInfo> &CSI)
+{
+    MachineModuleInfo &MMI = MF.getMMI();
+    MachineFrameInfo &MFI = MF.getFrameInfo();
+    const MCRegisterInfo *MRI = MMI.getContext().getRegisterInfo();
+    Function &func = const_cast<Function &>(MF.getFunction());
+    for (std::vector<CalleeSavedInfo>::const_iterator
+         I = CSI.begin(), E = CSI.end(); I != E; ++I) {
+        int64_t Offset = MFI.getObjectOffset(I->getFrameIdx());
+        unsigned Reg = I->getReg();
+        unsigned DwarfRegNum = MRI->getDwarfRegNum(Reg, true);
+        std::string key = std::string("DwarfReg") + std::to_string(DwarfRegNum);
+        std::string value = std::to_string(Offset);
+        Attribute attr = Attribute::get(func.getContext(), key.c_str(), value.c_str());
+        func.addAttribute(AttributeList::FunctionIndex, attr);
+   }
+}
+#endif
+
 void PEI::spillCalleeSavedRegs(MachineFunction &MF) {
   // We can't list this requirement in getRequiredProperties because some
   // targets (WebAssembly) use virtual registers past this point, and the pass
@@ -634,6 +657,9 @@ void PEI::spillCalleeSavedRegs(MachineFunction &MF) {
       for (MachineBasicBlock *RestoreBlock : RestoreBlocks)
         insertCSRRestores(*RestoreBlock, CSI);
     }
+#ifdef ARK_GC_SUPPORT
+    RecordCalleeSaveRegisterAndOffset(MF, CSI);
+#endif
   }
 }
 

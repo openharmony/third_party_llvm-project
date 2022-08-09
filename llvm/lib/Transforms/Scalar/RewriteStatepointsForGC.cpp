@@ -521,6 +521,16 @@ static BaseDefiningValueResult findBaseDefiningValue(Value *I) {
     return BaseDefiningValueResult(
         ConstantPointerNull::get(cast<PointerType>(I->getType())), true);
   }
+#ifndef ARK_GC_SUPPORT
+  // inttoptrs in an integral address space are currently ill-defined.  We
+  // treat them as defining base pointers here for consistency with the
+  // constant rule above and because we don't really have a better semantic
+  // to give them.  Note that the optimizer is always free to insert undefined
+  // behavior on dynamically dead paths as well.
+  // issue:https://gitee.com/openharmony/arkcompiler_ets_runtime/issues/I5L2AP?from=project-issue
+  if (isa<IntToPtrInst>(I))
+    return BaseDefiningValueResult(I, true);
+#endif
 
   if (CastInst *CI = dyn_cast<CastInst>(I)) {
     Value *Def = CI->stripPointerCasts();
