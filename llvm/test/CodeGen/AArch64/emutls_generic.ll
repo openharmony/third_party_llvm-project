@@ -8,6 +8,12 @@
 ; RUN:     | FileCheck -check-prefix=ARM_64 %s
 ; RUN: llc < %s -emulated-tls -mtriple=aarch64-apple-darwin -O3 \
 ; RUN:     | FileCheck -check-prefix=DARWIN %s
+; RUN: llc < %s -emulated-tls -mtriple=aarch64-linux-ohos -relocation-model=pic \
+; RUN:     | FileCheck -check-prefix=ARM_64 %s
+; RUN: llc < %s -emulated-tls -mtriple=aarch64-linux-ohos -relocation-model=pic -O3 \
+; RUN:     | FileCheck -check-prefix=ARM_64 %s
+; RUN: llc < %s -emulated-tls -mtriple=aarch64-linux-ohos -O3 \
+; RUN:     | FileCheck -check-prefix=ARM_64 %s
 
 ; RUN: llc < %s -mtriple=aarch64-linux-android -relocation-model=pic \
 ; RUN:     | FileCheck -check-prefix=ARM_64 %s
@@ -18,6 +24,12 @@
 ; aarch64-windows-gnu needs explicit -emulated-tls
 ; RUN: llc < %s -mtriple=aarch64-apple-darwin -O3 \
 ; RUN:     | FileCheck -check-prefix=NoEMU %s
+; RUN: llc < %s -mtriple=aarch64-linux-ohos -relocation-model=pic \
+; RUN:     | FileCheck -check-prefix=ARM_64 %s
+; RUN: llc < %s -mtriple=aarch64-linux-ohos -relocation-model=pic -O3 \
+; RUN:     | FileCheck -check-prefix=ARM_64 %s
+; RUN: llc < %s -mtriple=aarch64-linux-ohos -O3 \
+; RUN:     | FileCheck -check-prefix=ARM_64 %s
 
 ; NoEMU-NOT: __emutls
 

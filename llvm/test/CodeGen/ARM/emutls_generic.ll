@@ -10,6 +10,8 @@
 ; RUN:     | FileCheck -check-prefix=DARWIN %s
 ; RUN: llc < %s -emulated-tls -mtriple=thumbv7-windows-gnu -O3 \
 ; RUN:     | FileCheck -check-prefix=WIN %s
+; RUN: llc < %s -emulated-tls -mtriple=arm-linux-ohos -relocation-model=pic \
+; RUN:     | FileCheck -check-prefix=ARM_32 %s
 
 ; RUN: llc < %s -mtriple=arm-linux-android -relocation-model=pic \
 ; RUN:     | FileCheck -check-prefix=ARM_32 %s
@@ -21,6 +23,8 @@
 ; RUN:     | FileCheck -check-prefix=ARM_32 %s
 ; arm-apple-darwin must use -emulated-tls
 ; windows must use -emulated-tls
+; RUN: llc < %s -mtriple=arm-linux-ohos -relocation-model=pic \
+; RUN:     | FileCheck -check-prefix=ARM_32 %s
 
 ; Make sure that TLS symbols are emitted in expected order.
 
