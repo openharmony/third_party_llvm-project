@@ -59,6 +59,7 @@ class BuildConfig():
         self.OPENHOS_SFX = '-linux-ohos'
         self.LITEOS_SFX = '-liteos-ohos'
         self.LLDB_PY_VERSION = '3.10'
+        self.CLANG_VERSION = '10.0.1'
         logging.basicConfig(level=logging.INFO)
 
     @staticmethod
@@ -464,7 +465,7 @@ class LlvmCore(BuildUtils):
 
         llvm_clang_install = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR,
                                                           'prebuilts/clang/ohos', self.use_platform(),
-                                                          'clang-10.0.1'))
+                                                          'clang-%s' % self.build_config.CLANG_VERSION))
         llvm_path = self.merge_out_path('llvm_make')
         llvm_cc = os.path.join(llvm_clang_install, 'bin', 'clang')
         llvm_cxx = os.path.join(llvm_clang_install, 'bin', 'clang++')
@@ -528,7 +529,7 @@ class LlvmCore(BuildUtils):
 
         windows_defines['LLDB_RELOCATABLE_PYTHON'] = 'OFF'
         win_sysroot = self.merge_out_path(
-            'clang_mingw', 'clang-10.0.1', 'x86_64-w64-mingw32')
+            'clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION, 'x86_64-w64-mingw32')
         windows_defines['LLDB_ENABLE_PYTHON'] = 'ON'
         windows_defines['LLDB_PYTHON_HOME'] = 'python'
         windows_defines['LLDB_PYTHON_RELATIVE_PATH'] = 'bin/python/lib/python%s' % (self.build_config.LLDB_PY_VERSION)
@@ -631,11 +632,11 @@ class LlvmCore(BuildUtils):
         self.logger().info('Building llvm for windows.')
 
         build_dir = self.merge_out_path("windows-x86_64")
-        windowstool_path = self.merge_out_path('clang_mingw', 'clang-10.0.1')
+        windowstool_path = self.merge_out_path('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION)
         windows64_install = self.merge_out_path('windows-x86_64-install')
         windows_sysroot = os.path.join(windowstool_path, 'x86_64-w64-mingw32')
-        compiler_rt_path = self.merge_out_path('clang_mingw', 'clang-10.0.1', 
-            'lib', 'clang', '10.0.1', 'lib', 'windows')
+        compiler_rt_path = self.merge_out_path('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION,
+            'lib', 'clang', self.build_config.CLANG_VERSION, 'lib', 'windows')
 
         self.check_create_dir(build_dir)
 
@@ -1335,11 +1336,11 @@ class LlvmLibs(BuildUtils):
     def build_libs_for_windows(self, libname, enable_assertions):
 
         self.logger().info('Building libs for windows.')
-        toolchain_dir = self.merge_out_path('clang_mingw', 'clang-10.0.1')
+        toolchain_dir = self.merge_out_path('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION)
         install_dir = self.merge_out_path('windows-x86_64-install')
-        compiler_rt_path = self.merge_out_path('clang_mingw', 'clang-10.0.1', 'lib', 'clang', 
-                                                '10.0.1', 'lib', 'windows')
-        windows_sysroot = self.merge_out_path('clang_mingw', 'clang-10.0.1', 'x86_64-w64-mingw32')
+        compiler_rt_path = self.merge_out_path('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION, 'lib', 'clang', 
+                                                self.build_config.CLANG_VERSION, 'lib', 'windows')
+        windows_sysroot = self.merge_out_path('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION, 'x86_64-w64-mingw32')
 
         ldflags = ['-fuse-ld=lld', '--rtlib=compiler-rt', '-L%s' % compiler_rt_path, '-lunwind']
         cflags = ['-stdlib=libc++', '--target=x86_64-pc-windows-gnu', '-D_LARGEFILE_SOURCE',
@@ -1405,7 +1406,7 @@ class LldbMi(BuildUtils):
         self.logger().info('Building lldb-mi for linux.')
 
         llvm_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR,
-                                                 'prebuilts/clang/ohos', self.use_platform(), 'clang-10.0.1'))
+                                                 'prebuilts/clang/ohos', self.use_platform(), 'clang-%s' % self.build_config.CLANG_VERSION))
         lldb_mi_cmake_path = os.path.join(self.build_config.LLVM_PROJECT_DIR, '../lldb-mi')
         lldb_mi_path = self.merge_out_path('lldb_mi_build')
 
@@ -1495,17 +1496,17 @@ class LldbMi(BuildUtils):
     def build_lldb_mi_for_windows(self):
         self.logger().info('Building lldb-mi for windows.')
 
-        build_dir = self.merge_out_path('clang_mingw', 'clang-10.0.1')
+        build_dir = self.merge_out_path('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION)
         lldb_mi_windows64_path = self.merge_out_path('windows-x86_64-lldb-mi')
         lldb_mi_cmake_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, '../lldb-mi'))
         windows64_install = self.merge_out_path('windows-x86_64-install')
         cc = os.path.join(build_dir, 'bin', 'clang')
         cxx = os.path.join(build_dir, 'bin', 'clang++')
 
-        windows_sysroot = self.merge_out_path('clang_mingw', 'clang-10.0.1', 'x86_64-w64-mingw32')
+        windows_sysroot = self.merge_out_path('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION, 'x86_64-w64-mingw32')
         self.check_create_dir(lldb_mi_windows64_path)
-        compiler_rt_path = self.merge_out_path('clang_mingw', 'clang-10.0.1',
-             'lib', 'clang', '10.0.1', 'lib', 'windows')
+        compiler_rt_path = self.merge_out_path('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION,
+             'lib', 'clang', self.build_config.CLANG_VERSION, 'lib', 'windows')
 
         ldflags = ['-fuse-ld=lld',
                    '--rtlib=compiler-rt',
@@ -1661,7 +1662,7 @@ class LlvmPackage(BuildUtils):
 
 
     def strip_lldb_server(self, host, install_dir):
-        clang_version_bin_dir = os.path.join(install_dir, 'lib', 'clang', '10.0.1', 'bin')
+        clang_version_bin_dir = os.path.join(install_dir, 'lib', 'clang', self.build_config.CLANG_VERSION, 'bin')
 
         if not host.startswith('linux') or not os.path.exists(clang_version_bin_dir):
             return
@@ -1708,7 +1709,7 @@ class LlvmPackage(BuildUtils):
         if host.startswith('windows'):
             windows64_install = self.merge_out_path('windows-x86_64-install')
             clang_mingw_dir = self.merge_out_path('clang_mingw')
-            clang_mingw_sysroot_dir = os.path.join(clang_mingw_dir, 'clang-10.0.1', 'x86_64-w64-mingw32')
+            clang_mingw_sysroot_dir = os.path.join(clang_mingw_dir, 'clang-%s' % self.build_config.CLANG_VERSION, 'x86_64-w64-mingw32')
             package_name = 'clang-mingw-%s' % self.build_config.build_name
             clang_mingw_sysroot_lib_dir = os.path.join(clang_mingw_sysroot_dir, 'lib')
             clang_windows_lib_dir = os.path.join(windows64_install, 'lib')
@@ -1721,19 +1722,19 @@ class LlvmPackage(BuildUtils):
                                  os.path.join(clang_mingw_sysroot_dir, 'include', 'c++'))
 
             lib_files = []
-            if os.path.isdir(os.path.join(clang_mingw_dir, 'clang-10.0.1', 'lib')):
-                lib_files = os.listdir(os.path.join(clang_mingw_dir, 'clang-10.0.1', 'lib'))
+            if os.path.isdir(os.path.join(clang_mingw_dir, 'clang-%s' % self.build_config.CLANG_VERSION, 'lib')):
+                lib_files = os.listdir(os.path.join(clang_mingw_dir, 'clang-%s' % self.build_config.CLANG_VERSION, 'lib'))
             for lib_file in lib_files:
                 if lib_file.endswith('.a'):
-                    static_library = os.path.join(os.path.join(clang_mingw_dir, 'clang-10.0.1', 'lib'), lib_file)
+                    static_library = os.path.join(os.path.join(clang_mingw_dir, 'clang-%s' % self.build_config.CLANG_VERSION, 'lib'), lib_file)
                     os.remove(static_library)
 
-            self.check_rm_tree(os.path.join(clang_mingw_dir, 'clang-10.0.1', 'include'))
+            self.check_rm_tree(os.path.join(clang_mingw_dir, 'clang-%s' % self.build_config.CLANG_VERSION, 'include'))
 
             package_path = '%s%s' % (self.merge_out_path(package_name), '.tar.bz2')
             self.logger().info('Packaging %s', package_path)
             toolchain_name = 'clang-%s' % self.build_config.build_name
-            self.check_copy_tree(os.path.join(clang_mingw_dir, 'clang-10.0.1'),
+            self.check_copy_tree(os.path.join(clang_mingw_dir, 'clang-%s' % self.build_config.CLANG_VERSION),
                                  os.path.join(clang_mingw_dir, toolchain_name))
             args = ['tar', '-cjC', clang_mingw_dir, '-f', package_path, toolchain_name]
             self.check_call(args)

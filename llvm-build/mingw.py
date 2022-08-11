@@ -25,9 +25,10 @@ import sys
 class BuildConfig():
 
     def __init__(self):
+        self.CLANG_VERSION = '10.0.1'
         self.THIS_DIR = os.path.realpath(os.path.dirname(__file__))
         self.OUT_DIR = os.environ.get('OUT_DIR', self.repo_root('out'))
-        self.MINGW_DIR = self.out_root('clang_mingw', 'clang-10.0.1', 'x86_64-w64-mingw32')
+        self.MINGW_DIR = self.out_root('clang_mingw', 'clang-%s' % self.CLANG_VERSION, 'x86_64-w64-mingw32')
 
     def repo_root(self, *args):
         return os.path.realpath(os.path.join(self.THIS_DIR, '../../', *args))
@@ -53,14 +54,14 @@ class LlvmMingw():
         self.CMAKE_BIN_PATH = os.path.join(self.cmake_prebuilt_bin_dir(), 'cmake')
         self.NINJA_BIN_PATH = os.path.join(self.cmake_prebuilt_bin_dir(), 'ninja')
 
-        self.CLANG_PATH = self.build_config.out_root('clang_mingw', 'clang-10.0.1')
+        self.CLANG_PATH = self.build_config.out_root('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION)
         self.LLVM_CONFIG = os.path.join(self.CLANG_PATH, 'bin', 'llvm-config')
-        self.SYSROOT = self.build_config.out_root('clang_mingw', 'clang-10.0.1', 'x86_64-w64-mingw32')
+        self.SYSROOT = self.build_config.out_root('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION, 'x86_64-w64-mingw32')
         self.LLVM_TRIPLE = 'x86_64-windows-gnu'
         # out path
         self.CRT_PATH = self.build_config.out_root('clang_mingw', 'lib', 'clangrt-%s' % self.LLVM_TRIPLE)
         # install path
-        self.CRT_INSTALL = self.build_config.out_root('clang_mingw', 'clang-10.0.1', 'lib', 'clang', '10.0.1')
+        self.CRT_INSTALL = self.build_config.out_root('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION, 'lib', 'clang', self.build_config.CLANG_VERSION)
         # prefix & env
         self.prefix = build_config.mingw64_dir()
         common_flags = "-target x86_64-w64-mingw32 -rtlib=compiler-rt \
@@ -116,7 +117,7 @@ class LlvmMingw():
         self.crt_defines['CMAKE_C_COMPILER'] = cc
         self.crt_defines['CMAKE_CXX_COMPILER'] = cxx
         self.crt_defines['LLVM_CONFIG_PATH'] = self.LLVM_CONFIG
-        clang_libcxx_lib = self.build_config.out_root('clang_mingw', 'clang-10.0.1', 'lib')
+        clang_libcxx_lib = self.build_config.out_root('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION, 'lib')
         ldflags = [
             '-L%s' % clang_libcxx_lib,
             '-fuse-ld=lld',
@@ -197,17 +198,17 @@ class LlvmMingw():
         if os.path.isdir(clang_mingw_dir):
             shutil.rmtree(clang_mingw_dir)
         os.makedirs(clang_mingw_dir)
-        shutil.copytree(self.build_config.repo_root('prebuilts/clang/ohos/linux-x86_64/clang-10.0.1'),
-                        '%s/clang-10.0.1' % clang_mingw_dir)
+        shutil.copytree(self.build_config.repo_root('prebuilts/clang/ohos/linux-x86_64/clang-%s' % self.build_config.CLANG_VERSION),
+                        '%s/clang-%s' % (clang_mingw_dir, self.build_config.CLANG_VERSION))
         # Replace clang binaries to avoid dependency on libtinfo
         # TODO: Use `prebuilts/clang/ohos/linux-x86_64/llvm` instead of
         #           `prebuilts/clang/ohos/linux-x86_64/clang-10.0.1`
         shutil.copy(self.build_config.repo_root('prebuilts/clang/ohos/linux-x86_64/llvm/bin/clang'),
-                        '%s/clang-10.0.1/bin/clang' % clang_mingw_dir)
+                        '%s/clang-%s/bin/clang' % (clang_mingw_dir, self.build_config.CLANG_VERSION))
         shutil.copy(self.build_config.repo_root('prebuilts/clang/ohos/linux-x86_64/llvm/bin/clang++'),
-                        '%s/clang-10.0.1/bin/clang++' % clang_mingw_dir)
+                        '%s/clang-%s/bin/clang++' % (clang_mingw_dir, self.build_config.CLANG_VERSION))
         shutil.copy(self.build_config.repo_root('prebuilts/clang/ohos/linux-x86_64/llvm/bin/clang-10'),
-                        '%s/clang-10.0.1/bin/clang-10' % clang_mingw_dir)
+                        '%s/clang-%s/bin/clang-10' % (clang_mingw_dir, self.build_config.CLANG_VERSION))
 
     def build_mingw64_headers(self):
         headers_dir = self.build_config.repo_root('third_party', 'mingw-w64', 'mingw-w64-headers', 'build')

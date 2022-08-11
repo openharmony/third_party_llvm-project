@@ -59,6 +59,7 @@ prebuilts/clang/ohos/${host_platform}-${host_cpu},https://mirrors.huaweicloud.co
 prebuilts/clang/ohos/${host_platform}-${host_cpu},https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/clang+llvm-10.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
 """
 
+
 copy_config_darwin_x86_64="""
 prebuilts/cmake,https://mirrors.huaweicloud.com/harmonyos/compiler/cmake/3.16.5/${host_platform}/cmake-${host_platform}-x86-3.16.5.tar.gz
 prebuilts/clang/ohos/${host_platform}-${host_cpu},https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
