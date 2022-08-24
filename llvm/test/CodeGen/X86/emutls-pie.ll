@@ -6,6 +6,10 @@
 ; RUN:   | FileCheck -check-prefix=X86 %s
 ; RUN: llc < %s -emulated-tls -mcpu=generic -mtriple=x86_64-linux-android -relocation-model=pic \
 ; RUN:   | FileCheck -check-prefix=X64 %s
+; RUN: llc < %s -emulated-tls -mcpu=generic -mtriple=i386-linux-ohos -relocation-model=pic \
+; RUN:   | FileCheck -check-prefix=X86 %s
+; RUN: llc < %s -emulated-tls -mcpu=generic -mtriple=x86_64-linux-ohos -relocation-model=pic \
+; RUN:   | FileCheck -check-prefix=X64 %s
 
 ; RUN: llc < %s -mcpu=generic -mtriple=i386-linux-gnu -relocation-model=pic \
 ; RUN:   | FileCheck -check-prefix=NoEMU %s
@@ -14,6 +18,10 @@
 ; RUN: llc < %s -mcpu=generic -mtriple=i386-linux-android -relocation-model=pic \
 ; RUN:   | FileCheck -check-prefix=X86 %s
 ; RUN: llc < %s -mcpu=generic -mtriple=x86_64-linux-android -relocation-model=pic \
+; RUN:   | FileCheck -check-prefix=X64 %s
+; RUN: llc < %s -mcpu=generic -mtriple=i386-linux-ohos -relocation-model=pic \
+; RUN:   | FileCheck -check-prefix=X86 %s
+; RUN: llc < %s -mcpu=generic -mtriple=x86_64-linux-ohos -relocation-model=pic \
 ; RUN:   | FileCheck -check-prefix=X64 %s
 
 ; NoEMU-NOT: __emutls
