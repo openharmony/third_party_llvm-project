@@ -1911,7 +1911,7 @@ public:
                                  "vector.memcheck");
 
       auto DiffChecks = RtPtrChecking.getDiffChecks();
-      if (DiffChecks) {
+      if (L->getParentLoop() == nullptr && DiffChecks) {
         Value *RuntimeVF = nullptr;
         MemRuntimeCheckCond = addDiffRuntimeChecks(
             MemCheckBlock->getTerminator(), L, *DiffChecks, MemCheckExp,
