@@ -16,6 +16,9 @@
 // GCC doesn't support -fcxx-modules
 // UNSUPPORTED: gcc
 
+// FIXME: hangs on CI
+// UNSUPPORTED: ohos-ci
+
 // The Windows headers don't appear to be compatible with modules
 // UNSUPPORTED: windows
 

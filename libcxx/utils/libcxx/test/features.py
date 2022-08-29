@@ -299,3 +299,7 @@ DEFAULT_FEATURES += [
     actions=[AddSubstitution('%{gdb}', lambda cfg: shutil.which('gdb'))]
   )
 ]
+
+DEFAULT_FEATURES += [
+  Feature(name='ohos-ci', when=lambda cfg: os.path.exists('/.dockerenv'))
+]
