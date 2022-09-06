@@ -5,7 +5,7 @@ from ohos_common import *
 
 
 here = os.path.abspath(os.path.dirname(sys.argv[0]))
-hos_run = os.path.join(here, 'hos_run.py')
+hos_run = os.path.join(here, 'ohos_run.py')
 
 output = None
 output_type = 'executable'
