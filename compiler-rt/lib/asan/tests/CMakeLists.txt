@@ -168,8 +168,13 @@ function(add_asan_tests arch test_runtime)
   # selection. Each configuration expects the test binaries in a corresponding
   # subdirectory. Generate subdirectory names based on the architecture name.
   string(TOUPPER ${arch} ARCH_UPPER_CASE)
-  set(CONFIG_NAME ${ARCH_UPPER_CASE}${OS_NAME}Config)
-  set(CONFIG_NAME_DYNAMIC ${ARCH_UPPER_CASE}${OS_NAME}DynamicConfig)
+  if (OHOS)
+    set(CONFIG_NAME default)
+    set(CONFIG_NAME_DYNAMIC dynamic)
+  else()
+    set(CONFIG_NAME ${ARCH_UPPER_CASE}${OS_NAME}Config)
+    set(CONFIG_NAME_DYNAMIC ${ARCH_UPPER_CASE}${OS_NAME}DynamicConfig)
+  endif()
 
   # Closure to keep the values.
   function(generate_asan_tests test_objects test_suite testname)
