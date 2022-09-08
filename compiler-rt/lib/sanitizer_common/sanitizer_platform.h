@@ -442,7 +442,9 @@
 #  endif
 #endif
 
-#if defined(__thumb__) && defined(__linux__)
+// HUAWEI: musl seems to not respect static ctor order and we start
+// background thread before parsing flags. FIXME
+#if (defined(__thumb__) && defined(__linux__)) || SANITIZER_OHOS
 // Workaround for
 // https://lab.llvm.org/buildbot/#/builders/clang-thumbv7-full-2stage
 // or
