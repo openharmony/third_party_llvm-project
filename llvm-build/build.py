@@ -950,14 +950,19 @@ class LlvmLibs(BuildUtils):
         crt_path = self.merge_out_path('lib', 'clangrt-%s%s' % (llvm_triple, suffix))
         crt_install = os.path.join(llvm_install, 'lib', 'clang', self.build_config.VERSION)
 
+        crt_extra_flags = []
+        if not self.build_config.debug:
+            # Remove absolute paths from compiler-rt debug info emitted with -gline-tables-only
+            crt_extra_flags = ['-ffile-prefix-map=%s=.' % self.build_config.REPOROOT_DIR]
+
         crt_defines = defines.copy()
         crt_defines.update(self.base_cmake_defines())
         crt_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(ldflags)
         crt_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
         crt_defines['CMAKE_MODULE_LINKER_FLAGS'] = ' '.join(ldflags)
-        crt_defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
-        crt_defines['CMAKE_ASM_FLAGS'] = ' '.join(cflags)
-        crt_defines['CMAKE_CXX_FLAGS'] = ' '.join(cflags)
+        crt_defines['CMAKE_C_FLAGS'] = ' '.join(cflags + crt_extra_flags)
+        crt_defines['CMAKE_ASM_FLAGS'] = ' '.join(cflags + crt_extra_flags)
+        crt_defines['CMAKE_CXX_FLAGS'] = ' '.join(cflags + crt_extra_flags)
         crt_defines['COMPILER_RT_TEST_COMPILER_CFLAGS'] = ' '.join(cflags)
         crt_defines['OHOS'] = '1'
         crt_defines['COMPILER_RT_TEST_TARGET_TRIPLE'] = llvm_triple
