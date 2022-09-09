@@ -471,8 +471,6 @@ class LlvmCore(BuildUtils):
         llvm_cxx = os.path.join(llvm_clang_install, 'bin', 'clang++')
         llvm_profdata = os.path.join(llvm_clang_install, 'bin', 'llvm-profdata')
 
-        cflags = ''
-
         if self.host_is_darwin():
             ldflags = ''
         else:
@@ -484,13 +482,11 @@ class LlvmCore(BuildUtils):
 
         llvm_defines = {}
 
-
         self.llvm_compile_darwin_defines(llvm_defines)
         self.llvm_compile_linux_defines(llvm_defines, debug_build, no_lto, build_instrumented)
         
         if self.host_is_linux():
             ldflags += ' -lunwind --rtlib=compiler-rt -stdlib=libc++'
-
 
         if xunit_xml_output:
             llvm_defines['LLVM_LIT_ARGS'] = "--xunit-xml-output={} -sv".format(xunit_xml_output)
@@ -507,6 +503,9 @@ class LlvmCore(BuildUtils):
 
             resource_dir = "lib/clang/10.0.1/lib/linux/libclang_rt.profile-x86_64.a"
             ldflags += ' %s' % os.path.join(llvm_clang_install, resource_dir)
+        
+        cflags = '-fstack-protector-strong -fPIE'
+        ldflags += ' -Wl,-z,relro,-z,now -pie -s'
 
         self.llvm_compile_llvm_defines(llvm_defines, llvm_cc, llvm_cxx, cflags, ldflags)
 
@@ -768,8 +767,6 @@ class LlvmLibs(BuildUtils):
                                 precompilation=True)          
             self.sysroot_composer.build_musl(llvm_install, target, '-l')
             
-
-
     def build_libs_defines(self,
                            llvm_triple,
                            defines,
@@ -794,6 +791,8 @@ class LlvmLibs(BuildUtils):
         defines['CMAKE_FIND_ROOT_PATH_MODE_PROGRAM'] = 'NEVER'
 
         ldflag = [
+                '-Wl,-z,relro,-z,now',
+                '-s',
                 '-fuse-ld=lld',
                 '-Wl,--gc-sections',
                 '-Wl,--build-id=sha1',
@@ -802,9 +801,11 @@ class LlvmLibs(BuildUtils):
                 '-stdlib=libc++',
                 '-v', ]
 
-        ldflags.extend(ldflags)
+        ldflags.extend(ldflag)
 
         cflag = [
+                '-fstack-protector-strong',
+                '-fPIE',
                 '--target=%s' % llvm_triple,
                 '-ffunction-sections',
                 '-fdata-sections',
@@ -895,7 +896,6 @@ class LlvmLibs(BuildUtils):
         output_intdir = self.merge_out_path(out_path, 'lib')
 
         libcxxabi_cflags = list(cflags)
-        libcxxabi_cflags.append('-fstack-protector-strong')
 
         libcxxabi_defines = defines.copy()
         libcxxabi_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(ldflags)
@@ -1020,7 +1020,6 @@ class LlvmLibs(BuildUtils):
 
         lib_cflags = list(cflags)
         lib_cflags.append('-fPIC')
-        lib_cflags.append('-fstack-protector-strong')
 
         lib_defines = defines.copy()
         lib_defines.update(self.base_cmake_defines())
@@ -1133,7 +1132,6 @@ class LlvmLibs(BuildUtils):
         libcxx_ldflags = list(ldflags)
         libcxx_cflags = list(cflags)
         libcxx_ldflags.append('-lunwind')
-        libcxx_cflags.append('-fstack-protector-strong')
         libcxx_cflags.append('-fPIC')
 
         libcxx_defines = defines.copy()
@@ -1178,7 +1176,6 @@ class LlvmLibs(BuildUtils):
 
         libomp_cflags = list(cflags)
         libomp_cflags.append('-fPIC')
-        libomp_cflags.append('-fstack-protector-strong')
 
         libomp_defines = defines.copy()
         libomp_defines.update(self.base_cmake_defines())
@@ -1229,12 +1226,8 @@ class LlvmLibs(BuildUtils):
         if llvm_triple == self.hos_triple('arm'):
             ldflags.append('-lunwind')
 
-
         libz_cflags = list(cflags)
-        libz_cflags.append('-fstack-protector-strong')
         libz_cflags.append('-fPIC')
-        libz_cflags.append('-fuse-ld=lld')
-        libz_cflags.append('--rtlib=compiler-rt')
 
         libz_defines = defines.copy()
         libz_defines.update(self.base_cmake_defines())
@@ -1282,7 +1275,6 @@ class LlvmLibs(BuildUtils):
 
         lldb_ldflags.append('-lunwind')
         lldb_ldflags.append('-static')
-        lldb_cflags.append('-fstack-protector-strong')
 
         lldb_defines = defines.copy()
         lldb_defines.update(self.base_cmake_defines())
@@ -1433,6 +1425,9 @@ class LldbMi(BuildUtils):
 
         ldflags.append('-L%s' % os.path.join(llvm_path, 'lib'))
         cxxflags.append('-std=c++14')
+        cxxflags.append('-fstack-protector-strong -fPIE -v')
+        cflags.append('-fstack-protector-strong -fPIE -v')
+        ldflags.append('-Wl,-z,relro,-z,now -pie -s')
 
         lldb_mi_defines = {}
         lldb_mi_defines['CMAKE_C_COMPILER'] = os.path.join(llvm_path, 'bin', 'clang')
