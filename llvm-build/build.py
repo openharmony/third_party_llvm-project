@@ -510,6 +510,10 @@ class LlvmCore(BuildUtils):
 
         self.llvm_compile_llvm_defines(llvm_defines, llvm_cc, llvm_cxx, cflags, ldflags)
 
+        linker_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts', 'clang',
+            'ohos', 'linux-x86_64', 'llvm', 'bin', 'ld.lld'))
+        llvm_defines['CMAKE_LINKER'] = linker_path
+
         self.build_llvm(targets=self.build_config.TARGETS,
                         build_dir=llvm_path,
                         install_dir=out_dir,
