@@ -65,7 +65,7 @@ LLVM入门文档可能已过期。[Clang入门](https://clang.llvm.org/get_start
      - 默认目标（即 `ninja` or `make`）将构建所有LLVM。
      - `check-all`目标（即`ninja check-all`）将运行回归测试，以确保一切都正常工作。
      - CMake将为每个工具和库生成目标，大多数LLVM子项目生成自己的`check-<project>`目标。
-     - 运行串行构建将是 **缓慢** 。要提高速度，请尝试运行并行构建。在忍者中，默认情况下，这是在“make”中完成的；对于`make`，请使用选项`-j NNN`，其中`NNN`是并行作业的数量，例如您拥有的CPU数量。
+     - 运行串行构建将是 **缓慢** 。要提高速度，请尝试运行并行构建。默认情况下，这是在“make”中完成的；对于`make`，请使用选项`-j NNN`，其中`NNN`是并行作业的数量，例如您拥有的CPU数量。
 
    - 有关详细信息，请参阅 [CMake](https://llvm.org/docs/CMake.html)
 
