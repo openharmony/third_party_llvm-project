@@ -410,6 +410,9 @@ static void initialize(TargetLibraryInfoImpl &TLI, const Triple &T,
     TLI.setUnavailable(LibFunc_htons);
     TLI.setUnavailable(LibFunc_lchown);
     TLI.setUnavailable(LibFunc_lstat);
+    // OHOS_LOCAL begin backported from 4f30c5808a49ba85b052cb65bbe7b34109187bad
+    TLI.setUnavailable(LibFunc_memrchr);
+    // OHOS_LOCAL end backported from 4f30c5808a49ba85b052cb65bbe7b34109187bad
     TLI.setUnavailable(LibFunc_ntohl);
     TLI.setUnavailable(LibFunc_ntohs);
     TLI.setUnavailable(LibFunc_pread);
