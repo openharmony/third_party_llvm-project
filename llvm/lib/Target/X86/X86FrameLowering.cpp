@@ -2007,12 +2007,13 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
 #ifdef ARK_GC_SUPPORT
     if (MF.getFunction().hasFnAttribute("frame-reserved-slots"))
     {
+
+      int reserveSize = GetFrameReserveSize(MF);
       int slotSize = sizeof(uint32_t);
       if (Is64Bit) {
         slotSize = sizeof(uint64_t);
       }
-      int reserveSize = GetFrameReserveSize(MF);
-      for (unsigned i = 0; i < reserveSize / slotSize; i++) {
+      for (int i = 0; i < reserveSize / slotSize; i++) {
         BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
           MachineFramePtr)
           .setMIFlag(MachineInstr::FrameDestroy);
@@ -2414,7 +2415,11 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
       }
     }
   }
-
+#ifdef ARK_GC_SUPPORT
+  int reserveSize = GetFrameReserveSize(MF);
+  SpillSlotOffset -= reserveSize; // skip frame reserved
+  CalleeSavedFrameSize += reserveSize;
+#endif
   // Assign slots for GPRs. It increases frame size.
   for (unsigned i = CSI.size(); i != 0; --i) {
     unsigned Reg = CSI[i - 1].getReg();

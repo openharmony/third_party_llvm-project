@@ -611,6 +611,10 @@ void PEI::RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, std::vector<Cal
         unsigned DwarfRegNum = MRI->getDwarfRegNum(Reg, true);
         std::string key = std::string("DwarfReg") + std::to_string(DwarfRegNum);
         std::string value = std::to_string(Offset);
+        LLVM_DEBUG(dbgs() << "RecordCalleeSaveRegisterAndOffset DwarfRegNum:"
+                          << DwarfRegNum << " key:" << key
+                          << " value:" << value
+                          << "]\n");
         Attribute attr = Attribute::get(func.getContext(), key.c_str(), value.c_str());
         func.addAttribute(AttributeList::FunctionIndex, attr);
    }
@@ -834,7 +838,6 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
 
   // Skew to be applied to alignment.
   unsigned Skew = TFI.getStackAlignmentSkew(MF);
-
 #ifdef EXPENSIVE_CHECKS
   for (unsigned i = 0, e = MFI.getObjectIndexEnd(); i != e; ++i)
     if (!MFI.isDeadObjectIndex(i) &&
@@ -911,7 +914,7 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
 #ifdef ARK_GC_SUPPORT
   int CalleeSavedFrameSize = 0;
   Triple::ArchType archType = TFI.GetArkSupportTarget();
-  if (archType != Triple::UnknownArch && TFI.hasFP(MF)) {
+  if (archType == Triple::aarch64 && TFI.hasFP(MF)) {
     int fpPosition = TFI.GetFixedFpPosition();
     int slotSize = sizeof(uint64_t);
     int fpToCallerSpDelta = 0;
@@ -961,6 +964,32 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
 
     CalleeSavedFrameSize = TFI.GetFrameReserveSize(MF);
     Offset += CalleeSavedFrameSize;
+  }
+
+  if ((archType == Triple::x86_64) && TFI.hasFP(MF)) {
+    // Determine which of the registers in the callee save list should be saved.
+    int fpPosition = TFI.GetFixedFpPosition();
+    int fpToCallerSpDelta = 0;
+    int slotSize = sizeof(uint64_t);
+    if (fpPosition >= 0) {
+      fpToCallerSpDelta = fpPosition * slotSize;
+    } else {
+      fpToCallerSpDelta = FixedCSEnd + (fpPosition + 1) * slotSize;
+    }
+    Function &func = const_cast<Function &>(MF.getFunction());
+    Attribute attr = Attribute::get(func.getContext(), "fpToCallerSpDelta", std::to_string(fpToCallerSpDelta).c_str());
+    func.addAttribute(AttributeList::FunctionIndex, attr);
+
+    CalleeSavedFrameSize = TFI.GetFrameReserveSize(MF);
+    std::vector<CalleeSavedInfo> &CSI = MFI.getCalleeSavedInfo();
+    LLVM_DEBUG(dbgs() << "  CSI size: " << CSI.size() << " CalleeSavedFrameSize " << CalleeSavedFrameSize << "\n");
+    // if callee-saved is empty, the reserved-size can't be passed to the computation of local zone
+    // because the assignCalleeSavedSpillSlots() directly return.
+    // Otherwise, the reserved-size don't need to add to the computation of local zone because it has been considered
+    // while computing the offsets of callee-saved-zone that will be passed to the computation of local-zone
+    if (CSI.empty()) {
+      Offset += CalleeSavedFrameSize;
+    }
   }
 #endif
 
