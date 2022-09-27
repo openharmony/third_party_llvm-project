@@ -409,7 +409,7 @@ void Platform::GetStatus(Stream &strm) {
   std::string s;
   Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_OBJECT));
   if (log) {
-    LLDB_LOGF(log, "%p  Hsu file(%s):%d Platform::GetStatus() call", static_cast<void *>(this), __FILE__, __LINE__);
+    LLDB_LOGF(log, "%p file(%s):%d Platform::GetStatus() call", static_cast<void *>(this), __FILE__, __LINE__);
   }
   strm.Printf("  Platform: %s\n", GetPluginName().GetCString());
 
@@ -438,7 +438,7 @@ void Platform::GetStatus(Stream &strm) {
     const bool is_connected = IsConnected();
     const bool is_container = GetContainer();
     if (log) {
-      LLDB_LOGF(log, "%p  Hsu file(%s):%d Platform::GetStatus() is_container(%d) is_connected(%d)", static_cast<void *>(this), __FILE__, __LINE__, is_container, is_connected);
+      LLDB_LOGF(log, "%p file(%s):%d Platform::GetStatus() is_container(%d) is_connected(%d)", static_cast<void *>(this), __FILE__, __LINE__, is_container, is_connected);
     }
     if (is_connected)
       strm.Printf("  Hostname: %s\n", GetHostname());

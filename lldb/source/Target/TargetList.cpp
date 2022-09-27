@@ -63,9 +63,8 @@ Status TargetList::CreateTarget(Debugger &debugger,
                                 LoadDependentFiles load_dependent_files,
                                 PlatformSP &platform_sp, TargetSP &target_sp) {
   Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_PROCESS));
-  
   if (log) {
-      LLDB_LOGF(log,"Hsu file(%s):%d TargetList::%s call", __FILE__, __LINE__, __FUNCTION__);
+    LLDB_LOGF(log,"file(%s):%d TargetList::%s call", __FILE__, __LINE__, __FUNCTION__);
   }
   auto result = TargetList::CreateTargetInternal(
       debugger, user_exe_path, specified_arch, load_dependent_files,
@@ -82,9 +81,8 @@ Status TargetList::CreateTargetInternal(
     const OptionGroupPlatform *platform_options, TargetSP &target_sp) {
   Status error;
   Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_PROCESS));
-  
   if (log) {
-      LLDB_LOGF(log,"Hsu file(%s):%d TargetList::%s call", __FILE__, __LINE__, __FUNCTION__);
+    LLDB_LOGF(log,"file(%s):%d TargetList::%s call", __FILE__, __LINE__, __FUNCTION__);
   }
   // Let's start by looking at the selected platform.
   PlatformSP platform_sp = debugger.GetPlatformList().GetSelectedPlatform();

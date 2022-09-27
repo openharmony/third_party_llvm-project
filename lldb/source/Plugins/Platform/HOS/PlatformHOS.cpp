@@ -116,11 +116,9 @@ PlatformSP PlatformHOS::CreateInstance(bool force, const ArchSpec *arch) {
 PlatformHOS::PlatformHOS(bool is_host)
     : PlatformLinux(is_host), m_sdk_version(0) {
   Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  m_container = m_remote_platform_sp->GetContainer();
   if (log) {
-    LLDB_LOGF(log,
-              "Hsu file(%s):%d PlatformHOS::%s is_host(%d) m_container(%d)",
-              __FILE__, __LINE__, __FUNCTION__, is_host, m_container);
+    LLDB_LOGF(log, "Hsu file(%s):%d PlatformHOS::%s is_host(%d)", __FILE__,
+              __LINE__, __FUNCTION__, is_host);
   }
 }
 
@@ -253,11 +251,8 @@ Status PlatformHOS::GetFile(const FileSpec &source,
   char cmd[PATH_MAX];
   int len = strlen(source_file);
   std::string tempFile(source_file);
-  //ÈÝÆ÷ÄÚÆô¶¯µÄÓ¦ÓÃ
   if (m_container) {
-    //ÈÝÆ÷ÄÚÂ·¾¶Òª×ª»»³ÉÈÝÆ÷ÍâµÄÂ·¾¶
     /*
-    ÈÝÆ÷ÄÚ       ÈÝÆ÷Íâ
     /data       /data/ohos_data
     /vendor      /sytem/ohos/vendor
     /system     /system/ohos/system
@@ -265,28 +260,27 @@ Status PlatformHOS::GetFile(const FileSpec &source,
     const std::string str_data = "/data";
     const std::string str_vendor = "/vendor";
     const std::string str_system = "/system";
-    if (strncmp(source_file, str_data.c_str(), strlen(str_data.c_str()))) {
-      // ´Ó/dataºóÃæµÄÎ»ÖÃ¿ªÊ¼½ØÈ¡£¬Ö±µ½×îºó
-      tempFile.append(tempFile, strlen(str_data.c_str()), len);
-      tempFile = str_data + tempFile;
-      snprintf(cmd, sizeof(cmd), "cat '%s'", source_file);
+    const std::string str_data_append = "/data/ohos_data";
+    const std::string str_vendor_append = "/vendor/ohos/vendor";
+    const std::string str_system_append = "/system/ohos/system";
+    if (!strncmp(source_file, str_data.c_str(), strlen(str_data.c_str()))) {
+      tempFile = str_data_append + tempFile.substr(strlen(str_data.c_str()));
+      snprintf(cmd, sizeof(cmd), "cat '%s'", tempFile.c_str());
+      return hdc.ShellToFile(cmd, minutes(1), destination);
+    }
+    if (!strncmp(source_file, str_vendor.c_str(), strlen(str_vendor.c_str()))) {
+      tempFile =
+          str_vendor_append + tempFile.substr(strlen(str_vendor.c_str()));
+      snprintf(cmd, sizeof(cmd), "cat '%s'", tempFile.c_str());
       return hdc.ShellToFile(cmd, minutes(1), destination);
     }
 
-    if (strncmp(source_file, str_vendor.c_str(), strlen(str_vendor.c_str()))) {
-      tempFile.append(tempFile, strlen(str_vendor.c_str()), len);
-      tempFile = str_vendor + tempFile;
-      snprintf(cmd, sizeof(cmd), "cat '%s'", source_file);
+    if (!strncmp(source_file, str_system.c_str(), strlen(str_system.c_str()))) {
+      tempFile =
+          str_system_append + tempFile.substr(strlen(str_system.c_str()));
+      snprintf(cmd, sizeof(cmd), "cat '%s'", tempFile.c_str());
       return hdc.ShellToFile(cmd, minutes(1), destination);
     }
-
-    if (strncmp(source_file, str_system.c_str(), strlen(str_system.c_str()))) {
-      tempFile.append(tempFile, strlen(str_system.c_str()), len);
-      tempFile = str_system + tempFile;
-      snprintf(cmd, sizeof(cmd), "cat '%s'", source_file);
-      return hdc.ShellToFile(cmd, minutes(1), destination);
-    }
-    // ÈÝÆ÷ÍâÎÞ¶ÔÓ¦Â·¾¶
     return error;
   } else {
     snprintf(cmd, sizeof(cmd), "cat '%s'", source_file);
@@ -389,8 +383,14 @@ Status PlatformHOS::DownloadSymbolFile(const lldb::ModuleSP &module_sp,
 
   HdcClient hdc(m_device_id);
   std::string tmpdir;
-  Status error = hdc.Shell("mktemp --directory --tmpdir /data/local/tmp",
-                           seconds(5), &tmpdir);
+  Status error;
+  if (m_container) {
+    error = hdc.Shell("mktemp --directory --tmpdir /data/ohos_data/local/tmp",
+                      seconds(5), &tmpdir);
+  } else {
+    error = hdc.Shell("mktemp --directory --tmpdir /data/local/tmp", seconds(5),
+                      &tmpdir);
+  }
   if (error.Fail() || tmpdir.empty())
     return Status("Failed to generate temporary directory on the device (%s)",
                   error.AsCString());
