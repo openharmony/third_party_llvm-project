@@ -520,7 +520,8 @@ class LlvmCore(BuildUtils):
             ldflags += ' %s' % os.path.join(llvm_clang_install, resource_dir)
 
         cflags = '-fstack-protector-strong -fPIE'
-        ldflags += ' -Wl,-z,relro,-z,now -pie -s'
+        if not self.host_is_darwin():
+            ldflags += ' -Wl,-z,relro,-z,now -pie -s'
 
         self.llvm_compile_llvm_defines(llvm_defines, llvm_cc, llvm_cxx, cflags, ldflags)
 
@@ -810,16 +811,15 @@ class LlvmLibs(BuildUtils):
         defines['CMAKE_FIND_ROOT_PATH_MODE_PROGRAM'] = 'NEVER'
 
         ldflag = [
-                '-Wl,-z,relro,-z,now',
-                '-s',
                 '-fuse-ld=lld',
                 '-Wl,--gc-sections',
                 '-Wl,--build-id=sha1',
-                '-pie',
                 '--rtlib=compiler-rt',
-                '-stdlib=libc++',
-                '-v', ]
+                '-stdlib=libc++', ]
 
+        if not self.host_is_darwin():
+            ldflag.append('-Wl,-z,relro,-z,now -s -pie')
+        
         ldflags.extend(ldflag)
 
         cflag = [
@@ -1447,12 +1447,12 @@ class LldbMi(BuildUtils):
             cflags = []
             cxxflags =[]
             ldflags = ['-fuse-ld=lld', '-Wl,-rpath,%s' % '\$ORIGIN/../lib']
+            ldflags.append('-Wl,-z,relro,-z,now -pie -s')
 
         ldflags.append('-L%s' % os.path.join(llvm_path, 'lib'))
         cxxflags.append('-std=c++14')
-        cxxflags.append('-fstack-protector-strong -fPIE -v')
-        cflags.append('-fstack-protector-strong -fPIE -v')
-        ldflags.append('-Wl,-z,relro,-z,now -pie -s')
+        cxxflags.append('-fstack-protector-strong -fPIE')
+        cflags.append('-fstack-protector-strong -fPIE')
 
         lldb_mi_defines = {}
         lldb_mi_defines['CMAKE_C_COMPILER'] = os.path.join(llvm_path, 'bin', 'clang')
