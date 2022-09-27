@@ -554,8 +554,9 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   if (Args.hasArg(options::OPT_ffixed_x31))
     Features.push_back("+reserve-x31");
 
-  // -mrelax is default, unless -mno-relax is specified.
-  if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true))
+  // lld does not support relocations used by -mrelax on RISC-V
+  bool DefaultMRelax = !Triple.isOpenHOS();
+  if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, DefaultMRelax))
     Features.push_back("+relax");
   else
     Features.push_back("-relax");

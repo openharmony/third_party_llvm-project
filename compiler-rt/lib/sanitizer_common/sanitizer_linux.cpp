@@ -34,7 +34,7 @@
 // format. Struct kernel_stat is defined as 'struct stat' in asm/stat.h. To
 // access stat from asm/stat.h, without conflicting with definition in
 // sys/stat.h, we use this trick.
-#if defined(__mips64)
+#if defined(__mips64) || defined(__riscv)
 #include <asm/unistd.h>
 #include <sys/types.h>
 #define stat kernel_stat

@@ -25,6 +25,7 @@ import subprocess
 import shutil
 import argparse
 import mingw
+import stat
 
 
 class BuildConfig():
@@ -46,13 +47,14 @@ class BuildConfig():
 
         self.no_build_arm = args.skip_build or args.no_build_arm
         self.no_build_aarch64 = args.skip_build or args.no_build_aarch64
+        self.no_build_riscv64 = args.skip_build or args.no_build_riscv64
         self.no_build_x86_64 = args.skip_build or args.no_build_x86_64
 
         self.CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
         self.REPOROOT_DIR = os.path.abspath(os.path.join(self.CURRENT_DIR, '../../'))
         self.LLVM_PROJECT_DIR = os.path.abspath(os.path.join(self.REPOROOT_DIR, 'toolchain', 'llvm-project'))
         self.OUT_PATH = os.path.join(self.REPOROOT_DIR, 'out')
-        self.TARGETS = 'AArch64;ARM;BPF;X86'
+        self.TARGETS = 'AArch64;ARM;BPF;RISCV;X86'
         self.ORIG_ENV = dict(os.environ)
         self.VERSION = None # autodetected
 
@@ -93,6 +95,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Omit build os target: aarch64.')
+
+        parser.add_argument(
+            '--no-build-riscv64',
+            action='store_true',
+            default=False,
+            help='Omit build os target: 64-bit RISC-V.')
 
         parser.add_argument(
             '--no-build-x86_64',
@@ -835,6 +843,7 @@ class LlvmLibs(BuildUtils):
             ('arm', self.open_ohos_triple('arm'),
              '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=hard -mfpu=neon-vfpv4', 'a7_hard_neon-vfpv4'),
             ('aarch64', self.open_ohos_triple('aarch64'), '', ''),
+            ('riscv64', self.open_ohos_triple('riscv64'), '', ''),
             ('x86_64', self.open_ohos_triple('x86_64'), '', ''),]
 
         cc = os.path.join(llvm_install, 'bin', 'clang')
@@ -848,6 +857,8 @@ class LlvmLibs(BuildUtils):
             if llvm_build != llvm_triple:
                 continue
 
+            has_lldb_server = arch not in ['riscv64']
+
             defines = {}
             ldflags = []
             cflags = []
@@ -856,7 +867,7 @@ class LlvmLibs(BuildUtils):
 
             llvm_path = self.merge_out_path('llvm_make')
             arch_list = [self.liteos_triple('arm'), self.open_ohos_triple('arm'), self.open_ohos_triple('aarch64'),
-                         self.open_ohos_triple('x86_64')]
+                         self.open_ohos_triple('riscv64'), self.open_ohos_triple('x86_64')]
             if precompilation:
                 self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
                 continue
@@ -869,7 +880,7 @@ class LlvmLibs(BuildUtils):
                                 first_time=False)
 
             if llvm_triple in arch_list:
-                if need_lldb_server and llvm_triple not in seen_arch_list:
+                if need_lldb_server and has_lldb_server and llvm_triple not in seen_arch_list:
                     self.build_lldb_server(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags,
                                                    defines)
                     seen_arch_list.append(llvm_triple)
@@ -877,7 +888,7 @@ class LlvmLibs(BuildUtils):
 
             self.build_libomp(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
             self.build_libz(arch, llvm_triple, cflags, ldflags, defines)
-            if need_lldb_server and llvm_triple not in seen_arch_list:
+            if need_lldb_server and has_lldb_server and llvm_triple not in seen_arch_list:
                 self.build_lldb_server(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags, defines)
                 seen_arch_list.append(llvm_triple)
 
@@ -1973,6 +1984,9 @@ def main():
 
     if not build_config.no_build_aarch64:
         configs.append(('arm64', build_utils.open_ohos_triple('aarch64')))
+
+    if not build_config.no_build_riscv64:
+        configs.append(('riscv64', build_utils.open_ohos_triple('riscv64')))
 
     if not build_config.no_build_x86_64:
         configs.append(('x86_64', build_utils.open_ohos_triple('x86_64')))

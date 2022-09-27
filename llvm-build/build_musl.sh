@@ -72,6 +72,9 @@ if [ $TARGET_TRIPLE == "arm-liteos-ohos" ]; then
 elif [ $TARGET_TRIPLE == "arm-linux-ohos" ]; then
     TARGET_USER="linux_user"
     TARGETS_PREFIX="arm"
+elif [ $TARGET_TRIPLE == "riscv64-linux-ohos" ]; then
+    TARGET_USER="linux_user"
+    TARGETS_PREFIX="riscv64"
 elif [ $TARGET_TRIPLE == "x86_64-linux-ohos" ]; then
     TARGET_USER="linux_user"
     TARGETS_PREFIX="x86_64"
@@ -94,7 +97,8 @@ make musl_header_install_for_${TARGET_USER} CLANG="${CLANG_BIN_ROOT}/clang" TOPD
 
 # build musl_libs
 if ((make_libs == 1)); then
-    if [ $TARGET_TRIPLE == "aarch64-linux-ohos" ] || [ $TARGET_TRIPLE == "x86_64-linux-ohos" ]; then
+    if [ $TARGET_TRIPLE == "aarch64-linux-ohos" ] || [ $TARGET_TRIPLE == "riscv64-linux-ohos" ] || \
+       [ $TARGET_TRIPLE == "x86_64-linux-ohos" ]; then
         make CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${PWD}/../../ SYSROOTDIR=${OUT}/sysroot TARGETS=${TARGET_USER}\
             TARGET=${TARGET_TRIPLE} ARCH=${TARGETS_PREFIX} -f Makefile
     else
