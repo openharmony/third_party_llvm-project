@@ -91,6 +91,9 @@ protected:
   std::map<lldb::ModuleWP, lldb::addr_t, std::owner_less<lldb::ModuleWP>>
       m_loaded_modules;
 
+  /// number of woker in ThreadPool
+  static constexpr int DYLD_CONCURRENCY_THREADING {3};
+
   /// If possible sets a breakpoint on a function called by the runtime
   /// linker each time a module is loaded or unloaded.
   bool SetRendezvousBreakpoint();

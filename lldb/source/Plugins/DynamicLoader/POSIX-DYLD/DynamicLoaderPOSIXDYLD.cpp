@@ -24,6 +24,7 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/ProcessInfo.h"
+#include "llvm/Support/ThreadPool.h"
 
 #include <memory>
 
@@ -638,21 +639,25 @@ void DynamicLoaderPOSIXDYLD::LoadAllCurrentModules() {
   m_process->PrefetchModuleSpecs(
       module_names, m_process->GetTarget().GetArchitecture().GetTriple());
 
+  llvm::ThreadPool pool(llvm::hardware_concurrency(DynamicLoaderPOSIXDYLD::DYLD_CONCURRENCY_THREADING));
   for (I = m_rendezvous.begin(), E = m_rendezvous.end(); I != E; ++I) {
-    ModuleSP module_sp =
-        LoadModuleAtAddress(I->file_spec, I->link_addr, I->base_addr, true);
-    if (module_sp.get()) {
-      LLDB_LOG(log, "LoadAllCurrentModules loading module: {0}",
-               I->file_spec.GetFilename());
-      module_list.Append(module_sp);
-    } else {
-      Log *log = GetLog(LLDBLog::DynamicLoader);
-      LLDB_LOGF(
-          log,
-          "DynamicLoaderPOSIXDYLD::%s failed loading module %s at 0x%" PRIx64,
-          __FUNCTION__, I->file_spec.GetCString(), I->base_addr);
-    }
+    constexpr const auto &func_name = __FUNCTION__;
+    pool.async([&](const FileSpec &file_spec, addr_t link_addr, addr_t base_addr) {
+      ModuleSP module_sp =
+          LoadModuleAtAddress(file_spec, link_addr, base_addr, true);
+      if (module_sp.get()) {
+        LLDB_LOG(log, "LoadAllCurrentModules loading module: {0}", file_spec.GetFilename());
+        module_list.Append(module_sp);
+      } else {
+        LLDB_LOGF(
+            log,
+            "DynamicLoaderPOSIXDYLD::%s failed loading module %s at 0x%" PRIx64,
+             func_name, file_spec.GetCString(), base_addr);
+      }
+     }, I->file_spec, I->link_addr, I->base_addr);
   }
+
+  pool.wait();
 
   m_process->GetTarget().ModulesDidLoad(module_list);
   m_initial_modules_added = true;
