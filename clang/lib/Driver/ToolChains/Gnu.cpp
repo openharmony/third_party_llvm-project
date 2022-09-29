@@ -2124,7 +2124,7 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
   static const char *const MIPSELLibDirs[] = {"/lib"};
   static const char *const MIPSELTriples[] = {
       "mipsel-linux-gnu", "mips-img-linux-gnu", "mipsisa32r6el-linux-gnu",
-      "mipsel-linux-android"};
+      "mipsel-linux-android", "mipsel-linux-ohos"};
 
   static const char *const MIPS64LibDirs[] = {"/lib64", "/lib"};
   static const char *const MIPS64Triples[] = {

@@ -76,11 +76,15 @@ else
 ifeq ($(ARCH),riscv64)
 ARCH_CFLAGS =
 else
+ifeq ($(ARCH),mips)
+ARCH_CFLAGS =
+else
 ifeq ($(ARCH),x86_64)
 ARCH_CFLAGS =
 else
 $(warning *** warning: ARCH $(ARCH) has not been tested yet, use with cautions!)
 ARCH_CFLAGS =
+endif
 endif
 endif
 endif
@@ -92,10 +96,14 @@ else
 ifeq ($(ARCH),riscv64)
 CFLAGS = -march=rv64gc -O2 -Wall -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,relro,-z,now,-z,noexecstack
 else
+ifeq ($(ARCH),mips)
+CFLAGS = -march=mips32r2 -O2 -Wall -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,relro,-z,now,-z,noexecstack
+else
 ifeq ($(ARCH),x86_64)
 CFLAGS = -march=x86-64 -O2 -Wall -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,relro,-z,now,-z,noexecstack
 else
 CFLAGS = -march=armv7-a -O2 -Wall -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,relro,-z,now,-z,noexecstack
+endif
 endif
 endif
 endif

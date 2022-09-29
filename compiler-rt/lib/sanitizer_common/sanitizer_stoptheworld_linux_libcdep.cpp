@@ -41,7 +41,7 @@
 # include <asm/ptrace.h>
 #endif
 #include <sys/user.h>  // for user_regs_struct
-#if SANITIZER_ANDROID && SANITIZER_MIPS
+#if (SANITIZER_ANDROID || SANITIZER_OHOS) && SANITIZER_MIPS
 # include <asm/reg.h>  // for mips SP register in sys/user.h
 #endif
 #include <sys/wait.h> // for signal-related stuff
@@ -509,6 +509,11 @@ typedef pt_regs regs_struct;
 typedef struct user regs_struct;
 # if SANITIZER_ANDROID
 #  define REG_SP regs[EF_R29]
+// FIXME: For some reason, EF_R29 is not defined in asm/reg.h under
+// #if _MIPS_SIM == _MIPS_SIM_ABI32 condition, so use MIPS32_EF_R29 as a
+// temporary solution.
+# elif SANITIZER_OHOS
+#  define REG_SP regs[MIPS32_EF_R29]
 # else
 #  define REG_SP regs[EF_REG29]
 # endif

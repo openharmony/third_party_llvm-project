@@ -48,13 +48,14 @@ class BuildConfig():
         self.no_build_arm = args.skip_build or args.no_build_arm
         self.no_build_aarch64 = args.skip_build or args.no_build_aarch64
         self.no_build_riscv64 = args.skip_build or args.no_build_riscv64
+        self.no_build_mipsel = args.skip_build or args.no_build_mipsel
         self.no_build_x86_64 = args.skip_build or args.no_build_x86_64
 
         self.CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
         self.REPOROOT_DIR = os.path.abspath(os.path.join(self.CURRENT_DIR, '../../'))
         self.LLVM_PROJECT_DIR = os.path.abspath(os.path.join(self.REPOROOT_DIR, 'toolchain', 'llvm-project'))
         self.OUT_PATH = os.path.join(self.REPOROOT_DIR, 'out')
-        self.TARGETS = 'AArch64;ARM;BPF;RISCV;X86'
+        self.TARGETS = 'AArch64;ARM;BPF;Mips;RISCV;X86'
         self.ORIG_ENV = dict(os.environ)
         self.VERSION = None # autodetected
 
@@ -66,7 +67,7 @@ class BuildConfig():
 
     @staticmethod
     def parse_add_argument(parser):
-        
+
         parser.add_argument(
             '--enable-assertions',
             action='store_true',
@@ -103,6 +104,12 @@ class BuildConfig():
             help='Omit build os target: 64-bit RISC-V.')
 
         parser.add_argument(
+            '--no-build-mipsel',
+            action='store_true',
+            default=False,
+            help='Omit build os target: mipsel.')
+
+        parser.add_argument(
             '--no-build-x86_64',
             action='store_true',
             default=False,
@@ -111,7 +118,7 @@ class BuildConfig():
         parser.add_argument(
             '--no-lto',
             action='store_true',
-            default=False, 
+            default=False,
             help='Accelerate builds by disabling LTO (only affects llvm product)')
 
         parser.add_argument(
@@ -146,7 +153,7 @@ class BuildConfig():
             help='Omit the packaging, perform the packaging step directly.')
 
         self.parse_add_argument(parser)
-       
+
         known_platforms = ('windows', 'libs', 'lldb-mi', 'lldb-server', 'linux', 'check-api')
         known_platforms_str = ', '.join(known_platforms)
 
@@ -415,8 +422,8 @@ class LlvmCore(BuildUtils):
             llvm_defines['COMPILER_RT_BUILD_LIBFUZZER'] = 'OFF'
             llvm_defines['LLVM_BUILD_EXTERNAL_COMPILER_RT'] = 'ON'
 
-    def llvm_compile_linux_defines(self, 
-                                   llvm_defines, 
+    def llvm_compile_linux_defines(self,
+                                   llvm_defines,
                                    debug_build=False,
                                    no_lto=False,
                                    build_instrumented=False):
@@ -434,7 +441,7 @@ class LlvmCore(BuildUtils):
             llvm_defines['LIBCXXABI_USE_LLVM_UNWINDER'] = 'YES'
             llvm_defines['LIBCXXABI_STATICALLY_LINK_UNWINDER_IN_STATIC_LIBRARY'] = 'YES'
             llvm_defines['LLVM_BINUTILS_INCDIR'] = '/usr/include'
-            
+
 
             if not build_instrumented and not no_lto and not debug_build:
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
@@ -492,7 +499,7 @@ class LlvmCore(BuildUtils):
 
         self.llvm_compile_darwin_defines(llvm_defines)
         self.llvm_compile_linux_defines(llvm_defines, debug_build, no_lto, build_instrumented)
-        
+
         if self.host_is_linux():
             ldflags += ' -lunwind --rtlib=compiler-rt -stdlib=libc++'
 
@@ -511,7 +518,7 @@ class LlvmCore(BuildUtils):
 
             resource_dir = "lib/clang/10.0.1/lib/linux/libclang_rt.profile-x86_64.a"
             ldflags += ' %s' % os.path.join(llvm_clang_install, resource_dir)
-        
+
         cflags = '-fstack-protector-strong -fPIE'
         ldflags += ' -Wl,-z,relro,-z,now -pie -s'
 
@@ -535,7 +542,7 @@ class LlvmCore(BuildUtils):
                                      windows_sysroot):
 
         if self.build_config.enable_assertions:
-            
+
             windows_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON'
 
         windows_defines['LLDB_RELOCATABLE_PYTHON'] = 'OFF'
@@ -544,7 +551,7 @@ class LlvmCore(BuildUtils):
         windows_defines['LLDB_ENABLE_PYTHON'] = 'ON'
         windows_defines['LLDB_PYTHON_HOME'] = 'python'
         windows_defines['LLDB_PYTHON_RELATIVE_PATH'] = 'bin/python/lib/python%s' % (self.build_config.LLDB_PY_VERSION)
-        windows_defines['PYTHON_INCLUDE_DIRS'] = os.path.join(win_sysroot, 
+        windows_defines['PYTHON_INCLUDE_DIRS'] = os.path.join(win_sysroot,
                                         'include', 'python%s' % self.build_config.LLDB_PY_VERSION)
         windows_defines['PYTHON_LIBRARIES'] = os.path.join(win_sysroot, 'lib', 'libpython%s.dll.a'
                                                             % self.build_config.LLDB_PY_VERSION)
@@ -616,7 +623,7 @@ class LlvmCore(BuildUtils):
                                    cxxflags,
                                    ldflags,
                                    windows_defines):
-                                   
+
 
         zlib_path = self.merge_out_path('../', 'prebuilts', 'clang', 'host', 'windows-x86', 'toolchain-prebuilts',
                                         'zlib')
@@ -679,7 +686,7 @@ class LlvmCore(BuildUtils):
         ldflags = []
         cflags = []
 
-        self.llvm_compile_windows_flags(windows_defines, compiler_rt_path, native_cmake_file_path, 
+        self.llvm_compile_windows_flags(windows_defines, compiler_rt_path, native_cmake_file_path,
                                             windowstool_path, windows64_install, ldflags, cflags)
 
         cxxflags = list(cflags)
@@ -727,14 +734,18 @@ class SysrootComposer(BuildUtils):
         os.chdir(cur_dir)
 
     def install_linux_headers(self, arch, target):
-        dir_sufix = 'x86' if arch == 'x86_64' else arch
+        dir_suffix = arch
+        if arch == 'x86_64':
+            dir_suffix = 'x86'
+        elif arch == 'mipsel':
+            dir_suffix = 'mips'
         linux_kernel_dir = os.path.join('kernel_linux_patches', 'linux-5.10')
         linux_kernel_path = os.path.join(self.build_config.OUT_PATH, '..', linux_kernel_dir)
         ohosmusl_sysroot_dst = self.merge_out_path('sysroot', target, 'usr')
         headers_tmp_dir = os.path.join(linux_kernel_path, 'prebuilts', 'usr', 'include')
         self.check_copy_tree(os.path.join(headers_tmp_dir, 'linux'),
                              os.path.join(ohosmusl_sysroot_dst, 'include/linux'))
-        self.check_copy_tree(os.path.join(headers_tmp_dir, 'asm-%s' % dir_sufix,'asm'),
+        self.check_copy_tree(os.path.join(headers_tmp_dir, 'asm-%s' % dir_suffix,'asm'),
                              os.path.join(ohosmusl_sysroot_dst, 'include', 'asm'))
         self.check_copy_tree(os.path.join(headers_tmp_dir, 'asm-generic'),
                              os.path.join(ohosmusl_sysroot_dst, 'include/asm-generic'))
@@ -772,9 +783,9 @@ class LlvmLibs(BuildUtils):
             self.build_libs(need_lldb_server,
                                 llvm_install,
                                 target,
-                                precompilation=True)          
+                                precompilation=True)
             self.sysroot_composer.build_musl(llvm_install, target, '-l')
-            
+
     def build_libs_defines(self,
                            llvm_triple,
                            defines,
@@ -785,7 +796,7 @@ class LlvmLibs(BuildUtils):
                            ldflags,
                            cflags,
                            extra_flags):
-        
+
         sysroot = self.merge_out_path('sysroot')
 
         defines['CMAKE_C_COMPILER'] = cc
@@ -818,7 +829,7 @@ class LlvmLibs(BuildUtils):
                 '-ffunction-sections',
                 '-fdata-sections',
                 extra_flags, ]
-        
+
         cflags.extend(cflag)
 
     def build_need_libs_for_windows(self):
@@ -844,6 +855,7 @@ class LlvmLibs(BuildUtils):
              '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=hard -mfpu=neon-vfpv4', 'a7_hard_neon-vfpv4'),
             ('aarch64', self.open_ohos_triple('aarch64'), '', ''),
             ('riscv64', self.open_ohos_triple('riscv64'), '', ''),
+            ('mipsel', self.open_ohos_triple('mipsel'), '-march=mips32r2', ''),
             ('x86_64', self.open_ohos_triple('x86_64'), '', ''),]
 
         cc = os.path.join(llvm_install, 'bin', 'clang')
@@ -864,10 +876,13 @@ class LlvmLibs(BuildUtils):
             cflags = []
             self.logger().info('Build libs for %s', llvm_triple)
             self.build_libs_defines(llvm_triple, defines, cc, cxx, ar, llvm_config, ldflags, cflags, extra_flags)
+            if arch == 'mipsel':
+                ldflags.append('-Wl,-z,notext')
 
             llvm_path = self.merge_out_path('llvm_make')
-            arch_list = [self.liteos_triple('arm'), self.open_ohos_triple('arm'), self.open_ohos_triple('aarch64'),
-                         self.open_ohos_triple('riscv64'), self.open_ohos_triple('x86_64')]
+            arch_list = [self.liteos_triple('arm'), self.open_ohos_triple('arm'),
+                         self.open_ohos_triple('aarch64'), self.open_ohos_triple('riscv64'),
+                         self.open_ohos_triple('mipsel'), self.open_ohos_triple('x86_64')]
             if precompilation:
                 self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
                 continue
@@ -1068,17 +1083,17 @@ class LlvmLibs(BuildUtils):
                           install=True)
 
     def build_libcxx_defines_parameters(self,
-                                        libcxx_defines, 
+                                        libcxx_defines,
                                         libcxx_ldflags,
-                                        libcxx_cflags, 
-                                        llvm_install, 
+                                        libcxx_cflags,
+                                        llvm_install,
                                         multilib_suffix,
-                                        libcxx_path,  
-                                        llvm_triple, 
+                                        libcxx_path,
+                                        llvm_triple,
                                         out_dir,
                                         libcxx_ndk_install,
                                         do_build_system):
-    
+
         libcxx_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(libcxx_ldflags)
         libcxx_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(libcxx_ldflags)
         libcxx_defines['CMAKE_MODULE_LINKER_FLAGS'] = ' '.join(libcxx_ldflags)
@@ -1116,8 +1131,7 @@ class LlvmLibs(BuildUtils):
         libcxx_defines['LIBCXX_HAS_PTHREAD_LIB'] = 'OFF'
         libcxx_defines['LIBCXX_HAS_RT_LIB'] = 'OFF'
         libcxx_defines['CMAKE_TRY_COMPILE_TARGET_TYPE'] = 'STATIC_LIBRARY'
-        
-        
+
 
 
     def build_libcxx(self,
@@ -1135,7 +1149,7 @@ class LlvmLibs(BuildUtils):
         suffix = '-' + multilib_suffix if multilib_suffix else ''
         libcxx_path = self.merge_out_path('lib', 'libcxx-%s-%s%s' % ('system' if do_build_system else 'ndk',
                                                                    llvm_triple, suffix))
-       
+
         out_dir = os.path.join(libcxx_path, 'lib')
         libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
         self.check_create_dir(libcxx_ndk_install)
@@ -1146,14 +1160,14 @@ class LlvmLibs(BuildUtils):
         libcxx_cflags.append('-fPIC')
 
         libcxx_defines = defines.copy()
-        
-        self.build_libcxx_defines_parameters(libcxx_defines, 
+
+        self.build_libcxx_defines_parameters(libcxx_defines,
                                             libcxx_ldflags,
-                                            libcxx_cflags, 
+                                            libcxx_cflags,
                                             llvm_install,
                                             multilib_suffix,
-                                            libcxx_path,  
-                                            llvm_triple, 
+                                            libcxx_path,
+                                            llvm_triple,
                                             out_dir,
                                             libcxx_ndk_install,
                                             do_build_system)
@@ -1350,7 +1364,7 @@ class LlvmLibs(BuildUtils):
         self.logger().info('Building libs for windows.')
         toolchain_dir = self.merge_out_path('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION)
         install_dir = self.merge_out_path('windows-x86_64-install')
-        compiler_rt_path = self.merge_out_path('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION, 'lib', 'clang', 
+        compiler_rt_path = self.merge_out_path('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION, 'lib', 'clang',
                                                 self.build_config.CLANG_VERSION, 'lib', 'windows')
         windows_sysroot = self.merge_out_path('clang_mingw', 'clang-%s' % self.build_config.CLANG_VERSION, 'x86_64-w64-mingw32')
 
@@ -1474,7 +1488,7 @@ class LldbMi(BuildUtils):
         return ldflags_lists
 
     @staticmethod
-    def cflags_lists_define():               
+    def cflags_lists_define():
         cflags_lists = ['-D_LARGEFILE_SOURCE',
                     '-D_FILE_OFFSET_BITS=64',
                     '-D_WIN32_WINNT=0x0600',
@@ -1634,7 +1648,7 @@ class LlvmPackage(BuildUtils):
 
 
     def install_mingw_python(self, install_dir):
-        py_root = self.merge_out_path('../third_party', 'mingw-w64', 'mingw-w64-python', 
+        py_root = self.merge_out_path('../third_party', 'mingw-w64', 'mingw-w64-python',
                                         self.build_config.LLDB_PY_VERSION)
         bin_root = os.path.join(install_dir, 'bin')
         py_dll = 'libpython' + self.build_config.LLDB_PY_VERSION + '.dll'
@@ -1710,7 +1724,7 @@ class LlvmPackage(BuildUtils):
             notices.append(notice_file.read())
 
         if host.startswith('windows'):
-            mingw_license_file = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 
+            mingw_license_file = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR,
                                                                 'third_party/mingw-w64/COPYING'))
             with open(mingw_license_file) as notice_file:
                 notices.append(notice_file.read())
@@ -1988,6 +2002,9 @@ def main():
     if not build_config.no_build_riscv64:
         configs.append(('riscv', build_utils.open_ohos_triple('riscv64')))
 
+    if not build_config.no_build_mipsel:
+        configs.append(('mipsel', build_utils.open_ohos_triple('mipsel')))
+
     if not build_config.no_build_x86_64:
         configs.append(('x86_64', build_utils.open_ohos_triple('x86_64')))
 
@@ -2000,7 +2017,7 @@ def main():
             build_config.no_lto,
             build_config.build_instrumented,
             build_config.xunit_xml_output)
-            
+
     llvm_core.set_clang_version(llvm_install)
 
     if build_config.do_build and build_utils.host_is_linux():

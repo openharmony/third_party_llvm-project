@@ -593,7 +593,7 @@ struct __sanitizer_sigaction {
   };
   __sanitizer_sigset_t sa_mask;
 };
-#elif SANITIZER_ANDROID && (SANITIZER_WORDSIZE == 32)
+#elif (SANITIZER_ANDROID || SANITIZER_OHOS) && (SANITIZER_WORDSIZE == 32)
 struct __sanitizer_sigaction {
   union {
     __sanitizer_sigactionhandler_ptr sigaction;
