@@ -1986,7 +1986,7 @@ def main():
         configs.append(('arm64', build_utils.open_ohos_triple('aarch64')))
 
     if not build_config.no_build_riscv64:
-        configs.append(('riscv64', build_utils.open_ohos_triple('riscv64')))
+        configs.append(('riscv', build_utils.open_ohos_triple('riscv64')))
 
     if not build_config.no_build_x86_64:
         configs.append(('x86_64', build_utils.open_ohos_triple('x86_64')))
