@@ -2258,6 +2258,8 @@ defm signed_char : OptOutFFlag<"signed-char", "char is signed", "char is unsigne
 def fsplit_stack : Flag<["-"], "fsplit-stack">, Group<f_Group>;
 def fstack_protector_all : Flag<["-"], "fstack-protector-all">, Group<f_Group>,
   HelpText<"Enable stack protectors for all functions">;
+def fstack_protector_ret : Flag<["-"], "fstack-protector-ret">, Group<f_Group>,
+  HelpText<"Enable stack protectors for all functions with return address check">;
 defm stack_clash_protection : BoolFOption<"stack-clash-protection",
   CodeGenOpts<"StackClashProtector">, DefaultFalse,
   PosFlag<SetTrue, [CC1Option], "Enable">, NegFlag<SetFalse, [], "Disable">,
@@ -5115,9 +5117,9 @@ def static_define : Flag<["-"], "static-define">,
   HelpText<"Should __STATIC__ be defined">,
   MarshallingInfoFlag<LangOpts<"Static">>;
 def stack_protector : Separate<["-"], "stack-protector">,
-  HelpText<"Enable stack protectors">, Values<"0,1,2,3">,
+  HelpText<"Enable stack protectors">, Values<"0,1,2,3,4">,
   NormalizedValuesScope<"LangOptions">,
-  NormalizedValues<["SSPOff", "SSPOn", "SSPStrong", "SSPReq"]>,
+  NormalizedValues<["SSPOff", "SSPOn", "SSPStrong", "SSPReq", "SSPRet"]>,
   MarshallingInfoString<LangOpts<"StackProtector">, "SSPOff">, AutoNormalizeEnum;
 def stack_protector_buffer_size : Separate<["-"], "stack-protector-buffer-size">,
   HelpText<"Lower bound for a buffer to be considered for stack protection">,

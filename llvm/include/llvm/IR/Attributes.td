@@ -203,6 +203,9 @@ def Speculatable : EnumAttr<"speculatable">;
 /// Stack protection.
 def StackProtect : EnumAttr<"ssp">;
 
+/// Stack protection for return address.
+def StackProtectRet : EnumAttr<"sspret">;
+
 /// Stack protection required.
 def StackProtectReq : EnumAttr<"sspreq">;
 

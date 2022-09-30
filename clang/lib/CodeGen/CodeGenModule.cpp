@@ -1677,6 +1677,8 @@ void CodeGenModule::SetLLVMFunctionAttributesForDefinition(const Decl *D,
       B.addAttribute(llvm::Attribute::StackProtectStrong);
     else if (LangOpts.getStackProtector() == LangOptions::SSPReq)
       B.addAttribute(llvm::Attribute::StackProtectReq);
+    else if (LangOpts.getStackProtector() == LangOptions::SSPRet)
+      B.addAttribute(llvm::Attribute::StackProtectRet);
   }
 
   if (!D) {

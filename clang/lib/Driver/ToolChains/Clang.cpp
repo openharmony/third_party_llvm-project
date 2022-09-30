@@ -3007,6 +3007,7 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
 
   if (Arg *A = Args.getLastArg(options::OPT_fno_stack_protector,
                                options::OPT_fstack_protector_all,
+                               options::OPT_fstack_protector_ret,
                                options::OPT_fstack_protector_strong,
                                options::OPT_fstack_protector)) {
     if (A->getOption().matches(options::OPT_fstack_protector))
@@ -3014,6 +3015,8 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
           std::max<>(LangOptions::SSPOn, DefaultStackProtectorLevel);
     else if (A->getOption().matches(options::OPT_fstack_protector_strong))
       StackProtectorLevel = LangOptions::SSPStrong;
+    else if (A->getOption().matches(options::OPT_fstack_protector_ret))
+      StackProtectorLevel = LangOptions::SSPRet;
     else if (A->getOption().matches(options::OPT_fstack_protector_all))
       StackProtectorLevel = LangOptions::SSPReq;
   } else {
