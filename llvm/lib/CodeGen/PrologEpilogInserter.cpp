@@ -69,10 +69,10 @@
 #include <limits>
 #include <utility>
 #include <vector>
-#include <iostream>
 
 #ifdef ARK_GC_SUPPORT
 #include <string>
+#include<climits>
 #endif
 
 using namespace llvm;
@@ -604,9 +604,21 @@ void PEI::RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, std::vector<Cal
     MachineFrameInfo &MFI = MF.getFrameInfo();
     const MCRegisterInfo *MRI = MMI.getContext().getRegisterInfo();
     Function &func = const_cast<Function &>(MF.getFunction());
+    const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
+
+    // nearest to rbp callee register
+    int64_t maxOffset = INT_MIN;
+    for (std::vector<CalleeSavedInfo>::const_iterator
+        I = CSI.begin(), E = CSI.end(); I != E; ++I) {
+        int64_t Offset = MFI.getObjectOffset(I->getFrameIdx());
+        maxOffset = std::max(Offset, maxOffset);
+    }
+
+    int64_t reseversize = TFI->GetFrameReserveSize(MF) + sizeof(uint64_t); // 1: rbp
+    // for x86-64
     for (std::vector<CalleeSavedInfo>::const_iterator
          I = CSI.begin(), E = CSI.end(); I != E; ++I) {
-        int64_t Offset = MFI.getObjectOffset(I->getFrameIdx());
+        int64_t Offset = MFI.getObjectOffset(I->getFrameIdx()) - maxOffset - reseversize;
         unsigned Reg = I->getReg();
         unsigned DwarfRegNum = MRI->getDwarfRegNum(Reg, true);
         std::string key = std::string("DwarfReg") + std::to_string(DwarfRegNum);
@@ -618,6 +630,7 @@ void PEI::RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, std::vector<Cal
         Attribute attr = Attribute::get(func.getContext(), key.c_str(), value.c_str());
         func.addAttribute(AttributeList::FunctionIndex, attr);
    }
+   // todo: arm64
 }
 #endif
 
