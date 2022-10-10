@@ -129,7 +129,7 @@ private:
   void calculateCallFrameInfo(MachineFunction &MF);
   void calculateSaveRestoreBlocks(MachineFunction &MF);
 #ifdef ARK_GC_SUPPORT
-  void RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, std::vector<CalleeSavedInfo> &CSI);
+  void RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, const std::vector<CalleeSavedInfo> &CSI);
 #endif
   void spillCalleeSavedRegs(MachineFunction &MF);
 
@@ -301,6 +301,10 @@ bool PEI::runOnMachineFunction(MachineFunction &MF) {
   RestoreBlocks.clear();
   MFI.setSavePoint(nullptr);
   MFI.setRestorePoint(nullptr);
+#ifdef ARK_GC_SUPPORT
+  std::vector<CalleeSavedInfo> &CSI = MFI.getCalleeSavedInfo();
+  RecordCalleeSaveRegisterAndOffset(MF, CSI);
+#endif
   return true;
 }
 
@@ -598,39 +602,66 @@ static void insertCSRRestores(MachineBasicBlock &RestoreBlock,
 }
 
 #ifdef ARK_GC_SUPPORT
-void PEI::RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, std::vector<CalleeSavedInfo> &CSI)
+void PEI::RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, const std::vector<CalleeSavedInfo> &CSI)
 {
-    MachineModuleInfo &MMI = MF.getMMI();
-    MachineFrameInfo &MFI = MF.getFrameInfo();
-    const MCRegisterInfo *MRI = MMI.getContext().getRegisterInfo();
-    Function &func = const_cast<Function &>(MF.getFunction());
-    const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
+  MachineModuleInfo &MMI = MF.getMMI();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
+  const MCRegisterInfo *MRI = MMI.getContext().getRegisterInfo();
+  Function &func = const_cast<Function &>(MF.getFunction());
+  const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
+  Triple::ArchType archType = TFI->GetArkSupportTarget();
 
-    // nearest to rbp callee register
-    int64_t maxOffset = INT_MIN;
-    for (std::vector<CalleeSavedInfo>::const_iterator
-        I = CSI.begin(), E = CSI.end(); I != E; ++I) {
-        int64_t Offset = MFI.getObjectOffset(I->getFrameIdx());
-        maxOffset = std::max(Offset, maxOffset);
+  if ((archType != Triple::aarch64 && archType != Triple::x86_64) || !(TFI->hasFP(MF))) {
+    return;
+  }
+  unsigned FpRegDwarfNum = 0;
+  if (archType == Triple::aarch64) {
+    FpRegDwarfNum = 29; // x29
+  } else {
+    FpRegDwarfNum = 6; //rbp
+  }
+  int64_t FpOffset = 0;
+  int64_t deleta;
+  // nearest to rbp callee register
+  int64_t maxOffset = INT_MIN;
+  for (std::vector<CalleeSavedInfo>::const_iterator
+    I = CSI.begin(), E = CSI.end(); I != E; ++I) {
+    int64_t Offset = MFI.getObjectOffset(I->getFrameIdx());
+    unsigned Reg = I->getReg();
+    unsigned DwarfRegNum = MRI->getDwarfRegNum(Reg, true);
+    if (FpRegDwarfNum == DwarfRegNum) {
+      FpOffset = Offset;
     }
-
+    maxOffset = std::max(Offset, maxOffset);
+  }
+  if (archType == Triple::x86_64) {
+    // rbp not existed in CSI
     int64_t reseversize = TFI->GetFrameReserveSize(MF) + sizeof(uint64_t); // 1: rbp
-    // for x86-64
-    for (std::vector<CalleeSavedInfo>::const_iterator
-         I = CSI.begin(), E = CSI.end(); I != E; ++I) {
-        int64_t Offset = MFI.getObjectOffset(I->getFrameIdx()) - maxOffset - reseversize;
-        unsigned Reg = I->getReg();
-        unsigned DwarfRegNum = MRI->getDwarfRegNum(Reg, true);
-        std::string key = std::string("DwarfReg") + std::to_string(DwarfRegNum);
-        std::string value = std::to_string(Offset);
-        LLVM_DEBUG(dbgs() << "RecordCalleeSaveRegisterAndOffset DwarfRegNum:"
-                          << DwarfRegNum << " key:" << key
-                          << " value:" << value
-                          << "]\n");
-        Attribute attr = Attribute::get(func.getContext(), key.c_str(), value.c_str());
-        func.addAttribute(AttributeList::FunctionIndex, attr);
-   }
-   // todo: arm64
+    deleta = maxOffset + reseversize; // nearest to rbp offset
+  } else {
+    deleta = FpOffset;
+  }
+
+  const unsigned LinkRegDwarfNum = 30;
+  for (std::vector<CalleeSavedInfo>::const_iterator
+    I = CSI.begin(), E = CSI.end(); I != E; ++I) {
+    int64_t Offset = MFI.getObjectOffset(I->getFrameIdx());
+    unsigned Reg = I->getReg();
+    unsigned DwarfRegNum = MRI->getDwarfRegNum(Reg, true);
+    if ((DwarfRegNum == LinkRegDwarfNum || DwarfRegNum == FpRegDwarfNum)
+      && (archType == Triple::aarch64)) {
+      continue;
+    }
+    Offset = Offset - deleta;
+    std::string key = std::string("DwarfReg") + std::to_string(DwarfRegNum);
+    std::string value = std::to_string(Offset);
+    LLVM_DEBUG(dbgs() << "RecordCalleeSaveRegisterAndOffset DwarfRegNum  :"
+                      << DwarfRegNum << " key:" << key
+                      << " value:" << value
+                      << "]\n");
+    Attribute attr = Attribute::get(func.getContext(), key.c_str(), value.c_str());
+    func.addAttribute(AttributeList::FunctionIndex, attr);
+  }
 }
 #endif
 
@@ -674,9 +705,6 @@ void PEI::spillCalleeSavedRegs(MachineFunction &MF) {
       for (MachineBasicBlock *RestoreBlock : RestoreBlocks)
         insertCSRRestores(*RestoreBlock, CSI);
     }
-#ifdef ARK_GC_SUPPORT
-    RecordCalleeSaveRegisterAndOffset(MF, CSI);
-#endif
   }
 }
 
