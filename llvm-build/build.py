@@ -51,10 +51,8 @@ class BuildConfig():
         self.no_build_mipsel = args.skip_build or args.no_build_mipsel
         self.no_build_x86_64 = args.skip_build or args.no_build_x86_64
 
-        self.CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
-        self.REPOROOT_DIR = os.path.abspath(os.path.join(self.CURRENT_DIR, '../../'))
-        self.LLVM_PROJECT_DIR = os.path.abspath(os.path.join(self.REPOROOT_DIR, 'toolchain', 'llvm-project'))
-        self.OUT_PATH = os.path.join(self.REPOROOT_DIR, 'out')
+        self.discover_paths()
+
         self.TARGETS = 'AArch64;ARM;BPF;Mips;RISCV;X86'
         self.ORIG_ENV = dict(os.environ)
         self.VERSION = None # autodetected
@@ -65,6 +63,20 @@ class BuildConfig():
         self.CLANG_VERSION = '10.0.1'
         self.MINGW_TRIPLE = 'x86_64-windows-gnu'
         logging.basicConfig(level=logging.INFO)
+
+    def discover_paths(self):
+        # Location of llvm-build directory
+        self.LLVM_BUILD_DIR = os.path.abspath(os.path.dirname(__file__))
+
+        parent_of_llvm_build = os.path.basename(os.path.dirname(self.LLVM_BUILD_DIR))
+        if parent_of_llvm_build == 'toolchain':
+            self.REPOROOT_DIR = os.path.abspath(os.path.join(self.LLVM_BUILD_DIR, '../..'))
+        else:
+            assert parent_of_llvm_build == 'llvm-project'
+            self.REPOROOT_DIR = os.path.abspath(os.path.join(self.LLVM_BUILD_DIR, '../../..'))
+
+        self.LLVM_PROJECT_DIR = os.path.join(self.REPOROOT_DIR, 'toolchain', 'llvm-project')
+        self.OUT_PATH = os.path.join(self.REPOROOT_DIR, 'out')
 
     @staticmethod
     def parse_add_argument(parser):
@@ -706,7 +718,7 @@ class SysrootComposer(BuildUtils):
         ohos_cmake = 'OHOS.cmake'
         dst_dir = self.merge_out_path(
             '../prebuilts/cmake/%s/share/cmake-3.16/Modules/Platform' % self.platform_prefix())
-        src_file = '%s/%s' % (self.build_config.CURRENT_DIR, ohos_cmake)
+        src_file = '%s/%s' % (self.build_config.LLVM_BUILD_DIR, ohos_cmake)
         if os.path.exists(os.path.join(dst_dir, ohos_cmake)):
             os.remove(os.path.join(dst_dir, ohos_cmake))
         shutil.copy2(src_file, dst_dir)
@@ -714,10 +726,12 @@ class SysrootComposer(BuildUtils):
 
     def build_musl(self, llvm_install, target, *extra_args):
         cur_dir = os.getcwd()
-        os.chdir(self.build_config.CURRENT_DIR)
+        os.chdir(self.build_config.LLVM_BUILD_DIR)
         self.logger().info('build musl %s', self.merge_out_path('install'))
-        args = ['./build_musl.sh', '-t', target, '-c',
-                self.merge_out_path(llvm_install, 'bin'), '-o', self.merge_out_path()] + list(extra_args)
+        args = ['./build_musl.sh', '-t', target,
+                '-c', self.merge_out_path(llvm_install, 'bin'),
+                '-o', self.merge_out_path(),
+                '-T', self.build_config.REPOROOT_DIR] + list(extra_args)
         self.check_call(args)
         os.chdir(cur_dir)
 
@@ -1676,8 +1690,8 @@ class LlvmPackage(BuildUtils):
         self.check_rm_tree(install_host_dir)
         self.check_copy_tree(build_dir, install_dir)
         # copy readme file to install_dir
-        shutil.copyfile(os.path.join(self.build_config.CURRENT_DIR, "toolchain_readme.md"),
-         os.path.join(install_dir, "README.md"))
+        shutil.copyfile(os.path.join(self.build_config.LLVM_BUILD_DIR, "toolchain_readme.md"),
+                        os.path.join(install_dir, "README.md"))
 
         # Remove unnecessary binaries.
         necessary_bin_files = []

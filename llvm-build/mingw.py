@@ -25,22 +25,30 @@ import sys
 class BuildConfig():
 
     def __init__(self, clang_version):
-        self.THIS_DIR = os.path.realpath(os.path.dirname(__file__))
+        self.LLVM_BUILD_DIR = os.path.realpath(os.path.dirname(__file__))
+
+        parent_of_llvm_build = os.path.basename(os.path.dirname(self.LLVM_BUILD_DIR))
+        if parent_of_llvm_build == 'toolchain':
+            self.REPOROOT_DIR = os.path.realpath(os.path.join(self.LLVM_BUILD_DIR, '../..'))
+        else:
+            assert parent_of_llvm_build == 'llvm-project'
+            self.REPOROOT_DIR = os.path.realpath(os.path.join(self.LLVM_BUILD_DIR, '../../..'))
+
         self.OUT_DIR = os.environ.get('OUT_DIR', self.repo_root('out'))
         self.CLANG_VERSION = clang_version
         self.LLVM_TRIPLE = 'x86_64-windows-gnu'
 
     def repo_root(self, *args):
-        return os.path.realpath(os.path.join(self.THIS_DIR, '../../', *args))
+        return os.path.join(self.REPOROOT_DIR, *args)
 
     def out_root(self, *args):
-        return os.path.realpath(os.path.join(self.OUT_DIR, *args))
+        return os.path.join(self.OUT_DIR, *args)
 
     def mingw64_dir(self):
         return self.out_root('mingw', self.LLVM_TRIPLE)
 
     def llvm_path(self, *args):
-        return os.path.realpath(os.path.join(self.THIS_DIR, '../llvm-project', *args))
+        return os.path.join(self.REPOROOT_DIR, 'toolchain/llvm-project', *args)
 
 
 class LlvmMingw():
