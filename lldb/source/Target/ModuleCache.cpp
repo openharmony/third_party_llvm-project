@@ -128,9 +128,26 @@ Status CreateHostSysRootModuleLink(const FileSpec &root_dir_spec,
                                    const FileSpec &platform_module_spec,
                                    const FileSpec &local_module_spec,
                                    bool delete_existing) {
+  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_MODULES));
   const auto sysroot_module_path_spec =
       JoinPath(JoinPath(root_dir_spec, hostname),
                platform_module_spec.GetPath().c_str());
+  UUID module_uuid;
+  {
+    auto module_sp =
+        std::make_shared<Module>(ModuleSpec(sysroot_module_path_spec));
+    module_uuid = module_sp->GetUUID();
+  }
+
+  if (!module_uuid.IsValid()) {
+    LLDB_LOGF(log, "Try CreateHostSysRootModuleLink but uuid is invalid %s",
+              module_uuid.GetAsString().c_str());
+    return Status();
+  }
+
+  LLDB_LOGF(log, "CreateHostSysRootModuleLink with uuid %s",
+              module_uuid.GetAsString().c_str());
+
   if (FileSystem::Instance().Exists(sysroot_module_path_spec)) {
     if (!delete_existing)
       return Status();
