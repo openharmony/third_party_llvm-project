@@ -98,6 +98,9 @@ const unsigned struct_kernel_stat64_sz = 104;
 const unsigned struct_kernel_stat_sz = 144;
 const unsigned struct_kernel_stat64_sz = 104;
 #elif defined(__mips__)
+#      if SANITIZER_OHOS
+#        define _ABIN32 1
+#      endif
 const unsigned struct_kernel_stat_sz =
     SANITIZER_ANDROID
         ? FIRST_32_SECOND_64(104, 128)

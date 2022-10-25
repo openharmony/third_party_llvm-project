@@ -276,7 +276,9 @@ uptr internal_ftruncate(fd_t fd, uptr size) {
   return res;
 }
 
-#if (!SANITIZER_LINUX_USES_64BIT_SYSCALLS || SANITIZER_SPARC) && SANITIZER_LINUX
+#    if (!SANITIZER_LINUX_USES_64BIT_SYSCALLS || SANITIZER_SPARC || \
+         SANITIZER_OHOS) &&                                         \
+        SANITIZER_LINUX
 static void stat64_to_stat(struct stat64 *in, struct stat *out) {
   internal_memset(out, 0, sizeof(*out));
   out->st_dev = in->st_dev;
@@ -377,18 +379,19 @@ uptr internal_stat(const char *path, void *buf) {
                              AT_NO_AUTOMOUNT, STATX_BASIC_STATS, (uptr)&bufx);
   statx_to_stat(&bufx, (struct stat *)buf);
   return res;
-#    elif (SANITIZER_WORDSIZE == 64 || SANITIZER_X32 ||    \
-           (defined(__mips__) && _MIPS_SIM == _ABIN32)) && \
-        !SANITIZER_SPARC
+#      elif (                                                                \
+          SANITIZER_WORDSIZE == 64 || SANITIZER_X32 ||                       \
+          (defined(__mips__) && _MIPS_SIM == _ABIN32 && !SANITIZER_OHOS)) && \
+          !SANITIZER_SPARC
   return internal_syscall(SYSCALL(newfstatat), AT_FDCWD, (uptr)path, (uptr)buf,
                           0);
-#    else
+#      else
   struct stat64 buf64;
   int res = internal_syscall(SYSCALL(fstatat64), AT_FDCWD, (uptr)path,
                              (uptr)&buf64, 0);
   stat64_to_stat(&buf64, (struct stat *)buf);
   return res;
-#    endif
+#      endif
 #  else
   struct stat64 buf64;
   int res = internal_syscall(SYSCALL(stat64), path, &buf64);
@@ -409,18 +412,19 @@ uptr internal_lstat(const char *path, void *buf) {
                              STATX_BASIC_STATS, (uptr)&bufx);
   statx_to_stat(&bufx, (struct stat *)buf);
   return res;
-#    elif (defined(_LP64) || SANITIZER_X32 ||              \
-           (defined(__mips__) && _MIPS_SIM == _ABIN32)) && \
-        !SANITIZER_SPARC
+#      elif (                                                                \
+          defined(_LP64) || SANITIZER_X32 ||                                 \
+          (defined(__mips__) && _MIPS_SIM == _ABIN32 && !SANITIZER_OHOS)) && \
+          !SANITIZER_SPARC
   return internal_syscall(SYSCALL(newfstatat), AT_FDCWD, (uptr)path, (uptr)buf,
                           AT_SYMLINK_NOFOLLOW);
-#    else
+#      else
   struct stat64 buf64;
   int res = internal_syscall(SYSCALL(fstatat64), AT_FDCWD, (uptr)path,
                              (uptr)&buf64, AT_SYMLINK_NOFOLLOW);
   stat64_to_stat(&buf64, (struct stat *)buf);
   return res;
-#    endif
+#      endif
 #  else
   struct stat64 buf64;
   int res = internal_syscall(SYSCALL(lstat64), path, &buf64);
