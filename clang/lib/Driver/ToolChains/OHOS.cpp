@@ -103,6 +103,8 @@ std::string OHOS::getMultiarchTriple(const llvm::Triple &T) const {
     return T.isOSLiteOS() ? "arm-liteos-ohos" : "arm-linux-ohos";
   case llvm::Triple::riscv32:
     return "riscv32-liteos-ohos";
+  case llvm::Triple::riscv64:
+    return "riscv64-linux-ohos";
   case llvm::Triple::x86:
     return "i686-linux-ohos";
   case llvm::Triple::x86_64:
