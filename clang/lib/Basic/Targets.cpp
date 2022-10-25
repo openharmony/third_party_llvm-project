@@ -273,7 +273,12 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
   case llvm::Triple::mipsel:
     switch (os) {
     case llvm::Triple::Linux:
-      return new LinuxTargetInfo<MipsTargetInfo>(Triple, Opts);
+      switch (Triple.getEnvironment()) {
+      default:
+        return new LinuxTargetInfo<MipsTargetInfo>(Triple, Opts);
+      case llvm::Triple::OpenHOS:
+        return new OHOSTargetInfo<MipsTargetInfo>(Triple, Opts);
+      }
     case llvm::Triple::RTEMS:
       return new RTEMSTargetInfo<MipsTargetInfo>(Triple, Opts);
     case llvm::Triple::FreeBSD:

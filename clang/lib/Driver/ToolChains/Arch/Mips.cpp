@@ -362,6 +362,9 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   } else if (mips::isFP64ADefault(Triple, CPUName)) {
     Features.push_back("+fp64");
     Features.push_back("+nooddspreg");
+  } else if (Triple.isOpenHOS()) {
+    // TODO: remove this else if entry when fpxx is supported on OHOS
+    Features.push_back("+fp64");
   }
 
   AddTargetFeature(Args, Features, options::OPT_mno_odd_spreg,
@@ -467,6 +470,10 @@ bool mips::isFP64ADefault(const llvm::Triple &Triple, StringRef CPUName) {
 
 bool mips::isFPXXDefault(const llvm::Triple &Triple, StringRef CPUName,
                          StringRef ABIName, mips::FloatABI FloatABI) {
+  // TODO: remove this if entry when fpxx is supported on OHOS
+  if (Triple.isOpenHOS())
+    return false;
+
   if (Triple.getVendor() != llvm::Triple::ImaginationTechnologies &&
       Triple.getVendor() != llvm::Triple::MipsTechnologies &&
       !Triple.isAndroid())

@@ -308,6 +308,7 @@ def err_target_unsupported_abi_for_triple : Error<
 def err_unsupported_abi_for_opt : Error<"'%0' can only be used with the '%1' ABI">;
 def err_mips_fp64_req : Error<
     "'%0' can only be used if the target supports the mfhc1 and mthc1 instructions">;
+def err_unsupported_fpxx_ohos : Error<"fpxx is currently unsupported on OHOS">;
 def err_target_unknown_fpmath : Error<"unknown FP unit '%0'">;
 def err_target_unsupported_fpmath : Error<
     "the '%0' unit is not supported with this instruction set">;

@@ -55,6 +55,8 @@
 // RUN:     | FileCheck %s -check-prefix=CHECK-RUNTIME
 // RUN: %clang %s -### --target=aarch64-linux-ohos -fuse-ld=lld 2>&1 \
 // RUN:     | FileCheck %s -check-prefix=CHECK-RUNTIME
+// RUN: %clang %s -### --target=mipsel-linux-ohos -fuse-ld=lld 2>&1 \
+// RUN:     | FileCheck %s -check-prefix=CHECK-RUNTIME
 // CHECK-RUNTIME: "{{.*}}/libclang_rt.builtins.a"
 // CHECK-RUNTIME: "-l:libunwind.a"
 // CHECK-LIBM: "-lm"

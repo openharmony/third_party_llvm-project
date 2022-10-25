@@ -484,7 +484,9 @@ append_list_if(MINGW -fms-extensions SANITIZER_COMMON_CFLAGS)
 # TODO: We should consider using the same model as libc++, that is use either
 # -nostdlib++ and --unwindlib=none if supported, or -nodefaultlibs otherwise.
 append_list_if(C_SUPPORTS_NODEFAULTLIBS_FLAG -nodefaultlibs SANITIZER_COMMON_LINK_FLAGS)
-append_list_if(COMPILER_RT_HAS_Z_TEXT -Wl,-z,text SANITIZER_COMMON_LINK_FLAGS)
+if (NOT __MIPS)
+  append_list_if(COMPILER_RT_HAS_Z_TEXT -Wl,-z,text SANITIZER_COMMON_LINK_FLAGS)
+endif()
 
 # Only necessary for 32-bit SPARC.  Solaris 11.2+ ld uses -z ignore/-z record
 # natively, but supports --as-needed/--no-as-needed for GNU ld compatibility.

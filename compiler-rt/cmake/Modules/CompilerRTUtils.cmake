@@ -182,7 +182,7 @@ macro(detect_target_arch)
   elseif(__MIPS64) # must be checked before __MIPS
     add_default_target_arch(mips64)
   elseif(__MIPS)
-    add_default_target_arch(mips)
+    add_default_target_arch(mipsel)
   elseif(__PPC64) # must be checked before __PPC
     add_default_target_arch(powerpc64)
   elseif(__PPC64LE)

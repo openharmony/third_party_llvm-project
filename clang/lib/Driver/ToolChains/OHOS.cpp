@@ -105,6 +105,8 @@ std::string OHOS::getMultiarchTriple(const llvm::Triple &T) const {
     return "riscv32-liteos-ohos";
   case llvm::Triple::riscv64:
     return "riscv64-linux-ohos";
+  case llvm::Triple::mipsel:
+    return "mipsel-linux-ohos";
   case llvm::Triple::x86:
     return "i686-linux-ohos";
   case llvm::Triple::x86_64:
@@ -368,9 +370,12 @@ void OHOS::addExtraOpts(llvm::opt::ArgStringList &CmdArgs) const {
   CmdArgs.push_back("relro");
   CmdArgs.push_back("-z");
   CmdArgs.push_back("max-page-size=4096");
-  CmdArgs.push_back("--hash-style=gnu");
-  // FIXME: gnu or both???
-  CmdArgs.push_back("--hash-style=both");
+  // .gnu.hash section is not compatible with the MIPS target
+  if (getArch() != llvm::Triple::mipsel) {
+    CmdArgs.push_back("--hash-style=gnu");
+    // FIXME: gnu or both???
+    CmdArgs.push_back("--hash-style=both");
+  }
 #ifdef ENABLE_LINKER_BUILD_ID
   CmdArgs.push_back("--build-id");
 #endif

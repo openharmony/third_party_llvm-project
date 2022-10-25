@@ -30,7 +30,7 @@ set(RISCV64 riscv64)
 set(VE ve)
 
 set(ALL_CRT_SUPPORTED_ARCH ${X86} ${X86_64} ${ARM32} ${ARM64} ${PPC32}
-    ${PPC64} ${RISCV32} ${RISCV64} ${VE} ${HEXAGON})
+	${PPC64} ${MIPS32} ${RISCV32} ${RISCV64} ${VE} ${HEXAGON})
 
 include(CompilerRTUtils)
 

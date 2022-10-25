@@ -86,7 +86,10 @@ public:
   }
 
   bool isFP64Default() const {
-    return CPU == "mips32r6" || ABI == "n32" || ABI == "n64" || ABI == "64";
+    // TODO: remove getTriple().isOpenHOS() case
+    //  when fpxx is supported on OHOS
+    return getTriple().isOpenHOS() || CPU == "mips32r6" || ABI == "n32" ||
+           ABI == "n64" || ABI == "64";
   }
 
   bool isNan2008() const override { return IsNan2008; }
