@@ -63,6 +63,7 @@ class BuildConfig():
         self.LITEOS_SFX = '-liteos-ohos'
         self.LLDB_PY_VERSION = '3.10'
         self.CLANG_VERSION = '10.0.1'
+        self.MINGW_TRIPLE = 'x86_64-windows-gnu'
         logging.basicConfig(level=logging.INFO)
 
     @staticmethod
@@ -548,10 +549,10 @@ class LlvmCore(BuildUtils):
             windows_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON'
 
         windows_defines['LLDB_RELOCATABLE_PYTHON'] = 'OFF'
-        win_sysroot = self.merge_out_path('mingw', 'x86_64-w64-mingw32')
+        win_sysroot = self.merge_out_path('mingw', self.build_config.MINGW_TRIPLE)
         windows_defines['LLDB_ENABLE_PYTHON'] = 'ON'
         windows_defines['LLDB_PYTHON_HOME'] = 'python'
-        windows_defines['LLDB_PYTHON_RELATIVE_PATH'] =
+        windows_defines['LLDB_PYTHON_RELATIVE_PATH'] = \
           'bin/python/lib/python%s' % (self.build_config.LLDB_PY_VERSION)
         windows_defines['LLDB_PYTHON_EXE_RELATIVE_PATH'] = 'bin/python'
         windows_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.pys'
@@ -584,7 +585,6 @@ class LlvmCore(BuildUtils):
 
     def llvm_compile_windows_flags(self,
                                    windows_defines,
-                                   compiler_rt_path,
                                    windowstool_path,
                                    windows64_install,
                                    ldflags,
@@ -654,7 +654,7 @@ class LlvmCore(BuildUtils):
         build_dir = self.merge_out_path("windows-x86_64")
         windowstool_path = self.merge_out_path('llvm-install')
         windows64_install = self.merge_out_path('windows-x86_64-install')
-        windows_sysroot = self.merge_out_path('mingw', 'x86_64-w64-mingw32')
+        windows_sysroot = self.merge_out_path('mingw', self.build_config.MINGW_TRIPLE)
 
         self.check_create_dir(build_dir)
 
@@ -674,7 +674,7 @@ class LlvmCore(BuildUtils):
         ldflags = []
         cflags = []
 
-        self.llvm_compile_windows_flags(windows_defines, compiler_rt_path,
+        self.llvm_compile_windows_flags(windows_defines,
             windowstool_path, windows64_install, ldflags, cflags)
 
         cxxflags = list(cflags)
@@ -850,7 +850,7 @@ class LlvmLibs(BuildUtils):
             if llvm_build != llvm_triple:
                 continue
 
-            has_lldb_server = arch not in ['riscv64']
+            has_lldb_server = arch not in ['riscv64', 'mipsel']
 
             defines = {}
             ldflags = []
@@ -859,6 +859,7 @@ class LlvmLibs(BuildUtils):
             self.build_libs_defines(llvm_triple, defines, cc, cxx, ar, llvm_config, ldflags, cflags, extra_flags)
             if arch == 'mipsel':
                 ldflags.append('-Wl,-z,notext')
+                ldflags.append('-Wl,--no-check-dynamic-relocations')
 
             llvm_path = self.merge_out_path('llvm_make')
             arch_list = [self.liteos_triple('arm'), self.open_ohos_triple('arm'),
@@ -982,6 +983,7 @@ class LlvmLibs(BuildUtils):
             crt_defines['COMPILER_RT_BUILD_LIBFUZZER'] = 'OFF'
         else:
             crt_defines['COMPILER_RT_BUILD_LIBFUZZER'] = 'ON'
+        crt_defines['COMPILER_RT_BUILD_ORC'] = 'OFF'
         crt_defines['LLVM_ENABLE_PER_TARGET_RUNTIME_DIR'] = 'ON'
         crt_defines['COMPILER_RT_USE_BUILTINS_LIBRARY'] = 'ON'
         crt_defines['CMAKE_SYSTEM_NAME'] = 'OHOS'
@@ -989,10 +991,7 @@ class LlvmLibs(BuildUtils):
         crt_defines['SANITIZER_CXX_ABI'] = 'libcxxabi'
         crt_defines['CMAKE_TRY_COMPILE_TARGET_TYPE'] = 'STATIC_LIBRARY'
         crt_defines['COMPILER_RT_HWASAN_WITH_INTERCEPTORS'] = 'OFF'
-        crt_defines['COMPILER_RT_BUILD_ORC'] = 'OFF'
-        crt_defines['COMPILER_RT_USE_LLVM_UNWINDER'] = 'ON'
-
-        crt_defines['COMPILER_RT_BUILD_SANITIZERS'] =
+        crt_defines['COMPILER_RT_BUILD_SANITIZERS'] = \
             'OFF' if llvm_triple == self.liteos_triple('arm') or first_time else 'ON'
         crt_defines['COMPILER_RT_DEFAULT_TARGET_TRIPLE'] = llvm_triple
         crt_cmake_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'compiler-rt'))
@@ -1163,44 +1162,37 @@ class LlvmLibs(BuildUtils):
 
         self.llvm_package.copy_lldb_server_to_llvm_install(lldb_path, crt_install, llvm_triple)
 
-    @staticmethod
-    def build_libs_windows_cmake_defines(cmake_defines, toolchain_dir, windows_sysroot):
-        cmake_defines['CMAKE_C_COMPILER_WORKS'] = '1'
-        cmake_defines['CMAKE_CXX_COMPILER_WORKS'] = '1'
-        cmake_defines['CMAKE_SYSTEM_NAME'] = 'Windows'
-        cmake_defines['CMAKE_SYSTEM_PROCESSOR'] = 'x86_64'
-        cmake_defines['CMAKE_C_COMPILER'] = os.path.join(toolchain_dir, 'bin', 'clang')
-        cmake_defines['CMAKE_CXX_COMPILER'] = os.path.join(toolchain_dir, 'bin', 'clang++')
-        cmake_defines['LLVM_CONFIG_PATH'] = os.path.join(toolchain_dir, 'bin', 'llvm-config')
-        cmake_defines['LLVM_ENABLE_LIBCXX'] = 'ON'
-        cmake_defines['CMAKE_SYSROOT'] = windows_sysroot
-        cmake_defines['CMAKE_FIND_ROOT_PATH_MODE_INCLUDE'] = 'ONLY'
-        cmake_defines['CMAKE_FIND_ROOT_PATH_MODE_LIBRARY'] = 'ONLY'
-        cmake_defines['CMAKE_FIND_ROOT_PATH_MODE_PACKAGE'] = 'ONLY'
-        cmake_defines['CMAKE_FIND_ROOT_PATH_MODE_PROGRAM'] = 'NEVER'
-
 
     def build_runtimes_for_windows(self, enable_assertions):
 
         self.logger().info('Building libs for windows.')
         toolchain_dir = self.merge_out_path('llvm-install')
         install_dir = self.merge_out_path('windows-x86_64-install')
-        windows_sysroot = self.merge_out_path('mingw', 'x86_64-w64-mingw32')
+        windows_sysroot = self.merge_out_path('mingw', self.build_config.MINGW_TRIPLE)
 
         cflags = ['-stdlib=libc++', '--target=x86_64-pc-windows-gnu', '-D_LARGEFILE_SOURCE',
                   '-D_FILE_OFFSET_BITS=64', '-D_WIN32_WINNT=0x0600', '-DWINVER=0x0600', '-D__MSVCRT_VERSION__=0x1400']
 
         cmake_defines = {}
-        self.build_libs_windows_cmake_defines(cmake_defines, toolchain_dir, windows_sysroot)
-
+        cmake_defines['CMAKE_C_COMPILER'] = os.path.join(toolchain_dir, 'bin', 'clang')
+        cmake_defines['CMAKE_CXX_COMPILER'] = os.path.join(toolchain_dir, 'bin', 'clang++')
         cmake_defines['CMAKE_CROSSCOMPILING'] = 'True'
         cmake_defines['CMAKE_SYSTEM_NAME'] = 'Windows'
+        cmake_defines['CMAKE_SYSROOT'] = windows_sysroot
         cmake_defines['CMAKE_ASM_FLAGS'] = ' '.join(cflags)
         cmake_defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
         cmake_defines['CMAKE_CXX_FLAGS'] = ' '.join(cflags)
-        cmake_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(ldflags)
-        cmake_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
-        cmake_defines['CMAKE_MODULE_LINKER_FLAGS'] = ' '.join(ldflags)
+        cmake_defines['CMAKE_TRY_COMPILE_TARGET_TYPE'] = 'STATIC_LIBRARY'
+        cmake_defines['CMAKE_INSTALL_PREFIX'] = install_dir
+        cmake_defines['LLVM_CONFIG_PATH'] = os.path.join(toolchain_dir, 'bin', 'llvm-config')
+        cmake_defines['LIBCXX_ENABLE_SHARED'] = 'OFF'
+        cmake_defines['LIBCXX_ENABLE_STATIC_ABI_LIBRARY'] = 'ON'
+        cmake_defines['LIBCXX_ENABLE_NEW_DELETE_DEFINITIONS'] = 'ON'
+        cmake_defines['LIBCXXABI_ENABLE_SHARED'] = 'OFF'
+        cmake_defines['LIBUNWIND_ENABLE_SHARED'] = 'OFF'
+        cmake_defines['LIBCXXABI_USE_LLVM_UNWINDER'] = 'ON'
+        cmake_defines['LLVM_ENABLE_RUNTIMES'] = 'libunwind;libcxxabi;libcxx'
+        cmake_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON' if enable_assertions else 'OFF'
 
         out_path = self.merge_out_path('lib', 'windows-runtimes')
         cmake_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'runtimes'))
@@ -1277,7 +1269,6 @@ class LldbMi(BuildUtils):
                     '-Wl,--nxcompat',
                     '-lucrt',
                     '-lucrtbase',
-                    '-lpthread',
                     '-L', ]
         return ldflags_lists
 
@@ -1319,14 +1310,14 @@ class LldbMi(BuildUtils):
     def build_lldb_mi_for_windows(self):
         self.logger().info('Building lldb-mi for windows.')
 
-        build_dir = self.merge_out_path('clang_mingw', 'clang-10.0.1')
+        build_dir = self.merge_out_path('llvm-install')
         lldb_mi_windows64_path = self.merge_out_path('windows-x86_64-lldb-mi')
         lldb_mi_cmake_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, '../lldb-mi'))
         windows64_install = self.merge_out_path('windows-x86_64-install')
         cc = os.path.join(build_dir, 'bin', 'clang')
         cxx = os.path.join(build_dir, 'bin', 'clang++')
 
-        windows_sysroot = self.merge_out_path('mingw', 'x86_64-w64-mingw32')
+        windows_sysroot = self.merge_out_path('mingw', self.build_config.MINGW_TRIPLE)
         self.check_create_dir(lldb_mi_windows64_path)
 
         ldflags = ['-fuse-ld=lld',

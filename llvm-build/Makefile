@@ -108,6 +108,8 @@ endif
 endif
 endif
 
+CFLAGS += -Wno-int-conversion
+
 .PHONY: $(TARGETS:%=musl_copy_for_%)
 .PHONY: $(TARGETS:%=musl_patch_for_%)
 .PHONY: $(TARGETS:%=musl_install_for_%)

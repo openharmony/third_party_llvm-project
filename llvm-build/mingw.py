@@ -28,6 +28,7 @@ class BuildConfig():
         self.THIS_DIR = os.path.realpath(os.path.dirname(__file__))
         self.OUT_DIR = os.environ.get('OUT_DIR', self.repo_root('out'))
         self.CLANG_VERSION = clang_version
+        self.LLVM_TRIPLE = 'x86_64-windows-gnu'
 
     def repo_root(self, *args):
         return os.path.realpath(os.path.join(self.THIS_DIR, '../../', *args))
@@ -36,7 +37,7 @@ class BuildConfig():
         return os.path.realpath(os.path.join(self.OUT_DIR, *args))
 
     def mingw64_dir(self):
-        return out_root('mingw', 'x86_64-w64-mingw32')
+        return self.out_root('mingw', self.LLVM_TRIPLE)
 
     def llvm_path(self, *args):
         return os.path.realpath(os.path.join(self.THIS_DIR, '../llvm-project', *args))
@@ -53,13 +54,12 @@ class LlvmMingw():
         self.LLVM_ROOT = self.build_config.out_root('llvm-install')
         self.LLVM_CONFIG = os.path.join(self.LLVM_ROOT, 'bin', 'llvm-config')
         self.SYSROOT = self.build_config.mingw64_dir()
-        self.LLVM_TRIPLE = 'x86_64-windows-gnu'
-        self.CRT_PATH = self.build_config.out_root('lib', 'mingw-clangrt-%s' % llvm_triple)
+        self.CRT_PATH = self.build_config.out_root('lib', 'mingw-clangrt-%s' % self.build_config.LLVM_TRIPLE)
         self.CRT_INSTALL = self.build_config.out_root('llvm-install', 'lib', 'clang', self.build_config.CLANG_VERSION)
         # prefix & env
         self.prefix = build_config.mingw64_dir()
         common_flags = "-target x86_64-w64-mingw32 -rtlib=compiler-rt -stdlib=libc++ \
-            -fuse-ld=lld -Qunused-arguments -g -O2 --sysroot=" + mingw64_sysroot()
+            -fuse-ld=lld -Qunused-arguments -g -O2 --sysroot=" + self.build_config.mingw64_dir()
         self.env = {
             "CC": "%s/bin/clang" % self.LLVM_ROOT,
             "CXX": "%s/bin/clang++" % self.LLVM_ROOT,
@@ -124,7 +124,7 @@ class LlvmMingw():
         self.crt_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
         self.update_cmake_sysroot_flags(self.crt_defines, self.SYSROOT)
         cflags = [
-            '--target=%s' % self.LLVM_TRIPLE,
+            '--target=%s' % self.build_config.LLVM_TRIPLE,
             '-ffunction-sections',
             '-fdata-sections',
         ]
@@ -134,8 +134,8 @@ class LlvmMingw():
         self.crt_defines['CMAKE_ASM_FLAGS'] = ' '.join(cflags)
         self.crt_defines['CMAKE_CXX_FLAGS'] = ' '.join(cflags)
         self.crt_defines['COMPILER_RT_TEST_COMPILER_CFLAGS'] = ' '.join(cflags)
-        self.crt_defines['COMPILER_RT_TEST_TARGET_TRIPLE'] = self.LLVM_TRIPLE
-        self.crt_defines['COMPILER_RT_DEFAULT_TARGET_TRIPLE'] = self.LLVM_TRIPLE
+        self.crt_defines['COMPILER_RT_TEST_TARGET_TRIPLE'] = self.build_config.LLVM_TRIPLE
+        self.crt_defines['COMPILER_RT_DEFAULT_TARGET_TRIPLE'] = self.build_config.LLVM_TRIPLE
         self.crt_defines['COMPILER_RT_INCLUDE_TESTS'] = 'OFF'
         self.crt_defines['CMAKE_INSTALL_PREFIX'] = self.CRT_INSTALL
         self.crt_defines['COMPILER_RT_BUILD_LIBFUZZER'] = 'OFF'
