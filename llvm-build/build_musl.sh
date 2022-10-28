@@ -18,11 +18,12 @@ set -e
 #default variables
 CLANG_BIN_ROOT="${PWD}/../../out/install/linux-x86_64/clang-dev/bin/"
 TARGET_TRIPLE=""
+TOPDIR="${PWD}/../.."
 OUT="${PWD}/../../out"
 make_libs=0
 
 #argument parser
-while getopts "c:t:o:lh" arg
+while getopts "c:t:T:o:lh" arg
 do
     case "${arg}" in
         "c")
@@ -30,6 +31,9 @@ do
             ;;
         "t")
             TARGET_TRIPLE=${OPTARG}
+            ;;
+        "T")
+            TOPDIR=${OPTARG}
             ;;
         "o")
             OUT=${OPTARG}
@@ -43,6 +47,7 @@ do
             echo " Options are:"
             echo "  -c <path>       Specify clang bin path"
             echo "  -t <target>     Specify target tripple"
+            echo "  -T <dir>        Specify top of repo tree"
             echo "  -o <dir>        Specify the build output directory"
             echo "  -l              Install libs"
             exit 0
@@ -90,25 +95,25 @@ fi
 echo "CLANG_BIN_ROOT=${CLANG_BIN_ROOT}"
 echo "ARCH=${TARGETS_PREFIX}"
 echo "TARGET=${TARGET_TRIPLE}"
-echo "TOPDIR=${PWD}/../.."
+echo "TOPDIR=${TOPDIR}"
 echo "TARGETS=${TARGET_USER}"
 echo "OUT=${OUT}"
 echo "SYSROOTDIR=${OUT}/sysroot"
 
 # build musl_headers
-make musl_header_install_for_${TARGET_USER} CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${PWD}/../../\
+make musl_header_install_for_${TARGET_USER} CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${TOPDIR} \
      SYSROOTDIR=${OUT}/sysroot TARGETS=${TARGET_USER} TARGET=${TARGET_TRIPLE} ARCH=${TARGETS_PREFIX} -f Makefile
 
 # build musl_libs
 if ((make_libs == 1)); then
     if [ $TARGET_TRIPLE == "aarch64-linux-ohos" ] || [ $TARGET_TRIPLE == "riscv64-linux-ohos" ] || \
        [ $TARGET_TRIPLE == "mipsel-linux-ohos" ] || [ $TARGET_TRIPLE == "x86_64-linux-ohos" ]; then
-        make CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${PWD}/../../ SYSROOTDIR=${OUT}/sysroot TARGETS=${TARGET_USER}\
+        make CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${TOPDIR} SYSROOTDIR=${OUT}/sysroot TARGETS=${TARGET_USER}\
             TARGET=${TARGET_TRIPLE} ARCH=${TARGETS_PREFIX} -f Makefile
     else
         for ARCH_CFLAG in "${CFLAGS_FOR_TARGET[@]}"
         do
-            make CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${PWD}/../../ SYSROOTDIR=${OUT}/sysroot TARGETS=${TARGET_USER}\
+            make CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${TOPDIR} SYSROOTDIR=${OUT}/sysroot TARGETS=${TARGET_USER}\
             TARGET=${TARGET_TRIPLE} ARCH=${TARGETS_PREFIX} ARCH_CFLAGS="${ARCH_CFLAG}" -f Makefile
         done
     fi

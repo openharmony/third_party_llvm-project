@@ -26,15 +26,23 @@ class BuildConfig():
 
     def __init__(self):
         self.CLANG_VERSION = '10.0.1'
-        self.THIS_DIR = os.path.realpath(os.path.dirname(__file__))
+        self.LLVM_BUILD_DIR = os.path.realpath(os.path.dirname(__file__))
+
+        parent_of_llvm_build = os.path.basename(os.path.dirname(self.LLVM_BUILD_DIR))
+        if parent_of_llvm_build == 'toolchain':
+            self.REPOROOT_DIR = os.path.realpath(os.path.join(self.LLVM_BUILD_DIR, '../..'))
+        else:
+            assert parent_of_llvm_build == 'llvm-project'
+            self.REPOROOT_DIR = os.path.realpath(os.path.join(self.LLVM_BUILD_DIR, '../../..'))
+
         self.OUT_DIR = os.environ.get('OUT_DIR', self.repo_root('out'))
         self.MINGW_DIR = self.out_root('clang_mingw', 'clang-%s' % self.CLANG_VERSION, 'x86_64-w64-mingw32')
 
     def repo_root(self, *args):
-        return os.path.realpath(os.path.join(self.THIS_DIR, '../../', *args))
+        return os.path.join(self.REPOROOT_DIR, *args)
 
     def out_root(self, *args):
-        return os.path.realpath(os.path.join(self.OUT_DIR, *args))
+        return os.path.join(self.OUT_DIR, *args)
 
     def mingw64_dir(self):
         if os.path.isdir(self.MINGW_DIR):
@@ -43,7 +51,7 @@ class BuildConfig():
         return self.MINGW_DIR
 
     def llvm_path(self, *args):
-        return os.path.realpath(os.path.join(self.THIS_DIR, '../llvm-project', *args))
+        return os.path.join(self.REPOROOT_DIR, 'toolchain/llvm-project', *args)
 
 
 class LlvmMingw():
@@ -243,7 +251,7 @@ class LlvmMingw():
             shutil.rmtree(winpthreads_dir)
         os.makedirs(winpthreads_dir)
         os.chdir(winpthreads_dir)
-        self.env['RC'] = "%s/windres.sh" % self.build_config.THIS_DIR
+        self.env['RC'] = "%s/windres.sh" % self.build_config.LLVM_BUILD_DIR
         self.env['EXEEXT'] = ".exe"
         cmd = ['../configure', '--prefix=%s' % self.prefix,
             '--host=x86_64-w64-mingw32',

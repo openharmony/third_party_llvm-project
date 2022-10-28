@@ -15,8 +15,16 @@
 set -e
 
 #default variables
-MYDIR=$(dirname $0)
-CLANG_BIN_ROOT="$MYDIR/../../out/clang_mingw/clang-10.0.1/bin/"
+
+LLVM_BUILD_DIR=$(dirname $0)
+PARENT_OF_LLVM_BUILD=$(basename "$(realpath "$LLVM_BUILD_DIR/..")")
+case $PARENT_OF_LLVM_BUILD in
+  toolchain)    TOPDIR="$(realpath "$LLVM_BUILD_DIR/../..")" ;;
+  llvm-project) TOPDIR="$(realpath "$LLVM_BUILD_DIR/../../..")" ;;
+  *)            echo "Cannot detect TOPDIR" 1>&2 ; exit 1 ;;
+esac
+
+CLANG_BIN_ROOT="$TOPDIR/out/clang_mingw/clang-10.0.1/bin/"
 CLANG_FLAGS="clang -target x86_64-w64-mingw32 -rtlib=compiler-rt -stdlib=libc++ -fuse-ld=lld -Qunused-arguments -E -xc -DRC_INVOKED=1"
 LLVM_RC_FLAGS="llvm-rc -I ../src src/.libs/version.o.preproc.rc -c 1252 -fo src/.libs/version.o.out.res"
 LLVM_CVTRES_FLAGS="llvm-cvtres src/.libs/version.o.out.res -machine:X64 -out:"
