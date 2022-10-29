@@ -32,6 +32,7 @@ the [libc++ C++ standard library](https://libcxx.llvm.org),
 the [LLD linker](https://lld.llvm.org), and more.
 
 ### Getting the Source Code and Building LLVM
+We recommend that you base on the guide [llvm-build](https://gitee.com/openharmony-sig/third_party_llvm-project/blob/master/llvm-build/README.md) to get the source code and build it for OpenHarmony platform.
 
 The LLVM Getting Started documentation may be out of date.  The [Clang
 Getting Started](http://clang.llvm.org/get_started.html) page might have more
@@ -109,4 +110,4 @@ page for detailed information on configuring and compiling LLVM. You can visit
 [Directory Layout](https://llvm.org/docs/GettingStarted.html#directory-layout)
 to learn about the layout of the source code tree.
 
-For the llvm construction of openharmony, please refer to [llvm-build](https://gitee.com/openharmony-sig/third_party_llvm-project/tree/llvmorg-12.0.1-dev/llvm-build).
+For the llvm construction of openharmony, please refer to [llvm-build](https://gitee.com/openharmony-sig/third_party_llvm-project/blob/master/llvm-build/README.md).

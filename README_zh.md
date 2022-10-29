@@ -71,5 +71,4 @@ LLVM入门文档可能已过期。[Clang入门](https://clang.llvm.org/get_start
 
 请参阅 [LLVM入门](https://llvm.org/docs/GettingStarted.html#getting-started-with-llvm) 页面，了解有关配置和编译LLVM的详细信息。您可以访问 [目录布局](https://llvm.org/docs/GettingStarted.html#directory-layout) 以了解源代码树的布局。
 
-有关Openharmony的llvm构建请参考[llvm-build](https://gitee.com/openharmony-sig/third_party_llvm-project/tree/llvmorg-12.0.1-dev/llvm-build)。
-
+有关Openharmony的llvm构建请参考[llvm-build](https://gitee.com/openharmony-sig/third_party_llvm-project/blob/master/llvm-build/README.md)。
