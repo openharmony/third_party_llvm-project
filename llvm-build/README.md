@@ -18,9 +18,11 @@ MacOS X >= 10.15.4
 
 ### Get Code
 ```
-repo init -u https://gitee.com/OpenHarmony/manifest.git -b add_llvm_toolchain-dev (not ready yet)
+repo init -u https://gitee.com/OpenHarmony/manifest.git -b master -m llvm-toolchain.xml
 repo sync -c 
 repo forall -c 'git lfs pull'
+mkdir toolchain
+mv third_party/llvm-project toolchain/llvm-project
 cp -r toolchain/llvm-project/llvm-build toolchain
 ```
 </br>
