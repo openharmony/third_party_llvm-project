@@ -1,4 +1,4 @@
-//===-- PlatformOHOS.cpp -------------------------------------*- C++ -*-===//
+//===-- PlatformOHOS.cpp ----------------------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -14,6 +14,7 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Scalar.h"
 #include "lldb/Utility/UriParser.h"
+#include "llvm/Config/config.h"
 
 #include "HdcClient.h"
 #include "PlatformOHOS.h"
@@ -35,7 +36,7 @@ void PlatformOHOS::Initialize() {
   PlatformLinux::Initialize();
 
   if (g_initialize_count++ == 0) {
-#if defined(__OHOS_FAMILY__)
+#if defined(__OHOS__)
     PlatformSP default_platform_sp(new PlatformOHOS(true));
     default_platform_sp->SetSystemArchitecture(HostInfo::GetArchitecture());
     Platform::SetHostPlatform(default_platform_sp);
@@ -111,7 +112,8 @@ PlatformSP PlatformOHOS::CreateInstance(bool force, const ArchSpec *arch) {
   return PlatformSP();
 }
 
-PlatformOHOS::PlatformOHOS(bool is_host) : PlatformLinux(is_host) {}
+PlatformOHOS::PlatformOHOS(bool is_host)
+    : PlatformLinux(is_host), m_sdk_version(0) {}
 
 PlatformOHOS::~PlatformOHOS() {}
 
@@ -120,8 +122,8 @@ llvm::StringRef PlatformOHOS::GetPluginNameStatic(bool is_host) {
 }
 
 const char *PlatformOHOS::GetPluginDescriptionStatic(bool is_host) {
-  return is_host ? "Local OpenHarmony OS user platform plug-in." : 
-      "Remote OpenHarmony OS user platform plug-in.";
+  return is_host ? "Local Open HarmonyOS user platform plug-in."
+                 : "Remote Open HarmonyOS user platform plug-in.";
 }
 
 llvm::StringRef PlatformOHOS::GetPluginName() {
@@ -206,8 +208,10 @@ Status PlatformOHOS::DownloadModuleSlice(const FileSpec &src_file_spec,
 
 Status PlatformOHOS::DisconnectRemote() {
   Status error = PlatformLinux::DisconnectRemote();
-  if (error.Success())
+  if (error.Success()) {
     m_device_id.clear();
+    m_sdk_version = 0;
+  }
   return error;
 }
 
@@ -219,8 +223,25 @@ uint32_t PlatformOHOS::GetSdkVersion() {
   if (!IsConnected())
     return 0;
 
-  // TBD
-  return 1;
+  if (m_sdk_version != 0)
+    return m_sdk_version;
+
+  std::string version_string;
+  HdcClient hdc(m_device_id);
+  Status error =
+      hdc.Shell("getprop ro.build.version.sdk", seconds(5), &version_string);
+  version_string = llvm::StringRef(version_string).trim().str();
+
+  if (error.Fail() || version_string.empty()) {
+    Log *log = GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM);
+    if (log)
+      log->Printf("Get SDK version failed. (error: %s, output: %s)",
+                  error.AsCString(), version_string.c_str());
+    return 0;
+  }
+
+  m_sdk_version = StringConvert::ToUInt32(version_string.c_str());
+  return m_sdk_version;
 }
 
 bool PlatformOHOS::GetRemoteOSVersion() {
@@ -253,4 +274,10 @@ PlatformOHOS::GetLibdlFunctionDeclarations(lldb_private::Process *process) {
              )";
 
   return PlatformPOSIX::GetLibdlFunctionDeclarations(process);
+}
+
+ConstString PlatformOHOS::GetMmapSymbolName(const ArchSpec &arch) {
+  return arch.GetTriple().isArch32Bit()
+             ? ConstString("__lldb_mmap")
+             : PlatformLinux::GetMmapSymbolName(arch);
 }

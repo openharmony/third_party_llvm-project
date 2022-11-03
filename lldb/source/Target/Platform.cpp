@@ -1262,6 +1262,10 @@ Status Platform::Unlink(const FileSpec &path) {
   return Status("unimplemented");
 }
 
+ConstString Platform::GetMmapSymbolName(const ArchSpec &) {
+  return ConstString("mmap");
+}
+
 MmapArgList Platform::GetMmapArgumentList(const ArchSpec &arch, addr_t addr,
                                           addr_t length, unsigned prot,
                                           unsigned flags, addr_t fd,

@@ -544,6 +544,8 @@ public:
 
   virtual Status Unlink(const FileSpec &file_spec);
 
+  virtual ConstString GetMmapSymbolName(const ArchSpec &arch);
+
   virtual MmapArgList GetMmapArgumentList(const ArchSpec &arch,
                                           lldb::addr_t addr,
                                           lldb::addr_t length,

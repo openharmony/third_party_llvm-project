@@ -46,9 +46,11 @@ bool lldb_private::InferiorCallMmap(Process *process, addr_t &allocated_addr,
   function_options.include_symbols = true;
   function_options.include_inlines = false;
 
+  const ArchSpec arch = process->GetTarget().GetArchitecture();
+  auto mmap_name = process->GetTarget().GetPlatform()->GetMmapSymbolName(arch);
   SymbolContextList sc_list;
   process->GetTarget().GetImages().FindFunctions(
-      ConstString("mmap"), eFunctionNameTypeFull, function_options, sc_list);
+      mmap_name, eFunctionNameTypeFull, function_options, sc_list);
   const uint32_t count = sc_list.GetSize();
   if (count > 0) {
     SymbolContext sc;
@@ -91,7 +93,6 @@ bool lldb_private::InferiorCallMmap(Process *process, addr_t &allocated_addr,
         CompilerType void_ptr_type =
             type_system_or_err->GetBasicTypeFromAST(eBasicTypeVoid)
                 .GetPointerType();
-        const ArchSpec arch = process->GetTarget().GetArchitecture();
         MmapArgList args =
             process->GetTarget().GetPlatform()->GetMmapArgumentList(
                 arch, addr, length, prot_arg, flags, fd, offset);

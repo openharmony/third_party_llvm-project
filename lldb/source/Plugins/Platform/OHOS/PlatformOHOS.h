@@ -1,4 +1,4 @@
-//===-- PlatformOHOS.h ---------------------------------------*- C++ -*-===//
+//===-- PlatformOHOS.h ------------------------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -54,6 +54,8 @@ public:
 
   uint32_t GetDefaultMemoryCacheLineSize() override;
 
+  ConstString GetMmapSymbolName(const ArchSpec &arch) override;
+
 protected:
   const char *GetCacheHostname() override;
 
@@ -66,12 +68,13 @@ protected:
 
 private:
   std::string m_device_id;
+  uint32_t m_sdk_version;
 
   PlatformOHOS(const PlatformOHOS &other) = delete;
   PlatformOHOS& operator=(const PlatformOHOS &other) = delete;
 };
 
-} // namespace platofor_ohos
+} // namespace platform_ohos
 } // namespace lldb_private
 
 #endif // liblldb_PlatformOHOS_h_
