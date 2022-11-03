@@ -120,6 +120,8 @@ def FuchsiaAlpha : Package<"fuchsia">, ParentPackage<Alpha>;
 def WebKit : Package<"webkit">;
 def WebKitAlpha : Package<"webkit">, ParentPackage<Alpha>;
 
+def OpenHarmony : Package<"openharmony">;
+
 //===----------------------------------------------------------------------===//
 // Core Checkers.
 //===----------------------------------------------------------------------===//
@@ -1734,3 +1736,17 @@ def UncountedLocalVarsChecker : Checker<"UncountedLocalVarsChecker">,
   Documentation<HasDocumentation>;
 
 } // end alpha.webkit
+
+//===----------------------------------------------------------------------===//
+// OpenHarmony checkers.
+//===----------------------------------------------------------------------===//
+
+let ParentPackage = OpenHarmony in {
+def UnixAPIArgsChecker : Checker<"UnixAPIArgs">,
+  HelpText<"Check for open unix api arguments">,
+  Documentation<HasDocumentation>;
+
+def MemcpyChecker : Checker<"Memcpy">,
+  HelpText<"Check for memcpy_s api arguments">,
+  Documentation<HasDocumentation>;
+}
