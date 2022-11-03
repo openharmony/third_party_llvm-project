@@ -455,6 +455,10 @@ public:
 
   void SetSDKBuild(ConstString sdk_build) { m_sdk_build = sdk_build; }
 
+  void SetContainer(bool b_container) { m_container = b_container; }
+
+  bool GetContainer() const { return m_container; }
+
   // Override this to return true if your platform supports Clang modules. You
   // may also need to override AddClangModuleCompilationOptions to pass the
   // right Clang flags for your platform.
@@ -876,6 +880,7 @@ protected:
   ConstString
       m_sdk_sysroot; // the root location of where the SDK files are all located
   ConstString m_sdk_build;
+  bool m_container;
   FileSpec m_working_dir; // The working directory which is used when installing
                           // modules that have no install path set
   std::string m_remote_url;
