@@ -130,7 +130,7 @@ Status AdbClient::Connect() {
   Status error;
   m_conn = std::make_unique<ConnectionFileDescriptor>();
   std::string port = "5037";
-  if (const char *env_port = std::getenv("ANDROID_ADB_SERVER_PORT")) {
+  if (const char *env_port = std::getenv("HDC_SERVER_PORT")) {
     port = env_port;
   }
   std::string uri = "connect://127.0.0.1:" + port;
