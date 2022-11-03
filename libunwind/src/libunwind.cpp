@@ -157,7 +157,7 @@ _LIBUNWIND_WEAK_ALIAS(__unw_get_fpreg, unw_get_fpreg)
 /// Set value of specified float register at cursor position in stack frame.
 _LIBUNWIND_HIDDEN int __unw_set_fpreg(unw_cursor_t *cursor, unw_regnum_t regNum,
                                       unw_fpreg_t value) {
-#if defined(_LIBUNWIND_ARM_EHABI)
+#if defined(_LIBUNWIND_ARM_EHABI) || (defined(__mips__) && __mips_fpr == 0)
   _LIBUNWIND_TRACE_API("__unw_set_fpreg(cursor=%p, regNum=%d, value=%llX)",
                        static_cast<void *>(cursor), regNum, value);
 #else

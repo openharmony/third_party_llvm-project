@@ -84,7 +84,19 @@ typedef uintptr_t unw_word_t;
 #if defined(__arm__) && !defined(__ARM_DWARF_EH__) && !defined(__SEH__)
 typedef uint64_t unw_fpreg_t;
 #else
+# if defined(_LIBUNWIND_TARGET_MIPS_O32) && defined(__mips_hard_float)
+#  if __mips_fpr == 0
+typedef uint64_t unw_fpreg_t;
+#  elif __mips_fpr == 32
+typedef float unw_fpreg_t;
+#  elif __mips_fpr == 64
 typedef double unw_fpreg_t;
+#  else
+#   error "Unknown __mips_fpr value"
+#  endif
+# else
+typedef double unw_fpreg_t;
+# endif
 #endif
 
 struct unw_proc_info_t {

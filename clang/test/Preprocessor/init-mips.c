@@ -1,7 +1,4 @@
-// RUN: %clang_cc1 -E -dM -triple=mipsel-linux-ohos < /dev/null | FileCheck -match-full-lines -check-prefix MIPS32EL-OHOS %s
 //
-// MIPS32EL-OHOS:#define __mips_fpr 64
-
 // RUN: %clang_cc1 -E -dM -ffreestanding -fgnuc-version=4.2.1 -triple=mips-none-none < /dev/null | FileCheck -match-full-lines -check-prefix MIPS32BE -check-prefix MIPS32BE-C %s
 // RUN: %clang_cc1 -x c++ -E -dM -ffreestanding -fgnuc-version=4.2.1 -triple=mips-none-none < /dev/null | FileCheck -match-full-lines -check-prefix MIPS32BE -check-prefix MIPS32BE-CXX %s
 //
@@ -1699,11 +1696,6 @@
 // RUN:   -E -dM -triple=mips64-none-none < /dev/null \
 // RUN:   | FileCheck -match-full-lines -check-prefix MIPS64-NOFP %s
 // MIPS64-NOFP:#define __mips_fpr 64
-
-// RUN: not %clang_cc1 -target-feature +fpxx \
-// RUN:   -E -dM -triple=mipsel-linux-ohos < /dev/null 2>&1 \
-// RUN:   | FileCheck -match-full-lines -check-prefix MIPS32EL-OHOS-MFPXX %s
-// MIPS32EL-OHOS-MFPXX:error: fpxx is currently unsupported on OHOS
 
 // RUN: not %clang_cc1 -target-feature -fp64 \
 // RUN:   -E -dM -triple=mips64-none-none < /dev/null 2>&1 \

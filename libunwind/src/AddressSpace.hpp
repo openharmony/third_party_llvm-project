@@ -176,9 +176,13 @@ public:
     memcpy(&val, (void *)addr, sizeof(val));
     return val;
   }
-  double           getDouble(pint_t addr) {
-    double val;
+  unw_fpreg_t      getDouble(pint_t addr) {
+    unw_fpreg_t val;
+#if defined(_LIBUNWIND_TARGET_MIPS_O32)
+    memcpy(&val, (void *)addr, Registers_mips_o32::getFpuRegsSize());
+#else
     memcpy(&val, (void *)addr, sizeof(val));
+#endif
     return val;
   }
   v128             getVector(pint_t addr) {
