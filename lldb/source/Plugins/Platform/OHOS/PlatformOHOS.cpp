@@ -29,6 +29,7 @@ using namespace std::chrono;
 static uint32_t g_initialize_count = 0;
 static const unsigned int g_ohos_default_cache_size =
     2048; // Fits inside 4k adb packet.
+static constexpr uint32_t INVALID_SDK_VERSION = 0xFFFFFFFF;
 
 LLDB_PLUGIN_DEFINE(PlatformOHOS)
 
@@ -230,7 +231,7 @@ uint32_t PlatformOHOS::GetSdkVersion() {
   std::string version_string;
   HdcClient hdc(m_device_id);
   Status error =
-      hdc.Shell("getprop ro.build.version.sdk", seconds(5), &version_string);
+      hdc.Shell("param get const.ohos.apiversion", seconds(5), &version_string);
   version_string = llvm::StringRef(version_string).trim().str();
 
   if (error.Fail() || version_string.empty()) {
@@ -238,10 +239,15 @@ uint32_t PlatformOHOS::GetSdkVersion() {
     if (log)
       log->Printf("Get SDK version failed. (error: %s, output: %s)",
                   error.AsCString(), version_string.c_str());
+    m_sdk_version = INVALID_SDK_VERSION;
     return 0;
   }
 
-  m_sdk_version = StringConvert::ToUInt32(version_string.c_str());
+  m_sdk_version = StringConvert::ToUInt32(version_string.c_str(), INVALID_SDK_VERSION);
+  if (m_sdk_version == INVALID_SDK_VERSION) {
+    return 0;
+  }
+
   return m_sdk_version;
 }
 
