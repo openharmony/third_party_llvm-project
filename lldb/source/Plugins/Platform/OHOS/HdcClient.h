@@ -51,6 +51,9 @@ public:
                            const UnixSocketNamespace socket_namespace);
 
   Status DeletePortForwarding(std::pair<uint16_t, uint16_t> fwd);
+  
+  Status DeletePortForwarding(const uint16_t local_port, const std::string remote_socket_name,
+                              const UnixSocketNamespace socket_namespace);
 
   Status RecvFile(const FileSpec &src, const FileSpec &dst);
 

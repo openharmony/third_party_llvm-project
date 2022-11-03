@@ -70,6 +70,23 @@ static Status DeleteForwardPortWithHdc(std::pair<uint16_t, uint16_t> ports,
   return hdc.DeletePortForwarding(ports);
 }
 
+static Status DeleteForwardPortWithHdc(std::pair<uint16_t, std::string> remote_socket,
+                                       const llvm::Optional<HdcClient::UnixSocketNamespace> &socket_namespace,
+                                       const std::string &device_id) {
+
+  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
+  uint16_t local_port = remote_socket.first;
+  std::string remote_socket_name = remote_socket.second;
+  if (log)
+    log->Printf("Delete port forwarding %d -> %s, device=%s", local_port,
+            remote_socket_name.c_str(), device_id.c_str());
+  if (!socket_namespace)
+    return Status("Invalid socket namespace");
+
+  HdcClient hdc(device_id);
+  return hdc.DeletePortForwarding(local_port, remote_socket_name, *socket_namespace);
+}
+
 static Status FindUnusedPort(uint16_t &port) {
   Status error;
 
@@ -93,8 +110,12 @@ static Status FindUnusedPort(uint16_t &port) {
 PlatformOHOSRemoteGDBServer::PlatformOHOSRemoteGDBServer() {}
 
 PlatformOHOSRemoteGDBServer::~PlatformOHOSRemoteGDBServer() {
-  for (const auto &it : m_port_forwards)
+  for (const auto &it : m_port_forwards) {
     DeleteForwardPortWithHdc(it.second, m_device_id);
+  }
+  for (const auto &it_socket : m_remote_socket_name) {
+    DeleteForwardPortWithHdc(it_socket.second, m_socket_namespace, m_device_id);
+  }
 }
 
 bool PlatformOHOSRemoteGDBServer::LaunchGDBServer(lldb::pid_t &pid,
@@ -173,19 +194,30 @@ void PlatformOHOSRemoteGDBServer::DeleteForwardPort(lldb::pid_t pid) {
   Log *log = GetLog(LLDBLog::Platform);
 
   auto it = m_port_forwards.find(pid);
-  if (it == m_port_forwards.end())
-    return;
-
-  const auto port = it->second;
-  const auto error = DeleteForwardPortWithHdc(port, m_device_id);
-  if (error.Fail()) {
-    if (log)
-      log->Printf("Failed to delete port forwarding (pid=%" PRIu64
-                  ", fwd=(%d -> %d), device=%s): %s",
-                  pid, port.first, port.second, m_device_id.c_str(),
-                  error.AsCString());
+  auto it_socket = m_remote_socket_name.find(pid);
+  if (it != m_port_forwards.end() && it->second.second != 0) {
+    const auto error = DeleteForwardPortWithHdc(it->second, m_device_id);
+    if (error.Fail()) {
+      if (log)
+        log->Printf("Failed to delete port forwarding (pid=%" PRIu64
+                    ", fwd=(%d -> %d), device=%s): %s",
+                    pid, it->second.first, it->second.second, m_device_id.c_str(),
+                    error.AsCString());
+    }
+    m_port_forwards.erase(it);
   }
-  m_port_forwards.erase(it);
+  
+  if(it_socket != m_remote_socket_name.end()) {
+    const auto error_Socket = DeleteForwardPortWithHdc(it_socket->second, m_socket_namespace, m_device_id);
+    if (error_Socket.Fail()) {
+      if (log)
+        log->Printf("Failed to delete port forwarding (pid=%" PRIu64
+                    ", fwd=(%d->%s)device=%s): %s", pid, it_socket->second.first, it_socket->second.second.c_str(), m_device_id.c_str(),error_Socket.AsCString());
+    }
+    m_remote_socket_name.erase(it_socket);
+  }
+  
+  return;
 }
 
 Status PlatformOHOSRemoteGDBServer::MakeConnectURL(
@@ -206,7 +238,12 @@ Status PlatformOHOSRemoteGDBServer::MakeConnectURL(
     error = ForwardPortWithHdc(local_port, remote_port, remote_socket_name,
                                m_socket_namespace, m_device_id);
     if (error.Success()) {
-      m_port_forwards[pid] = {local_port, remote_port};
+      if (remote_port != 0){
+        m_port_forwards[pid] = {local_port, remote_port};
+      }
+      else{
+        m_remote_socket_name[pid] ={local_port, remote_socket_name.str()};
+      }
       std::ostringstream url_str;
       url_str << "connect://localhost:" << local_port;
       connect_url = url_str.str();

@@ -235,7 +235,27 @@ Status HdcClient::DeletePortForwarding(std::pair<uint16_t, uint16_t> fwd) {
   if (error.Fail())
     return error;
 
-  return ReadResponseStatus(nullptr);
+  return ReadResponseStatus("Remove forward ruler success");
+}
+
+Status HdcClient::DeletePortForwarding(const uint16_t local_port,
+                                       const std::string remote_socket_name,
+                                       const UnixSocketNamespace socket_namespace) {
+    const char *sock_namespace_str =
+      (socket_namespace == UnixSocketNamespaceAbstract)
+          ? kSocketNamespaceAbstract
+          : kSocketNamespaceFileSystem;
+    char message[PATH_MAX] = "";
+
+    snprintf(message, sizeof(message), "fport rm tcp:%d %s:%s", local_port,
+           sock_namespace_str, remote_socket_name.c_str());
+
+    const auto error = SendMessage(message);
+    if (error.Fail()){
+        return error;
+    }
+    
+    return ReadResponseStatus("Remove forward ruler success");
 }
 
 Status HdcClient::TransferFile(const char *direction, const FileSpec &src,
