@@ -310,7 +310,7 @@ void Platform::GetStatus(Stream &strm) {
     const bool is_connected = IsConnected();
     const bool is_container = GetContainer();
     if (log) {
-      LLDB_LOGF(log, "%p  Hsu file(%s):%d Platform::GetStatus() is_container(%d) is_connected(%d)", static_cast<void *>(this), __FILE__, __LINE__, is_container, is_connected);
+      LLDB_LOGF(log, "%p file(%s):%d Platform::GetStatus() is_container(%d) is_connected(%d)", static_cast<void *>(this), __FILE__, __LINE__, is_container, is_connected);
     }
     if (is_connected)
       strm.Printf("  Hostname: %s\n", GetHostname());

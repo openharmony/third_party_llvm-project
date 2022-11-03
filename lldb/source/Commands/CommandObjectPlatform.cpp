@@ -166,11 +166,16 @@ public:
 
 protected:
   bool DoExecute(Args &args, CommandReturnObject &result) override {
-    if (args.GetArgumentCount() == 1) {
+    if (args.GetArgumentCount() >= 1) {
       const char *platform_name = args.GetArgumentAtIndex(0);
       if (platform_name && platform_name[0]) {
         const bool select = true;
         m_platform_options.SetPlatformName(platform_name);
+        if (args.GetArgumentCount() == 2) {
+          std::string inner(args.GetArgumentAtIndex(1));
+          if (inner == "inner")
+            m_platform_options.SetContainer(true);
+        }
         Status error;
         ArchSpec platform_arch;
         PlatformSP platform_sp(m_platform_options.CreatePlatformWithOptions(

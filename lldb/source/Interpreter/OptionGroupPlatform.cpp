@@ -33,6 +33,12 @@ PlatformSP OptionGroupPlatform::CreatePlatformWithOptions(
           m_platform_name);
     }
     if (platform_sp) {
+      if (GetContainer()) {
+        if (log) {
+          LLDB_LOGF(log, "Platform is created inside container.");
+        }
+        platform_sp->SetContainer(true);
+      }
       if (platform_arch.IsValid() && !platform_sp->IsCompatibleArchitecture(
                                          arch, {}, false, &platform_arch)) {
         error.SetErrorStringWithFormatv("platform '{0}' doesn't support '{1}'",
@@ -82,9 +88,6 @@ static constexpr OptionDefinition g_option_table[] = {
     {LLDB_OPT_SET_ALL, false, "build", 'b', OptionParser::eRequiredArgument,
      nullptr, {}, 0, eArgTypeNone,
      "Specify the initial SDK build number."},
-    {LLDB_OPT_SET_ALL, false, "contain", 'c', OptionParser::eRequiredArgument,
-     nullptr, {}, 0, eArgTypeNone,
-     "Specifies whether the application is in a container."},
     {LLDB_OPT_SET_ALL, false, "sysroot", 'S', OptionParser::eRequiredArgument,
      nullptr, {}, 0, eArgTypeFilename, "Specify the SDK root directory "
                                        "that contains a root of all "
@@ -106,10 +109,6 @@ OptionGroupPlatform::SetOptionValue(uint32_t option_idx,
     ++option_idx;
 
   const int short_option = g_option_table[option_idx].short_option;
-  Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_COMMANDS));
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d OptionGroupPlatform::%s short_option: %d", __FILE__, __LINE__, __FUNCTION__, short_option);
-  }
   switch (short_option) {
   case 'p':
     m_platform_name.assign(std::string(option_arg));
@@ -123,23 +122,6 @@ OptionGroupPlatform::SetOptionValue(uint32_t option_idx,
 
   case 'b':
     m_sdk_build.SetString(option_arg);
-    break;
- 
-    case 'c':
-    if (log) {
-      LLDB_LOGF(log, "Hsu file(%s):%d OptionGroupPlatform::%s option_arg:-c %s", __FILE__, __LINE__, __FUNCTION__, option_arg.str().c_str());
-    }
-
-    if (std::string(option_arg) == "true") {
-      m_container = true;
-    }
-    else {
-      m_container = false;
-    }
-
-    if (log) {
-        LLDB_LOGF(log, "Hsu file(%s):%d OptionGroupPlatform::%s m_container:%d", __FILE__, __LINE__, __FUNCTION__, m_container);
-   }
     break;
 
   case 'S':
@@ -168,9 +150,10 @@ bool OptionGroupPlatform::PlatformMatches(
 
     if (!m_os_version.empty() && m_os_version != platform_sp->GetOSVersion())
       return false;
-    
+
     if (m_container != platform_sp->GetContainer())
       return false;
+
     return true;
   }
   return false;
