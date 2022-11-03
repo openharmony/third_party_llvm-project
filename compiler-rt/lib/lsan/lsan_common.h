@@ -32,7 +32,8 @@
 // the new architecture inside the sanitizer library.
 // Exclude leak-detection on arm32 for Android because `__aeabi_read_tp`
 // is missing. This caused a link error.
-#if SANITIZER_ANDROID && (__ANDROID_API__ < 28 || defined(__arm__))
+#if SANITIZER_OHOS || \
+    (SANITIZER_ANDROID && (__ANDROID_API__ < 28 || defined(__arm__)))
 #  define CAN_SANITIZE_LEAKS 0
 #elif (SANITIZER_LINUX || SANITIZER_APPLE) && (SANITIZER_WORDSIZE == 64) && \
     (defined(__x86_64__) || defined(__mips64) || defined(__aarch64__) ||  \
