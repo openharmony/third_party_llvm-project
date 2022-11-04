@@ -832,7 +832,8 @@ static bool isRelroSection(const OutputSection *sec) {
   return s == ".data.rel.ro" || s == ".bss.rel.ro" || s == ".ctors" ||
          s == ".dtors" || s == ".jcr" || s == ".eh_frame" ||
          s == ".fini_array" || s == ".init_array" ||
-         s == ".openbsd.randomdata" || s == ".preinit_array";
+         s == ".openbsd.randomdata" || s == ".preinit_array" ||
+         s == ".ohos.randomdata";
 }
 
 // We compute a rank for each section. The rank indicates where the
@@ -2426,6 +2427,9 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
 
   if (OutputSection *cmd = findSection(".note.gnu.property", partNo))
     addHdr(PT_GNU_PROPERTY, PF_R)->add(cmd);
+
+  if (OutputSection *cmd = findSection(".ohos.randomdata", partNo))
+    addHdr(PT_OHOS_RANDOMDATA, cmd->getPhdrFlags())->add(cmd);
 
   // Create one PT_NOTE per a group of contiguous SHT_NOTE sections with the
   // same alignment.

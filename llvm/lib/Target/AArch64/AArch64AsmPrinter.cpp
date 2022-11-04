@@ -1402,6 +1402,17 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
 
     return;
   }
+  case AArch64::SSP_RET_TRAP: {
+    MCSymbol *TempSymbol = OutContext.createTempSymbol();
+    /* Compare and branch */
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::CBZX)
+                                     .addReg(MI->getOperand(0).getReg())
+                                     .addExpr(MCSymbolRefExpr::create(
+                                         TempSymbol, OutContext)));
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::BRK).addImm(1));
+    OutStreamer->emitLabel(TempSymbol);
+    return;
+  }
 
   case AArch64::JumpTableDest32:
   case AArch64::JumpTableDest16:

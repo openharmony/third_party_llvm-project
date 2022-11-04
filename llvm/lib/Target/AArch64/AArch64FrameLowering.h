@@ -13,8 +13,9 @@
 #ifndef LLVM_LIB_TARGET_AARCH64_AARCH64FRAMELOWERING_H
 #define LLVM_LIB_TARGET_AARCH64_AARCH64FRAMELOWERING_H
 
-#include "llvm/Support/TypeSize.h"
+#include "AArch64StackProtectorRetLowering.h"
 #include "llvm/CodeGen/TargetFrameLowering.h"
+#include "llvm/Support/TypeSize.h"
 
 namespace llvm {
 
@@ -22,9 +23,12 @@ class MCCFIInstruction;
 
 class AArch64FrameLowering : public TargetFrameLowering {
 public:
+  const AArch64StackProtectorRetLowering SPRL;
+
   explicit AArch64FrameLowering()
       : TargetFrameLowering(StackGrowsDown, Align(16), 0, Align(16),
-                            true /*StackRealignable*/) {}
+                            true /*StackRealignable*/),
+        SPRL() {}
 
   void emitCalleeSavedFrameMoves(MachineBasicBlock &MBB,
                                  MachineBasicBlock::iterator MBBI) const;
@@ -39,6 +43,8 @@ public:
   /// the function.
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+
+  const StackProtectorRetLowering *getStackProtectorRet() const override;
 
   bool canUseAsPrologue(const MachineBasicBlock &MBB) const override;
 

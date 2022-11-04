@@ -114,6 +114,7 @@
 # MAPPING-NEXT:   20     .foo.begin .foo.end {{$}}
 # MAPPING-NEXT:   21     .foo.begin .foo.end {{$}}
 # MAPPING-NEXT:   22     .foo.begin .foo.end {{$}}
+# MAPPING-NEXT:   23     .foo.begin .foo.end {{$}}
 # MAPPING-NEXT:   None   .unused .strtab .shstrtab {{$}}
 
 # ELF-LLVM:      ProgramHeaders [
@@ -401,6 +402,18 @@
 # ELF-LLVM-NEXT:     ]
 # ELF-LLVM-NEXT:     Alignment: 1
 # ELF-LLVM-NEXT:   }
+# ELF-LLVM-NEXT:   ProgramHeader {
+# ELF-LLVM-NEXT:     Type: PT_OHOS_RANDOMDATA (0x6788FC60)
+# ELF32-LLVM-NEXT:   Offset: 0x314
+# ELF64-LLVM-NEXT:   Offset: 0x548
+# ELF-LLVM-NEXT:     VirtualAddress: 0x1000
+# ELF-LLVM-NEXT:     PhysicalAddress: 0x1000
+# ELF-LLVM-NEXT:     FileSize: 3
+# ELF-LLVM-NEXT:     MemSize: 3
+# ELF-LLVM-NEXT:     Flags [ (0x0)
+# ELF-LLVM-NEXT:     ]
+# ELF-LLVM-NEXT:     Alignment: 1
+# ELF-LLVM-NEXT:   }
 # ELF-LLVM-NEXT: ]
 
 --- !ELF
@@ -564,6 +577,11 @@ ProgramHeaders:
     VAddr:    0x1000
     FirstSec: .foo.begin
     LastSec: .foo.end
+## Case 23: the PT_OHOS_RANDOMDATA segment.
+  - Type:     0x6788FC60 ## PT_OHOS_RANDOMDATA
+    VAddr:    0x1000
+    FirstSec: .foo.begin
+    LastSec:  .foo.end
 
 ## Check how we dump ARM specific program headers.
 # RUN: yaml2obj --docnum=1 -DBITS=64 -DMACHINE=EM_ARM %s -o %tarm.elf

@@ -108,7 +108,34 @@ bool StackProtector::runOnFunction(Function &Fn) {
   }
 
   ++NumFunProtected;
+
+  if (Fn.hasFnAttribute(Attribute::StackProtectRet)) {
+    HasIRCheck = true;
+    CreateSSPRetCookie();
+    // StackProtectRet requires special code generation methods for backward
+    // cfi.
+    return false;
+  }
+
   return InsertStackProtectors();
+}
+
+bool StackProtector::CreateSSPRetCookie() {
+  std::string cookiename = "__sspret_cookie";
+  Type *cookietype = Type::getInt8PtrTy(M->getContext());
+  GlobalVariable *cookie = dyn_cast_or_null<GlobalVariable>(
+      M->getOrInsertGlobal(cookiename, cookietype));
+
+  cookie->setSection(".ohos.randomdata");
+  cookie->setExternallyInitialized(true);
+  cookie->setInitializer(Constant::getNullValue(cookietype));
+  cookie->setLinkage(GlobalVariable::LinkOnceAnyLinkage);
+  cookie->setVisibility(GlobalValue::HiddenVisibility);
+  cookie->setComdat(M->getOrInsertComdat(cookiename));
+
+  F->addFnAttr("sspret-randomdata", cookiename);
+
+  return true;
 }
 
 /// \param [out] IsLarge is set to true if a protectable array is found and
@@ -296,6 +323,9 @@ bool StackProtector::RequiresStackProtector() {
     });
     NeedsProtector = true;
     Strong = true; // Use the same heuristic as strong to determine SSPLayout
+  } else if (F->hasFnAttribute(Attribute::StackProtectRet)) {
+    NeedsProtector = true;
+    Strong = true;
   } else if (F->hasFnAttribute(Attribute::StackProtectStrong))
     Strong = true;
   else if (!F->hasFnAttribute(Attribute::StackProtect))

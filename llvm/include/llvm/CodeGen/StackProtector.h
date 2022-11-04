@@ -100,6 +100,8 @@ private:
   /// stack protector based upon the stack protector level.
   bool RequiresStackProtector();
 
+  bool CreateSSPRetCookie();
+
 public:
   static char ID; // Pass identification, replacement for typeid.
 

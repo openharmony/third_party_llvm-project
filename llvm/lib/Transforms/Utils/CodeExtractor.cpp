@@ -955,6 +955,7 @@ Function *CodeExtractor::constructFunction(const ValueSet &inputs,
       case Attribute::SanitizeMemTag:
       case Attribute::SpeculativeLoadHardening:
       case Attribute::StackProtect:
+      case Attribute::StackProtectRet:
       case Attribute::StackProtectReq:
       case Attribute::StackProtectStrong:
       case Attribute::StrictFP:

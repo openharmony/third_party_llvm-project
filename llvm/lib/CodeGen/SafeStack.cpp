@@ -808,7 +808,8 @@ bool SafeStack::run() {
   // FIXME: implement weaker forms of stack protector.
   if (F.hasFnAttribute(Attribute::StackProtect) ||
       F.hasFnAttribute(Attribute::StackProtectStrong) ||
-      F.hasFnAttribute(Attribute::StackProtectReq)) {
+      F.hasFnAttribute(Attribute::StackProtectReq) ||
+      F.hasFnAttribute(Attribute::StackProtectRet)) {
     Value *StackGuard = getStackGuard(IRB, F);
     StackGuardSlot = IRB.CreateAlloca(StackPtrTy, nullptr);
     IRB.CreateStore(StackGuard, StackGuardSlot);

@@ -853,6 +853,14 @@ def ADDlowTLS
 
 } // isReMaterializable, isCodeGenOnly
 
+//===----------------------------------------------------------------------===//
+// Pseudo instruction used by stack protector ret for backward cfi
+let isCodeGenOnly = 1, hasNoSchedulingInfo = 1 in {
+    let Size = 8 in {
+    def SSP_RET_TRAP: Pseudo<(outs), (ins GPR64:$reg), []>;
+    }
+}
+
 def : Pat<(AArch64LOADgot tglobaltlsaddr:$addr),
           (LOADgot tglobaltlsaddr:$addr)>;
 

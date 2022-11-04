@@ -206,6 +206,7 @@ add_llvm_component_library(LLVMCodeGen
   StackMapLivenessAnalysis.cpp
   StackMaps.cpp
   StackProtector.cpp
+  StackProtectorRetLowering.cpp
   StackSlotColoring.cpp
   SwiftErrorValueTracking.cpp
   SwitchLoweringUtils.cpp

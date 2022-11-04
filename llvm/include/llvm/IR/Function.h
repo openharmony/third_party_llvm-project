@@ -418,7 +418,8 @@ public:
     return AttributeSets.getFnStackAlignment();
   }
 
-  /// Returns true if the function has ssp, sspstrong, or sspreq fn attrs.
+  /// Returns true if the function has ssp, sspstrong, sspret or sspreq fn
+  /// attrs.
   bool hasStackProtectorFnAttr() const;
 
   /// adds the dereferenceable attribute to the list of attributes for

@@ -212,6 +212,10 @@ bool PEI::runOnMachineFunction(MachineFunction &MF) {
   const Function &F = MF.getFunction();
   const TargetRegisterInfo *TRI = MF.getSubtarget().getRegisterInfo();
   const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
+  const StackProtectorRetLowering *SPRL = TFI->getStackProtectorRet();
+
+  if (SPRL)
+    SPRL->setupStackProtectorRet(MF);
 
   RS = TRI->requiresRegisterScavenging(MF) ? new RegScavenger() : nullptr;
   FrameIndexVirtualScavenging = TRI->requiresFrameIndexScavenging(MF);
@@ -249,6 +253,10 @@ bool PEI::runOnMachineFunction(MachineFunction &MF) {
   // and MaxCallFrameSize variables.
   if (!F.hasFnAttribute(Attribute::Naked))
     insertPrologEpilogCode(MF);
+
+  // Add StackProtectorRets if using them
+  if (SPRL)
+    SPRL->insertStackProtectorRets(MF);
 
   // Reinsert stashed debug values at the start of the entry blocks.
   for (auto &I : EntryDbgValues)
@@ -359,7 +367,9 @@ void PEI::calculateCallFrameInfo(MachineFunction &MF) {
 /// Compute the sets of entry and return blocks for saving and restoring
 /// callee-saved registers, and placing prolog and epilog code.
 void PEI::calculateSaveRestoreBlocks(MachineFunction &MF) {
-  const MachineFrameInfo &MFI = MF.getFrameInfo();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
+  const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
+  const StackProtectorRetLowering *SPRL = TFI->getStackProtectorRet();
 
   // Even when we do not change any CSR, we still want to insert the
   // prologue and epilogue of the function.
@@ -375,7 +385,18 @@ void PEI::calculateSaveRestoreBlocks(MachineFunction &MF) {
     // epilogue.
     if (!RestoreBlock->succ_empty() || RestoreBlock->isReturnBlock())
       RestoreBlocks.push_back(RestoreBlock);
-    return;
+
+    // If we are adding stack-protector-rets ensure we can find a available
+    // register for CFI verification.
+    if (SPRL && !SPRL->determineStackProtectorRetRegister(MF)) {
+      // Shrinkwrapping will prevent finding a free register
+      SaveBlocks.clear();
+      RestoreBlocks.clear();
+      MFI.setSavePoint(nullptr);
+      MFI.setRestorePoint(nullptr);
+    } else {
+      return;
+    }
   }
 
   // Save refs to entry and return blocks.
@@ -386,6 +407,9 @@ void PEI::calculateSaveRestoreBlocks(MachineFunction &MF) {
     if (MBB.isReturnBlock())
       RestoreBlocks.push_back(&MBB);
   }
+
+  if (SPRL)
+    SPRL->determineStackProtectorRetRegister(MF);
 }
 
 static void assignCalleeSavedSpillSlots(MachineFunction &F,
@@ -422,6 +446,8 @@ static void assignCalleeSavedSpillSlots(MachineFunction &F,
   }
 
   const TargetFrameLowering *TFI = F.getSubtarget().getFrameLowering();
+  if (TFI->getStackProtectorRet())
+    TFI->getStackProtectorRet()->saveStackProtectorRetRegister(F, CSI);
   MachineFrameInfo &MFI = F.getFrameInfo();
   if (!TFI->assignCalleeSavedSpillSlots(F, RegInfo, CSI, MinCSFrameIndex,
                                         MaxCSFrameIndex)) {
@@ -931,6 +957,7 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
 
   // Make sure that the stack protector comes before the local variables on the
   // stack.
+  Function &F = MF.getFunction();
   SmallSet<int, 16> ProtectedObjs;
   if (MFI.hasStackProtectorIndex()) {
     int StackProtectorFI = MFI.getStackProtectorIndex();
@@ -999,6 +1026,47 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
           AddrOfObjs.empty()))
       llvm_unreachable("Found protected stack objects not pre-allocated by "
                        "LocalStackSlotPass.");
+
+    AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
+                          Offset, MaxAlign, Skew);
+    AssignProtectedObjSet(SmallArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
+                          Offset, MaxAlign, Skew);
+    AssignProtectedObjSet(AddrOfObjs, ProtectedObjs, MFI, StackGrowsDown,
+                          Offset, MaxAlign, Skew);
+  } else if (F.hasFnAttribute(Attribute::StackProtectRet)) {
+    StackObjSet LargeArrayObjs;
+    StackObjSet SmallArrayObjs;
+    StackObjSet AddrOfObjs;
+    // Assign large stack objects first.
+    for (unsigned i = 0, e = MFI.getObjectIndexEnd(); i != e; ++i) {
+      if (MFI.isObjectPreAllocated(i) && MFI.getUseLocalStackAllocationBlock())
+        continue;
+      if (i >= MinCSFrameIndex && i <= MaxCSFrameIndex)
+        continue;
+      if (RS && RS->isScavengingFrameIndex((int)i))
+        continue;
+      if (MFI.isDeadObjectIndex(i))
+        continue;
+      if (EHRegNodeFrameIndex == (int)i)
+        continue;
+      if (MFI.getStackID(i) !=
+          TargetStackID::Default) // Only allocate objects on the default stack.
+        continue;
+      switch (MFI.getObjectSSPLayout(i)) {
+      case MachineFrameInfo::SSPLK_None:
+        continue;
+      case MachineFrameInfo::SSPLK_SmallArray:
+        SmallArrayObjs.insert(i);
+        continue;
+      case MachineFrameInfo::SSPLK_AddrOf:
+        AddrOfObjs.insert(i);
+        continue;
+      case MachineFrameInfo::SSPLK_LargeArray:
+        LargeArrayObjs.insert(i);
+        continue;
+      }
+      llvm_unreachable("Unexpected SSPLayoutKind.");
+    }
 
     AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign, Skew);

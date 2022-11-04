@@ -272,6 +272,13 @@ private:
   /// The frame index for the stack protector.
   int StackProtectorIdx = -1;
 
+  struct StackProtectorRet {
+    /// The register to use for stack protector & backwrad cfi calculations
+    unsigned Register = 0;
+    /// Set to true if this function needs stack-protector-ret
+    bool Needed = false;
+  } SPR;
+
   /// The frame index for the function context. Used for SjLj exceptions.
   int FunctionContextIdx = -1;
 
@@ -357,6 +364,14 @@ public:
   int getStackProtectorIndex() const { return StackProtectorIdx; }
   void setStackProtectorIndex(int I) { StackProtectorIdx = I; }
   bool hasStackProtectorIndex() const { return StackProtectorIdx != -1; }
+
+  /// Get / Set stack protector ret calculation register
+  unsigned getStackProtectorRetRegister() const { return SPR.Register; }
+  void setStackProtectorRetRegister(unsigned I) { SPR.Register = I; }
+  bool hasStackProtectorRetRegister() const { return SPR.Register != 0; }
+  /// Get / Set if this frame needs backward cfi protect.
+  void setStackProtectorRetNeeded(bool I) { SPR.Needed = I; }
+  bool getStackProtectorRetNeeded() const { return SPR.Needed; }
 
   /// Return the index for the function context object.
   /// This object is used for SjLj exceptions.
