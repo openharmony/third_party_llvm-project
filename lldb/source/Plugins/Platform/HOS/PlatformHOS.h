@@ -32,13 +32,13 @@ public:
 
   static lldb::PlatformSP CreateInstance(bool force, const ArchSpec *arch);
 
-  static ConstString GetPluginNameStatic(bool is_host);
+  static llvm::StringRef GetPluginNameStatic(bool is_host);
 
   static const char *GetPluginDescriptionStatic(bool is_host);
 
-  ConstString GetPluginName() override { return GetPluginNameStatic(IsHost()); }
-
-  uint32_t GetPluginVersion() override { return 1; }
+  llvm::StringRef GetPluginName() override {
+    return GetPluginNameStatic(IsHost());
+  }
 
   Status ConnectRemote(Args &args) override;
 

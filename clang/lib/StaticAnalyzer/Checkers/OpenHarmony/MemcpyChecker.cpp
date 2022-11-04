@@ -14,9 +14,10 @@
 #include "clang/StaticAnalyzer/Checkers/BuiltinCheckerRegistration.h"
 #include "clang/StaticAnalyzer/Core/BugReporter/BugType.h"
 #include "clang/StaticAnalyzer/Core/Checker.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/CallDescription.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CallEvent.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
-#include "clang/StaticAnalyzer/Core/PathSensitive/DynamicSize.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/DynamicExtent.h"
 
 using namespace clang;
 using namespace ento;
@@ -38,9 +39,9 @@ MemcpyChecker::MemcpyChecker()
     }
 
 void MemcpyChecker::checkPreCall(const CallEvent &Call, CheckerContext &C) const {
-    if (!Call.isCalled(MemcpyS)) {
-        return;
-    }
+  if (!MemcpyS.matches(Call)) {
+    return;
+  }
 
     SValBuilder &SVB = C.getSValBuilder();
     ProgramStateRef state = C.getState();

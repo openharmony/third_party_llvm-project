@@ -129,7 +129,7 @@ Status CreateHostSysRootModuleLink(const FileSpec &root_dir_spec,
                                    const FileSpec &platform_module_spec,
                                    const FileSpec &local_module_spec,
                                    bool delete_existing) {
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_MODULES));
+  Log *log = GetLog(LLDBLog::Modules);
   const auto sysroot_module_path_spec =
       JoinPath(JoinPath(root_dir_spec, hostname),
                platform_module_spec.GetPath().c_str());

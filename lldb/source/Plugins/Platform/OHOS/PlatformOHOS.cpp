@@ -235,7 +235,7 @@ uint32_t PlatformOHOS::GetSdkVersion() {
   version_string = llvm::StringRef(version_string).trim().str();
 
   if (error.Fail() || version_string.empty()) {
-    Log *log = GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM);
+    Log *log = GetLog(LLDBLog::Platform);
     if (log)
       log->Printf("Get SDK version failed. (error: %s, output: %s)",
                   error.AsCString(), version_string.c_str());
@@ -243,7 +243,8 @@ uint32_t PlatformOHOS::GetSdkVersion() {
     return 0;
   }
 
-  m_sdk_version = StringConvert::ToUInt32(version_string.c_str(), INVALID_SDK_VERSION);
+  m_sdk_version = INVALID_SDK_VERSION;
+  llvm::to_integer(version_string, m_sdk_version);
   if (m_sdk_version == INVALID_SDK_VERSION) {
     return 0;
   }

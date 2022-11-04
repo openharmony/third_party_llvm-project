@@ -74,7 +74,7 @@ static Status DeleteForwardPortWithHdc(std::pair<uint16_t, std::string> remote_s
                                        const llvm::Optional<HdcClient::UnixSocketNamespace> &socket_namespace,
                                        const std::string &device_id) {
 
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
+  Log *log = GetLog(LLDBLog::Platform);
   uint16_t local_port = remote_socket.first;
   std::string remote_socket_name = remote_socket.second;
   if (log)

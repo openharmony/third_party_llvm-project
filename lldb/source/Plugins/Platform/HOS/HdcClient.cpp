@@ -21,7 +21,7 @@
 #include "lldb/Utility/DataEncoder.h"
 #include "lldb/Utility/DataExtractor.h"
 #include "lldb/Utility/FileSpec.h"
-#include "lldb/Utility/Log.h"
+#include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/StreamString.h"
 #include "lldb/Utility/Timeout.h"
 
@@ -99,11 +99,10 @@ Status HdcClient::CreateByDeviceID(const std::string &device_id,
   auto error = hdc.GetDevices(connect_devices);
   if (error.Fail())
     return error;
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d HdcClient::%s device_id(%s)", __FILE__,
-              __LINE__, __FUNCTION__, device_id.c_str());
-  }
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s device_id(%s)", __FILE__,
+                __LINE__, __FUNCTION__, device_id.c_str());
   std::string android_serial;
   if (!device_id.empty())
     android_serial = device_id;
@@ -135,21 +134,19 @@ HdcClient::~HdcClient() {}
 
 void HdcClient::SetDeviceID(const std::string &device_id) {
   m_device_id = device_id;
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d HdcClient::%s m_device_id(%s)", __FILE__,
-              __LINE__, __FUNCTION__, m_device_id.c_str());
-  }
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s m_device_id(%s)", __FILE__,
+                __LINE__, __FUNCTION__, m_device_id.c_str());
 }
 
 const std::string &HdcClient::GetDeviceID() const { return m_device_id; }
 
 Status HdcClient::Connect() {
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s new ConnectionFileDescriptor",
                 __FILE__, __LINE__, __FUNCTION__);
-  }
   Status error;
   m_conn.reset(new ConnectionFileDescriptor);
   std::string port = "5037";
@@ -157,17 +154,15 @@ Status HdcClient::Connect() {
   const char *env_port = std::getenv("HDC_SERVER_PORT");
   if ((env_port != NULL) && (atoi(env_port) > 0)) {
     port = env_port;
-    if (log) {
+    if (log)
       log->Printf("Hsu file(%s):%d HdcClient::%s  env_port(%s) port(%s)",
                   __FILE__, __LINE__, __FUNCTION__, env_port, port.c_str());
-    }
   }
 
   std::string uri = "connect://127.0.0.1:" + port;
-  if (log) {
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s  uri(%s)", __FILE__, __LINE__,
                 __FUNCTION__, uri.c_str());
-  }
   m_conn->Connect(uri.c_str(), &error);
 
   return error;
@@ -175,11 +170,10 @@ Status HdcClient::Connect() {
 
 Status HdcClient::GetDevices(DeviceIDList &device_list) {
   device_list.clear();
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s call", __FILE__, __LINE__,
                 __FUNCTION__);
-  }
   auto error = SendMessage("host:devices");
   if (error.Fail())
     return error;
@@ -206,19 +200,17 @@ Status HdcClient::GetDevices(DeviceIDList &device_list) {
 
 Status HdcClient::SetPortForwarding(const uint16_t local_port,
                                     const uint16_t remote_port) {
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s local_port(%d) remote_port(%d)",
                 __FILE__, __LINE__, __FUNCTION__, local_port, remote_port);
-  }
   char message[48];
   snprintf(message, sizeof(message), "forward:tcp:%d;tcp:%d", local_port,
            remote_port);
 
-  if (log) {
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s message(%s)", __FILE__, __LINE__,
                 __FUNCTION__, message);
-  }
   const auto error = SendDeviceMessage(message);
   if (error.Fail())
     return error;
@@ -230,11 +222,10 @@ Status
 HdcClient::SetPortForwarding(const uint16_t local_port,
                              llvm::StringRef remote_socket_name,
                              const UnixSocketNamespace socket_namespace) {
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s local_port(%d)", __FILE__,
                 __LINE__, __FUNCTION__, local_port);
-  }
   char message[PATH_MAX];
   const char *sock_namespace_str =
       (socket_namespace == UnixSocketNamespaceAbstract)
@@ -243,10 +234,9 @@ HdcClient::SetPortForwarding(const uint16_t local_port,
   snprintf(message, sizeof(message), "forward:tcp:%d;%s:%s", local_port,
            sock_namespace_str, remote_socket_name.str().c_str());
 
-  if (log) {
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s message(%s)", __FILE__, __LINE__,
                 __FUNCTION__, message);
-  }
   const auto error = SendDeviceMessage(message);
   if (error.Fail())
     return error;
@@ -255,18 +245,16 @@ HdcClient::SetPortForwarding(const uint16_t local_port,
 }
 
 Status HdcClient::DeletePortForwarding(const uint16_t local_port) {
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s local_port(%d)", __FILE__,
                 __LINE__, __FUNCTION__, local_port);
-  }
   char message[32];
   snprintf(message, sizeof(message), "killforward:tcp:%d", local_port);
 
-  if (log) {
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s message(%s)", __FILE__, __LINE__,
                 __FUNCTION__, message);
-  }
   const auto error = SendDeviceMessage(message);
   if (error.Fail())
     return error;
@@ -276,11 +264,10 @@ Status HdcClient::DeletePortForwarding(const uint16_t local_port) {
 
 Status HdcClient::SendMessage(const std::string &packet, const bool reconnect) {
   Status error;
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s packet(%s) reconnect(%d)",
                 __FILE__, __LINE__, __FUNCTION__, packet.c_str(), reconnect);
-  }
   if (!m_conn || reconnect) {
     error = Connect();
     if (error.Fail())
@@ -302,27 +289,26 @@ Status HdcClient::SendMessage(const std::string &packet, const bool reconnect) {
 }
 
 Status HdcClient::SendDeviceMessage(const std::string &packet) {
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s packet(%s) ", __FILE__, __LINE__,
                 __FUNCTION__, packet.c_str());
-  }
+
   std::ostringstream msg;
   msg << "host-serial:" << m_device_id << ":" << packet;
-  if (log) {
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s msg(%s) ", __FILE__, __LINE__,
                 __FUNCTION__, msg.str().c_str());
-  }
+
   return SendMessage(msg.str());
 }
 
 Status HdcClient::ReadMessage(std::vector<char> &message) {
   message.clear();
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s call ", __FILE__, __LINE__,
                 __FUNCTION__);
-  }
   char buffer[5];
   buffer[4] = 0;
 
@@ -345,11 +331,11 @@ Status HdcClient::ReadMessageStream(std::vector<char> &message,
                                     milliseconds timeout) {
   auto start = steady_clock::now();
   message.clear();
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s call ", __FILE__, __LINE__,
                 __FUNCTION__);
-  }
+
   Status error;
   lldb::ConnectionStatus status = lldb::eConnectionStatusSuccess;
   char buffer[1024];
@@ -370,7 +356,6 @@ Status HdcClient::ReadMessageStream(std::vector<char> &message,
 
 Status HdcClient::ReadResponseStatus() {
   char response_id[5];
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
   static const size_t packet_len = 4;
   response_id[packet_len] = 0;
 
@@ -378,10 +363,11 @@ Status HdcClient::ReadResponseStatus() {
   if (error.Fail())
     return error;
 
-  if (log) {
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s response_id(%s) ", __FILE__,
                 __LINE__, __FUNCTION__, response_id);
-  }
+
   if (strncmp(response_id, kOKAY, packet_len) != 0)
     return GetResponseError(response_id);
 
@@ -389,13 +375,13 @@ Status HdcClient::ReadResponseStatus() {
 }
 
 Status HdcClient::GetResponseError(const char *response_id) {
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
   if (strcmp(response_id, kFAIL) != 0)
     return Status("Got unexpected response id from hdc: \"%s\"", response_id);
-  if (log) {
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s response_id(%s) ", __FILE__,
                 __LINE__, __FUNCTION__, response_id);
-  }
+
   std::vector<char> error_message;
   auto error = ReadMessage(error_message);
   if (error.Success())
@@ -407,17 +393,17 @@ Status HdcClient::GetResponseError(const char *response_id) {
 
 Status HdcClient::SwitchDeviceTransport() {
   std::ostringstream msg;
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
   msg << "host:transport:" << m_device_id;
 
   auto error = SendMessage(msg.str());
   if (error.Fail())
     return error;
-  if (log) {
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
     log->Printf("Hsu file(%s):%d HdcClient::%s m_device_id(%s) msg(%s)",
                 __FILE__, __LINE__, __FUNCTION__, m_device_id.c_str(),
                 msg.str().c_str());
-  }
+
   return ReadResponseStatus();
 }
 
@@ -484,11 +470,11 @@ Status HdcClient::internalShell(const char *command, milliseconds timeout,
 Status HdcClient::Shell(const char *command, milliseconds timeout,
                         std::string *output) {
   std::vector<char> output_buffer;
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d HdcClient::%s command(%s)", __FILE__,
-              __LINE__, __FUNCTION__, command);
-  }
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s command(%s)", __FILE__, __LINE__,
+                __FUNCTION__, command);
+
   auto error = internalShell(command, timeout, output_buffer);
   if (error.Fail())
     return error;
@@ -501,11 +487,11 @@ Status HdcClient::Shell(const char *command, milliseconds timeout,
 Status HdcClient::ShellToFile(const char *command, milliseconds timeout,
                               const FileSpec &output_file_spec) {
   std::vector<char> output_buffer;
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d HdcClient::%s command(%s)", __FILE__,
-              __LINE__, __FUNCTION__, command);
-  }
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s command(%s)", __FILE__, __LINE__,
+                __FUNCTION__, command);
+
   auto error = internalShell(command, timeout, output_buffer);
   if (error.Fail())
     return error;
@@ -513,10 +499,9 @@ Status HdcClient::ShellToFile(const char *command, milliseconds timeout,
   const auto output_filename = output_file_spec.GetPath();
   std::error_code EC;
   llvm::raw_fd_ostream dst(output_filename, EC, llvm::sys::fs::OF_None);
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d HdcClient::%s output_filename(%s)",
-              __FILE__, __LINE__, __FUNCTION__, output_filename.c_str());
-  }
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s output_filename(%s)", __FILE__,
+                __LINE__, __FUNCTION__, output_filename.c_str());
   if (EC)
     return Status("Unable to open local file %s", output_filename.c_str());
 
@@ -544,21 +529,21 @@ Status HdcClient::SyncService::internalPullFile(const FileSpec &remote_file,
 
   std::error_code EC;
   llvm::raw_fd_ostream dst(local_file_path, EC, llvm::sys::fs::OF_None);
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d HdcClient::%s local_file_path(%s)",
-              __FILE__, __LINE__, __FUNCTION__, local_file_path.c_str());
-  }
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s local_file_path(%s)", __FILE__,
+                __LINE__, __FUNCTION__, local_file_path.c_str());
+
   if (EC)
     return Status("Unable to open local file %s", local_file_path.c_str());
 
   const auto remote_file_path = remote_file.GetPath(false);
   auto error = SendSyncRequest(kRECV, remote_file_path.length(),
                                remote_file_path.c_str());
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d HdcClient::%s remote_file_path(%s)",
-              __FILE__, __LINE__, __FUNCTION__, remote_file_path.c_str());
-  }
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s remote_file_path(%s)", __FILE__,
+                __LINE__, __FUNCTION__, remote_file_path.c_str());
+
   if (error.Fail())
     return error;
 
@@ -583,11 +568,11 @@ Status HdcClient::SyncService::internalPushFile(const FileSpec &local_file,
                                                 const FileSpec &remote_file) {
   const auto local_file_path(local_file.GetPath());
   std::ifstream src(local_file_path.c_str(), std::ios::in | std::ios::binary);
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d HdcClient::%s local_file_path(%s)",
-              __FILE__, __LINE__, __FUNCTION__, local_file_path.c_str());
-  }
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s local_file_path(%s)", __FILE__,
+                __LINE__, __FUNCTION__, local_file_path.c_str());
+
   if (!src.is_open())
     return Status("Unable to open local file %s", local_file_path.c_str());
 
@@ -596,10 +581,10 @@ Status HdcClient::SyncService::internalPushFile(const FileSpec &local_file,
   std::string file_description_str = file_description.str();
   auto error = SendSyncRequest(kSEND, file_description_str.length(),
                                file_description_str.c_str());
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d HdcClient::%s file_description_str(%s)",
-              __FILE__, __LINE__, __FUNCTION__, file_description_str.c_str());
-  }
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s file_description_str(%s)",
+                __FILE__, __LINE__, __FUNCTION__, file_description_str.c_str());
+
   if (error.Fail())
     return error;
 
@@ -645,11 +630,11 @@ Status HdcClient::SyncService::internalStat(const FileSpec &remote_file,
   const std::string remote_file_path(remote_file.GetPath(false));
   auto error = SendSyncRequest(kSTAT, remote_file_path.length(),
                                remote_file_path.c_str());
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d HdcClient::%s remote_file_path(%s)",
-              __FILE__, __LINE__, __FUNCTION__, remote_file_path.c_str());
-  }
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s remote_file_path(%s)", __FILE__,
+                __LINE__, __FUNCTION__, remote_file_path.c_str());
+
   if (error.Fail())
     return Status("Failed to send request: %s", error.AsCString());
 
@@ -680,13 +665,12 @@ Status HdcClient::SyncService::internalStat(const FileSpec &remote_file,
 
 Status HdcClient::SyncService::PullFile(const FileSpec &remote_file,
                                         const FileSpec &local_file) {
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
-    LLDB_LOGF(log,
-              "Hsu file(%s):%d HdcClient::%s remote_file(%s) local_file(%s)",
-              __FILE__, __LINE__, __FUNCTION__, remote_file.GetPath().c_str(),
-              local_file.GetPath().c_str());
-  }
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s remote_file(%s) local_file(%s)",
+                __FILE__, __LINE__, __FUNCTION__, remote_file.GetPath().c_str(),
+                local_file.GetPath().c_str());
+
   return executeCommand([this, &remote_file, &local_file]() {
     return internalPullFile(remote_file, local_file);
   });
@@ -694,13 +678,11 @@ Status HdcClient::SyncService::PullFile(const FileSpec &remote_file,
 
 Status HdcClient::SyncService::PushFile(const FileSpec &local_file,
                                         const FileSpec &remote_file) {
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
-    LLDB_LOGF(log,
-              "Hsu file(%s):%d HdcClient::%s remote_file(%s) local_file(%s)",
-              __FILE__, __LINE__, __FUNCTION__, remote_file.GetPath().c_str(),
-              local_file.GetPath().c_str());
-  }
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s remote_file(%s) local_file(%s)",
+                __FILE__, __LINE__, __FUNCTION__, remote_file.GetPath().c_str(),
+                local_file.GetPath().c_str());
   return executeCommand([this, &local_file, &remote_file]() {
     return internalPushFile(local_file, remote_file);
   });
@@ -708,12 +690,11 @@ Status HdcClient::SyncService::PushFile(const FileSpec &local_file,
 
 Status HdcClient::SyncService::Stat(const FileSpec &remote_file, uint32_t &mode,
                                     uint32_t &size, uint32_t &mtime) {
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d HdcClient::%s remote_file(%s) mode(%d)",
-              __FILE__, __LINE__, __FUNCTION__, remote_file.GetPath().c_str(),
-              mode);
-  }
+  Log *log = GetLog(LLDBLog::Platform);
+  if (log)
+    log->Printf("Hsu file(%s):%d HdcClient::%s remote_file(%s) mode(%d)",
+                __FILE__, __LINE__, __FUNCTION__, remote_file.GetPath().c_str(),
+                mode);
   return executeCommand([this, &remote_file, &mode, &size, &mtime]() {
     return internalStat(remote_file, mode, size, mtime);
   });
@@ -744,7 +725,8 @@ Status HdcClient::SyncService::SendSyncRequest(const char *request_id,
                                                const uint32_t data_len,
                                                const void *data) {
   const DataBufferSP data_sp(new DataBufferHeap(kSyncPacketLen, 0));
-  DataEncoder encoder(data_sp, eByteOrderLittle, sizeof(void *));
+  DataEncoder encoder(data_sp->GetBytes(), data_sp->GetByteSize(),
+                      eByteOrderLittle, sizeof(void *));
   auto offset = encoder.PutData(0, request_id, strlen(request_id));
   encoder.PutUnsigned(offset, 4, data_len);
 

@@ -21,10 +21,10 @@ PlatformSP OptionGroupPlatform::CreatePlatformWithOptions(
   PlatformList &platforms = interpreter.GetDebugger().GetPlatformList();
 
   PlatformSP platform_sp;
-  Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_COMMANDS));
-  if (log) {
-    LLDB_LOGF(log, "Hsu file(%s):%d OptionGroupPlatform::%s call make_selected:%d", __FILE__, __LINE__, __FUNCTION__, make_selected);
- }
+  Log *log = GetLog(LLDBLog::Commands);
+  if (log)
+    log->Printf("Hsu file(%s):%d OptionGroupPlatform::%s call make_selected:%d",
+                __FILE__, __LINE__, __FUNCTION__, make_selected);
   if (!m_platform_name.empty()) {
     platform_sp = platforms.Create(m_platform_name);
     if (!platform_sp) {
@@ -34,9 +34,8 @@ PlatformSP OptionGroupPlatform::CreatePlatformWithOptions(
     }
     if (platform_sp) {
       if (GetContainer()) {
-        if (log) {
-          LLDB_LOGF(log, "Platform is created inside container.");
-        }
+        if (log)
+          log->Printf("Platform is created inside container.");
         platform_sp->SetContainer(true);
       }
       if (platform_arch.IsValid() && !platform_sp->IsCompatibleArchitecture(
