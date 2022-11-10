@@ -198,6 +198,9 @@ LLVMBool LLVMCreateMCJITCompilerForModule(
   builder.setEngineKind(EngineKind::JIT)
          .setErrorStr(&Error)
          .setOptLevel((CodeGenOpt::Level)options.OptLevel)
+#ifdef ARK_GC_SUPPORT
+         .setRelocationModel(unwrap(options.RelMode))
+#endif
          .setTargetOptions(targetOptions);
   bool JIT;
   if (Optional<CodeModel::Model> CM = unwrap(options.CodeModel, JIT))

@@ -541,6 +541,12 @@ BitVector X86RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     for (const MCPhysReg &SubReg : subregs_inclusive(X86::RBP))
       Reserved.set(SubReg);
   }
+#ifdef ARK_GC_SUPPORT
+  if (MF.getFunction().getCallingConv() == CallingConv::GHC) {
+    for (const MCPhysReg &SubReg : subregs_inclusive(X86::RBP))
+      Reserved.set(SubReg);
+  }
+#endif
 
   // Set the base-pointer register and its aliases as reserved if needed.
   if (hasBasePointer(MF)) {

@@ -70,6 +70,11 @@ public:
 
   /// emitProlog/emitEpilog - These methods insert prolog and epilog code into
   /// the function.
+#ifdef ARK_GC_SUPPORT
+  Triple::ArchType GetArkSupportTarget() const override;
+  int GetFixedFpPosition() const override;
+  int GetFrameReserveSize(MachineFunction &MF) const override;
+#endif
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
 

@@ -3914,6 +3914,25 @@ LLVMValueRef LLVMBuildCall2(LLVMBuilderRef B, LLVMTypeRef Ty, LLVMValueRef Fn,
                                     makeArrayRef(unwrap(Args), NumArgs), Name));
 }
 
+#ifdef ARK_GC_SUPPORT
+LLVMValueRef LLVMBuildCall3(LLVMBuilderRef B, LLVMTypeRef Ty, LLVMValueRef Fn,
+                            LLVMValueRef *Args, unsigned NumArgs,
+                            const char *Name, LLVMValueRef *deoptVals,
+                            int NumVals) {
+  FunctionType *FTy = unwrap<FunctionType>(Ty);
+  std::vector<Value*> vals;
+  for (int i = 0; i < NumVals; i++) {
+    vals.push_back(unwrap(deoptVals[i]));
+  }
+  OperandBundleDefT<Value *> deoptBundle("deopt", vals);
+
+  return wrap(unwrap(B)->CreateCall(FTy, unwrap(Fn),
+                                    makeArrayRef(unwrap(Args), NumArgs), // Args
+                                    {deoptBundle}, // ArrayRef<OperandBundleDef>
+                                    Name));
+}
+#endif
+
 LLVMValueRef LLVMBuildSelect(LLVMBuilderRef B, LLVMValueRef If,
                              LLVMValueRef Then, LLVMValueRef Else,
                              const char *Name) {

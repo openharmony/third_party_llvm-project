@@ -312,6 +312,17 @@ AArch64RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   if (TFI->hasFP(MF) || TT.isOSDarwin())
     markSuperRegs(Reserved, AArch64::W29);
 
+#ifdef ARK_GC_SUPPORT
+  if (MF.getFunction().getCallingConv() == CallingConv::GHC) {
+    markSuperRegs(Reserved, AArch64::W29);
+    markSuperRegs(Reserved, AArch64::W30);
+  }
+  if ((MF.getFunction().getCallingConv() == CallingConv::WebKit_JS) ||
+    (MF.getFunction().getCallingConv() == CallingConv::C)) {
+    markSuperRegs(Reserved, AArch64::W30);
+  }
+#endif
+
   for (size_t i = 0; i < AArch64::GPR32commonRegClass.getNumRegs(); ++i) {
     if (MF.getSubtarget<AArch64Subtarget>().isXRegisterReserved(i))
       markSuperRegs(Reserved, AArch64::GPR32commonRegClass.getRegister(i));

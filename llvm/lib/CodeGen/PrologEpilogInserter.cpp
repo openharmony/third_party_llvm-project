@@ -70,6 +70,11 @@
 #include <utility>
 #include <vector>
 
+#ifdef ARK_GC_SUPPORT
+#include <string>
+#include<climits>
+#endif
+
 using namespace llvm;
 
 #define DEBUG_TYPE "prologepilog"
@@ -123,6 +128,9 @@ private:
 
   void calculateCallFrameInfo(MachineFunction &MF);
   void calculateSaveRestoreBlocks(MachineFunction &MF);
+#ifdef ARK_GC_SUPPORT
+  void RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, const std::vector<CalleeSavedInfo> &CSI);
+#endif
   void spillCalleeSavedRegs(MachineFunction &MF);
 
   void calculateFrameObjectOffsets(MachineFunction &MF);
@@ -301,6 +309,10 @@ bool PEI::runOnMachineFunction(MachineFunction &MF) {
   RestoreBlocks.clear();
   MFI.setSavePoint(nullptr);
   MFI.setRestorePoint(nullptr);
+#ifdef ARK_GC_SUPPORT
+  std::vector<CalleeSavedInfo> &CSI = MFI.getCalleeSavedInfo();
+  RecordCalleeSaveRegisterAndOffset(MF, CSI);
+#endif
   return true;
 }
 
@@ -617,6 +629,69 @@ static void insertCSRRestores(MachineBasicBlock &RestoreBlock,
   }
 }
 
+#ifdef ARK_GC_SUPPORT
+void PEI::RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, const std::vector<CalleeSavedInfo> &CSI)
+{
+  MachineModuleInfo &MMI = MF.getMMI();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
+  const MCRegisterInfo *MRI = MMI.getContext().getRegisterInfo();
+  Function &func = const_cast<Function &>(MF.getFunction());
+  const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
+  Triple::ArchType archType = TFI->GetArkSupportTarget();
+
+  if ((archType != Triple::aarch64 && archType != Triple::x86_64) || !(TFI->hasFP(MF))) {
+    return;
+  }
+  unsigned FpRegDwarfNum = 0;
+  if (archType == Triple::aarch64) {
+    FpRegDwarfNum = 29; // x29
+  } else {
+    FpRegDwarfNum = 6; //rbp
+  }
+  int64_t FpOffset = 0;
+  int64_t deleta;
+  // nearest to rbp callee register
+  int64_t maxOffset = INT_MIN;
+  for (auto I : CSI) {
+    int64_t Offset = MFI.getObjectOffset(I.getFrameIdx());
+    unsigned Reg = I.getReg();
+    unsigned DwarfRegNum = MRI->getDwarfRegNum(Reg, true);
+    if (FpRegDwarfNum == DwarfRegNum) {
+      FpOffset = Offset;
+    }
+    maxOffset = std::max(Offset, maxOffset);
+  }
+  if (archType == Triple::x86_64) {
+    // rbp not existed in CSI
+    int64_t reseversize = TFI->GetFrameReserveSize(MF) + sizeof(uint64_t); // 1: rbp
+    deleta = maxOffset + reseversize; // nearest to rbp offset
+  } else {
+    deleta = FpOffset;
+  }
+
+  const unsigned LinkRegDwarfNum = 30;
+  for (std::vector<CalleeSavedInfo>::const_iterator
+    I = CSI.begin(), E = CSI.end(); I != E; ++I) {
+    int64_t Offset = MFI.getObjectOffset(I->getFrameIdx());
+    unsigned Reg = I->getReg();
+    unsigned DwarfRegNum = MRI->getDwarfRegNum(Reg, true);
+    if ((DwarfRegNum == LinkRegDwarfNum || DwarfRegNum == FpRegDwarfNum)
+      && (archType == Triple::aarch64)) {
+      continue;
+    }
+    Offset = Offset - deleta;
+    std::string key = std::string("DwarfReg") + std::to_string(DwarfRegNum);
+    std::string value = std::to_string(Offset);
+    LLVM_DEBUG(dbgs() << "RecordCalleeSaveRegisterAndOffset DwarfRegNum  :"
+                      << DwarfRegNum << " key:" << key
+                      << " value:" << value
+                      << "]\n");
+    Attribute attr = Attribute::get(func.getContext(), key.c_str(), value.c_str());
+    func.addAttribute(AttributeList::FunctionIndex, attr);
+  }
+}
+#endif
+
 void PEI::spillCalleeSavedRegs(MachineFunction &MF) {
   // We can't list this requirement in getRequiredProperties because some
   // targets (WebAssembly) use virtual registers past this point, and the pass
@@ -904,6 +979,88 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
   // stack area.
   int64_t FixedCSEnd = Offset;
   Align MaxAlign = MFI.getMaxAlign();
+
+#ifdef ARK_GC_SUPPORT
+  int CalleeSavedFrameSize = 0;
+  Triple::ArchType archType = TFI.GetArkSupportTarget();
+  if (archType == Triple::aarch64 && TFI.hasFP(MF)) {
+    int fpPosition = TFI.GetFixedFpPosition();
+    int slotSize = sizeof(uint64_t);
+    int fpToCallerSpDelta = 0;
+    // 0:not exist  +:count from head -:count from tail
+    //   for x86-64
+    //   +--------------------------+
+    //   |       caller Frame       |
+    //   +--------------------------+---
+    //   |       returnAddr         |  ^
+    //   +--------------------------+  2 slot(fpToCallerSpDelta)
+    //   |       Fp                 |  V  fpPosition = 2
+    //   +--------------------------+---
+    //   |       type               |
+    //   +--------------------------+
+    //   |       ReServeSize        |
+    //   +--------------------------+
+    //   |          R14             |
+    //   +--------------------------+
+    //   |          R13             |
+    //   +--------------------------+
+    //   |          R12             |
+    //   +--------------------------+
+    //   |          RBX             |
+    //   +--------------------------+
+    //   for ARM64
+    //   +--------------------------+
+    //   |       caller Frame       |
+    //   +--------------------------+---
+    //   |  callee save registers   |  ^
+    //   |      (exclude Fp)        |  |
+    //   |                          |  callee save registers size(fpToCallerSpDelta)
+    //   +--------------------------+  |
+    //   |          Fp              |  V  fpPosition = -1
+    //   +--------------------------+--- FixedCSEnd
+    //   |         type             |
+    //   +--------------------------+
+    //   |       ReServeSize        |
+    //   +--------------------------+
+    if (fpPosition >= 0) {
+      fpToCallerSpDelta = fpPosition * slotSize;
+    } else {
+      fpToCallerSpDelta = FixedCSEnd + (fpPosition + 1) * slotSize;
+    }
+    Function &func = const_cast<Function &>(MF.getFunction());
+    Attribute attr = Attribute::get(func.getContext(), "fpToCallerSpDelta", std::to_string(fpToCallerSpDelta).c_str());
+    func.addAttribute(AttributeList::FunctionIndex, attr);
+
+    CalleeSavedFrameSize = TFI.GetFrameReserveSize(MF);
+    Offset += CalleeSavedFrameSize;
+  }
+
+  if ((archType == Triple::x86_64) && TFI.hasFP(MF)) {
+    // Determine which of the registers in the callee save list should be saved.
+    int fpPosition = TFI.GetFixedFpPosition();
+    int fpToCallerSpDelta = 0;
+    int slotSize = sizeof(uint64_t);
+    if (fpPosition >= 0) {
+      fpToCallerSpDelta = fpPosition * slotSize;
+    } else {
+      fpToCallerSpDelta = FixedCSEnd + (fpPosition + 1) * slotSize;
+    }
+    Function &func = const_cast<Function &>(MF.getFunction());
+    Attribute attr = Attribute::get(func.getContext(), "fpToCallerSpDelta", std::to_string(fpToCallerSpDelta).c_str());
+    func.addAttribute(AttributeList::FunctionIndex, attr);
+
+    CalleeSavedFrameSize = TFI.GetFrameReserveSize(MF);
+    std::vector<CalleeSavedInfo> &CSI = MFI.getCalleeSavedInfo();
+    LLVM_DEBUG(dbgs() << "  CSI size: " << CSI.size() << " CalleeSavedFrameSize " << CalleeSavedFrameSize << "\n");
+    // if callee-saved is empty, the reserved-size can't be passed to the computation of local zone
+    // because the assignCalleeSavedSpillSlots() directly return.
+    // Otherwise, the reserved-size don't need to add to the computation of local zone because it has been considered
+    // while computing the offsets of callee-saved-zone that will be passed to the computation of local-zone
+    if (CSI.empty()) {
+      Offset += CalleeSavedFrameSize;
+    }
+  }
+#endif
 
   // Make sure the special register scavenging spill slot is closest to the
   // incoming stack pointer if a frame pointer is required and is closer

@@ -1024,6 +1024,18 @@ static bool IsSVECalleeSave(MachineBasicBlock::iterator I) {
   }
 }
 
+#ifdef ARK_GC_SUPPORT
+Triple::ArchType AArch64FrameLowering::GetArkSupportTarget() const
+{
+    return Triple::aarch64;
+}
+
+int AArch64FrameLowering::GetFixedFpPosition() const
+{
+  return -1;
+}
+#endif
+
 void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
                                         MachineBasicBlock &MBB) const {
   MachineBasicBlock::iterator MBBI = MBB.begin();
@@ -1073,8 +1085,11 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
 
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+#ifndef ARK_GC_SUPPORT
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+#endif
+  // asm-int GHC call webkit function, we need push regs to stack.
 
   // Set tagged base pointer to the requested stack slot.
   // Ideally it should match SP value after prologue.
@@ -1559,8 +1574,11 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
 
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+  #ifndef ARK_GC_SUPPORT
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+  #endif
+  // asm-int GHC call webkit function, we need push regs to stack.
 
   // Initial and residual are named for consistency with the prologue. Note that
   // in the epilogue, the residual adjustment is executed first.
@@ -2543,8 +2561,11 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
                                                 RegScavenger *RS) const {
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+  #ifndef ARK_GC_SUPPORT
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+  #endif
+  // asm-int GHC call webkit function, we need push regs to stack.
 
   TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
   const AArch64RegisterInfo *RegInfo = static_cast<const AArch64RegisterInfo *>(

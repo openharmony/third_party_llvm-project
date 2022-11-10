@@ -545,6 +545,12 @@ option(LLVM_BUILD_RUNTIME
   "Build the LLVM runtime libraries." ON)
 option(LLVM_BUILD_EXAMPLES
   "Build the LLVM example programs. If OFF, just generate build targets." OFF)
+option(BUILD_ARK_GC_SUPPORT
+	"ARK support GC. If ON, support GC." OFF)
+if(BUILD_ARK_GC_SUPPORT)
+   add_definitions(-DARK_GC_SUPPORT)
+endif(BUILD_ARK_GC_SUPPORT)
+
 option(LLVM_INCLUDE_EXAMPLES "Generate build targets for the LLVM examples" ON)
 
 if(LLVM_BUILD_EXAMPLES)

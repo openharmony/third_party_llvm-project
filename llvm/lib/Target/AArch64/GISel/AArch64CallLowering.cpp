@@ -231,7 +231,11 @@ struct OutgoingArgHandler : public CallLowering::OutgoingValueHandler {
 } // namespace
 
 static bool doesCalleeRestoreStack(CallingConv::ID CallConv, bool TailCallOpt) {
-  return CallConv == CallingConv::Fast && TailCallOpt;
+  #ifdef ARK_GC_SUPPORT
+    return (CallConv == CallingConv::GHC || (CallConv == CallingConv::Fast)) && TailCallOpt;
+  #else
+    return CallConv == CallingConv::Fast && TailCallOpt;
+  #endif
 }
 
 void AArch64CallLowering::splitToValueTypes(
@@ -522,7 +526,11 @@ bool AArch64CallLowering::lowerFormalArguments(
 
 /// Return true if the calling convention is one that we can guarantee TCO for.
 static bool canGuaranteeTCO(CallingConv::ID CC) {
+#ifdef ARK_GC_SUPPORT
+  return (CC == CallingConv::GHC) || (CC == CallingConv::Fast);
+#else
   return CC == CallingConv::Fast;
+#endif
 }
 
 /// Return true if we might ever do TCO for calls with this calling convention.
