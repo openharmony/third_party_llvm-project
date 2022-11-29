@@ -67,7 +67,7 @@ protected:
   std::string m_platform_name;
   ConstString m_sdk_sysroot;
   ConstString m_sdk_build;
-  bool m_container;
+  bool m_container{};
   llvm::VersionTuple m_os_version;
   bool m_include_platform_option;
 };
