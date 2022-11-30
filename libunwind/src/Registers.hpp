@@ -2760,16 +2760,6 @@ class _LIBUNWIND_HIDDEN Registers_mips_o32 {
 public:
   Registers_mips_o32();
   Registers_mips_o32(const void *registers);
-  // OHOS_LOCAL begin
-#ifdef __mips_hard_float
-  Registers_mips_o32(const Registers_mips_o32 &) = default;
-  Registers_mips_o32 &operator=(const Registers_mips_o32 &src) {
-    memcpy(&_registers, &src._registers, sizeof(_registers));
-    memcpy(&_floatsBuffer, &src._floatsBuffer, sizeof(_floatsBuffer));
-    return *this;
-  }
-#endif
-  // OHOS_LOCAL end
 
   bool        validRegister(int num) const;
   uint32_t    getRegister(int num) const;
@@ -2786,7 +2776,7 @@ public:
   static int  getArch() { return REGISTERS_MIPS_O32; }
   // OHOS_LOCAL begin
 #ifdef __mips_hard_float
-  static uint32_t getFpuRegsSize();
+  static uint32_t getFpuRegsSize() { return (areFpuRegs64Bit() ? 8 : 4); }
 #endif
   // OHOS_LOCAL end
 
@@ -2801,40 +2791,36 @@ private:
     uint32_t __pc;
     uint32_t __hi;
     uint32_t __lo;
+    // OHOS_LOCAL begin
+#ifdef __mips_hard_float
+    /// O32 with 32-bit floating point registers only uses half of this
+    /// space.  However, using the same layout for 32-bit vs 64-bit
+    /// floating point registers results in a single context size for
+    /// O32 with hard float.
+    uint32_t __padding;
+    char __f[32 * 8];
+#endif
+    // OHOS_LOCAL end
   };
 
   mips_o32_thread_state_t _registers;
 #ifdef __mips_hard_float
-  /// O32 with 32-bit floating point registers only uses half of this
-  /// space.  However, using the same layout for 32-bit vs 64-bit
-  /// floating point registers results in a single context size for
-  /// O32 with hard float.
   // OHOS_LOCAL begin
-  const uint32_t _fpuRegsSize;
-  char _floatsBuffer[32 * 8] = {0};
-
+  static bool areFpuRegs64Bit();
   char *getFpuRegLocation(int regNum);
   const char *getFpuRegLocation(int regNum) const;
   // OHOS_LOCAL end
 #endif
 };
 
-inline Registers_mips_o32::Registers_mips_o32(const void *registers)
-#ifdef __mips_hard_float
-    : _fpuRegsSize(getFpuRegsSize())
-#endif
-{
+inline Registers_mips_o32::Registers_mips_o32(const void *registers) {
   static_assert((check_fit<Registers_mips_o32, unw_context_t>::does_fit),
                 "mips_o32 registers do not fit into unw_context_t");
   memcpy(&_registers, static_cast<const uint8_t *>(registers),
          sizeof(_registers));
 }
 
-inline Registers_mips_o32::Registers_mips_o32()
-#ifdef __mips_hard_float
-    : _fpuRegsSize(getFpuRegsSize())
-#endif
-{
+inline Registers_mips_o32::Registers_mips_o32() {
   memset(&_registers, 0, sizeof(_registers));
 }
 
@@ -2902,42 +2888,37 @@ inline void Registers_mips_o32::setRegister(int regNum, uint32_t value) {
 
 // OHOS_LOCAL begin
 #ifdef __mips_hard_float
-inline uint32_t Registers_mips_o32::getFpuRegsSize() {
+inline bool Registers_mips_o32::areFpuRegs64Bit() {
 #if __mips_fpr == 32
-  return 4;
+  return false;
 #elif __mips_fpr == 64
-  return 8;
+  return true;
 #elif __mips_fpr == 0
-  unsigned fpuID;
-  __asm__ __volatile__(" .set  push      \n"
-                       " cfc1  %0,$0     \n"
-                       " .set  pop       \n"
-                       : "=r"(fpuID));
-  constexpr unsigned MIPS_FPIR_F64 = (1 << 22);
-  return (fpuID & MIPS_FPIR_F64) ? 8 : 4;
+  uint32_t fpuID;
+  asm("cfc1 %0, $0" : "=r"(fpuID));
+  constexpr uint32_t MIPS_FPIR_F64 = (1 << 22);
+  return (fpuID & MIPS_FPIR_F64);
 #else
 #error "Unknown __mips_fpr value"
 #endif
 }
 
 inline const char *Registers_mips_o32::getFpuRegLocation(int regNum) const {
-  const char *regLocation = _floatsBuffer;
-  int fpuRegNum = regNum - UNW_MIPS_F0;
-  if (_fpuRegsSize == 4 && fpuRegNum % 2 == 1)
-    regLocation += (fpuRegNum - 1) * 8 + 4;
+  int offset, fpuRegNum = regNum - UNW_MIPS_F0;
+  if (!areFpuRegs64Bit() && fpuRegNum % 2 == 1)
+    offset = (fpuRegNum - 1) * 8 + 4;
   else
-    regLocation += fpuRegNum * 8;
-  return regLocation;
+    offset = fpuRegNum * 8;
+  return _registers.__f + offset;
 }
 
 inline char *Registers_mips_o32::getFpuRegLocation(int regNum) {
-  char *regLocation = _floatsBuffer;
-  int fpuRegNum = regNum - UNW_MIPS_F0;
-  if (_fpuRegsSize == 4 && fpuRegNum % 2 == 1)
-    regLocation += (fpuRegNum - 1) * 8 + 4;
+  int offset, fpuRegNum = regNum - UNW_MIPS_F0;
+  if (!areFpuRegs64Bit() && fpuRegNum % 2 == 1)
+    offset = (fpuRegNum - 1) * 8 + 4;
   else
-    regLocation += fpuRegNum * 8;
-  return regLocation;
+    offset = fpuRegNum * 8;
+  return _registers.__f + offset;
 }
 #endif
 // OHOS_LOCAL end
@@ -2960,7 +2941,7 @@ inline unw_fpreg_t Registers_mips_o32::getFloatRegister(int regNum) const {
 #if __mips_fpr == 0
   const char *regLocation = getFpuRegLocation(regNum);
   unw_fpreg_t regValue = 0;
-  memcpy(reinterpret_cast<char *>(&regValue), regLocation, _fpuRegsSize);
+  memcpy(reinterpret_cast<char *>(&regValue), regLocation, getFpuRegsSize());
   return regValue;
 #elif __mips_fpr == 32 || __mips_fpr == 64
   const char *regLocation = getFpuRegLocation(regNum);
@@ -2982,7 +2963,7 @@ inline void Registers_mips_o32::setFloatRegister(int regNum,
   assert(validFloatRegister(regNum));
 #if __mips_fpr == 0
   char *regLocation = getFpuRegLocation(regNum);
-  memcpy(regLocation, reinterpret_cast<char *>(&value), _fpuRegsSize);
+  memcpy(regLocation, reinterpret_cast<char *>(&value), getFpuRegsSize());
 #elif __mips_fpr == 32 || __mips_fpr == 64
   char *regLocation = getFpuRegLocation(regNum);
   *reinterpret_cast<unw_fpreg_t *>(regLocation) = value;
@@ -3182,12 +3163,15 @@ private:
     uint64_t __pc;
     uint64_t __hi;
     uint64_t __lo;
+    // OHOS_LOCAL begin
+#ifdef __mips_hard_float
+    double __f[32];
+#endif
+    // OHOS_LOCAL end
   };
 
+  // OHOS_LOCAL delete code block
   mips_newabi_thread_state_t _registers;
-#ifdef __mips_hard_float
-  double _floats[32];
-#endif
 };
 
 inline Registers_mips_newabi::Registers_mips_newabi(const void *registers) {
@@ -3275,7 +3259,7 @@ inline unw_fpreg_t Registers_mips_newabi::getFloatRegister(int regNum) const {
 // OHOS_LOCAL end
 #ifdef __mips_hard_float
   assert(validFloatRegister(regNum));
-  return _floats[regNum - UNW_MIPS_F0];
+  return _registers.__f[regNum - UNW_MIPS_F0]; // OHOS_LOCAL
 #else
   (void)regNum;
   _LIBUNWIND_ABORT("mips_newabi float support not implemented");
@@ -3288,7 +3272,7 @@ inline void Registers_mips_newabi::setFloatRegister(int regNum,
 // OHOS_LOCAL end
 #ifdef __mips_hard_float
   assert(validFloatRegister(regNum));
-  _floats[regNum - UNW_MIPS_F0] = value; // OHOS_LOCAL
+  _registers.__f[regNum - UNW_MIPS_F0] = value; // OHOS_LOCAL
 #else
   (void)regNum;
   (void)value;
