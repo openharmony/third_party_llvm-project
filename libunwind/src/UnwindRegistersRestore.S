@@ -882,8 +882,7 @@ DEFINE_LIBUNWIND_FUNCTION(_ZN9libunwind18Registers_mips_o326jumptoEv)
   ldc1  $f26, (4 * 36 + 8 * 26)($4)
   ldc1  $f28, (4 * 36 + 8 * 28)($4)
   ldc1  $f30, (4 * 36 + 8 * 30)($4)
-// OHOS_LOCAL begin
-#elif __mips_fpr == 64
+#elif __mips_fpr == 64 // OHOS_LOCAL
   ldc1  $f0, (4 * 36 + 8 * 0)($4)
   ldc1  $f1, (4 * 36 + 8 * 1)($4)
   ldc1  $f2, (4 * 36 + 8 * 2)($4)
@@ -916,14 +915,33 @@ DEFINE_LIBUNWIND_FUNCTION(_ZN9libunwind18Registers_mips_o326jumptoEv)
   ldc1  $f29, (4 * 36 + 8 * 29)($4)
   ldc1  $f30, (4 * 36 + 8 * 30)($4)
   ldc1  $f31, (4 * 36 + 8 * 31)($4)
+// OHOS_LOCAL begin
 #elif __mips_fpr == 0
+  // Check the register size in runtime
+  // Load the FIR control register value
   cfc1  $t0, $0
+  // Test F64 bit of the FIR control register
   li    $t1, 1
   sll   $t1, $t1, 22
   and   $t0, $t0, $t1
   beq   $t0, $0, _fp32
+  nop
 _fp64:
-// OHOS_LOCAL end
+  .set  fp=64
+  // The order of loads here is important. Even if the F64 bit of the FIR status
+  // register is set, it only means that the FPU has 64-bit FPRs. But it also
+  // can operate in 32-bit compatibility mode. We are not able to determine if
+  // such mode is enable because the corresponding FR bit of the CP0 Status
+  // register is only available for read in the kernel mode. So, we use the
+  // following order of loads as a workaround.
+  // - If FR=0 (32-bit compat mode), double-precision operations have no
+  //   documented behavior. Here we assume that such loads just corrupt the
+  //   corresponding registers and do not raise an exception (which is true for
+  //   QEMU). Since $f_{2k+1} is a higher part of $f_{2k} in FR=0 mode, we need
+  //   to perform operation on the odd register first so it won't corrupt the
+  //   even register value when it's treated as 64-bit.
+  // - If FR=1 (64-bit native mode), the order does not matter since the
+  //   registers do not overlap.
   ldc1  $f0, (4 * 36 + 8 * 0)($4)
   ldc1  $f1, (4 * 36 + 8 * 1)($4)
   ldc1  $f2, (4 * 36 + 8 * 2)($4)
@@ -956,9 +974,11 @@ _fp64:
   ldc1  $f29, (4 * 36 + 8 * 29)($4)
   ldc1  $f30, (4 * 36 + 8 * 30)($4)
   ldc1  $f31, (4 * 36 + 8 * 31)($4)
-// OHOS_LOCAL begin
+  .set  fp=xx
   j     _after_float
+  nop
 _fp32:
+  .set  fp=32
   ldc1  $f0, (4 * 36 + 8 * 0)($4)
   ldc1  $f2, (4 * 36 + 8 * 2)($4)
   ldc1  $f4, (4 * 36 + 8 * 4)($4)
@@ -975,6 +995,7 @@ _fp32:
   ldc1  $f26, (4 * 36 + 8 * 26)($4)
   ldc1  $f28, (4 * 36 + 8 * 28)($4)
   ldc1  $f30, (4 * 36 + 8 * 30)($4)
+  .set  fp=xx
 #else
 #error "Unknown __mips_fpr value"
 // OHOS_LOCAL end

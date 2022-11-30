@@ -147,8 +147,7 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   sdc1  $f26, (4 * 36 + 8 * 26)($4)
   sdc1  $f28, (4 * 36 + 8 * 28)($4)
   sdc1  $f30, (4 * 36 + 8 * 30)($4)
-// OHOS_LOCAL begin
-#elif __mips_fpr == 64
+#elif __mips_fpr == 64 // OHOS_LOCAL
   sdc1  $f0, (4 * 36 + 8 * 0)($4)
   sdc1  $f1, (4 * 36 + 8 * 1)($4)
   sdc1  $f2, (4 * 36 + 8 * 2)($4)
@@ -181,14 +180,19 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   sdc1  $f29, (4 * 36 + 8 * 29)($4)
   sdc1  $f30, (4 * 36 + 8 * 30)($4)
   sdc1  $f31, (4 * 36 + 8 * 31)($4)
+// OHOS_LOCAL begin
 #elif __mips_fpr == 0
+  // Check the register size in runtime
+  // Load the FIR control register value
   cfc1  $t0, $0
+  // Test F64 bit of the FIR control register
   li    $t1, 1
   sll   $t1, $t1, 22
   and   $t0, $t0, $t1
   beq   $t0, $0, _fp32
+  nop
 _fp64:
-// OHOS_LOCAL end
+  .set  fp=64
   sdc1  $f0, (4 * 36 + 8 * 0)($4)
   sdc1  $f1, (4 * 36 + 8 * 1)($4)
   sdc1  $f2, (4 * 36 + 8 * 2)($4)
@@ -221,9 +225,11 @@ _fp64:
   sdc1  $f29, (4 * 36 + 8 * 29)($4)
   sdc1  $f30, (4 * 36 + 8 * 30)($4)
   sdc1  $f31, (4 * 36 + 8 * 31)($4)
-// OHOS_LOCAL begin
+  .set  fp=xx
   j     _after_float
+  nop
 _fp32:
+  .set  fp=32
   sdc1  $f0, (4 * 36 + 8 * 0)($4)
   sdc1  $f2, (4 * 36 + 8 * 2)($4)
   sdc1  $f4, (4 * 36 + 8 * 4)($4)
@@ -240,6 +246,7 @@ _fp32:
   sdc1  $f26, (4 * 36 + 8 * 26)($4)
   sdc1  $f28, (4 * 36 + 8 * 28)($4)
   sdc1  $f30, (4 * 36 + 8 * 30)($4)
+  .set  fp=xx
 #else
 #error "Unknown __mips_fpr value"
 // OHOS_LOCAL end
