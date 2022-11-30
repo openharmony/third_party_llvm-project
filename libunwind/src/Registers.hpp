@@ -63,8 +63,8 @@ public:
   uint32_t    getRegister(int num) const;
   void        setRegister(int num, uint32_t value);
   bool        validFloatRegister(int) const { return false; }
-  unw_fpreg_t getFloatRegister(int num) const;
-  void        setFloatRegister(int num, unw_fpreg_t value);
+  unw_fpreg_t getFloatRegister(int num) const; // OHOS_LOCAL
+  void        setFloatRegister(int num, unw_fpreg_t value); // OHOS_LOCAL
   bool        validVectorRegister(int) const { return false; }
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
@@ -242,11 +242,11 @@ inline const char *Registers_x86::getRegisterName(int regNum) {
   }
 }
 
-inline unw_fpreg_t Registers_x86::getFloatRegister(int) const {
+inline unw_fpreg_t Registers_x86::getFloatRegister(int) const { // OHOS_LOCAL
   _LIBUNWIND_ABORT("no x86 float registers");
 }
 
-inline void Registers_x86::setFloatRegister(int, unw_fpreg_t) {
+inline void Registers_x86::setFloatRegister(int, unw_fpreg_t) { // OHOS_LOCAL
   _LIBUNWIND_ABORT("no x86 float registers");
 }
 
@@ -281,8 +281,8 @@ public:
   uint64_t    getRegister(int num) const;
   void        setRegister(int num, uint64_t value);
   bool        validFloatRegister(int) const { return false; }
-  unw_fpreg_t getFloatRegister(int num) const;
-  void        setFloatRegister(int num, unw_fpreg_t value);
+  unw_fpreg_t getFloatRegister(int num) const; // OHOS_LOCAL
+  void        setFloatRegister(int num, unw_fpreg_t value); // OHOS_LOCAL
   bool        validVectorRegister(int) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
@@ -545,11 +545,11 @@ inline const char *Registers_x86_64::getRegisterName(int regNum) {
   }
 }
 
-inline unw_fpreg_t Registers_x86_64::getFloatRegister(int) const {
+inline unw_fpreg_t Registers_x86_64::getFloatRegister(int) const { // OHOS_LOCAL
   _LIBUNWIND_ABORT("no x86_64 float registers");
 }
 
-inline void Registers_x86_64::setFloatRegister(int, unw_fpreg_t) {
+inline void Registers_x86_64::setFloatRegister(int, unw_fpreg_t) { // OHOS_LOCAL
   _LIBUNWIND_ABORT("no x86_64 float registers");
 }
 
@@ -600,8 +600,8 @@ public:
   uint32_t    getRegister(int num) const;
   void        setRegister(int num, uint32_t value);
   bool        validFloatRegister(int num) const;
-  unw_fpreg_t getFloatRegister(int num) const;
-  void        setFloatRegister(int num, unw_fpreg_t value);
+  unw_fpreg_t getFloatRegister(int num) const; // OHOS_LOCAL
+  void        setFloatRegister(int num, unw_fpreg_t value); // OHOS_LOCAL
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
@@ -986,12 +986,16 @@ inline bool Registers_ppc::validFloatRegister(int regNum) const {
   return true;
 }
 
+// OHOS_LOCAL begin
 inline unw_fpreg_t Registers_ppc::getFloatRegister(int regNum) const {
+// OHOS_LOCAL end
   assert(validFloatRegister(regNum));
   return _floatRegisters.__fpregs[regNum - UNW_PPC_F0];
 }
 
+// OHOS_LOCAL begin
 inline void Registers_ppc::setFloatRegister(int regNum, unw_fpreg_t value) {
+// OHOS_LOCAL end
   assert(validFloatRegister(regNum));
   _floatRegisters.__fpregs[regNum - UNW_PPC_F0] = value;
 }
@@ -1170,8 +1174,8 @@ public:
   uint64_t    getRegister(int num) const;
   void        setRegister(int num, uint64_t value);
   bool        validFloatRegister(int num) const;
-  unw_fpreg_t getFloatRegister(int num) const;
-  void        setFloatRegister(int num, unw_fpreg_t value);
+  unw_fpreg_t getFloatRegister(int num) const; // OHOS_LOCAL
+  void        setFloatRegister(int num, unw_fpreg_t value); // OHOS_LOCAL
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
@@ -1536,12 +1540,16 @@ inline bool Registers_ppc64::validFloatRegister(int regNum) const {
   return regNum >= UNW_PPC64_F0 && regNum <= UNW_PPC64_F31;
 }
 
+// OHOS_LOCAL begin
 inline unw_fpreg_t Registers_ppc64::getFloatRegister(int regNum) const {
+// OHOS_LOCAL end
   assert(validFloatRegister(regNum));
   return _vectorScalarRegisters[regNum - UNW_PPC64_F0].asfloat.f;
 }
 
+// OHOS_LOCAL begin
 inline void Registers_ppc64::setFloatRegister(int regNum, unw_fpreg_t value) {
+// OHOS_LOCAL end
   assert(validFloatRegister(regNum));
   _vectorScalarRegisters[regNum - UNW_PPC64_F0].asfloat.f = value;
 }
@@ -1819,8 +1827,8 @@ public:
   uint64_t    getRegister(int num) const;
   void        setRegister(int num, uint64_t value);
   bool        validFloatRegister(int num) const;
-  unw_fpreg_t getFloatRegister(int num) const;
-  void        setFloatRegister(int num, unw_fpreg_t value);
+  unw_fpreg_t getFloatRegister(int num) const; // OHOS_LOCAL
+  void        setFloatRegister(int num, unw_fpreg_t value); // OHOS_LOCAL
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
@@ -2070,12 +2078,16 @@ inline bool Registers_arm64::validFloatRegister(int regNum) const {
   return true;
 }
 
+// OHOS_LOCAL begin
 inline unw_fpreg_t Registers_arm64::getFloatRegister(int regNum) const {
+// OHOS_LOCAL end
   assert(validFloatRegister(regNum));
   return _vectorHalfRegisters[regNum - UNW_AARCH64_V0];
 }
 
+// OHOS_LOCAL begin
 inline void Registers_arm64::setFloatRegister(int regNum, unw_fpreg_t value) {
+// OHOS_LOCAL end
   assert(validFloatRegister(regNum));
   _vectorHalfRegisters[regNum - UNW_AARCH64_V0] = value;
 }
@@ -2613,8 +2625,8 @@ public:
   uint32_t    getRegister(int num) const;
   void        setRegister(int num, uint32_t value);
   bool        validFloatRegister(int num) const;
-  unw_fpreg_t getFloatRegister(int num) const;
-  void        setFloatRegister(int num, unw_fpreg_t value);
+  unw_fpreg_t getFloatRegister(int num) const; // OHOS_LOCAL
+  void        setFloatRegister(int num, unw_fpreg_t value); // OHOS_LOCAL
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
@@ -2704,12 +2716,16 @@ inline bool Registers_or1k::validFloatRegister(int /* regNum */) const {
   return false;
 }
 
+// OHOS_LOCAL begin
 inline unw_fpreg_t Registers_or1k::getFloatRegister(int /* regNum */) const {
+// OHOS_LOCAL end
   _LIBUNWIND_ABORT("or1k float support not implemented");
 }
 
+// OHOS_LOCAL begin
 inline void Registers_or1k::setFloatRegister(int /* regNum */,
                                              unw_fpreg_t /* value */) {
+// OHOS_LOCAL end
   _LIBUNWIND_ABORT("or1k float support not implemented");
 }
 
@@ -2802,9 +2818,11 @@ inline const char *Registers_or1k::getRegisterName(int regNum) {
 
 #if defined(_LIBUNWIND_TARGET_MIPS_O32)
 
+// OHOS_LOCAL begin
 // TODO: check the following for FPU with 32-bit registers:
 // - fpxx code works properly
 // - fp32 code remains working properly
+// OHOS_LOCAL end
 
 /// Registers_mips_o32 holds the register state of a thread in a 32-bit MIPS
 /// process.
@@ -2812,6 +2830,7 @@ class _LIBUNWIND_HIDDEN Registers_mips_o32 {
 public:
   Registers_mips_o32();
   Registers_mips_o32(const void *registers);
+  // OHOS_LOCAL begin
 #ifdef __mips_hard_float
   Registers_mips_o32(const Registers_mips_o32 &) = default;
   Registers_mips_o32 &operator=(const Registers_mips_o32 &src) {
@@ -2820,13 +2839,14 @@ public:
     return *this;
   }
 #endif
+  // OHOS_LOCAL end
 
   bool        validRegister(int num) const;
   uint32_t    getRegister(int num) const;
   void        setRegister(int num, uint32_t value);
   bool        validFloatRegister(int num) const;
-  unw_fpreg_t getFloatRegister(int num) const;
-  void        setFloatRegister(int num, unw_fpreg_t value);
+  unw_fpreg_t getFloatRegister(int num) const; // OHOS_LOCAL
+  void        setFloatRegister(int num, unw_fpreg_t value); // OHOS_LOCAL
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
@@ -2836,9 +2856,11 @@ public:
     return _LIBUNWIND_HIGHEST_DWARF_REGISTER_MIPS;
   }
   static int  getArch() { return REGISTERS_MIPS_O32; }
+  // OHOS_LOCAL begin
 #ifdef __mips_hard_float
   static uint32_t getFpuRegsSize();
 #endif
+  // OHOS_LOCAL end
 
   uint32_t  getSP() const         { return _registers.__r[29]; }
   void      setSP(uint32_t value) { _registers.__r[29] = value; }
@@ -2859,11 +2881,13 @@ private:
   /// space.  However, using the same layout for 32-bit vs 64-bit
   /// floating point registers results in a single context size for
   /// O32 with hard float.
+  // OHOS_LOCAL begin
   const uint32_t _fpuRegsSize;
   char _floatsBuffer[32 * 8] = {0};
 
   char *getFpuRegLocation(int regNum);
   const char *getFpuRegLocation(int regNum) const;
+  // OHOS_LOCAL end
 #endif
 };
 
@@ -2877,26 +2901,6 @@ inline Registers_mips_o32::Registers_mips_o32(const void *registers)
   memcpy(&_registers, static_cast<const uint8_t *>(registers),
          sizeof(_registers));
 }
-
-#ifdef __mips_hard_float
-inline uint32_t Registers_mips_o32::getFpuRegsSize() {
-#if __mips_fpr == 32
-  return 4;
-#elif __mips_fpr == 64
-  return 8;
-#elif __mips_fpr == 0
-  unsigned fpuID;
-  __asm__ __volatile__(" .set  push      \n"
-                       " cfc1  %0,$0     \n"
-                       " .set  pop       \n"
-                       : "=r"(fpuID));
-  constexpr unsigned MIPS_FPIR_F64 = (1 << 22);
-  return (fpuID & MIPS_FPIR_F64) ? 8 : 4;
-#else
-#error "Unknown __mips_fpr value"
-#endif
-}
-#endif
 
 inline Registers_mips_o32::Registers_mips_o32()
 #ifdef __mips_hard_float
@@ -2921,6 +2925,7 @@ inline bool Registers_mips_o32::validRegister(int regNum) const {
   if (regNum == UNW_MIPS_LO)
     return true;
 #endif
+  // OHOS_LOCAL delete code block
   // FIXME: DSP accumulator registers, MSA registers
   return false;
 }
@@ -2928,6 +2933,7 @@ inline bool Registers_mips_o32::validRegister(int regNum) const {
 inline uint32_t Registers_mips_o32::getRegister(int regNum) const {
   if (regNum >= UNW_MIPS_R0 && regNum <= UNW_MIPS_R31)
     return _registers.__r[regNum - UNW_MIPS_R0];
+  // OHOS_LOCAL delete code block
 
   switch (regNum) {
   case UNW_REG_IP:
@@ -2947,6 +2953,8 @@ inline void Registers_mips_o32::setRegister(int regNum, uint32_t value) {
     _registers.__r[regNum - UNW_MIPS_R0] = value;
     return;
   }
+  // OHOS_LOCAL delete code block
+
   switch (regNum) {
   case UNW_REG_IP:
     _registers.__pc = value;
@@ -2964,7 +2972,26 @@ inline void Registers_mips_o32::setRegister(int regNum, uint32_t value) {
   _LIBUNWIND_ABORT("unsupported mips_o32 register");
 }
 
+// OHOS_LOCAL begin
 #ifdef __mips_hard_float
+inline uint32_t Registers_mips_o32::getFpuRegsSize() {
+#if __mips_fpr == 32
+  return 4;
+#elif __mips_fpr == 64
+  return 8;
+#elif __mips_fpr == 0
+  unsigned fpuID;
+  __asm__ __volatile__(" .set  push      \n"
+                       " cfc1  %0,$0     \n"
+                       " .set  pop       \n"
+                       : "=r"(fpuID));
+  constexpr unsigned MIPS_FPIR_F64 = (1 << 22);
+  return (fpuID & MIPS_FPIR_F64) ? 8 : 4;
+#else
+#error "Unknown __mips_fpr value"
+#endif
+}
+
 inline const char *Registers_mips_o32::getFpuRegLocation(int regNum) const {
   const char *regLocation = _floatsBuffer;
   int fpuRegNum = regNum - UNW_MIPS_F0;
@@ -2985,16 +3012,20 @@ inline char *Registers_mips_o32::getFpuRegLocation(int regNum) {
   return regLocation;
 }
 #endif
+// OHOS_LOCAL end
 
 inline bool Registers_mips_o32::validFloatRegister(int regNum) const {
+// OHOS_LOCAL begin
 #if defined(__mips_hard_float)
   return (regNum >= UNW_MIPS_F0 && regNum <= UNW_MIPS_F31);
 #else
   (void)regNum;
   return false;
 #endif
+// OHOS_LOCAL end
 }
 
+// OHOS_LOCAL begin
 inline unw_fpreg_t Registers_mips_o32::getFloatRegister(int regNum) const {
 #if defined(__mips_hard_float)
   assert(validFloatRegister(regNum));
@@ -3009,12 +3040,14 @@ inline unw_fpreg_t Registers_mips_o32::getFloatRegister(int regNum) const {
 #else
 #error "Unknown __mips_fpr value"
 #endif
+// OHOS_LOCAL end
 #else
   (void)regNum;
   _LIBUNWIND_ABORT("mips_o32 float support not implemented");
 #endif
 }
 
+// OHOS_LOCAL begin
 inline void Registers_mips_o32::setFloatRegister(int regNum,
                                                  unw_fpreg_t value) {
 #if defined(__mips_hard_float)
@@ -3028,6 +3061,7 @@ inline void Registers_mips_o32::setFloatRegister(int regNum,
 #else
 #error "Unknown __mips_fpr value"
 #endif
+// OHOS_LOCAL end
 #else
   (void)regNum;
   (void)value;
@@ -3199,8 +3233,8 @@ public:
   uint64_t    getRegister(int num) const;
   void        setRegister(int num, uint64_t value);
   bool        validFloatRegister(int num) const;
-  unw_fpreg_t getFloatRegister(int num) const;
-  void        setFloatRegister(int num, unw_fpreg_t value);
+  unw_fpreg_t getFloatRegister(int num) const; // OHOS_LOCAL
+  void        setFloatRegister(int num, unw_fpreg_t value); // OHOS_LOCAL
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
@@ -3310,7 +3344,9 @@ inline bool Registers_mips_newabi::validFloatRegister(int regNum) const {
   return false;
 }
 
+// OHOS_LOCAL begin
 inline unw_fpreg_t Registers_mips_newabi::getFloatRegister(int regNum) const {
+// OHOS_LOCAL end
 #ifdef __mips_hard_float
   assert(validFloatRegister(regNum));
   return _floats[regNum - UNW_MIPS_F0];
@@ -3320,11 +3356,13 @@ inline unw_fpreg_t Registers_mips_newabi::getFloatRegister(int regNum) const {
 #endif
 }
 
+// OHOS_LOCAL begin
 inline void Registers_mips_newabi::setFloatRegister(int regNum,
                                                     unw_fpreg_t value) {
+// OHOS_LOCAL end
 #ifdef __mips_hard_float
   assert(validFloatRegister(regNum));
-  _floats[regNum - UNW_MIPS_F0] = value;
+  _floats[regNum - UNW_MIPS_F0] = value; // OHOS_LOCAL
 #else
   (void)regNum;
   (void)value;
@@ -3496,8 +3534,8 @@ public:
   uint32_t    getRegister(int num) const;
   void        setRegister(int num, uint32_t value);
   bool        validFloatRegister(int num) const;
-  unw_fpreg_t getFloatRegister(int num) const;
-  void        setFloatRegister(int num, unw_fpreg_t value);
+  unw_fpreg_t getFloatRegister(int num) const; // OHOS_LOCAL
+  void        setFloatRegister(int num, unw_fpreg_t value); // OHOS_LOCAL
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
@@ -3577,11 +3615,11 @@ inline void Registers_sparc::setRegister(int regNum, uint32_t value) {
 
 inline bool Registers_sparc::validFloatRegister(int) const { return false; }
 
-inline unw_fpreg_t Registers_sparc::getFloatRegister(int) const {
+inline unw_fpreg_t Registers_sparc::getFloatRegister(int) const { // OHOS_LOCAL
   _LIBUNWIND_ABORT("no Sparc float registers");
 }
 
-inline void Registers_sparc::setFloatRegister(int, unw_fpreg_t) {
+inline void Registers_sparc::setFloatRegister(int, unw_fpreg_t) { // OHOS_LOCAL
   _LIBUNWIND_ABORT("no Sparc float registers");
 }
 
@@ -3867,8 +3905,8 @@ public:
   uint32_t    getRegister(int num) const;
   void        setRegister(int num, uint32_t value);
   bool        validFloatRegister(int num) const;
-  unw_fpreg_t getFloatRegister(int num) const;
-  void        setFloatRegister(int num, unw_fpreg_t value);
+  unw_fpreg_t getFloatRegister(int num) const; // OHOS_LOCAL
+  void        setFloatRegister(int num, unw_fpreg_t value); // OHOS_LOCAL
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
@@ -3943,12 +3981,16 @@ inline bool Registers_hexagon::validFloatRegister(int /* regNum */) const {
   return false;
 }
 
+// OHOS_LOCAL begin
 inline unw_fpreg_t Registers_hexagon::getFloatRegister(int /* regNum */) const {
+// OHOS_LOCAL end
   _LIBUNWIND_ABORT("hexagon float support not implemented");
 }
 
+// OHOS_LOCAL begin
 inline void Registers_hexagon::setFloatRegister(int /* regNum */,
                                                 unw_fpreg_t /* value */) {
+// OHOS_LOCAL end
   _LIBUNWIND_ABORT("hexagon float support not implemented");
 }
 
@@ -4082,8 +4124,8 @@ public:
   reg_t       getRegister(int num) const;
   void        setRegister(int num, reg_t value);
   bool        validFloatRegister(int num) const;
-  fp_t        getFloatRegister(int num) const;
-  void        setFloatRegister(int num, fp_t value);
+  fp_t        getFloatRegister(int num) const; // OHOS_LOCAL
+  void        setFloatRegister(int num, fp_t value); // OHOS_LOCAL
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
@@ -4325,8 +4367,10 @@ inline bool Registers_riscv::validFloatRegister(int regNum) const {
 # endif
 }
 
-inline unw_fpreg_t Registers_riscv::getFloatRegister(int regNum) const {
-# if defined(__riscv_flen)
+// OHOS_LOCAL begin
+inline fp_t Registers_riscv::getFloatRegister(int regNum) const {
+// OHOS_LOCAL end
+#if defined(__riscv_flen)
   assert(validFloatRegister(regNum));
   return _floats[regNum - UNW_RISCV_F0];
 # else
@@ -4335,8 +4379,10 @@ inline unw_fpreg_t Registers_riscv::getFloatRegister(int regNum) const {
 # endif
 }
 
-inline void Registers_riscv::setFloatRegister(int regNum, unw_fpreg_t value) {
-# if defined(__riscv_flen)
+// OHOS_LOCAL begin
+inline void Registers_riscv::setFloatRegister(int regNum, fp_t value) {
+// OHOS_LOCAL end
+#if defined(__riscv_flen)
   assert(validFloatRegister(regNum));
   _floats[regNum - UNW_RISCV_F0] = value;
 # else
@@ -4370,8 +4416,8 @@ public:
   uint64_t    getRegister(int num) const;
   void        setRegister(int num, uint64_t value);
   bool        validFloatRegister(int num) const;
-  unw_fpreg_t getFloatRegister(int num) const;
-  void        setFloatRegister(int num, unw_fpreg_t value);
+  unw_fpreg_t getFloatRegister(int num) const; // OHOS_LOCAL
+  void        setFloatRegister(int num, unw_fpreg_t value); // OHOS_LOCAL
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
@@ -4476,12 +4522,16 @@ inline bool Registers_ve::validFloatRegister(int /* regNum */) const {
   return false;
 }
 
+// OHOS_LOCAL begin
 inline unw_fpreg_t Registers_ve::getFloatRegister(int /* regNum */) const {
+// OHOS_LOCAL end
   _LIBUNWIND_ABORT("VE doesn't have float registers");
 }
 
+// OHOS_LOCAL begin
 inline void Registers_ve::setFloatRegister(int /* regNum */,
                                            unw_fpreg_t /* value */) {
+// OHOS_LOCAL end
   _LIBUNWIND_ABORT("VE doesn't have float registers");
 }
 

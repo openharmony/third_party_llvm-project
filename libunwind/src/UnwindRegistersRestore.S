@@ -917,7 +917,7 @@ DEFINE_LIBUNWIND_FUNCTION(_ZN9libunwind18Registers_mips_o326jumptoEv)
   .set noreorder
   .set nomacro
 #ifdef __mips_hard_float
-#if __mips_fpr == 32
+#if __mips_fpr == 32 // OHOS_LOCAL
   ldc1  $f0, (4 * 36 + 8 * 0)($4)
   ldc1  $f2, (4 * 36 + 8 * 2)($4)
   ldc1  $f4, (4 * 36 + 8 * 4)($4)
@@ -934,6 +934,7 @@ DEFINE_LIBUNWIND_FUNCTION(_ZN9libunwind18Registers_mips_o326jumptoEv)
   ldc1  $f26, (4 * 36 + 8 * 26)($4)
   ldc1  $f28, (4 * 36 + 8 * 28)($4)
   ldc1  $f30, (4 * 36 + 8 * 30)($4)
+// OHOS_LOCAL begin
 #elif __mips_fpr == 64
   ldc1  $f0, (4 * 36 + 8 * 0)($4)
   ldc1  $f1, (4 * 36 + 8 * 1)($4)
@@ -974,6 +975,7 @@ DEFINE_LIBUNWIND_FUNCTION(_ZN9libunwind18Registers_mips_o326jumptoEv)
   and   $t0, $t0, $t1
   beq   $t0, $0, _fp32
 _fp64:
+// OHOS_LOCAL end
   ldc1  $f0, (4 * 36 + 8 * 0)($4)
   ldc1  $f1, (4 * 36 + 8 * 1)($4)
   ldc1  $f2, (4 * 36 + 8 * 2)($4)
@@ -1006,6 +1008,7 @@ _fp64:
   ldc1  $f29, (4 * 36 + 8 * 29)($4)
   ldc1  $f30, (4 * 36 + 8 * 30)($4)
   ldc1  $f31, (4 * 36 + 8 * 31)($4)
+// OHOS_LOCAL begin
   j     _after_float
 _fp32:
   ldc1  $f0, (4 * 36 + 8 * 0)($4)
@@ -1026,9 +1029,10 @@ _fp32:
   ldc1  $f30, (4 * 36 + 8 * 30)($4)
 #else
 #error "Unknown __mips_fpr value"
+// OHOS_LOCAL end
 #endif
 #endif
-_after_float:
+_after_float: // OHOS_LOCAL
   // restore hi and lo
   lw    $8, (4 * 33)($4)
   mthi  $8
