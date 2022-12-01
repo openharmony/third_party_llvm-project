@@ -36,20 +36,20 @@ static Status ForwardPortWithHdc(
     return error;
 
   device_id = hdc.GetDeviceID();
-  log->Printf("Hsu file(%s):%d function(ForwardPortWithHdc) Connected to Hos "
-              "device \"%s\"",
-              __FILE__, __LINE__, device_id.c_str());
+  LLDB_LOGF(log, "Hsu file(%s):%d function(ForwardPortWithHdc) Connected to Hos "
+            "device \"%s\"",
+            __FILE__, __LINE__, device_id.c_str());
 
   if (remote_port != 0) {
-    log->Printf(
-        "Hsu file(%s):%d function(ForwardPortWithHdc) Forwarding remote "
-        "TCP port %d to local TCP port %d",
-        __FILE__, __LINE__, remote_port, local_port);
+    LLDB_LOGF(log,
+              "Hsu file(%s):%d function(ForwardPortWithHdc) Forwarding remote "
+              "TCP port %d to local TCP port %d",
+              __FILE__, __LINE__, remote_port, local_port);
     return hdc.SetPortForwarding(local_port, remote_port);
   }
 
-  log->Printf("Forwarding remote socket \"%s\" to local TCP port %d",
-              remote_socket_name.str().c_str(), local_port);
+  LLDB_LOGF(log, "Forwarding remote socket \"%s\" to local TCP port %d",
+            remote_socket_name.str().c_str(), local_port);
 
   if (!socket_namespace)
     return Status("Invalid socket namespace");
@@ -75,9 +75,8 @@ static Status FindUnusedPort(uint16_t &port) {
     port = tcp_socket->GetLocalPortNumber();
 
   Log *log = GetLog(LLDBLog::Platform);
-  if (log)
-    log->Printf("Hsu file(%s):%d FindUnusedPort port(%d)", __FILE__, __LINE__,
-                port);
+  LLDB_LOGF(log, "Hsu file(%s):%d FindUnusedPort port(%d)", __FILE__, __LINE__,
+            port);
   return error;
 }
 
@@ -99,8 +98,8 @@ bool PlatformHOSRemoteGDBServer::LaunchGDBServer(lldb::pid_t &pid,
   Log *log = GetLog(LLDBLog::Platform);
   auto error =
       MakeConnectURL(pid, remote_port, socket_name.c_str(), connect_url);
-  if (error.Success() && log)
-    log->Printf("gdbserver connect URL: %s", connect_url.c_str());
+  if (error.Success())
+    LLDB_LOGF(log, "gdbserver connect URL: %s", connect_url.c_str());
 
   return error.Success();
 }
@@ -139,17 +138,16 @@ Status PlatformHOSRemoteGDBServer::ConnectRemote(Args &args) {
   auto error = MakeConnectURL(g_remote_platform_pid, remote_port, uri->path,
                               connect_url);
   Log *log = GetLog(LLDBLog::Platform);
-  if (log)
-    log->Printf("Hsu file(%s):%d g_remote_platform_pid(%lu) remote_port(%d) "
-                "connect_url(%s)",
-                __FILE__, __LINE__, g_remote_platform_pid, remote_port,
-                connect_url.c_str());
+  LLDB_LOGF(log, "Hsu file(%s):%d g_remote_platform_pid(%lu) remote_port(%d) "
+            "connect_url(%s)",
+            __FILE__, __LINE__, g_remote_platform_pid, remote_port,
+            connect_url.c_str());
   if (error.Fail())
     return error;
 
   args.ReplaceArgumentAtIndex(0, connect_url);
 
-  log->Printf("Rewritten platform connect URL: %s", connect_url.c_str());
+  LLDB_LOGF(log, "Rewritten platform connect URL: %s", connect_url.c_str());
 
   error = PlatformRemoteGDBServer::ConnectRemote(args);
   if (error.Fail())
@@ -172,9 +170,9 @@ void PlatformHOSRemoteGDBServer::DeleteForwardPort(lldb::pid_t pid) {
   const auto port = it->second;
   const auto error = DeleteForwardPortWithHdc(port, m_device_id);
   if (error.Fail())
-    log->Printf("Failed to delete port forwarding (pid=%" PRIu64
-                ", port=%d, device=%s): %s",
-                pid, port, m_device_id.c_str(), error.AsCString());
+    LLDB_LOGF(log, "Failed to delete port forwarding (pid=%" PRIu64
+              ", port=%d, device=%s): %s",
+              pid, port, m_device_id.c_str(), error.AsCString());
   m_port_forwards.erase(it);
 }
 

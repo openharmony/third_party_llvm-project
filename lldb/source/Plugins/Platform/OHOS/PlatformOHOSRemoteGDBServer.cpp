@@ -38,19 +38,16 @@ static Status ForwardPortWithHdc(
     return error;
 
   device_id = hdc.GetDeviceID();
-  if (log)
-    log->Printf("Connected to OHOS device \"%s\"", device_id.c_str());
+  LLDB_LOGF(log, "Connected to OHOS device \"%s\"", device_id.c_str());
 
   if (remote_port != 0) {
-    if (log)
-      log->Printf("Forwarding remote TCP port %d to local TCP port %d",
-                  remote_port, local_port);
+    LLDB_LOGF(log, "Forwarding remote TCP port %d to local TCP port %d",
+              remote_port, local_port);
     return hdc.SetPortForwarding(local_port, remote_port);
   }
 
-  if (log)
-    log->Printf("Forwarding remote socket \"%s\" to local TCP port %d",
-                remote_socket_name.str().c_str(), local_port);
+  LLDB_LOGF(log, "Forwarding remote socket \"%s\" to local TCP port %d",
+            remote_socket_name.str().c_str(), local_port);
 
   if (!socket_namespace)
     return Status("Invalid socket namespace");
@@ -62,9 +59,8 @@ static Status ForwardPortWithHdc(
 static Status DeleteForwardPortWithHdc(std::pair<uint16_t, uint16_t> ports,
                                        const std::string &device_id) {
   Log *log = GetLog(LLDBLog::Platform);
-  if (log)
-    log->Printf("Delete port forwarding %d -> %d, device=%s", ports.first,
-                ports.second, device_id.c_str());
+  LLDB_LOGF(log, "Delete port forwarding %d -> %d, device=%s", ports.first,
+            ports.second, device_id.c_str());
 
   HdcClient hdc(device_id);
   return hdc.DeletePortForwarding(ports);
@@ -77,8 +73,7 @@ static Status DeleteForwardPortWithHdc(std::pair<uint16_t, std::string> remote_s
   Log *log = GetLog(LLDBLog::Platform);
   uint16_t local_port = remote_socket.first;
   std::string remote_socket_name = remote_socket.second;
-  if (log)
-    log->Printf("Delete port forwarding %d -> %s, device=%s", local_port,
+  LLDB_LOGF(log, "Delete port forwarding %d -> %s, device=%s", local_port,
             remote_socket_name.c_str(), device_id.c_str());
   if (!socket_namespace)
     return Status("Invalid socket namespace");
@@ -129,8 +124,8 @@ bool PlatformOHOSRemoteGDBServer::LaunchGDBServer(lldb::pid_t &pid,
 
   auto error =
       MakeConnectURL(pid, remote_port, socket_name.c_str(), connect_url);
-  if (error.Success() && log)
-    log->Printf("gdbserver connect URL: %s", connect_url.c_str());
+  if (error.Success())
+    LLDB_LOGF(log, "gdbserver connect URL: %s", connect_url.c_str());
 
   return error.Success();
 }
@@ -174,9 +169,7 @@ Status PlatformOHOSRemoteGDBServer::ConnectRemote(Args &args) {
   args.ReplaceArgumentAtIndex(0, connect_url);
 
   Log *log = GetLog(LLDBLog::Platform);
-  if (log)
-    log->Printf("Rewritten platform connect URL: %s", connect_url.c_str());
-
+  LLDB_LOGF(log, "Rewritten platform connect URL: %s", connect_url.c_str());
   error = PlatformRemoteGDBServer::ConnectRemote(args);
   if (error.Fail())
     DeleteForwardPort(g_remote_platform_pid);
@@ -198,11 +191,10 @@ void PlatformOHOSRemoteGDBServer::DeleteForwardPort(lldb::pid_t pid) {
   if (it != m_port_forwards.end() && it->second.second != 0) {
     const auto error = DeleteForwardPortWithHdc(it->second, m_device_id);
     if (error.Fail()) {
-      if (log)
-        log->Printf("Failed to delete port forwarding (pid=%" PRIu64
-                    ", fwd=(%d -> %d), device=%s): %s",
-                    pid, it->second.first, it->second.second, m_device_id.c_str(),
-                    error.AsCString());
+      LLDB_LOGF(log, "Failed to delete port forwarding (pid=%" PRIu64
+                ", fwd=(%d -> %d), device=%s): %s",
+                pid, it->second.first, it->second.second, m_device_id.c_str(),
+                error.AsCString());
     }
     m_port_forwards.erase(it);
   }
@@ -210,9 +202,8 @@ void PlatformOHOSRemoteGDBServer::DeleteForwardPort(lldb::pid_t pid) {
   if(it_socket != m_remote_socket_name.end()) {
     const auto error_Socket = DeleteForwardPortWithHdc(it_socket->second, m_socket_namespace, m_device_id);
     if (error_Socket.Fail()) {
-      if (log)
-        log->Printf("Failed to delete port forwarding (pid=%" PRIu64
-                    ", fwd=(%d->%s)device=%s): %s", pid, it_socket->second.first, it_socket->second.second.c_str(), m_device_id.c_str(),error_Socket.AsCString());
+      LLDB_LOGF(log, "Failed to delete port forwarding (pid=%" PRIu64
+                ", fwd=(%d->%s)device=%s): %s", pid, it_socket->second.first, it_socket->second.second.c_str(), m_device_id.c_str(),error_Socket.AsCString());
     }
     m_remote_socket_name.erase(it_socket);
   }

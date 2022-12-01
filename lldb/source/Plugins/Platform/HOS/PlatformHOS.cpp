@@ -51,9 +51,8 @@ void PlatformHOS::Initialize() {
     PlatformSP default_platform_sp(new PlatformHOS(true));
     default_platform_sp->SetSystemArchitecture(HostInfo::GetArchitecture());
     Platform::SetHostPlatform(default_platform_sp);
-    if (log)
-      log->Printf("Hsu file(%s)%d PlatformHOS::%s new PlatformHOS(true)",
-                  __FILE__, __LINE__, __FUNCTION__);
+    LLDB_LOGF(log, "Hsu file(%s)%d PlatformHOS::%s new PlatformHOS(true)",
+              __FILE__, __LINE__, __FUNCTION__);
 #endif
     PluginManager::RegisterPlugin(
         PlatformHOS::GetPluginNameStatic(false),
@@ -77,8 +76,8 @@ PlatformSP PlatformHOS::CreateInstance(bool force, const ArchSpec *arch) {
     const char *triple_cstr =
         arch ? arch->GetTriple().getTriple().c_str() : "<null>";
 
-    log->Printf("PlatformHOS::%s(force=%s, triple=%s)", __FUNCTION__,
-                force ? "true" : "false", triple_cstr);
+    LLDB_LOGF(log, "PlatformHOS::%s(force=%s, triple=%s)", __FUNCTION__,
+              force ? "true" : "false", triple_cstr);
   }
 
   bool create = force;
@@ -100,12 +99,11 @@ PlatformSP PlatformHOS::CreateInstance(bool force, const ArchSpec *arch) {
     if (const char *env = std::getenv("HDC_UTID"))
       platform_setenv("ANDROID_SERIAL", env);
 
-    log->Printf("PlatformHOS::%s() creating remote-hos platform", __FUNCTION__);
+    LLDB_LOGF(log, "PlatformHOS::%s() creating remote-hos platform", __FUNCTION__);
     return PlatformSP(new PlatformHOS(false));
   }
 
-  log->Printf("PlatformHOS::%s() aborting creation of remote-hos platform",
-              __FUNCTION__);
+  LLDB_LOGF(log, "PlatformHOS::%s() aborting creation of remote-hos platform", __FUNCTION__);
 
   return PlatformSP();
 }
@@ -113,27 +111,23 @@ PlatformSP PlatformHOS::CreateInstance(bool force, const ArchSpec *arch) {
 PlatformHOS::PlatformHOS(bool is_host)
     : PlatformLinux(is_host), m_sdk_version(0) {
   Log *log = GetLog(LLDBLog::Platform);
-  if (log)
-    log->Printf("Hsu file(%s):%d PlatformHOS::%s is_host(%d)", __FILE__,
-                __LINE__, __FUNCTION__, is_host);
+  LLDB_LOGF(log, "Hsu file(%s):%d PlatformHOS::%s is_host(%d)", __FILE__,
+            __LINE__, __FUNCTION__, is_host);
 }
 
 PlatformHOS::~PlatformHOS() {}
 
 llvm::StringRef PlatformHOS::GetPluginNameStatic(bool is_host) {
   Log *log = GetLog(LLDBLog::Platform);
-  if (log)
-    log->Printf("Hsu %s:%d PlatformHOS::GetPluginNameStatic is_host(%d)",
-                __FILE__, __LINE__, is_host);
+  LLDB_LOGF(log, "Hsu %s:%d PlatformHOS::GetPluginNameStatic is_host(%d)",
+            __FILE__, __LINE__, is_host);
   if (is_host) {
-    if (log)
-      log->Printf("Hsu %s:%d PlatformHOS::GetPluginNameStatic g_host_name",
-                  __FILE__, __LINE__);
+    LLDB_LOGF(log, "Hsu %s:%d PlatformHOS::GetPluginNameStatic g_host_name",
+              __FILE__, __LINE__);
     return Platform::GetHostPlatformName();
   } else {
-    if (log)
-      log->Printf("Hsu %s:%d PlatformHOS::GetPluginNameStatic g_remote_name",
-                  __FILE__, __LINE__);
+    LLDB_LOGF(log, "Hsu %s:%d PlatformHOS::GetPluginNameStatic g_remote_name",
+              __FILE__, __LINE__);
     return "remote-hos";
   }
 }
@@ -148,9 +142,8 @@ const char *PlatformHOS::GetPluginDescriptionStatic(bool is_host) {
 Status PlatformHOS::ConnectRemote(Args &args) {
   m_device_id.clear();
   Log *log = GetLog(LLDBLog::Platform);
-  if (log)
-    log->Printf("Hsu %s:%d PlatformHOS::ConnectRemote call", __FILE__,
-                __LINE__);
+  LLDB_LOGF(log, "Hsu %s:%d PlatformHOS::ConnectRemote call", __FILE__,
+            __LINE__);
 
   if (IsHost()) {
     return Status("can't connect to the host platform '%s', always connected",
@@ -158,10 +151,8 @@ Status PlatformHOS::ConnectRemote(Args &args) {
   }
 
   if (!m_remote_platform_sp) {
-    if (log)
-      log->Printf("Hsu %s:%d PlatformHOS::ConnectRemote new "
-                  "PlatformHOSRemoteGDBServer()",
-                  __FILE__, __LINE__);
+    LLDB_LOGF(log, "Hsu %s:%d PlatformHOS::ConnectRemote new "
+              "PlatformHOSRemoteGDBServer()", __FILE__, __LINE__);
     m_remote_platform_sp = PlatformSP(new PlatformHOSRemoteGDBServer());
   }
 
@@ -177,17 +168,15 @@ Status PlatformHOS::ConnectRemote(Args &args) {
   auto error = PlatformLinux::ConnectRemote(args);
   if (error.Success()) {
     HdcClient hdc;
-    if (log)
-      log->Printf("Hsu file(%s):%d PlatformHOS::ConnectRemote m_device_id(%s)",
-                  __FILE__, __LINE__, m_device_id.c_str());
+    LLDB_LOGF(log, "Hsu file(%s):%d PlatformHOS::ConnectRemote m_device_id(%s)",
+              __FILE__, __LINE__, m_device_id.c_str());
     error = HdcClient::CreateByDeviceID(m_device_id, hdc);
     if (error.Fail())
       return error;
 
     m_device_id = hdc.GetDeviceID();
-    if (log)
-      log->Printf("Hsu file(%s):%d PlatformHOS::ConnectRemote m_device_id(%s)",
-                  __FILE__, __LINE__, m_device_id.c_str());
+    LLDB_LOGF(log, "Hsu file(%s):%d PlatformHOS::ConnectRemote m_device_id(%s)",
+              __FILE__, __LINE__, m_device_id.c_str());
   }
   return error;
 }
@@ -218,18 +207,16 @@ Status PlatformHOS::GetFile(const FileSpec &source,
   auto source_file = source_spec.GetCString(false);
 
   Log *log = GetLog(LLDBLog::Platform);
-  if (log)
-    log->Printf("Got mode == 0 on '%s': try to get file via 'shell cat'",
-                source_file);
+  LLDB_LOGF(log, "Got mode == 0 on '%s': try to get file via 'shell cat'",
+            source_file);
 
   if (strchr(source_file, '\'') != nullptr)
     return Status("Doesn't support single-quotes in filenames");
 
   // mode == 0 can signify that adbd cannot access the file due security
   // constraints - try "cat ..." as a fallback.
-  if (log)
-    log->Printf("Hsu file(%s):%d PlatformHOS::%s source_file(%s)", __FILE__,
-                __LINE__, __FUNCTION__, source_file);
+  LLDB_LOGF(log, "Hsu file(%s):%d PlatformHOS::%s source_file(%s)", __FILE__,
+            __LINE__, __FUNCTION__, source_file);
   HdcClient hdc(m_device_id);
 
   char cmd[PATH_MAX];
@@ -270,9 +257,8 @@ Status PlatformHOS::GetFile(const FileSpec &source,
     snprintf(cmd, sizeof(cmd), "cat '%s'", source_file);
   }
 
-  if (log)
-    log->Printf("Hsu file(%s):%d PlatformHOS::%s source_file(%s)", __FILE__,
-                __LINE__, __FUNCTION__, source_file);
+  LLDB_LOGF(log, "Hsu file(%s):%d PlatformHOS::%s source_file(%s)", __FILE__,
+            __LINE__, __FUNCTION__, source_file);
 
   return hdc.ShellToFile(cmd, minutes(1), destination);
 }
@@ -335,9 +321,8 @@ uint32_t PlatformHOS::GetSdkVersion() {
 
   if (error.Fail() || version_string.empty()) {
     Log *log = GetLog(LLDBLog::Platform);
-    if (log)
-      log->Printf("Get SDK version failed. (error: %s, output: %s)",
-                  error.AsCString(), version_string.c_str());
+    LLDB_LOGF(log, "Get SDK version failed. (error: %s, output: %s)",
+              error.AsCString(), version_string.c_str());
     return 0;
   }
 
@@ -389,8 +374,8 @@ Status PlatformHOS::DownloadSymbolFile(const lldb::ModuleSP &module_sp,
         Status error = hdc.Shell(command.GetData(), seconds(5), nullptr);
 
         Log *log = GetLog(LLDBLog::Platform);
-        if (log && error.Fail())
-          log->Printf("Failed to remove temp directory: %s", error.AsCString());
+        if (error.Fail())
+          LLDB_LOGF(log, "Failed to remove temp directory: %s", error.AsCString());
       });
 
   FileSpec symfile_platform_filespec(tmpdir);

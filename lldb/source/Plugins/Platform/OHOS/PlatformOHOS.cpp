@@ -71,8 +71,8 @@ PlatformSP PlatformOHOS::CreateInstance(bool force, const ArchSpec *arch) {
     const char *triple_cstr =
         arch ? arch->GetTriple().getTriple().c_str() : "<null>";
 
-    log->Printf("PlatformOHOS::%s(force=%s, arch={%s,%s})", __FUNCTION__,
-                force ? "true" : "false", arch_name, triple_cstr);
+    LLDB_LOGF(log, "PlatformOHOS::%s(force=%s, arch={%s,%s})", __FUNCTION__,
+              force ? "true" : "false", arch_name, triple_cstr);
   }
 
   bool create = force;
@@ -98,17 +98,15 @@ PlatformSP PlatformOHOS::CreateInstance(bool force, const ArchSpec *arch) {
   }
 
   if (create) {
-    if (log)
-      log->Printf("PlatformOHOS::%s() creating remote-ohos platform",
-                  __FUNCTION__);
+    LLDB_LOGF(log, "PlatformOHOS::%s() creating remote-ohos platform",
+              __FUNCTION__);
     
     return PlatformSP(new PlatformOHOS(false));
   }
 
-  if (log)
-    log->Printf(
-        "PlatformOHOS::%s() aborting creation of remote-ohos platform",
-        __FUNCTION__);
+  LLDB_LOGF(log,
+      "PlatformOHOS::%s() aborting creation of remote-ohos platform",
+      __FUNCTION__);
 
   return PlatformSP();
 }
@@ -236,9 +234,8 @@ uint32_t PlatformOHOS::GetSdkVersion() {
 
   if (error.Fail() || version_string.empty()) {
     Log *log = GetLog(LLDBLog::Platform);
-    if (log)
-      log->Printf("Get SDK version failed. (error: %s, output: %s)",
-                  error.AsCString(), version_string.c_str());
+    LLDB_LOGF(log, "Get SDK version failed. (error: %s, output: %s)",
+              error.AsCString(), version_string.c_str());
     m_sdk_version = INVALID_SDK_VERSION;
     return 0;
   }
