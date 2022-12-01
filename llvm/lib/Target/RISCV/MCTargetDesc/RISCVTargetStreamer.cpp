@@ -36,6 +36,12 @@ void RISCVTargetStreamer::emitTextAttribute(unsigned Attribute,
 void RISCVTargetStreamer::emitIntTextAttribute(unsigned Attribute,
                                                unsigned IntValue,
                                                StringRef StringValue) {}
+// OHOS_LOCAL begin backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+void RISCVTargetStreamer::setTargetABI(RISCVABI::ABI ABI) {
+  assert(ABI != RISCVABI::ABI_Unknown && "Improperly initialized target ABI");
+  TargetABI = ABI;
+}
+// OHOS_LOCAL   end backported from 227496dc09cf46df233aad041d6dc6113822e4bb
 
 void RISCVTargetStreamer::emitTargetAttributes(const MCSubtargetInfo &STI) {
   if (STI.hasFeature(RISCV::FeatureRV32E))

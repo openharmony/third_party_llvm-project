@@ -247,6 +247,13 @@ public:
                 "target-abi)\n";
     }
 
+    // OHOS_LOCAL begin backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+    // Use computeTargetABI to check if ABIName is valid. If invalid, output
+    // error message.
+    RISCVABI::computeTargetABI(STI.getTargetTriple(), STI.getFeatureBits(),
+                               ABIName);
+    // OHOS_LOCAL   end backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+
     const MCObjectFileInfo *MOFI = Parser.getContext().getObjectFileInfo();
     ParserOptions.IsPicEnabled = MOFI->isPositionIndependent();
   }

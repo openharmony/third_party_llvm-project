@@ -9,12 +9,17 @@
 #ifndef LLVM_LIB_TARGET_RISCV_RISCVTARGETSTREAMER_H
 #define LLVM_LIB_TARGET_RISCV_RISCVTARGETSTREAMER_H
 
+// OHOS_LOCAL backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+#include "RISCV.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 
 namespace llvm {
 
 class RISCVTargetStreamer : public MCTargetStreamer {
+  // OHOS_LOCAL backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+  RISCVABI::ABI TargetABI = RISCVABI::ABI_Unknown;
+
 public:
   RISCVTargetStreamer(MCStreamer &S);
   void finish() override;
@@ -34,6 +39,10 @@ public:
                                     StringRef StringValue);
 
   void emitTargetAttributes(const MCSubtargetInfo &STI);
+  // OHOS_LOCAL begin backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+  void setTargetABI(RISCVABI::ABI ABI);
+  RISCVABI::ABI getTargetABI() const { return TargetABI; }
+  // OHOS_LOCAL   end backported from 227496dc09cf46df233aad041d6dc6113822e4bb
 };
 
 // This part is for ascii assembly output

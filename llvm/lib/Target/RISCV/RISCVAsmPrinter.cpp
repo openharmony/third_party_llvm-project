@@ -38,12 +38,16 @@ STATISTIC(RISCVNumInstrsCompressed,
 
 namespace {
 class RISCVAsmPrinter : public AsmPrinter {
-  const MCSubtargetInfo *STI;
+  // OHOS_LOCAL begin backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+  const MCSubtargetInfo *MCSTI;
+  const RISCVSubtarget *STI;
+  // OHOS_LOCAL   end backported from 227496dc09cf46df233aad041d6dc6113822e4bb
 
 public:
   explicit RISCVAsmPrinter(TargetMachine &TM,
                            std::unique_ptr<MCStreamer> Streamer)
-      : AsmPrinter(TM, std::move(Streamer)), STI(TM.getMCSubtargetInfo()) {}
+      // OHOS_LOCAL backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+      : AsmPrinter(TM, std::move(Streamer)), MCSTI(TM.getMCSubtargetInfo()) {}
 
   StringRef getPassName() const override { return "RISCV Assembly Printer"; }
 
@@ -67,6 +71,9 @@ public:
 
   void emitStartOfAsmFile(Module &M) override;
   void emitEndOfAsmFile(Module &M) override;
+
+  // OHOS_LOCAL backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+  void emitFunctionEntryLabel() override;
 
 private:
   void emitAttributes();
@@ -170,7 +177,10 @@ bool RISCVAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
   MCSubtargetInfo &NewSTI =
     OutStreamer->getContext().getSubtargetCopy(*TM.getMCSubtargetInfo());
   NewSTI.setFeatureBits(MF.getSubtarget().getFeatureBits());
-  STI = &NewSTI;
+  // OHOS_LOCAL begin backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+  MCSTI = &NewSTI;
+  STI = &MF.getSubtarget<RISCVSubtarget>();
+  // OHOS_LOCAL   end backported from 227496dc09cf46df233aad041d6dc6113822e4bb
 
   SetupMachineFunction(MF);
   emitFunctionBody();
@@ -193,17 +203,18 @@ void RISCVAsmPrinter::emitEndOfAsmFile(Module &M) {
 void RISCVAsmPrinter::emitAttributes() {
   RISCVTargetStreamer &RTS =
       static_cast<RISCVTargetStreamer &>(*OutStreamer->getTargetStreamer());
-
-  const Triple &TT = TM.getTargetTriple();
-  StringRef CPU = TM.getTargetCPU();
-  StringRef FS = TM.getTargetFeatureString();
-  const RISCVTargetMachine &RTM = static_cast<const RISCVTargetMachine &>(TM);
-  /* TuneCPU doesn't impact emission of ELF attributes, ELF attributes only
-     care about arch related features, so we can set TuneCPU as CPU.  */
-  const RISCVSubtarget STI(TT, CPU, /*TuneCPU=*/CPU, FS, /*ABIName=*/"", RTM);
-
-  RTS.emitTargetAttributes(STI);
+  // OHOS_LOCAL backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+  RTS.emitTargetAttributes(*MCSTI);
 }
+
+// OHOS_LOCAL begin backported from 227496dc09cf46df233aad041d6dc6113822e4bb
+void RISCVAsmPrinter::emitFunctionEntryLabel() {
+  AsmPrinter::emitFunctionEntryLabel();
+  RISCVTargetStreamer &RTS =
+      static_cast<RISCVTargetStreamer &>(*OutStreamer->getTargetStreamer());
+  RTS.setTargetABI(STI->getTargetABI());
+}
+// OHOS_LOCAL   end backported from 227496dc09cf46df233aad041d6dc6113822e4bb
 
 // Force static initialization.
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeRISCVAsmPrinter() {
