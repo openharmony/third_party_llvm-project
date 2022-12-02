@@ -73,6 +73,8 @@ public:
   LLVMContext &operator=(const LLVMContext &) = delete;
   ~LLVMContext();
 
+  static const char *getLLVMVersion(); // OHOS_LOCAL
+
   // Pinned metadata names, which always have the same value.  This is a
   // compile-time performance optimization, not a correctness optimization.
   enum : unsigned {
