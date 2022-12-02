@@ -254,6 +254,30 @@ bool X86Subtarget::isLegalToCallImmediateAddr() const {
   return isTargetELF() || TM.getRelocationModel() == Reloc::Static;
 }
 
+// OHOS_LOCAL begin
+// Reserved registers features
+SmallSet<Register, 8> X86Subtarget::getRRegReservation() const {
+  SmallSet<Register, 8> ReservedRRegs;
+  if (hasReservedR8())
+    ReservedRRegs.insert(X86::R8);
+  if (hasReservedR9())
+    ReservedRRegs.insert(X86::R9);
+  if (hasReservedR10())
+    ReservedRRegs.insert(X86::R10);
+  if (hasReservedR11())
+    ReservedRRegs.insert(X86::R11);
+  if (hasReservedR12())
+    ReservedRRegs.insert(X86::R12);
+  if (hasReservedR13())
+    ReservedRRegs.insert(X86::R13);
+  if (hasReservedR14())
+    ReservedRRegs.insert(X86::R14);
+  if (hasReservedR15())
+    ReservedRRegs.insert(X86::R15);
+  return ReservedRRegs;
+}
+// OHOS_LOCAL end
+
 void X86Subtarget::initSubtargetFeatures(StringRef CPU, StringRef TuneCPU,
                                          StringRef FS) {
   if (CPU.empty())

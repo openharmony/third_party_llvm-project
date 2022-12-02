@@ -17,6 +17,7 @@
 #include "clang/Basic/BitmaskEnum.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/TargetOptions.h"
+#include "llvm/ADT/StringSet.h" // OHOS_LOCAL
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/X86TargetParser.h"
@@ -152,6 +153,8 @@ protected:
   llvm::X86::CPUKind CPU = llvm::X86::CK_None;
 
   enum FPMathKind { FP_Default, FP_SSE, FP_387 } FPMath = FP_Default;
+
+  llvm::StringSet<> ReservedRRegs; // OHOS_LOCAL
 
 public:
   X86TargetInfo(const llvm::Triple &Triple, const TargetOptions &)
@@ -768,6 +771,31 @@ public:
       HasSizeMismatch = RegSize != 64;
       return true;
     }
+
+    // OHOS_LOCAL begin
+    // callee saved registers r8-r15 if they are set as reserved
+    // via -mfixed-r# flag
+    const StringRef RRegsNames[] = {
+      "r8",  "r9", "r10", "r11",
+      "r12", "r13", "r14", "r15"
+    };
+    auto IfStartsWith = [RegName](const StringRef str) {
+      return RegName.startswith(str);
+    };
+    auto End = std::end(RRegsNames);
+    auto RegIter = std::find_if(std::begin(RRegsNames), End, IfStartsWith);
+    if (RegIter != E && ReservedRRegs.contains(*RegIter)) {
+      unsigned ReadedRegSize =
+      llvm::StringSwitch<unsigned>(RegName.substr(RegIter->size()))
+        .Case("",64)
+        .Case("d",32)
+        .Case("w",16)
+        .Case("b",8)
+        .Default(0);
+      HasSizeMismatch = RegSize != ReadedRegSize;
+      return true;
+    }
+    // OHOS_LOCAL end
 
     // Check if the register is a 32-bit register the backend can handle.
     return X86TargetInfo::validateGlobalRegisterVariable(RegName, RegSize,

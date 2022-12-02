@@ -2846,6 +2846,13 @@ void X86FrameLowering::determineCalleeSaves(MachineFunction &MF,
       BasePtr = getX86SubSuperRegister(BasePtr, 64);
     SavedRegs.set(BasePtr);
   }
+
+  // OHOS_LOCAL begin
+  if (MF.getSubtarget<X86Subtarget>().is64Bit()) {
+    for (auto Reg : MF.getSubtarget<X86Subtarget>().getRRegReservation())
+      SavedRegs.reset(Reg);
+  }
+  // OHOS_LOCAL end
 }
 
 static bool

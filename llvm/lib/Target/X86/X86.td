@@ -30,6 +30,12 @@ def Is16Bit : SubtargetFeature<"16bit-mode", "Is16Bit", "true",
 // X86 Subtarget ISA features
 //===----------------------------------------------------------------------===//
 
+// OHOS_LOCAL begin
+foreach i = {8-15} in
+  def FeatureReserveR#i : SubtargetFeature<"fixed-r"#i, "HasReservedR"#i, "true",
+                                           "Reserve r"#i#", making it unavaliable as a GPR">;
+// OHOS_LOCAL end
+
 def FeatureX87     : SubtargetFeature<"x87","HasX87", "true",
                                       "Enable X87 float instructions">;
 
