@@ -16,6 +16,7 @@
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/StackProtectorRetLowering.h"
 #include "llvm/Support/TypeSize.h"
+#include "llvm/IR/CallingConv.h" // OHOS_LOCAL
 #include <vector>
 
 namespace llvm {
@@ -138,7 +139,11 @@ public:
   /// getOffsetOfLocalArea - This method returns the offset of the local area
   /// from the stack pointer on entrance to a function.
   ///
-  int getOffsetOfLocalArea() const { return LocalAreaOffset; }
+  // OHOS_LOCAL begin
+  virtual int getOffsetOfLocalArea(CallingConv::ID CC = CallingConv::C) const {
+    return LocalAreaOffset;
+  }
+  // OHOS_LOCAL end
 
   /// Control the placement of special register scavenging spill slots when
   /// allocating a stack frame.

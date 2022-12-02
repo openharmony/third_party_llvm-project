@@ -3885,7 +3885,10 @@ void VarArgsLoweringHelper::createVarArgAreaAndStoreRegisters(
     if (isWin64()) {
       // Get to the caller-allocated home save location.  Add 8 to account
       // for the return address.
-      int HomeOffset = FrameLowering.getOffsetOfLocalArea() + 8;
+      // OHOS_LOCAL begin
+      auto CC = TheMachineFunction.getFunction().getCallingConv();
+      int HomeOffset = FrameLowering.getOffsetOfLocalArea(CC) + 8;
+      // OHOS_LOCAL end
       FuncInfo->setRegSaveFrameIndex(
           FrameInfo.CreateFixedObject(1, NumIntRegs * 8 + HomeOffset, false));
       // Fixup to set vararg frame on shadow area (4 x i64).

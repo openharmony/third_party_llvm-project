@@ -57,9 +57,11 @@ TargetFrameLowering::getFrameIndexReference(const MachineFunction &MF, int FI,
   // something different.
   FrameReg = RI->getFrameRegister(MF);
 
+  // OHOS_LOCAL begin
   return StackOffset::getFixed(MFI.getObjectOffset(FI) + MFI.getStackSize() -
-                               getOffsetOfLocalArea() +
+                               getOffsetOfLocalArea(MF.getFunction().getCallingConv()) +
                                MFI.getOffsetAdjustment());
+  // OHOS_LOCAL end
 }
 
 bool TargetFrameLowering::needsFrameIndexResolution(

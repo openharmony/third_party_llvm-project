@@ -213,7 +213,10 @@ void MachineFrameInfo::print(const MachineFunction &MF, raw_ostream &OS) const{
   if (Objects.empty()) return;
 
   const TargetFrameLowering *FI = MF.getSubtarget().getFrameLowering();
-  int ValOffset = (FI ? FI->getOffsetOfLocalArea() : 0);
+  // OHOS_LOCAL begin
+  auto CC = MF.getFunction().getCallingConv();
+  int ValOffset = (FI ? FI->getOffsetOfLocalArea(CC) : 0);
+  // OHOS_LOCAL end
 
   OS << "Frame Objects:\n";
 
