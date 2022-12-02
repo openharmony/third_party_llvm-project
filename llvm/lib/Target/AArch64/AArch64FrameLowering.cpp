@@ -1477,6 +1477,18 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
 
+  // OHOS_LOCAL begin
+  if (HasFP && (MF.getFunction().getCallingConv() == CallingConv::ArkFast0 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast1 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast2 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast3 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast4 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast5)) {
+    report_fatal_error(
+        "Implicit use of FP is forbidden for ArkFast conventions!");
+  }
+  // OHOS_LOCAL end
+
   // Set tagged base pointer to the requested stack slot.
   // Ideally it should match SP value after prologue.
   Optional<int> TBPI = AFI->getTaggedBasePointerIndex();

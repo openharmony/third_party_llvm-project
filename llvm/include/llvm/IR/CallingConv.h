@@ -91,6 +91,40 @@ namespace CallingConv {
     /// clean up their stack.
     SwiftTail = 20,
 
+    // OHOS_LOCAL begin
+    // Ark Irtoc calling convention for Interpreter handlers
+    ArkInt = 21,
+
+    // Ark Irtoc calling convention for void-return FastPath  handlers with
+    // zero arguments
+    ArkFast0 = 22,
+
+    // Ark Irtoc calling convention for FastPath handlers with one argument or
+    // no arguments but having a return value
+    ArkFast1 = 23,
+
+    // Ark Itroc calling convention for FastPath handlers with two arguments
+    ArkFast2 = 24,
+
+    // Ark Itroc calling convention for FastPath handlers with three arguments
+    ArkFast3 = 25,
+
+    // Ark Itroc calling convention for FastPath handlers with four arguments
+    ArkFast4 = 26,
+
+    // Ark Itroc calling convention for FastPath handlers with five arguments
+    ArkFast5 = 27,
+
+    // Ark AOT method calling convention with frame adaptation
+    ArkMethod = 28,
+
+    // Ark AOT calling convention for special class resolvers
+    ArkResolver = 29,
+
+    // Ark AOT calling convention for static calls through special PLT resolver
+    ArkPlt = 30,
+    // OHOS_LOCAL end
+
     // Target - This is the start of the target-specific calling conventions,
     // e.g. fastcall and thiscall on X86.
     FirstTargetCC = 64,

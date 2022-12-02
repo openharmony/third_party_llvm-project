@@ -3610,6 +3610,16 @@ static bool mayTailCallThisCC(CallingConv::ID CC) {
   // Swift:
   case CallingConv::Swift:
     return true;
+  // OHOS_LOCAL begin
+  case CallingConv::ArkInt:
+  case CallingConv::ArkFast0:
+  case CallingConv::ArkFast1:
+  case CallingConv::ArkFast2:
+  case CallingConv::ArkFast3:
+  case CallingConv::ArkFast4:
+  case CallingConv::ArkFast5:
+    return true;
+  // OHOS_LOCAL end
   default:
     return canGuaranteeTCO(CC);
   }

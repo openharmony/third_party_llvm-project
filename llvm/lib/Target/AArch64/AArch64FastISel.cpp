@@ -3786,8 +3786,20 @@ bool AArch64FastISel::selectRet(const Instruction *I) {
     // Analyze operands of the call, assigning locations to each operand.
     SmallVector<CCValAssign, 16> ValLocs;
     CCState CCInfo(CC, F.isVarArg(), *FuncInfo.MF, ValLocs, I->getContext());
-    CCAssignFn *RetCC = CC == CallingConv::WebKit_JS ? RetCC_AArch64_WebKit_JS
-                                                     : RetCC_AArch64_AAPCS;
+    // OHOS_LOCAL begin
+    CCAssignFn *RetCC;
+    switch (CC) {
+    default:
+      RetCC = RetCC_AArch64_AAPCS;
+      break;
+    case CallingConv::WebKit_JS:
+      RetCC = RetCC_AArch64_WebKit_JS;
+      break;
+    case CallingConv::ArkResolver:
+      RetCC = RetCC_AArch64_ArkResolver;
+      break;
+    }
+    // OHOS_LOCAL end
     CCInfo.AnalyzeReturn(Outs, RetCC);
 
     // Only handle a single return value for now.

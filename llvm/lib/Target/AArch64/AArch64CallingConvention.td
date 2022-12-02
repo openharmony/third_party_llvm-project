@@ -304,6 +304,72 @@ def RetCC_AArch64_WebKit_JS : CallingConv<[
   CCIfType<[f64], CCAssignToReg<[D0, D1, D2, D3, D4, D5, D6, D7]>>
 ]>;
 
+// OHOS_LOCAL begin
+// Ark Conventions
+let Entry = 1 in
+def CC_AArch64_ArkInt : CallingConv<[
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+  CCIfType<[i32], CCAssignToRegWithShadow<[W20, W21, W22, W23, W24, W25, W26, W28], [X20, X21, X22, X23, X24, X25, X26, X28]>>,
+  CCIfType<[i64], CCAssignToRegWithShadow<[X20, X21, X22, X23, X24, X25, X26, X28], [W20, W21, W22, W23, W24, W25, W26, W28]>>,
+]>;
+
+let Entry = 1 in
+def CC_AArch64_ArkFast0 : CallingConv<[
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+  CCIfType<[i32], CCAssignToRegWithShadow<[W28, W29], [X28, FP]>>,
+  CCIfType<[i64], CCAssignToRegWithShadow<[X28, FP], [W28, W29]>>,
+]>;
+
+let Entry = 1 in
+def CC_AArch64_ArkFast1 : CallingConv<[
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+  CCIfType<[i32], CCAssignToRegWithShadow<[W0, W28, W29], [X0, X28, FP]>>,
+  CCIfType<[i64], CCAssignToRegWithShadow<[X0, X28, FP], [W0, W28, W29]>>,
+]>;
+
+let Entry = 1 in
+def CC_AArch64_ArkFast2 : CallingConv<[
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+  CCIfType<[i32], CCAssignToRegWithShadow<[W0, W1, W28, W29], [X0, X1, X28, FP]>>,
+  CCIfType<[i64], CCAssignToRegWithShadow<[X0, X1, X28, FP], [W0, W1, W28, W29]>>,
+]>;
+
+let Entry = 1 in
+def CC_AArch64_ArkFast3 : CallingConv<[
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+  CCIfType<[i32], CCAssignToRegWithShadow<[W0, W1, W2, W28, W29], [X0, X1, X2, X28, FP]>>,
+  CCIfType<[i64], CCAssignToRegWithShadow<[X0, X1, X2, X28, FP], [W0, W1, W2, W28, W29]>>,
+]>;
+
+let Entry = 1 in
+def CC_AArch64_ArkFast4 : CallingConv<[
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+  CCIfType<[i32], CCAssignToRegWithShadow<[W0, W1, W2, W3, W28, W29], [X0, X1, X2, X3, X28, FP]>>,
+  CCIfType<[i64], CCAssignToRegWithShadow<[X0, X1, X2, X3, X28, FP], [W0, W1, W2, W3, W28, W29]>>,
+]>;
+
+let Entry = 1 in
+def CC_AArch64_ArkFast5 : CallingConv<[
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+  CCIfType<[i32], CCAssignToRegWithShadow<[W0, W1, W2, W3, W4, W28, W29], [X0, X1, X2, X3, X4, X28, FP]>>,
+  CCIfType<[i64], CCAssignToRegWithShadow<[X0, X1, X2, X3, X4, X28, FP], [W0, W1, W2, W3, W4, W28, W29]>>,
+]>;
+
+let Entry = 1 in
+def CC_AArch64_ArkResolver : CallingConv<[
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+  CCIfType<[i32], CCAssignToRegWithShadow<[W16], [X16]>>,
+  CCIfType<[i64], CCAssignToRegWithShadow<[X16], [W16]>>,
+]>;
+
+let Entry = 1 in
+def RetCC_AArch64_ArkResolver : CallingConv<[
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+  CCIfType<[i32], CCAssignToRegWithShadow<[W16], [X16]>>,
+  CCIfType<[i64], CCAssignToRegWithShadow<[X16], [W16]>>,
+]>;
+// OHOS_LOCAL end
+
 //===----------------------------------------------------------------------===//
 // ARM64 Calling Convention for GHC
 //===----------------------------------------------------------------------===//
@@ -433,6 +499,30 @@ def CSR_AArch64_StackProbe_Windows
     : CalleeSavedRegs<(add (sequence "X%u", 0, 15),
                            (sequence "X%u", 18, 28), FP, SP,
                            (sequence "Q%u", 0, 31))>;
+
+// OHOS_LOCAL begin
+def CSR_AArch64_ArkInt : CalleeSavedRegs<(add FP)>;
+
+def CSR_AArch64_ArkFast5
+    : CalleeSavedRegs<(add (sub (sequence "X%u", 5, 27), X16, X17), LR,
+                           (sequence "D%u", 0, 31))>;
+def CSR_AArch64_ArkFast4
+    : CalleeSavedRegs<(add CSR_AArch64_ArkFast5, X4)>;
+
+def CSR_AArch64_ArkFast3
+    : CalleeSavedRegs<(add CSR_AArch64_ArkFast4, X3)>;
+
+def CSR_AArch64_ArkFast2
+    : CalleeSavedRegs<(add CSR_AArch64_ArkFast3, X2)>;
+
+def CSR_AArch64_ArkFast1
+    : CalleeSavedRegs<(add CSR_AArch64_ArkFast2, X1)>;
+
+def CSR_AArch64_ArkFast0
+    : CalleeSavedRegs<(add CSR_AArch64_ArkFast1, X0)>;
+
+def CSR_AArch64_ArkMethod : CalleeSavedRegs<(add LR, FP)>;
+// OHOS_LOCAL end
 
 // Darwin variants of AAPCS.
 // Darwin puts the frame-record at the top of the callee-save area.

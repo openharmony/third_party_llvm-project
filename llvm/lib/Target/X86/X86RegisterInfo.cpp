@@ -298,6 +298,28 @@ X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
     return CSR_NoRegs_SaveList;
 
   switch (CC) {
+  // OHOS_LOCAL begin
+  case CallingConv::ArkInt:
+    return CSR_NoRegs_SaveList;
+  case CallingConv::ArkFast0:
+    return CSR_ArkFast0_SaveList;
+  case CallingConv::ArkFast1:
+    return CSR_ArkFast1_SaveList;
+  case CallingConv::ArkFast2:
+    return CSR_ArkFast2_SaveList;
+  case CallingConv::ArkFast3:
+    return CSR_ArkFast3_SaveList;
+  case CallingConv::ArkFast4:
+    return CSR_ArkFast4_SaveList;
+  case CallingConv::ArkFast5:
+    return CSR_ArkFast5_SaveList;
+  case CallingConv::ArkMethod:
+    return CSR_ArkMethod_SaveList;
+  case CallingConv::ArkResolver:
+    return CSR_ArkResolver_SaveList;
+  case CallingConv::ArkPlt:
+    return CSR_ArkPlt_SaveList;
+  // OHOS_LOCAL end
   case CallingConv::GHC:
   case CallingConv::HiPE:
     return CSR_NoRegs_SaveList;
@@ -421,6 +443,28 @@ X86RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
   bool HasAVX512 = Subtarget.hasAVX512();
 
   switch (CC) {
+  // OHOS_LOCAL begin
+  case CallingConv::ArkInt:
+    return CSR_NoRegs_RegMask;
+  case CallingConv::ArkFast0:
+    return CSR_ArkFast0_RegMask;
+  case CallingConv::ArkFast1:
+    return CSR_ArkFast1_RegMask;
+  case CallingConv::ArkFast2:
+    return CSR_ArkFast2_RegMask;
+  case CallingConv::ArkFast3:
+    return CSR_ArkFast3_RegMask;
+  case CallingConv::ArkFast4:
+    return CSR_ArkFast4_RegMask;
+  case CallingConv::ArkFast5:
+    return CSR_ArkFast5_RegMask;
+  case CallingConv::ArkMethod:
+    return CSR_ArkMethod_RegMask;
+  case CallingConv::ArkResolver:
+    return CSR_ArkResolver_RegMask;
+  case CallingConv::ArkPlt:
+    return CSR_ArkPlt_RegMask;
+  // OHOS_LOCAL end
   case CallingConv::GHC:
   case CallingConv::HiPE:
     return CSR_NoRegs_RegMask;

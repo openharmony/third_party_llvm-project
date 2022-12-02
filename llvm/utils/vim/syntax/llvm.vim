@@ -48,6 +48,18 @@ syn keyword llvmKeyword
       \ alwaysinline
       \ appending
       \ argmemonly
+" OHOS_LOCAL begin
+      \ arkfast0cc
+      \ arkfast1cc
+      \ arkfast2cc
+      \ arkfast3cc
+      \ arkfast4cc
+      \ arkfast5cc
+      \ arkintccx
+      \ arkmethodcc
+      \ arkpltcc
+      \ arkresolvercc
+" OHOS_LOCAL end
       \ arm_aapcs_vfpcc
       \ arm_aapcscc
       \ arm_apcscc

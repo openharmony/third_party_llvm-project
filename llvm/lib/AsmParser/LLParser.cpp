@@ -1904,6 +1904,18 @@ void LLParser::parseOptionalDLLStorageClass(unsigned &Res) {
 ///   ::= 'amdgpu_cs'
 ///   ::= 'amdgpu_kernel'
 ///   ::= 'tailcc'
+// OHOS_LOCAL begin
+///   ::= 'arkintcc'
+///   ::= 'arkfast0cc'
+///   ::= 'arkfast1cc'
+///   ::= 'arkfast2cc'
+///   ::= 'arkfast3cc'
+///   ::= 'arkfast4cc'
+///   ::= 'arkfast5cc'
+///   ::= 'arkmethodcc'
+///   ::= 'arkresolvercc'
+///   ::= 'arkpltcc'
+// OHOS_LOCAL end
 ///   ::= 'cc' UINT
 ///
 bool LLParser::parseOptionalCallingConv(unsigned &CC) {
@@ -1956,6 +1968,18 @@ bool LLParser::parseOptionalCallingConv(unsigned &CC) {
   case lltok::kw_amdgpu_cs:      CC = CallingConv::AMDGPU_CS; break;
   case lltok::kw_amdgpu_kernel:  CC = CallingConv::AMDGPU_KERNEL; break;
   case lltok::kw_tailcc:         CC = CallingConv::Tail; break;
+  // OHOS_LOCAL begin
+  case lltok::kw_arkintcc:       CC = CallingConv::ArkInt; break;
+  case lltok::kw_arkfast0cc:     CC = CallingConv::ArkFast0; break;
+  case lltok::kw_arkfast1cc:     CC = CallingConv::ArkFast1; break;
+  case lltok::kw_arkfast2cc:     CC = CallingConv::ArkFast2; break;
+  case lltok::kw_arkfast3cc:     CC = CallingConv::ArkFast3; break;
+  case lltok::kw_arkfast4cc:     CC = CallingConv::ArkFast4; break;
+  case lltok::kw_arkfast5cc:     CC = CallingConv::ArkFast5; break;
+  case lltok::kw_arkmethodcc:    CC = CallingConv::ArkMethod; break;
+  case lltok::kw_arkresolvercc:  CC = CallingConv::ArkResolver; break;
+  case lltok::kw_arkpltcc:       CC = CallingConv::ArkPlt; break;
+  // OHOS_LOCAL end
   case lltok::kw_cc: {
       Lex.Lex();
       return parseUInt32(CC);

@@ -297,6 +297,18 @@ static void PrintCallingConv(unsigned cc, raw_ostream &Out) {
   case CallingConv::CXX_FAST_TLS:  Out << "cxx_fast_tlscc"; break;
   case CallingConv::GHC:           Out << "ghccc"; break;
   case CallingConv::Tail:          Out << "tailcc"; break;
+  // OHOS_LOCAL begin
+  case CallingConv::ArkInt:        Out << "arkintcc"; break;
+  case CallingConv::ArkFast0:      Out << "arkfast0cc"; break;
+  case CallingConv::ArkFast1:      Out << "arkfast1cc"; break;
+  case CallingConv::ArkFast2:      Out << "arkfast2cc"; break;
+  case CallingConv::ArkFast3:      Out << "arkfast3cc"; break;
+  case CallingConv::ArkFast4:      Out << "arkfast4cc"; break;
+  case CallingConv::ArkFast5:      Out << "arkfast5cc"; break;
+  case CallingConv::ArkMethod:     Out << "arkmethod"; break;
+  case CallingConv::ArkResolver:   Out << "arkresolvercc"; break;
+  case CallingConv::ArkPlt:        Out << "arkpltcc"; break;
+  // OHOS_LOCAL end
   case CallingConv::CFGuard_Check: Out << "cfguard_checkcc"; break;
   case CallingConv::X86_StdCall:   Out << "x86_stdcallcc"; break;
   case CallingConv::X86_FastCall:  Out << "x86_fastcallcc"; break;

@@ -629,6 +629,18 @@ lltok::Kind LLLexer::LexIdentifier() {
   KEYWORD(amdgpu_kernel);
   KEYWORD(amdgpu_gfx);
   KEYWORD(tailcc);
+  // OHOS_LOCAL begin
+  KEYWORD(arkintcc);
+  KEYWORD(arkfast0cc);
+  KEYWORD(arkfast1cc);
+  KEYWORD(arkfast2cc);
+  KEYWORD(arkfast3cc);
+  KEYWORD(arkfast4cc);
+  KEYWORD(arkfast5cc);
+  KEYWORD(arkmethodcc);
+  KEYWORD(arkresolvercc);
+  KEYWORD(arkpltcc);
+  // OHOS_LOCAL end
 
   KEYWORD(cc);
   KEYWORD(c);
