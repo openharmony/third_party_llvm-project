@@ -742,3 +742,15 @@ class SettingsCommandTestCase(TestBase):
         # finally, confirm that trying to set a setting that does not exist still fails.
         # (SHOWING a setting that does not exist does not currently yield an error.)
         self.expect('settings set target.setting-which-does-not-exist true', error=True)
+    
+    def test_settings_plugin_path(self):
+        path = self.getBuildArtifact("/proc/self/cwd");
+        self.runCmd(
+            "settings set plugin.symbol-file.dwarf.comp-dir-symlink-paths %s" %
+            path) #Set to konw value
+        self.expect(
+            "settings show plugin.symbol-file.dwarf.comp-dir-symlink-paths",
+            substrs=[
+                'plugin.symbol-file.dwarf.comp-dir-symlink-paths (file-list) =',
+                '[0]: \proc\self\cwd'])
+        self.runCmd("settings clear plugin.symbol-file.dwarf.comp-dir-symlink-paths")
