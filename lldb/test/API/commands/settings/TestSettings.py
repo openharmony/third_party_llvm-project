@@ -745,12 +745,9 @@ class SettingsCommandTestCase(TestBase):
     
     def test_settings_plugin_path(self):
         path = self.getBuildArtifact("/proc/self/cwd");
-        self.runCmd(
-            "settings set plugin.symbol-file.dwarf.comp-dir-symlink-paths %s" %
-            path) #Set to konw value
-        self.expect(
-            "settings show plugin.symbol-file.dwarf.comp-dir-symlink-paths",
-            substrs=[
-                'plugin.symbol-file.dwarf.comp-dir-symlink-paths (file-list) =',
-                '[0]: \proc\self\cwd'])
+        self.runCmd("settings set plugin.symbol-file.dwarf.comp-dir-symlink-paths %s" %
+                    path) #Set to konw value
+        self.expect("settings show plugin.symbol-file.dwarf.comp-dir-symlink-paths",
+                   substrs=['plugin.symbol-file.dwarf.comp-dir-symlink-paths (file-list) =',
+                            '[0]: \proc\self\cwd'])
         self.runCmd("settings clear plugin.symbol-file.dwarf.comp-dir-symlink-paths")
