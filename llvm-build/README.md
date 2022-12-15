@@ -18,10 +18,9 @@ MacOS X >= 10.15.4
 
 ### Get Code
 ```
-repo init -u https://gitee.com/OpenHarmony/manifest.git -b add_llvm_toolchain-dev (not ready yet)
+repo init -u https://gitee.com/OpenHarmony/manifest.git -b master -m llvm-toolchain.xml
 repo sync -c 
 repo forall -c 'git lfs pull'
-cp -r toolchain/llvm-project/llvm-build toolchain
 ```
 </br>
 
@@ -32,7 +31,7 @@ Here is an example of starting build process on Linux or MacOS:
 # update prebuilts, no need to run each time
 ./toolchain/llvm-project/llvm-build/env_prepare.sh
 # build
-python3 ./toolchain/llvm-build/build.py
+python3 ./toolchain/llvm-project/llvm-build/build.py
 ```
 
 1. env_prepare (one time only)

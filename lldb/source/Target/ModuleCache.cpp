@@ -133,27 +133,29 @@ Status CreateHostSysRootModuleLink(const FileSpec &root_dir_spec,
   const auto sysroot_module_path_spec =
       JoinPath(JoinPath(root_dir_spec, hostname),
                platform_module_spec.GetPath().c_str());
-  UUID module_uuid;
-  {
-    auto module_sp =
-        std::make_shared<Module>(ModuleSpec(sysroot_module_path_spec));
-    module_uuid = module_sp->GetUUID();
-  }
-
-  if (!module_uuid.IsValid()) {
-    LLDB_LOGF(log, "Try CreateHostSysRootModuleLink but uuid is invalid %s",
-              module_uuid.GetAsString().c_str());
-    return Status();
-  }
-
-  LLDB_LOGF(log, "CreateHostSysRootModuleLink with uuid %s",
-              module_uuid.GetAsString().c_str());
 
   if (FileSystem::Instance().Exists(sysroot_module_path_spec)) {
     if (!delete_existing)
       return Status();
 
     DecrementRefExistingModule(root_dir_spec, sysroot_module_path_spec);
+  }
+
+  // sysroot_module_path_spec might still exist.
+  // It means that module UUID is not valid.
+  if (FileSystem::Instance().Exists(sysroot_module_path_spec)) {
+    auto module_sp =
+        std::make_shared<Module>(ModuleSpec(sysroot_module_path_spec));
+    UUID module_uuid = module_sp->GetUUID();
+
+    if (!module_uuid.IsValid()) {
+      LLDB_LOGF(log, "Try CreateHostSysRootModuleLink but uuid is invalid %s",
+                module_uuid.GetAsString().c_str());
+      return Status();
+    }
+
+    LLDB_LOGF(log, "CreateHostSysRootModuleLink with uuid %s",
+              module_uuid.GetAsString().c_str());
   }
 
   const auto error = MakeDirectory(
@@ -232,13 +234,16 @@ Status ModuleCache::Put(const FileSpec &root_dir_spec, const char *hostname,
 Status ModuleCache::Get(const FileSpec &root_dir_spec, const char *hostname,
                         const ModuleSpec &module_spec,
                         ModuleSP &cached_module_sp, bool *did_create_ptr) {
-  const auto find_it =
-      m_loaded_modules.find(module_spec.GetUUID().GetAsString());
-  if (find_it != m_loaded_modules.end()) {
-    cached_module_sp = (*find_it).second.lock();
-    if (cached_module_sp)
-      return Status();
-    m_loaded_modules.erase(find_it);
+  {
+    std::lock_guard<std::recursive_mutex> lock(m_cache_mutex);
+    const auto find_it =
+        m_loaded_modules.find(module_spec.GetUUID().GetAsString());
+    if (find_it != m_loaded_modules.end()) {
+      cached_module_sp = (*find_it).second.lock();
+      if (cached_module_sp)
+        return Status();
+      m_loaded_modules.erase(find_it);
+    }
   }
 
   const auto module_spec_dir =
@@ -277,6 +282,7 @@ Status ModuleCache::Get(const FileSpec &root_dir_spec, const char *hostname,
   if (FileSystem::Instance().Exists(symfile_spec))
     cached_module_sp->SetSymbolFileFileSpec(symfile_spec);
 
+  std::lock_guard<std::recursive_mutex> lock(m_cache_mutex);
   m_loaded_modules.insert(
       std::make_pair(module_spec.GetUUID().GetAsString(), cached_module_sp));
 

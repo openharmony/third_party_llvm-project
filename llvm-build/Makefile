@@ -123,7 +123,7 @@ all: $(TARGETS:%=musl_install_for_%)
 
 $(TARGETS:%=musl_copy_for_%):
 		$(HIDE) mkdir -p $@
-		$(HIDE) cp -rfu $(MUSLDIR)/[^p]* $@
+		$(HIDE) cp -rfu $(MUSLDIR)/[!p]* $@
 
 optimized_routines_install_for_liteos_a_user: musl_copy_for_liteos_a_user
 ifneq ($(ARCH),)
