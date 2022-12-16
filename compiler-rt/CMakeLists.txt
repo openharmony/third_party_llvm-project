@@ -454,6 +454,25 @@ if (OHOS)
   list(APPEND SANITIZER_COMMON_LINK_LIBS unwind)
 endif()
 
+# TODO: COMPILER_RT_COMMON_CFLAGS and COMPILER_RT_COMMON_LINK_FLAGS are
+# intended for use in non-sanitizer runtimes such as libFuzzer, profile or XRay,
+# move these higher to include common flags, then derive SANITIZER_COMMON_CFLAGS
+# and SANITIZER_COMMON_LINK_FLAGS from those and append sanitizer-specific flags.
+set(COMPILER_RT_COMMON_CFLAGS ${SANITIZER_COMMON_CFLAGS})
+set(COMPILER_RT_COMMON_LINK_FLAGS ${SANITIZER_COMMON_LINK_FLAGS})
+
+# We don't use the C++ standard library, so avoid including it by mistake.
+append_list_if(COMPILER_RT_HAS_NOSTDINCXX_FLAG -nostdinc++ SANITIZER_COMMON_CFLAGS)
+append_list_if(COMPILER_RT_HAS_NOSTDLIBXX_FLAG -nostdlib++ SANITIZER_COMMON_LINK_FLAGS)
+
+# Remove -stdlib= which is unused when passing -nostdinc++...
+string(REGEX MATCHALL "-stdlib=[a-zA-Z+]*" stdlib_flag "${CMAKE_CXX_FLAGS}")
+string(REGEX REPLACE "-stdlib=[a-zA-Z+]*" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+# ...we need it to build some runtimes and tests so readd it where appropriate.
+list(APPEND COMPILER_RT_COMMON_CFLAGS ${stdlib_flag})
+list(APPEND COMPILER_RT_COMMON_LINK_FLAGS ${stdlib_flag})
+
 macro(append_libcxx_libs var)
   if (${var}_INTREE)
     if (SANITIZER_USE_STATIC_LLVM_UNWINDER AND (TARGET unwind_static OR HAVE_LIBUNWIND))
