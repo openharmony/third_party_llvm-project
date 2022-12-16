@@ -69,9 +69,8 @@ protected:
   GetLibdlFunctionDeclarations(lldb_private::Process *process) override;
 
 private:
-  HdcClient::SyncService *GetSyncService(Status &error);
+  std::unique_ptr<HdcClient::SyncService> GetSyncService(Status &error);
 
-  std::unique_ptr<HdcClient::SyncService> m_adb_sync_svc;
   std::string m_device_id;
   uint32_t m_sdk_version;
 };

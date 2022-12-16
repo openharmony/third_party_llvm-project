@@ -456,11 +456,8 @@ PlatformHOS::GetLibdlFunctionDeclarations(lldb_private::Process *process) {
   return PlatformPOSIX::GetLibdlFunctionDeclarations(process);
 }
 
-HdcClient::SyncService *PlatformHOS::GetSyncService(Status &error) {
-  if (m_adb_sync_svc && m_adb_sync_svc->IsConnected())
-    return m_adb_sync_svc.get();
-
+std::unique_ptr<HdcClient::SyncService> PlatformHOS::GetSyncService(Status &error) {
   HdcClient hdc(m_device_id);
-  m_adb_sync_svc = hdc.GetSyncService(error);
-  return (error.Success()) ? m_adb_sync_svc.get() : nullptr;
+  std::unique_ptr<HdcClient::SyncService> adb_sync_svc = hdc.GetSyncService(error);
+  return (error.Success()) ? std::move(adb_sync_svc) : nullptr;
 }
