@@ -59,6 +59,37 @@ inline LLVMCodeModel wrap(CodeModel::Model Model) {
   }
   llvm_unreachable("Bad CodeModel!");
 }
+
+#ifdef ARK_GC_SUPPORT
+inline Reloc::Model unwrap(LLVMRelocMode Model) {
+  switch (Model) {
+  case LLVMRelocDefault:
+  case LLVMRelocStatic:
+    return Reloc::Static;
+  case LLVMRelocPIC:
+    return Reloc::PIC_;
+  case LLVMRelocDynamicNoPic:
+    return Reloc::DynamicNoPIC;
+  }
+  llvm_unreachable("Invalid LLVMRelocMode!");
+}
+
+inline LLVMRelocMode unwrap(Reloc::Model Model) {
+  switch (Model) {
+  case Reloc::Static:
+    return LLVMRelocStatic;
+  case Reloc::PIC_:
+    return LLVMRelocPIC;
+  case Reloc::DynamicNoPIC:
+    return LLVMRelocDynamicNoPic;
+  case Reloc::ROPI:
+  case Reloc::RWPI:
+  case Reloc::ROPI_RWPI:
+    break;
+  }
+  llvm_unreachable("Invalid Reloc::Model!");
+}
+#endif
 } // namespace llvm
 
 #endif

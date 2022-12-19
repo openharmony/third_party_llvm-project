@@ -1286,6 +1286,37 @@ bool X86FrameLowering::has128ByteRedZone(const MachineFunction& MF) const {
   - for 32-bit code, substitute %e?? registers for %r??
 */
 
+#ifdef ARK_GC_SUPPORT
+Triple::ArchType X86FrameLowering::GetArkSupportTarget() const
+{
+    return Is64Bit ? Triple::x86_64 : Triple::x86;
+}
+
+int X86FrameLowering::GetFixedFpPosition() const
+{
+  return 2;
+}
+
+int X86FrameLowering::GetFrameReserveSize(MachineFunction &MF) const
+{
+    int slotSize = sizeof(uint64_t);
+    if (!Is64Bit) {
+      slotSize = sizeof(uint32_t);
+    }
+    int reserveSize = 0;
+    MF.getFunction()
+      .getFnAttribute("frame-reserved-slots")
+      .getValueAsString()
+      .getAsInteger(10, reserveSize);
+
+    // x86-64 shoule align 16 bytes
+    if (Is64Bit) {
+      return RoundUp(reserveSize, 2 * sizeof(uint64_t));
+    }
+    return reserveSize;
+}
+#endif
+
 void X86FrameLowering::emitPrologue(MachineFunction &MF,
                                     MachineBasicBlock &MBB) const {
   assert(&STI == &MF.getSubtarget<X86Subtarget>() &&
@@ -1486,6 +1517,20 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
     else
       MFI.setOffsetAdjustment(-StackSize);
   }
+#ifdef ARK_GC_SUPPORT
+    // push marker
+    if (MF.getFunction().hasFnAttribute("frame-reserved-slots"))
+    {
+      unsigned StackPtr = TRI->getStackRegister();
+      int reserveSize = GetFrameReserveSize(MF);
+      const unsigned SUBOpc =
+        getSUBriOpcode(Uses64BitFramePtr, reserveSize);
+      BuildMI(MBB, MBBI, DL, TII.get(SUBOpc), StackPtr)
+        .addReg(StackPtr)
+        .addImm(reserveSize)
+        .setMIFlag(MachineInstr::FrameSetup);
+    }
+#endif
 
   // For EH funclets, only allocate enough space for outgoing calls. Save the
   // NumBytes value that we would've used for the parent frame.
@@ -1959,6 +2004,22 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
   // AfterPop is the position to insert .cfi_restore.
   MachineBasicBlock::iterator AfterPop = MBBI;
   if (HasFP) {
+#ifdef ARK_GC_SUPPORT
+    if (MF.getFunction().hasFnAttribute("frame-reserved-slots"))
+    {
+
+      int reserveSize = GetFrameReserveSize(MF);
+      int slotSize = sizeof(uint32_t);
+      if (Is64Bit) {
+        slotSize = sizeof(uint64_t);
+      }
+      for (int i = 0; i < reserveSize / slotSize; i++) {
+        BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
+          MachineFramePtr)
+          .setMIFlag(MachineInstr::FrameDestroy);
+      }
+    }
+#endif
     // Pop EBP.
     BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
             MachineFramePtr)
@@ -2354,7 +2415,11 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
       }
     }
   }
-
+#ifdef ARK_GC_SUPPORT
+  int reserveSize = GetFrameReserveSize(MF);
+  SpillSlotOffset -= reserveSize; // skip frame reserved
+  CalleeSavedFrameSize += reserveSize;
+#endif
   // Assign slots for GPRs. It increases frame size.
   for (unsigned i = CSI.size(); i != 0; --i) {
     unsigned Reg = CSI[i - 1].getReg();

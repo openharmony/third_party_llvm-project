@@ -3946,6 +3946,12 @@ LLVMValueRef LLVMBuildCall(LLVMBuilderRef, LLVMValueRef Fn,
 LLVMValueRef LLVMBuildCall2(LLVMBuilderRef, LLVMTypeRef, LLVMValueRef Fn,
                             LLVMValueRef *Args, unsigned NumArgs,
                             const char *Name);
+#ifdef ARK_GC_SUPPORT
+LLVMValueRef LLVMBuildCall3(LLVMBuilderRef B, LLVMTypeRef Ty, LLVMValueRef Fn,
+                            LLVMValueRef *Args, unsigned NumArgs,
+                            const char *Name, LLVMValueRef *deoptVals,
+                            int NumVals);
+#endif
 LLVMValueRef LLVMBuildSelect(LLVMBuilderRef, LLVMValueRef If,
                              LLVMValueRef Then, LLVMValueRef Else,
                              const char *Name);
