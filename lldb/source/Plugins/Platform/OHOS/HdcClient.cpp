@@ -153,8 +153,14 @@ Status HdcClient::Connect() {
   std::string port = "8710";
   
   const char *env_port = std::getenv("OHOS_HDC_SERVER_PORT");
-  if ((env_port != NULL) && (atoi(env_port) > 0)) {
-    port = env_port;
+  if (env_port != NULL) {
+    int iEnv_port = atoi(env_port);
+    if ((iEnv_port > 0) && (iEnv_port <= 65535)) {
+      port = env_port;
+    }
+    else {
+      return Status("invalid port specification: %s. $OHOS_HDC_SERVER_PORT must be a positive number in (0,65535]", env_port);
+    }
   }
   
   std::string uri = "connect://localhost:" + port;
