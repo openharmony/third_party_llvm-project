@@ -410,8 +410,6 @@ protected:
               continue;
             }
 
-            internal_breakpoint = bp_loc_sp->GetBreakpoint().IsInternal();
-            
             // First run the precondition, but since the precondition is per
             // breakpoint, only run it once per breakpoint.
             std::pair<std::unordered_set<break_id_t>::iterator, bool> result =
@@ -481,7 +479,7 @@ protected:
                         loc_desc.GetData());
               // We want this stop reported, so you will know we auto-continued
               // but only for external breakpoints:
-              if (!internal_breakpoint)
+              if (!bp_loc_sp->GetBreakpoint().IsInternal())
                 thread_sp->SetShouldReportStop(eVoteYes);
               auto_continue_says_stop = false;
             }
@@ -504,7 +502,10 @@ protected:
 
             if (callback_says_stop && auto_continue_says_stop)
               m_should_stop = true;
-                  
+
+            if (m_should_stop && !bp_loc_sp->GetBreakpoint().IsInternal())
+              internal_breakpoint = false;
+
             // If we are going to stop for this breakpoint, then remove the
             // breakpoint.
             if (callback_says_stop && bp_loc_sp &&
