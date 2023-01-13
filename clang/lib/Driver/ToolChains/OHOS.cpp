@@ -419,6 +419,7 @@ SanitizerMask OHOS::getSupportedSanitizers() const {
   Res |= SanitizerKind::SafeStack;
   Res |= SanitizerKind::Scudo;
   Res |= SanitizerKind::KernelAddress;
+  Res |= SanitizerKind::KernelMemory;
   // TODO: Support TSAN and HWASAN and update mask.
   return Res;
 }
