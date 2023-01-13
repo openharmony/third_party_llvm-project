@@ -23,13 +23,15 @@ namespace segv_handler {
 // before this function.
 void installSignalHandlers(gwp_asan::GuardedPoolAllocator *GPA, Printf_t Printf,
                            gwp_asan::backtrace::PrintBacktrace_t PrintBacktrace,
-                           gwp_asan::backtrace::SegvBacktrace_t SegvBacktrace);
+                           gwp_asan::backtrace::SegvBacktrace_t SegvBacktrace,
+                           bool Recoverable = true);
 // OHOS_LOCAL begin
 
 #if defined(__OHOS__)
 void installSignalHandlersOhos(gwp_asan::GuardedPoolAllocator *GPA, Printf_t Printf,
                            gwp_asan::backtrace::PrintBacktrace_t PrintBacktrace,
-                           gwp_asan::backtrace::SegvBacktrace_t SegvBacktrace);
+                           gwp_asan::backtrace::SegvBacktrace_t SegvBacktrace,
+                           bool Recoverable = true);
 #endif
 
 // OHOS_LOCAL end

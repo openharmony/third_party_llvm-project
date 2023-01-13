@@ -105,4 +105,13 @@ size_t AllocatorState::getNearestSlot(uintptr_t Ptr) const {
   return addrToSlot(this, Ptr + PageSize);   // Round up.
 }
 
+// In recoverable mode, The internal fault(double free & invalid free) are 
+// triggered by deliberately faulting on a dedicated guard page appended to 
+// the end of the guarded pool.GuardedPagePoolEnd - 0x10 ensures the access 
+// lands within this internal-fault page (not a slot or a regular guard page), 
+// reliably triggering a memory fault.
+uintptr_t AllocatorState::internallyDetectedErrorFaultAddress() const {
+  return GuardedPagePoolEnd - 0x10;
+}
+
 } // namespace gwp_asan
