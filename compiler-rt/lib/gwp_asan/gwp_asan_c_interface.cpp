@@ -36,6 +36,7 @@ typedef struct gwp_asan_option {
     // OHOS_LOCAL begin
     int min_sample_size;
     const char *white_list_path;
+    bool gwp_asan_recoverable;
     // OHOS_LOCAL end
 } gwp_asan_option;
 
@@ -62,7 +63,7 @@ void init_gwp_asan(void *init_options)
     guarded_poll_alloctor.init(opts);
     if (input_opts->install_signal_handlers) {
         gwp_asan::segv_handler::installSignalHandlersOhos(&guarded_poll_alloctor, input_opts->gwp_asan_printf,
-            input_opts->printf_backtrace, input_opts->segv_backtrace);
+            input_opts->printf_backtrace, input_opts->segv_backtrace, input_opts->gwp_asan_recoverable);
     }
 }
 

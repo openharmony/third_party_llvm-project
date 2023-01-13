@@ -130,18 +130,31 @@ void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
   assert(State && "dumpReport missing Allocator State.");
   assert(Metadata && "dumpReport missing Metadata.");
   assert(Printf && "dumpReport missing Printf.");
+  assert(__gwp_asan_error_is_mine(State, ErrorPtr) &&
+         "dumpReport() called on a non-GWP-ASan error.");
+
+  uintptr_t InternalErrorPtr =
+      __gwp_asan_get_internal_crash_address(State, ErrorPtr);
+  if (InternalErrorPtr)
+    ErrorPtr = InternalErrorPtr;
+
+  const gwp_asan::AllocationMetadata *AllocMeta =
+      __gwp_asan_get_metadata(State, Metadata, ErrorPtr);
+
+  // It's unusual for a signal handler to be invoked multiple times for the same
+  // allocation, but it's possible in various scenarios, like:
+  //  1. A double-free or invalid-free was invoked in one thread at the same
+  //     time as a buffer-overflow or use-after-free in another thread, or
+  //  2. Two threads do a use-after-free or buffer-overflow at the same time.
+  // In these instances, we've already dumped a report for this allocation, so
+  // skip dumping this issue as well.
+  if (AllocMeta->HasCrashed)
+    return;
 
   Printf("*** GWP-ASan detected a memory error ***\n");
   ScopedEndOfReportDecorator Decorator(Printf);
 
-  uintptr_t InternalErrorPtr = __gwp_asan_get_internal_crash_address(State);
-  if (InternalErrorPtr != 0u)
-    ErrorPtr = InternalErrorPtr;
-
   Error E = __gwp_asan_diagnose_error(State, Metadata, ErrorPtr);
-
-  const gwp_asan::AllocationMetadata *AllocMeta =
-      __gwp_asan_get_metadata(State, Metadata, ErrorPtr);
 
   // Print the error header.
   printHeader(E, ErrorPtr, AllocMeta, Printf);
@@ -181,6 +194,7 @@ void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
 
 struct sigaction PreviousHandler;
 bool SignalHandlerInstalled;
+bool RecoverableSignal;
 gwp_asan::GuardedPoolAllocator *GPAForSignalHandler;
 Printf_t PrintfForSignalHandler;
 PrintBacktrace_t PrintBacktraceForSignalHandler;
@@ -189,35 +203,52 @@ SegvBacktrace_t BacktraceForSignalHandler;
 // OHOS_LOCAL begin
 #if defined(__OHOS__)
 static bool sigSegvHandlerOhos(int sig, siginfo_t *info, void *ucontext) {
-  uintptr_t ErrorPtr = reinterpret_cast<uintptr_t>(info->si_addr);
-  const gwp_asan::AllocatorState *State =
-    GPAForSignalHandler->getAllocatorState();
-    
-  if (__gwp_asan_error_is_mine(State, ErrorPtr)) {
-    ScopedErrorReportLock gwp_report_lock_;//Prevented log output confusion
-
-    GPAForSignalHandler->stop();
-    dumpReport(ErrorPtr, State, GPAForSignalHandler->getMetadataRegion(),
-               BacktraceForSignalHandler, PrintfForSignalHandler,
-               PrintBacktraceForSignalHandler, ucontext);
-  }
-  return false;
+ const gwp_asan::AllocatorState *State =
+       GPAForSignalHandler->getAllocatorState();
+ void *FaultAddr = info->si_addr;
+ uintptr_t FaultAddrUPtr = reinterpret_cast<uintptr_t>(FaultAddr);
+ 
+ if (__gwp_asan_error_is_mine(State, FaultAddrUPtr)) {
+     if(FaultAddrUPtr == 0) {
+     return false;
+     }
+     GPAForSignalHandler->preCrashReport(FaultAddr);
+ 
+     dumpReport(FaultAddrUPtr, State, GPAForSignalHandler->getMetadataRegion(),
+                BacktraceForSignalHandler, PrintfForSignalHandler,
+                PrintBacktraceForSignalHandler, ucontext);
+ 
+     if (RecoverableSignal) {
+     GPAForSignalHandler->postCrashReportRecoverableOnly(FaultAddr);
+     return true;
+     }
+ }
+ return false;
 }
 #endif
 // OHOS_LOCAL end
 
 static void sigSegvHandler(int sig, siginfo_t *info, void *ucontext) {
-  if (GPAForSignalHandler) {
-    GPAForSignalHandler->stop();
+  const gwp_asan::AllocatorState *State =
+      GPAForSignalHandler->getAllocatorState();
+  void *FaultAddr = info->si_addr;
+  uintptr_t FaultAddrUPtr = reinterpret_cast<uintptr_t>(FaultAddr);
 
-    dumpReport(reinterpret_cast<uintptr_t>(info->si_addr),
-               GPAForSignalHandler->getAllocatorState(),
-               GPAForSignalHandler->getMetadataRegion(),
+  if (__gwp_asan_error_is_mine(State, FaultAddrUPtr)) {
+    GPAForSignalHandler->preCrashReport(FaultAddr);
+
+    dumpReport(FaultAddrUPtr, State, GPAForSignalHandler->getMetadataRegion(),
                BacktraceForSignalHandler, PrintfForSignalHandler,
                PrintBacktraceForSignalHandler, ucontext);
+
+    if (RecoverableSignal) {
+      GPAForSignalHandler->postCrashReportRecoverableOnly(FaultAddr);
+      return;
+    }
   }
 
-  // Process any previous handlers.
+  // Process any previous handlers as long as the crash wasn't a GWP-ASan crash
+  // in recoverable mode.
   if (PreviousHandler.sa_flags & SA_SIGINFO) {
     PreviousHandler.sa_sigaction(sig, info, ucontext);
   } else if (PreviousHandler.sa_handler == SIG_DFL) {
@@ -245,7 +276,7 @@ namespace segv_handler {
 #if defined(__OHOS__)
 void installSignalHandlersOhos(gwp_asan::GuardedPoolAllocator *GPA, Printf_t Printf,
                            PrintBacktrace_t PrintBacktrace,
-                           SegvBacktrace_t SegvBacktrace) {
+                           SegvBacktrace_t SegvBacktrace, bool Recoverable) {
   assert(GPA && "GPA wasn't provided to installSignalHandlers.");
   assert(Printf && "Printf wasn't provided to installSignalHandlers.");
   assert(PrintBacktrace &&
@@ -256,6 +287,7 @@ void installSignalHandlersOhos(gwp_asan::GuardedPoolAllocator *GPA, Printf_t Pri
   PrintfForSignalHandler = Printf;
   PrintBacktraceForSignalHandler = PrintBacktrace;
   BacktraceForSignalHandler = SegvBacktrace;
+  RecoverableSignal = Recoverable;
 
   struct signal_chain_action Action = {
     .sca_sigaction = sigSegvHandlerOhos,
@@ -270,7 +302,7 @@ void installSignalHandlersOhos(gwp_asan::GuardedPoolAllocator *GPA, Printf_t Pri
 
 void installSignalHandlers(gwp_asan::GuardedPoolAllocator *GPA, Printf_t Printf,
                            PrintBacktrace_t PrintBacktrace,
-                           SegvBacktrace_t SegvBacktrace) {
+                           SegvBacktrace_t SegvBacktrace, bool Recoverable) {
   assert(GPA && "GPA wasn't provided to installSignalHandlers.");
   assert(Printf && "Printf wasn't provided to installSignalHandlers.");
   assert(PrintBacktrace &&
@@ -281,6 +313,7 @@ void installSignalHandlers(gwp_asan::GuardedPoolAllocator *GPA, Printf_t Printf,
   PrintfForSignalHandler = Printf;
   PrintBacktraceForSignalHandler = PrintBacktrace;
   BacktraceForSignalHandler = SegvBacktrace;
+  RecoverableSignal = Recoverable;
 
   struct sigaction Action = {};
   Action.sa_sigaction = sigSegvHandler;
