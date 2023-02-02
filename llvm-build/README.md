@@ -52,6 +52,7 @@ build.py options：
 --enable-assertions		# enable assertion when compiling
 --build-name 			# specify release package name
 --debug					# build debug version llvm toolchain
+--strip					# strip llvm toolchain binaries
 --no-build-arm			# skip triplet arm
 --no-build-aarch64  	# skip triplet arm64
 --no-build-x86_64 		# skip triplet x86_64
