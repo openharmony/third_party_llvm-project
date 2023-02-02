@@ -37,6 +37,7 @@ class BuildConfig():
         self.do_package = not args.skip_package
         self.build_name = args.build_name
         self.debug = args.debug
+        self.strip = args.strip
         self.no_lto = args.no_lto
         self.build_instrumented = args.build_instrumented
         self.xunit_xml_output = args.xunit_xml_output
@@ -97,6 +98,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Building Clang and LLVM Tools for Debugging (only affects stage2)')
+
+        parser.add_argument(
+            '--strip',
+            action='store_true',
+            default=False,
+            help='Strip final LLVM binaries.')
 
         parser.add_argument(
             '--no-build-arm',
@@ -535,7 +542,9 @@ class LlvmCore(BuildUtils):
 
         cflags = '-fstack-protector-strong -fPIE'
         if not self.host_is_darwin():
-            ldflags += ' -Wl,-z,relro,-z,now -pie -s'
+            ldflags += ' -Wl,-z,relro,-z,now -pie'
+            if self.build_config.strip:
+                ldflags += ' -s'
 
         self.llvm_compile_llvm_defines(llvm_defines, llvm_cc, llvm_cxx, cflags, ldflags)
 
@@ -819,7 +828,9 @@ class LlvmLibs(BuildUtils):
                 '-stdlib=libc++', ]
 
         if not self.host_is_darwin():
-            ldflag.append('-Wl,-z,relro,-z,now -s -pie')
+            ldflag.append('-Wl,-z,relro,-z,now -pie')
+            if self.build_config.strip:
+                ldflag.append('-s')
         
         ldflags.extend(ldflag)
 
@@ -1247,7 +1258,9 @@ class LldbMi(BuildUtils):
             cflags = []
             cxxflags =[]
             ldflags = ['-fuse-ld=lld', '-Wl,-rpath,%s' % '\$ORIGIN/../lib']
-            ldflags.append('-Wl,-z,relro,-z,now -pie -s')
+            ldflags.append('-Wl,-z,relro,-z,now -pie')
+            if self.build_config.strip:
+                ldflags.append('-s')
 
         ldflags.append('-L%s' % os.path.join(llvm_path, 'lib'))
         cxxflags.append('-std=c++14')
@@ -1479,7 +1492,7 @@ class LlvmPackage(BuildUtils):
                 continue
             if bin_filename not in necessary_bin_files:
                 os.remove(binary)
-            elif bin_filename not in script_bins:
+            elif bin_filename not in script_bins and self.build_config.strip:
                 if bin_filename not in need_x_bins_darwin and self.host_is_darwin():
                     self.check_call(['strip', '-x', binary])
                 else:
@@ -1489,7 +1502,7 @@ class LlvmPackage(BuildUtils):
     def strip_lldb_server(self, host, install_dir):
         clang_version_bin_dir = os.path.join(install_dir, 'lib', 'clang', self.build_config.CLANG_VERSION, 'bin')
 
-        if not host.startswith('linux') or not os.path.exists(clang_version_bin_dir):
+        if not host.startswith('linux') or not os.path.exists(clang_version_bin_dir) or not self.build_config.strip:
             return
         llvm_strip = os.path.join(install_dir, 'bin', 'llvm-strip')
         for llvm_triple_dir in os.listdir(clang_version_bin_dir):
