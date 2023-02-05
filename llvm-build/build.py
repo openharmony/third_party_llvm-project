@@ -428,7 +428,8 @@ class LlvmCore(BuildUtils):
 
     def llvm_compile_darwin_defines(self, llvm_defines):
         if self.host_is_darwin():
-            llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'OFF'
+            llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
+            llvm_defines['LLDB_ENABLE_CURSES'] = 'ON'
             llvm_defines['LLDB_NO_DEBUGSERVER'] = 'ON'
             llvm_defines['LLDB_ENABLE_PYTHON'] = 'ON'
             llvm_defines['COMPILER_RT_BUILD_LIBFUZZER'] = 'OFF'
@@ -471,7 +472,8 @@ class LlvmCore(BuildUtils):
         llvm_defines['LIBOMP_ENABLE_SHARED'] = 'FALSE'
         llvm_defines['OPENMP_TEST_FLAGS'] = '-Wl,-ldl'
         llvm_defines['CLANG_BUILD_EXAMPLES'] = 'OFF'
-        llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'OFF'
+        llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
+        llvm_defines['LLDB_ENABLE_CURSES'] = 'ON'
         llvm_defines['LLDB_ENABLE_PYTHON'] = 'ON'
         llvm_defines['COMPILER_RT_BUILD_SANITIZERS'] = 'OFF'
         llvm_defines['COMPILER_RT_BUILD_MEMPROF'] = 'OFF'
@@ -587,7 +589,8 @@ class LlvmCore(BuildUtils):
         windows_defines['CMAKE_FIND_ROOT_PATH_MODE_LIBRARY'] = 'ONLY'
         windows_defines['CMAKE_FIND_ROOT_PATH_MODE_PACKAGE'] = 'ONLY'
         windows_defines['CMAKE_FIND_ROOT_PATH_MODE_PROGRAM'] = 'NEVER'
-        windows_defines['LLDB_ENABLE_LIBEDIT'] = 'OFF'
+        windows_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
+        llvm_defines['LLDB_ENABLE_CURSES'] = 'ON'
         windows_defines['LLDB_RELOCATABLE_PYTHON'] = 'OFF'
 
     def llvm_compile_windows_flags(self,
@@ -683,7 +686,8 @@ class LlvmCore(BuildUtils):
                              'set(LLVM_ENABLE_PROJECTS "clang;lldb" CACHE STRING "" FORCE)\n'
                              'set(LLDB_ENABLE_PYTHON "OFF" CACHE STRING "" FORCE)\n'
                              'set(LLDB_DISABLE_CURSES "ON" CACHE STRING "" FORCE)\n'
-                             'set(LLDB_ENABLE_LIBEDIT "OFF" CACHE STRING "" FORCE)\n'
+                             'set(LLDB_ENABLE_LIBEDIT "ON" CACHE STRING "" FORCE)\n'
+                             'set(LLDB_ENABLE_CURSES "ON" CACHE STRING "" FORCE)\n'
                              ).format(cc=cc, cxx=cxx)
 
         with open(native_cmake_file_path, 'w') as native_cmake_file:
