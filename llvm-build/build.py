@@ -466,13 +466,15 @@ class LlvmCore(BuildUtils):
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
 
     @staticmethod
-    def llvm_compile_llvm_defines(llvm_defines, llvm_cc, llvm_cxx, cflags, ldflags):
+    def llvm_compile_llvm_defines(llvm_defines, llvm_root, cflags, ldflags):
         llvm_defines['LLVM_BUILD_RUNTIME'] = 'ON'
         llvm_defines['LLVM_ENABLE_PROJECTS'] = \
             'clang;lld;libunwind;libcxxabi;libcxx;compiler-rt;clang-tools-extra;openmp;lldb'
         llvm_defines['LLVM_ENABLE_BINDINGS'] = 'OFF'
-        llvm_defines['CMAKE_C_COMPILER'] = llvm_cc
-        llvm_defines['CMAKE_CXX_COMPILER'] = llvm_cxx
+        llvm_defines['CMAKE_C_COMPILER'] = os.path.join(llvm_root, 'bin', 'clang')
+        llvm_defines['CMAKE_CXX_COMPILER'] = os.path.join(llvm_root, 'bin', 'clang++')
+        llvm_defines['CMAKE_AR'] = os.path.join(llvm_root, 'bin', 'llvm-ar')
+        llvm_defines['CMAKE_RANLIB'] = os.path.join(llvm_root, 'bin', 'llvm-ranlib')
         llvm_defines['LLVM_ENABLE_LIBCXX'] = 'ON'
         llvm_defines['SANITIZER_ALLOW_CXXABI'] = 'OFF'
         llvm_defines['LIBOMP_ENABLE_SHARED'] = 'FALSE'
@@ -501,8 +503,6 @@ class LlvmCore(BuildUtils):
                                                           'prebuilts/clang/ohos', self.use_platform(),
                                                           'clang-%s' % self.build_config.CLANG_VERSION))
         llvm_path = self.merge_out_path('llvm_make')
-        llvm_cc = os.path.join(llvm_clang_install, 'bin', 'clang')
-        llvm_cxx = os.path.join(llvm_clang_install, 'bin', 'clang++')
         llvm_profdata = os.path.join(llvm_clang_install, 'bin', 'llvm-profdata')
 
         if self.host_is_darwin():
@@ -544,7 +544,7 @@ class LlvmCore(BuildUtils):
             if self.build_config.strip:
                 ldflags += ' -s'
 
-        self.llvm_compile_llvm_defines(llvm_defines, llvm_cc, llvm_cxx, cflags, ldflags)
+        self.llvm_compile_llvm_defines(llvm_defines, llvm_clang_install, cflags, ldflags)
 
         linker_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts', 'clang',
             'ohos', 'linux-x86_64', 'llvm', 'bin', 'ld.lld'))
