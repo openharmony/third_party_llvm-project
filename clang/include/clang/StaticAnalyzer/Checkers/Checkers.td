@@ -1688,4 +1688,26 @@ def UnixAPIArgsChecker : Checker<"UnixAPIArgs">,
 def MemcpyChecker : Checker<"Memcpy">,
   HelpText<"Check for memcpy_s api arguments">,
   Documentation<HasDocumentation>;
+
+def PrintSensitiveInfoChecker : Checker<"PrintSensitiveInfo">,
+  HelpText<"Check for sensitive information disclosure">,
+  CheckerOptions<[
+    CmdLineOption<String,
+                  "Config",
+                  "Path to the yaml configuration of sensitive information",
+                  "",
+                  Released>,
+  ]>,
+  Documentation<HasDocumentation>;
+
+def SignalHandlerChecker : Checker<"SignalHandler">,
+  HelpText<"Check for signal handler">,
+  CheckerOptions<[
+    CmdLineOption<String,
+                  "Config",
+                  "Path to the yaml configuration of async-safe function",
+                  "",
+                  Released>,
+  ]>,
+  Documentation<HasDocumentation>;
 }

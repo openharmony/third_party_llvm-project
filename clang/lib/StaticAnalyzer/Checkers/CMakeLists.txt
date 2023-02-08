@@ -131,6 +131,8 @@ add_clang_library(clangStaticAnalyzerCheckers
   WebKit/UncountedLocalVarsChecker.cpp
   OpenHarmony/UnixAPIArgsChecker.cpp
   OpenHarmony/MemcpyChecker.cpp
+  OpenHarmony/PrintSensitiveInfoChecker.cpp
+  OpenHarmony/SignalHandlerChecker.cpp
 
   LINK_LIBS
   clangAST
