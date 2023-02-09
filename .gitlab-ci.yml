@@ -1,8 +1,0 @@
-variables:
-  TOOLCHAIN_MANIFEST: 'huawei/dev-open-harmonyos'
-  TOOLCHAIN_NAME: 'HOS-OS'
-
-include:
-  - project: 'rus-os-team/compilers/testing/automation/llvm-ci'
-    ref: 'master-opensource-llvm-15'
-    file: '/pipelines/llvm/ohos/main.yml'
