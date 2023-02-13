@@ -71,6 +71,11 @@ protected:
 private:
   std::unique_ptr<HdcClient::SyncService> GetSyncService(Status &error);
 
+  Status GetFileFromContainer(const FileSpec &source,
+                              const FileSpec &destination);
+
+  Status DoGetFile(const FileSpec &source, const FileSpec &destination);
+
   std::string m_device_id;
   uint32_t m_sdk_version;
 };
