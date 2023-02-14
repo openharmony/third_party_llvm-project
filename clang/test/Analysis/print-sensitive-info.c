@@ -16,8 +16,8 @@ void test1() {
     // expected-warning@-2 {{y is a sensitive information}}
 }
 
-void test2(int password, int PWD) {
-    HILOG(password, PWD); 
+void test2(int password, int passwd) {
+    HILOG(password, passwd);
     // expected-warning@-1 {{password is a sensitive information}}
-    // expected-warning@-2 {{PWD is a sensitive information}}
+    // expected-warning@-2 {{passwd is a sensitive information}}
 }

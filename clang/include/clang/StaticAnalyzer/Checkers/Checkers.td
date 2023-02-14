@@ -1676,6 +1676,8 @@ def UncountedLocalVarsChecker : Checker<"UncountedLocalVarsChecker">,
 
 } // end alpha.webkit
 
+// OHOS_LOCAL begin
+
 //===----------------------------------------------------------------------===//
 // OpenHarmony checkers.
 //===----------------------------------------------------------------------===//
@@ -1711,3 +1713,5 @@ def SignalHandlerChecker : Checker<"SignalHandler">,
   ]>,
   Documentation<HasDocumentation>;
 }
+
+// OHOS_LOCAL end

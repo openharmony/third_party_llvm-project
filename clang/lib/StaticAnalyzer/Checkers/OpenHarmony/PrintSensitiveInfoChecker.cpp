@@ -27,30 +27,19 @@ using namespace ento;
 
 namespace {
     struct SensitiveState {
+    private:
+        bool sensitive;
+
     public:
-        bool isSensitive;
-        SensitiveState() {
-            isSensitive = false;
+        bool isSensitive() const { return sensitive; }
+        void setSensitive(bool B) { sensitive = B; }
+
+        bool operator==(const SensitiveState &X) const {
+            return sensitive == X.sensitive;
         }
-
-        SensitiveState(const SensitiveState &another) {
-            this->isSensitive = another.isSensitive;
+        void Profile(llvm::FoldingSetNodeID &ID) const {
+            ID.AddBoolean(sensitive);
         }
-
-        SensitiveState &operator=(const SensitiveState &another) {
-            if (&another != this) {
-                this->isSensitive = another.isSensitive;
-            }
-            return *this;
-        }
-
-        ~SensitiveState() {}
-
-        bool operator==(const SensitiveState &x) const {
-            return isSensitive == x.isSensitive;
-        }
-
-        void Profile(llvm::FoldingSetNodeID &id) const {}
     };
 
     class PrintSensitiveInfoChecker : public Checker<check::PreStmt<BinaryOperator>,
@@ -58,18 +47,16 @@ namespace {
                                                      check::PreStmt<CallExpr>> {
     public:
         // lowercase string in following sets
-        mutable std::set<std::string> m_sensitive_var_set;
-        mutable std::set<std::string> m_sensitive_func_set;
-        mutable std::set<std::string> m_output_set;
-
-        mutable map<string, unsigned int> m_output_map;
+        set<string> m_sensitive_var_set;
+        set<string> m_sensitive_func_set;
+        set<string> m_output_set;
 
         struct SensitiveValueConfiguration {
             struct SensitiveList {
-                std::string type;
-                std::vector<std::string> list;
+                string type;
+                vector<string> list;
             };
-            std::vector<SensitiveList> sensitiveList;
+            vector<SensitiveList> sensitiveList;
         };
 
         PrintSensitiveInfoChecker();
@@ -82,10 +69,10 @@ namespace {
         void saveVardeclStateForBo(const Expr *lhs, const Expr *rhs, CheckerContext &c) const;
         void saveVardeclStateForDeclStmt(const DeclStmt *ds, CheckerContext &c) const;
         const VarDecl *GetVarDeclFromExpr(const Expr *E) const;
-        const string GetCurrentCalleeName(const CallExpr *CE) const;
+        string GetCurrentCalleeName(const CallExpr *CE) const;
 
-        void parseConfiguration(const SensitiveValueConfiguration *config);
-        string convertStrToLowerCase(const string &str) const;
+        void parseConfiguration(CheckerManager &mgr, const std::string &Option, const SensitiveValueConfiguration *config);
+        string convertStrToLowerCase(string str) const;
 
         void report(const Stmt *Opera, const string &msg, CheckerContext &c) const;
     };
@@ -118,7 +105,7 @@ REGISTER_MAP_WITH_PROGRAMSTATE(SensitiveInfoMap, const VarDecl *, SensitiveState
 PrintSensitiveInfoChecker::PrintSensitiveInfoChecker() {
     // some base patterns in set
     m_sensitive_var_set.insert("password");
-    m_sensitive_var_set.insert("pwd");
+    m_sensitive_var_set.insert("passwd");
     m_sensitive_func_set.insert("getpassword");
     m_output_set.insert("hilog");
 }
@@ -132,33 +119,36 @@ const VarDecl *PrintSensitiveInfoChecker::GetVarDeclFromExpr(const Expr *E) cons
     return nullptr;
 }
 
-const string PrintSensitiveInfoChecker::GetCurrentCalleeName(const CallExpr *CE) const {
+string PrintSensitiveInfoChecker::GetCurrentCalleeName(const CallExpr *CE) const {
     return CE->getDirectCallee()->getNameInfo().getName().getAsString();
 }
 
-string PrintSensitiveInfoChecker::convertStrToLowerCase(const string &str) const {
-    string ret(str);
-    transform(str.begin(), str.end(), ret.begin(), [](unsigned char c){ return tolower(c); });
-    return ret;
+string PrintSensitiveInfoChecker::convertStrToLowerCase(string str) const {
+    transform(str.begin(), str.end(), str.begin(), [](unsigned char c){ return tolower(c); });
+    return str;
 }
 
-void PrintSensitiveInfoChecker::parseConfiguration(const SensitiveValueConfiguration *config) {
+void PrintSensitiveInfoChecker::parseConfiguration(CheckerManager &mgr, const std::string &Option, const SensitiveValueConfiguration *config) {
     if (config) {
         for (auto &sl : config->sensitiveList) {
             if (sl.type == "fnCall") {
-                for (auto &value : sl.list) {
+                for (auto value : sl.list) {
                     m_sensitive_func_set.insert(convertStrToLowerCase(value));
                 }
             }
             else if (sl.type == "varName") {
-                for (auto &value : sl.list) {
+                for (auto value : sl.list) {
                     m_sensitive_var_set.insert(convertStrToLowerCase(value));
                 }
             }
             else if (sl.type == "outputFn") {
-                for (auto &value : sl.list) {
+                for (auto value : sl.list) {
                     m_output_set.insert(convertStrToLowerCase(value));
                 }
+            } else {
+                mgr.reportInvalidCheckerOptionValue(
+                    this, Option,
+                    "a valid key: fnCall, varName, outputFn");
             }
         }
     }
@@ -211,7 +201,7 @@ void PrintSensitiveInfoChecker::checkPreStmt(const CallExpr *call, CheckerContex
     if (call == nullptr) {
         return;
     }
-    const string funcName = GetCurrentCalleeName(call);
+    string funcName = GetCurrentCalleeName(call);
     if (m_output_set.find(convertStrToLowerCase(funcName)) == m_output_set.end()) {
         return;
     }
@@ -231,6 +221,7 @@ void PrintSensitiveInfoChecker::checkPreStmt(const CallExpr *call, CheckerContex
         if (m_sensitive_var_set.find(convertStrToLowerCase(varDecl->getNameAsString())) != m_sensitive_var_set.end()) {
             string msg = varDecl->getNameAsString() + " is a sensitive information";
             report(call, msg, c);
+            continue;
         }
         // check by state map
         ProgramStateRef state = c.getState();
@@ -238,7 +229,7 @@ void PrintSensitiveInfoChecker::checkPreStmt(const CallExpr *call, CheckerContex
         if (sens == nullptr) {
             continue;
         }
-        if (sens->isSensitive) {
+        if (sens->isSensitive()) {
             // report bug
             string msg = varDecl->getNameAsString() + " is a sensitive information";
             report(call, msg, c);
@@ -257,11 +248,11 @@ void PrintSensitiveInfoChecker::saveVardeclStateForBo(const Expr *lhs, const Exp
     }
     if (isa<CallExpr>(rhs)) {
         const CallExpr *call = llvm::dyn_cast_or_null<CallExpr>(rhs);
-        const string funcName = GetCurrentCalleeName(call);
+        string funcName = GetCurrentCalleeName(call);
         if (m_sensitive_func_set.find(convertStrToLowerCase(funcName)) != m_sensitive_func_set.end()) {
             ProgramStateRef state = c.getState();
             SensitiveState sens;
-            sens.isSensitive = true;
+            sens.setSensitive(true);
             state = state->set<SensitiveInfoMap>(varDecl, sens);
             c.addTransition(state);
         }
@@ -281,11 +272,11 @@ void PrintSensitiveInfoChecker::saveVardeclStateForDeclStmt(const DeclStmt *ds, 
 
     if (isa<CallExpr>(expr)) {
         const CallExpr *call = llvm::dyn_cast_or_null<CallExpr>(expr);
-        const string funcName = GetCurrentCalleeName(call);
+        string funcName = GetCurrentCalleeName(call);
         if (m_sensitive_func_set.find(convertStrToLowerCase(funcName)) != m_sensitive_func_set.end()) {
             ProgramStateRef state = c.getState();
             SensitiveState sens;
-            sens.isSensitive = true;
+            sens.setSensitive(true);
             state = state->set<SensitiveInfoMap>(varDecl, sens);
             c.addTransition(state);
         }
@@ -298,12 +289,12 @@ void PrintSensitiveInfoChecker::saveVardeclStateForDeclStmt(const DeclStmt *ds, 
 
 void ento::registerPrintSensitiveInfoChecker(CheckerManager &mgr) {
     auto *Checker = mgr.registerChecker<PrintSensitiveInfoChecker>();
-    std::string Option{"Config"};
+    string Option{"Config"};
     StringRef ConfigFile = mgr.getAnalyzerOptions().getCheckerStringOption(Checker, Option);
     llvm::Optional<sensitiveConfig> obj = getConfiguration<sensitiveConfig>(mgr, Checker, Option, ConfigFile);
     // If no Config is provided, obj is null
     if (obj) {
-        Checker->parseConfiguration(obj.getPointer());
+        Checker->parseConfiguration(mgr, Option, obj.getPointer());
     }
 }
 

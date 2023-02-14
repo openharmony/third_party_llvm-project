@@ -38,25 +38,29 @@ namespace {
 
     class SignalHandlerChecker : public Checker<check::EndOfTranslationUnit> {
     public:
-        mutable std::set<std::string> m_async_safe_func_set;
+        set<string> m_async_safe_func_set;
         struct FunctionConfiguration
         {
             struct FunctionList {
-                std::string type;
-                std::vector<std::string> list;
+                string type;
+                vector<string> list;
             };
-            std::vector<FunctionList> functionList;
+            vector<FunctionList> functionList;
         };
         void checkEndOfTranslationUnit(const TranslationUnitDecl *TU,
                                        AnalysisManager &AM,
                                        BugReporter &BR) const;
-        void parseConfiguration(const FunctionConfiguration *config);
+        void parseConfiguration(CheckerManager &mgr,
+                                const std::string &Option,
+                                const FunctionConfiguration *config);
     };
 
     class Callback : public MatchFinder::MatchCallback {
         const SignalHandlerChecker *C;
         BugReporter &BR;
         AnalysisDeclContext *ADC;
+        const llvm::StringSet<> StrictConformingFunctions = {
+                "signal", "abort", "_Exit", "quick_exit"};
 
     public :
         void run(const MatchFinder::MatchResult &Result) override;
@@ -65,10 +69,6 @@ namespace {
         Callback(const SignalHandlerChecker *C,
                  BugReporter &BR, AnalysisDeclContext *ADC)
                 : C(C), BR(BR), ADC(ADC) {}
-
-    private:
-        llvm::StringSet<> StrictConformingFunctions = {
-                "signal", "abort", "_Exit", "quick_exit"};
     };
 }
 
@@ -100,13 +100,19 @@ namespace llvm
     } // end namespace yaml
 } // end namespace llvm
 
-void SignalHandlerChecker::parseConfiguration(const FunctionConfiguration *config) {
+void SignalHandlerChecker::parseConfiguration(CheckerManager &mgr,
+                                              const std::string &Option,
+                                              const FunctionConfiguration *config) {
     if (config) {
         for (auto &sl : config->functionList) {
             if (sl.type == "asyncSafeFunction") {
                 for (auto &value : sl.list) {
                     m_async_safe_func_set.insert(value);
                 }
+            } else {
+                mgr.reportInvalidCheckerOptionValue(
+                    this, Option,
+                    "a valid key: asyncSafeFunction");
             }
         }
     }
@@ -129,16 +135,17 @@ void SignalHandlerChecker::checkEndOfTranslationUnit(const TranslationUnitDecl *
 }
 
 void Callback::run(const MatchFinder::MatchResult &Result) {
-    const auto *SignalCall = Result.Nodes.getNodeAs<CallExpr>("register_call");
-    const auto *HandlerDecl =
-            Result.Nodes.getNodeAs<FunctionDecl>("handler_decl");
+    const auto *HandlerDecl = Result.Nodes.getNodeAs<FunctionDecl>("handler_decl");
     const auto *HandlerExpr = Result.Nodes.getNodeAs<DeclRefExpr>("handler_expr");
     llvm::DenseSet<const FunctionDecl *> SeenFunctions;
 
     // The worklist of the callgraph visitation algorithm.
-    std::deque<const CallExpr *> CalledFunctions;
+    queue<const CallExpr *> CalledFunctions;
 
     auto ProcessFunction = [&](const FunctionDecl *F, const Expr *CallOrRef) {
+        if (F == nullptr || CallOrRef == nullptr) {
+            return false;
+        }
         // Ensure that canonical declaration is used.
         F = F->getCanonicalDecl();
 
@@ -153,8 +160,8 @@ void Callback::run(const MatchFinder::MatchResult &Result) {
             }
             // disallowed
             const string funcName = F->getNameInfo().getName().getAsString();
-            string msg = "The non-async-safe function \'"+ funcName + "\' cannot be used in the callback function of signal";
-            Report(CallOrRef,msg);
+            string msg = "The non-async-safe function '" + funcName + "' cannot be used in the callback function of signal";
+            Report(CallOrRef, msg);
             return false;
         }
 
@@ -162,8 +169,8 @@ void Callback::run(const MatchFinder::MatchResult &Result) {
         const FunctionDecl *FBody;
         if (!F->hasBody(FBody)) {
             const string funcName = F->getNameInfo().getName().getAsString();
-            string msg = "The non-async-safe function \'"+ funcName + "\' cannot be used in the callback function of signal";
-            Report(CallOrRef,msg);
+            string msg = "The non-async-safe function '" + funcName + "' cannot be used in the callback function of signal";
+            Report(CallOrRef, msg);
             return false;
         }
 
@@ -172,8 +179,8 @@ void Callback::run(const MatchFinder::MatchResult &Result) {
                                 *FBody, FBody->getASTContext());
         for (const auto &Match: Matches) {
             const auto *CE = Match.getNodeAs<CallExpr>("call");
-            if (isa<FunctionDecl>(CE->getCalleeDecl())) {
-                CalledFunctions.push_back(CE);
+            if (CE && isa<FunctionDecl>(CE->getCalleeDecl())) {
+                CalledFunctions.push(CE);
             }
         }
         return true;
@@ -186,7 +193,7 @@ void Callback::run(const MatchFinder::MatchResult &Result) {
     // Check for allowed function calls.
     while (!CalledFunctions.empty()) {
         const CallExpr *FunctionCall = CalledFunctions.front();
-        CalledFunctions.pop_front();
+        CalledFunctions.pop();
         // At insertion we have already ensured that only function calls are there.
         const auto *F = cast<FunctionDecl>(FunctionCall->getCalleeDecl());
 
@@ -233,7 +240,7 @@ void ento::registerSignalHandlerChecker(CheckerManager &mgr) {
     StringRef ConfigFile = mgr.getAnalyzerOptions().getCheckerStringOption(Checker, Option);
     llvm::Optional<functionConfig> obj = getConfiguration<functionConfig>(mgr, Checker, Option, ConfigFile);
     if (obj) {
-        Checker->parseConfiguration(obj.getPointer());
+        Checker->parseConfiguration(mgr, Option, obj.getPointer());
     }
 }
 
