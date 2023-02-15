@@ -594,14 +594,6 @@
 // CHECK-CFI-LINUX: "{{.*}}ld{{(.exe)?}}"
 // CHECK-CFI-LINUX-NOT: libclang_rt.
 
-// [OHOS]CFI by itself does not link runtime libraries.
-// RUN: %clang -fsanitize=cfi %s -### -o %t.o 2>&1 \
-// RUN:     -target arm-linux-ohos -fuse-ld=lld -rtlib=platform \
-// RUN:     --sysroot=%S/Inputs/ohos_native_tree/sysroot \
-// RUN:   | FileCheck --check-prefix=CHECK-CFI-LINUX %s
-// CHECK-CFI-LINUX: "{{.*}}ld{{(.exe)?}}"
-// CHECK-CFI-LINUX-NOT: libclang_rt.
-
 // CFI with diagnostics links the UBSan runtime.
 // RUN: %clang -fsanitize=cfi -fno-sanitize-trap=cfi -fsanitize-recover=cfi \
 // RUN:     -### %s 2>&1\
@@ -641,6 +633,18 @@
 // RUN:   | FileCheck --check-prefix=CHECK-CFI-CROSS-DSO-ANDROID %s
 // CHECK-CFI-CROSS-DSO-ANDROID: "{{.*}}ld{{(.exe)?}}"
 // CHECK-CFI-CROSS-DSO-ANDROID-NOT: libclang_rt.cfi
+
+// OHOS_LOCAL begin
+
+// Cross-DSO CFI on OHOS does not link runtime libraries.
+// RUN: %clang -fsanitize=cfi -fsanitize-cfi-cross-dso %s -### -o %t.o 2>&1 \
+// RUN:     -target aarch64-linux-ohos -fuse-ld=ld \
+// RUN:     --sysroot=%S/Inputs/ohos_native_tree/sysroot \
+// RUN:   | FileCheck --check-prefix=CHECK-CFI-CROSS-DSO-OHOS %s
+// CHECK-CFI-CROSS-DSO-OHOS: "{{.*}}ld{{(.exe)?}}"
+// CHECK-CFI-CROSS-DSO-OHOS-NOT: libclang_rt.cfi
+
+// OHOS_LOCAL end
 
 // Cross-DSO CFI with diagnostics on Android links just the UBSAN runtime.
 // RUN: %clang -fsanitize=cfi -fsanitize-cfi-cross-dso -### %s 2>&1 \
