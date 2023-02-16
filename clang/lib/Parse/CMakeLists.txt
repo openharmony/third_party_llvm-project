@@ -28,6 +28,7 @@ add_clang_library(clangParse
   clangBasic
   clangLex
   clangSema
+  pacDfi
 
   DEPENDS
   omp_gen
