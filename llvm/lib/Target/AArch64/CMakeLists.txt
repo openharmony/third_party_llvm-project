@@ -40,6 +40,7 @@ add_llvm_target(AArch64CodeGen
   GISel/AArch64PostLegalizerLowering.cpp
   GISel/AArch64PostSelectOptimize.cpp
   GISel/AArch64RegisterBankInfo.cpp
+  AArch64PARTS/PartsFrameLowering.cpp
   AArch64A57FPLoadBalancing.cpp
   AArch64AdvSIMDScalarPass.cpp
   AArch64AsmPrinter.cpp
@@ -85,9 +86,15 @@ add_llvm_target(AArch64CodeGen
   AArch64TargetTransformInfo.cpp
   SVEIntrinsicOpts.cpp
   AArch64SIMDInstrOpt.cpp
+  AArch64PARTS/AArch64EarlyPartsCpiPass.cpp
+  AArch64PARTS/AArch64PartsCpiPass.cpp
 
   DEPENDS
   intrinsics_gen
+  Parts
+
+  LINK_LIBS
+  Parts
 
   LINK_COMPONENTS
   AArch64Desc

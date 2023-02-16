@@ -579,7 +579,7 @@ void AArch64AsmPrinter::emitEndOfAsmFile(Module &M) {
     // generates code that does this, it is always safe to set.
     OutStreamer->emitAssemblerFlag(MCAF_SubsectionsViaSymbols);
   }
-  
+
   // Emit stack and fault map information.
   emitStackMaps(SM);
   FM.serializeToFaultMapSection();
@@ -1307,6 +1307,14 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
     MCInst TmpInst;
     TmpInst.setOpcode(AArch64::BR);
     TmpInst.addOperand(MCOperand::createReg(MI->getOperand(0).getReg()));
+    EmitToStreamer(*OutStreamer, TmpInst);
+    return;
+  }
+  case AArch64::TCRETURNriAA: {
+    MCInst TmpInst;
+    TmpInst.setOpcode(AArch64::BRAA);
+    TmpInst.addOperand(MCOperand::createReg(MI->getOperand(0).getReg()));
+    TmpInst.addOperand(MCOperand::createReg(MI->getOperand(2).getReg()));
     EmitToStreamer(*OutStreamer, TmpInst);
     return;
   }

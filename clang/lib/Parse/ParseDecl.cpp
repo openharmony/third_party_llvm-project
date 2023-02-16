@@ -25,6 +25,7 @@
 #include "clang/Sema/ParsedTemplate.h"
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/SemaDiagnostic.h"
+#include "clang/Pac/PacDfi.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallString.h"
@@ -4528,6 +4529,9 @@ void Parser::ParseStructUnionBody(SourceLocation RecordLoc,
     // If we stopped at a ';', eat it.
     TryConsumeToken(tok::semi);
   }
+
+  // find pac_tag attr fields, and insert new fields
+  PacDfiParseStruct(TagDecl, Actions.getASTContext());
 
   T.consumeClose();
 
