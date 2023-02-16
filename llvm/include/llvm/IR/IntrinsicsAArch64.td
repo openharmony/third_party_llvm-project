@@ -848,7 +848,7 @@ def int_aarch64_crc32x  : DefaultAttrsIntrinsic<[llvm_i32_ty], [llvm_i32_ty, llv
 def int_aarch64_crc32cx : DefaultAttrsIntrinsic<[llvm_i32_ty], [llvm_i32_ty, llvm_i64_ty],
     [IntrNoMem]>;
 }
-
+include "llvm/PARTS/Intrinsics.td"
 //===----------------------------------------------------------------------===//
 // Memory Tagging Extensions (MTE) Intrinsics
 let TargetPrefix = "aarch64" in {

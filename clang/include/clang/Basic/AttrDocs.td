@@ -1355,6 +1355,20 @@ in C++11 onwards.
   }];
 }
 
+def PacDataTagDocs : Documentation {
+  let Category = DocCatField;
+  let Content = [{
+The ``pac_protected_data`` attribute asks the compiler to protect the struct field with PA
+  }];
+}
+
+def PacPtrTagDocs : Documentation {
+  let Category = DocCatField;
+  let Content = [{
+The ``pac_protected_ptr`` attribute asks the compiler to protect the struct pointer type field with PA
+  }];
+}
+
 def ObjCRequiresSuperDocs : Documentation {
   let Category = DocCatFunction;
   let Content = [{

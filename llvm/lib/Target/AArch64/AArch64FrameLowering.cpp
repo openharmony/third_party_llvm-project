@@ -192,6 +192,7 @@
 #include "AArch64StackProtectorRetLowering.h"
 #include "AArch64Subtarget.h"
 #include "AArch64TargetMachine.h"
+#include "AArch64PARTS/PartsFrameLowering.h"
 #include "MCTargetDesc/AArch64AddressingModes.h"
 #include "MCTargetDesc/AArch64MCTargetDesc.h"
 #include "llvm/ADT/ScopeExit.h"
@@ -274,6 +275,7 @@ static int64_t getArgumentStackToRestore(MachineFunction &MF,
     unsigned RetOpcode = MBBI->getOpcode();
     IsTailCallReturn = RetOpcode == AArch64::TCRETURNdi ||
                        RetOpcode == AArch64::TCRETURNri ||
+                       RetOpcode == AArch64::TCRETURNriAA ||
                        RetOpcode == AArch64::TCRETURNriBTI;
   }
   AArch64FunctionInfo *AFI = MF.getInfo<AArch64FunctionInfo>();
@@ -1433,6 +1435,7 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
           .setMIFlags(MachineInstr::FrameSetup);
     }
   }
+  PartsFrameLowering::instrumentPrologue(TII, Subtarget.getRegisterInfo(), MBB, MBBI, DebugLoc());
   if (EmitCFI && MFnI.isMTETagged()) {
     BuildMI(MBB, MBBI, DL, TII->get(AArch64::EMITMTETAGGED))
         .setMIFlag(MachineInstr::FrameSetup);
@@ -1930,6 +1933,7 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
 
   auto FinishingTouches = make_scope_exit([&]() {
     InsertReturnAddressAuth(MF, MBB);
+    PartsFrameLowering::instrumentEpilogue(TII, Subtarget.getRegisterInfo(), MBB);
     if (needsShadowCallStackPrologueEpilogue(MF))
       emitShadowCallStackEpilogue(*TII, MF, MBB, MBB.getFirstTerminator(), DL);
     if (EmitCFI)
