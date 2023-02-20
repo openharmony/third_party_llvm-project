@@ -53,6 +53,9 @@ static bool findOHOSMuslMultilibs(const Multilib::flags_list &Flags,
                           .flag("+mfloat-abi=hard")
                           .flag("+mfpu=neon-vfpv4"));
 
+  Multilibs.push_back(Multilib("nanlegacy", {}, {}, 1)
+                          .flag("+mnan=legacy"));
+
   if (Multilibs.select(Flags, Result.SelectedMultilib)) {
     Result.Multilibs = Multilibs;
     return true;
@@ -66,6 +69,7 @@ static bool findOHOSMultilibs(const Driver &D,
                                       StringRef Path, const ArgList &Args,
                                       DetectedMultilibs &Result) {
   Multilib::flags_list Flags;
+
   bool IsA7 = false;
   if (const Arg *A = Args.getLastArg(options::OPT_mcpu_EQ))
     IsA7 = A->getValue() == StringRef("cortex-a7");
@@ -83,6 +87,11 @@ static bool findOHOSMultilibs(const Driver &D,
       "mfloat-abi=softfp", Flags);
   addMultilibFlag((ARMFloatABI == tools::arm::FloatABI::Hard),
       "mfloat-abi=hard", Flags);
+
+  bool IsLegacy = false;
+  if (const Arg *A = Args.getLastArg(options::OPT_mnan_EQ))
+    IsLegacy = A->getValue() != StringRef("2008");
+  addMultilibFlag(IsLegacy, "mnan=legacy", Flags);
 
   return findOHOSMuslMultilibs(Flags, Result);
 }

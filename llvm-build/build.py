@@ -862,7 +862,8 @@ class LlvmLibs(BuildUtils):
              '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=hard -mfpu=neon-vfpv4', 'a7_hard_neon-vfpv4'),
             ('aarch64', self.open_ohos_triple('aarch64'), '', ''),
             ('riscv64', self.open_ohos_triple('riscv64'), '', ''),
-            ('mipsel', self.open_ohos_triple('mipsel'), '-march=mips32r2', ''),
+            ('mipsel', self.open_ohos_triple('mipsel'), '', ''),
+            ('mipsel', self.open_ohos_triple('mipsel'), '-mnan=legacy', 'nanlegacy'),
             ('x86_64', self.open_ohos_triple('x86_64'), '', ''),]
 
         cc = os.path.join(llvm_install, 'bin', 'clang')
