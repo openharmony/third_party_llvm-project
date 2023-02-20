@@ -881,7 +881,8 @@ class LlvmLibs(BuildUtils):
              '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=hard -mfpu=neon-vfpv4', 'a7_hard_neon-vfpv4'),
             ('aarch64', self.open_ohos_triple('aarch64'), '', ''),
             ('riscv64', self.open_ohos_triple('riscv64'), '', ''),
-            ('mipsel', self.open_ohos_triple('mipsel'), '-march=mips32r2', ''),
+            ('mipsel', self.open_ohos_triple('mipsel'), '', ''),
+            ('mipsel', self.open_ohos_triple('mipsel'), '-mnan=legacy', 'nanlegacy'),
             ('x86_64', self.open_ohos_triple('x86_64'), '', ''),]
 
         cc = os.path.join(llvm_install, 'bin', 'clang')
@@ -1152,7 +1153,7 @@ class LlvmLibs(BuildUtils):
         libcxx_defines['LIBCXX_CXX_ABI_INCLUDE_PATHS'] = os.path.abspath(
             os.path.join(self.build_config.LLVM_PROJECT_DIR, 'libcxxabi', 'include'))
         str_cpp = 'c++'
-        libcxx_defines['LIBCXX_CXX_ABI_LIBRARY_PATH'] = os.path.join(llvm_install, 'lib', llvm_triple, str_cpp)
+        libcxx_defines['LIBCXX_CXX_ABI_LIBRARY_PATH'] = os.path.join(llvm_install, 'lib', llvm_triple, str_cpp, multilib_suffix)
         libcxx_defines['LIBCXX_USE_COMPILER_RT'] = 'ON'
         libcxx_defines['LIBCXX_HAS_PTHREAD_LIB'] = 'OFF'
         libcxx_defines['LIBCXX_HAS_RT_LIB'] = 'OFF'
