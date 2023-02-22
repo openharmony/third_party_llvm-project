@@ -429,6 +429,7 @@ class LlvmCore(BuildUtils):
 
     def llvm_compile_darwin_defines(self, llvm_defines):
         if self.host_is_darwin():
+            llvm_defines['LIBUNWIND_ENABLE_SHARED'] = 'OFF'
             llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'OFF'
             llvm_defines['LLDB_NO_DEBUGSERVER'] = 'ON'
             llvm_defines['LLDB_ENABLE_PYTHON'] = 'ON'
