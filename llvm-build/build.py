@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (C) 2021 Huawei Device Co., Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1960,6 +1960,16 @@ class LlvmPackage(BuildUtils):
         # copy readme file to install_dir
         shutil.copyfile(os.path.join(self.build_config.LLVM_BUILD_DIR, "toolchain_readme.md"),
                         os.path.join(install_dir, "README.md"))
+
+        # Generate manifest in install_dir
+        manifest = os.path.join(install_dir, 'manifest.xml')
+        repo_tool = os.path.join(self.build_config.REPOROOT_DIR, '.repo', 'repo', 'repo')
+        if os.path.isfile(repo_tool):
+            self.logger().info('Generating manifest.')
+            subprocess.run([repo_tool, 'manifest', '-r', '-o', manifest], shell=False,
+                           stdout=subprocess.PIPE, cwd=self.build_config.REPOROOT_DIR)
+        else:
+            self.logger().error('Cannot generate manifest, repo tool not found.')
 
         # Remove unnecessary binaries.
         necessary_bin_files = []
