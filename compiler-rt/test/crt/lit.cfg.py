@@ -55,7 +55,8 @@ def get_libgcc_file_name():
 
 
 def build_invocation(compile_flags):
-    return ' ' + ' '.join([config.clang] + compile_flags) + ' '
+    # OHOS_LOCAL
+    return ' ' + ' '.join([config.compile_wrapper, config.clang] + compile_flags) + ' '
 
 
 # Setup substitutions.
@@ -88,8 +89,16 @@ config.substitutions.append(
 config.substitutions.append(
     ('%libstdcxx', '-l' + config.sanitizer_cxx_lib.lstrip('lib')))
 
+# OHOS_LOCAL begin
+
+config.substitutions.append(
+    ('%shared_ubsan_standalone',
+     get_library_path('libclang_rt.ubsan_standalone.so')))
+
+# OHOS_LOCAL end
+
 # Default test suffixes.
 config.suffixes = ['.c', '.cpp']
 
-if config.host_os not in ['Linux']:
+if config.host_os not in ['Linux', 'OHOS']: # OHOS_LOCAL
     config.unsupported = True
