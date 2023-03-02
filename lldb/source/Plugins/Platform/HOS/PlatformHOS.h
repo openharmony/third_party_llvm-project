@@ -36,7 +36,7 @@ public:
 
   static const char *GetPluginDescriptionStatic(bool is_host);
 
-  ConstString GetPluginName() override { return GetPluginNameStatic(IsHost()); }
+  ConstString GetPluginName() override;
 
   uint32_t GetPluginVersion() override { return 1; }
 
