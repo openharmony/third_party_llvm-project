@@ -42,7 +42,7 @@
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCTargetOptions.h"
 #include "llvm/MC/TargetRegistry.h"
-#include "llvm/PARTS/Parts.h"
+#include "llvm/PARTS/Parts.h" // OHOS_LOCAL
 #include "llvm/Pass.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/CommandLine.h"
@@ -592,8 +592,10 @@ void AArch64PassConfig::addIRPasses() {
   if (TM->getTargetTriple().isOSWindows())
     addPass(createCFGuardCheckPass());
 
+  // OHOS_LOCAL start
   if (PARTS::useFeCfi())
     addPass(PARTS::createPartsPluginPass());
+  // OHOS_LOCAL end
 
   if (TM->Options.JMCInstrument)
     addPass(createJMCInstrumenterPass());
@@ -647,10 +649,11 @@ bool AArch64PassConfig::addInstSelector() {
       getOptLevel() != CodeGenOpt::None)
     addPass(createAArch64CleanupLocalDynamicTLSPass());
 
+  // OHOS_LOCAL start
   if (PARTS::useFeCfi())
     // Replace indirect jump instruction such as : BR BLR --> BRAA BLRAA
     addPass(createAArch64EarlyPartsCpiPass());
-
+  // OHOS_LOCAL end
   return false;
 }
 
@@ -814,8 +817,10 @@ void AArch64PassConfig::addPreEmitPass() {
       TM->getTargetTriple().isOSBinFormatMachO())
     addPass(createAArch64CollectLOHPass());
 
+  // OHOS_LOCAL start
   if (PARTS::useFeCfi())
     addPass(createAArch64PartsCpiPass());
+  // OHOS_LOCAL end
 }
 
 void AArch64PassConfig::addPreEmitPass2() {

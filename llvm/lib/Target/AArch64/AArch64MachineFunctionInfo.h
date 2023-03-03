@@ -188,7 +188,7 @@ class AArch64FunctionInfo final : public MachineFunctionInfo {
   mutable Optional<bool> NeedsAsyncDwarfUnwindInfo;
   /// Temporary symbol used by PARTS to generate a runtime dependent modifier based on
   /// the position of function. Epilogue emission relys on this value beging set.
-  MCSymbol *PartsSym = nullptr;
+  MCSymbol *PartsSym = nullptr; // OHOS_LOCAL
 public:
   explicit AArch64FunctionInfo(MachineFunction &MF);
 
@@ -435,8 +435,10 @@ public:
 
   bool needsDwarfUnwindInfo() const;
   bool needsAsyncDwarfUnwindInfo() const;
+  // OHOS_LOCAL start
   void setPartsSym(MCSymbol *Sym) { PartsSym = Sym; }
   MCSymbol *getPartsSym() const { return PartsSym; }
+  // OHOS_LOCAL end
 private:
   // Hold the lists of LOHs.
   MILOHContainer LOHContainerSet;

@@ -40,7 +40,7 @@ add_llvm_target(AArch64CodeGen
   GISel/AArch64PostLegalizerLowering.cpp
   GISel/AArch64PostSelectOptimize.cpp
   GISel/AArch64RegisterBankInfo.cpp
-  AArch64PARTS/PartsFrameLowering.cpp
+  AArch64PARTS/PartsFrameLowering.cpp # OHOS_LOCAL
   AArch64A57FPLoadBalancing.cpp
   AArch64AdvSIMDScalarPass.cpp
   AArch64AsmPrinter.cpp
@@ -86,15 +86,19 @@ add_llvm_target(AArch64CodeGen
   AArch64TargetTransformInfo.cpp
   SVEIntrinsicOpts.cpp
   AArch64SIMDInstrOpt.cpp
+  # OHOS_LOCAL start
   AArch64PARTS/AArch64EarlyPartsCpiPass.cpp
   AArch64PARTS/AArch64PartsCpiPass.cpp
+  # OHOS_LOCAL end
 
   DEPENDS
   intrinsics_gen
+  # OHOS_LOCAL start
   Parts
 
   LINK_LIBS
   Parts
+  # OHOS_LOCAL end
 
   LINK_COMPONENTS
   AArch64Desc

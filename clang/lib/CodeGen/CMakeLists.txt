@@ -96,5 +96,5 @@ add_clang_library(clangCodeGen
   clangFrontend
   clangLex
   clangSerialization
-  pacDfi
+  pacDfi # OHOS_LOCAL
   )
