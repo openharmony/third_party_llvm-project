@@ -47,7 +47,9 @@
 #include "clang/CodeGen/BackendUtil.h"
 #include "clang/CodeGen/ConstantInitBuilder.h"
 #include "clang/Frontend/FrontendDiagnostic.h"
+// OHOS_LOCAL start
 #include "clang/Pac/PacDfi.h"
+// OHOS_LOCAL end
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
@@ -836,7 +838,7 @@ void CodeGenModule::Release() {
   if (getLangOpts().OpenMPIsDevice)
     getModule().addModuleFlag(llvm::Module::Max, "openmp-device",
                               LangOpts.OpenMP);
-  PacDfiEmitStructFieldsMetadata(getModule(), VMContext);
+  PacDfiEmitStructFieldsMetadata(getModule(), VMContext); // OHOS_LOCAL
 
   // Emit OpenCL specific module metadata: OpenCL/SPIR version.
   if (LangOpts.OpenCL || (LangOpts.CUDAIsDevice && getTriple().isSPIRV())) {

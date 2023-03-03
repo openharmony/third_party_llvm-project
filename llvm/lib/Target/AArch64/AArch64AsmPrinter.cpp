@@ -1310,6 +1310,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
     EmitToStreamer(*OutStreamer, TmpInst);
     return;
   }
+  // OHOS_LOCAL start
   case AArch64::TCRETURNriAA: {
     MCInst TmpInst;
     TmpInst.setOpcode(AArch64::BRAA);
@@ -1318,6 +1319,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
     EmitToStreamer(*OutStreamer, TmpInst);
     return;
   }
+  // OHOS_LOCAL end
   case AArch64::TCRETURNdi: {
     MCOperand Dest;
     MCInstLowering.lowerOperand(MI->getOperand(0), Dest);

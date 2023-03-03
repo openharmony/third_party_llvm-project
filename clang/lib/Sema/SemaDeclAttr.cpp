@@ -9093,7 +9093,7 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
   case ParsedAttr::AT_UsingIfExists:
     handleSimpleAttribute<UsingIfExistsAttr>(S, D, AL);
     break;
-
+  // OHOS_LOCAL start
   case ParsedAttr::AT_PacDataTag:
     handleSimpleAttribute<PacDataTagAttr>(S, D, AL);
     break;
@@ -9102,6 +9102,7 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
     handleSimpleAttribute<PacPtrTagAttr>(S, D, AL);
     break;
   }
+  // OHOS_LOCAL end
 }
 
 /// ProcessDeclAttributeList - Apply all the decl attributes in the specified
