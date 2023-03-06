@@ -79,6 +79,7 @@ class LlvmMingw():
             "LDFLAGS": common_flags,
             "CFLAGS": common_flags,
             "CXXFLAGS": common_flags,
+            "PATH": os.environ["PATH"],
         }
 
     def cmake_prebuilt_bin_dir(self):
