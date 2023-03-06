@@ -298,6 +298,9 @@ Status PlatformHOS::DisconnectRemote() {
   if (error.Success()) {
     m_device_id.clear();
     m_sdk_version = 0;
+    if (m_remote_platform_sp) {
+      m_remote_platform_sp = nullptr;
+    }
   }
   return error;
 }
