@@ -36,9 +36,13 @@ LLDB_PLUGIN_DEFINE(PlatformHOS)
 
 using PrefixMap = std::pair<llvm::StringRef, llvm::StringRef>;
 
-static constexpr std::array<PrefixMap, 3> PATH_PREFIX_MAP {{
+static constexpr std::array<PrefixMap, 7> PATH_PREFIX_MAP {{
   { "/data", "/data/ohos_data" },
-  { "/vendor", "/vendor/ohos/vendor" },
+  { "/vendor/aosp/system/lib64/libqdMetaData.system.so", "/system/system_ext/lib64/libqdMetaData.system.so"},
+  { "/vendor/aosp/system/lib64/libgralloc.system.qti.so", "/system/system_ext/lib64/libgralloc.system.qti.so"},
+  { "/vendor/aosp/vendor/lib64", "/vendor/lib64" },
+  { "/vendor/aosp/system/lib64", "/system/lib64" },
+  { "/vendor/lib64", "/system/ohos/vendor/lib64" },
   { "/system", "/system/ohos/system" },
 }};
 
@@ -131,6 +135,17 @@ PlatformHOS::PlatformHOS(bool is_host)
 }
 
 PlatformHOS::~PlatformHOS() {}
+
+ConstString PlatformHOS::GetPluginName() {
+  if (GetContainer()) {
+    Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
+    static ConstString g_remote_name("remote-hos-inner");
+    LLDB_LOGF(log, "PlatformHOS::GetPluginName g_remote_name(%s)", g_remote_name.GetCString());
+    return g_remote_name;
+  }
+  
+  return GetPluginNameStatic(IsHost());
+}
 
 ConstString PlatformHOS::GetPluginNameStatic(bool is_host) {
   Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
