@@ -32,12 +32,13 @@ enum PartsDpiType {
 
 bool useBeCfi();
 bool useFeCfi();
+bool useDataPointerConfig();
 bool useDataPointerProtection();
 bool useDataFieldTag();
 bool useDataFieldProtection();
 PartsBeCfiType getBeCfiType();
 Pass *createPartsPluginPass();
-
+uint16_t getTypeIdFor(const Type *T);
 }
 }
 #endif

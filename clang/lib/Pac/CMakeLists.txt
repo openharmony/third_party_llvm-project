@@ -3,4 +3,5 @@ add_clang_library(pacDfi
 
   LINK_LIBS
   Parts
+  clangCodeGen
 )

@@ -838,7 +838,7 @@ void CodeGenModule::Release() {
   if (getLangOpts().OpenMPIsDevice)
     getModule().addModuleFlag(llvm::Module::Max, "openmp-device",
                               LangOpts.OpenMP);
-  PacDfiEmitStructFieldsMetadata(getModule(), VMContext); // OHOS_LOCAL
+  PacDfiEmitStructFieldsMetadata(getModule(), VMContext, this); // OHOS_LOCAL
 
   // Emit OpenCL specific module metadata: OpenCL/SPIR version.
   if (LangOpts.OpenCL || (LangOpts.CUDAIsDevice && getTriple().isSPIRV())) {
