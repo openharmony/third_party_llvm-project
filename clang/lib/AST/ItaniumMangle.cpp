@@ -4691,6 +4691,11 @@ recurse:
       Diags.Report(DiagID);
       return;
     }
+    // OHOS_LOCAL Begin
+    case UETT_PacModifierByType: {
+      return;
+    }
+    // OHOS_LOCAL End
     }
     break;
   }

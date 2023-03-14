@@ -19,27 +19,28 @@
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/SemaDiagnostic.h"
 #include "clang/Pac/PacDfi.h"
+#include "llvm/IR/Metadata.h"
+#include "clang/CodeGen/CodeGenABITypes.h"
 
 using namespace clang;
 
 std::map<const RecordDecl*, StringRef> RecordDecl2StructName;
-std::map<RecordDecl*, std::vector<unsigned int>> PacFieldInfos;
-std::map<RecordDecl*, std::vector<unsigned int>> PacPtrInfos;
-
+std::map<RecordDecl*, std::vector<FieldDecl*>> PacPtrNameInfos;
+std::map<RecordDecl*, std::vector<FieldDecl*>> PacFieldNameInfos;
+std::map<const RecordDecl*, llvm::StructType*> RecordDecl2StructType;
 void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx)
 {
     if (!llvm::PARTS::useDataFieldTag()) {
         return;
     }
     // find pac_tag attr fields, and insert new fields
-    std::vector<unsigned int> PacFieldIdxs;
-    std::vector<unsigned int> PacPtrIdxs;
-    unsigned int FieldIdx = 0;
+    std::vector<FieldDecl*> PacPtrNames;
+    std::vector<FieldDecl*> PacFieldNames;
     unsigned int ArraySize = 0;
 
     for (auto Field : TagDecl->fields()) {
         if (Field->hasAttr<PacDataTagAttr>()) {
-            PacFieldIdxs.push_back(FieldIdx);
+            PacFieldNames.push_back(Field);
             if (Field->getType()->isConstantArrayType()) {
                 auto ArrayTy = dyn_cast<ConstantArrayType>(Field->getType());
                 ArraySize += ArrayTy->getSize().getZExtValue();
@@ -47,12 +48,11 @@ void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx)
                 ++ArraySize;
             }
         } else if (Field->hasAttr<PacPtrTagAttr>()) {
-            PacPtrIdxs.push_back(FieldIdx);
+            PacPtrNames.push_back(Field);
         }
-        ++FieldIdx;
     }
 
-    if (!PacFieldIdxs.empty()) {
+    if (!PacFieldNames.empty()) {
         llvm::APInt ArraySizeInt(32, ArraySize);
         auto ArrayTy = Ctx.getConstantArrayType(Ctx.IntTy, ArraySizeInt, nullptr, ArrayType::Normal,
             /*IndexTypeQuals=*/ 0);
@@ -60,22 +60,26 @@ void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx)
             ArrayTy, nullptr, nullptr, true, ICIS_NoInit);
 
         TagDecl->addDecl(PacFD);
-        PacFieldInfos.insert(std::make_pair(TagDecl, PacFieldIdxs));
+        PacFieldNameInfos.insert(std::make_pair(TagDecl, PacFieldNames));
     }
-    if (!PacPtrIdxs.empty()) {
-        PacPtrInfos.insert(std::make_pair(TagDecl, PacPtrIdxs));
+    if (!PacPtrNames.empty()) {
+        PacPtrNameInfos.insert(std::make_pair(TagDecl, PacPtrNames));
     }
 }
 
-void PacDfiCreateMetaData(std::map<RecordDecl*, std::vector<unsigned int>> &fieldInfos, StringRef mdName,
-    llvm::Module &M, llvm::LLVMContext &VMContext)
+void PacDfiCreateMetaData(std::map<RecordDecl*, std::vector<FieldDecl*>> &fieldInfos, StringRef mdName,
+    llvm::Module &M, llvm::LLVMContext &VMContext, CodeGen::CodeGenModule *CGM)
 {
     llvm::NamedMDNode *PacNMD = M.getOrInsertNamedMetadata(mdName);
     for (auto item : fieldInfos) {
+        if (RecordDecl2StructName.find(item.first) == RecordDecl2StructName.end()) {
+            continue;
+        }
         std::vector<llvm::Metadata *> PacFields;
         auto styName = RecordDecl2StructName.find(item.first)->second;
         PacFields.push_back(llvm::MDString::get(VMContext, styName));
-        for (auto idx : item.second) {
+        for (auto Field : item.second) {
+            unsigned idx = CodeGen::getLLVMFieldNumber(*CGM, item.first, Field);
             PacFields.push_back(llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(
                 llvm::Type::getInt32Ty(VMContext), idx)));
         }
@@ -83,23 +87,26 @@ void PacDfiCreateMetaData(std::map<RecordDecl*, std::vector<unsigned int>> &fiel
     }
 }
 
-void PacDfiEmitStructFieldsMetadata(llvm::Module &M, llvm::LLVMContext &VMContext)
+void PacDfiEmitStructFieldsMetadata(llvm::Module &M, llvm::LLVMContext &VMContext, CodeGen::CodeGenModule *CGM)
 {
     if (!llvm::PARTS::useDataFieldTag()) {
         return;
     }
     // emit struct fields that need to protect with PA
-    if (!PacFieldInfos.empty()) {
-        PacDfiCreateMetaData(PacFieldInfos, "pa_field_info", M, VMContext);
+    if (!PacFieldNameInfos.empty()) {
+        PacDfiCreateMetaData(PacFieldNameInfos, "pa_field_info", M, VMContext, CGM);
     }
-    if (!PacPtrInfos.empty()) {
-        PacDfiCreateMetaData(PacPtrInfos, "pa_ptr_field_info", M, VMContext);
+    if (!PacPtrNameInfos.empty()) {
+        PacDfiCreateMetaData(PacPtrNameInfos, "pa_ptr_field_info", M, VMContext, CGM);
     }
 }
 
 void PacDfiRecordDecl2StructName(const RecordDecl *RD, llvm::StructType *Entry)
 {
     if (!llvm::PARTS::useDataFieldTag()) {
+        return;
+    }
+    if (Entry->isLiteral()) {
         return;
     }
     RecordDecl2StructName.insert(std::make_pair(RD, Entry->getName()));
