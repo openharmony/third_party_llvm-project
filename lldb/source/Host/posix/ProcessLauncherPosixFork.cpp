@@ -38,7 +38,7 @@ using namespace lldb;
 using namespace lldb_private;
 
 static void FixupEnvironment(Environment &env) {
-#if defined(__ANDROID__)
+#ifdef __ANDROID__
   // If there is no PATH variable specified inside the environment then set the
   // path to /system/bin. It is required because the default path used by
   // execve() is wrong on android.

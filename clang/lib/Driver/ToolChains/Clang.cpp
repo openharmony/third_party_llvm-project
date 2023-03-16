@@ -1702,7 +1702,7 @@ void Clang::AddAArch64TargetArgs(const ArgList &Args,
       CmdArgs.push_back("-aarch64-fix-cortex-a53-835769=1");
     else
       CmdArgs.push_back("-aarch64-fix-cortex-a53-835769=0");
-  } else if (Triple.isAndroid() || Triple.isOHOSFamily()) {
+  } else if (Triple.isAndroid()) {
     // Enabled A53 errata (835769) workaround by default on android
     CmdArgs.push_back("-mllvm");
     CmdArgs.push_back("-aarch64-fix-cortex-a53-835769=1");
@@ -3007,7 +3007,6 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
 
   if (Arg *A = Args.getLastArg(options::OPT_fno_stack_protector,
                                options::OPT_fstack_protector_all,
-                               options::OPT_fstack_protector_ret,
                                options::OPT_fstack_protector_strong,
                                options::OPT_fstack_protector)) {
     if (A->getOption().matches(options::OPT_fstack_protector))
@@ -3015,8 +3014,6 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
           std::max<>(LangOptions::SSPOn, DefaultStackProtectorLevel);
     else if (A->getOption().matches(options::OPT_fstack_protector_strong))
       StackProtectorLevel = LangOptions::SSPStrong;
-    else if (A->getOption().matches(options::OPT_fstack_protector_ret))
-      StackProtectorLevel = LangOptions::SSPRet;
     else if (A->getOption().matches(options::OPT_fstack_protector_all))
       StackProtectorLevel = LangOptions::SSPReq;
   } else {
@@ -4672,14 +4669,20 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
     }
   }
 
+  if (Triple.isOSAIX() && Args.hasArg(options::OPT_maltivec)) {
+    if (Args.getLastArg(options::OPT_mabi_EQ_vec_extabi)) {
+      CmdArgs.push_back("-mabi=vec-extabi");
+    } else {
+      D.Diag(diag::err_aix_default_altivec_abi);
+    }
+  }
+
   if (Arg *A = Args.getLastArg(options::OPT_mabi_EQ_vec_extabi,
                                options::OPT_mabi_EQ_vec_default)) {
     if (!Triple.isOSAIX())
       D.Diag(diag::err_drv_unsupported_opt_for_target)
           << A->getSpelling() << RawTriple.str();
-    if (A->getOption().getID() == options::OPT_mabi_EQ_vec_extabi)
-      CmdArgs.push_back("-mabi=vec-extabi");
-    else
+    if (A->getOption().getID() == options::OPT_mabi_EQ_vec_default)
       D.Diag(diag::err_aix_default_altivec_abi);
   }
 
@@ -5623,15 +5626,9 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
     if (A->getOption().matches(options::OPT_freroll_loops))
       CmdArgs.push_back("-freroll-loops");
 
-  Args.AddLastArg(CmdArgs, options::OPT_ffinite_loops,
-                  options::OPT_fno_finite_loops);
-
   Args.AddLastArg(CmdArgs, options::OPT_fwritable_strings);
   Args.AddLastArg(CmdArgs, options::OPT_funroll_loops,
                   options::OPT_fno_unroll_loops);
-
-  if (Args.hasArg(options::OPT_fenable_merge_functions))
-    CmdArgs.push_back(Args.MakeArgString("-fmerge-functions"));
 
   Args.AddLastArg(CmdArgs, options::OPT_pthread);
 

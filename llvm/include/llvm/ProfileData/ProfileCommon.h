@@ -17,7 +17,6 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/IR/ProfileSummary.h"
 #include "llvm/ProfileData/InstrProf.h"
-#include "llvm/ProfileData/SampleProf.h"
 #include "llvm/Support/Error.h"
 #include <algorithm>
 #include <cstdint>
@@ -90,8 +89,6 @@ public:
 
   void addRecord(const sampleprof::FunctionSamples &FS,
                  bool isCallsiteSample = false);
-  std::unique_ptr<ProfileSummary> computeSummaryForProfiles(
-      const StringMap<sampleprof::FunctionSamples> &Profiles);
   std::unique_ptr<ProfileSummary> getSummary();
 };
 

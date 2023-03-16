@@ -1147,7 +1147,7 @@ def fprofile_update_EQ : Joined<["-"], "fprofile-update=">,
 defm pseudo_probe_for_profiling : BoolFOption<"pseudo-probe-for-profiling",
   CodeGenOpts<"PseudoProbeForProfiling">, DefaultFalse,
   PosFlag<SetTrue, [], "Emit">, NegFlag<SetFalse, [], "Do not emit">,
-  BothFlags<[NoXarchOption, CC1Option], " pseudo probes for sample profiling">>;
+  BothFlags<[NoXarchOption, CC1Option], " pseudo probes for sample profiler">>;
 def forder_file_instrumentation : Flag<["-"], "forder-file-instrumentation">,
     Group<f_Group>, Flags<[CC1Option, CoreOption]>,
     HelpText<"Generate instrumented code to collect order file into default.profraw file (overridden by '=' form of option or LLVM_PROFILE_FILE env var)">;
@@ -2258,8 +2258,6 @@ defm signed_char : OptOutFFlag<"signed-char", "char is signed", "char is unsigne
 def fsplit_stack : Flag<["-"], "fsplit-stack">, Group<f_Group>;
 def fstack_protector_all : Flag<["-"], "fstack-protector-all">, Group<f_Group>,
   HelpText<"Enable stack protectors for all functions">;
-def fstack_protector_ret : Flag<["-"], "fstack-protector-ret">, Group<f_Group>,
-  HelpText<"Enable stack protectors for all functions with return address check">;
 defm stack_clash_protection : BoolFOption<"stack-clash-protection",
   CodeGenOpts<"StackClashProtector">, DefaultFalse,
   PosFlag<SetTrue, [CC1Option], "Enable">, NegFlag<SetFalse, [], "Disable">,
@@ -2412,13 +2410,6 @@ def fno_unroll_loops : Flag<["-"], "fno-unroll-loops">, Group<f_Group>,
 defm reroll_loops : BoolFOption<"reroll-loops",
   CodeGenOpts<"RerollLoops">, DefaultFalse,
   PosFlag<SetTrue, [CC1Option], "Turn on loop reroller">, NegFlag<SetFalse>>;
-def ffinite_loops: Flag<["-"],  "ffinite-loops">, Group<f_Group>,
-  HelpText<"Assume all loops are finite.">, Flags<[CC1Option]>;
-def fno_finite_loops: Flag<["-"], "fno-finite-loops">, Group<f_Group>,
-  HelpText<"Do not assume that any loop is finite.">, Flags<[CC1Option]>;
-
-def fenable_merge_functions : Flag<["-"], "fenable-merge-functions">, Group<f_Group>,
-  HelpText<"Enables Merge Functions optimization">;
 def ftrigraphs : Flag<["-"], "ftrigraphs">, Group<f_Group>,
   HelpText<"Process trigraph sequences">, Flags<[CC1Option]>;
 def fno_trigraphs : Flag<["-"], "fno-trigraphs">, Group<f_Group>,
@@ -5117,9 +5108,9 @@ def static_define : Flag<["-"], "static-define">,
   HelpText<"Should __STATIC__ be defined">,
   MarshallingInfoFlag<LangOpts<"Static">>;
 def stack_protector : Separate<["-"], "stack-protector">,
-  HelpText<"Enable stack protectors">, Values<"0,1,2,3,4">,
+  HelpText<"Enable stack protectors">, Values<"0,1,2,3">,
   NormalizedValuesScope<"LangOptions">,
-  NormalizedValues<["SSPOff", "SSPOn", "SSPStrong", "SSPReq", "SSPRet"]>,
+  NormalizedValues<["SSPOff", "SSPOn", "SSPStrong", "SSPReq"]>,
   MarshallingInfoString<LangOpts<"StackProtector">, "SSPOff">, AutoNormalizeEnum;
 def stack_protector_buffer_size : Separate<["-"], "stack-protector-buffer-size">,
   HelpText<"Lower bound for a buffer to be considered for stack protection">,

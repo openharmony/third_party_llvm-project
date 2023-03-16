@@ -129,8 +129,6 @@ void llvm::computeLTOCacheKey(
   AddUnsigned(Conf.CGOptLevel);
   AddUnsigned(Conf.CGFileType);
   AddUnsigned(Conf.OptLevel);
-  AddUnsigned(Conf.SizeLevel);
-  AddUnsigned(Conf.MergeFunctions);
   AddUnsigned(Conf.UseNewPM);
   AddUnsigned(Conf.Freestanding);
   AddString(Conf.OptPipeline);

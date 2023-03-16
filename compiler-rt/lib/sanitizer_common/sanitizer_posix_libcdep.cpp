@@ -165,27 +165,21 @@ bool SupportsColoredOutput(fd_t fd) {
 
 #if !SANITIZER_GO
 // TODO(glider): different tools may require different altstack size.
-static uptr GetAltStackSize() {
-  // Note: since GLIBC_2.31, SIGSTKSZ may be a function call, so this may be
-  // more costly that you think. However GetAltStackSize is only call 2-3 times
-  // per thread so don't cache the evaluation.
-  return SIGSTKSZ * 4;
-}
+static const uptr kAltStackSize = SIGSTKSZ * 4;  // SIGSTKSZ is not enough.
 
 void SetAlternateSignalStack() {
   stack_t altstack, oldstack;
   CHECK_EQ(0, sigaltstack(nullptr, &oldstack));
   // If the alternate stack is already in place, do nothing.
   // Android always sets an alternate stack, but it's too small for us.
-  if (!SANITIZER_ANDROID && !(oldstack.ss_flags & SS_DISABLE))
-    return;
+  if (!SANITIZER_ANDROID && !(oldstack.ss_flags & SS_DISABLE)) return;
   // TODO(glider): the mapped stack should have the MAP_STACK flag in the
   // future. It is not required by man 2 sigaltstack now (they're using
   // malloc()).
-  void *base = MmapOrDie(GetAltStackSize(), __func__);
+  void* base = MmapOrDie(kAltStackSize, __func__);
   altstack.ss_sp = (char*) base;
   altstack.ss_flags = 0;
-  altstack.ss_size = GetAltStackSize();
+  altstack.ss_size = kAltStackSize;
   CHECK_EQ(0, sigaltstack(&altstack, nullptr));
 }
 
@@ -193,7 +187,7 @@ void UnsetAlternateSignalStack() {
   stack_t altstack, oldstack;
   altstack.ss_sp = nullptr;
   altstack.ss_flags = SS_DISABLE;
-  altstack.ss_size = GetAltStackSize();  // Some sane value required on Darwin.
+  altstack.ss_size = kAltStackSize;  // Some sane value required on Darwin.
   CHECK_EQ(0, sigaltstack(&altstack, &oldstack));
   UnmapOrDie(oldstack.ss_sp, oldstack.ss_size);
 }

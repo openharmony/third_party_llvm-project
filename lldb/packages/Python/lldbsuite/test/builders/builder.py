@@ -63,18 +63,19 @@ class Builder:
         string used for the make system.
         """
 
+        # If d is None or an empty mapping, just return an empty string.
         if not d:
-            d = {}
-
+            return ""
         pattern = '%s="%s"' if "win32" in sys.platform else "%s='%s'"
-        append_vars = ["CFLAGS", "CFLAGS_EXTRAS", "LD_EXTRAS"]
-        for var in append_vars:
-            val = (d.get(var, '') + ' ' + os.getenv(var, '')).strip()
-            if val:
-                d[var] = val
+
+        def setOrAppendVariable(k, v):
+            append_vars = ["CFLAGS", "CFLAGS_EXTRAS", "LD_EXTRAS"]
+            if k in append_vars and k in os.environ:
+                v = os.environ[k] + " " + v
+            return pattern % (k, v)
 
         cmdline = " ".join(
-            [pattern % (k, v) for k, v in d.items()]).strip()
+            [setOrAppendVariable(k, v) for k, v in list(d.items())])
 
         return cmdline
 

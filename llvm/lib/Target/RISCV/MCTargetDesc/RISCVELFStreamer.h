@@ -29,8 +29,6 @@ private:
   SmallVector<AttributeItem, 64> Contents;
 
   MCSection *AttributeSection = nullptr;
-  // OHOS_LOCAL backported from 227496dc09cf46df233aad041d6dc6113822e4bb
-  const MCSubtargetInfo &STI;
 
   AttributeItem *getAttributeItem(unsigned Attribute) {
     for (size_t i = 0; i < Contents.size(); ++i)
@@ -105,9 +103,6 @@ public:
   void emitDirectiveOptionNoRVC() override;
   void emitDirectiveOptionRelax() override;
   void emitDirectiveOptionNoRelax() override;
-
-  // OHOS_LOCAL backported from 227496dc09cf46df233aad041d6dc6113822e4bb
-  void finish() override;
 };
 }
 #endif

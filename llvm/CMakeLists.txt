@@ -11,10 +11,10 @@ if(NOT DEFINED LLVM_VERSION_MINOR)
   set(LLVM_VERSION_MINOR 0)
 endif()
 if(NOT DEFINED LLVM_VERSION_PATCH)
-  set(LLVM_VERSION_PATCH 1)
+  set(LLVM_VERSION_PATCH 0)
 endif()
 if(NOT DEFINED LLVM_VERSION_SUFFIX)
-  set(LLVM_VERSION_SUFFIX "")
+  set(LLVM_VERSION_SUFFIX git)
 endif()
 
 if (NOT PACKAGE_VERSION)
@@ -545,12 +545,6 @@ option(LLVM_BUILD_RUNTIME
   "Build the LLVM runtime libraries." ON)
 option(LLVM_BUILD_EXAMPLES
   "Build the LLVM example programs. If OFF, just generate build targets." OFF)
-option(BUILD_ARK_GC_SUPPORT
-	"ARK support GC. If ON, support GC." OFF)
-if(BUILD_ARK_GC_SUPPORT)
-   add_definitions(-DARK_GC_SUPPORT)
-endif(BUILD_ARK_GC_SUPPORT)
-
 option(LLVM_INCLUDE_EXAMPLES "Generate build targets for the LLVM examples" ON)
 
 if(LLVM_BUILD_EXAMPLES)

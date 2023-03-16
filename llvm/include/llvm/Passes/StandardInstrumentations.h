@@ -22,7 +22,6 @@
 #include "llvm/IR/PassTimingInfo.h"
 #include "llvm/IR/ValueHandle.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Transforms/IPO/SampleProfileProbe.h"
 
 #include <string>
 #include <utility>
@@ -274,7 +273,6 @@ class StandardInstrumentations {
   OptBisectInstrumentation OptBisect;
   PreservedCFGCheckerInstrumentation PreservedCFGChecker;
   IRChangedPrinter PrintChangedIR;
-  PseudoProbeVerifier PseudoProbeVerification;
   VerifyInstrumentation Verify;
 
   bool VerifyEach;

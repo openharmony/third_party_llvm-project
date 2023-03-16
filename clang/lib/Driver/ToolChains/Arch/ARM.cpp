@@ -211,8 +211,6 @@ arm::FloatABI arm::getDefaultFloatABI(const llvm::Triple &Triple) {
     return FloatABI::SoftFP;
 
   default:
-    if (Triple.isOHOSFamily())
-      return FloatABI::Soft;
     switch (Triple.getEnvironment()) {
     case llvm::Triple::GNUEABIHF:
     case llvm::Triple::MuslEABIHF:

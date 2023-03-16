@@ -220,8 +220,6 @@ StringRef Triple::getOSTypeName(OSType Kind) {
   case WatchOS: return "watchos";
   case Win32: return "windows";
   case ZOS: return "zos";
-  case LiteOS:
-    return "liteos";
   }
 
   llvm_unreachable("Invalid OSType");
@@ -250,8 +248,6 @@ StringRef Triple::getEnvironmentTypeName(EnvironmentType Kind) {
   case MuslEABI: return "musleabi";
   case MuslEABIHF: return "musleabihf";
   case Simulator: return "simulator";
-  case OpenHOS:
-    return "ohos";
   }
 
   llvm_unreachable("Invalid EnvironmentType!");
@@ -499,44 +495,43 @@ static Triple::VendorType parseVendor(StringRef VendorName) {
 
 static Triple::OSType parseOS(StringRef OSName) {
   return StringSwitch<Triple::OSType>(OSName)
-      .StartsWith("ananas", Triple::Ananas)
-      .StartsWith("cloudabi", Triple::CloudABI)
-      .StartsWith("darwin", Triple::Darwin)
-      .StartsWith("dragonfly", Triple::DragonFly)
-      .StartsWith("freebsd", Triple::FreeBSD)
-      .StartsWith("fuchsia", Triple::Fuchsia)
-      .StartsWith("ios", Triple::IOS)
-      .StartsWith("kfreebsd", Triple::KFreeBSD)
-      .StartsWith("linux", Triple::Linux)
-      .StartsWith("lv2", Triple::Lv2)
-      .StartsWith("macos", Triple::MacOSX)
-      .StartsWith("netbsd", Triple::NetBSD)
-      .StartsWith("openbsd", Triple::OpenBSD)
-      .StartsWith("solaris", Triple::Solaris)
-      .StartsWith("win32", Triple::Win32)
-      .StartsWith("windows", Triple::Win32)
-      .StartsWith("zos", Triple::ZOS)
-      .StartsWith("haiku", Triple::Haiku)
-      .StartsWith("minix", Triple::Minix)
-      .StartsWith("rtems", Triple::RTEMS)
-      .StartsWith("nacl", Triple::NaCl)
-      .StartsWith("aix", Triple::AIX)
-      .StartsWith("cuda", Triple::CUDA)
-      .StartsWith("nvcl", Triple::NVCL)
-      .StartsWith("amdhsa", Triple::AMDHSA)
-      .StartsWith("ps4", Triple::PS4)
-      .StartsWith("elfiamcu", Triple::ELFIAMCU)
-      .StartsWith("tvos", Triple::TvOS)
-      .StartsWith("watchos", Triple::WatchOS)
-      .StartsWith("mesa3d", Triple::Mesa3D)
-      .StartsWith("contiki", Triple::Contiki)
-      .StartsWith("amdpal", Triple::AMDPAL)
-      .StartsWith("hermit", Triple::HermitCore)
-      .StartsWith("hurd", Triple::Hurd)
-      .StartsWith("wasi", Triple::WASI)
-      .StartsWith("emscripten", Triple::Emscripten)
-      .StartsWith("liteos", Triple::LiteOS)
-      .Default(Triple::UnknownOS);
+    .StartsWith("ananas", Triple::Ananas)
+    .StartsWith("cloudabi", Triple::CloudABI)
+    .StartsWith("darwin", Triple::Darwin)
+    .StartsWith("dragonfly", Triple::DragonFly)
+    .StartsWith("freebsd", Triple::FreeBSD)
+    .StartsWith("fuchsia", Triple::Fuchsia)
+    .StartsWith("ios", Triple::IOS)
+    .StartsWith("kfreebsd", Triple::KFreeBSD)
+    .StartsWith("linux", Triple::Linux)
+    .StartsWith("lv2", Triple::Lv2)
+    .StartsWith("macos", Triple::MacOSX)
+    .StartsWith("netbsd", Triple::NetBSD)
+    .StartsWith("openbsd", Triple::OpenBSD)
+    .StartsWith("solaris", Triple::Solaris)
+    .StartsWith("win32", Triple::Win32)
+    .StartsWith("windows", Triple::Win32)
+    .StartsWith("zos", Triple::ZOS)
+    .StartsWith("haiku", Triple::Haiku)
+    .StartsWith("minix", Triple::Minix)
+    .StartsWith("rtems", Triple::RTEMS)
+    .StartsWith("nacl", Triple::NaCl)
+    .StartsWith("aix", Triple::AIX)
+    .StartsWith("cuda", Triple::CUDA)
+    .StartsWith("nvcl", Triple::NVCL)
+    .StartsWith("amdhsa", Triple::AMDHSA)
+    .StartsWith("ps4", Triple::PS4)
+    .StartsWith("elfiamcu", Triple::ELFIAMCU)
+    .StartsWith("tvos", Triple::TvOS)
+    .StartsWith("watchos", Triple::WatchOS)
+    .StartsWith("mesa3d", Triple::Mesa3D)
+    .StartsWith("contiki", Triple::Contiki)
+    .StartsWith("amdpal", Triple::AMDPAL)
+    .StartsWith("hermit", Triple::HermitCore)
+    .StartsWith("hurd", Triple::Hurd)
+    .StartsWith("wasi", Triple::WASI)
+    .StartsWith("emscripten", Triple::Emscripten)
+    .Default(Triple::UnknownOS);
 }
 
 static Triple::EnvironmentType parseEnvironment(StringRef EnvironmentName) {
@@ -561,7 +556,6 @@ static Triple::EnvironmentType parseEnvironment(StringRef EnvironmentName) {
       .StartsWith("coreclr", Triple::CoreCLR)
       .StartsWith("simulator", Triple::Simulator)
       .StartsWith("macabi", Triple::MacABI)
-      .StartsWith("ohos", Triple::OpenHOS)
       .Default(Triple::UnknownEnvironment);
 }
 

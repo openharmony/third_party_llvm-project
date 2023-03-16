@@ -129,8 +129,6 @@ static lto::Config createConfig() {
   c.DisableVerify = config->disableVerify;
   c.DiagHandler = diagnosticHandler;
   c.OptLevel = config->ltoo;
-  c.SizeLevel = config->ltos;
-  c.MergeFunctions = config->mergeFunctions;
   c.CPU = getCPUStr();
   c.MAttrs = getMAttrs();
   c.CGOptLevel = args::getCGOptLevel(config->ltoo);

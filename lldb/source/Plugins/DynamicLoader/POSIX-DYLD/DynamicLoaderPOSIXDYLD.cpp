@@ -23,7 +23,6 @@
 #include "lldb/Target/ThreadPlanRunToAddress.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/ProcessInfo.h"
-#include "llvm/Support/ThreadPool.h"
 
 #include <memory>
 
@@ -443,18 +442,14 @@ void DynamicLoaderPOSIXDYLD::RefreshModules() {
         if (module_sp->GetObjectFile()->GetBaseAddress().GetLoadAddress(
                 &m_process->GetTarget()) == m_interpreter_base &&
             module_sp != m_interpreter_module.lock()) {
-          if (m_interpreter_module.lock() == nullptr) {
-            m_interpreter_module = module_sp;
-          } else {
-            // If this is a duplicate instance of ld.so, unload it.  We may end
-            // up with it if we load it via a different path than before
-            // (symlink vs real path).
-            // TODO: remove this once we either fix library matching or avoid
-            // loading the interpreter when setting the rendezvous breakpoint.
-            UnloadSections(module_sp);
-            loaded_modules.Remove(module_sp);
-            continue;
-          }
+          // If this is a duplicate instance of ld.so, unload it.  We may end up
+          // with it if we load it via a different path than before (symlink
+          // vs real path).
+          // TODO: remove this once we either fix library matching or avoid
+          // loading the interpreter when setting the rendezvous breakpoint.
+          UnloadSections(module_sp);
+          loaded_modules.Remove(module_sp);
+          continue;
         }
 
         loaded_modules.AppendIfNeeded(module_sp);
@@ -608,28 +603,23 @@ void DynamicLoaderPOSIXDYLD::LoadAllCurrentModules() {
   m_process->PrefetchModuleSpecs(
       module_names, m_process->GetTarget().GetArchitecture().GetTriple());
 
-  llvm::ThreadPool pool(llvm::hardware_concurrency(DynamicLoaderPOSIXDYLD::DYLD_CONCURRENCY_THREADING));
   for (I = m_rendezvous.begin(), E = m_rendezvous.end(); I != E; ++I) {
-    pool.async([&](const FileSpec &file_spec, addr_t link_addr, addr_t base_addr) {
+    ModuleSP module_sp =
+        LoadModuleAtAddress(I->file_spec, I->link_addr, I->base_addr, true);
+    if (module_sp.get()) {
+      LLDB_LOG(log, "LoadAllCurrentModules loading module: {0}",
+               I->file_spec.GetFilename());
+      module_list.Append(module_sp);
+    } else {
       Log *log(GetLogIfAnyCategoriesSet(LIBLLDB_LOG_DYNAMIC_LOADER));
-      ModuleSP module_sp =
-          LoadModuleAtAddress(file_spec, link_addr, base_addr, true);
-      if (module_sp.get()) {
-        LLDB_LOGF(log, "LoadAllCurrentModules loading module: %s", file_spec.GetFilename().GetCString());
-        module_list.Append(module_sp);
-      } else {
-        LLDB_LOGF(
-            log,
-            "DynamicLoaderPOSIXDYLD:: failed loading module %s at 0x%" PRIx64,
-             file_spec.GetCString(), base_addr);
-      }
-     }, I->file_spec, I->link_addr, I->base_addr);
+      LLDB_LOGF(
+          log,
+          "DynamicLoaderPOSIXDYLD::%s failed loading module %s at 0x%" PRIx64,
+          __FUNCTION__, I->file_spec.GetCString(), I->base_addr);
+    }
   }
 
-  pool.wait();
-
   m_process->GetTarget().ModulesDidLoad(module_list);
-  m_initial_modules_added = true;
 }
 
 addr_t DynamicLoaderPOSIXDYLD::ComputeLoadOffset() {

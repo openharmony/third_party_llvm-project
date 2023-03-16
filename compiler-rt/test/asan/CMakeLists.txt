@@ -132,7 +132,7 @@ if(COMPILER_RT_INCLUDE_TESTS)
       ${CMAKE_CURRENT_BINARY_DIR}/Unit/dynamic/lit.site.cfg.py)
   endif()
   # FIXME: support unit test in the android test runner
-  if (NOT ANDROID AND NOT OHOS_FAMILY)
+  if (NOT ANDROID)
     list(APPEND ASAN_TEST_DEPS AsanUnitTests)
     list(APPEND ASAN_TESTSUITES ${CMAKE_CURRENT_BINARY_DIR}/Unit)
     if(COMPILER_RT_ASAN_HAS_STATIC_RUNTIME)

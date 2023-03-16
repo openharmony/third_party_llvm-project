@@ -10,7 +10,6 @@
 
 #include "ClangHost.h"
 #include "lldb/Host/FileSystem.h"
-#include "llvm/ADT/Triple.h"
 
 using namespace lldb_private;
 
@@ -31,29 +30,7 @@ bool CppModuleConfiguration::SetOncePath::TrySet(llvm::StringRef path) {
   return false;
 }
 
-static std::string targetSpecificIncludePath(const llvm::Triple &triple) {
-  if (triple.getArchName().empty() || triple.getOSAndEnvironmentName().empty())
-    return "";
-  return ("/usr/include/" + triple.getArchName() + "-" +
-          triple.getOSAndEnvironmentName())
-      .str();
-}
-
-static bool guessIncludePath(llvm::StringRef pathToFile,
-                             llvm::StringRef pattern, llvm::StringRef &result) {
-  result = llvm::StringRef();
-  if (pattern.empty())
-    return false;
-  size_t pos = pathToFile.find(pattern);
-  if (pos == llvm::StringRef::npos)
-    return false;
-
-  result = pathToFile.substr(0, pos + pattern.size());
-  return true;
-}
-
-bool CppModuleConfiguration::analyzeFile(const FileSpec &f,
-                                         const llvm::Triple &triple) {
+bool CppModuleConfiguration::analyzeFile(const FileSpec &f) {
   using namespace llvm::sys::path;
   // Convert to slashes to make following operations simpler.
   std::string dir_buffer = convert_to_slash(f.GetDirectory().GetStringRef());
@@ -69,12 +46,12 @@ bool CppModuleConfiguration::analyzeFile(const FileSpec &f,
     return m_std_inc.TrySet(posix_dir);
   }
 
-  llvm::StringRef inc_path;
-  // Target specific path contains /usr/include, so we check it first
-  if (guessIncludePath(posix_dir, targetSpecificIncludePath(triple), inc_path))
-    return m_c_target_inc.TrySet(inc_path);
-  if (guessIncludePath(posix_dir, "/usr/include", inc_path))
-    return m_c_inc.TrySet(inc_path);
+  // Check for /usr/include. On Linux this might be /usr/include/bits, so
+  // we should remove that '/bits' suffix to get the actual include directory.
+  if (posix_dir.endswith("/usr/include/bits"))
+    posix_dir.consume_back("/bits");
+  if (posix_dir.endswith("/usr/include"))
+    return m_c_inc.TrySet(posix_dir);
 
   // File wasn't interesting, continue analyzing.
   return true;
@@ -115,11 +92,11 @@ bool CppModuleConfiguration::hasValidConfig() {
 }
 
 CppModuleConfiguration::CppModuleConfiguration(
-    const FileSpecList &support_files, const llvm::Triple &triple) {
+    const FileSpecList &support_files) {
   // Analyze all files we were given to build the configuration.
   bool error = !llvm::all_of(support_files,
                              std::bind(&CppModuleConfiguration::analyzeFile,
-                                       this, std::placeholders::_1, triple));
+                                       this, std::placeholders::_1));
   // If we have a valid configuration at this point, set the
   // include directories and module list that should be used.
   if (!error && hasValidConfig()) {
@@ -132,8 +109,6 @@ CppModuleConfiguration::CppModuleConfiguration(
     // This order matches the way Clang orders these directories.
     m_include_dirs = {m_std_inc.Get().str(), m_resource_inc,
                       m_c_inc.Get().str()};
-    if (m_c_target_inc.Valid())
-      m_include_dirs.push_back(m_c_target_inc.Get().str());
     m_imported_modules = {"std"};
   }
 }

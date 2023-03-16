@@ -160,10 +160,10 @@ typedef enum {
   LLVMVectorTypeKind,    /**< Fixed width SIMD vector type */
   LLVMMetadataTypeKind,  /**< Metadata */
   LLVMX86_MMXTypeKind,   /**< X86 MMX */
+  LLVMX86_AMXTypeKind,   /**< X86 AMX */
   LLVMTokenTypeKind,     /**< Tokens */
   LLVMScalableVectorTypeKind, /**< Scalable SIMD vector type */
-  LLVMBFloatTypeKind,    /**< 16 bit brain floating point type */
-  LLVMX86_AMXTypeKind    /**< X86 AMX */
+  LLVMBFloatTypeKind     /**< 16 bit brain floating point type */
 } LLVMTypeKind;
 
 typedef enum {
@@ -270,6 +270,7 @@ typedef enum {
   LLVMConstantVectorValueKind,
 
   LLVMUndefValueValueKind,
+  LLVMPoisonValueValueKind,
   LLVMConstantAggregateZeroValueKind,
   LLVMConstantDataArrayValueKind,
   LLVMConstantDataVectorValueKind,
@@ -282,7 +283,6 @@ typedef enum {
   LLVMInlineAsmValueKind,
 
   LLVMInstructionValueKind,
-  LLVMPoisonValueValueKind
 } LLVMValueKind;
 
 typedef enum {
@@ -605,17 +605,6 @@ unsigned LLVMGetEnumAttributeKind(LLVMAttributeRef A);
 uint64_t LLVMGetEnumAttributeValue(LLVMAttributeRef A);
 
 /**
- * Create a type attribute
- */
-LLVMAttributeRef LLVMCreateTypeAttribute(LLVMContextRef C, unsigned KindID,
-                                         LLVMTypeRef type_ref);
-
-/**
- * Get the type attribute's value.
- */
-LLVMTypeRef LLVMGetTypeAttributeValue(LLVMAttributeRef A);
-
-/**
  * Create a string attribute.
  */
 LLVMAttributeRef LLVMCreateStringAttribute(LLVMContextRef C,
@@ -637,7 +626,6 @@ const char *LLVMGetStringAttributeValue(LLVMAttributeRef A, unsigned *Length);
  */
 LLVMBool LLVMIsEnumAttribute(LLVMAttributeRef A);
 LLVMBool LLVMIsStringAttribute(LLVMAttributeRef A);
-LLVMBool LLVMIsTypeAttribute(LLVMAttributeRef A);
 
 /**
  * Obtain a Type from a context by its registered name.
@@ -3946,12 +3934,6 @@ LLVMValueRef LLVMBuildCall(LLVMBuilderRef, LLVMValueRef Fn,
 LLVMValueRef LLVMBuildCall2(LLVMBuilderRef, LLVMTypeRef, LLVMValueRef Fn,
                             LLVMValueRef *Args, unsigned NumArgs,
                             const char *Name);
-#ifdef ARK_GC_SUPPORT
-LLVMValueRef LLVMBuildCall3(LLVMBuilderRef B, LLVMTypeRef Ty, LLVMValueRef Fn,
-                            LLVMValueRef *Args, unsigned NumArgs,
-                            const char *Name, LLVMValueRef *deoptVals,
-                            int NumVals);
-#endif
 LLVMValueRef LLVMBuildSelect(LLVMBuilderRef, LLVMValueRef If,
                              LLVMValueRef Then, LLVMValueRef Else,
                              const char *Name);

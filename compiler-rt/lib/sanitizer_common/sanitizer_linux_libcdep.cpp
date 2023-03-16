@@ -75,7 +75,7 @@ struct __sanitizer::linux_dirent {
 #endif
 #endif
 
-#if !SANITIZER_ANDROID && !SANITIZER_OHOS
+#if !SANITIZER_ANDROID
 #include <elf.h>
 #include <unistd.h>
 #endif
@@ -803,7 +803,7 @@ void LogMessageOnPrintf(const char *str) {
 
 #endif  // SANITIZER_LINUX
 
-#if SANITIZER_LINUX && !SANITIZER_GO && !SANITIZER_OHOS
+#if SANITIZER_LINUX && !SANITIZER_GO
 // glibc crashes when using clock_gettime from a preinit_array function as the
 // vDSO function pointers haven't been initialized yet. __progname is
 // initialized after the vDSO function pointers, so if it exists, is not null
@@ -839,11 +839,7 @@ u64 MonotonicNanoTime() {
 // Non-Linux & Go always use the syscall.
 u64 MonotonicNanoTime() {
   timespec ts;
-#if SANITIZER_OHOS
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-#else
   internal_clock_gettime(CLOCK_MONOTONIC, &ts);
-#endif
   return (u64)ts.tv_sec * (1000ULL * 1000 * 1000) + ts.tv_nsec;
 }
 #endif  // SANITIZER_LINUX && !SANITIZER_GO

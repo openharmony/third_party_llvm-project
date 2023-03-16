@@ -58,17 +58,12 @@ public:
 
   void SetSDKBuild(ConstString sdk_build) { m_sdk_build = sdk_build; }
 
-  bool GetContainer() const { return m_container; }
-
-  void SetContainer(bool b_container) { m_container = b_container; }
-
   bool PlatformMatches(const lldb::PlatformSP &platform_sp) const;
 
 protected:
   std::string m_platform_name;
   ConstString m_sdk_sysroot;
   ConstString m_sdk_build;
-  bool m_container;
   llvm::VersionTuple m_os_version;
   bool m_include_platform_option;
 };

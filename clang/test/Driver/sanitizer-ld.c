@@ -527,14 +527,6 @@
 // CHECK-CFI-LINUX: "{{.*}}ld{{(.exe)?}}"
 // CHECK-CFI-LINUX-NOT: libclang_rt.
 
-// [OHOS]CFI by itself does not link runtime libraries.
-// RUN: %clang -fsanitize=cfi %s -### -o %t.o 2>&1 \
-// RUN:     -target arm-linux-ohos -fuse-ld=lld -rtlib=platform \
-// RUN:     --sysroot=%S/Inputs/ohos_native_tree/sysroot \
-// RUN:   | FileCheck --check-prefix=CHECK-CFI-LINUX %s
-// CHECK-CFI-LINUX: "{{.*}}ld{{(.exe)?}}"
-// CHECK-CFI-LINUX-NOT: libclang_rt.
-
 // CFI with diagnostics links the UBSan runtime.
 // RUN: %clang -fsanitize=cfi -fno-sanitize-trap=cfi -fsanitize-recover=cfi \
 // RUN:     %s -### -o %t.o 2>&1\

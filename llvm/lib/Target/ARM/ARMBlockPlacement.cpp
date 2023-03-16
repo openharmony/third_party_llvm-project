@@ -145,7 +145,8 @@ bool ARMBlockPlacement::runOnMachineFunction(MachineFunction &MF) {
              It++) {
           MachineBasicBlock *MBB = &*It;
           for (auto &Terminator : MBB->terminators()) {
-            if (Terminator.getOpcode() != ARM::t2LoopEndDec)
+            if (Terminator.getOpcode() != ARM::t2LoopEnd &&
+                Terminator.getOpcode() != ARM::t2LoopEndDec)
               continue;
             MachineBasicBlock *LETarget = Terminator.getOperand(2).getMBB();
             // The LE will become forwards branching if it branches to LoopExit
@@ -203,8 +204,10 @@ void ARMBlockPlacement::moveBasicBlock(MachineBasicBlock *BB,
     if (!Terminator.isUnconditionalBranch()) {
       // The BB doesn't have an unconditional branch so it relied on
       // fall-through. Fix by adding an unconditional branch to the moved BB.
+      unsigned BrOpc =
+          BBUtils->isBBInRange(&Terminator, To, 254) ? ARM::tB : ARM::t2B;
       MachineInstrBuilder MIB =
-          BuildMI(From, Terminator.getDebugLoc(), TII->get(ARM::t2B));
+          BuildMI(From, Terminator.getDebugLoc(), TII->get(BrOpc));
       MIB.addMBB(To);
       MIB.addImm(ARMCC::CondCodes::AL);
       MIB.addReg(ARM::NoRegister);

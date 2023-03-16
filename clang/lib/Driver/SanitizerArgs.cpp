@@ -766,7 +766,7 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
                    TC.getTriple().isAndroid() || TC.getTriple().isOSFuchsia() ||
                        TC.getTriple().isOSDarwin());
 
-  ImplicitCfiRuntime = TC.getTriple().isAndroid() || TC.getTriple().isOHOSFamily();
+  ImplicitCfiRuntime = TC.getTriple().isAndroid();
 
   if (AllAddedKinds & SanitizerKind::Address) {
     NeedPIE |= TC.getTriple().isOSFuchsia();

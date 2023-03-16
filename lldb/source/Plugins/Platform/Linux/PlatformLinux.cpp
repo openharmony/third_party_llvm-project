@@ -97,7 +97,7 @@ void PlatformLinux::Initialize() {
   PlatformPOSIX::Initialize();
 
   if (g_initialize_count++ == 0) {
-#if defined(__linux__) && !defined(__ANDROID__) && !defined(__OHOS_FAMILY__)
+#if defined(__linux__) && !defined(__ANDROID__)
     PlatformSP default_platform_sp(new PlatformLinux(true));
     default_platform_sp->SetSystemArchitecture(HostInfo::GetArchitecture());
     Platform::SetHostPlatform(default_platform_sp);

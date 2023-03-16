@@ -3878,10 +3878,9 @@ static bool prepareICWorklistFromFunction(Function &F, const DataLayout &DL,
         }
       }
 
-      // Skip processing debug and pseudo intrinsics in InstCombine. Processing
-      // these call instructions consumes non-trivial amount of time and
-      // provides no value for the optimization.
-      if (!Inst->isDebugOrPseudoInst()) {
+      // Skip processing debug intrinsics in InstCombine. Processing these call instructions
+      // consumes non-trivial amount of time and provides no value for the optimization.
+      if (!isa<DbgInfoIntrinsic>(Inst)) {
         InstrsForInstCombineWorklist.push_back(Inst);
         SeenAliasScopes.analyse(Inst);
       }

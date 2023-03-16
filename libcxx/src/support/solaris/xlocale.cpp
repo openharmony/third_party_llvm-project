@@ -8,7 +8,7 @@
 
 #ifdef __sun__
 
-#include "__support/solaris/xlocale.h"
+#include "support/solaris/xlocale.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <sys/localedef.h>

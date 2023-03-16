@@ -33,15 +33,10 @@
 #include <elf.h> // for NT_PRSTATUS
 #if (defined(__aarch64__) || SANITIZER_RISCV64) && !SANITIZER_ANDROID
 // GLIBC 2.20+ sys/user does not include asm/ptrace.h
-#if SANITIZER_OHOS
-// Do not include asm/sigcontext.h on behalf of asm/ptrace.h
-// to avoid multiple definiton errors.
-#define __ASM_SIGCONTEXT_H 1
-#endif
 # include <asm/ptrace.h>
 #endif
 #include <sys/user.h>  // for user_regs_struct
-#if (SANITIZER_ANDROID || SANITIZER_OHOS) && SANITIZER_MIPS
+#if SANITIZER_ANDROID && SANITIZER_MIPS
 # include <asm/reg.h>  // for mips SP register in sys/user.h
 #endif
 #include <sys/wait.h> // for signal-related stuff
@@ -509,11 +504,6 @@ typedef pt_regs regs_struct;
 typedef struct user regs_struct;
 # if SANITIZER_ANDROID
 #  define REG_SP regs[EF_R29]
-// FIXME: For some reason, EF_R29 is not defined in asm/reg.h under
-// #if _MIPS_SIM == _MIPS_SIM_ABI32 condition, so use MIPS32_EF_R29 as a
-// temporary solution.
-# elif SANITIZER_OHOS
-#  define REG_SP regs[MIPS32_EF_R29]
 # else
 #  define REG_SP regs[EF_REG29]
 # endif

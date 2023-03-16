@@ -27,7 +27,6 @@ class TestGdbRemoteThreadName(gdbremote_testcase.GdbRemoteTestCaseBase):
         self.assertEqual(expected_name, kv_dict.get("name"))
 
     @skipIfWindows # the test is not updated for Windows.
-    @skipOnHuaweiCI # investigate CI timeouts
     def test(self):
         """ Make sure lldb-server can retrieve inferior thread name"""
         self.build()

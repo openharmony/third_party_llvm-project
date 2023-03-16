@@ -624,7 +624,7 @@ StringRef ARM::computeDefaultTargetABI(const Triple &TT, StringRef CPU) {
   default:
     if (TT.isOSNetBSD())
       return "apcs-gnu";
-    if (TT.isOSOpenBSD() || TT.isOHOSFamily())
+    if (TT.isOSOpenBSD())
       return "aapcs-linux";
     return "aapcs";
   }

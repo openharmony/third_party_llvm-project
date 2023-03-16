@@ -5,7 +5,7 @@ set_target_properties(LLGSOptionsTableGen PROPERTIES FOLDER "lldb misc")
 
 set(LLDB_PLUGINS)
 
-if(CMAKE_SYSTEM_NAME MATCHES "Linux|Android|OHOS")
+if(CMAKE_SYSTEM_NAME MATCHES "Linux|Android")
   list(APPEND LLDB_PLUGINS lldbPluginProcessLinux)
 endif()
 

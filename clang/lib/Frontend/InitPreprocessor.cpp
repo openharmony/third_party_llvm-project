@@ -565,7 +565,7 @@ static void InitializeCPlusPlusFeatureTestMacros(const LangOptions &LangOpts,
     Builder.defineMacro("__cpp_aggregate_bases", "201603L");
     Builder.defineMacro("__cpp_structured_bindings", "201606L");
     Builder.defineMacro("__cpp_nontype_template_args",
-                        "201411L"); // (not latest)
+                        LangOpts.CPlusPlus20 ? "201911L" : "201411L");
     Builder.defineMacro("__cpp_fold_expressions", "201603L");
     Builder.defineMacro("__cpp_guaranteed_copy_elision", "201606L");
     Builder.defineMacro("__cpp_nontype_template_parameter_auto", "201606L");
@@ -1038,8 +1038,6 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
     Builder.defineMacro("__SSP_STRONG__", "2");
   else if (LangOpts.getStackProtector() == LangOptions::SSPReq)
     Builder.defineMacro("__SSP_ALL__", "3");
-  else if (LangOpts.getStackProtector() == LangOptions::SSPRet)
-    Builder.defineMacro("__SSP_RET__", "4");
 
   if (PPOpts.SetUpStaticAnalyzer)
     Builder.defineMacro("__clang_analyzer__");

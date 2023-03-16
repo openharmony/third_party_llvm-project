@@ -56,13 +56,6 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
     DefMips64CPU = "mips3";
   }
 
-  // OHOS_LOCAL begin
-  // TODO: Which mips64 cpu will supported by OHOS?
-  if (Triple.isOpenHOS()) {
-    DefMips32CPU = "mips32r2";
-  }
-  // OHOS_LOCAL end
-
   if (Arg *A = Args.getLastArg(clang::driver::options::OPT_march_EQ,
                                options::OPT_mcpu_EQ))
     CPUName = A->getValue();
@@ -314,10 +307,6 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
     } else
       D.Diag(diag::err_drv_unsupported_option_argument)
           << A->getOption().getName() << Val;
-  // OHOS_LOCAL begin
-  } else if (Triple.isOpenHOS()) {
-      Features.push_back("+nan2008");
-  // OHOS_LOCAL end
   }
 
   if (Arg *A = Args.getLastArg(options::OPT_mabs_EQ)) {
@@ -367,11 +356,6 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
       Features.push_back("+nooddspreg");
     } else
       Features.push_back("+fp64");
-  // OHOS_LOCAL begin
-  } else if (Triple.isOpenHOS()) {
-    // Set FP64 as default in OHOS
-    Features.push_back("+fp64");
-  // OHOS_LOCAL end
   } else if (mips::shouldUseFPXX(Args, Triple, CPUName, ABIName, FloatABI)) {
     Features.push_back("+fpxx");
     Features.push_back("+nooddspreg");
@@ -482,6 +466,11 @@ bool mips::isFP64ADefault(const llvm::Triple &Triple, StringRef CPUName) {
 
 bool mips::isFPXXDefault(const llvm::Triple &Triple, StringRef CPUName,
                          StringRef ABIName, mips::FloatABI FloatABI) {
+  if (Triple.getVendor() != llvm::Triple::ImaginationTechnologies &&
+      Triple.getVendor() != llvm::Triple::MipsTechnologies &&
+      !Triple.isAndroid())
+    return false;
+
   if (ABIName != "32")
     return false;
 

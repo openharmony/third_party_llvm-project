@@ -24,7 +24,7 @@
 // The code in this file needs to run in an unrelocated binary. It should not
 // access any external symbol, including its own non-hidden globals.
 
-#if SANITIZER_ANDROID || SANITIZER_OHOS
+#if SANITIZER_ANDROID
 extern "C" {
 
 INTERFACE_ATTRIBUTE void __hwasan_shadow();

@@ -30,7 +30,7 @@ namespace llvm {
 ContextTrieNode *ContextTrieNode::getChildContext(const LineLocation &CallSite,
                                                   StringRef CalleeName) {
   if (CalleeName.empty())
-    return getHottestChildContext(CallSite);
+    return getChildContext(CallSite);
 
   uint32_t Hash = nodeHash(CalleeName, CallSite);
   auto It = AllChildContext.find(Hash);
@@ -40,22 +40,18 @@ ContextTrieNode *ContextTrieNode::getChildContext(const LineLocation &CallSite,
 }
 
 ContextTrieNode *
-ContextTrieNode::getHottestChildContext(const LineLocation &CallSite) {
+ContextTrieNode::getChildContext(const LineLocation &CallSite) {
   // CSFDO-TODO: This could be slow, change AllChildContext so we can
   // do point look up for child node by call site alone.
-  // Retrieve the child node with max count for indirect call
+  // CSFDO-TODO: Return the child with max count for indirect call
   ContextTrieNode *ChildNodeRet = nullptr;
-  uint64_t MaxCalleeSamples = 0;
   for (auto &It : AllChildContext) {
     ContextTrieNode &ChildNode = It.second;
-    if (ChildNode.CallSiteLoc != CallSite)
-      continue;
-    FunctionSamples *Samples = ChildNode.getFunctionSamples();
-    if (!Samples)
-      continue;
-    if (Samples->getTotalSamples() > MaxCalleeSamples) {
-      ChildNodeRet = &ChildNode;
-      MaxCalleeSamples = Samples->getTotalSamples();
+    if (ChildNode.CallSiteLoc == CallSite) {
+      if (ChildNodeRet)
+        return nullptr;
+      else
+        ChildNodeRet = &ChildNode;
     }
   }
 
@@ -183,7 +179,7 @@ SampleContextTracker::SampleContextTracker(
     SampleContext Context(FuncSample.first(), RawContext);
     LLVM_DEBUG(dbgs() << "Tracking Context for function: " << Context << "\n");
     if (!Context.isBaseContext())
-      FuncToCtxtProfileSet[Context.getNameWithoutContext()].insert(FSamples);
+      FuncToCtxtProfileSet[Context.getName()].insert(FSamples);
     ContextTrieNode *NewNode = getOrCreateContextPath(Context, true);
     assert(!NewNode->getFunctionSamples() &&
            "New node can't have sample profile");
@@ -195,12 +191,12 @@ FunctionSamples *
 SampleContextTracker::getCalleeContextSamplesFor(const CallBase &Inst,
                                                  StringRef CalleeName) {
   LLVM_DEBUG(dbgs() << "Getting callee context for instr: " << Inst << "\n");
+  // CSFDO-TODO: We use CalleeName to differentiate indirect call
+  // We need to get sample for indirect callee too.
   DILocation *DIL = Inst.getDebugLoc();
   if (!DIL)
     return nullptr;
 
-  // For indirect call, CalleeName will be empty, in which case the context
-  // profile for callee with largest total samples will be returned.
   ContextTrieNode *CalleeContext = getCalleeContextFor(DIL, CalleeName);
   if (CalleeContext) {
     FunctionSamples *FSamples = CalleeContext->getFunctionSamples();
@@ -211,26 +207,6 @@ SampleContextTracker::getCalleeContextSamplesFor(const CallBase &Inst,
   }
 
   return nullptr;
-}
-
-std::vector<const FunctionSamples *>
-SampleContextTracker::getIndirectCalleeContextSamplesFor(
-    const DILocation *DIL) {
-  std::vector<const FunctionSamples *> R;
-  if (!DIL)
-    return R;
-
-  ContextTrieNode *CallerNode = getContextFor(DIL);
-  LineLocation CallSite = FunctionSamples::getCallSiteIdentifier(DIL);
-  for (auto &It : CallerNode->getAllChildContext()) {
-    ContextTrieNode &ChildNode = It.second;
-    if (ChildNode.getCallSiteLoc() != CallSite)
-      continue;
-    if (FunctionSamples *CalleeSamples = ChildNode.getFunctionSamples())
-      R.push_back(CalleeSamples);
-  }
-
-  return R;
 }
 
 FunctionSamples *
@@ -261,17 +237,6 @@ SampleContextTracker::getContextSamplesFor(const SampleContext &Context) {
     return nullptr;
 
   return Node->getFunctionSamples();
-}
-
-SampleContextTracker::ContextSamplesTy &
-SampleContextTracker::getAllContextSamplesFor(const Function &Func) {
-  StringRef CanonName = FunctionSamples::getCanonicalFnName(Func);
-  return FuncToCtxtProfileSet[CanonName];
-}
-
-SampleContextTracker::ContextSamplesTy &
-SampleContextTracker::getAllContextSamplesFor(StringRef Name) {
-  return FuncToCtxtProfileSet[Name];
 }
 
 FunctionSamples *SampleContextTracker::getBaseSamplesFor(const Function &Func,
@@ -330,6 +295,11 @@ void SampleContextTracker::promoteMergeContextSamplesTree(
     const Instruction &Inst, StringRef CalleeName) {
   LLVM_DEBUG(dbgs() << "Promoting and merging context tree for instr: \n"
                     << Inst << "\n");
+  // CSFDO-TODO: We also need to promote context profile from indirect
+  // calls. We won't have callee names from those from call instr.
+  if (CalleeName.empty())
+    return;
+
   // Get the caller context for the call instruction, we don't use callee
   // name from call because there can be context from indirect calls too.
   DILocation *DIL = Inst.getDebugLoc();
@@ -338,23 +308,8 @@ void SampleContextTracker::promoteMergeContextSamplesTree(
     return;
 
   // Get the context that needs to be promoted
-  LineLocation CallSite = FunctionSamples::getCallSiteIdentifier(DIL);
-  // For indirect call, CalleeName will be empty, in which case we need to
-  // promote all non-inlined child context profiles.
-  if (CalleeName.empty()) {
-    for (auto &It : CallerNode->getAllChildContext()) {
-      ContextTrieNode *NodeToPromo = &It.second;
-      if (CallSite != NodeToPromo->getCallSiteLoc())
-        continue;
-      FunctionSamples *FromSamples = NodeToPromo->getFunctionSamples();
-      if (FromSamples && FromSamples->getContext().hasState(InlinedContext))
-        continue;
-      promoteMergeContextSamplesTree(*NodeToPromo);
-    }
-    return;
-  }
-
-  // Get the context for the given callee that needs to be promoted
+  LineLocation CallSite(FunctionSamples::getOffset(DIL),
+                        DIL->getBaseDiscriminator());
   ContextTrieNode *NodeToPromo =
       CallerNode->getChildContext(CallSite, CalleeName);
   if (!NodeToPromo)
@@ -374,8 +329,6 @@ ContextTrieNode &SampleContextTracker::promoteMergeContextSamplesTree(
   LLVM_DEBUG(dbgs() << "  Found context tree root to promote: "
                     << FromSamples->getContext() << "\n");
 
-  assert(!FromSamples->getContext().hasState(InlinedContext) &&
-         "Shouldn't promote inlined context profile");
   StringRef ContextStrToRemove = FromSamples->getContext().getCallingContext();
   return promoteMergeContextSamplesTree(NodeToPromo, RootContext,
                                         ContextStrToRemove);
@@ -408,14 +361,18 @@ SampleContextTracker::getCalleeContextFor(const DILocation *DIL,
                                           StringRef CalleeName) {
   assert(DIL && "Expect non-null location");
 
+  // CSSPGO-TODO: need to support indirect callee
+  if (CalleeName.empty())
+    return nullptr;
+
   ContextTrieNode *CallContext = getContextFor(DIL);
   if (!CallContext)
     return nullptr;
 
-  // When CalleeName is empty, the child context profile with max
-  // total samples will be returned.
   return CallContext->getChildContext(
-      FunctionSamples::getCallSiteIdentifier(DIL), CalleeName);
+      LineLocation(FunctionSamples::getOffset(DIL),
+                   DIL->getBaseDiscriminator()),
+      CalleeName);
 }
 
 ContextTrieNode *SampleContextTracker::getContextFor(const DILocation *DIL) {
@@ -429,8 +386,8 @@ ContextTrieNode *SampleContextTracker::getContextFor(const DILocation *DIL) {
     if (Name.empty())
       Name = PrevDIL->getScope()->getSubprogram()->getName();
     S.push_back(
-        std::make_pair(FunctionSamples::getCallSiteIdentifier(DIL),
-                       PrevDIL->getScope()->getSubprogram()->getLinkageName()));
+        std::make_pair(LineLocation(FunctionSamples::getOffset(DIL),
+                                    DIL->getBaseDiscriminator()), Name));
     PrevDIL = DIL;
   }
 
@@ -561,25 +518,4 @@ ContextTrieNode &SampleContextTracker::promoteMergeContextSamplesTree(
   return *ToNode;
 }
 
-// Replace call graph edges with dynamic call edges from the profile.
-void SampleContextTracker::addCallGraphEdges(CallGraph &CG,
-                                             StringMap<Function *> &SymbolMap) {
-  // Add profile call edges to the call graph.
-  std::queue<ContextTrieNode *> NodeQueue;
-  NodeQueue.push(&RootContext);
-  while (!NodeQueue.empty()) {
-    ContextTrieNode *Node = NodeQueue.front();
-    NodeQueue.pop();
-    Function *F = SymbolMap.lookup(Node->getFuncName());
-    for (auto &I : Node->getAllChildContext()) {
-      ContextTrieNode *ChildNode = &I.second;
-      NodeQueue.push(ChildNode);
-      if (F && !F->isDeclaration()) {
-        Function *Callee = SymbolMap.lookup(ChildNode->getFuncName());
-        if (Callee && !Callee->isDeclaration())
-          CG[F]->addCalledFunction(nullptr, CG[Callee]);
-      }
-    }
-  }
-}
 } // namespace llvm

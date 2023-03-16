@@ -67,9 +67,7 @@ static void __deregister_frame(void *p) {
 }
 #endif
 
-/* libgcc and libunwind __register_frame behave differently. We use the presence
- * of __unw_add_dynamic_fde to detect libunwind. */
-#ifdef HAVE_UNW_ADD_DYNAMIC_FDE
+#ifdef __APPLE__
 
 static const char *processFDE(const char *Entry, bool isDeregister) {
   const char *P = Entry;

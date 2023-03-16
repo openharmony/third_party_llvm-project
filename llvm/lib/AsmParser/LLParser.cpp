@@ -1383,7 +1383,6 @@ bool LLParser::parseFnAttributeValuePairs(AttrBuilder &B,
       B.addAttribute(Attribute::ReturnsTwice); break;
     case lltok::kw_speculatable: B.addAttribute(Attribute::Speculatable); break;
     case lltok::kw_ssp: B.addAttribute(Attribute::StackProtect); break;
-    case lltok::kw_sspret: B.addAttribute(Attribute::StackProtectRet); break;
     case lltok::kw_sspreq: B.addAttribute(Attribute::StackProtectReq); break;
     case lltok::kw_sspstrong:
       B.addAttribute(Attribute::StackProtectStrong); break;

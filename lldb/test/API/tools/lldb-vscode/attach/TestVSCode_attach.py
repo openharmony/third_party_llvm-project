@@ -44,7 +44,6 @@ class TestVSCode_attach(lldbvscode_testcase.VSCodeTestCaseBase):
             self.continue_to_exit()
 
     @skipIfWindows
-    @skipIfLinux
     @skipIfNetBSD # Hangs on NetBSD as well
     @skipIfRemote
     def test_by_pid(self):

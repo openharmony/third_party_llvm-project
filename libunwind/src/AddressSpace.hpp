@@ -169,17 +169,11 @@ public:
     memcpy(&val, (void *)addr, sizeof(val));
     return val;
   }
-  // OHOS_LOCAL begin
-  unw_fpreg_t      getDouble(pint_t addr) {
-    unw_fpreg_t val;
-#if defined(_LIBUNWIND_TARGET_MIPS_O32)
-    memcpy(&val, (void *)addr, Registers_mips_o32::getFpuRegsSize());
-#else
+  double           getDouble(pint_t addr) {
+    double val;
     memcpy(&val, (void *)addr, sizeof(val));
-#endif
     return val;
   }
-  // OHOS_LOCAL end
   v128             getVector(pint_t addr) {
     v128 val;
     memcpy(&val, (void *)addr, sizeof(val));

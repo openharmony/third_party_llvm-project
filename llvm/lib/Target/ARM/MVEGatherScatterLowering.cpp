@@ -960,8 +960,7 @@ bool MVEGatherScatterLowering::optimiseOffsets(Value *Offsets, BasicBlock *BB,
   // Get the value that is added to/multiplied with the phi
   Value *OffsSecondOperand = Offs->getOperand(OffsSecondOp);
 
-  if (IncrementPerRound->getType() != OffsSecondOperand->getType() ||
-      !L->isLoopInvariant(OffsSecondOperand))
+  if (IncrementPerRound->getType() != OffsSecondOperand->getType())
     // Something has gone wrong, abort
     return false;
 
@@ -1166,8 +1165,6 @@ bool MVEGatherScatterLowering::runOnFunction(Function &F) {
   bool Changed = false;
 
   for (BasicBlock &BB : F) {
-    Changed |= SimplifyInstructionsInBlock(&BB);
-
     for (Instruction &I : BB) {
       IntrinsicInst *II = dyn_cast<IntrinsicInst>(&I);
       if (II && II->getIntrinsicID() == Intrinsic::masked_gather &&

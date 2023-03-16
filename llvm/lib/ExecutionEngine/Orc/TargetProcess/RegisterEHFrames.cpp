@@ -86,11 +86,11 @@ static Error deregisterFrameWrapper(const void *P) {
 }
 #endif
 
-#ifdef HAVE_UNW_ADD_DYNAMIC_FDE
+#ifdef __APPLE__
 
 template <typename HandleFDEFn>
-Error walkLibunwindEHFrameSection(const char *const SectionStart,
-                                  size_t SectionSize, HandleFDEFn HandleFDE) {
+Error walkAppleEHFrameSection(const char *const SectionStart,
+                              size_t SectionSize, HandleFDEFn HandleFDE) {
   const char *CurCFIRecord = SectionStart;
   const char *End = SectionStart + SectionSize;
   uint64_t Size = *reinterpret_cast<const uint32_t *>(CurCFIRecord);
@@ -124,19 +124,16 @@ Error walkLibunwindEHFrameSection(const char *const SectionStart,
   return Error::success();
 }
 
-#endif // HAVE_UNW_ADD_DYNAMIC_FDE
+#endif // __APPLE__
 
 Error registerEHFrameSection(const void *EHFrameSectionAddr,
                              size_t EHFrameSectionSize) {
-  /* libgcc and libunwind __register_frame behave differently. We use the
-   * presence of __unw_add_dynamic_fde to detect libunwind. */
-#ifdef HAVE_UNW_ADD_DYNAMIC_FDE
-  // With libunwind, __register_frame has to be called for each FDE entry.
-  return walkLibunwindEHFrameSection(
-      static_cast<const char *>(EHFrameSectionAddr), EHFrameSectionSize,
-      registerFrameWrapper);
+#ifdef __APPLE__
+  // On Darwin __register_frame has to be called for each FDE entry.
+  return walkAppleEHFrameSection(static_cast<const char *>(EHFrameSectionAddr),
+                                 EHFrameSectionSize, registerFrameWrapper);
 #else
-  // With libgcc, __register_frame takes a single argument:
+  // On Linux __register_frame takes a single argument:
   // a pointer to the start of the .eh_frame section.
 
   // How can it find the end? Because crtendS.o is linked
@@ -147,10 +144,9 @@ Error registerEHFrameSection(const void *EHFrameSectionAddr,
 
 Error deregisterEHFrameSection(const void *EHFrameSectionAddr,
                                size_t EHFrameSectionSize) {
-#ifdef HAVE_UNW_ADD_DYNAMIC_FDE
-  return walkLibunwindEHFrameSection(
-      static_cast<const char *>(EHFrameSectionAddr), EHFrameSectionSize,
-      deregisterFrameWrapper);
+#ifdef __APPLE__
+  return walkAppleEHFrameSection(static_cast<const char *>(EHFrameSectionAddr),
+                                 EHFrameSectionSize, deregisterFrameWrapper);
 #else
   return deregisterFrameWrapper(EHFrameSectionAddr);
 #endif

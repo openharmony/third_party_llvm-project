@@ -16,8 +16,8 @@
 
 #include "sanitizer_common/sanitizer_internal_defs.h"
 
-#if !SANITIZER_LINUX && !SANITIZER_FREEBSD && !SANITIZER_MAC &&   \
-    !SANITIZER_NETBSD && !SANITIZER_WINDOWS && !SANITIZER_OHOS && \
+#if !SANITIZER_LINUX && !SANITIZER_FREEBSD && !SANITIZER_MAC && \
+    !SANITIZER_NETBSD && !SANITIZER_WINDOWS && \
     !SANITIZER_FUCHSIA && !SANITIZER_RTEMS && !SANITIZER_SOLARIS
 # error "Interception doesn't work on this operating system."
 #endif

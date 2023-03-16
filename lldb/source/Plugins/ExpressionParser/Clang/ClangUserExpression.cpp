@@ -519,7 +519,7 @@ CppModuleConfiguration GetModuleConfig(lldb::LanguageType language,
   // Try to create a configuration from the files. If there is no valid
   // configuration possible with the files, this just returns an invalid
   // configuration.
-  return CppModuleConfiguration(files, target->GetArchitecture().GetTriple());
+  return CppModuleConfiguration(files);
 }
 
 bool ClangUserExpression::PrepareForParsing(

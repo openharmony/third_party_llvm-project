@@ -393,7 +393,6 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   const llvm::Triple &Triple = getToolChain().getEffectiveTriple();
 
   const llvm::Triple::ArchType Arch = ToolChain.getArch();
-  const bool isOHOSFamily = ToolChain.getTriple().isOHOSFamily();
   const bool isAndroid = ToolChain.getTriple().isAndroid();
   const bool IsIAMCU = ToolChain.getTriple().isOSIAMCU();
   const bool IsVE = ToolChain.getTriple().isVE();
@@ -449,7 +448,7 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   // Most Android ARM64 targets should enable the linker fix for erratum
   // 843419. Only non-Cortex-A53 devices are allowed to skip this flag.
-  if (Arch == llvm::Triple::aarch64 && (isAndroid || isOHOSFamily)) {
+  if (Arch == llvm::Triple::aarch64 && isAndroid) {
     std::string CPU = getCPUName(Args, Triple);
     if (CPU.empty() || CPU == "generic" || CPU == "cortex-a53")
       CmdArgs.push_back("--fix-cortex-a53-843419");
@@ -457,8 +456,8 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   // Android does not allow shared text relocations. Emit a warning if the
   // user's code contains any.
-  if (isAndroid || isOHOSFamily)
-    CmdArgs.push_back("--warn-shared-textrel");
+  if (isAndroid)
+      CmdArgs.push_back("--warn-shared-textrel");
 
   ToolChain.addExtraOpts(CmdArgs);
 
@@ -616,8 +615,7 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
       AddRunTimeLibs(ToolChain, D, CmdArgs, Args);
 
-      // We don't need libpthread neither for bionic nor for musl
-      if (WantPthread && !isAndroid && !isOHOSFamily)
+      if (WantPthread && !isAndroid)
         CmdArgs.push_back("-lpthread");
 
       if (Args.hasArg(options::OPT_fsplit_stack))
@@ -2076,8 +2074,8 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
   // lifetime or initialization issues.
   static const char *const AArch64LibDirs[] = {"/lib64", "/lib"};
   static const char *const AArch64Triples[] = {
-      "aarch64-none-linux-gnu", "aarch64-linux-gnu",     "aarch64-redhat-linux",
-      "aarch64-suse-linux",     "aarch64-linux-android", "aarch64-linux-ohos"};
+      "aarch64-none-linux-gnu", "aarch64-linux-gnu", "aarch64-redhat-linux",
+      "aarch64-suse-linux", "aarch64-linux-android"};
   static const char *const AArch64beLibDirs[] = {"/lib"};
   static const char *const AArch64beTriples[] = {"aarch64_be-none-linux-gnu",
                                                  "aarch64_be-linux-gnu"};
@@ -2105,8 +2103,7 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
       "x86_64-redhat-linux",    "x86_64-suse-linux",
       "x86_64-manbo-linux-gnu", "x86_64-linux-gnu",
       "x86_64-slackware-linux", "x86_64-unknown-linux",
-      "x86_64-amazon-linux",    "x86_64-linux-android",
-      "x86_64-linux-ohos"};
+      "x86_64-amazon-linux",    "x86_64-linux-android"};
   static const char *const X32LibDirs[] = {"/libx32"};
   static const char *const X86LibDirs[] = {"/lib32", "/lib"};
   static const char *const X86Triples[] = {
@@ -2124,7 +2121,7 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
   static const char *const MIPSELLibDirs[] = {"/lib"};
   static const char *const MIPSELTriples[] = {
       "mipsel-linux-gnu", "mips-img-linux-gnu", "mipsisa32r6el-linux-gnu",
-      "mipsel-linux-android", "mipsel-linux-ohos"};
+      "mipsel-linux-android"};
 
   static const char *const MIPS64LibDirs[] = {"/lib64", "/lib"};
   static const char *const MIPS64Triples[] = {

@@ -1070,6 +1070,12 @@ void Verifier::visitDICompositeType(const DICompositeType &N) {
   if (auto *Params = N.getRawTemplateParams())
     visitTemplateParams(N, *Params);
 
+  if (N.getTag() == dwarf::DW_TAG_class_type ||
+      N.getTag() == dwarf::DW_TAG_union_type) {
+    AssertDI(N.getFile() && !N.getFile()->getFilename().empty(),
+             "class/union requires a filename", &N, N.getFile());
+  }
+
   if (auto *D = N.getRawDiscriminator()) {
     AssertDI(isa<DIDerivedType>(D) && N.getTag() == dwarf::DW_TAG_variant_part,
              "discriminator can only appear on variant part");
@@ -1612,7 +1618,6 @@ static bool isFuncOnlyAttr(Attribute::AttrKind Kind) {
   case Attribute::AlwaysInline:
   case Attribute::OptimizeForSize:
   case Attribute::StackProtect:
-  case Attribute::StackProtectRet:
   case Attribute::StackProtectReq:
   case Attribute::StackProtectStrong:
   case Attribute::SafeStack:

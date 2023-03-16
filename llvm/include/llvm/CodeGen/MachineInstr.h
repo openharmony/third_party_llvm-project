@@ -1156,10 +1156,6 @@ public:
     return getOpcode() == TargetOpcode::CFI_INSTRUCTION;
   }
 
-  bool isPseudoProbe() const {
-    return getOpcode() == TargetOpcode::PSEUDO_PROBE;
-  }
-  
   // True if the instruction represents a position in the function.
   bool isPosition() const { return isLabel() || isCFIInstruction(); }
 
@@ -1168,9 +1164,6 @@ public:
   bool isDebugRef() const { return getOpcode() == TargetOpcode::DBG_INSTR_REF; }
   bool isDebugInstr() const {
     return isDebugValue() || isDebugLabel() || isDebugRef();
-  }
-  bool isDebugOrPseudoInstr() const {
-    return isDebugInstr() || isPseudoProbe();
   }
 
   bool isDebugOffsetImm() const { return getDebugOffset().isImm(); }

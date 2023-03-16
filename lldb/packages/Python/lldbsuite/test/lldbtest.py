@@ -804,6 +804,11 @@ class Base(unittest2.TestCase):
         for setting, value in configuration.settings:
             commands.append('setting set %s %s'%(setting, value))
 
+        # Make sure that a sanitizer LLDB's environment doesn't get passed on.
+        if cls.platformContext and cls.platformContext.shlib_environment_var in os.environ:
+            commands.append('settings set target.env-vars {}='.format(
+                cls.platformContext.shlib_environment_var))
+
         # Set environment variables for the inferior.
         if lldbtest_config.inferior_env:
             commands.append('settings set target.env-vars {}'.format(
@@ -956,56 +961,6 @@ class Base(unittest2.TestCase):
         proc.launch(executable, args)
         self.subprocesses.append(proc)
         return proc
-
-    def runCmd(self, cmd, msg=None, check=True, trace=False, inHistory=False):
-        """
-        Ask the command interpreter to handle the command and then check its
-        return status.
-        """
-        # Fail fast if 'cmd' is not meaningful.
-        if cmd is None:
-            raise Exception("Bad 'cmd' parameter encountered")
-
-        trace = (True if traceAlways else trace)
-
-        if cmd.startswith("target create "):
-            cmd = cmd.replace("target create ", "file ")
-
-        running = (cmd.startswith("run") or cmd.startswith("process launch"))
-
-        for i in range(self.maxLaunchCount if running else 1):
-            self.ci.HandleCommand(cmd, self.res, inHistory)
-
-            with recording(self, trace) as sbuf:
-                print("runCmd:", cmd, file=sbuf)
-                if not check:
-                    print("check of return status not required", file=sbuf)
-                if self.res.Succeeded():
-                    print("output:", self.res.GetOutput(), file=sbuf)
-                else:
-                    print("runCmd failed!", file=sbuf)
-                    print(self.res.GetError(), file=sbuf)
-
-            if self.res.Succeeded():
-                break
-            elif running:
-                # For process launch, wait some time before possible next try.
-                time.sleep(self.timeWaitNextLaunch)
-                with recording(self, trace) as sbuf:
-                    print("Command '" + cmd + "' failed!", file=sbuf)
-
-        if check:
-            output = ""
-            if self.res.GetOutput():
-                output += "\nCommand output:\n" + self.res.GetOutput()
-            if self.res.GetError():
-                output += "\nError output:\n" + self.res.GetError()
-            if msg:
-                msg += output
-            if cmd:
-                cmd += output
-            self.assertTrue(self.res.Succeeded(),
-                            msg if (msg) else CMD_MSG(cmd))
 
     def HideStdout(self):
         """Hide output to stdout from the user.
@@ -1796,7 +1751,7 @@ class Base(unittest2.TestCase):
         elif self.getPlatform() == "netbsd":
             # NetBSD defaults to libc++
             pass
-        elif "clang" in self.getCompiler() and not lldb.remote_platform:
+        elif "clang" in self.getCompiler():
             cflags += " -stdlib=libstdc++"
 
         return {'CFLAGS_EXTRAS': cflags,
@@ -2170,6 +2125,56 @@ class TestBase(Base):
             matched = thread_line_pattern.match(line)
             if matched:
                 self.runCmd('thread select %s' % matched.group(1))
+
+    def runCmd(self, cmd, msg=None, check=True, trace=False, inHistory=False):
+        """
+        Ask the command interpreter to handle the command and then check its
+        return status.
+        """
+        # Fail fast if 'cmd' is not meaningful.
+        if cmd is None:
+            raise Exception("Bad 'cmd' parameter encountered")
+
+        trace = (True if traceAlways else trace)
+
+        if cmd.startswith("target create "):
+            cmd = cmd.replace("target create ", "file ")
+
+        running = (cmd.startswith("run") or cmd.startswith("process launch"))
+
+        for i in range(self.maxLaunchCount if running else 1):
+            self.ci.HandleCommand(cmd, self.res, inHistory)
+
+            with recording(self, trace) as sbuf:
+                print("runCmd:", cmd, file=sbuf)
+                if not check:
+                    print("check of return status not required", file=sbuf)
+                if self.res.Succeeded():
+                    print("output:", self.res.GetOutput(), file=sbuf)
+                else:
+                    print("runCmd failed!", file=sbuf)
+                    print(self.res.GetError(), file=sbuf)
+
+            if self.res.Succeeded():
+                break
+            elif running:
+                # For process launch, wait some time before possible next try.
+                time.sleep(self.timeWaitNextLaunch)
+                with recording(self, trace) as sbuf:
+                    print("Command '" + cmd + "' failed!", file=sbuf)
+
+        if check:
+            output = ""
+            if self.res.GetOutput():
+                output += "\nCommand output:\n" + self.res.GetOutput()
+            if self.res.GetError():
+                output += "\nError output:\n" + self.res.GetError()
+            if msg:
+                msg += output
+            if cmd:
+                cmd += output
+            self.assertTrue(self.res.Succeeded(),
+                            msg if (msg) else CMD_MSG(cmd))
 
     def match(
             self,

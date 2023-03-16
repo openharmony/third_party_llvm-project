@@ -60,8 +60,7 @@ COMMON_FLAG(
     "Mention name of executable when reporting error and "
     "append executable name to logs (as in \"log_path.exe_name.pid\").")
 COMMON_FLAG(
-    bool, log_to_syslog,
-    (bool)SANITIZER_ANDROID || (bool)SANITIZER_MAC || (bool)SANITIZER_OHOS,
+    bool, log_to_syslog, (bool)SANITIZER_ANDROID || (bool)SANITIZER_MAC,
     "Write all sanitizer output to syslog in addition to other means of "
     "logging.")
 COMMON_FLAG(
@@ -231,15 +230,13 @@ COMMON_FLAG(bool, intercept_stat, true,
 COMMON_FLAG(bool, intercept_send, true,
             "If set, uses custom wrappers for send* functions "
             "to find more errors.")
-COMMON_FLAG(bool, decorate_proc_maps,
-            (bool)SANITIZER_ANDROID || (bool)SANITIZER_OHOS,
+COMMON_FLAG(bool, decorate_proc_maps, (bool)SANITIZER_ANDROID,
             "If set, decorate sanitizer mappings in /proc/self/maps with "
             "user-readable names")
 COMMON_FLAG(int, exitcode, 1, "Override the program exit status if the tool "
                               "found an error")
 COMMON_FLAG(
-    bool, abort_on_error,
-    (bool)SANITIZER_ANDROID || (bool)SANITIZER_MAC || (bool)SANITIZER_OHOS,
+    bool, abort_on_error, (bool)SANITIZER_ANDROID || (bool)SANITIZER_MAC,
     "If set, the tool calls abort() instead of _exit() after printing the "
     "error report.")
 COMMON_FLAG(bool, suppress_equal_pcs, true,

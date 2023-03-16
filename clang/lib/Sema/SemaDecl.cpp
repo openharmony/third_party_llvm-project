@@ -9420,9 +9420,6 @@ Sema::ActOnFunctionDeclarator(Scope *S, Declarator &D, DeclContext *DC,
     }
   }
 
-  if (LangOpts.SYCLIsDevice || (LangOpts.OpenMP && LangOpts.OpenMPIsDevice))
-    checkDeviceDecl(NewFD, D.getBeginLoc());
-
   if (!getLangOpts().CPlusPlus) {
     // Perform semantic checking on the function declaration.
     if (!NewFD->isInvalidDecl() && NewFD->isMain())
@@ -14922,8 +14919,7 @@ void Sema::AddKnownFunctionAttributes(FunctionDecl *FD) {
     // errno in those environments even though it could set errno based on the
     // C standard.
     const llvm::Triple &Trip = Context.getTargetInfo().getTriple();
-    if ((Trip.isGNUEnvironment() || Trip.isAndroid() || Trip.isOSMSVCRT() ||
-         Trip.isOHOSFamily()) &&
+    if ((Trip.isGNUEnvironment() || Trip.isAndroid() || Trip.isOSMSVCRT()) &&
         !FD->hasAttr<ConstAttr>()) {
       switch (BuiltinID) {
       case Builtin::BI__builtin_fma:
@@ -18333,51 +18329,42 @@ Sema::FunctionEmissionStatus Sema::getEmissionStatus(FunctionDecl *FD,
   if (FD->isDependentContext())
     return FunctionEmissionStatus::TemplateDiscarded;
 
-  // Check whether this function is an externally visible definition.
-  auto IsEmittedForExternalSymbol = [this, FD]() {
-    // We have to check the GVA linkage of the function's *definition* -- if we
-    // only have a declaration, we don't know whether or not the function will
-    // be emitted, because (say) the definition could include "inline".
-    FunctionDecl *Def = FD->getDefinition();
-
-    return Def && !isDiscardableGVALinkage(
-                      getASTContext().GetGVALinkageForFunction(Def));
-  };
-
+  FunctionEmissionStatus OMPES = FunctionEmissionStatus::Unknown;
   if (LangOpts.OpenMPIsDevice) {
-    // In OpenMP device mode we will not emit host only functions, or functions
-    // we don't need due to their linkage.
     Optional<OMPDeclareTargetDeclAttr::DevTypeTy> DevTy =
         OMPDeclareTargetDeclAttr::getDeviceType(FD->getCanonicalDecl());
-    // DevTy may be changed later by
-    //  #pragma omp declare target to(*) device_type(*).
-    // Therefore DevTyhaving no value does not imply host. The emission status
-    // will be checked again at the end of compilation unit with Final = true.
-    if (DevTy.hasValue())
+    if (DevTy.hasValue()) {
       if (*DevTy == OMPDeclareTargetDeclAttr::DT_Host)
-        return FunctionEmissionStatus::OMPDiscarded;
-    // If we have an explicit value for the device type, or we are in a target
-    // declare context, we need to emit all extern and used symbols.
-    if (isInOpenMPDeclareTargetContext() || DevTy.hasValue())
-      if (IsEmittedForExternalSymbol())
-        return FunctionEmissionStatus::Emitted;
-    // Device mode only emits what it must, if it wasn't tagged yet and needed,
-    // we'll omit it.
-    if (Final)
-      return FunctionEmissionStatus::OMPDiscarded;
-  } else if (LangOpts.OpenMP > 45) {
-    // In OpenMP host compilation prior to 5.0 everything was an emitted host
-    // function. In 5.0, no_host was introduced which might cause a function to
-    // be ommitted.
-    Optional<OMPDeclareTargetDeclAttr::DevTypeTy> DevTy =
-        OMPDeclareTargetDeclAttr::getDeviceType(FD->getCanonicalDecl());
-    if (DevTy.hasValue())
-      if (*DevTy == OMPDeclareTargetDeclAttr::DT_NoHost)
-        return FunctionEmissionStatus::OMPDiscarded;
+        OMPES = FunctionEmissionStatus::OMPDiscarded;
+      else if (*DevTy == OMPDeclareTargetDeclAttr::DT_NoHost ||
+               *DevTy == OMPDeclareTargetDeclAttr::DT_Any) {
+        OMPES = FunctionEmissionStatus::Emitted;
+      }
+    }
+  } else if (LangOpts.OpenMP) {
+    // In OpenMP 4.5 all the functions are host functions.
+    if (LangOpts.OpenMP <= 45) {
+      OMPES = FunctionEmissionStatus::Emitted;
+    } else {
+      Optional<OMPDeclareTargetDeclAttr::DevTypeTy> DevTy =
+          OMPDeclareTargetDeclAttr::getDeviceType(FD->getCanonicalDecl());
+      // In OpenMP 5.0 or above, DevTy may be changed later by
+      // #pragma omp declare target to(*) device_type(*). Therefore DevTy
+      // having no value does not imply host. The emission status will be
+      // checked again at the end of compilation unit.
+      if (DevTy.hasValue()) {
+        if (*DevTy == OMPDeclareTargetDeclAttr::DT_NoHost) {
+          OMPES = FunctionEmissionStatus::OMPDiscarded;
+        } else if (*DevTy == OMPDeclareTargetDeclAttr::DT_Host ||
+                   *DevTy == OMPDeclareTargetDeclAttr::DT_Any)
+          OMPES = FunctionEmissionStatus::Emitted;
+      } else if (Final)
+        OMPES = FunctionEmissionStatus::Emitted;
+    }
   }
-
-  if (Final && LangOpts.OpenMP && !LangOpts.CUDA)
-    return FunctionEmissionStatus::Emitted;
+  if (OMPES == FunctionEmissionStatus::OMPDiscarded ||
+      (OMPES == FunctionEmissionStatus::Emitted && !LangOpts.CUDA))
+    return OMPES;
 
   if (LangOpts.CUDA) {
     // When compiling for device, host functions are never emitted.  Similarly,
@@ -18391,7 +18378,17 @@ Sema::FunctionEmissionStatus Sema::getEmissionStatus(FunctionDecl *FD,
         (T == Sema::CFT_Device || T == Sema::CFT_Global))
       return FunctionEmissionStatus::CUDADiscarded;
 
-    if (IsEmittedForExternalSymbol())
+    // Check whether this function is externally visible -- if so, it's
+    // known-emitted.
+    //
+    // We have to check the GVA linkage of the function's *definition* -- if we
+    // only have a declaration, we don't know whether or not the function will
+    // be emitted, because (say) the definition could include "inline".
+    FunctionDecl *Def = FD->getDefinition();
+
+    if (Def &&
+        !isDiscardableGVALinkage(getASTContext().GetGVALinkageForFunction(Def))
+        && (!LangOpts.OpenMP || OMPES == FunctionEmissionStatus::Emitted))
       return FunctionEmissionStatus::Emitted;
   }
 

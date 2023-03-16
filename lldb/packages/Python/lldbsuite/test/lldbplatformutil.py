@@ -152,8 +152,6 @@ def getPlatform():
     # It still might be an unconnected remote platform.
     return ''
 
-def isHuaweiCI():
-    return getPlatform() == 'linux' and os.path.exists('/.dockerenv')
 
 def platformIsDarwin():
     """Returns true if the OS triple for the selected platform is any valid apple OS"""

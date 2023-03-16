@@ -1,5 +1,4 @@
 import tempfile
-import os
 import gdbremote_testcase
 from lldbsuite.test.lldbtest import *
 from lldbsuite.test.decorators import *
@@ -12,10 +11,7 @@ class GdbRemoteCompletionTestCase(gdbremote_testcase.GdbRemoteTestCaseBase):
         self.debug_monitor_exe = get_lldb_server_exe()
         if not self.debug_monitor_exe:
             self.skipTest("lldb-server exe not found")
-        port_file = os.path.join(
-            lldb.remote_platform.GetWorkingDirectory(),
-            'connect.sock'
-        ) if lldb.remote_platform else tempfile.NamedTemporaryFile().name
+        port_file = tempfile.NamedTemporaryFile().name
         commandline_args = [
             "platform",
             "--listen",

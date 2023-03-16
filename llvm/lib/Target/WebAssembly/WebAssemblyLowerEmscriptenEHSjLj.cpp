@@ -885,9 +885,16 @@ bool WebAssemblyLowerEmscriptenEHSjLj::runEHOnFunction(Function &F) {
     SmallVector<Value *, 16> FMCArgs;
     for (unsigned I = 0, E = LPI->getNumClauses(); I < E; ++I) {
       Constant *Clause = LPI->getClause(I);
-      // TODO Handle filters (= exception specifications).
-      // https://bugs.llvm.org/show_bug.cgi?id=50396
-      if (LPI->isCatch(I))
+      // As a temporary workaround for the lack of aggregate varargs support
+      // in the interface between JS and wasm, break out filter operands into
+      // their component elements.
+      if (LPI->isFilter(I)) {
+        auto *ATy = cast<ArrayType>(Clause->getType());
+        for (unsigned J = 0, E = ATy->getNumElements(); J < E; ++J) {
+          Value *EV = IRB.CreateExtractValue(Clause, makeArrayRef(J), "filter");
+          FMCArgs.push_back(EV);
+        }
+      } else
         FMCArgs.push_back(Clause);
     }
 

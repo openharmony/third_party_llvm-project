@@ -61,17 +61,10 @@ Align GEPOperator::getMaxPreservedAlignment(const DataLayout &DL) const {
 bool GEPOperator::accumulateConstantOffset(
     const DataLayout &DL, APInt &Offset,
     function_ref<bool(Value &, APInt &)> ExternalAnalysis) const {
-  assert(Offset.getBitWidth() ==
-             DL.getIndexSizeInBits(getPointerAddressSpace()) &&
-         "The offset bit width does not match DL specification.");
-  SmallVector<const Value *> Index(value_op_begin() + 1, value_op_end());
-  return GEPOperator::accumulateConstantOffset(getSourceElementType(), Index,
-                                               DL, Offset, ExternalAnalysis);
-}
+   assert(Offset.getBitWidth() ==
+              DL.getIndexSizeInBits(getPointerAddressSpace()) &&
+          "The offset bit width does not match DL specification.");
 
-bool GEPOperator::accumulateConstantOffset(
-    Type *SourceType, ArrayRef<const Value *> Index, const DataLayout &DL,
-    APInt &Offset, function_ref<bool(Value &, APInt &)> ExternalAnalysis) {
   bool UsedExternalAnalysis = false;
   auto AccumulateOffset = [&](APInt Index, uint64_t Size) -> bool {
     Index = Index.sextOrTrunc(Offset.getBitWidth());
@@ -92,10 +85,9 @@ bool GEPOperator::accumulateConstantOffset(
     }
     return true;
   };
-  auto begin = generic_gep_type_iterator<decltype(Index.begin())>::begin(
-      SourceType, Index.begin());
-  auto end = generic_gep_type_iterator<decltype(Index.end())>::end(Index.end());
-  for (auto GTI = begin, GTE = end; GTI != GTE; ++GTI) {
+
+  for (gep_type_iterator GTI = gep_type_begin(this), GTE = gep_type_end(this);
+       GTI != GTE; ++GTI) {
     // Scalable vectors are multiplied by a runtime constant.
     bool ScalableType = false;
     if (isa<ScalableVectorType>(GTI.getIndexedType()))

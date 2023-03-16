@@ -33,31 +33,20 @@ class TestVSCode_runInTerminal(lldbvscode_testcase.VSCodeTestCaseBase):
         with open(fifo_file, "r") as file:
             return file.readline()
 
-    def isTestSupported(self):
-        # For some strange reason, this test fails on python3.6
-        if not (sys.version_info.major == 3 and sys.version_info.minor >= 7):
-            return False
-        try:
-            # We skip this test for debug builds because it takes too long parsing lldb's own
-            # debug info. Release builds are fine.
-            # Checking the size of the lldb-vscode binary seems to be a decent proxy for a quick
-            # detection. It should be far less than 1 MB in Release builds.
-            if os.path.getsize(os.environ["LLDBVSCODE_EXEC"]) < 1000000:
-                return True
-        except:
-            return False
-
     @skipIfWindows
-    @skipIfLinux
     @skipIfRemote
     @skipIf(archs=no_match(['x86_64']))
     def test_runInTerminal(self):
-        if not self.isTestSupported():
-            return
         '''
             Tests the "runInTerminal" reverse request. It makes sure that the IDE can
             launch the inferior with the correct environment variables and arguments.
         '''
+        if "debug" in str(os.environ["LLDBVSCODE_EXEC"]).lower():
+            # We skip this test for debug builds because it takes too long parsing lldb's own
+            # debug info. Release builds are fine.
+            # Checking this environment variable seems to be a decent proxy for a quick
+            # detection
+            return
         program = self.getBuildArtifact("a.out")
         source = 'main.c'
         self.build_and_launch(
@@ -88,8 +77,6 @@ class TestVSCode_runInTerminal(lldbvscode_testcase.VSCodeTestCaseBase):
     @skipIfRemote
     @skipIf(archs=no_match(['x86_64']))
     def test_runInTerminalInvalidTarget(self):
-        if not self.isTestSupported():
-            return
         self.build_and_create_debug_adaptor()
         response = self.launch(
             "INVALIDPROGRAM", stopOnEntry=True, runInTerminal=True, args=["foobar"], env=["FOO=bar"], expectFailure=True)
@@ -101,8 +88,6 @@ class TestVSCode_runInTerminal(lldbvscode_testcase.VSCodeTestCaseBase):
     @skipIfRemote
     @skipIf(archs=no_match(['x86_64']))
     def test_missingArgInRunInTerminalLauncher(self):
-        if not self.isTestSupported():
-            return
         proc = subprocess.run([self.lldbVSCodeExec,  "--launch-target", "INVALIDPROGRAM"],
             capture_output=True, universal_newlines=True)
         self.assertTrue(proc.returncode != 0)
@@ -112,8 +97,6 @@ class TestVSCode_runInTerminal(lldbvscode_testcase.VSCodeTestCaseBase):
     @skipIfRemote
     @skipIf(archs=no_match(['x86_64']))
     def test_FakeAttachedRunInTerminalLauncherWithInvalidProgram(self):
-        if not self.isTestSupported():
-            return
         comm_file = os.path.join(self.getBuildDir(), "comm-file")
         os.mkfifo(comm_file)
 
@@ -132,8 +115,6 @@ class TestVSCode_runInTerminal(lldbvscode_testcase.VSCodeTestCaseBase):
     @skipIfRemote
     @skipIf(archs=no_match(['x86_64']))
     def test_FakeAttachedRunInTerminalLauncherWithValidProgram(self):
-        if not self.isTestSupported():
-            return
         comm_file = os.path.join(self.getBuildDir(), "comm-file")
         os.mkfifo(comm_file)
 
@@ -151,8 +132,6 @@ class TestVSCode_runInTerminal(lldbvscode_testcase.VSCodeTestCaseBase):
     @skipIfRemote
     @skipIf(archs=no_match(['x86_64']))
     def test_FakeAttachedRunInTerminalLauncherAndCheckEnvironment(self):
-        if not self.isTestSupported():
-            return
         comm_file = os.path.join(self.getBuildDir(), "comm-file")
         os.mkfifo(comm_file)
 
@@ -171,8 +150,6 @@ class TestVSCode_runInTerminal(lldbvscode_testcase.VSCodeTestCaseBase):
     @skipIfRemote
     @skipIf(archs=no_match(['x86_64']))
     def test_NonAttachedRunInTerminalLauncher(self):
-        if not self.isTestSupported():
-            return
         comm_file = os.path.join(self.getBuildDir(), "comm-file")
         os.mkfifo(comm_file)
 

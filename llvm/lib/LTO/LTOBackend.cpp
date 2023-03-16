@@ -361,9 +361,6 @@ static void runOldPMPasses(const Config &Conf, Module &Mod, TargetMachine *TM,
   PMB.OptLevel = Conf.OptLevel;
   PMB.PGOSampleUse = Conf.SampleProfile;
   PMB.EnablePGOCSInstrGen = Conf.RunCSIRInstr;
-  PMB.MergeFunctions = Conf.MergeFunctions;
-  PMB.SizeLevel = Conf.SizeLevel;
-
   if (!Conf.RunCSIRInstr && !Conf.CSIRProfile.empty()) {
     PMB.EnablePGOCSInstrUse = true;
     PMB.PGOInstrUse = Conf.CSIRProfile;

@@ -2294,7 +2294,7 @@ PRE_SYSCALL(ni_syscall)() {}
 POST_SYSCALL(ni_syscall)(long res) {}
 
 PRE_SYSCALL(ptrace)(long request, long pid, long addr, long data) {
-#if !SANITIZER_ANDROID && !SANITIZER_OHOS &&                                \
+#if !SANITIZER_ANDROID &&                                                   \
     (defined(__i386) || defined(__x86_64) || defined(__mips64) ||           \
      defined(__powerpc64__) || defined(__aarch64__) || defined(__s390__) || \
      SANITIZER_RISCV64)
@@ -2316,7 +2316,7 @@ PRE_SYSCALL(ptrace)(long request, long pid, long addr, long data) {
 }
 
 POST_SYSCALL(ptrace)(long res, long request, long pid, long addr, long data) {
-#if !SANITIZER_ANDROID && !SANITIZER_OHOS &&                                \
+#if !SANITIZER_ANDROID &&                                                   \
     (defined(__i386) || defined(__x86_64) || defined(__mips64) ||           \
      defined(__powerpc64__) || defined(__aarch64__) || defined(__s390__) || \
      SANITIZER_RISCV64)

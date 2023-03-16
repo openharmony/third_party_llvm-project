@@ -63,7 +63,7 @@ isExperimentalExtension(StringRef Ext) {
       Ext == "zbr" || Ext == "zbs" || Ext == "zbt" || Ext == "zbproposedc")
     return RISCVExtensionVersion{"0", "93"};
   if (Ext == "v" || Ext == "zvamo" || Ext == "zvlsseg")
-    return RISCVExtensionVersion{"0", "10"};
+    return RISCVExtensionVersion{"1", "0"};
   if (Ext == "zfh")
     return RISCVExtensionVersion{"0", "1"};
   return None;
@@ -554,9 +554,8 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   if (Args.hasArg(options::OPT_ffixed_x31))
     Features.push_back("+reserve-x31");
 
-  // lld does not support relocations used by -mrelax on RISC-V
-  bool DefaultMRelax = !Triple.isOpenHOS();
-  if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, DefaultMRelax))
+  // -mrelax is default, unless -mno-relax is specified.
+  if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true))
     Features.push_back("+relax");
   else
     Features.push_back("-relax");
