@@ -387,7 +387,7 @@ public:
   void setGC(std::string Str);
   void clearGC();
 
-  /// Returns true if the function has ssp, sspstrong, sspret or sspreq fn attrs.
+  /// Returns true if the function has ssp, sspstrong, or sspreq fn attrs.
   bool hasStackProtectorFnAttr() const;
 
   /// adds the attribute to the list of attributes.

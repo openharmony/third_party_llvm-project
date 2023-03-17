@@ -124,7 +124,7 @@ void ThreadPlanStepInRange::GetDescription(Stream *s,
   s->PutChar('.');
 }
 
-bool ThreadPlanStepInRange::ShouldStop (Event *event_ptr) {
+bool ThreadPlanStepInRange::ShouldStop(Event *event_ptr) {
   Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_STEP));
 
   if (log) {
@@ -166,16 +166,6 @@ bool ThreadPlanStepInRange::ShouldStop (Event *event_ptr) {
     Thread &thread = GetThread();
     if (frame_order == eFrameCompareOlder ||
         frame_order == eFrameCompareSameParent) {
-      // Here we make a nasty hack to avoid double stepping on enclosing brace
-      // on ARM platforms. The problem is that before 'bx lr' we typically have
-      // some instruction modifying the stack pointer register. This confuses
-      // lldb and makes it think that we're already in a different frame where
-      // we should stop.
-      // TODO: Litmit this to OHOS targets
-      if (MaybeAArch32Or64FunctionTail()) {
-        SetNextBranchBreakpoint();
-        return false;
-      }
       // If we're in an older frame then we should stop.
       //
       // A caveat to this is if we think the frame is older but we're actually

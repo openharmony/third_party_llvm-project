@@ -89,7 +89,6 @@ namespace swiftcall {
                                        QualType Ty) const = 0;
 
     bool isAndroid() const;
-    bool isOHOSFamily() const;
 
     /// Emit the target dependent code to load a value of
     /// \arg Ty from the \c __builtin_ms_va_list pointed to by \arg VAListAddr.

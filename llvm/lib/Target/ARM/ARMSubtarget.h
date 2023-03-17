@@ -762,8 +762,7 @@ public:
   }
   bool isTargetMuslAEABI() const {
     return (TargetTriple.getEnvironment() == Triple::MuslEABI ||
-            TargetTriple.getEnvironment() == Triple::MuslEABIHF ||
-            TargetTriple.getEnvironment() == Triple::OpenHOS) &&
+            TargetTriple.getEnvironment() == Triple::MuslEABIHF) &&
            !isTargetDarwin() && !isTargetWindows();
   }
 
@@ -776,14 +775,13 @@ public:
             TargetTriple.getEnvironment() == Triple::EABIHF ||
             TargetTriple.getEnvironment() == Triple::GNUEABIHF ||
             TargetTriple.getEnvironment() == Triple::MuslEABIHF ||
-            isTargetAndroid() || isTargetOHOSFamily()) &&
+            isTargetAndroid()) &&
            !isTargetDarwin() && !isTargetWindows();
   }
 
   bool isTargetHardFloat() const;
 
   bool isTargetAndroid() const { return TargetTriple.isAndroid(); }
-  bool isTargetOHOSFamily() const { return TargetTriple.isOHOSFamily(); }
 
   bool isXRaySupported() const override;
 

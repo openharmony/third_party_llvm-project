@@ -1453,7 +1453,6 @@ unsigned ScriptParser::readPhdrType() {
                      .Case("PT_OPENBSD_RANDOMIZE", PT_OPENBSD_RANDOMIZE)
                      .Case("PT_OPENBSD_WXNEEDED", PT_OPENBSD_WXNEEDED)
                      .Case("PT_OPENBSD_BOOTDATA", PT_OPENBSD_BOOTDATA)
-                     .Case("PT_OHOS_RANDOMDATA", PT_OHOS_RANDOMDATA)
                      .Default(-1);
 
   if (ret == (unsigned)-1) {

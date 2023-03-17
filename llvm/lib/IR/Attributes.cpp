@@ -431,8 +431,6 @@ std::string Attribute::getAsString(bool InAttrGrp) const {
     return "speculatable";
   if (hasAttribute(Attribute::StackProtect))
     return "ssp";
-  if (hasAttribute(Attribute::StackProtectRet))
-    return "sspret";
   if (hasAttribute(Attribute::StackProtectReq))
     return "sspreq";
   if (hasAttribute(Attribute::StackProtectStrong))
@@ -1968,16 +1966,9 @@ static void adjustCallerSSPLevel(Function &Caller, const Function &Callee) {
   AttrBuilder OldSSPAttr;
   OldSSPAttr.addAttribute(Attribute::StackProtect)
       .addAttribute(Attribute::StackProtectStrong)
-      .addAttribute(Attribute::StackProtectReq)
-      .addAttribute(Attribute::StackProtectRet);
+      .addAttribute(Attribute::StackProtectReq);
 
-  if (Callee.hasFnAttribute(Attribute::StackProtectRet) &&
-             !Caller.hasFnAttribute(Attribute::StackProtect) &&
-             !Caller.hasFnAttribute(Attribute::StackProtectReq) &&
-             !Caller.hasFnAttribute(Attribute::StackProtectStrong)) {
-    Caller.removeAttributes(AttributeList::FunctionIndex, OldSSPAttr);
-    Caller.addFnAttr(Attribute::StackProtectRet);
-  } else if (Callee.hasFnAttribute(Attribute::StackProtectReq)) {
+  if (Callee.hasFnAttribute(Attribute::StackProtectReq)) {
     Caller.removeAttributes(AttributeList::FunctionIndex, OldSSPAttr);
     Caller.addFnAttr(Attribute::StackProtectReq);
   } else if (Callee.hasFnAttribute(Attribute::StackProtectStrong) &&

@@ -339,7 +339,8 @@ LLVMErrorRef LLVMOrcResourceTrackerRemove(LLVMOrcResourceTrackerRef RT);
  * ownership has not been passed to a JITDylib (e.g. because some error
  * prevented the client from calling LLVMOrcJITDylibAddGenerator).
  */
-void LLVMOrcDisposeDefinitionGenerator(LLVMOrcDefinitionGeneratorRef DG);
+void LLVMOrcDisposeDefinitionGenerator(
+    LLVMOrcDefinitionGeneratorRef DG);
 
 /**
  * Dispose of a MaterializationUnit.
@@ -387,9 +388,7 @@ LLVMOrcExecutionSessionCreateJITDylib(LLVMOrcExecutionSessionRef ES,
  * Returns the JITDylib with the given name, or NULL if no such JITDylib
  * exists.
  */
-LLVMOrcJITDylibRef
-LLVMOrcExecutionSessionGetJITDylibByName(LLVMOrcExecutionSessionRef ES,
-                                         const char *Name);
+LLVMOrcJITDylibRef LLVMOrcExecutionSessionGetJITDylibByName(const char *Name);
 
 /**
  * Return a reference to a newly created resource tracker associated with JD.

@@ -3958,13 +3958,8 @@ X86TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
       ++NumTailCalls;
   }
 
-#ifdef ARK_GC_SUPPORT
-   assert(!(isVarArg && canGuaranteeTCO(CallConv) && (CallConv != CallingConv::GHC)) &&
-         "Var args not supported with calling convention fastcc, ghc or hipe");
-#else
   assert(!(isVarArg && canGuaranteeTCO(CallConv)) &&
          "Var args not supported with calling convention fastcc, ghc or hipe");
-#endif
 
   // Analyze operands of the call, assigning locations to each operand.
   SmallVector<CCValAssign, 16> ArgLocs;
@@ -36921,18 +36916,11 @@ static SDValue canonicalizeLaneShuffleWithRepeatedOps(SDValue V,
     Res = DAG.getNode(SrcOpc0, DL, SrcVT0, DAG.getBitcast(SrcVT0, Res));
     return DAG.getBitcast(VT, Res);
   }
-  case X86ISD::VPERMILPI:
-    // TODO: Handle v4f64 permutes with different low/high lane masks.
-    if (SrcVT0 == MVT::v4f64) {
-      uint64_t Mask = Src0.getConstantOperandVal(1);
-      if ((Mask & 0x3) != ((Mask >> 2) & 0x3))
-        break;
-    }
-    LLVM_FALLTHROUGH;
   case X86ISD::VSHLI:
   case X86ISD::VSRLI:
   case X86ISD::VSRAI:
   case X86ISD::PSHUFD:
+  case X86ISD::VPERMILPI:
     if (Src1.isUndef() || Src0.getOperand(1) == Src1.getOperand(1)) {
       SDValue LHS = DAG.getBitcast(VT, Src0.getOperand(0));
       SDValue RHS =
@@ -37894,8 +37882,6 @@ static SDValue foldShuffleOfHorizOp(SDNode *N, SelectionDAG &DAG) {
   // replicating low and high halves (and without changing the type/length of
   // the vector), we don't need the shuffle.
   if (Opcode == X86ISD::MOVDDUP || Opcode == X86ISD::VBROADCAST) {
-    if (Opcode == X86ISD::VBROADCAST && !VT.is128BitVector())
-      return SDValue();
     if (HOp.getScalarValueSizeInBits() == 64 && HOp.getValueType() == VT) {
       // movddup (hadd X, X) --> hadd X, X
       // broadcast (extract_vec_elt (hadd X, X), 0) --> hadd X, X

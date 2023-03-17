@@ -39,7 +39,7 @@ bool StandardTildeExpressionResolver::ResolveExact(
   return !fs::real_path(Expr, Output, true);
 }
 
-bool StandardTildeExpressionResolver::ResolvePartial (StringRef Expr,
+bool StandardTildeExpressionResolver::ResolvePartial(StringRef Expr,
                                                      StringSet<> &Output) {
   // We expect the tilde expression to be ONLY the expression itself, and
   // contain no separators.
@@ -47,7 +47,7 @@ bool StandardTildeExpressionResolver::ResolvePartial (StringRef Expr,
   assert(Expr.empty() || Expr[0] == '~');
 
   Output.clear();
-#if defined(_WIN32) || defined(__ANDROID__) || defined(__OHOS_FAMILY__)
+#if defined(_WIN32) || defined(__ANDROID__)
   return false;
 #else
   if (Expr.empty())

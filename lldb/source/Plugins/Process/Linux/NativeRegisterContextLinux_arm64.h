@@ -14,11 +14,6 @@
 #include "Plugins/Process/Linux/NativeRegisterContextLinux.h"
 #include "Plugins/Process/Utility/RegisterInfoPOSIX_arm64.h"
 
-#if __OHOS__
-// Do not include <asm/sigcontext.h> to avoid conflicting definitions for
-// aarch64-linux-ohos target
-#define __ASM_SIGCONTEXT_H 1
-#endif
 #include <asm/ptrace.h>
 
 namespace lldb_private {

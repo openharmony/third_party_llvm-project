@@ -492,7 +492,6 @@ static int readPrefixes(struct InternalInstruction *insn) {
       insn->addressSize = (insn->hasAdSize ? 4 : 8);
       insn->displacementSize = 4;
       insn->immediateSize = 4;
-      insn->hasOpSize = false;
     } else {
       insn->registerSize = (insn->hasOpSize ? 2 : 4);
       insn->addressSize = (insn->hasAdSize ? 4 : 8);

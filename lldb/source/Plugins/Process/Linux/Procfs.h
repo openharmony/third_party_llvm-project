@@ -11,7 +11,7 @@
 
 #include <sys/ptrace.h>
 
-#if defined(__ANDROID__)
+#ifdef __ANDROID__
 #if defined(__arm64__) || defined(__aarch64__)
 typedef unsigned long elf_greg_t;
 typedef elf_greg_t

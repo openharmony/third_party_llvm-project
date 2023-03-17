@@ -20,8 +20,6 @@ LLVM项目有多个组件。该项目的核心本身被称为“LLVM”。这包
 
 ### 获取源代码并构建LLVM
 
-在OpenHarmony中，我们建议您基于[llvm-build](https://gitee.com/openharmony-sig/third_party_llvm-project/blob/master/llvm-build/README.md)的指导获取源码并进行构建。
-
 LLVM入门文档可能已过期。[Clang入门](https://clang.llvm.org/get_started.html) 页面可能有更准确的信息。
 
 这是获取和构建LLVM源的示例工作流和配置：
@@ -65,10 +63,8 @@ LLVM入门文档可能已过期。[Clang入门](https://clang.llvm.org/get_start
      - 默认目标（即 `ninja` or `make`）将构建所有LLVM。
      - `check-all`目标（即`ninja check-all`）将运行回归测试，以确保一切都正常工作。
      - CMake将为每个工具和库生成目标，大多数LLVM子项目生成自己的`check-<project>`目标。
-     - 运行串行构建将是 **缓慢** 。要提高速度，请尝试运行并行构建。默认情况下，这是在“make”中完成的；对于`make`，请使用选项`-j NNN`，其中`NNN`是并行作业的数量，例如您拥有的CPU数量。
+     - 运行串行构建将是 **缓慢** 。要提高速度，请尝试运行并行构建。在忍者中，默认情况下，这是在“make”中完成的；对于`make`，请使用选项`-j NNN`，其中`NNN`是并行作业的数量，例如您拥有的CPU数量。
 
    - 有关详细信息，请参阅 [CMake](https://llvm.org/docs/CMake.html)
 
 请参阅 [LLVM入门](https://llvm.org/docs/GettingStarted.html#getting-started-with-llvm) 页面，了解有关配置和编译LLVM的详细信息。您可以访问 [目录布局](https://llvm.org/docs/GettingStarted.html#directory-layout) 以了解源代码树的布局。
-
-有关Openharmony的llvm构建请参考[llvm-build](https://gitee.com/openharmony-sig/third_party_llvm-project/blob/master/llvm-build/README.md)。

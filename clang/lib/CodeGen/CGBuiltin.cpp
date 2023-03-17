@@ -13794,14 +13794,12 @@ Value *CodeGenFunction::EmitX86BuiltinExpr(unsigned BuiltinID,
   case X86::BI__builtin_ia32_reduce_fadd_ps512: {
     Function *F =
         CGM.getIntrinsic(Intrinsic::vector_reduce_fadd, Ops[1]->getType());
-    Builder.getFastMathFlags().setAllowReassoc(true);
     return Builder.CreateCall(F, {Ops[0], Ops[1]});
   }
   case X86::BI__builtin_ia32_reduce_fmul_pd512:
   case X86::BI__builtin_ia32_reduce_fmul_ps512: {
     Function *F =
         CGM.getIntrinsic(Intrinsic::vector_reduce_fmul, Ops[1]->getType());
-    Builder.getFastMathFlags().setAllowReassoc(true);
     return Builder.CreateCall(F, {Ops[0], Ops[1]});
   }
   case X86::BI__builtin_ia32_reduce_mul_d512:
@@ -14473,12 +14471,11 @@ Value *CodeGenFunction::EmitX86BuiltinExpr(unsigned BuiltinID,
       break;
     }
 
-    llvm::Type *Ty = FixedVectorType::get(Builder.getInt64Ty(), 2);
     Value *InOps[9];
     InOps[0] = Ops[2];
     for (int i = 0; i != 8; ++i) {
       Value *Ptr = Builder.CreateConstGEP1_32(Ops[1], i);
-      InOps[i + 1] = Builder.CreateAlignedLoad(Ty, Ptr, Align(16));
+      InOps[i + 1] = Builder.CreateAlignedLoad(Ptr, Align(16));
     }
 
     Value *Call = Builder.CreateCall(CGM.getIntrinsic(IID), InOps);

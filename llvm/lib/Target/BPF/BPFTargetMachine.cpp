@@ -12,7 +12,6 @@
 
 #include "BPFTargetMachine.h"
 #include "BPF.h"
-#include "BPFTargetTransformInfo.h"
 #include "MCTargetDesc/BPFMCAsmInfo.h"
 #include "TargetInfo/BPFTargetInfo.h"
 #include "llvm/CodeGen/Passes.h"
@@ -144,11 +143,6 @@ void BPFTargetMachine::registerPassBuilderCallbacks(PassBuilder &PB,
 void BPFPassConfig::addIRPasses() {
   addPass(createBPFCheckAndAdjustIR());
   TargetPassConfig::addIRPasses();
-}
-
-TargetTransformInfo
-BPFTargetMachine::getTargetTransformInfo(const Function &F) {
-  return TargetTransformInfo(BPFTTIImpl(this, F));
 }
 
 // Install an instruction selector pass using

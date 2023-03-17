@@ -34,7 +34,7 @@ protected:
   Tool *buildLinker() const override;
 
 public:
-  bool IsIntegratedAssemblerDefault() const override { return true; }
+  bool useIntegratedAs() const override { return true; }
   bool isCrossCompiling() const override { return true; }
   bool isPICDefault() const override { return false; }
   bool isPIEDefault() const override { return false; }

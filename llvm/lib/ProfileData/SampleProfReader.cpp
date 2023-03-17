@@ -222,6 +222,8 @@ std::error_code SampleProfileReaderText::readImpl() {
   sampleprof_error Result = sampleprof_error::success;
 
   InlineCallStack InlineStack;
+  int CSProfileCount = 0;
+  int RegularProfileCount = 0;
   uint32_t ProbeProfileCount = 0;
 
   // SeenMetadata tracks whether we have processed metadata for the current
@@ -255,9 +257,11 @@ std::error_code SampleProfileReaderText::readImpl() {
       SampleContext FContext(FName);
       if (FContext.hasContext())
         ++CSProfileCount;
+      else
+        ++RegularProfileCount;
       Profiles[FContext] = FunctionSamples();
       FunctionSamples &FProfile = Profiles[FContext];
-      FProfile.setName(FContext.getNameWithoutContext());
+      FProfile.setName(FContext.getName());
       FProfile.setContext(FContext);
       MergeResult(Result, FProfile.addTotalSamples(NumSamples));
       MergeResult(Result, FProfile.addHeadSamples(NumHeadSamples));
@@ -320,14 +324,13 @@ std::error_code SampleProfileReaderText::readImpl() {
     }
   }
 
-  assert((CSProfileCount == 0 || CSProfileCount == Profiles.size()) &&
+  assert((RegularProfileCount == 0 || CSProfileCount == 0) &&
          "Cannot have both context-sensitive and regular profile");
   ProfileIsCS = (CSProfileCount > 0);
   assert((ProbeProfileCount == 0 || ProbeProfileCount == Profiles.size()) &&
          "Cannot have both probe-based profiles and regular profiles");
   ProfileIsProbeBased = (ProbeProfileCount > 0);
   FunctionSamples::ProfileIsProbeBased = ProfileIsProbeBased;
-  FunctionSamples::ProfileIsCS = ProfileIsCS;
 
   if (Result == sampleprof_error::success)
     computeSummary();
@@ -543,15 +546,11 @@ SampleProfileReaderBinary::readFuncProfile(const uint8_t *Start) {
   if (std::error_code EC = FName.getError())
     return EC;
 
-  SampleContext FContext(*FName);
-  Profiles[FContext] = FunctionSamples();
-  FunctionSamples &FProfile = Profiles[FContext];
-  FProfile.setName(FContext.getNameWithoutContext());
-  FProfile.setContext(FContext);
-  FProfile.addHeadSamples(*NumHeadSamples);
+  Profiles[*FName] = FunctionSamples();
+  FunctionSamples &FProfile = Profiles[*FName];
+  FProfile.setName(*FName);
 
-  if (FContext.hasContext())
-    CSProfileCount++;
+  FProfile.addHeadSamples(*NumHeadSamples);
 
   if (std::error_code EC = readProfile(FProfile))
     return EC;
@@ -655,44 +654,40 @@ std::error_code SampleProfileReaderExtBinaryBase::readFuncProfiles() {
         return EC;
     }
     assert(Data == End && "More data is read than expected");
-  } else {
-    if (Remapper) {
-      for (auto Name : FuncsToUse) {
-        Remapper->insert(Name);
-      }
-    }
-
-    if (useMD5()) {
-      for (auto Name : FuncsToUse) {
-        auto GUID = std::to_string(MD5Hash(Name));
-        auto iter = FuncOffsetTable.find(StringRef(GUID));
-        if (iter == FuncOffsetTable.end())
-          continue;
-        const uint8_t *FuncProfileAddr = Start + iter->second;
-        assert(FuncProfileAddr < End && "out of LBRProfile section");
-        if (std::error_code EC = readFuncProfile(FuncProfileAddr))
-          return EC;
-      }
-    } else {
-      for (auto NameOffset : FuncOffsetTable) {
-        SampleContext FContext(NameOffset.first);
-        auto FuncName = FContext.getNameWithoutContext();
-        if (!FuncsToUse.count(FuncName) &&
-            (!Remapper || !Remapper->exist(FuncName)))
-          continue;
-        const uint8_t *FuncProfileAddr = Start + NameOffset.second;
-        assert(FuncProfileAddr < End && "out of LBRProfile section");
-        if (std::error_code EC = readFuncProfile(FuncProfileAddr))
-          return EC;
-      }
-    }
-    Data = End;
+    return sampleprof_error::success;
   }
 
-  assert((CSProfileCount == 0 || CSProfileCount == Profiles.size()) &&
-         "Cannot have both context-sensitive and regular profile");
-  ProfileIsCS = (CSProfileCount > 0);
-  FunctionSamples::ProfileIsCS = ProfileIsCS;
+  if (Remapper) {
+    for (auto Name : FuncsToUse) {
+      Remapper->insert(Name);
+    }
+  }
+
+  if (useMD5()) {
+    for (auto Name : FuncsToUse) {
+      auto GUID = std::to_string(MD5Hash(Name));
+      auto iter = FuncOffsetTable.find(StringRef(GUID));
+      if (iter == FuncOffsetTable.end())
+        continue;
+      const uint8_t *FuncProfileAddr = Start + iter->second;
+      assert(FuncProfileAddr < End && "out of LBRProfile section");
+      if (std::error_code EC = readFuncProfile(FuncProfileAddr))
+        return EC;
+    }
+  } else {
+    for (auto NameOffset : FuncOffsetTable) {
+      auto FuncName = NameOffset.first;
+      if (!FuncsToUse.count(FuncName) &&
+          (!Remapper || !Remapper->exist(FuncName)))
+        continue;
+      const uint8_t *FuncProfileAddr = Start + NameOffset.second;
+      assert(FuncProfileAddr < End && "out of LBRProfile section");
+      if (std::error_code EC = readFuncProfile(FuncProfileAddr))
+        return EC;
+    }
+  }
+
+  Data = End;
   return sampleprof_error::success;
 }
 
@@ -883,7 +878,7 @@ std::error_code SampleProfileReaderExtBinaryBase::readNameTableSec(bool IsMD5) {
 std::error_code SampleProfileReaderExtBinaryBase::readFuncMetadata() {
   if (!ProfileIsProbeBased)
     return sampleprof_error::success;
-  while (Data < End) {
+  for (unsigned I = 0; I < Profiles.size(); ++I) {
     auto FName(readStringFromTable());
     if (std::error_code EC = FName.getError())
       return EC;
@@ -892,14 +887,8 @@ std::error_code SampleProfileReaderExtBinaryBase::readFuncMetadata() {
     if (std::error_code EC = Checksum.getError())
       return EC;
 
-    SampleContext FContext(*FName);
-    // No need to load metadata for profiles that are not loaded in the current
-    // module.
-    if (Profiles.count(FContext))
-      Profiles[FContext].setFunctionHash(*Checksum);
+    Profiles[*FName].setFunctionHash(*Checksum);
   }
-
-  assert(Data == End && "More data is read than expected");
   return sampleprof_error::success;
 }
 
@@ -1610,5 +1599,9 @@ SampleProfileReader::create(std::unique_ptr<MemoryBuffer> &B, LLVMContext &C,
 // profile. Binary format has the profile summary in its header.
 void SampleProfileReader::computeSummary() {
   SampleProfileSummaryBuilder Builder(ProfileSummaryBuilder::DefaultCutoffs);
-  Summary = Builder.computeSummaryForProfiles(Profiles);
+  for (const auto &I : Profiles) {
+    const FunctionSamples &Profile = I.second;
+    Builder.addRecord(Profile);
+  }
+  Summary = Builder.getSummary();
 }

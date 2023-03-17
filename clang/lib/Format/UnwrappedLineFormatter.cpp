@@ -371,7 +371,7 @@ private:
         if (Previous->is(tok::comment))
           Previous = Previous->getPreviousNonComment();
         if (Previous) {
-          if (Previous->is(tok::greater) && !I[-1]->InPPDirective)
+          if (Previous->is(tok::greater))
             return 0;
           if (Previous->is(tok::identifier)) {
             const FormatToken *PreviousPrevious =
@@ -1280,6 +1280,13 @@ void UnwrappedLineFormatter::formatFirstToken(
 
   if (Newlines)
     Indent = NewlineIndent;
+
+  // If in Whitemsmiths mode, indent start and end of blocks
+  if (Style.BreakBeforeBraces == FormatStyle::BS_Whitesmiths) {
+    if (RootToken.isOneOf(tok::l_brace, tok::r_brace, tok::kw_case,
+                          tok::kw_default))
+      Indent += Style.IndentWidth;
+  }
 
   // Preprocessor directives get indented before the hash only if specified
   if (Style.IndentPPDirectives != FormatStyle::PPDIS_BeforeHash &&

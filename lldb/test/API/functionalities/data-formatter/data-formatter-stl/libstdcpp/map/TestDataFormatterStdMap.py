@@ -10,7 +10,7 @@ from lldbsuite.test.lldbtest import *
 from lldbsuite.test import lldbutil
 
 
-class StdMapDataFormatterTestCase (TestBase):
+class StdMapDataFormatterTestCase(TestBase):
 
     mydir = TestBase.compute_mydir(__file__)
 
@@ -21,7 +21,6 @@ class StdMapDataFormatterTestCase (TestBase):
         self.line = line_number('main.cpp', '// Set break point at this line.')
 
     @add_test_categories(["libstdcxx"])
-    @skipIfLinux # Not working on OHOS, because we use libc++
     def test_with_run_command(self):
         """Test that that file and class static variables display correctly."""
         self.build()

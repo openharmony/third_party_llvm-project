@@ -1677,8 +1677,6 @@ void CodeGenModule::SetLLVMFunctionAttributesForDefinition(const Decl *D,
       B.addAttribute(llvm::Attribute::StackProtectStrong);
     else if (LangOpts.getStackProtector() == LangOptions::SSPReq)
       B.addAttribute(llvm::Attribute::StackProtectReq);
-    else if (LangOpts.getStackProtector() == LangOptions::SSPRet)
-      B.addAttribute(llvm::Attribute::StackProtectRet);
   }
 
   if (!D) {
@@ -6217,17 +6215,15 @@ llvm::SanitizerStatReport &CodeGenModule::getSanStats() {
 
   return *SanStats;
 }
-
 llvm::Value *
 CodeGenModule::createOpenCLIntToSamplerConversion(const Expr *E,
                                                   CodeGenFunction &CGF) {
   llvm::Constant *C = ConstantEmitter(CGF).emitAbstract(E, E->getType());
-  auto *SamplerT = getOpenCLRuntime().getSamplerType(E->getType().getTypePtr());
-  auto *FTy = llvm::FunctionType::get(SamplerT, {C->getType()}, false);
-  auto *Call = CGF.Builder.CreateCall(
-      CreateRuntimeFunction(FTy, "__translate_sampler_initializer"), {C});
-  Call->setCallingConv(Call->getCalledFunction()->getCallingConv());
-  return Call;
+  auto SamplerT = getOpenCLRuntime().getSamplerType(E->getType().getTypePtr());
+  auto FTy = llvm::FunctionType::get(SamplerT, {C->getType()}, false);
+  return CGF.Builder.CreateCall(CreateRuntimeFunction(FTy,
+                                "__translate_sampler_initializer"),
+                                {C});
 }
 
 CharUnits CodeGenModule::getNaturalPointeeTypeAlignment(

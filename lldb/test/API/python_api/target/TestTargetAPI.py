@@ -476,10 +476,6 @@ class TargetAPITestCase(TestBase):
         desc2 = get_description(symbol2)
         self.assertTrue(desc1 and desc2 and desc1 == desc2,
                         "The two addresses should resolve to the same symbol")
-
-    # LLDB_ARCH_DEFAULT is for the host arch,
-    # so we don't want to try to run binary built for remote device locally
-    @skipIfRemote
     def test_default_arch(self):
         """ Test the other two target create methods using LLDB_ARCH_DEFAULT. """
         self.build()

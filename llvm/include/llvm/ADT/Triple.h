@@ -172,7 +172,7 @@ public:
     IOS,
     KFreeBSD,
     Linux,
-    Lv2, // PS3
+    Lv2,        // PS3
     MacOSX,
     NetBSD,
     OpenBSD,
@@ -182,15 +182,15 @@ public:
     Haiku,
     Minix,
     RTEMS,
-    NaCl, // Native Client
+    NaCl,       // Native Client
     AIX,
-    CUDA,   // NVIDIA CUDA
-    NVCL,   // NVIDIA OpenCL
-    AMDHSA, // AMD HSA Runtime
+    CUDA,       // NVIDIA CUDA
+    NVCL,       // NVIDIA OpenCL
+    AMDHSA,     // AMD HSA Runtime
     PS4,
     ELFIAMCU,
-    TvOS,    // Apple tvOS
-    WatchOS, // Apple watchOS
+    TvOS,       // Apple tvOS
+    WatchOS,    // Apple watchOS
     Mesa3D,
     Contiki,
     AMDPAL,     // AMD PAL Runtime
@@ -198,8 +198,7 @@ public:
     Hurd,       // GNU/Hurd
     WASI,       // Experimental WebAssembly OS
     Emscripten,
-    LiteOS,
-    LastOSType = LiteOS
+    LastOSType = Emscripten
   };
   enum EnvironmentType {
     UnknownEnvironment,
@@ -224,9 +223,8 @@ public:
     Cygnus,
     CoreCLR,
     Simulator, // Simulator variants of other systems, e.g., Apple's iOS
-    MacABI,    // Mac Catalyst variant of Apple's iOS deployment target.
-    OpenHOS,
-    LastEnvironmentType = OpenHOS
+    MacABI, // Mac Catalyst variant of Apple's iOS deployment target.
+    LastEnvironmentType = MacABI
   };
   enum ObjectFormatType {
     UnknownObjectFormat,
@@ -689,18 +687,8 @@ public:
   bool isMusl() const {
     return getEnvironment() == Triple::Musl ||
            getEnvironment() == Triple::MuslEABI ||
-           getEnvironment() == Triple::MuslEABIHF ||
-           getEnvironment() == Triple::OpenHOS ||
-           isOSLiteOS();
+           getEnvironment() == Triple::MuslEABIHF;
   }
-
-  /// Tests whether the target is OHOS
-  /// LiteOS default enviroment is also OHOS, but omited on triple.
-  bool isOHOSFamily() const { return isOpenHOS() || isOSLiteOS(); }
-
-  bool isOpenHOS() const { return getEnvironment() == Triple::OpenHOS; }
-
-  bool isOSLiteOS() const { return getOS() == Triple::LiteOS; }
 
   /// Tests whether the target is SPIR (32- or 64-bit).
   bool isSPIR() const {
@@ -821,7 +809,7 @@ public:
 
   /// Tests whether the target uses emulated TLS as default.
   bool hasDefaultEmulatedTLS() const {
-    return isOpenHOS() || isAndroid() || isOSOpenBSD() || isWindowsCygwinEnvironment();
+    return isAndroid() || isOSOpenBSD() || isWindowsCygwinEnvironment();
   }
 
   /// Tests whether the target uses -data-sections as default.

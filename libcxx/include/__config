@@ -1132,7 +1132,6 @@ extern "C" _LIBCPP_FUNC_VIS void __sanitizer_annotate_contiguous_container(
       defined(__CloudABI__) || \
       defined(__sun__) || \
       defined(__MVS__) || \
-      defined(__OHOS_FAMILY__) || \
       (defined(__MINGW32__) && __has_include(<pthread.h>))
 #    define _LIBCPP_HAS_THREAD_API_PTHREAD
 #  elif defined(__Fuchsia__)
@@ -1227,7 +1226,7 @@ extern "C" _LIBCPP_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  endif
 #endif
 
-#if defined(__BIONIC__) || defined(__CloudABI__) || defined(__OHOS_FAMILY__) ||  \
+#if defined(__BIONIC__) || defined(__CloudABI__) || defined(__NuttX__) ||      \
     defined(__Fuchsia__) || defined(__wasi__) || defined(_LIBCPP_HAS_MUSL_LIBC) || \
     defined(__MVS__) || defined(__OpenBSD__)
 #define _LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE

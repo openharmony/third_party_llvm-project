@@ -89,7 +89,7 @@ void ReportErrorSummary(const char *error_type, const StackTrace *stack,
 }
 
 void ReportMmapWriteExec(int prot) {
-#if SANITIZER_POSIX && (!SANITIZER_GO && !SANITIZER_ANDROID) && !SANITIZER_OHOS
+#if SANITIZER_POSIX && (!SANITIZER_GO && !SANITIZER_ANDROID)
   if ((prot & (PROT_WRITE | PROT_EXEC)) != (PROT_WRITE | PROT_EXEC))
     return;
 

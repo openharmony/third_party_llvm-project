@@ -120,14 +120,7 @@ if ("${COMPILER_RT_DEFAULT_TARGET_TRIPLE}" MATCHES ".*android.*")
   string(REGEX MATCH "-target(=| +)[^ ]+android[a-z]*([0-9]+)" ANDROID_API_LEVEL "${CMAKE_C_FLAGS}")
   set(ANDROID_API_LEVEL ${CMAKE_MATCH_2})
 endif()
-
-# We define OHOS for ohos targets for now
-if (OHOS)
-  set(OHOS_FAMILY 1)
-endif()
-
 pythonize_bool(ANDROID)
-pythonize_bool(OHOS_FAMILY)
 
 set(COMPILER_RT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(COMPILER_RT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -138,7 +131,7 @@ pythonize_bool(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR)
 # and target a UNIX-like system or Windows.
 # We can run tests on Android even when we are cross-compiling.
 if(("${CMAKE_HOST_SYSTEM}" STREQUAL "${CMAKE_SYSTEM}" AND (UNIX OR WIN32)) OR ANDROID
- OR COMPILER_RT_EMULATOR OR OHOS)
+   OR COMPILER_RT_EMULATOR)
   option(COMPILER_RT_CAN_EXECUTE_TESTS "Can we execute instrumented tests" ON)
 else()
   option(COMPILER_RT_CAN_EXECUTE_TESTS "Can we execute instrumented tests" OFF)
@@ -242,7 +235,7 @@ option(SANITIZER_USE_STATIC_CXX_ABI
   "Use static libc++abi." ${DEFAULT_SANITIZER_USE_STATIC_CXX_ABI})
 
 set(DEFAULT_COMPILER_RT_USE_BUILTINS_LIBRARY OFF)
-if (FUCHSIA OR OHOS)
+if (FUCHSIA)
   set(DEFAULT_COMPILER_RT_USE_BUILTINS_LIBRARY ON)
 endif()
 
@@ -429,9 +422,7 @@ append_list_if(MINGW -fms-extensions SANITIZER_COMMON_CFLAGS)
 
 # Set common link flags.
 append_list_if(COMPILER_RT_HAS_NODEFAULTLIBS_FLAG -nodefaultlibs SANITIZER_COMMON_LINK_FLAGS)
-if (NOT __MIPS)
-  append_list_if(COMPILER_RT_HAS_Z_TEXT -Wl,-z,text SANITIZER_COMMON_LINK_FLAGS)
-endif()
+append_list_if(COMPILER_RT_HAS_Z_TEXT -Wl,-z,text SANITIZER_COMMON_LINK_FLAGS)
 
 if (COMPILER_RT_USE_BUILTINS_LIBRARY)
   string(REPLACE "-Wl,-z,defs" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
@@ -448,10 +439,6 @@ append_list_if(COMPILER_RT_HAS_LIBC c SANITIZER_COMMON_LINK_LIBS)
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Fuchsia")
   list(APPEND SANITIZER_COMMON_LINK_FLAGS -Wl,-z,defs,-z,now,-z,relro)
   list(APPEND SANITIZER_COMMON_LINK_LIBS zircon)
-endif()
-
-if (OHOS)
-  list(APPEND SANITIZER_COMMON_LINK_LIBS unwind)
 endif()
 
 # TODO: COMPILER_RT_COMMON_CFLAGS and COMPILER_RT_COMMON_LINK_FLAGS are

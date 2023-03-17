@@ -243,14 +243,10 @@ public:
       return true;
     ScopedIncrement ScopedDepth(&CurrentDepth);
     if (auto *Init = Node->getInit())
-      if (!traverse(*Init))
+      if (!match(*Init))
         return false;
-    if (!match(*Node->getLoopVariable()))
-      return false;
-    if (match(*Node->getRangeInit()))
-      if (!VisitorBase::TraverseStmt(Node->getRangeInit()))
-        return false;
-    if (!match(*Node->getBody()))
+    if (!match(*Node->getLoopVariable()) || !match(*Node->getRangeInit()) ||
+        !match(*Node->getBody()))
       return false;
     return VisitorBase::TraverseStmt(Node->getBody());
   }
@@ -295,7 +291,7 @@ public:
     if (!match(*Node->getBody()))
       return false;
 
-    return VisitorBase::TraverseStmt(Node->getBody());
+    return true;
   }
 
   bool shouldVisitTemplateInstantiations() const { return true; }
@@ -492,21 +488,15 @@ public:
 
   bool dataTraverseNode(Stmt *S, DataRecursionQueue *Queue) {
     if (auto *RF = dyn_cast<CXXForRangeStmt>(S)) {
-      {
-        ASTNodeNotAsIsSourceScope RAII(this, true);
-        TraverseStmt(RF->getInit());
-        // Don't traverse under the loop variable
-        match(*RF->getLoopVariable());
-        TraverseStmt(RF->getRangeInit());
-      }
-      {
-        ASTNodeNotSpelledInSourceScope RAII(this, true);
-        for (auto *SubStmt : RF->children()) {
-          if (SubStmt != RF->getBody())
-            TraverseStmt(SubStmt);
+      for (auto *SubStmt : RF->children()) {
+        if (SubStmt == RF->getInit() || SubStmt == RF->getLoopVarStmt() ||
+            SubStmt == RF->getRangeInit() || SubStmt == RF->getBody()) {
+          TraverseStmt(SubStmt, Queue);
+        } else {
+          ASTNodeNotSpelledInSourceScope RAII(this, true);
+          TraverseStmt(SubStmt, Queue);
         }
       }
-      TraverseStmt(RF->getBody());
       return true;
     } else if (auto *RBO = dyn_cast<CXXRewrittenBinaryOperator>(S)) {
       {
@@ -566,9 +556,9 @@ public:
         if (LE->hasExplicitResultType())
           TraverseTypeLoc(Proto.getReturnLoc());
         TraverseStmt(LE->getTrailingRequiresClause());
-      }
 
-      TraverseStmt(LE->getBody());
+        TraverseStmt(LE->getBody());
+      }
       return true;
     }
     return RecursiveASTVisitor<MatchASTVisitor>::dataTraverseNode(S, Queue);
@@ -707,10 +697,6 @@ public:
   bool shouldVisitTemplateInstantiations() const { return true; }
   bool shouldVisitImplicitCode() const { return true; }
 
-  // We visit the lambda body explicitly, so instruct the RAV
-  // to not visit it on our behalf too.
-  bool shouldVisitLambdaBody() const { return false; }
-
   bool IsMatchingInASTNodeNotSpelledInSource() const override {
     return TraversingASTNodeNotSpelledInSource;
   }
@@ -837,14 +823,6 @@ private:
       if (EnableCheckProfiling)
         Timer.setBucket(&TimeByBucket[MP.second->getID()]);
       BoundNodesTreeBuilder Builder;
-
-      {
-        TraversalKindScope RAII(getASTContext(), MP.first.getTraversalKind());
-        if (getASTContext().getParentMapContext().traverseIgnored(DynNode) !=
-            DynNode)
-          continue;
-      }
-
       if (MP.first.matches(DynNode, this, &Builder)) {
         MatchVisitor Visitor(ActiveASTContext, MP.second);
         Builder.visitMatches(&Visitor);

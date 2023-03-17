@@ -36,12 +36,6 @@ void RISCVTargetStreamer::emitTextAttribute(unsigned Attribute,
 void RISCVTargetStreamer::emitIntTextAttribute(unsigned Attribute,
                                                unsigned IntValue,
                                                StringRef StringValue) {}
-// OHOS_LOCAL begin backported from 227496dc09cf46df233aad041d6dc6113822e4bb
-void RISCVTargetStreamer::setTargetABI(RISCVABI::ABI ABI) {
-  assert(ABI != RISCVABI::ABI_Unknown && "Improperly initialized target ABI");
-  TargetABI = ABI;
-}
-// OHOS_LOCAL   end backported from 227496dc09cf46df233aad041d6dc6113822e4bb
 
 void RISCVTargetStreamer::emitTargetAttributes(const MCSubtargetInfo &STI) {
   if (STI.hasFeature(RISCV::FeatureRV32E))
@@ -69,7 +63,7 @@ void RISCVTargetStreamer::emitTargetAttributes(const MCSubtargetInfo &STI) {
   if (STI.hasFeature(RISCV::FeatureStdExtB))
     Arch += "_b0p93";
   if (STI.hasFeature(RISCV::FeatureStdExtV))
-    Arch += "_v0p10";
+    Arch += "_v1p0";
   if (STI.hasFeature(RISCV::FeatureExtZfh))
     Arch += "_zfh0p1";
   if (STI.hasFeature(RISCV::FeatureExtZba))
@@ -95,9 +89,9 @@ void RISCVTargetStreamer::emitTargetAttributes(const MCSubtargetInfo &STI) {
   if (STI.hasFeature(RISCV::FeatureExtZbt))
     Arch += "_zbt0p93";
   if (STI.hasFeature(RISCV::FeatureExtZvamo))
-    Arch += "_zvamo0p10";
+    Arch += "_zvamo1p0";
   if (STI.hasFeature(RISCV::FeatureStdExtZvlsseg))
-    Arch += "_zvlsseg0p10";
+    Arch += "_zvlsseg1p0";
 
   emitTextAttribute(RISCVAttrs::ARCH, Arch);
 }

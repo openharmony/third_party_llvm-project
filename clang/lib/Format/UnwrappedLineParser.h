@@ -85,9 +85,8 @@ private:
   void reset();
   void parseFile();
   void parseLevel(bool HasOpeningBrace);
-  void parseBlock(bool MustBeDeclaration, unsigned AddLevels = 1u,
-                  bool MunchSemi = true,
-                  bool UnindentWhitesmithsBraces = false);
+  void parseBlock(bool MustBeDeclaration, bool AddLevel = true,
+                  bool MunchSemi = true);
   void parseChildBlock();
   void parsePPDirective();
   void parsePPDefine();
@@ -141,12 +140,7 @@ private:
   bool tryToParsePropertyAccessor();
   void tryToParseJSFunction();
   bool tryToParseSimpleAttribute();
-
-  // Used by addUnwrappedLine to denote whether to keep or remove a level
-  // when resetting the line state.
-  enum class LineLevel { Remove, Keep };
-
-  void addUnwrappedLine(LineLevel AdjustLevel = LineLevel::Remove);
+  void addUnwrappedLine();
   bool eof() const;
   // LevelDifference is the difference of levels after and before the current
   // token. For example:

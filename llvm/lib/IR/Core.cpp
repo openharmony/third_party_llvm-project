@@ -164,18 +164,6 @@ uint64_t LLVMGetEnumAttributeValue(LLVMAttributeRef A) {
   return Attr.getValueAsInt();
 }
 
-LLVMAttributeRef LLVMCreateTypeAttribute(LLVMContextRef C, unsigned KindID,
-                                         LLVMTypeRef type_ref) {
-  auto &Ctx = *unwrap(C);
-  auto AttrKind = (Attribute::AttrKind)KindID;
-  return wrap(Attribute::get(Ctx, AttrKind, unwrap(type_ref)));
-}
-
-LLVMTypeRef LLVMGetTypeAttributeValue(LLVMAttributeRef A) {
-  auto Attr = unwrap(A);
-  return wrap(Attr.getValueAsType());
-}
-
 LLVMAttributeRef LLVMCreateStringAttribute(LLVMContextRef C,
                                            const char *K, unsigned KLength,
                                            const char *V, unsigned VLength) {
@@ -204,10 +192,6 @@ LLVMBool LLVMIsEnumAttribute(LLVMAttributeRef A) {
 
 LLVMBool LLVMIsStringAttribute(LLVMAttributeRef A) {
   return unwrap(A).isStringAttribute();
-}
-
-LLVMBool LLVMIsTypeAttribute(LLVMAttributeRef A) {
-  return unwrap(A).isTypeAttribute();
 }
 
 char *LLVMGetDiagInfoDescription(LLVMDiagnosticInfoRef DI) {
@@ -3913,25 +3897,6 @@ LLVMValueRef LLVMBuildCall2(LLVMBuilderRef B, LLVMTypeRef Ty, LLVMValueRef Fn,
   return wrap(unwrap(B)->CreateCall(FTy, unwrap(Fn),
                                     makeArrayRef(unwrap(Args), NumArgs), Name));
 }
-
-#ifdef ARK_GC_SUPPORT
-LLVMValueRef LLVMBuildCall3(LLVMBuilderRef B, LLVMTypeRef Ty, LLVMValueRef Fn,
-                            LLVMValueRef *Args, unsigned NumArgs,
-                            const char *Name, LLVMValueRef *deoptVals,
-                            int NumVals) {
-  FunctionType *FTy = unwrap<FunctionType>(Ty);
-  std::vector<Value*> vals;
-  for (int i = 0; i < NumVals; i++) {
-    vals.push_back(unwrap(deoptVals[i]));
-  }
-  OperandBundleDefT<Value *> deoptBundle("deopt", vals);
-
-  return wrap(unwrap(B)->CreateCall(FTy, unwrap(Fn),
-                                    makeArrayRef(unwrap(Args), NumArgs), // Args
-                                    {deoptBundle}, // ArrayRef<OperandBundleDef>
-                                    Name));
-}
-#endif
 
 LLVMValueRef LLVMBuildSelect(LLVMBuilderRef B, LLVMValueRef If,
                              LLVMValueRef Then, LLVMValueRef Else,

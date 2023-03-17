@@ -326,8 +326,7 @@ static kmp_int32 __kmp_push_task(kmp_int32 gtid, kmp_task_t *task) {
   kmp_info_t *thread = __kmp_threads[gtid];
   kmp_taskdata_t *taskdata = KMP_TASK_TO_TASKDATA(task);
 
-  // We don't need to map to shadow gtid if it is already hidden helper thread
-  if (taskdata->td_flags.hidden_helper && !KMP_HIDDEN_HELPER_THREAD(gtid)) {
+  if (taskdata->td_flags.hidden_helper) {
     gtid = KMP_GTID_TO_SHADOW_GTID(gtid);
     thread = __kmp_threads[gtid];
   }

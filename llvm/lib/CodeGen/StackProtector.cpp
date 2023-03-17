@@ -109,33 +109,7 @@ bool StackProtector::runOnFunction(Function &Fn) {
   }
 
   ++NumFunProtected;
-
-  if (Fn.hasFnAttribute(Attribute::StackProtectRet)) {
-    HasIRCheck = true;
-    CreateSSPRetCookie();
-    // StackProtectRet requires special code generation methods for backward cfi.
-    return false;
-  }
-
   return InsertStackProtectors();
-}
-
-bool StackProtector::CreateSSPRetCookie()
-{
-  std::string cookiename = "__sspret_cookie";
-  Type *cookietype = Type::getInt8PtrTy(M->getContext());
-  GlobalVariable *cookie = dyn_cast_or_null<GlobalVariable>(M->getOrInsertGlobal(cookiename, cookietype));
-
-  cookie->setSection(".ohos.randomdata");
-  cookie->setExternallyInitialized(true);
-  cookie->setInitializer(Constant::getNullValue(cookietype));
-  cookie->setLinkage(GlobalVariable::LinkOnceAnyLinkage);
-  cookie->setVisibility(GlobalValue::HiddenVisibility);
-  cookie->setComdat(M->getOrInsertComdat(cookiename));
-
-  F->addFnAttr("sspret-randomdata", cookiename);
-
-  return true;
 }
 
 /// \param [out] IsLarge is set to true if a protectable array is found and
@@ -218,7 +192,7 @@ bool StackProtector::HasAddressTaken(const Instruction *AI,
       // Ignore intrinsics that do not become real instructions.
       // TODO: Narrow this to intrinsics that have store-like effects.
       const auto *CI = cast<CallInst>(I);
-      if (!CI->isDebugOrPseudoInst() && !CI->isLifetimeStartOrEnd())
+      if (!isa<DbgInfoIntrinsic>(CI) && !CI->isLifetimeStartOrEnd())
         return true;
       break;
     }
@@ -318,9 +292,6 @@ bool StackProtector::RequiresStackProtector() {
     });
     NeedsProtector = true;
     Strong = true; // Use the same heuristic as strong to determine SSPLayout
-  } else if (F->hasFnAttribute(Attribute::StackProtectRet)) {
-    NeedsProtector = true;
-    Strong = true;
   } else if (F->hasFnAttribute(Attribute::StackProtectStrong))
     Strong = true;
   else if (!F->hasFnAttribute(Attribute::StackProtect))
@@ -499,36 +470,21 @@ bool StackProtector::InsertStackProtectors() {
     // instrumentation has already been generated.
     HasIRCheck = true;
 
-    // If we're instrumenting a block with a musttail call, the check has to be
-    // inserted before the call rather than between it and the return. The
-    // verifier guarantees that a musttail call is either directly before the
-    // return or with a single correct bitcast of the return value in between so
-    // we don't need to worry about many situations here.
-    Instruction *CheckLoc = RI;
-    Instruction *Prev = RI->getPrevNonDebugInstruction();
-    if (Prev && isa<CallInst>(Prev) && cast<CallInst>(Prev)->isMustTailCall())
-      CheckLoc = Prev;
-    else if (Prev) {
-      Prev = Prev->getPrevNonDebugInstruction();
-      if (Prev && isa<CallInst>(Prev) && cast<CallInst>(Prev)->isMustTailCall())
-        CheckLoc = Prev;
-    }
-
     // Generate epilogue instrumentation. The epilogue intrumentation can be
     // function-based or inlined depending on which mechanism the target is
     // providing.
     if (Function *GuardCheck = TLI->getSSPStackGuardCheck(*M)) {
       // Generate the function-based epilogue instrumentation.
       // The target provides a guard check function, generate a call to it.
-      IRBuilder<> B(CheckLoc);
+      IRBuilder<> B(RI);
       LoadInst *Guard = B.CreateLoad(B.getInt8PtrTy(), AI, true, "Guard");
       CallInst *Call = B.CreateCall(GuardCheck, {Guard});
       Call->setAttributes(GuardCheck->getAttributes());
       Call->setCallingConv(GuardCheck->getCallingConv());
     } else {
       // Generate the epilogue with inline instrumentation.
-      // If we do not support SelectionDAG based calls, generate IR level
-      // calls.
+      // If we do not support SelectionDAG based tail calls, generate IR level
+      // tail calls.
       //
       // For each block with a return instruction, convert this:
       //
@@ -558,8 +514,7 @@ bool StackProtector::InsertStackProtectors() {
       BasicBlock *FailBB = CreateFailBB();
 
       // Split the basic block before the return instruction.
-      BasicBlock *NewBB =
-          BB->splitBasicBlock(CheckLoc->getIterator(), "SP_return");
+      BasicBlock *NewBB = BB->splitBasicBlock(RI->getIterator(), "SP_return");
 
       // Update the dominator tree if we need to.
       if (DT && DT->isReachableFromEntry(BB)) {

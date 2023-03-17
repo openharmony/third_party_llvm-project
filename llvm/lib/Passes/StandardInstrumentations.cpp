@@ -882,7 +882,6 @@ void StandardInstrumentations::registerCallbacks(
   OptBisect.registerCallbacks(PIC);
   PreservedCFGChecker.registerCallbacks(PIC);
   PrintChangedIR.registerCallbacks(PIC);
-  PseudoProbeVerification.registerCallbacks(PIC);
   if (VerifyEach)
     Verify.registerCallbacks(PIC);
 }

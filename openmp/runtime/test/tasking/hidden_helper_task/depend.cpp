@@ -1,7 +1,7 @@
 // RUN: %libomp-cxx-compile-and-run
-// UNSUPPORTED: ohos-ci
 
-/* This test aims to check whether hidden helper task can work with regular task
+/*
+ * This test aims to check whether hidden helper task can work with regular task
  * in terms of dependences. It is equivalent to the following code:
  *
  * #pragma omp parallel

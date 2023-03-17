@@ -781,13 +781,7 @@ static StructType *buildFrameType(Function &F, coro::Shape &Shape,
         PromiseAlloca, DenseMap<Instruction *, llvm::Optional<APInt>>{}, false);
   // Create an entry for every spilled value.
   for (auto &S : FrameData.Spills) {
-    Type *FieldType = S.first->getType();
-    // For byval arguments, we need to store the pointed value in the frame,
-    // instead of the pointer itself.
-    if (const Argument *A = dyn_cast<Argument>(S.first))
-      if (A->hasByValAttr())
-        FieldType = FieldType->getPointerElementType();
-    FieldIDType Id = B.addField(FieldType, None);
+    FieldIDType Id = B.addField(S.first->getType(), None);
     FrameData.setFieldIndex(S.first, Id);
   }
 
@@ -1155,7 +1149,6 @@ static Instruction *insertSpills(const FrameDataInfo &FrameData,
     // Create a store instruction storing the value into the
     // coroutine frame.
     Instruction *InsertPt = nullptr;
-    bool NeedToCopyArgPtrValue = false;
     if (auto *Arg = dyn_cast<Argument>(Def)) {
       // For arguments, we will place the store instruction right after
       // the coroutine frame pointer instruction, i.e. bitcast of
@@ -1165,9 +1158,6 @@ static Instruction *insertSpills(const FrameDataInfo &FrameData,
       // If we're spilling an Argument, make sure we clear 'nocapture'
       // from the coroutine function.
       Arg->getParent()->removeParamAttr(Arg->getArgNo(), Attribute::NoCapture);
-
-      if (Arg->hasByValAttr())
-        NeedToCopyArgPtrValue = true;
 
     } else if (auto *CSI = dyn_cast<AnyCoroSuspendInst>(Def)) {
       // Don't spill immediately after a suspend; splitting assumes
@@ -1203,15 +1193,7 @@ static Instruction *insertSpills(const FrameDataInfo &FrameData,
     Builder.SetInsertPoint(InsertPt);
     auto *G = Builder.CreateConstInBoundsGEP2_32(
         FrameTy, FramePtr, 0, Index, Def->getName() + Twine(".spill.addr"));
-    if (NeedToCopyArgPtrValue) {
-      // For byval arguments, we need to store the pointed value in the frame,
-      // instead of the pointer itself.
-      auto *Value =
-          Builder.CreateLoad(Def->getType()->getPointerElementType(), Def);
-      Builder.CreateStore(Value, G);
-    } else {
-      Builder.CreateStore(Def, G);
-    }
+    Builder.CreateStore(Def, G);
 
     BasicBlock *CurrentBlock = nullptr;
     Value *CurrentReload = nullptr;
@@ -1225,12 +1207,9 @@ static Instruction *insertSpills(const FrameDataInfo &FrameData,
 
         auto *GEP = GetFramePointer(E.first);
         GEP->setName(E.first->getName() + Twine(".reload.addr"));
-        if (NeedToCopyArgPtrValue)
-          CurrentReload = GEP;
-        else
-          CurrentReload = Builder.CreateLoad(
-              FrameTy->getElementType(FrameData.getFieldIndex(E.first)), GEP,
-              E.first->getName() + Twine(".reload"));
+        CurrentReload = Builder.CreateLoad(
+            FrameTy->getElementType(FrameData.getFieldIndex(E.first)), GEP,
+            E.first->getName() + Twine(".reload"));
 
         TinyPtrVector<DbgDeclareInst *> DIs = FindDbgDeclareUses(Def);
         for (DbgDeclareInst *DDI : DIs) {

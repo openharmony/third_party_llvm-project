@@ -840,7 +840,6 @@ def Availability : InheritableAttr {
              .Case("tvos_app_extension", "tvOS (App Extension)")
              .Case("watchos_app_extension", "watchOS (App Extension)")
              .Case("swift", "Swift")
-             .Case("ohos", "OpenHOS")
              .Default(llvm::StringRef());
 }
 static llvm::StringRef getPlatformNameSourceSpelling(llvm::StringRef Platform) {

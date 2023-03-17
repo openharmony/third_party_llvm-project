@@ -507,23 +507,12 @@ public:
 
   /// True if the C++ Standard Requires Progress.
   bool CPlusPlusWithProgress() {
-    if (CGM.getCodeGenOpts().getFiniteLoops() ==
-        CodeGenOptions::FiniteLoopsKind::Never)
-      return false;
-
     return getLangOpts().CPlusPlus11 || getLangOpts().CPlusPlus14 ||
            getLangOpts().CPlusPlus17 || getLangOpts().CPlusPlus20;
   }
 
   /// True if the C Standard Requires Progress.
   bool CWithProgress() {
-    if (CGM.getCodeGenOpts().getFiniteLoops() ==
-        CodeGenOptions::FiniteLoopsKind::Always)
-      return true;
-    if (CGM.getCodeGenOpts().getFiniteLoops() ==
-        CodeGenOptions::FiniteLoopsKind::Never)
-      return false;
-
     return getLangOpts().C11 || getLangOpts().C17 || getLangOpts().C2x;
   }
 
@@ -4775,8 +4764,7 @@ inline llvm::Value *DominatingLLVMValue::restore(CodeGenFunction &CGF,
 
   // Otherwise, it should be an alloca instruction, as set up in save().
   auto alloca = cast<llvm::AllocaInst>(value.getPointer());
-  return CGF.Builder.CreateAlignedLoad(alloca->getAllocatedType(), alloca,
-                                       alloca->getAlign());
+  return CGF.Builder.CreateAlignedLoad(alloca, alloca->getAlign());
 }
 
 }  // end namespace CodeGen

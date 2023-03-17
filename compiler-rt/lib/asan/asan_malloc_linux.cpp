@@ -243,7 +243,7 @@ INTERCEPTOR(void, malloc_stats, void) {
   __asan_print_accumulated_stats();
 }
 
-#if SANITIZER_BIONIC
+#if SANITIZER_ANDROID
 // Format of __libc_malloc_dispatch has changed in Android L.
 // While we are moving towards a solution that does not depend on bionic
 // internals, here is something to support both K* and L releases.
@@ -295,7 +295,7 @@ void ReplaceSystemMalloc() {
 }
 }  // namespace __asan
 
-#else  // SANITIZER_BIONIC
+#else  // SANITIZER_ANDROID
 
 namespace __asan {
 void ReplaceSystemMalloc() {

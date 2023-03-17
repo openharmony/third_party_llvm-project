@@ -2785,10 +2785,6 @@ public:
     return false;
   }
 
-  /// Does this target require the clearing of high-order bits in a register
-  /// passed to the fp16 to fp conversion library function.
-  virtual bool shouldKeepZExtForFP16Conv() const { return false; }
-
   //===--------------------------------------------------------------------===//
   // Runtime Library hooks
   //

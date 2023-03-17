@@ -968,11 +968,10 @@ bool CombinerHelper::matchOptBrCondByInvertingCond(MachineInstr &MI) {
   if (BrCond->getOpcode() != TargetOpcode::G_BRCOND)
     return false;
 
-  // Check that the next block is the conditional branch target. Also make sure
-  // that it isn't the same as the G_BR's target (otherwise, this will loop.)
-  MachineBasicBlock *BrCondTarget = BrCond->getOperand(1).getMBB();
-  return BrCondTarget != MI.getOperand(0).getMBB() &&
-         MBB->isLayoutSuccessor(BrCondTarget);
+  // Check that the next block is the conditional branch target.
+  if (!MBB->isLayoutSuccessor(BrCond->getOperand(1).getMBB()))
+    return false;
+  return true;
 }
 
 void CombinerHelper::applyOptBrCondByInvertingCond(MachineInstr &MI) {

@@ -263,8 +263,6 @@ struct Configuration {
   uint64_t zStackSize;
   unsigned ltoPartitions;
   unsigned ltoo;
-  unsigned ltos;
-  bool mergeFunctions;
   unsigned optimize;
   StringRef thinLTOJobs;
   unsigned timeTraceGranularity;

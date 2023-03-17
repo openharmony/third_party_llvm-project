@@ -19,16 +19,10 @@ PlatformSP OptionGroupPlatform::CreatePlatformWithOptions(
     CommandInterpreter &interpreter, const ArchSpec &arch, bool make_selected,
     Status &error, ArchSpec &platform_arch) const {
   PlatformSP platform_sp;
-  Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_COMMANDS));
+
   if (!m_platform_name.empty()) {
     platform_sp = Platform::Create(ConstString(m_platform_name.c_str()), error);
     if (platform_sp) {
-      if (GetContainer()) {
-        if (log) {
-          LLDB_LOGF(log, "Platform is created inside container.");
-        }
-        platform_sp->SetContainer(true);
-      }
       if (platform_arch.IsValid() &&
           !platform_sp->IsCompatibleArchitecture(arch, false, &platform_arch)) {
         error.SetErrorStringWithFormat("platform '%s' doesn't support '%s'",
@@ -64,7 +58,6 @@ void OptionGroupPlatform::OptionParsingStarting(
   m_sdk_sysroot.Clear();
   m_sdk_build.Clear();
   m_os_version = llvm::VersionTuple();
-  m_container = false;
 }
 
 static constexpr OptionDefinition g_option_table[] = {
@@ -99,6 +92,7 @@ OptionGroupPlatform::SetOptionValue(uint32_t option_idx,
     ++option_idx;
 
   const int short_option = g_option_table[option_idx].short_option;
+
   switch (short_option) {
   case 'p':
     m_platform_name.assign(std::string(option_arg));
@@ -140,10 +134,6 @@ bool OptionGroupPlatform::PlatformMatches(
 
     if (!m_os_version.empty() && m_os_version != platform_sp->GetOSVersion())
       return false;
-
-    if (m_container != platform_sp->GetContainer())
-      return false;
-
     return true;
   }
   return false;

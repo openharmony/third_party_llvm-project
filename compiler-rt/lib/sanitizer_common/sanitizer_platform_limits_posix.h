@@ -188,15 +188,13 @@ struct __sanitizer_struct_mallinfo {
 #endif
 
 #if SANITIZER_LINUX && !SANITIZER_ANDROID
-extern unsigned struct_ustat_sz;
-extern unsigned struct_rlimit64_sz;
-extern unsigned struct_statvfs64_sz;
-#endif
-
-#if SANITIZER_LINUX && !SANITIZER_ANDROID
 struct __sanitizer_struct_mallinfo {
   int v[10];
 };
+
+extern unsigned struct_ustat_sz;
+extern unsigned struct_rlimit64_sz;
+extern unsigned struct_statvfs64_sz;
 
 struct __sanitizer_ipc_perm {
   int __key;
@@ -369,7 +367,7 @@ struct __sanitizer_group {
   char **gr_mem;
 };
 
-#if SANITIZER_OHOS || (defined(__x86_64__) && !defined(_LP64))
+#if defined(__x86_64__) && !defined(_LP64)
 typedef long long __sanitizer_time_t;
 #else
 typedef long __sanitizer_time_t;
@@ -477,7 +475,7 @@ struct __sanitizer_dirent {
   unsigned short d_reclen;
   // more fields that we don't care about
 };
-#elif SANITIZER_ANDROID || defined(__x86_64__) || SANITIZER_OHOS
+#elif SANITIZER_ANDROID || defined(__x86_64__)
 struct __sanitizer_dirent {
   unsigned long long d_ino;
   unsigned long long d_off;
@@ -593,7 +591,7 @@ struct __sanitizer_sigaction {
   };
   __sanitizer_sigset_t sa_mask;
 };
-#elif (SANITIZER_ANDROID || SANITIZER_OHOS) && (SANITIZER_WORDSIZE == 32)
+#elif SANITIZER_ANDROID && (SANITIZER_WORDSIZE == 32)
 struct __sanitizer_sigaction {
   union {
     __sanitizer_sigactionhandler_ptr sigaction;
@@ -603,7 +601,7 @@ struct __sanitizer_sigaction {
   uptr sa_flags;
   void (*sa_restorer)();
 };
-#else  // !SANITIZER_ANDROID
+#else // !SANITIZER_ANDROID
 struct __sanitizer_sigaction {
 #if defined(__mips__) && !SANITIZER_FREEBSD
   unsigned int sa_flags;
@@ -781,7 +779,7 @@ struct __sanitizer_wordexp_t {
   uptr we_offs;
 };
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
+#if SANITIZER_LINUX && !SANITIZER_ANDROID
 struct __sanitizer_FILE {
   int _flags;
   char *_IO_read_ptr;
@@ -805,7 +803,7 @@ typedef void __sanitizer_FILE;
 # define SANITIZER_HAS_STRUCT_FILE 0
 #endif
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS &&            \
+#if SANITIZER_LINUX && !SANITIZER_ANDROID &&                               \
     (defined(__i386) || defined(__x86_64) || defined(__mips64) ||          \
      defined(__powerpc64__) || defined(__aarch64__) || defined(__arm__) || \
      defined(__s390__) || SANITIZER_RISCV64)
@@ -983,8 +981,9 @@ extern unsigned struct_synth_info_sz;
 extern unsigned struct_vt_mode_sz;
 #endif // SANITIZER_LINUX
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
+#if SANITIZER_LINUX && !SANITIZER_ANDROID
 extern unsigned struct_ax25_parms_struct_sz;
+extern unsigned struct_cyclades_monitor_sz;
 extern unsigned struct_input_keymap_entry_sz;
 extern unsigned struct_ipx_config_data_sz;
 extern unsigned struct_kbdiacrs_sz;
@@ -1004,12 +1003,12 @@ extern unsigned struct_unimapinit_sz;
 
 extern const unsigned long __sanitizer_bufsiz;
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
+#if SANITIZER_LINUX && !SANITIZER_ANDROID
 extern unsigned struct_audio_buf_info_sz;
 extern unsigned struct_ppp_stats_sz;
 #endif  // (SANITIZER_LINUX || SANITIZER_FREEBSD) && !SANITIZER_ANDROID
 
-#if !SANITIZER_ANDROID && !SANITIZER_MAC && !SANITIZER_OHOS
+#if !SANITIZER_ANDROID && !SANITIZER_MAC
 extern unsigned struct_sioc_sg_req_sz;
 extern unsigned struct_sioc_vif_req_sz;
 #endif
@@ -1064,7 +1063,7 @@ extern unsigned IOCTL_TIOCSETD;
 extern unsigned IOCTL_TIOCSPGRP;
 extern unsigned IOCTL_TIOCSTI;
 extern unsigned IOCTL_TIOCSWINSZ;
-#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
+#if SANITIZER_LINUX && !SANITIZER_ANDROID
 extern unsigned IOCTL_SIOCGETSGCNT;
 extern unsigned IOCTL_SIOCGETVIFCNT;
 #endif
@@ -1328,7 +1327,7 @@ extern unsigned IOCTL_VT_SETMODE;
 extern unsigned IOCTL_VT_WAITACTIVE;
 #endif  // SANITIZER_LINUX
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
+#if SANITIZER_LINUX && !SANITIZER_ANDROID
 extern unsigned IOCTL_CYGETDEFTHRESH;
 extern unsigned IOCTL_CYGETDEFTIMEOUT;
 extern unsigned IOCTL_CYGETMON;

@@ -347,16 +347,6 @@ public:
     return SortedTargets;
   }
 
-  /// Prorate call targets by a distribution factor.
-  static const CallTargetMap adjustCallTargets(const CallTargetMap &Targets,
-                                               float DistributionFactor) {
-    CallTargetMap AdjustedTargets;
-    for (const auto &I : Targets) {
-      AdjustedTargets[I.first()] = I.second * DistributionFactor;
-    }
-    return AdjustedTargets;
-  }
-
   /// Merge the samples in \p Other into this record.
   /// Optionally scale sample counts by \p Weight.
   sampleprof_error merge(const SampleRecord &Other, uint64_t Weight = 1) {
@@ -449,11 +439,9 @@ public:
   void clearState(ContextStateMask S) { State &= (uint32_t)~S; }
   bool hasContext() const { return State != UnknownContext; }
   bool isBaseContext() const { return CallingContext.empty(); }
-  StringRef getNameWithoutContext() const { return Name; }
+  StringRef getName() const { return Name; }
   StringRef getCallingContext() const { return CallingContext; }
-  StringRef getNameWithContext(bool WithBracket = false) const {
-    return WithBracket ? InputContext : FullContext;
-  }
+  StringRef getNameWithContext() const { return FullContext; }
 
 private:
   // Give a context string, decode and populate internal states like
@@ -461,7 +449,6 @@ private:
   // `ContextStr`: `[main:3 @ _Z5funcAi:1 @ _Z8funcLeafi]`
   void setContext(StringRef ContextStr, ContextStateMask CState) {
     assert(!ContextStr.empty());
-    InputContext = ContextStr;
     // Note that `[]` wrapped input indicates a full context string, otherwise
     // it's treated as context-less function name only.
     bool HasContext = ContextStr.startswith("[");
@@ -493,9 +480,6 @@ private:
     }
   }
 
-  // Input context string including bracketed calling context and leaf function
-  // name
-  StringRef InputContext;
   // Full context string including calling context and leaf function name
   StringRef FullContext;
   // Function name for the associated sample profile
@@ -692,8 +676,7 @@ public:
     Name = Other.getName();
     if (!GUIDToFuncNameMap)
       GUIDToFuncNameMap = Other.GUIDToFuncNameMap;
-    if (Context.getNameWithContext(true).empty())
-      Context = Other.getContext();
+
     if (FunctionHash == 0) {
       // Set the function hash code for the target profile.
       FunctionHash = Other.getFunctionHash();
@@ -760,10 +743,8 @@ public:
   StringRef getName() const { return Name; }
 
   /// Return function name with context.
-  StringRef getNameWithContext(bool WithBracket = false) const {
-    return FunctionSamples::ProfileIsCS
-               ? Context.getNameWithContext(WithBracket)
-               : Name;
+  StringRef getNameWithContext() const {
+    return FunctionSamples::ProfileIsCS ? Context.getNameWithContext() : Name;
   }
 
   /// Return the original function name.

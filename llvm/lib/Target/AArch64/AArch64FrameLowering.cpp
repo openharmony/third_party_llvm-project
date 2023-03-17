@@ -116,7 +116,6 @@
 #include "AArch64InstrInfo.h"
 #include "AArch64MachineFunctionInfo.h"
 #include "AArch64RegisterInfo.h"
-#include "AArch64StackProtectorRetLowering.h"
 #include "AArch64Subtarget.h"
 #include "AArch64TargetMachine.h"
 #include "MCTargetDesc/AArch64AddressingModes.h"
@@ -1024,18 +1023,6 @@ static bool IsSVECalleeSave(MachineBasicBlock::iterator I) {
   }
 }
 
-#ifdef ARK_GC_SUPPORT
-Triple::ArchType AArch64FrameLowering::GetArkSupportTarget() const
-{
-    return Triple::aarch64;
-}
-
-int AArch64FrameLowering::GetFixedFpPosition() const
-{
-  return -1;
-}
-#endif
-
 void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
                                         MachineBasicBlock &MBB) const {
   MachineBasicBlock::iterator MBBI = MBB.begin();
@@ -1085,11 +1072,8 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
 
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
-#ifndef ARK_GC_SUPPORT
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
-#endif
-  // asm-int GHC call webkit function, we need push regs to stack.
 
   // Set tagged base pointer to the requested stack slot.
   // Ideally it should match SP value after prologue.
@@ -1574,11 +1558,8 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
 
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
-  #ifndef ARK_GC_SUPPORT
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
-  #endif
-  // asm-int GHC call webkit function, we need push regs to stack.
 
   // Initial and residual are named for consistency with the prologue. Note that
   // in the epilogue, the residual adjustment is executed first.
@@ -2561,11 +2542,8 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
                                                 RegScavenger *RS) const {
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
-  #ifndef ARK_GC_SUPPORT
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
-  #endif
-  // asm-int GHC call webkit function, we need push regs to stack.
 
   TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
   const AArch64RegisterInfo *RegInfo = static_cast<const AArch64RegisterInfo *>(
@@ -2581,10 +2559,6 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
   unsigned BasePointerReg = RegInfo->hasBasePointer(MF)
                                 ? RegInfo->getBaseRegister()
                                 : (unsigned)AArch64::NoRegister;
-
-  if (MFI.hasStackProtectorRetRegister()) {
-    SavedRegs.set(MFI.getStackProtectorRetRegister());
-  }
 
   unsigned ExtraCSSpill = 0;
   // Figure out which callee-saved registers to save/restore.
@@ -3331,10 +3305,6 @@ unsigned AArch64FrameLowering::getWinEHFuncletFrameSize(
   // This is the amount of stack a funclet needs to allocate.
   return alignTo(CSSize + MF.getFrameInfo().getMaxCallFrameSize(),
                  getStackAlign());
-}
-
-const StackProtectorRetLowering *AArch64FrameLowering::getStackProtectorRet() const {
-  return &SPRL;
 }
 
 namespace {

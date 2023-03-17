@@ -2623,10 +2623,7 @@ static bool isValidBPFPreserveEnumValueArg(Expr *Arg) {
     return false;
 
   const auto *CE = dyn_cast<CStyleCastExpr>(UO->getSubExpr());
-  if (!CE)
-    return false;
-  if (CE->getCastKind() != CK_IntegralToPointer &&
-      CE->getCastKind() != CK_NullToPointer)
+  if (!CE || CE->getCastKind() != CK_IntegralToPointer)
     return false;
 
   // The integer must be from an EnumConstantDecl.

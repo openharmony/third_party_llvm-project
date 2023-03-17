@@ -1726,19 +1726,6 @@ void Option::printHelpStr(StringRef HelpStr, size_t Indent,
   }
 }
 
-void Option::printEnumValHelpStr(StringRef HelpStr, size_t BaseIndent,
-                                 size_t FirstLineIndentedBy) {
-  const StringRef ValHelpPrefix = "  ";
-  assert(BaseIndent >= FirstLineIndentedBy);
-  std::pair<StringRef, StringRef> Split = HelpStr.split('\n');
-  outs().indent(BaseIndent - FirstLineIndentedBy)
-      << ArgHelpPrefix << ValHelpPrefix << Split.first << "\n";
-  while (!Split.second.empty()) {
-    Split = Split.second.split('\n');
-    outs().indent(BaseIndent + ValHelpPrefix.size()) << Split.first << "\n";
-  }
-}
-
 // Print out the option for the alias.
 void alias::printOptionInfo(size_t GlobalWidth) const {
   outs() << PrintArg(ArgStr);
@@ -1984,17 +1971,17 @@ void generic_parser_base::printOptionInfo(const Option &O,
       StringRef Description = getDescription(i);
       if (!shouldPrintOption(OptionName, Description, O))
         continue;
-      size_t FirstLineIndent = OptionName.size() + OptionPrefixesSize;
+      assert(GlobalWidth >= OptionName.size() + OptionPrefixesSize);
+      size_t NumSpaces = GlobalWidth - OptionName.size() - OptionPrefixesSize;
       outs() << OptionPrefix << OptionName;
       if (OptionName.empty()) {
         outs() << EmptyOption;
-        assert(FirstLineIndent >= EmptyOption.size());
-        FirstLineIndent += EmptyOption.size();
+        assert(NumSpaces >= EmptyOption.size());
+        NumSpaces -= EmptyOption.size();
       }
       if (!Description.empty())
-        Option::printEnumValHelpStr(Description, GlobalWidth, FirstLineIndent);
-      else
-        outs() << '\n';
+        outs().indent(NumSpaces) << ArgHelpPrefix << "  " << Description;
+      outs() << '\n';
     }
   } else {
     if (!O.HelpStr.empty())

@@ -6,9 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "RunInTerminal.h"
-
-#if !defined(_WIN32)
+#if !defined(WIN32)
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -22,6 +20,8 @@
 #include "llvm/Support/FileSystem.h"
 
 #include "lldb/lldb-defines.h"
+
+#include "RunInTerminal.h"
 
 using namespace llvm;
 

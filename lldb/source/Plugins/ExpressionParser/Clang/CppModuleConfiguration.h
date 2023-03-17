@@ -44,9 +44,6 @@ class CppModuleConfiguration {
   SetOncePath m_std_inc;
   /// If valid, the include path to the C library (e.g. /usr/include).
   SetOncePath m_c_inc;
-  /// If valid, the include path to target-specific C library files
-  /// (e.g. /usr/include/x86_64-linux-gnu).
-  SetOncePath m_c_target_inc;
   /// The Clang resource include path for this configuration.
   std::string m_resource_inc;
 
@@ -56,12 +53,11 @@ class CppModuleConfiguration {
   /// Analyze a given source file to build the current configuration.
   /// Returns false iff there was a fatal error that makes analyzing any
   /// further files pointless as the configuration is now invalid.
-  bool analyzeFile(const FileSpec &f, const llvm::Triple &triple);
+  bool analyzeFile(const FileSpec &f);
 
 public:
   /// Creates a configuration by analyzing the given list of used source files.
-  explicit CppModuleConfiguration(const FileSpecList &support_files,
-                                  const llvm::Triple &triple);
+  explicit CppModuleConfiguration(const FileSpecList &support_files);
   /// Creates an empty and invalid configuration.
   CppModuleConfiguration() {}
 

@@ -409,7 +409,6 @@ class InlinedOpenMPRegionRAII {
   llvm::DenseMap<const VarDecl *, FieldDecl *> LambdaCaptureFields;
   FieldDecl *LambdaThisCaptureField = nullptr;
   const CodeGen::CGBlockInfo *BlockInfo = nullptr;
-  bool NoInheritance = false;
 
 public:
   /// Constructs region for combined constructs.
@@ -417,19 +416,16 @@ public:
   /// a list of functions used for code generation of implicitly inlined
   /// regions.
   InlinedOpenMPRegionRAII(CodeGenFunction &CGF, const RegionCodeGenTy &CodeGen,
-                          OpenMPDirectiveKind Kind, bool HasCancel,
-                          bool NoInheritance = true)
-      : CGF(CGF), NoInheritance(NoInheritance) {
+                          OpenMPDirectiveKind Kind, bool HasCancel)
+      : CGF(CGF) {
     // Start emission for the construct.
     CGF.CapturedStmtInfo = new CGOpenMPInlinedRegionInfo(
         CGF.CapturedStmtInfo, CodeGen, Kind, HasCancel);
-    if (NoInheritance) {
-      std::swap(CGF.LambdaCaptureFields, LambdaCaptureFields);
-      LambdaThisCaptureField = CGF.LambdaThisCaptureField;
-      CGF.LambdaThisCaptureField = nullptr;
-      BlockInfo = CGF.BlockInfo;
-      CGF.BlockInfo = nullptr;
-    }
+    std::swap(CGF.LambdaCaptureFields, LambdaCaptureFields);
+    LambdaThisCaptureField = CGF.LambdaThisCaptureField;
+    CGF.LambdaThisCaptureField = nullptr;
+    BlockInfo = CGF.BlockInfo;
+    CGF.BlockInfo = nullptr;
   }
 
   ~InlinedOpenMPRegionRAII() {
@@ -438,11 +434,9 @@ public:
         cast<CGOpenMPInlinedRegionInfo>(CGF.CapturedStmtInfo)->getOldCSI();
     delete CGF.CapturedStmtInfo;
     CGF.CapturedStmtInfo = OldCSI;
-    if (NoInheritance) {
-      std::swap(CGF.LambdaCaptureFields, LambdaCaptureFields);
-      CGF.LambdaThisCaptureField = LambdaThisCaptureField;
-      CGF.BlockInfo = BlockInfo;
-    }
+    std::swap(CGF.LambdaCaptureFields, LambdaCaptureFields);
+    CGF.LambdaThisCaptureField = LambdaThisCaptureField;
+    CGF.BlockInfo = BlockInfo;
   }
 };
 
@@ -3859,7 +3853,7 @@ static void emitPrivatesInit(CodeGenFunction &CGF,
           // Processing for implicitly captured variables.
           InlinedOpenMPRegionRAII Region(
               CGF, [](CodeGenFunction &, PrePostActionTy &) {}, OMPD_unknown,
-              /*HasCancel=*/false, /*NoInheritance=*/true);
+              /*HasCancel=*/false);
           SharedRefLValue = CGF.EmitLValue(Pair.second.OriginalRef);
         }
         if (Type->isArrayType()) {
@@ -6220,9 +6214,7 @@ void CGOpenMPRuntime::emitInlinedDirective(CodeGenFunction &CGF,
                                            bool HasCancel) {
   if (!CGF.HaveInsertPoint())
     return;
-  InlinedOpenMPRegionRAII Region(CGF, CodeGen, InnerKind, HasCancel,
-                                 InnerKind != OMPD_critical &&
-                                     InnerKind != OMPD_master);
+  InlinedOpenMPRegionRAII Region(CGF, CodeGen, InnerKind, HasCancel);
   CGF.CapturedStmtInfo->EmitBody(CGF, /*S=*/nullptr);
 }
 
@@ -9900,7 +9892,7 @@ void CGOpenMPRuntime::emitTargetNumIterationsCall(
       llvm::Value *Args[] = {RTLoc, DeviceID, NumIterations};
       CGF.EmitRuntimeCall(
           OMPBuilder.getOrCreateRuntimeFunction(
-              CGM.getModule(), OMPRTL___kmpc_push_target_tripcount_mapper),
+              CGM.getModule(), OMPRTL___kmpc_push_target_tripcount),
           Args);
     }
   };

@@ -101,13 +101,11 @@ if config.sizeof_void_p == 8:
 
 tar_executable = lit.util.which('tar', config.environment['PATH'])
 if tar_executable:
-    env = os.environ
-    env['LANG'] = 'C'
     tar_version = subprocess.Popen(
         [tar_executable, '--version'],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        env=env)
+        env={'LANG': 'C'})
     sout, _ = tar_version.communicate()
     if 'GNU tar' in sout.decode():
         config.available_features.add('gnutar')

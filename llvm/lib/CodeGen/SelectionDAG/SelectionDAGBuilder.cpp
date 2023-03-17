@@ -9660,9 +9660,8 @@ findArgumentCopyElisionCandidates(const DataLayout &DL,
       // We will look through cast uses, so ignore them completely.
       if (I.isCast())
         continue;
-      // Ignore debug info and pseudo op intrinsics, they don't escape or store
-      // to allocas.
-      if (I.isDebugOrPseudoInst())
+      // Ignore debug info intrinsics, they don't escape or store to allocas.
+      if (isa<DbgInfoIntrinsic>(I))
         continue;
       // This is an unknown instruction. Assume it escapes or writes to all
       // static alloca operands.

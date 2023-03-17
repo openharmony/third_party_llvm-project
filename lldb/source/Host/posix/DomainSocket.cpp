@@ -18,7 +18,7 @@
 using namespace lldb;
 using namespace lldb_private;
 
-#if defined(__ANDROID__)
+#ifdef __ANDROID__
 // Android does not have SUN_LEN
 #ifndef SUN_LEN
 #define SUN_LEN(ptr)                                                           \

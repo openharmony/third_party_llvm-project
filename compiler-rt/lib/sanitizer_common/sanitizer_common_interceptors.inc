@@ -2180,13 +2180,11 @@ INTERCEPTOR(int, clock_gettime, u32 clk_id, void *tp) {
 }
 namespace __sanitizer {
 extern "C" {
-#if !SANITIZER_OHOS
 int real_clock_gettime(u32 clk_id, void *tp) {
   if (COMMON_INTERCEPTOR_NOTHING_IS_INITIALIZED)
     return internal_clock_gettime(clk_id, tp);
   return REAL(clock_gettime)(clk_id, tp);
 }
-#endif
 }  // extern "C"
 }  // namespace __sanitizer
 INTERCEPTOR(int, clock_settime, u32 clk_id, const void *tp) {
@@ -2453,7 +2451,7 @@ INTERCEPTOR(int, wait3, int *status, int options, void *rusage) {
   }
   return res;
 }
-#if SANITIZER_ANDROID || SANITIZER_OHOS
+#if SANITIZER_ANDROID
 INTERCEPTOR(int, __wait4, int pid, int *status, int options, void *rusage) {
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, __wait4, pid, status, options, rusage);
@@ -3752,7 +3750,7 @@ INTERCEPTOR(char *, strerror, int errnum) {
 //    static storage.
 #if ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE) || \
     SANITIZER_MAC || SANITIZER_ANDROID || SANITIZER_NETBSD ||                 \
-    SANITIZER_FREEBSD || SANITIZER_OHOS
+    SANITIZER_FREEBSD
 // POSIX version. Spec is not clear on whether buf is NULL-terminated.
 // At least on OSX, buf contents are valid even when the call fails.
 INTERCEPTOR(int, strerror_r, int errnum, char *buf, SIZE_T buflen) {

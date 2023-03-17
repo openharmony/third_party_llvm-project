@@ -605,11 +605,6 @@ void tools::addLTOOptions(const ToolChain &ToolChain, const ArgList &Args,
       CmdArgs.push_back("-plugin-opt=new-pass-manager");
   }
 
-  // Pass an option to enable pseudo probe emission.
-  if (Args.hasFlag(options::OPT_fpseudo_probe_for_profiling,
-                   options::OPT_fno_pseudo_probe_for_profiling, false))
-    CmdArgs.push_back("-plugin-opt=pseudo-probe-for-profiling");
-
   // Setup statistics file output.
   SmallString<128> StatsFile = getStatsFileName(Args, Output, Input, D);
   if (!StatsFile.empty())
@@ -753,7 +748,7 @@ void tools::linkSanitizerRuntimeDeps(const ToolChain &TC,
   CmdArgs.push_back(getAsNeededOption(TC, false));
   // There's no libpthread or librt on RTEMS & Android.
   if (TC.getTriple().getOS() != llvm::Triple::RTEMS &&
-      !TC.getTriple().isAndroid() && !TC.getTriple().isOHOSFamily()) {
+      !TC.getTriple().isAndroid()) {
     CmdArgs.push_back("-lpthread");
     if (!TC.getTriple().isOSOpenBSD())
       CmdArgs.push_back("-lrt");
@@ -1132,18 +1127,6 @@ tools::ParsePICArgs(const ToolChain &ToolChain, const ArgList &Args) {
     }
   }
 
-  // OHOS-specific defaults for PIC/PIE
-  if (Triple.isOHOSFamily()) {
-    switch (Triple.getArch()) {
-    case llvm::Triple::aarch64:
-      PIC = true; // "-fpic"
-      break;
-
-    default:
-      break;
-    }
-  }
-
   // OpenBSD-specific defaults for PIE
   if (Triple.isOSOpenBSD()) {
     switch (ToolChain.getArch()) {
@@ -1403,11 +1386,6 @@ static LibGccType getLibGccType(const Driver &D, const ArgList &Args) {
 static void AddUnwindLibrary(const ToolChain &TC, const Driver &D,
                              ArgStringList &CmdArgs, const ArgList &Args) {
   ToolChain::UnwindLibType UNW = TC.GetUnwindLibType(Args);
-  if (TC.getTriple().isOHOSFamily() && UNW != ToolChain::UNW_None) {
-    CmdArgs.push_back("-l:libunwind.a");
-    return;
-  }
-
   // Targets that don't use unwind libraries.
   if (TC.getTriple().isAndroid() || TC.getTriple().isOSIAMCU() ||
       TC.getTriple().isOSBinFormatWasm() ||

@@ -14,12 +14,8 @@
 #define LLVM_CODEGEN_TARGETFRAMELOWERING_H
 
 #include "llvm/CodeGen/MachineBasicBlock.h"
-#include "llvm/CodeGen/StackProtectorRetLowering.h"
 #include "llvm/Support/TypeSize.h"
 #include <vector>
-#ifdef ARK_GC_SUPPORT
-#include "llvm/ADT/Triple.h"
-#endif
 
 namespace llvm {
   class BitVector;
@@ -212,31 +208,6 @@ public:
                             MachineBasicBlock &MBB) const = 0;
   virtual void emitEpilogue(MachineFunction &MF,
                             MachineBasicBlock &MBB) const = 0;
-#ifdef ARK_GC_SUPPORT
-
-template <typename T>
-constexpr T RoundUp(T x, size_t n) const
-{
-    static_assert(std::is_integral<T>::value, "T must be integral");
-    return (static_cast<size_t>(x) + n - 1U) & (-n);
-}
-
-virtual Triple::ArchType GetArkSupportTarget() const
-{
-  return Triple::UnknownArch;
-}
-
-virtual int GetFixedFpPosition() const
-{
-  return 2;
-}
-
-virtual int GetFrameReserveSize(MachineFunction &MF) const;
-#endif
-
-  virtual const StackProtectorRetLowering *getStackProtectorRet() const {
-    return nullptr;
-  }
 
   /// With basic block sections, emit callee saved frame moves for basic blocks
   /// that are in a different section.

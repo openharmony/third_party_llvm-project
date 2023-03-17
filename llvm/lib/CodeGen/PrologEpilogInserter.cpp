@@ -70,11 +70,6 @@
 #include <utility>
 #include <vector>
 
-#ifdef ARK_GC_SUPPORT
-#include <string>
-#include<climits>
-#endif
-
 using namespace llvm;
 
 #define DEBUG_TYPE "prologepilog"
@@ -128,9 +123,6 @@ private:
 
   void calculateCallFrameInfo(MachineFunction &MF);
   void calculateSaveRestoreBlocks(MachineFunction &MF);
-#ifdef ARK_GC_SUPPORT
-  void RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, const std::vector<CalleeSavedInfo> &CSI);
-#endif
   void spillCalleeSavedRegs(MachineFunction &MF);
 
   void calculateFrameObjectOffsets(MachineFunction &MF);
@@ -225,10 +217,6 @@ bool PEI::runOnMachineFunction(MachineFunction &MF) {
   const Function &F = MF.getFunction();
   const TargetRegisterInfo *TRI = MF.getSubtarget().getRegisterInfo();
   const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
-  const StackProtectorRetLowering *SPRL = TFI->getStackProtectorRet();
-
-  if (SPRL)
-      SPRL->setupStackProtectorRet(MF);
 
   RS = TRI->requiresRegisterScavenging(MF) ? new RegScavenger() : nullptr;
   FrameIndexVirtualScavenging = TRI->requiresFrameIndexScavenging(MF);
@@ -266,10 +254,6 @@ bool PEI::runOnMachineFunction(MachineFunction &MF) {
   // and MaxCallFrameSize variables.
   if (!F.hasFnAttribute(Attribute::Naked))
     insertPrologEpilogCode(MF);
-
-  // Add StackProtectorRets if using them
-  if (SPRL)
-      SPRL->insertStackProtectorRets(MF);
 
   // Reinsert stashed debug values at the start of the entry blocks.
   for (auto &I : EntryDbgValues)
@@ -309,10 +293,6 @@ bool PEI::runOnMachineFunction(MachineFunction &MF) {
   RestoreBlocks.clear();
   MFI.setSavePoint(nullptr);
   MFI.setRestorePoint(nullptr);
-#ifdef ARK_GC_SUPPORT
-  std::vector<CalleeSavedInfo> &CSI = MFI.getCalleeSavedInfo();
-  RecordCalleeSaveRegisterAndOffset(MF, CSI);
-#endif
   return true;
 }
 
@@ -373,9 +353,7 @@ void PEI::calculateCallFrameInfo(MachineFunction &MF) {
 /// Compute the sets of entry and return blocks for saving and restoring
 /// callee-saved registers, and placing prolog and epilog code.
 void PEI::calculateSaveRestoreBlocks(MachineFunction &MF) {
-  MachineFrameInfo &MFI = MF.getFrameInfo();
-  const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
-  const StackProtectorRetLowering *SPRL = TFI->getStackProtectorRet();
+  const MachineFrameInfo &MFI = MF.getFrameInfo();
 
   // Even when we do not change any CSR, we still want to insert the
   // prologue and epilogue of the function.
@@ -391,18 +369,7 @@ void PEI::calculateSaveRestoreBlocks(MachineFunction &MF) {
     // epilogue.
     if (!RestoreBlock->succ_empty() || RestoreBlock->isReturnBlock())
       RestoreBlocks.push_back(RestoreBlock);
-
-    // If we are adding stack-protector-rets ensure we can find a available
-    // register for CFI verification.
-    if (SPRL && !SPRL->determineStackProtectorRetRegister(MF)) {
-      // Shrinkwrapping will prevent finding a free register
-      SaveBlocks.clear();
-      RestoreBlocks.clear();
-      MFI.setSavePoint(nullptr);
-      MFI.setRestorePoint(nullptr);
-    } else {
-      return;
-    }
+    return;
   }
 
   // Save refs to entry and return blocks.
@@ -413,9 +380,6 @@ void PEI::calculateSaveRestoreBlocks(MachineFunction &MF) {
     if (MBB.isReturnBlock())
       RestoreBlocks.push_back(&MBB);
   }
-
-  if (SPRL)
-    SPRL->determineStackProtectorRetRegister(MF);
 }
 
 static void assignCalleeSavedSpillSlots(MachineFunction &F,
@@ -437,10 +401,6 @@ static void assignCalleeSavedSpillSlots(MachineFunction &F,
 
   const TargetFrameLowering *TFI = F.getSubtarget().getFrameLowering();
   MachineFrameInfo &MFI = F.getFrameInfo();
-
-  if (TFI->getStackProtectorRet())
-      TFI->getStackProtectorRet()->saveStackProtectorRetRegister(F, CSI);
-
   if (!TFI->assignCalleeSavedSpillSlots(F, RegInfo, CSI)) {
     // If target doesn't implement this, use generic code.
 
@@ -628,69 +588,6 @@ static void insertCSRRestores(MachineBasicBlock &RestoreBlock,
     }
   }
 }
-
-#ifdef ARK_GC_SUPPORT
-void PEI::RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, const std::vector<CalleeSavedInfo> &CSI)
-{
-  MachineModuleInfo &MMI = MF.getMMI();
-  MachineFrameInfo &MFI = MF.getFrameInfo();
-  const MCRegisterInfo *MRI = MMI.getContext().getRegisterInfo();
-  Function &func = const_cast<Function &>(MF.getFunction());
-  const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
-  Triple::ArchType archType = TFI->GetArkSupportTarget();
-
-  if ((archType != Triple::aarch64 && archType != Triple::x86_64) || !(TFI->hasFP(MF))) {
-    return;
-  }
-  unsigned FpRegDwarfNum = 0;
-  if (archType == Triple::aarch64) {
-    FpRegDwarfNum = 29; // x29
-  } else {
-    FpRegDwarfNum = 6; //rbp
-  }
-  int64_t FpOffset = 0;
-  int64_t deleta;
-  // nearest to rbp callee register
-  int64_t maxOffset = INT_MIN;
-  for (auto I : CSI) {
-    int64_t Offset = MFI.getObjectOffset(I.getFrameIdx());
-    unsigned Reg = I.getReg();
-    unsigned DwarfRegNum = MRI->getDwarfRegNum(Reg, true);
-    if (FpRegDwarfNum == DwarfRegNum) {
-      FpOffset = Offset;
-    }
-    maxOffset = std::max(Offset, maxOffset);
-  }
-  if (archType == Triple::x86_64) {
-    // rbp not existed in CSI
-    int64_t reseversize = TFI->GetFrameReserveSize(MF) + sizeof(uint64_t); // 1: rbp
-    deleta = maxOffset + reseversize; // nearest to rbp offset
-  } else {
-    deleta = FpOffset;
-  }
-
-  const unsigned LinkRegDwarfNum = 30;
-  for (std::vector<CalleeSavedInfo>::const_iterator
-    I = CSI.begin(), E = CSI.end(); I != E; ++I) {
-    int64_t Offset = MFI.getObjectOffset(I->getFrameIdx());
-    unsigned Reg = I->getReg();
-    unsigned DwarfRegNum = MRI->getDwarfRegNum(Reg, true);
-    if ((DwarfRegNum == LinkRegDwarfNum || DwarfRegNum == FpRegDwarfNum)
-      && (archType == Triple::aarch64)) {
-      continue;
-    }
-    Offset = Offset - deleta;
-    std::string key = std::string("DwarfReg") + std::to_string(DwarfRegNum);
-    std::string value = std::to_string(Offset);
-    LLVM_DEBUG(dbgs() << "RecordCalleeSaveRegisterAndOffset DwarfRegNum  :"
-                      << DwarfRegNum << " key:" << key
-                      << " value:" << value
-                      << "]\n");
-    Attribute attr = Attribute::get(func.getContext(), key.c_str(), value.c_str());
-    func.addAttribute(AttributeList::FunctionIndex, attr);
-  }
-}
-#endif
 
 void PEI::spillCalleeSavedRegs(MachineFunction &MF) {
   // We can't list this requirement in getRequiredProperties because some
@@ -980,88 +877,6 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
   int64_t FixedCSEnd = Offset;
   Align MaxAlign = MFI.getMaxAlign();
 
-#ifdef ARK_GC_SUPPORT
-  int CalleeSavedFrameSize = 0;
-  Triple::ArchType archType = TFI.GetArkSupportTarget();
-  if (archType == Triple::aarch64 && TFI.hasFP(MF)) {
-    int fpPosition = TFI.GetFixedFpPosition();
-    int slotSize = sizeof(uint64_t);
-    int fpToCallerSpDelta = 0;
-    // 0:not exist  +:count from head -:count from tail
-    //   for x86-64
-    //   +--------------------------+
-    //   |       caller Frame       |
-    //   +--------------------------+---
-    //   |       returnAddr         |  ^
-    //   +--------------------------+  2 slot(fpToCallerSpDelta)
-    //   |       Fp                 |  V  fpPosition = 2
-    //   +--------------------------+---
-    //   |       type               |
-    //   +--------------------------+
-    //   |       ReServeSize        |
-    //   +--------------------------+
-    //   |          R14             |
-    //   +--------------------------+
-    //   |          R13             |
-    //   +--------------------------+
-    //   |          R12             |
-    //   +--------------------------+
-    //   |          RBX             |
-    //   +--------------------------+
-    //   for ARM64
-    //   +--------------------------+
-    //   |       caller Frame       |
-    //   +--------------------------+---
-    //   |  callee save registers   |  ^
-    //   |      (exclude Fp)        |  |
-    //   |                          |  callee save registers size(fpToCallerSpDelta)
-    //   +--------------------------+  |
-    //   |          Fp              |  V  fpPosition = -1
-    //   +--------------------------+--- FixedCSEnd
-    //   |         type             |
-    //   +--------------------------+
-    //   |       ReServeSize        |
-    //   +--------------------------+
-    if (fpPosition >= 0) {
-      fpToCallerSpDelta = fpPosition * slotSize;
-    } else {
-      fpToCallerSpDelta = FixedCSEnd + (fpPosition + 1) * slotSize;
-    }
-    Function &func = const_cast<Function &>(MF.getFunction());
-    Attribute attr = Attribute::get(func.getContext(), "fpToCallerSpDelta", std::to_string(fpToCallerSpDelta).c_str());
-    func.addAttribute(AttributeList::FunctionIndex, attr);
-
-    CalleeSavedFrameSize = TFI.GetFrameReserveSize(MF);
-    Offset += CalleeSavedFrameSize;
-  }
-
-  if ((archType == Triple::x86_64) && TFI.hasFP(MF)) {
-    // Determine which of the registers in the callee save list should be saved.
-    int fpPosition = TFI.GetFixedFpPosition();
-    int fpToCallerSpDelta = 0;
-    int slotSize = sizeof(uint64_t);
-    if (fpPosition >= 0) {
-      fpToCallerSpDelta = fpPosition * slotSize;
-    } else {
-      fpToCallerSpDelta = FixedCSEnd + (fpPosition + 1) * slotSize;
-    }
-    Function &func = const_cast<Function &>(MF.getFunction());
-    Attribute attr = Attribute::get(func.getContext(), "fpToCallerSpDelta", std::to_string(fpToCallerSpDelta).c_str());
-    func.addAttribute(AttributeList::FunctionIndex, attr);
-
-    CalleeSavedFrameSize = TFI.GetFrameReserveSize(MF);
-    std::vector<CalleeSavedInfo> &CSI = MFI.getCalleeSavedInfo();
-    LLVM_DEBUG(dbgs() << "  CSI size: " << CSI.size() << " CalleeSavedFrameSize " << CalleeSavedFrameSize << "\n");
-    // if callee-saved is empty, the reserved-size can't be passed to the computation of local zone
-    // because the assignCalleeSavedSpillSlots() directly return.
-    // Otherwise, the reserved-size don't need to add to the computation of local zone because it has been considered
-    // while computing the offsets of callee-saved-zone that will be passed to the computation of local-zone
-    if (CSI.empty()) {
-      Offset += CalleeSavedFrameSize;
-    }
-  }
-#endif
-
   // Make sure the special register scavenging spill slot is closest to the
   // incoming stack pointer if a frame pointer is required and is closer
   // to the incoming rather than the final stack pointer.
@@ -1111,7 +926,6 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
 
   // Make sure that the stack protector comes before the local variables on the
   // stack.
-  Function &F = MF.getFunction();
   SmallSet<int, 16> ProtectedObjs;
   if (MFI.hasStackProtectorIndex()) {
     int StackProtectorFI = MFI.getStackProtectorIndex();
@@ -1170,47 +984,6 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
           AddrOfObjs.empty()))
       llvm_unreachable("Found protected stack objects not pre-allocated by "
                        "LocalStackSlotPass.");
-
-    AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
-                          Offset, MaxAlign, Skew);
-    AssignProtectedObjSet(SmallArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
-                          Offset, MaxAlign, Skew);
-    AssignProtectedObjSet(AddrOfObjs, ProtectedObjs, MFI, StackGrowsDown,
-                          Offset, MaxAlign, Skew);
-  } else if (F.hasFnAttribute(Attribute::StackProtectRet)) {
-    StackObjSet LargeArrayObjs;
-    StackObjSet SmallArrayObjs;
-    StackObjSet AddrOfObjs;
-    // Assign large stack objects first.
-    for (unsigned i = 0, e = MFI.getObjectIndexEnd(); i != e; ++i) {
-      if (MFI.isObjectPreAllocated(i) && MFI.getUseLocalStackAllocationBlock())
-        continue;
-      if (i >= MinCSFrameIndex && i <= MaxCSFrameIndex)
-        continue;
-      if (RS && RS->isScavengingFrameIndex((int)i))
-        continue;
-      if (MFI.isDeadObjectIndex(i))
-        continue;
-      if (EHRegNodeFrameIndex == (int)i)
-        continue;
-      if (MFI.getStackID(i) !=
-          TargetStackID::Default) // Only allocate objects on the default stack.
-        continue;
-      switch (MFI.getObjectSSPLayout(i)) {
-        case MachineFrameInfo::SSPLK_None:
-          continue;
-        case MachineFrameInfo::SSPLK_SmallArray:
-          SmallArrayObjs.insert(i);
-          continue;
-        case MachineFrameInfo::SSPLK_AddrOf:
-          AddrOfObjs.insert(i);
-          continue;
-        case MachineFrameInfo::SSPLK_LargeArray:
-          LargeArrayObjs.insert(i);
-          continue;
-      }
-      llvm_unreachable("Unexpected SSPLayoutKind.");
-    }
 
     AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign, Skew);

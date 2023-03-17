@@ -1462,8 +1462,7 @@ bool MachineInstr::hasUnmodeledSideEffects() const {
 }
 
 bool MachineInstr::isLoadFoldBarrier() const {
-  return mayStore() || isCall() ||
-         (hasUnmodeledSideEffects() && !isPseudoProbe());
+  return mayStore() || isCall() || hasUnmodeledSideEffects();
 }
 
 /// allDefsAreDead - Return true if all the defs of this instruction are dead.
