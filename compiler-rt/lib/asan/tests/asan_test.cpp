@@ -230,13 +230,13 @@ TEST(AddressSanitizer, UAF_Packed5) {
   delete [] Ident(p);
 }
 
-#if ASAN_HAS_BLACKLIST
+#if ASAN_HAS_IGNORELIST
 TEST(AddressSanitizer, IgnoreTest) {
   int *x = Ident(new int);
   delete Ident(x);
   *x = 0;
 }
-#endif  // ASAN_HAS_BLACKLIST
+#endif  // ASAN_HAS_IGNORELIST
 
 struct StructWithBitField {
   int bf1:1;
@@ -1322,7 +1322,9 @@ TEST(AddressSanitizer, LongDoubleNegativeTest) {
   memcpy(Ident(&c), Ident(&b), sizeof(long double));
 }
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(__OHOS__)
+// On OHOS/Musl sched_param is not int.
+// See __interceptor_pthread_getschedparam
 TEST(AddressSanitizer, pthread_getschedparam) {
   int policy;
   struct sched_param param;

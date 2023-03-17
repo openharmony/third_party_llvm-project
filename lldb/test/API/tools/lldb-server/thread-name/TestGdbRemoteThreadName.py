@@ -5,8 +5,6 @@ from lldbsuite.test import lldbutil
 
 class TestGdbRemoteThreadName(gdbremote_testcase.GdbRemoteTestCaseBase):
 
-    mydir = TestBase.compute_mydir(__file__)
-
     def run_and_check_name(self, expected_name):
         self.test_sequence.add_log_lines(["read packet: $vCont;c#a8",
                                           {"direction": "send",
@@ -27,6 +25,7 @@ class TestGdbRemoteThreadName(gdbremote_testcase.GdbRemoteTestCaseBase):
         self.assertEqual(expected_name, kv_dict.get("name"))
 
     @skipIfWindows # the test is not updated for Windows.
+    @skipOnOpenHarmonyCI # investigate CI timeouts
     def test(self):
         """ Make sure lldb-server can retrieve inferior thread name"""
         self.build()

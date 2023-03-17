@@ -39,7 +39,7 @@ SCUDO_FLAG(int, QuarantineChunksUpToSize, -1,
 // Disable the deallocation type check by default on Android, it causes too many
 // issues with third party libraries.
 SCUDO_FLAG(bool, DeallocationTypeMismatch, !SANITIZER_ANDROID,
-          "Report errors on malloc/delete, new/free, new/delete[], etc.")
+           "Report errors on malloc/delete, new/free, new/delete[], etc.")
 
 SCUDO_FLAG(bool, DeleteSizeMismatch, true,
            "Report errors on mismatch between size of new and delete.")

@@ -1,4 +1,5 @@
 // RUN: %libomp-cxx-compile-and-run
+// RUN: %libomp-cxx-compile && env OMP_NUM_THREADS=1 %libomp-run
 
 /*
  * This test aims to check whether hidden helper thread has right gtid. We also
@@ -41,7 +42,9 @@ struct anon {
 };
 }
 
-kmp_int32 __kmp_hidden_helper_threads_num;
+// OHOS specific: we use static libomp and get link error on this symbol
+// probably push this to mainline
+__attribute__((weak)) kmp_int32 __kmp_hidden_helper_threads_num;
 
 kmp_int32 omp_task_entry(kmp_int32 gtid, kmp_task_t_with_privates *task) {
   auto shareds = reinterpret_cast<anon *>(task->task.shareds);
@@ -81,8 +84,7 @@ int main(int argc, char *argv[]) {
 
     kmp_depend_info_t depinfo1;
     depinfo1.base_addr = reinterpret_cast<intptr_t>(&depvar);
-    depinfo1.flags.in = 1;
-    depinfo1.flags.out = 1;
+    depinfo1.flag = 3; // INOUT
     depinfo1.len = 4;
 
     __kmpc_omp_task_with_deps(nullptr, gtid, task1, 1, &depinfo1, 0, nullptr);
@@ -96,8 +98,7 @@ int main(int argc, char *argv[]) {
 
     kmp_depend_info_t depinfo2;
     depinfo2.base_addr = reinterpret_cast<intptr_t>(&depvar);
-    depinfo2.flags.in = 1;
-    depinfo2.flags.out = 1;
+    depinfo2.flag = 3; // INOUT
     depinfo2.len = 4;
 
     __kmpc_omp_task_with_deps(nullptr, gtid, task2, 1, &depinfo2, 0, nullptr);
@@ -111,8 +112,7 @@ int main(int argc, char *argv[]) {
 
     kmp_depend_info_t depinfo3;
     depinfo3.base_addr = reinterpret_cast<intptr_t>(&depvar);
-    depinfo3.flags.in = 1;
-    depinfo3.flags.out = 1;
+    depinfo3.flag = 3; // INOUT
     depinfo3.len = 4;
 
     __kmpc_omp_task_with_deps(nullptr, gtid, task3, 1, &depinfo3, 0, nullptr);

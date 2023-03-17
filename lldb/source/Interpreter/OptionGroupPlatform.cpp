@@ -18,27 +18,40 @@ using namespace lldb_private;
 PlatformSP OptionGroupPlatform::CreatePlatformWithOptions(
     CommandInterpreter &interpreter, const ArchSpec &arch, bool make_selected,
     Status &error, ArchSpec &platform_arch) const {
-  PlatformSP platform_sp;
+  PlatformList &platforms = interpreter.GetDebugger().GetPlatformList();
 
+  PlatformSP platform_sp;
+  Log *log = GetLog(LLDBLog::Commands);
+  LLDB_LOGF(log, "Hsu file(%s):%d OptionGroupPlatform::%s call make_selected:%d",
+            __FILE__, __LINE__, __FUNCTION__, make_selected);
   if (!m_platform_name.empty()) {
-    platform_sp = Platform::Create(ConstString(m_platform_name.c_str()), error);
+    platform_sp = platforms.Create(m_platform_name);
+    if (!platform_sp) {
+      error.SetErrorStringWithFormatv(
+          "unable to find a plug-in for the platform named \"{0}\"",
+          m_platform_name);
+    }
     if (platform_sp) {
-      if (platform_arch.IsValid() &&
-          !platform_sp->IsCompatibleArchitecture(arch, false, &platform_arch)) {
-        error.SetErrorStringWithFormat("platform '%s' doesn't support '%s'",
-                                       platform_sp->GetName().GetCString(),
-                                       arch.GetTriple().getTriple().c_str());
+      if (GetContainer()) {
+        LLDB_LOGF(log, "Platform is created inside container.");
+        platform_sp->SetContainer(true);
+      }
+      if (platform_arch.IsValid() && !platform_sp->IsCompatibleArchitecture(
+                                         arch, {}, false, &platform_arch)) {
+        error.SetErrorStringWithFormatv("platform '{0}' doesn't support '{1}'",
+                                        platform_sp->GetPluginName(),
+                                        arch.GetTriple().getTriple());
         platform_sp.reset();
         return platform_sp;
       }
     }
   } else if (arch.IsValid()) {
-    platform_sp = Platform::Create(arch, &platform_arch, error);
+    platform_sp = platforms.GetOrCreate(arch, {}, &platform_arch, error);
   }
 
   if (platform_sp) {
-    interpreter.GetDebugger().GetPlatformList().Append(platform_sp,
-                                                       make_selected);
+    if (make_selected)
+      platforms.SetSelectedPlatform(platform_sp);
     if (!m_os_version.empty())
       platform_sp->SetOSVersion(m_os_version);
 
@@ -58,6 +71,7 @@ void OptionGroupPlatform::OptionParsingStarting(
   m_sdk_sysroot.Clear();
   m_sdk_build.Clear();
   m_os_version = llvm::VersionTuple();
+  m_container = false;
 }
 
 static constexpr OptionDefinition g_option_table[] = {
@@ -92,7 +106,6 @@ OptionGroupPlatform::SetOptionValue(uint32_t option_idx,
     ++option_idx;
 
   const int short_option = g_option_table[option_idx].short_option;
-
   switch (short_option) {
   case 'p':
     m_platform_name.assign(std::string(option_arg));
@@ -122,7 +135,7 @@ bool OptionGroupPlatform::PlatformMatches(
     const lldb::PlatformSP &platform_sp) const {
   if (platform_sp) {
     if (!m_platform_name.empty()) {
-      if (platform_sp->GetName() != ConstString(m_platform_name.c_str()))
+      if (platform_sp->GetName() != m_platform_name)
         return false;
     }
 
@@ -134,6 +147,10 @@ bool OptionGroupPlatform::PlatformMatches(
 
     if (!m_os_version.empty() && m_os_version != platform_sp->GetOSVersion())
       return false;
+
+    if (m_container != platform_sp->GetContainer())
+      return false;
+
     return true;
   }
   return false;

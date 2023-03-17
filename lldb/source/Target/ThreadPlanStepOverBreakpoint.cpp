@@ -10,6 +10,7 @@
 
 #include "lldb/Target/Process.h"
 #include "lldb/Target/RegisterContext.h"
+#include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/Stream.h"
 
@@ -18,6 +19,12 @@ using namespace lldb_private;
 
 // ThreadPlanStepOverBreakpoint: Single steps over a breakpoint bp_site_sp at
 // the pc.
+// Current behavior is to skip signal handlers, if a signal is received, so that
+// signals in the background do not interrupt our stepping (otherwise a
+// breakpoint can be seen as hit multiple times in a row, even though the
+// underlying instruction was not executed). If a breakpoint is hit inside the
+// handler (even with a false condition), the plan will finish and the user will
+// see another initial breakpoint hit once the control exits the handler.
 
 ThreadPlanStepOverBreakpoint::ThreadPlanStepOverBreakpoint(Thread &thread)
     : ThreadPlan(
@@ -27,8 +34,8 @@ ThreadPlanStepOverBreakpoint::ThreadPlanStepOverBreakpoint(Thread &thread)
                            // first in the thread plan stack when stepping over
                            // a breakpoint
       m_breakpoint_addr(LLDB_INVALID_ADDRESS),
-      m_auto_continue(false), m_reenabled_breakpoint_site(false)
-
+      m_auto_continue(false), m_reenabled_breakpoint_site(false),
+      m_handling_signal(false), m_is_stale(false)
 {
   m_breakpoint_addr = thread.GetRegisterContext()->GetPC();
   m_breakpoint_site_id =
@@ -36,7 +43,7 @@ ThreadPlanStepOverBreakpoint::ThreadPlanStepOverBreakpoint(Thread &thread)
           m_breakpoint_addr);
 }
 
-ThreadPlanStepOverBreakpoint::~ThreadPlanStepOverBreakpoint() {}
+ThreadPlanStepOverBreakpoint::~ThreadPlanStepOverBreakpoint() = default;
 
 void ThreadPlanStepOverBreakpoint::GetDescription(
     Stream *s, lldb::DescriptionLevel level) {
@@ -49,26 +56,16 @@ bool ThreadPlanStepOverBreakpoint::ValidatePlan(Stream *error) { return true; }
 bool ThreadPlanStepOverBreakpoint::DoPlanExplainsStop(Event *event_ptr) {
   StopInfoSP stop_info_sp = GetPrivateStopInfo();
   if (stop_info_sp) {
-    // It's a little surprising that we stop here for a breakpoint hit.
-    // However, when you single step ONTO a breakpoint we still want to call
-    // that a breakpoint hit, and trigger the actions, etc.  Otherwise you
-    // would see the
-    // PC at the breakpoint without having triggered the actions, then you'd
-    // continue, the PC wouldn't change,
-    // and you'd see the breakpoint hit, which would be odd. So the lower
-    // levels fake "step onto breakpoint address" and return that as a
-    // breakpoint.  So our trace step COULD appear as a breakpoint hit if the
-    // next instruction also contained a breakpoint.
     StopReason reason = stop_info_sp->GetStopReason();
 
-    Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_STEP));
+    Log *log = GetLog(LLDBLog::Step);
     LLDB_LOG(log, "Step over breakpoint stopped for reason: {0}.",
              Thread::StopReasonAsString(reason));
 
     switch (reason) {
       case eStopReasonTrace:
       case eStopReasonNone:
-        return true;
+        return !m_handling_signal;
       case eStopReasonBreakpoint:
       {
         // It's a little surprising that we stop here for a breakpoint hit.
@@ -89,16 +86,35 @@ bool ThreadPlanStepOverBreakpoint::DoPlanExplainsStop(Event *event_ptr) {
         lldb::addr_t pc_addr = GetThread().GetRegisterContext()->GetPC();
 
         if (pc_addr == m_breakpoint_addr) {
+          // If we came from a signal handler, just reset the flag and try again.
+          m_handling_signal = false;
           LLDB_LOGF(log,
                     "Got breakpoint stop reason but pc: 0x%" PRIx64
-                    "hasn't changed.",
+                    " hasn't changed, resetting m_handling_signal."
+                    " If we came from a signal handler, trying again.",
                     pc_addr);
           return true;
+        }
+
+        if (m_handling_signal) {
+          LLDB_LOG(log,
+                   "Got breakpoint stop reason inside a signal handler, "
+                   "step over breakpoint is finished for now.");
+          // Even if we are in a signal handler, handle the breakpoint as usual
+          // and finish the plan
+          m_is_stale = true;
         }
 
         SetAutoContinue(false);
         return false;
       }
+      case eStopReasonSignal:
+        if (!m_handling_signal) {
+          // Next stop may be a signal handler.
+          LLDB_LOG(log, "Preparing for signal handler handling.");
+          m_handling_signal = true;
+        }
+        return false;
       default:
         return false;
     }
@@ -113,6 +129,12 @@ bool ThreadPlanStepOverBreakpoint::ShouldStop(Event *event_ptr) {
 bool ThreadPlanStepOverBreakpoint::StopOthers() { return true; }
 
 StateType ThreadPlanStepOverBreakpoint::GetPlanRunState() {
+  if (m_handling_signal) {
+    // Resume & wait to hit our initial breakpoint
+    Log *log = GetLog(LLDBLog::Step);
+    LLDB_LOG(log, "Step over breakpoint resuming through a potential signal handler.");
+    return eStateRunning;
+  }
   return eStateStepping;
 }
 
@@ -121,9 +143,19 @@ bool ThreadPlanStepOverBreakpoint::DoWillResume(StateType resume_state,
   if (current_plan) {
     BreakpointSiteSP bp_site_sp(
         m_process.GetBreakpointSiteList().FindByAddress(m_breakpoint_addr));
-    if (bp_site_sp && bp_site_sp->IsEnabled()) {
-      m_process.DisableBreakpointSite(bp_site_sp.get());
-      m_reenabled_breakpoint_site = false;
+    if (bp_site_sp) {
+      Log *log = GetLog(LLDBLog::Step);
+      if (m_handling_signal) {
+        // Turn the breakpoint back on and wait to hit it.
+        // Even if there is no userspace signal handler, we'll immediately stop
+        // on the breakpoint and try again.
+        LLDB_LOG(log, "Step over breakpoint reenabling breakpoint to try again after a potential signal handler");
+        ReenableBreakpointSite();
+      } else if (bp_site_sp->IsEnabled()) {
+        LLDB_LOG(log, "Step over breakpoint disabling breakpoint.");
+        m_process.DisableBreakpointSite(bp_site_sp.get());
+        m_reenabled_breakpoint_site = false;
+      }
     }
   }
   return true;
@@ -134,19 +166,17 @@ bool ThreadPlanStepOverBreakpoint::WillStop() {
   return true;
 }
 
-void ThreadPlanStepOverBreakpoint::WillPop() {
-  ReenableBreakpointSite();
-}
+void ThreadPlanStepOverBreakpoint::DidPop() { ReenableBreakpointSite(); }
 
 bool ThreadPlanStepOverBreakpoint::MischiefManaged() {
   lldb::addr_t pc_addr = GetThread().GetRegisterContext()->GetPC();
 
-  if (pc_addr == m_breakpoint_addr) {
+  if (pc_addr == m_breakpoint_addr || m_handling_signal) {
     // If we are still at the PC of our breakpoint, then for some reason we
-    // didn't get a chance to run.
+    // didn't get a chance to run, or we received a signal and want to try again.
     return false;
   } else {
-    Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_STEP));
+    Log *log = GetLog(LLDBLog::Step);
     LLDB_LOGF(log, "Completed step over breakpoint plan.");
     // Otherwise, re-enable the breakpoint we were stepping over, and we're
     // done.
@@ -175,9 +205,20 @@ void ThreadPlanStepOverBreakpoint::SetAutoContinue(bool do_it) {
 }
 
 bool ThreadPlanStepOverBreakpoint::ShouldAutoContinue(Event *event_ptr) {
+  lldb::addr_t pc_addr = GetThread().GetRegisterContext()->GetPC();
+
+  if (pc_addr == m_breakpoint_addr) {
+    // Do not stop again at the breakpoint we are trying to step over
+    Log *log = GetLog(LLDBLog::Step);
+    LLDB_LOG(log, "Stopped step over breakpoint plan on its own breakpoint, auto-continue.");
+    return true;
+  }
   return m_auto_continue;
 }
 
 bool ThreadPlanStepOverBreakpoint::IsPlanStale() {
+  if (m_handling_signal) {
+    return m_is_stale;
+  }
   return GetThread().GetRegisterContext()->GetPC() != m_breakpoint_addr;
 }

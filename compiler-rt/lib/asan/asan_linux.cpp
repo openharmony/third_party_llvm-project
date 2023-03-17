@@ -45,7 +45,8 @@
 #include <link.h>
 #endif
 
-#if SANITIZER_ANDROID || SANITIZER_FREEBSD || SANITIZER_SOLARIS
+#if SANITIZER_ANDROID || SANITIZER_FREEBSD || SANITIZER_SOLARIS || \
+    SANITIZER_OHOS
 #include <ucontext.h>
 extern "C" void* _DYNAMIC;
 #elif SANITIZER_NETBSD
@@ -107,7 +108,7 @@ uptr FindDynamicShadowStart() {
     return FindPremappedShadowStart(shadow_size_bytes);
 #endif
 
-  return MapDynamicShadow(shadow_size_bytes, SHADOW_SCALE,
+  return MapDynamicShadow(shadow_size_bytes, ASAN_SHADOW_SCALE,
                           /*min_shadow_base_alignment*/ 0, kHighMemEnd);
 }
 
@@ -121,40 +122,34 @@ void FlushUnneededASanShadowMemory(uptr p, uptr size) {
   ReleaseMemoryPagesToOS(MemToShadow(p), MemToShadow(p + size));
 }
 
-#if SANITIZER_ANDROID
+#if SANITIZER_ANDROID || SANITIZER_OHOS
 // FIXME: should we do anything for Android?
 void AsanCheckDynamicRTPrereqs() {}
 void AsanCheckIncompatibleRT() {}
 #else
 static int FindFirstDSOCallback(struct dl_phdr_info *info, size_t size,
                                 void *data) {
-  VReport(2, "info->dlpi_name = %s\tinfo->dlpi_addr = %p\n",
-          info->dlpi_name, info->dlpi_addr);
+  VReport(2, "info->dlpi_name = %s\tinfo->dlpi_addr = %p\n", info->dlpi_name,
+          (void *)info->dlpi_addr);
 
-  // Continue until the first dynamic library is found
-  if (!info->dlpi_name || info->dlpi_name[0] == 0)
-    return 0;
+  const char **name = (const char **)data;
 
-  // Ignore vDSO
-  if (internal_strncmp(info->dlpi_name, "linux-", sizeof("linux-") - 1) == 0)
-    return 0;
-
-#if SANITIZER_FREEBSD || SANITIZER_NETBSD
   // Ignore first entry (the main program)
-  char **p = (char **)data;
-  if (!(*p)) {
-    *p = (char *)-1;
+  if (!*name) {
+    *name = "";
     return 0;
   }
-#endif
 
-#if SANITIZER_SOLARIS
-  // Ignore executable on Solaris
-  if (info->dlpi_addr == 0)
+#    if SANITIZER_LINUX
+  // Ignore vDSO. glibc versions earlier than 2.15 (and some patched
+  // by distributors) return an empty name for the vDSO entry, so
+  // detect this as well.
+  if (!info->dlpi_name[0] ||
+      internal_strncmp(info->dlpi_name, "linux-", sizeof("linux-") - 1) == 0)
     return 0;
-#endif
+#    endif
 
-  *(const char **)data = info->dlpi_name;
+  *name = info->dlpi_name;
   return 1;
 }
 
@@ -175,7 +170,7 @@ void AsanCheckDynamicRTPrereqs() {
   // Ensure that dynamic RT is the first DSO in the list
   const char *first_dso_name = nullptr;
   dl_iterate_phdr(FindFirstDSOCallback, &first_dso_name);
-  if (first_dso_name && !IsDynamicRTName(first_dso_name)) {
+  if (first_dso_name && first_dso_name[0] && !IsDynamicRTName(first_dso_name)) {
     Report("ASan runtime does not come first in initial library list; "
            "you should either link runtime to your application or "
            "manually preload it with LD_PRELOAD.\n");
@@ -214,17 +209,25 @@ void AsanCheckIncompatibleRT() {
 }
 #endif // SANITIZER_ANDROID
 
-#if !SANITIZER_ANDROID
+#if !SANITIZER_ANDROID && !SANITIZER_OHOS
 void ReadContextStack(void *context, uptr *stack, uptr *ssize) {
   ucontext_t *ucp = (ucontext_t*)context;
   *stack = (uptr)ucp->uc_stack.ss_sp;
   *ssize = ucp->uc_stack.ss_size;
 }
-#else
+
+void ResetContextStack(void *context) {
+  ucontext_t *ucp = (ucontext_t *)context;
+  ucp->uc_stack.ss_sp = nullptr;
+  ucp->uc_stack.ss_size = 0;
+}
+#  else
 void ReadContextStack(void *context, uptr *stack, uptr *ssize) {
   UNIMPLEMENTED();
 }
-#endif
+
+void ResetContextStack(void *context) { UNIMPLEMENTED(); }
+#  endif
 
 void *AsanDlSymNext(const char *sym) {
   return dlsym(RTLD_NEXT, sym);

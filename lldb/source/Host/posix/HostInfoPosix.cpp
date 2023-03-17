@@ -15,12 +15,13 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include <climits>
+#include <cstdlib>
 #include <grp.h>
-#include <limits.h>
 #include <mutex>
 #include <pwd.h>
-#include <stdlib.h>
 #include <sys/types.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 
 using namespace lldb_private;
@@ -35,6 +36,14 @@ bool HostInfoPosix::GetHostname(std::string &s) {
     return true;
   }
   return false;
+}
+
+llvm::Optional<std::string> HostInfoPosix::GetOSKernelDescription() {
+  struct utsname un;
+  if (uname(&un) < 0)
+    return llvm::None;
+
+  return std::string(un.version);
 }
 
 #ifdef __ANDROID__
@@ -86,7 +95,7 @@ llvm::Optional<std::string> PosixUserIDResolver::DoGetUserName(id_t uid) {
 }
 
 llvm::Optional<std::string> PosixUserIDResolver::DoGetGroupName(id_t gid) {
-#ifndef __ANDROID__
+#if !defined(__ANDROID__) && !defined(__OHOS_FAMILY__)
   char group_buffer[PATH_MAX];
   size_t group_buffer_size = sizeof(group_buffer);
   struct group group_info;

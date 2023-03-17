@@ -6,7 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if !defined(WIN32)
+#include "FifoFiles.h"
+
+#if !defined(_WIN32)
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -21,8 +23,6 @@
 
 #include "lldb/lldb-defines.h"
 
-#include "FifoFiles.h"
-
 using namespace llvm;
 
 namespace lldb_vscode {
@@ -30,13 +30,13 @@ namespace lldb_vscode {
 FifoFile::FifoFile(StringRef path) : m_path(path) {}
 
 FifoFile::~FifoFile() {
-#if !defined(WIN32)
+#if !defined(_WIN32)
   unlink(m_path.c_str());
 #endif
-};
+}
 
 Expected<std::shared_ptr<FifoFile>> CreateFifoFile(StringRef path) {
-#if defined(WIN32)
+#if defined(_WIN32)
   return createStringError(inconvertibleErrorCode(), "Unimplemented");
 #else
   if (int err = mkfifo(path.data(), 0600))
@@ -61,8 +61,7 @@ Expected<json::Value> FifoFileIO::ReadJSON(std::chrono::milliseconds timeout) {
         if (!buffer.empty())
           line = buffer;
       }));
-  if (future->wait_for(timeout) == std::future_status::timeout ||
-      !line.hasValue())
+  if (future->wait_for(timeout) == std::future_status::timeout || !line)
     return createStringError(inconvertibleErrorCode(),
                              "Timed out trying to get messages from the " +
                                  m_other_endpoint_name);

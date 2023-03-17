@@ -23,11 +23,11 @@
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineOperand.h"
-#include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
+#include "llvm/IR/Function.h"
 #include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
@@ -118,7 +118,7 @@ bool LocalStackSlotPass::runOnMachineFunction(MachineFunction &MF) {
   // If the target doesn't want/need this pass, or if there are no locals
   // to consider, early exit.
   if (LocalObjectCount == 0 || !TRI->requiresVirtualBaseRegisters(MF))
-    return true;
+    return false;
 
   // Make sure we have enough space to store the local offsets.
   LocalOffsets.resize(MFI.getObjectIndexEnd());
@@ -176,9 +176,7 @@ void LocalStackSlotPass::AssignProtectedObjSet(
     const StackObjSet &UnassignedObjs, SmallSet<int, 16> &ProtectedObjs,
     MachineFrameInfo &MFI, bool StackGrowsDown, int64_t &Offset,
     Align &MaxAlign) {
-  for (StackObjSet::const_iterator I = UnassignedObjs.begin(),
-        E = UnassignedObjs.end(); I != E; ++I) {
-    int i = *I;
+  for (int i : UnassignedObjs) {
     AdjustStackOffset(MFI, i, Offset, StackGrowsDown, MaxAlign);
     ProtectedObjs.insert(i);
   }
@@ -197,7 +195,9 @@ void LocalStackSlotPass::calculateFrameObjectOffsets(MachineFunction &Fn) {
 
   // Make sure that the stack protector comes before the local variables on the
   // stack.
+  Function &F = Fn.getFunction();
   SmallSet<int, 16> ProtectedObjs;
+
   if (MFI.hasStackProtectorIndex()) {
     int StackProtectorFI = MFI.getStackProtectorIndex();
 
@@ -212,7 +212,11 @@ void LocalStackSlotPass::calculateFrameObjectOffsets(MachineFunction &Fn) {
     StackObjSet SmallArrayObjs;
     StackObjSet AddrOfObjs;
 
-    AdjustStackOffset(MFI, StackProtectorFI, Offset, StackGrowsDown, MaxAlign);
+    // Only place the stack protector in the local stack area if the target
+    // allows it.
+    if (TFI.isStackIdSafeForLocalArea(MFI.getStackID(StackProtectorFI)))
+      AdjustStackOffset(MFI, StackProtectorFI, Offset, StackGrowsDown,
+                        MaxAlign);
 
     // Assign large stack objects first.
     for (unsigned i = 0, e = MFI.getObjectIndexEnd(); i != e; ++i) {
@@ -238,7 +242,37 @@ void LocalStackSlotPass::calculateFrameObjectOffsets(MachineFunction &Fn) {
       }
       llvm_unreachable("Unexpected SSPLayoutKind.");
     }
-
+    AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
+                          Offset, MaxAlign);
+    AssignProtectedObjSet(SmallArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
+                          Offset, MaxAlign);
+    AssignProtectedObjSet(AddrOfObjs, ProtectedObjs, MFI, StackGrowsDown,
+                          Offset, MaxAlign);
+  } else if (F.hasFnAttribute(Attribute::StackProtectRet)) {
+    StackObjSet LargeArrayObjs;
+    StackObjSet SmallArrayObjs;
+    StackObjSet AddrOfObjs;
+    // Assign large stack objects first.
+    for (unsigned i = 0, e = MFI.getObjectIndexEnd(); i != e; ++i) {
+      if (MFI.isDeadObjectIndex(i))
+        continue;
+      if (!TFI.isStackIdSafeForLocalArea(MFI.getStackID(i)))
+        continue;
+      switch (MFI.getObjectSSPLayout(i)) {
+      case MachineFrameInfo::SSPLK_None:
+        continue;
+      case MachineFrameInfo::SSPLK_SmallArray:
+        SmallArrayObjs.insert(i);
+        continue;
+      case MachineFrameInfo::SSPLK_AddrOf:
+        AddrOfObjs.insert(i);
+        continue;
+      case MachineFrameInfo::SSPLK_LargeArray:
+        LargeArrayObjs.insert(i);
+        continue;
+      }
+      llvm_unreachable("Unexpected SSPLayoutKind.");
+    }
     AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
     AssignProtectedObjSet(SmallArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
@@ -318,14 +352,14 @@ bool LocalStackSlotPass::insertFrameReferenceRegisters(MachineFunction &Fn) {
       // than that, but the increased register pressure makes that a
       // tricky thing to balance. Investigate if re-materializing these
       // becomes an issue.
-      for (unsigned i = 0, e = MI.getNumOperands(); i != e; ++i) {
+      for (const MachineOperand &MO : MI.operands()) {
         // Consider replacing all frame index operands that reference
         // an object allocated in the local block.
-        if (MI.getOperand(i).isFI()) {
+        if (MO.isFI()) {
           // Don't try this with values not in the local block.
-          if (!MFI.isObjectPreAllocated(MI.getOperand(i).getIndex()))
+          if (!MFI.isObjectPreAllocated(MO.getIndex()))
             break;
-          int Idx = MI.getOperand(i).getIndex();
+          int Idx = MO.getIndex();
           int64_t LocalOffset = LocalOffsets[Idx];
           if (!TRI->needsFrameBaseReg(&MI, LocalOffset))
             break;
@@ -342,7 +376,7 @@ bool LocalStackSlotPass::insertFrameReferenceRegisters(MachineFunction &Fn) {
 
   MachineBasicBlock *Entry = &Fn.front();
 
-  unsigned BaseReg = 0;
+  Register BaseReg;
   int64_t BaseOffset = 0;
 
   // Loop through the frame references and allocate for them as necessary.
@@ -412,20 +446,14 @@ bool LocalStackSlotPass::insertFrameReferenceRegisters(MachineFunction &Fn) {
         continue;
       }
 
-      const MachineFunction *MF = MI.getMF();
-      const TargetRegisterClass *RC = TRI->getPointerRegClass(*MF);
-      BaseReg = Fn.getRegInfo().createVirtualRegister(RC);
-
-      LLVM_DEBUG(dbgs() << "  Materializing base register"
-                        << " at frame local offset "
-                        << LocalOffset + InstrOffset);
-
       // Tell the target to insert the instruction to initialize
       // the base register.
       //            MachineBasicBlock::iterator InsertionPt = Entry->begin();
       BaseReg = TRI->materializeFrameBaseRegister(Entry, FrameIdx, InstrOffset);
 
-      LLVM_DEBUG(dbgs() << " into " << printReg(BaseReg, TRI) << '\n');
+      LLVM_DEBUG(dbgs() << "  Materialized base register at frame local offset "
+                        << LocalOffset + InstrOffset
+                        << " into " << printReg(BaseReg, TRI) << '\n');
 
       // The base register already includes any offset specified
       // by the instruction, so account for that so it doesn't get
@@ -435,7 +463,7 @@ bool LocalStackSlotPass::insertFrameReferenceRegisters(MachineFunction &Fn) {
       ++NumBaseRegisters;
       UsedBaseReg = true;
     }
-    assert(BaseReg != 0 && "Unable to allocate virtual base register!");
+    assert(BaseReg && "Unable to allocate virtual base register!");
 
     // Modify the instruction to use the new base register rather
     // than the frame index operand.

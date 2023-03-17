@@ -53,9 +53,9 @@ struct ErrorDeadlySignal : ErrorBase {
       scariness.Scare(10, "null-deref");
     } else if (signal.addr == signal.pc) {
       scariness.Scare(60, "wild-jump");
-    } else if (signal.write_flag == SignalContext::WRITE) {
+    } else if (signal.write_flag == SignalContext::Write) {
       scariness.Scare(30, "wild-addr-write");
-    } else if (signal.write_flag == SignalContext::READ) {
+    } else if (signal.write_flag == SignalContext::Read) {
       scariness.Scare(20, "wild-addr-read");
     } else {
       scariness.Scare(25, "wild-addr");
@@ -339,10 +339,13 @@ struct ErrorODRViolation : ErrorBase {
   ErrorODRViolation(u32 tid, const __asan_global *g1, u32 stack_id1_,
                     const __asan_global *g2, u32 stack_id2_)
       : ErrorBase(tid, 10, "odr-violation"),
-        global1(*g1),
-        global2(*g2),
         stack_id1(stack_id1_),
-        stack_id2(stack_id2_) {}
+        stack_id2(stack_id2_) {
+    // HUAWEI: We must avoid memcpy intrinsic, because memory for g2
+    // is poisoned.
+    internal_memcpy(&global1, g1, sizeof(*g1));
+    internal_memcpy(&global2, g2, sizeof(*g2));
+  }
   void Print();
 };
 
@@ -372,7 +375,7 @@ struct ErrorGeneric : ErrorBase {
   u8 shadow_val;
 
   ErrorGeneric() = default;  // (*)
-  ErrorGeneric(u32 tid, uptr addr, uptr pc_, uptr bp_, uptr sp_, bool is_write_,
+  ErrorGeneric(u32 tid, uptr pc_, uptr bp_, uptr sp_, uptr addr, bool is_write_,
                uptr access_size_);
   void Print();
 };

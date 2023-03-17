@@ -28,44 +28,39 @@
 // are not defined anywhere in userspace headers. Fake them. This seems to work
 // fine with newer headers, too.
 #include <linux/posix_types.h>
-#if defined(__x86_64__) ||  defined(__mips__)
-#include <sys/stat.h>
-#else
-#define ino_t __kernel_ino_t
-#define mode_t __kernel_mode_t
-#define nlink_t __kernel_nlink_t
-#define uid_t __kernel_uid_t
-#define gid_t __kernel_gid_t
-#define off_t __kernel_off_t
-#define time_t __kernel_time_t
+#  if defined(__x86_64__) || defined(__mips__) || defined(__hexagon__)
+#    include <sys/stat.h>
+#  else
+#    define ino_t __kernel_ino_t
+#    define mode_t __kernel_mode_t
+#    define nlink_t __kernel_nlink_t
+#    define uid_t __kernel_uid_t
+#    define gid_t __kernel_gid_t
+#    define off_t __kernel_off_t
+#    define time_t __kernel_time_t
 // This header seems to contain the definitions of _kernel_ stat* structs.
-#include <asm/stat.h>
-#undef ino_t
-#undef mode_t
-#undef nlink_t
-#undef uid_t
-#undef gid_t
-#undef off_t
-#endif
+#    include <asm/stat.h>
+#    undef ino_t
+#    undef mode_t
+#    undef nlink_t
+#    undef uid_t
+#    undef gid_t
+#    undef off_t
+#  endif
 
-#include <linux/aio_abi.h>
+#  include <linux/aio_abi.h>
 
-#if !SANITIZER_ANDROID
-#include <sys/statfs.h>
-#include <linux/perf_event.h>
-#endif
+#  if !SANITIZER_ANDROID
+#    include <sys/statfs.h>
+#    include <linux/perf_event.h>
+#  endif
 
 using namespace __sanitizer;
 
-namespace __sanitizer {
-#if !SANITIZER_ANDROID
-  unsigned struct_statfs64_sz = sizeof(struct statfs64);
-#endif
-}  // namespace __sanitizer
-
-#if !defined(__powerpc64__) && !defined(__x86_64__) && !defined(__aarch64__)\
-                            && !defined(__mips__) && !defined(__s390__)\
-                            && !defined(__sparc__) && !defined(__riscv)
+#  if !defined(__powerpc64__) && !defined(__x86_64__) &&                   \
+      !defined(__aarch64__) && !defined(__mips__) && !defined(__s390__) && \
+      !defined(__sparc__) && !defined(__riscv) && !defined(__hexagon__) && \
+      !defined(__loongarch__)
 COMPILER_CHECK(struct___old_kernel_stat_sz == sizeof(struct __old_kernel_stat));
 #endif
 
@@ -81,7 +76,7 @@ CHECK_SIZE_AND_OFFSET(io_event, obj);
 CHECK_SIZE_AND_OFFSET(io_event, res);
 CHECK_SIZE_AND_OFFSET(io_event, res2);
 
-#if !SANITIZER_ANDROID
+#  if !SANITIZER_ANDROID && !SANITIZER_OHOS
 COMPILER_CHECK(sizeof(struct __sanitizer_perf_event_attr) <=
                sizeof(struct perf_event_attr));
 CHECK_SIZE_AND_OFFSET(perf_event_attr, type);
@@ -90,7 +85,7 @@ CHECK_SIZE_AND_OFFSET(perf_event_attr, size);
 
 COMPILER_CHECK(iocb_cmd_pread == IOCB_CMD_PREAD);
 COMPILER_CHECK(iocb_cmd_pwrite == IOCB_CMD_PWRITE);
-#if !SANITIZER_ANDROID
+#  if !SANITIZER_ANDROID && !SANITIZER_OHOS
 COMPILER_CHECK(iocb_cmd_preadv == IOCB_CMD_PREADV);
 COMPILER_CHECK(iocb_cmd_pwritev == IOCB_CMD_PWRITEV);
 #endif

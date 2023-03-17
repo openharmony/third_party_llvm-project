@@ -41,6 +41,8 @@ uptr GetMmapGranularity() {
   return GetPageSize();
 }
 
+bool ErrorIsOOM(error_t err) { return err == ENOMEM; }
+
 void *MmapOrDie(uptr size, const char *mem_type, bool raw_report) {
   size = RoundUpTo(size, GetPageSizeCached());
   uptr res = MmapNamed(nullptr, size, PROT_READ | PROT_WRITE,
@@ -95,6 +97,7 @@ void *MmapAlignedOrDieOnFatalError(uptr size, uptr alignment,
     UnmapOrDie((void*)map_res, res - map_res);
   }
   uptr end = res + size;
+  end = RoundUpTo(end, GetPageSizeCached());
   if (end != map_end)
     UnmapOrDie((void*)end, map_end - end);
   return (void*)res;
@@ -146,7 +149,7 @@ bool MprotectReadOnly(uptr addr, uptr size) {
   return 0 == internal_mprotect((void *)addr, size, PROT_READ);
 }
 
-#if !SANITIZER_MAC
+#if !SANITIZER_APPLE
 void MprotectMallocZones(void *addr, int prot) {}
 #endif
 
@@ -239,7 +242,7 @@ bool MemoryRangeIsAvailable(uptr range_start, uptr range_end) {
   return true;
 }
 
-#if !SANITIZER_MAC
+#if !SANITIZER_APPLE
 void DumpProcessMap() {
   MemoryMappingLayout proc_maps(/*cache_enabled*/true);
   const sptr kBufSize = 4095;
@@ -275,8 +278,8 @@ void ReportFile::Write(const char *buffer, uptr length) {
 
 bool GetCodeRangeForFile(const char *module, uptr *start, uptr *end) {
   MemoryMappingLayout proc_maps(/*cache_enabled*/false);
-  InternalScopedString buff(kMaxPathLength);
-  MemoryMappedSegment segment(buff.data(), kMaxPathLength);
+  InternalMmapVector<char> buff(kMaxPathLength);
+  MemoryMappedSegment segment(buff.data(), buff.size());
   while (proc_maps.Next(&segment)) {
     if (segment.IsExecutable() &&
         internal_strcmp(module, segment.filename) == 0) {
@@ -341,7 +344,7 @@ bool ShouldMockFailureToOpen(const char *path) {
          internal_strncmp(path, "/proc/", 6) == 0;
 }
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_GO
+#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_GO && !SANITIZER_OHOS
 int GetNamedMappingFd(const char *name, uptr size, int *flags) {
   if (!common_flags()->decorate_proc_maps || !name)
     return -1;
@@ -373,7 +376,7 @@ int GetNamedMappingFd(const char *name, uptr size, int *flags) {
 }
 #endif
 
-#if SANITIZER_ANDROID
+#if SANITIZER_ANDROID || SANITIZER_OHOS
 #define PR_SET_VMA 0x53564d41
 #define PR_SET_VMA_ANON_NAME 0
 void DecorateMapping(uptr addr, uptr size, const char *name) {

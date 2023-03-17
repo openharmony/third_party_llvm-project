@@ -5,14 +5,12 @@ set_target_properties(LLGSOptionsTableGen PROPERTIES FOLDER "lldb misc")
 
 set(LLDB_PLUGINS)
 
-if(CMAKE_SYSTEM_NAME MATCHES "Linux|Android")
+if(CMAKE_SYSTEM_NAME MATCHES "Linux|Android|OHOS")
   list(APPEND LLDB_PLUGINS lldbPluginProcessLinux)
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-  list(APPEND LLDB_PLUGINS
-    lldbPluginProcessFreeBSDRemote
-    lldbPluginProcessFreeBSD)
+  list(APPEND LLDB_PLUGINS lldbPluginProcessFreeBSD)
 endif()
 
 if(CMAKE_SYSTEM_NAME MATCHES "NetBSD")
@@ -48,9 +46,9 @@ add_lldb_tool(lldb-server
     SystemInitializerLLGS.cpp
 
     LINK_LIBS
-      lldbBase
       lldbHost
       lldbInitialization
+      lldbVersion
       ${LLDB_PLUGINS}
       lldbPluginInstructionARM
       lldbPluginInstructionMIPS

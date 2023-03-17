@@ -76,7 +76,7 @@ class ConcurrentEventsBase(TestBase):
         bp = self.inferior_target.FindBreakpointByID(bpno)
         descriptions.append(
             ": file = 'main.cpp', line = %d" %
-            self.finish_breakpoint_line)
+            line)
         return bp
 
     def inferior_done(self):

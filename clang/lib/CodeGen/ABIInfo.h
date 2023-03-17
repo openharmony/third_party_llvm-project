@@ -35,10 +35,6 @@ namespace CodeGen {
   class CodeGenTypes;
   class SwiftABIInfo;
 
-namespace swiftcall {
-  class SwiftAggLowering;
-}
-
   // FIXME: All of this stuff should be part of the target interface
   // somehow. It is currently here because it is not clear how to factor
   // the targets to support this, since the Targets currently live in a
@@ -89,6 +85,7 @@ namespace swiftcall {
                                        QualType Ty) const = 0;
 
     bool isAndroid() const;
+    bool isOHOSFamily() const;
 
     /// Emit the target dependent code to load a value of
     /// \arg Ty from the \c __builtin_ms_va_list pointed to by \arg VAListAddr.
@@ -100,12 +97,13 @@ namespace swiftcall {
 
     virtual bool isHomogeneousAggregateSmallEnough(const Type *Base,
                                                    uint64_t Members) const;
+    virtual bool isZeroLengthBitfieldPermittedInHomogeneousAggregate() const;
 
     bool isHomogeneousAggregate(QualType Ty, const Type *&Base,
                                 uint64_t &Members) const;
 
     // Implement the Type::IsPromotableIntegerType for ABI specific needs. The
-    // only difference is that this considers _ExtInt as well.
+    // only difference is that this considers bit-precise integer types as well.
     bool isPromotableIntegerTypeForABI(QualType Ty) const;
 
     /// A convenience method to return an indirect ABIArgInfo with an
@@ -130,7 +128,7 @@ namespace swiftcall {
   public:
     SwiftABIInfo(CodeGen::CodeGenTypes &cgt) : ABIInfo(cgt) {}
 
-    bool supportsSwift() const final override { return true; }
+    bool supportsSwift() const final { return true; }
 
     virtual bool shouldPassIndirectlyForSwift(ArrayRef<llvm::Type*> types,
                                               bool asReturnValue) const = 0;

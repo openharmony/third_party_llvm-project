@@ -33,28 +33,33 @@
 #include <elf.h> // for NT_PRSTATUS
 #if (defined(__aarch64__) || SANITIZER_RISCV64) && !SANITIZER_ANDROID
 // GLIBC 2.20+ sys/user does not include asm/ptrace.h
+#if SANITIZER_OHOS
+// Do not include asm/sigcontext.h on behalf of asm/ptrace.h
+// to avoid multiple definiton errors.
+#define __ASM_SIGCONTEXT_H 1
+#endif
 # include <asm/ptrace.h>
 #endif
 #include <sys/user.h>  // for user_regs_struct
-#if SANITIZER_ANDROID && SANITIZER_MIPS
-# include <asm/reg.h>  // for mips SP register in sys/user.h
-#endif
-#include <sys/wait.h> // for signal-related stuff
+#  if (SANITIZER_ANDROID || SANITIZER_OHOS) && SANITIZER_MIPS
+#    include <asm/reg.h>  // for mips SP register in sys/user.h
+#  endif
+#  include <sys/wait.h>  // for signal-related stuff
 
-#ifdef sa_handler
-# undef sa_handler
-#endif
+#  ifdef sa_handler
+#    undef sa_handler
+#  endif
 
-#ifdef sa_sigaction
-# undef sa_sigaction
-#endif
+#  ifdef sa_sigaction
+#    undef sa_sigaction
+#  endif
 
-#include "sanitizer_common.h"
-#include "sanitizer_flags.h"
-#include "sanitizer_libc.h"
-#include "sanitizer_linux.h"
-#include "sanitizer_mutex.h"
-#include "sanitizer_placement_new.h"
+#  include "sanitizer_common.h"
+#  include "sanitizer_flags.h"
+#  include "sanitizer_libc.h"
+#  include "sanitizer_linux.h"
+#  include "sanitizer_mutex.h"
+#  include "sanitizer_placement_new.h"
 
 // Sufficiently old kernel headers don't provide this value, but we can still
 // call prctl with it. If the runtime kernel is new enough, the prctl call will
@@ -108,7 +113,7 @@ struct TracerThreadArgument {
   void *callback_argument;
   // The tracer thread waits on this mutex while the parent finishes its
   // preparations.
-  BlockingMutex mutex;
+  Mutex mutex;
   // Tracer thread signals its completion by setting done.
   atomic_uintptr_t done;
   uptr parent_pid;
@@ -504,9 +509,14 @@ typedef pt_regs regs_struct;
 typedef struct user regs_struct;
 # if SANITIZER_ANDROID
 #  define REG_SP regs[EF_R29]
-# else
-#  define REG_SP regs[EF_REG29]
-# endif
+// FIXME: For some reason, EF_R29 is not defined in asm/reg.h under
+// #if _MIPS_SIM == _MIPS_SIM_ABI32 condition, so use MIPS32_EF_R29 as a
+// temporary solution.
+#    elif SANITIZER_OHOS
+#      define REG_SP regs[MIPS32_EF_R29]
+#    else
+#      define REG_SP regs[EF_REG29]
+#    endif
 
 #elif defined(__aarch64__)
 typedef struct user_pt_regs regs_struct;

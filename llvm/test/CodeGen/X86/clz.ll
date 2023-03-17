@@ -56,12 +56,14 @@ define i16 @cttz_i16(i16 %x)  {
 ;
 ; X86-CLZ-LABEL: cttz_i16:
 ; X86-CLZ:       # %bb.0:
-; X86-CLZ-NEXT:    tzcntw {{[0-9]+}}(%esp), %ax
+; X86-CLZ-NEXT:    tzcntl {{[0-9]+}}(%esp), %eax
+; X86-CLZ-NEXT:    # kill: def $ax killed $ax killed $eax
 ; X86-CLZ-NEXT:    retl
 ;
 ; X64-CLZ-LABEL: cttz_i16:
 ; X64-CLZ:       # %bb.0:
-; X64-CLZ-NEXT:    tzcntw %di, %ax
+; X64-CLZ-NEXT:    tzcntl %edi, %eax
+; X64-CLZ-NEXT:    # kill: def $ax killed $ax killed $eax
 ; X64-CLZ-NEXT:    retq
   %tmp = call i16 @llvm.cttz.i16( i16 %x, i1 true )
   ret i16 %tmp
@@ -300,7 +302,7 @@ define i64 @ctlz_i64(i64 %x) {
 define i8 @ctlz_i8_zero_test(i8 %n) {
 ; X86-LABEL: ctlz_i8_zero_test:
 ; X86:       # %bb.0:
-; X86-NEXT:    movb {{[0-9]+}}(%esp), %al
+; X86-NEXT:    movzbl {{[0-9]+}}(%esp), %eax
 ; X86-NEXT:    testb %al, %al
 ; X86-NEXT:    je .LBB8_1
 ; X86-NEXT:  # %bb.2: # %cond.false
@@ -510,7 +512,7 @@ define i64 @ctlz_i64_zero_test(i64 %n) {
 define i8 @cttz_i8_zero_test(i8 %n) {
 ; X86-LABEL: cttz_i8_zero_test:
 ; X86:       # %bb.0:
-; X86-NEXT:    movb {{[0-9]+}}(%esp), %al
+; X86-NEXT:    movzbl {{[0-9]+}}(%esp), %eax
 ; X86-NEXT:    testb %al, %al
 ; X86-NEXT:    je .LBB12_1
 ; X86-NEXT:  # %bb.2: # %cond.false
@@ -702,32 +704,20 @@ define i64 @cttz_i64_zero_test(i64 %n) {
 ; Don't generate the cmovne when the source is known non-zero (and bsr would
 ; not set ZF).
 ; rdar://9490949
-; FIXME: The compare and branch are produced late in IR (by CodeGenPrepare), and
-;        codegen doesn't know how to delete the movl and je.
 define i32 @ctlz_i32_fold_cmov(i32 %n) {
 ; X86-LABEL: ctlz_i32_fold_cmov:
 ; X86:       # %bb.0:
 ; X86-NEXT:    movl {{[0-9]+}}(%esp), %eax
 ; X86-NEXT:    orl $1, %eax
-; X86-NEXT:    je .LBB16_1
-; X86-NEXT:  # %bb.2: # %cond.false
 ; X86-NEXT:    bsrl %eax, %eax
 ; X86-NEXT:    xorl $31, %eax
-; X86-NEXT:    retl
-; X86-NEXT:  .LBB16_1:
-; X86-NEXT:    movl $32, %eax
 ; X86-NEXT:    retl
 ;
 ; X64-LABEL: ctlz_i32_fold_cmov:
 ; X64:       # %bb.0:
 ; X64-NEXT:    orl $1, %edi
-; X64-NEXT:    je .LBB16_1
-; X64-NEXT:  # %bb.2: # %cond.false
 ; X64-NEXT:    bsrl %edi, %eax
 ; X64-NEXT:    xorl $31, %eax
-; X64-NEXT:    retq
-; X64-NEXT:  .LBB16_1:
-; X64-NEXT:    movl $32, %eax
 ; X64-NEXT:    retq
 ;
 ; X86-CLZ-LABEL: ctlz_i32_fold_cmov:
@@ -829,7 +819,7 @@ define i32 @ctlz_bsr_zero_test(i32 %n) {
 define i8 @cttz_i8_knownbits(i8 %x)  {
 ; X86-LABEL: cttz_i8_knownbits:
 ; X86:       # %bb.0:
-; X86-NEXT:    movb {{[0-9]+}}(%esp), %al
+; X86-NEXT:    movzbl {{[0-9]+}}(%esp), %eax
 ; X86-NEXT:    orb $2, %al
 ; X86-NEXT:    movzbl %al, %eax
 ; X86-NEXT:    bsfl %eax, %eax
@@ -846,7 +836,7 @@ define i8 @cttz_i8_knownbits(i8 %x)  {
 ;
 ; X86-CLZ-LABEL: cttz_i8_knownbits:
 ; X86-CLZ:       # %bb.0:
-; X86-CLZ-NEXT:    movb {{[0-9]+}}(%esp), %al
+; X86-CLZ-NEXT:    movzbl {{[0-9]+}}(%esp), %eax
 ; X86-CLZ-NEXT:    orb $2, %al
 ; X86-CLZ-NEXT:    movzbl %al, %eax
 ; X86-CLZ-NEXT:    tzcntl %eax, %eax
@@ -869,7 +859,7 @@ define i8 @cttz_i8_knownbits(i8 %x)  {
 define i8 @ctlz_i8_knownbits(i8 %x)  {
 ; X86-LABEL: ctlz_i8_knownbits:
 ; X86:       # %bb.0:
-; X86-NEXT:    movb {{[0-9]+}}(%esp), %al
+; X86-NEXT:    movzbl {{[0-9]+}}(%esp), %eax
 ; X86-NEXT:    orb $64, %al
 ; X86-NEXT:    movzbl %al, %eax
 ; X86-NEXT:    bsrl %eax, %eax
@@ -888,7 +878,7 @@ define i8 @ctlz_i8_knownbits(i8 %x)  {
 ;
 ; X86-CLZ-LABEL: ctlz_i8_knownbits:
 ; X86-CLZ:       # %bb.0:
-; X86-CLZ-NEXT:    movb {{[0-9]+}}(%esp), %al
+; X86-CLZ-NEXT:    movzbl {{[0-9]+}}(%esp), %eax
 ; X86-CLZ-NEXT:    orb $64, %al
 ; X86-CLZ-NEXT:    movzbl %al, %eax
 ; X86-CLZ-NEXT:    lzcntl %eax, %eax
@@ -951,13 +941,8 @@ define i64 @ctlz_i64_zero_test_knownneverzero(i64 %n) {
 ; X64-LABEL: ctlz_i64_zero_test_knownneverzero:
 ; X64:       # %bb.0:
 ; X64-NEXT:    orq $1, %rdi
-; X64-NEXT:    je .LBB21_1
-; X64-NEXT:  # %bb.2: # %cond.false
 ; X64-NEXT:    bsrq %rdi, %rax
 ; X64-NEXT:    xorq $63, %rax
-; X64-NEXT:    retq
-; X64-NEXT:  .LBB21_1:
-; X64-NEXT:    movl $64, %eax
 ; X64-NEXT:    retq
 ;
 ; X86-CLZ-LABEL: ctlz_i64_zero_test_knownneverzero:
@@ -1024,12 +1009,7 @@ define i64 @cttz_i64_zero_test_knownneverzero(i64 %n) {
 ; X64:       # %bb.0:
 ; X64-NEXT:    movabsq $-9223372036854775808, %rax # imm = 0x8000000000000000
 ; X64-NEXT:    orq %rdi, %rax
-; X64-NEXT:    je .LBB22_1
-; X64-NEXT:  # %bb.2: # %cond.false
 ; X64-NEXT:    bsfq %rax, %rax
-; X64-NEXT:    retq
-; X64-NEXT:  .LBB22_1:
-; X64-NEXT:    movl $64, %eax
 ; X64-NEXT:    retq
 ;
 ; X86-CLZ-LABEL: cttz_i64_zero_test_knownneverzero:
@@ -1058,4 +1038,75 @@ define i64 @cttz_i64_zero_test_knownneverzero(i64 %n) {
   %o = or i64 %n, -9223372036854775808 ; 0x8000000000000000
   %tmp1 = call i64 @llvm.cttz.i64(i64 %o, i1 false)
   ret i64 %tmp1
+}
+
+; Ensure we fold away the XOR(TRUNC(XOR(BSR(X),31)),31).
+define i8 @PR47603_trunc(i32 %0) {
+; X86-LABEL: PR47603_trunc:
+; X86:       # %bb.0:
+; X86-NEXT:    bsrl {{[0-9]+}}(%esp), %eax
+; X86-NEXT:    # kill: def $al killed $al killed $eax
+; X86-NEXT:    retl
+;
+; X64-LABEL: PR47603_trunc:
+; X64:       # %bb.0:
+; X64-NEXT:    bsrl %edi, %eax
+; X64-NEXT:    # kill: def $al killed $al killed $eax
+; X64-NEXT:    retq
+;
+; X86-CLZ-LABEL: PR47603_trunc:
+; X86-CLZ:       # %bb.0:
+; X86-CLZ-NEXT:    lzcntl {{[0-9]+}}(%esp), %eax
+; X86-CLZ-NEXT:    xorb $31, %al
+; X86-CLZ-NEXT:    # kill: def $al killed $al killed $eax
+; X86-CLZ-NEXT:    retl
+;
+; X64-CLZ-LABEL: PR47603_trunc:
+; X64-CLZ:       # %bb.0:
+; X64-CLZ-NEXT:    lzcntl %edi, %eax
+; X64-CLZ-NEXT:    xorb $31, %al
+; X64-CLZ-NEXT:    # kill: def $al killed $al killed $eax
+; X64-CLZ-NEXT:    retq
+  %2 = call i32 @llvm.ctlz.i32(i32 %0, i1 true)
+  %3 = xor i32 %2, 31
+  %4 = trunc i32 %3 to i8
+  ret i8 %4
+}
+
+; Ensure we fold away the XOR(ZEXT(XOR(BSR(X),31)),31).
+define i32 @PR47603_zext(i32 %a0, ptr %a1) {
+; X86-LABEL: PR47603_zext:
+; X86:       # %bb.0:
+; X86-NEXT:    movl {{[0-9]+}}(%esp), %eax
+; X86-NEXT:    bsrl {{[0-9]+}}(%esp), %ecx
+; X86-NEXT:    movsbl (%eax,%ecx), %eax
+; X86-NEXT:    retl
+;
+; X64-LABEL: PR47603_zext:
+; X64:       # %bb.0:
+; X64-NEXT:    bsrl %edi, %eax
+; X64-NEXT:    movsbl (%rsi,%rax), %eax
+; X64-NEXT:    retq
+;
+; X86-CLZ-LABEL: PR47603_zext:
+; X86-CLZ:       # %bb.0:
+; X86-CLZ-NEXT:    movl {{[0-9]+}}(%esp), %eax
+; X86-CLZ-NEXT:    lzcntl {{[0-9]+}}(%esp), %ecx
+; X86-CLZ-NEXT:    xorl $31, %ecx
+; X86-CLZ-NEXT:    movsbl (%eax,%ecx), %eax
+; X86-CLZ-NEXT:    retl
+;
+; X64-CLZ-LABEL: PR47603_zext:
+; X64-CLZ:       # %bb.0:
+; X64-CLZ-NEXT:    lzcntl %edi, %eax
+; X64-CLZ-NEXT:    xorq $31, %rax
+; X64-CLZ-NEXT:    movsbl (%rsi,%rax), %eax
+; X64-CLZ-NEXT:    retq
+  %ctlz = tail call i32 @llvm.ctlz.i32(i32 %a0, i1 true)
+  %xor = xor i32 %ctlz, 31
+  %zext = zext i32 %xor to i64
+  %gep = getelementptr inbounds [32 x i8], ptr %a1, i64 0, i64 %zext
+  %load = load i8, ptr %gep, align 1
+  %sext = sext i8 %load to i32
+  ret i32 %sext
 }
