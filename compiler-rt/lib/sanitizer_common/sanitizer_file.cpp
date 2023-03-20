@@ -88,7 +88,9 @@ static void RecursiveCreateParentDirs(char *path) {
       const char *ErrorMsgPrefix = "ERROR: Can't create directory: ";
       WriteToFile(kStderrFd, ErrorMsgPrefix, internal_strlen(ErrorMsgPrefix));
       WriteToFile(kStderrFd, path, internal_strlen(path));
-      Die();
+      // OHOS_LOCAL
+      // Die();
+      // OHOS_LOCAL
     }
     path[i] = save;
   }
