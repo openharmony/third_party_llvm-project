@@ -68,17 +68,19 @@ class Builder:
         make system.
         """
 
-        # If d is None or an empty mapping, just return an empty list.
+        # OHOS_LOCAL begin
         if not d:
-            return []
+            d = {}
 
-        def setOrAppendVariable(k, v):
-            append_vars = ["CFLAGS", "CFLAGS_EXTRAS", "LD_EXTRAS"]
-            if k in append_vars and k in os.environ:
-                v = os.environ[k] + " " + v
-            return '%s=%s' % (k, v)
+        pattern = '%s=%s'
+        append_vars = ["CFLAGS", "CFLAGS_EXTRAS", "LD_EXTRAS"]
+        for var in append_vars:
+            val = (d.get(var, '') + ' ' + os.getenv(var, '')).strip()
+            if val:
+                d[var] = val
 
-        cmdline = [setOrAppendVariable(k, v) for k, v in list(d.items())]
+        cmdline = [pattern % (k, v) for k, v in d.items()]
+        # OHOS_LOCAL end
 
         return cmdline
 
