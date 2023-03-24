@@ -108,7 +108,7 @@ License: Apache License v2.0 with LLVM Exceptions
 
 ### Functionality
 
-The LLVM toolchain is built based on LLVM 12.0.1. It is used to provide capability of building ohos image. For detailed information about LLVM 12.0.1, please refer to [LLVM 12.0.1](https://lists.llvm.org/pipermail/llvm-announce/2021-July/000093.html).
+The LLVM toolchain is built based on LLVM 15.0.4. It is used to provide capability of building ohos image. For detailed information about LLVM 15.0.4, please refer to [LLVM 15.0.4](https://discourse.llvm.org/t/llvm-15-0-4-released/66337).
 </br>
 
 ### Specifically Included Triplets
