@@ -1185,8 +1185,12 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
     Builder.defineMacro("__SSP_STRONG__", "2");
   else if (LangOpts.getStackProtector() == LangOptions::SSPReq)
     Builder.defineMacro("__SSP_ALL__", "3");
-  else if (LangOpts.getStackProtector() == LangOptions::SSPRet)
-    Builder.defineMacro("__SSP_RET__", "4");
+  // OHOS_LOCAL begin
+  else if (LangOpts.getStackProtector() == LangOptions::SSPRetStrong)
+    Builder.defineMacro("__SSP_RET_STRONG__", "4");
+  else if (LangOpts.getStackProtector() == LangOptions::SSPRetReq)
+    Builder.defineMacro("__SSP_RET_ALL__", "5");
+  // OHOS_LOCAL end
 
   if (PPOpts.SetUpStaticAnalyzer)
     Builder.defineMacro("__clang_analyzer__");

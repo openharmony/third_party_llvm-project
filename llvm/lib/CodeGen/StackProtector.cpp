@@ -96,6 +96,14 @@ bool StackProtector::runOnFunction(Function &Fn) {
       Attr.getValueAsString().getAsInteger(10, SSPBufferSize))
     return false; // Invalid integer string
 
+  // OHOS_LOCAL begin
+  Attr = Fn.getFnAttribute("stack-protector-ret-cookie-size");
+  if (Attr.isStringAttribute()) {
+    if ((Attr.getValueAsString().getAsInteger(10, SSPRetCookieSize)) || (!SSPRetCookieSize))
+      return false; // Invalid integer string
+  }
+  // OHOS_LOCAL end
+
   if (!RequiresStackProtector())
     return false;
 
@@ -109,20 +117,26 @@ bool StackProtector::runOnFunction(Function &Fn) {
 
   ++NumFunProtected;
 
-  if (Fn.hasFnAttribute(Attribute::StackProtectRet)) {
+  // OHOS_LOCAL begin
+  if (Fn.hasFnAttribute(Attribute::StackProtectRetReq) ||
+      Fn.hasFnAttribute(Attribute::StackProtectRetStrong)) {
     HasIRCheck = true;
     CreateSSPRetCookie();
     // StackProtectRet requires special code generation methods for backward
     // cfi.
     return false;
   }
+  // OHOS_LOCAL end
 
   return InsertStackProtectors();
 }
 
+// OHOS_LOCAL begin
 bool StackProtector::CreateSSPRetCookie() {
-  std::string cookiename = "__sspret_cookie";
   Type *cookietype = Type::getInt8PtrTy(M->getContext());
+  std::hash<std::string> hasher;
+  std::string hash = std::to_string(hasher((M->getName() + F->getName()).str()) % SSPRetCookieSize);
+  std::string cookiename = "__sspret_cookie_" + hash;
   GlobalVariable *cookie = dyn_cast_or_null<GlobalVariable>(
       M->getOrInsertGlobal(cookiename, cookietype));
 
@@ -137,6 +151,7 @@ bool StackProtector::CreateSSPRetCookie() {
 
   return true;
 }
+// OHOS_LOCAL end
 
 /// \param [out] IsLarge is set to true if a protectable array is found and
 /// it is "large" ( >= ssp-buffer-size).  In the case of a structure with
@@ -323,9 +338,13 @@ bool StackProtector::RequiresStackProtector() {
     });
     NeedsProtector = true;
     Strong = true; // Use the same heuristic as strong to determine SSPLayout
-  } else if (F->hasFnAttribute(Attribute::StackProtectRet)) {
+  // OHOS_LOCAL begin
+  } else if (F->hasFnAttribute(Attribute::StackProtectRetReq)) {
     NeedsProtector = true;
     Strong = true;
+  } else if (F->hasFnAttribute(Attribute::StackProtectRetStrong)) {
+    Strong = true;
+  // OHOS_LOCAL end
   } else if (F->hasFnAttribute(Attribute::StackProtectStrong))
     Strong = true;
   else if (!F->hasFnAttribute(Attribute::StackProtect))
