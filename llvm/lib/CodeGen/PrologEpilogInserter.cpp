@@ -212,10 +212,12 @@ bool PEI::runOnMachineFunction(MachineFunction &MF) {
   const Function &F = MF.getFunction();
   const TargetRegisterInfo *TRI = MF.getSubtarget().getRegisterInfo();
   const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
-  const StackProtectorRetLowering *SPRL = TFI->getStackProtectorRet();
 
+  // OHOS_LOCAL begin
+  const StackProtectorRetLowering *SPRL = TFI->getStackProtectorRet();
   if (SPRL)
     SPRL->setupStackProtectorRet(MF);
+  // OHOS_LOCAL end
 
   RS = TRI->requiresRegisterScavenging(MF) ? new RegScavenger() : nullptr;
   FrameIndexVirtualScavenging = TRI->requiresFrameIndexScavenging(MF);
@@ -254,9 +256,11 @@ bool PEI::runOnMachineFunction(MachineFunction &MF) {
   if (!F.hasFnAttribute(Attribute::Naked))
     insertPrologEpilogCode(MF);
 
+  // OHOS_LOCAL begin
   // Add StackProtectorRets if using them
   if (SPRL)
     SPRL->insertStackProtectorRets(MF);
+  // OHOS_LOCAL end
 
   // Reinsert stashed debug values at the start of the entry blocks.
   for (auto &I : EntryDbgValues)
@@ -367,9 +371,11 @@ void PEI::calculateCallFrameInfo(MachineFunction &MF) {
 /// Compute the sets of entry and return blocks for saving and restoring
 /// callee-saved registers, and placing prolog and epilog code.
 void PEI::calculateSaveRestoreBlocks(MachineFunction &MF) {
+  // OHOS_LOCAL begin
   MachineFrameInfo &MFI = MF.getFrameInfo();
   const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
   const StackProtectorRetLowering *SPRL = TFI->getStackProtectorRet();
+  // OHOS_LOCAL end
 
   // Even when we do not change any CSR, we still want to insert the
   // prologue and epilogue of the function.
@@ -386,6 +392,7 @@ void PEI::calculateSaveRestoreBlocks(MachineFunction &MF) {
     if (!RestoreBlock->succ_empty() || RestoreBlock->isReturnBlock())
       RestoreBlocks.push_back(RestoreBlock);
 
+    // OHOS_LOCAL begin
     // If we are adding stack-protector-rets ensure we can find a available
     // register for CFI verification.
     if (SPRL && !SPRL->determineStackProtectorRetRegister(MF)) {
@@ -395,8 +402,9 @@ void PEI::calculateSaveRestoreBlocks(MachineFunction &MF) {
       MFI.setSavePoint(nullptr);
       MFI.setRestorePoint(nullptr);
     } else {
+    // OHOS_LOCAL end
       return;
-    }
+    } // OHOS_LOCAL
   }
 
   // Save refs to entry and return blocks.
@@ -408,8 +416,10 @@ void PEI::calculateSaveRestoreBlocks(MachineFunction &MF) {
       RestoreBlocks.push_back(&MBB);
   }
 
+  // OHOS_LOCAL begin
   if (SPRL)
     SPRL->determineStackProtectorRetRegister(MF);
+  // OHOS_LOCAL end
 }
 
 static void assignCalleeSavedSpillSlots(MachineFunction &F,
@@ -446,9 +456,11 @@ static void assignCalleeSavedSpillSlots(MachineFunction &F,
   }
 
   const TargetFrameLowering *TFI = F.getSubtarget().getFrameLowering();
+  MachineFrameInfo &MFI = F.getFrameInfo();
+  // OHOS_LOCAL begin
   if (TFI->getStackProtectorRet())
     TFI->getStackProtectorRet()->saveStackProtectorRetRegister(F, CSI);
-  MachineFrameInfo &MFI = F.getFrameInfo();
+  // OHOS_LOCAL end
   if (!TFI->assignCalleeSavedSpillSlots(F, RegInfo, CSI, MinCSFrameIndex,
                                         MaxCSFrameIndex)) {
     // If target doesn't implement this, use generic code.
@@ -961,7 +973,7 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
 
   // Make sure that the stack protector comes before the local variables on the
   // stack.
-  Function &F = MF.getFunction();
+  Function &F = MF.getFunction(); // OHOS_LOCAL
   SmallSet<int, 16> ProtectedObjs;
   if (MFI.hasStackProtectorIndex()) {
     int StackProtectorFI = MFI.getStackProtectorIndex();
@@ -1031,13 +1043,15 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
       llvm_unreachable("Found protected stack objects not pre-allocated by "
                        "LocalStackSlotPass.");
 
+    // OHOS_LOCAL begin
     AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign, Skew);
     AssignProtectedObjSet(SmallArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign, Skew);
     AssignProtectedObjSet(AddrOfObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign, Skew);
-  } else if (F.hasFnAttribute(Attribute::StackProtectRet)) {
+  } else if (F.hasFnAttribute(Attribute::StackProtectRetReq) ||
+             F.hasFnAttribute(Attribute::StackProtectRetStrong)) {
     StackObjSet LargeArrayObjs;
     StackObjSet SmallArrayObjs;
     StackObjSet AddrOfObjs;
@@ -1071,6 +1085,7 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
       }
       llvm_unreachable("Unexpected SSPLayoutKind.");
     }
+    // OHOS_LOCAL end
 
     AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign, Skew);

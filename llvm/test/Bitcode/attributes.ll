@@ -535,6 +535,20 @@ define void @f86() nosanitize_bounds
 ; CHECK: define void @f87() [[FNRETTHUNKEXTERN:#[0-9]+]]
 define void @f87() fn_ret_thunk_extern { ret void }
 
+; OHOS_LOCAL begin
+define void @f88() sspretreq
+; CHECK: define void @f88() #54
+{
+        ret void;
+}
+
+define void @f89() sspretstrong
+; CHECK: define void @f89() #55
+{
+        ret void;
+}
+; OHOS_LOCAL end
+
 ; CHECK: attributes #0 = { noreturn }
 ; CHECK: attributes #1 = { nounwind }
 ; CHECK: attributes #2 = { readnone }
@@ -589,4 +603,8 @@ define void @f87() fn_ret_thunk_extern { ret void }
 ; CHECK: attributes #51 = { uwtable(sync) }
 ; CHECK: attributes #52 = { nosanitize_bounds }
 ; CHECK: attributes [[FNRETTHUNKEXTERN]] = { fn_ret_thunk_extern }
+; OHOS_LOCAL begin
+; CHECK: attributes #54 = { sspretreq }
+; CHECK: attributes #55 = { sspretstrong }
+; OHOS_LOCAL end
 ; CHECK: attributes #[[NOBUILTIN]] = { nobuiltin }

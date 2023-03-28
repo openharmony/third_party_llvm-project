@@ -272,12 +272,14 @@ private:
   /// The frame index for the stack protector.
   int StackProtectorIdx = -1;
 
+  /// OHOS_LOCAL begin
   struct StackProtectorRet {
     /// The register to use for stack protector & backwrad cfi calculations
     unsigned Register = 0;
     /// Set to true if this function needs stack-protector-ret
     bool Needed = false;
   } SPR;
+  /// OHOS_LOCAL end
 
   /// The frame index for the function context. Used for SjLj exceptions.
   int FunctionContextIdx = -1;
@@ -365,6 +367,7 @@ public:
   void setStackProtectorIndex(int I) { StackProtectorIdx = I; }
   bool hasStackProtectorIndex() const { return StackProtectorIdx != -1; }
 
+  /// OHOS_LOCAL begin
   /// Get / Set stack protector ret calculation register
   unsigned getStackProtectorRetRegister() const { return SPR.Register; }
   void setStackProtectorRetRegister(unsigned I) { SPR.Register = I; }
@@ -372,6 +375,7 @@ public:
   /// Get / Set if this frame needs backward cfi protect.
   void setStackProtectorRetNeeded(bool I) { SPR.Needed = I; }
   bool getStackProtectorRetNeeded() const { return SPR.Needed; }
+  /// OHOS_LOCAL end
 
   /// Return the index for the function context object.
   /// This object is used for SjLj exceptions.

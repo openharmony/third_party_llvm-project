@@ -498,6 +498,12 @@ static unsigned getELFSectionType(StringRef Name, SectionKind K) {
   if (hasPrefix(Name, ".preinit_array"))
     return ELF::SHT_PREINIT_ARRAY;
 
+  // OHOS_LOCAL begin
+  // ohos customized section, does not occupy ROM in ELF.
+  if (Name == ".ohos.randomdata")
+    return ELF::SHT_NOBITS;
+  // OHOS_LOCAL end
+
   if (hasPrefix(Name, ".llvm.offloading"))
     return ELF::SHT_LLVM_OFFLOADING;
 

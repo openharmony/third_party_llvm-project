@@ -76,7 +76,7 @@ add_llvm_target(AArch64CodeGen
   AArch64SLSHardening.cpp
   AArch64SelectionDAGInfo.cpp
   AArch64SpeculationHardening.cpp
-  AArch64StackProtectorRetLowering.cpp
+  AArch64StackProtectorRetLowering.cpp # OHOS_LOCAL
   AArch64StackTagging.cpp
   AArch64StackTaggingPreRA.cpp
   AArch64StorePairSuppress.cpp

@@ -2506,13 +2506,17 @@ Enable stack protectors for some functions vulnerable to stack smashing. This us
 
 Enable stack protectors for all functions
 
+.. option:: -fstack-protector-ret-all
+
+Enable stack protectors for all functions with return address check
+
+.. option:: -fstack-protector-ret-strong
+
+Enable stack protectors for some functions vulnerable to stack smashing with return address check
+
 .. option:: -fstack-protector-strong
 
 Enable stack protectors for some functions vulnerable to stack smashing. Compared to -fstack-protector, this uses a stronger heuristic that includes functions containing arrays of any size (and any type), as well as any calls to alloca or the taking of an address from a local variable
-
-.. option:: -fstack-protector-ret
-
-Enable stack protectors for all functions with return address check
 
 .. option:: -fstack-size-section, -fno-stack-size-section
 

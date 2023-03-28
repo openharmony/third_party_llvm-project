@@ -2151,6 +2151,67 @@ example:
     function which has an ``ssp`` or ``sspstrong`` attribute, the calling
     function's attribute will be upgraded to ``sspreq``.
 
+.. OHOS_LOCAL begin
+``sspretstrong``
+    This attribute indicates that the function should emit a stack smashing
+    protector with return address check for backward cfi. This attribute
+    causes a strong heuristic to be used when determining if a function needs
+    stack protectors. This overrides the ``sspstrong`` function attributes.
+
+    Variables that are identified as requiring a protector will be arranged
+    on the stack such that they are adjacent to the stack protector guard.
+    The specific layout rules are:
+
+    #. Large arrays and structures containing large arrays
+       (``>= ssp-buffer-size``) are closest to the stack protector.
+    #. Small arrays and structures containing small arrays
+       (``< ssp-buffer-size``) are 2nd closest to the protector.
+    #. Variables that have had their address taken are 3rd closest to the
+       protector.
+
+    The rules for the number of cookies used by additional backward cfi
+    protection are:
+
+    #. If ``ssp-ret-cookie-size`` is not specified, the functions protected
+       by ``sspretstrong`` in each object share the one cookie.
+    #. The maximum number of cookies used by ``sspretstrong`` in each object
+       does not exceed ``ssp-ret-cookie-size``.
+
+    This overrides the ``ssp`` function attribute.
+
+    If a function with an ``sspretstrong`` attribute is inlined into a calling
+    function which has an ``ssp`` or ``sspstrong`` attribute, the calling function's attribute
+    will be upgraded to ``sspretstrong``.
+
+``sspretreq``
+    This attribute indicates that the function should *always* emit a stack
+    smashing protector with return address check for backward cfi. This
+    overrides the ``sspreq`` and ``sspstrong`` function attributes.
+
+    Variables that are identified as requiring a protector will be arranged
+    on the stack such that they are adjacent to the stack protector guard.
+    The specific layout rules are:
+
+    #. Large arrays and structures containing large arrays
+       (``>= ssp-buffer-size``) are closest to the stack protector.
+    #. Small arrays and structures containing small arrays
+       (``< ssp-buffer-size``) are 2nd closest to the protector.
+    #. Variables that have had their address taken are 3rd closest to the
+       protector.
+
+    The rules for the number of cookies used by additional backward cfi
+    protection are:
+
+    #. If ``ssp-ret-cookie-size`` is not specified, the functions protected
+       by ``sspretreq`` in each object share the one cookie.
+    #. The maximum number of cookies used by ``sspretreq`` in each object
+       does not exceed ``ssp-ret-cookie-size``.
+
+    If a function with an ``sspretreq`` attribute is inlined into a calling
+    function which has an ``sspreq`` or ``sspretstrong`` attribute, the calling
+    function's attribute will be upgraded to ``sspretreq``.
+.. OHOS_LOCAL end
+
 ``strictfp``
     This attribute indicates that the function was called from a scope that
     requires strict floating-point semantics.  LLVM will not attempt any

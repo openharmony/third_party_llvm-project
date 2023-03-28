@@ -1412,6 +1412,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
 
     return;
   }
+  // OHOS_LOCAL begin
   case AArch64::SSP_RET_TRAP: {
     MCSymbol *TempSymbol = OutContext.createTempSymbol();
     /* Compare and branch */
@@ -1423,6 +1424,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
     OutStreamer->emitLabel(TempSymbol);
     return;
   }
+  // OHOS_LOCAL end
 
   case AArch64::JumpTableDest32:
   case AArch64::JumpTableDest16:

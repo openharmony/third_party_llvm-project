@@ -955,7 +955,10 @@ Function *CodeExtractor::constructFunction(const ValueSet &inputs,
       case Attribute::SanitizeMemTag:
       case Attribute::SpeculativeLoadHardening:
       case Attribute::StackProtect:
-      case Attribute::StackProtectRet:
+      // OHOS_LOCAL begin
+      case Attribute::StackProtectRetReq:
+      case Attribute::StackProtectRetStrong:
+      // OHOS_LOCAL end
       case Attribute::StackProtectReq:
       case Attribute::StackProtectStrong:
       case Attribute::StrictFP:

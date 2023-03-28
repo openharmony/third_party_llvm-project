@@ -24,6 +24,24 @@
 // SSP-ALL: "-stack-protector" "3"
 // SSP-ALL-NOT: "-stack-protector-buffer-size" 
 
+// OHOS_LOCAL begin
+// RUN: %clang -fstack-protector-ret-strong -### %s 2>&1 | FileCheck %s -check-prefix=SSP-RET-STRONG
+// SSP-RET-STRONG: "-stack-protector" "4"
+// SSP-RET-STRONG-NOT: "-stack-protector-buffer-size"
+
+// RUN: %clang -fstack-protector-ret-all -### %s 2>&1 | FileCheck %s -check-prefix=SSP-RET-ALL
+// SSP-RET-ALL: "-stack-protector" "5"
+// SSP-RET-ALL-NOT: "-stack-protector-buffer-size"
+
+// RUN: %clang -target aarch64-linux-ohos -fstack-protector-ret-strong --param ssp-ret-cookie-size=10 -### %s 2>&1 | FileCheck %s -check-prefix=SSP-RET-COOKIE-STRONG
+// SSP-RET-COOKIE-STRONG: "-stack-protector" "4"
+// SSP-RET-COOKIE-STRONG: "-stack-protector-ret-cookie-size" "10"
+
+// RUN: %clang -target aarch64-linux-ohos -fstack-protector-ret-all --param ssp-ret-cookie-size=-1 -### %s 2>&1 | FileCheck %s -check-prefix=SSP-RET-COOKIE-ALL
+// SSP-RET-COOKIE-ALL: invalid integral value
+// SSP-RET-COOKIE-ALL: "-stack-protector" "5"
+// OHOS_LOCAL end
+
 // RUN: %clang -target x86_64-scei-ps4 -### %s 2>&1 | FileCheck %s -check-prefix=SSP-PS4
 // RUN: %clang -target x86_64-scei-ps4 -fstack-protector -### %s 2>&1 | FileCheck %s -check-prefix=SSP-PS4
 // SSP-PS4: "-stack-protector" "2"

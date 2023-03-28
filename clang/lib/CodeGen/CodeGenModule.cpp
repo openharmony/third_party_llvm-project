@@ -1955,8 +1955,12 @@ void CodeGenModule::SetLLVMFunctionAttributesForDefinition(const Decl *D,
       B.addAttribute(llvm::Attribute::StackProtectStrong);
     else if (LangOpts.getStackProtector() == LangOptions::SSPReq)
       B.addAttribute(llvm::Attribute::StackProtectReq);
-    else if (LangOpts.getStackProtector() == LangOptions::SSPRet)
-      B.addAttribute(llvm::Attribute::StackProtectRet);
+    // OHOS_LOCAL begin
+    else if (LangOpts.getStackProtector() == LangOptions::SSPRetStrong)
+      B.addAttribute(llvm::Attribute::StackProtectRetStrong);
+    else if (LangOpts.getStackProtector() == LangOptions::SSPRetReq)
+      B.addAttribute(llvm::Attribute::StackProtectRetReq);
+    // OHOS_LOCAL end
   }
 
   if (!D) {
