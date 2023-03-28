@@ -953,19 +953,21 @@ class LlvmLibs(BuildUtils):
         rt_defines['LIBCXXABI_HAS_CXA_THREAD_ATEXIT_IMPL'] = 'OFF'
         rt_defines['LIBCXXABI_ENABLE_SHARED'] = 'OFF'
         rt_defines['LIBCXXABI_LIBCXX_INCLUDES'] = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'libcxx', 'include'))
+        rt_defines['LIBCXXABI_STATICALLY_LINK_UNWINDER_IN_STATIC_LIBRARY'] = 'OFF'
         rt_defines['LIBCXX_USE_COMPILER_RT'] = 'ON'
         rt_defines['LIBCXX_ENABLE_ABI_LINKER_SCRIPT'] = 'OFF'
         rt_defines['LIBCXX_ENABLE_STATIC_ABI_LIBRARY'] = 'ON'
         rt_defines['CMAKE_ASM_FLAGS'] = ' '.join(rt_cflags)
         rt_defines['CMAKE_C_FLAGS'] = ' '.join(rt_cflags)
         rt_defines['CMAKE_CXX_FLAGS'] = ' '.join(rt_cflags)
-        rt_defines['CMAKE_INSTALL_PREFIX'] = llvm_install
+
         rt_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
         rt_defines['CMAKE_SYSTEM_NAME'] = 'OHOS'
         rt_defines['CMAKE_CROSSCOMPILING'] = 'True'
         rt_defines['CMAKE_TRY_COMPILE_TARGET_TYPE'] = 'STATIC_LIBRARY'
 
         if libcxx_ndk_install:
+            rt_defines['CMAKE_INSTALL_PREFIX'] = libcxx_ndk_install
             rt_defines['LIBCXX_ABI_NAMESPACE'] = '__n1'
             rt_defines['LIBCXX_OUTPUT_NAME'] = 'c++_shared'
             rt_defines['LIBCXX_OUTPUT_STATIC_NAME'] = 'c++_static'
@@ -974,7 +976,9 @@ class LlvmLibs(BuildUtils):
             rt_defines['LIBCXXABI_INSTALL_LIBRARY'] = 'OFF'
             rt_defines['LIBUNWIND_INSTALL_LIBRARY'] = 'OFF'
         else:
+            rt_defines['CMAKE_INSTALL_PREFIX'] = llvm_install
             rt_defines['LIBCXX_ABI_NAMESPACE'] = '__h'
+            rt_defines['LIBCXX_INSTALL_INCLUDE_DIR'] = self.merge_out_path(llvm_install, 'include', 'libcxx-ohos', 'include', 'c++', 'v1')
  
         self.check_rm_tree(out_path)
         cmake_rt = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'runtimes'))
