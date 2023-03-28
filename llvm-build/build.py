@@ -1578,7 +1578,9 @@ class LlvmPackage(BuildUtils):
             'count%s' % ext,
             'llc%s' % ext,
             'opt%s' % ext,
+
             ]
+            
         necessary_bin_files.extend(necessary_bin_file)
 
     @staticmethod
