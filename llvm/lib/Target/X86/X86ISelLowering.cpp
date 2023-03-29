@@ -3610,6 +3610,16 @@ static bool mayTailCallThisCC(CallingConv::ID CC) {
   // Swift:
   case CallingConv::Swift:
     return true;
+  // OHOS_LOCAL begin
+  case CallingConv::ArkInt:
+  case CallingConv::ArkFast0:
+  case CallingConv::ArkFast1:
+  case CallingConv::ArkFast2:
+  case CallingConv::ArkFast3:
+  case CallingConv::ArkFast4:
+  case CallingConv::ArkFast5:
+    return true;
+  // OHOS_LOCAL end
   default:
     return canGuaranteeTCO(CC);
   }
@@ -3875,7 +3885,10 @@ void VarArgsLoweringHelper::createVarArgAreaAndStoreRegisters(
     if (isWin64()) {
       // Get to the caller-allocated home save location.  Add 8 to account
       // for the return address.
-      int HomeOffset = FrameLowering.getOffsetOfLocalArea() + 8;
+      // OHOS_LOCAL begin
+      auto CC = TheMachineFunction.getFunction().getCallingConv();
+      int HomeOffset = FrameLowering.getOffsetOfLocalArea(CC) + 8;
+      // OHOS_LOCAL end
       FuncInfo->setRegSaveFrameIndex(
           FrameInfo.CreateFixedObject(1, NumIntRegs * 8 + HomeOffset, false));
       // Fixup to set vararg frame on shadow area (4 x i64).
@@ -28213,6 +28226,11 @@ SDValue X86TargetLowering::LowerFRAMEADDR(SDValue Op, SelectionDAG &DAG) const {
   return FrameAddr;
 }
 
+// OHOS_LOCAL begin
+#define GET_REGISTER_MATCHER
+#include "X86GenAsmMatcher.inc"
+// OHOS_LOCAL end
+
 // FIXME? Maybe this could be a TableGen attribute on some registers and
 // this table could be generated automatically from RegInfo.
 Register X86TargetLowering::getRegisterByName(const char* RegName, LLT VT,
@@ -28242,6 +28260,13 @@ Register X86TargetLowering::getRegisterByName(const char* RegName, LLT VT,
 
   if (Reg)
     return Reg;
+
+  // OHOS_LOCAL begin
+  Reg = MatchRegisterName(RegName);
+  Register RReg = getX86SubSuperRegisterOrZero(Reg, 64);
+  if (Subtarget.getRRegReservation().contains(RReg))
+    return Reg;
+  // OHOS_LOCAL end
 
   report_fatal_error("Invalid register name global variable");
 }

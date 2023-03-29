@@ -456,6 +456,31 @@ added in the future:
     - On X86 the target address is passed in ECX.
     - On ARM the target address is passed in R0.
     - On AArch64 the target address is passed in X15.
+.. OHOS_LOCAL begin
+"``arkintcc``"
+    Ark Irtoc calling convention for Interpreter handlers
+"``arkfast0cc``"
+    Ark Irtoc calling convention for void-return FastPath handlers with zero
+    arguments
+"``arkfast1cc``"
+    Ark Irtoc calling convention for FastPath handlers with one argument or
+    no arguments but having a return value
+"``arkfast2cc``"
+    Ark Itroc calling convention for FastPath handlers with two arguments
+"``arkfast3cc``"
+    Ark Itroc calling convention for FastPath handlers with three arguments
+"``arkfast4cc``"
+    Ark Itroc calling convention for FastPath handlers with four arguments
+"``arkfast5cc``"
+    Ark Itroc calling convention for FastPath handlers with five arguments
+"``arkmethodcc``"
+    Ark AOT method calling convention with frame adaptation
+"``arkresolvercc``"
+    Ark AOT calling convention for special class resolvers
+"``arkpltcc``"
+    Ark AOT calling convention for static calls through special PLT resolver
+.. OHOS_LOCAL end
+
 "``cc <n>``" - Numbered convention
     Any calling convention may be specified by number, allowing
     target-specific calling conventions to be used. Target specific

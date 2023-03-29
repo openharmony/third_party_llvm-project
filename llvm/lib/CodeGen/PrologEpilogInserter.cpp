@@ -842,7 +842,11 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
   // Start at the beginning of the local area.
   // The Offset is the distance from the stack top in the direction
   // of stack growth -- so it's always nonnegative.
-  int LocalAreaOffset = TFI.getOffsetOfLocalArea();
+  // OHOS_LOCAL begin
+  auto CC = MF.getFunction().getCallingConv();
+  int LocalAreaOffset = TFI.getOffsetOfLocalArea(CC);
+  // OHOS_LOCAL end
+
   if (StackGrowsDown)
     LocalAreaOffset = -LocalAreaOffset;
   assert(LocalAreaOffset >= 0

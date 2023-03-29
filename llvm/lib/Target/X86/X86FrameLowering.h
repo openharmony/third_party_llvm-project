@@ -264,6 +264,10 @@ private:
   void emitCatchRetReturnValue(MachineBasicBlock &MBB,
                                MachineBasicBlock::iterator MBBI,
                                MachineInstr *CatchRet) const;
+
+  // OHOS_LOCAL begin
+  int getOffsetOfLocalArea(CallingConv::ID CC = CallingConv::C) const override;
+  // OHOS_LOCAL end
 };
 
 } // End llvm namespace

@@ -1185,12 +1185,16 @@ static MachineBasicBlock::iterator convertCalleeSaveRestoreToSPPrePostIncDec(
   MachineFunction &MF = *MBB.getParent();
   if (MBBI->getOperand(MBBI->getNumOperands() - 1).getImm() != 0 ||
       CSStackSizeInc < MinOffset || CSStackSizeInc > MaxOffset) {
-    emitFrameOffset(MBB, MBBI, DL, AArch64::SP, AArch64::SP,
+    // OHOS_LOCAL begin
+    MachineBasicBlock::iterator MBBIn =
+      FrameFlag == MachineInstr::FrameDestroy ? std::next(MBBI) : MBBI;
+    emitFrameOffset(MBB, MBBIn, DL, AArch64::SP, AArch64::SP,
                     StackOffset::getFixed(CSStackSizeInc), TII, FrameFlag,
                     false, false, nullptr, EmitCFI,
                     StackOffset::getFixed(CFAOffset));
 
-    return std::prev(MBBI);
+    return std::prev(MBBIn);
+    // OHOS_LOCAL end
   }
 
   MachineInstrBuilder MIB = BuildMI(MBB, MBBI, DL, TII->get(NewOpc));
@@ -1472,6 +1476,18 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
   // prologue/epilogue.
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+
+  // OHOS_LOCAL begin
+  if (HasFP && (MF.getFunction().getCallingConv() == CallingConv::ArkFast0 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast1 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast2 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast3 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast4 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast5)) {
+    report_fatal_error(
+        "Implicit use of FP is forbidden for ArkFast conventions!");
+  }
+  // OHOS_LOCAL end
 
   // Set tagged base pointer to the requested stack slot.
   // Ideally it should match SP value after prologue.

@@ -5726,6 +5726,7 @@ CCAssignFn *AArch64TargetLowering::CCAssignFnForCall(CallingConv::ID CC,
   case CallingConv::Swift:
   case CallingConv::SwiftTail:
   case CallingConv::Tail:
+  case CallingConv::ArkMethod: // OHOS_LOCAL
     if (Subtarget->isTargetWindows() && IsVarArg)
       return CC_AArch64_Win64_VarArg;
     if (!Subtarget->isTargetDarwin())
@@ -5734,6 +5735,24 @@ CCAssignFn *AArch64TargetLowering::CCAssignFnForCall(CallingConv::ID CC,
       return CC_AArch64_DarwinPCS;
     return Subtarget->isTargetILP32() ? CC_AArch64_DarwinPCS_ILP32_VarArg
                                       : CC_AArch64_DarwinPCS_VarArg;
+   // OHOS_LOCAL begin
+   case CallingConv::ArkInt:
+     return CC_AArch64_ArkInt;
+   case CallingConv::ArkFast0:
+     return CC_AArch64_ArkFast0;
+   case CallingConv::ArkFast1:
+     return CC_AArch64_ArkFast1;
+   case CallingConv::ArkFast2:
+     return CC_AArch64_ArkFast2;
+   case CallingConv::ArkFast3:
+     return CC_AArch64_ArkFast3;
+   case CallingConv::ArkFast4:
+     return CC_AArch64_ArkFast4;
+   case CallingConv::ArkFast5:
+     return CC_AArch64_ArkFast5;
+   case CallingConv::ArkResolver:
+     return CC_AArch64_ArkResolver;
+   // OHOS_LOCAL end
    case CallingConv::Win64:
     return IsVarArg ? CC_AArch64_Win64_VarArg : CC_AArch64_AAPCS;
    case CallingConv::CFGuard_Check:
@@ -5746,8 +5765,16 @@ CCAssignFn *AArch64TargetLowering::CCAssignFnForCall(CallingConv::ID CC,
 
 CCAssignFn *
 AArch64TargetLowering::CCAssignFnForReturn(CallingConv::ID CC) const {
-  return CC == CallingConv::WebKit_JS ? RetCC_AArch64_WebKit_JS
-                                      : RetCC_AArch64_AAPCS;
+  // OHOS_LOCAL begin
+  switch (CC) {
+  case CallingConv::WebKit_JS:
+    return RetCC_AArch64_WebKit_JS;
+  case CallingConv::ArkResolver:
+    return RetCC_AArch64_ArkResolver;
+  default:
+    return RetCC_AArch64_AAPCS;
+  }
+  // OHOS_LOCAL end
 }
 
 SDValue AArch64TargetLowering::LowerFormalArguments(
@@ -6226,6 +6253,15 @@ static bool mayTailCallThisCC(CallingConv::ID CC) {
   case CallingConv::SwiftTail:
   case CallingConv::Tail:
   case CallingConv::Fast:
+  // OHOS_LOCAL begin
+  case CallingConv::ArkInt:
+  case CallingConv::ArkFast0:
+  case CallingConv::ArkFast1:
+  case CallingConv::ArkFast2:
+  case CallingConv::ArkFast3:
+  case CallingConv::ArkFast4:
+  case CallingConv::ArkFast5:
+  // OHOS_LOCAL end
     return true;
   default:
     return false;

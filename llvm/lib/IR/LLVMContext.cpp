@@ -31,6 +31,12 @@
 
 using namespace llvm;
 
+// OHOS_LOCAL begin
+const char *LLVMContext::getLLVMVersion() {
+  return LLVM_VERSION_STRING;
+}
+// OHOS_LOCAL end
+
 LLVMContext::LLVMContext() : pImpl(new LLVMContextImpl(*this)) {
   // Create the fixed metadata kinds. This is done in the same order as the
   // MD_* enum values so that they correspond.

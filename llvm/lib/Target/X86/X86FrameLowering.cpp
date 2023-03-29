@@ -2397,7 +2397,10 @@ StackOffset X86FrameLowering::getFrameIndexReference(const MachineFunction &MF,
   // object.
   // We need to factor in additional offsets applied during the prologue to the
   // frame, base, and stack pointer depending on which is used.
-  int Offset = MFI.getObjectOffset(FI) - getOffsetOfLocalArea();
+  // OHOS_LOCAL begin
+  auto CC = MF.getFunction().getCallingConv();
+  int Offset = MFI.getObjectOffset(FI) - getOffsetOfLocalArea(CC);
+  // OHOS_LOCAL end
   const X86MachineFunctionInfo *X86FI = MF.getInfo<X86MachineFunctionInfo>();
   unsigned CSSize = X86FI->getCalleeSavedFrameSize();
   uint64_t StackSize = MFI.getStackSize();
@@ -2408,10 +2411,11 @@ StackOffset X86FrameLowering::getFrameIndexReference(const MachineFunction &MF,
   // address from any stack object allocated in the caller's frame. Interrupts
   // do not have a standard return address. Fixed objects in the current frame,
   // such as SSE register spills, should not get this treatment.
-  if (MF.getFunction().getCallingConv() == CallingConv::X86_INTR &&
-      Offset >= 0) {
-    Offset += getOffsetOfLocalArea();
+  // OHOS_LOCAL begin
+  if (CC == CallingConv::X86_INTR && Offset >= 0) {
+    Offset += getOffsetOfLocalArea(CC);
   }
+  // OHOS_LOCAL end
 
   if (IsWin64Prologue) {
     assert(!MFI.hasCalls() || (StackSize % 16) == 8);
@@ -2480,8 +2484,11 @@ X86FrameLowering::getFrameIndexReferenceSP(const MachineFunction &MF, int FI,
                                            int Adjustment) const {
   const MachineFrameInfo &MFI = MF.getFrameInfo();
   FrameReg = TRI->getStackRegister();
+  // OHOS_LOCAL begin
+  auto CC = MF.getFunction().getCallingConv();
   return StackOffset::getFixed(MFI.getObjectOffset(FI) -
-                               getOffsetOfLocalArea() + Adjustment);
+                               getOffsetOfLocalArea(CC) + Adjustment);
+  // OHOS_LOCAL end
 }
 
 StackOffset
@@ -2576,7 +2583,10 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
   unsigned CalleeSavedFrameSize = 0;
   unsigned XMMCalleeSavedFrameSize = 0;
   auto &WinEHXMMSlotInfo = X86FI->getWinEHXMMSlotInfo();
-  int SpillSlotOffset = getOffsetOfLocalArea() + X86FI->getTCReturnAddrDelta();
+  // OHOS_LOCAL begin
+  auto CC = MF.getFunction().getCallingConv();
+  int SpillSlotOffset = getOffsetOfLocalArea(CC) + X86FI->getTCReturnAddrDelta();
+  // OHOS_LOCAL end
 
   int64_t TailCallReturnAddrDelta = X86FI->getTCReturnAddrDelta();
 
@@ -2846,6 +2856,13 @@ void X86FrameLowering::determineCalleeSaves(MachineFunction &MF,
       BasePtr = getX86SubSuperRegister(BasePtr, 64);
     SavedRegs.set(BasePtr);
   }
+
+  // OHOS_LOCAL begin
+  if (MF.getSubtarget<X86Subtarget>().is64Bit()) {
+    for (auto Reg : MF.getSubtarget<X86Subtarget>().getRRegReservation())
+      SavedRegs.reset(Reg);
+  }
+  // OHOS_LOCAL end
 }
 
 static bool
@@ -3868,3 +3885,9 @@ void X86FrameLowering::restoreWinEHStackPointersInParent(
                                   /*RestoreSP=*/IsSEH);
   }
 }
+
+// OHOS_LOCAL begin
+int X86FrameLowering::getOffsetOfLocalArea(CallingConv::ID CC) const {
+  return CC == CallingConv::ArkInt ? 0 : TargetFrameLowering::getOffsetOfLocalArea();
+}
+// OHOS_LOCAL end
