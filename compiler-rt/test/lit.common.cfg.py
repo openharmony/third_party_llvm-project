@@ -518,6 +518,19 @@ if config.android:
   subprocess.check_call([adb, "shell", "mkdir", "-p", android_tmpdir], env=env)
   for file in config.android_files_to_push:
     subprocess.check_call([adb, "push", file, android_tmpdir], env=env)
+# OHOS_LOCAL begin
+
+elif config.host_os == 'OHOS':
+  env = os.environ.copy()
+  adb = os.environ.get('ADB', 'adb')
+  device_tmpdir = '/data/local/tmp/Output/'
+  config.substitutions.append( ('%device_rundir/', device_tmpdir) )
+  config.substitutions.append( ('%push_to_device', "%s push " % adb) )
+  config.substitutions.append( ('%adb_shell ', "%s shell " % adb) )
+  config.substitutions.append( ('%device_rm', "%s shell 'rm ' " % adb) )
+  subprocess.check_call([adb, "shell", "mkdir", "-p", device_tmpdir], env=env)
+
+# OHOS_LOCAL end
 else:
   config.substitutions.append( ('%device_rundir/', "") )
   config.substitutions.append( ('%push_to_device', "echo ") )
