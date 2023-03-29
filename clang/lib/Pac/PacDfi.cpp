@@ -21,14 +21,14 @@
 #include "clang/Pac/PacDfi.h"
 #include "llvm/IR/Metadata.h"
 #include "clang/CodeGen/CodeGenABITypes.h"
-
+#include "clang/Basic/DiagnosticParse.h"
 using namespace clang;
 
 std::map<const RecordDecl*, StringRef> RecordDecl2StructName;
 std::map<RecordDecl*, std::vector<FieldDecl*>> PacPtrNameInfos;
 std::map<RecordDecl*, std::vector<FieldDecl*>> PacFieldNameInfos;
 std::map<const RecordDecl*, llvm::StructType*> RecordDecl2StructType;
-void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx)
+void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &Diags)
 {
     if (!llvm::PARTS::useDataFieldTag()) {
         return;
@@ -38,16 +38,31 @@ void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx)
     std::vector<FieldDecl*> PacFieldNames;
     unsigned int ArraySize = 0;
 
-    for (auto Field : TagDecl->fields()) {
+    for (auto *Field : TagDecl->fields()) {
+        auto ElemTy = Field->getType();
         if (Field->hasAttr<PacDataTagAttr>()) {
-            PacFieldNames.push_back(Field);
+            unsigned Inc = 1;
+            // if Field is array type ElemTy is equal to array element type.
             if (Field->getType()->isConstantArrayType()) {
-                auto ArrayTy = dyn_cast<ConstantArrayType>(Field->getType());
-                ArraySize += ArrayTy->getSize().getZExtValue();
-            } else {
-                ++ArraySize;
+                auto *ArrayTy = llvm::dyn_cast<ConstantArrayType>(ElemTy);
+                ElemTy = ArrayTy->getElementType();
+                Inc = ArrayTy->getSize().getZExtValue();
             }
+            // pac_protected_data [not] support structure type or structure array.
+            if (ElemTy->isStructureOrClassType()) {
+                Diags.Report(Field->getLocation(), diag::warn_unsupported_pac_dfi_type) << Field->getType()
+                    << Field->getAttr<PacDataTagAttr>()->getSpelling();
+                    continue;
+            }
+            ArraySize += Inc;
+            PacFieldNames.push_back(Field);
         } else if (Field->hasAttr<PacPtrTagAttr>()) {
+            // pac_protected_ptr [only] support pointer type.
+            if (!ElemTy->isAnyPointerType()) {
+                Diags.Report(Field->getLocation(), diag::warn_unsupported_pac_dfi_type) << Field->getType()
+                    << Field->getAttr<PacPtrTagAttr>()->getSpelling();
+                    continue;
+            }
             PacPtrNames.push_back(Field);
         }
     }
@@ -78,7 +93,7 @@ void PacDfiCreateMetaData(std::map<RecordDecl*, std::vector<FieldDecl*>> &fieldI
         std::vector<llvm::Metadata *> PacFields;
         auto styName = RecordDecl2StructName.find(item.first)->second;
         PacFields.push_back(llvm::MDString::get(VMContext, styName));
-        for (auto Field : item.second) {
+        for (auto *Field : item.second) {
             unsigned idx = CodeGen::getLLVMFieldNumber(*CGM, item.first, Field);
             PacFields.push_back(llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(
                 llvm::Type::getInt32Ty(VMContext), idx)));

@@ -4533,7 +4533,7 @@ void Parser::ParseStructUnionBody(SourceLocation RecordLoc,
   }
 
   // find pac_tag attr fields, and insert new fields
-  PacDfiParseStruct(TagDecl, Actions.getASTContext()); // OHOS_LOCAL
+  PacDfiParseStruct(TagDecl, Actions.getASTContext(), Diags); // OHOS_LOCAL
 
   T.consumeClose();
 
