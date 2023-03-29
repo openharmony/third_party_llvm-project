@@ -35,3 +35,14 @@ The presence of such marks greatly simplifies porting such code snippets to new 
 ### ABI Breakage
 
 All ABI-breaking changes MUST be scheduled to a major toolchain releases. One should explicitly discuss and document such changes. Ideally ABI-breaking change should cause linking error, it should not cause silent and hard to track bugs.
+
+---------------------
+
+### Writing tests
+
+Each pull request which changes existing functionality or adds new one should contains tests (modified or new ones). To add tests, please refer official LLVM documentation:
+- General testing guide https://llvm.org/docs/TestingGuide.html
+- Filecheck description https://llvm.org/docs/CommandGuide/FileCheck.html
+- LIT description https://llvm.org/docs/CommandGuide/lit.html
+
+And also you can check online presentations from LLVM Conferences about LLVM testing infrastructure, e.g.: https://youtu.be/isVQ8kYqaSA
