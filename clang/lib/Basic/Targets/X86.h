@@ -784,7 +784,7 @@ public:
     };
     auto End = std::end(RRegsNames);
     auto RegIter = std::find_if(std::begin(RRegsNames), End, IfStartsWith);
-    if (RegIter != E && ReservedRRegs.contains(*RegIter)) {
+    if (RegIter != End && ReservedRRegs.contains(*RegIter)) {
       unsigned ReadedRegSize =
       llvm::StringSwitch<unsigned>(RegName.substr(RegIter->size()))
         .Case("",64)
