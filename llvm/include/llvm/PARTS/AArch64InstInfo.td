@@ -21,6 +21,19 @@ let isPseudo = 1, hasNoSchedulingInfo = 1 in {
                              (ins GPR64:$ptr, GPR64sp:$mod),
                              [(set i64:$dst, (int_pa_autcall GPR64:$ptr, GPR64sp:$mod))],
                              "$dst = $ptr">;
+
+    def PARTS_PACDA : Pseudo<(outs GPR64:$dst),
+                             (ins GPR64:$ptr, GPR64sp:$mod),
+                             [(set i64:$dst, (int_pa_pacda GPR64:$ptr, GPR64sp:$mod))],
+                             "$dst = $ptr">;
+    def PARTS_AUTDA : Pseudo<(outs GPR64:$dst),
+                             (ins GPR64:$ptr, GPR64sp:$mod),
+                             [(set i64:$dst, (int_pa_autda GPR64:$ptr, GPR64sp:$mod))],
+                             "$dst = $ptr">;
+    def PARTS_XPACD : Pseudo<(outs GPR64:$dst),
+                             (ins GPR64:$ptr),
+                             [(set i64:$dst, (int_pa_xpacd GPR64:$ptr))],
+                             "$dst = $ptr">;
 }
 
 let isCall = 1, isTerminator = 1, isReturn = 1, isBarrier = 1, Uses = [SP] in {

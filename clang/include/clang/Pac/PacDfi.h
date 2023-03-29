@@ -20,7 +20,7 @@
 #include "clang/CodeGen/CodeGenABITypes.h"
 using namespace clang;
 
-void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx);
+void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &Diags);
 void PacDfiEmitStructFieldsMetadata(llvm::Module &M, llvm::LLVMContext &VMContext, CodeGen::CodeGenModule *CGM);
 void PacDfiRecordDecl2StructName(const RecordDecl *RD, llvm::StructType *Entry);
 
