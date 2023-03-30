@@ -89,6 +89,7 @@ add_llvm_target(AArch64CodeGen
   # OHOS_LOCAL start
   AArch64PARTS/AArch64EarlyPartsCpiPass.cpp
   AArch64PARTS/AArch64PartsCpiPass.cpp
+  AArch64PARTS/AArch64PartsDpiPass.cpp
   # OHOS_LOCAL end
 
   DEPENDS
