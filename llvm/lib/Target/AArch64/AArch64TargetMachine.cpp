@@ -820,8 +820,8 @@ void AArch64PassConfig::addPreEmitPass() {
   // OHOS_LOCAL start
   if (PARTS::useFeCfi())
     addPass(createAArch64PartsCpiPass());
-  if (PARTS::useDataPointerProtection)
-    addPass(createPartsPassDpi);
+  if ((PARTS::useDataPointerProtection()))
+    addPass(createPartsPassDpi());
   // OHOS_LOCAL end
 }
 

@@ -70,18 +70,18 @@ bool AArch64PartsDpiPass::lowerDpiIntrinsics(MachineFunction &MF) {
             switch(MI.getOpcode()) {
                 default:
                     break;
-                case AArch64:PARTS_PACDA:
-                    replacePartsIntrinsic(MF, MBB, MI, TII->get(AARCH64::PACDA));
+                case AArch64::PARTS_PACDA:
+                    replacePartsIntrinsic(MF, MBB, MI, TII->get(AArch64::PACDA));
                     ++StatDataStore;
                     modified = true;
                     break;
-                case AArch64:PARTS_AUTDA:
-                    replacePartsIntrinsic(MF, MBB, MI, TII->get(AARCH64::AUTDA));
+                case AArch64::PARTS_AUTDA:
+                    replacePartsIntrinsic(MF, MBB, MI, TII->get(AArch64::AUTDA));
                     ++StatDataLoad;
                     modified = true;
                     break;
-                case AArch64:PARTS_XPACD:
-                    replacePartsIntrinsic(MF, MBB, MI);
+                case AArch64::PARTS_XPACD:
+                    replacePartsXPACDIntrinsic(MF, MBB, MI);
                     ++StatInsecureDataLoad;
                     modified = true;
                     break;
