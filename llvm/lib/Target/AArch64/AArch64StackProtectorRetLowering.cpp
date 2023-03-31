@@ -5,7 +5,13 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
+//
+// This file contains a stack-protector-ret function to insert code to mitigate
+// against ROP attacks.
+//
+//===----------------------------------------------------------------------===//
 
+/// OHOS_LOCAL begin
 #include "AArch64InstrInfo.h"
 #include "AArch64MachineFunctionInfo.h"
 #include "AArch64RegisterInfo.h"
@@ -37,7 +43,10 @@ void AArch64StackProtectorRetLowering::insertStackProtectorRetPrologue(
   BuildMI(MBB, MI, MBBDL, TII->get(AArch64::LDRXui), REG)
       .addReg(REG)
       .addGlobalAddress(cookie, 0, AArch64II::MO_PAGEOFF | AArch64II::MO_NC);
-  BuildMI(MBB, MI, MBBDL, TII->get(AArch64::ANDXrr), REG)
+  BuildMI(MBB, MI, MBBDL, TII->get(AArch64::EORXrr), REG)
+      .addReg(REG)
+      .addReg(AArch64::FP);
+  BuildMI(MBB, MI, MBBDL, TII->get(AArch64::EORXrr), REG)
       .addReg(REG)
       .addReg(AArch64::LR);
 }
@@ -56,7 +65,10 @@ void AArch64StackProtectorRetLowering::insertStackProtectorRetEpilogue(
   BuildMI(MBB, MI, MBBDL, TII->get(AArch64::LDRXui), AArch64::X9)
       .addReg(AArch64::X9)
       .addGlobalAddress(cookie, 0, AArch64II::MO_PAGEOFF | AArch64II::MO_NC);
-  BuildMI(MBB, MI, MBBDL, TII->get(AArch64::ANDXrr), AArch64::X9)
+  BuildMI(MBB, MI, MBBDL, TII->get(AArch64::EORXrr), AArch64::X9)
+      .addReg(AArch64::X9)
+      .addReg(AArch64::FP);
+  BuildMI(MBB, MI, MBBDL, TII->get(AArch64::EORXrr), AArch64::X9)
       .addReg(AArch64::X9)
       .addReg(AArch64::LR);
   BuildMI(MBB, MI, MBBDL, TII->get(AArch64::SUBSXrr), REG)
@@ -97,3 +109,4 @@ void AArch64StackProtectorRetLowering::saveStackProtectorRetRegister(
 
   CSI.insert(CSI.begin(), CalleeSavedInfo(Reg));
 }
+/// OHOS_LOCAL end

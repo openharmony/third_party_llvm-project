@@ -14,7 +14,7 @@
 #define LLVM_CODEGEN_TARGETFRAMELOWERING_H
 
 #include "llvm/CodeGen/MachineBasicBlock.h"
-#include "llvm/CodeGen/StackProtectorRetLowering.h"
+#include "llvm/CodeGen/StackProtectorRetLowering.h" // OHOS_LOCAL
 #include "llvm/Support/TypeSize.h"
 #include "llvm/IR/CallingConv.h" // OHOS_LOCAL
 #include <vector>
@@ -223,9 +223,12 @@ public:
   virtual void emitZeroCallUsedRegs(BitVector RegsToZero,
                                     MachineBasicBlock &MBB) const {}
 
+  /// OHOS_LOCAL begin
+  /// Instances about backward cfi and stack protection provided by different architectures.
   virtual const StackProtectorRetLowering *getStackProtectorRet() const {
     return nullptr;
   }
+  /// OHOS_LOCAL begin
 
   /// With basic block sections, emit callee saved frame moves for basic blocks
   /// that are in a different section.

@@ -60,6 +60,11 @@ private:
   /// protection when -fstack-protection is used.
   unsigned SSPBufferSize = 0;
 
+  /// OHOS_LOCAL begin
+  /// The total of cookies that -fstack-protector-ret used.
+  unsigned SSPRetCookieSize = 1;
+  /// OHOS_LOCAL end
+
   /// VisitedPHIs - The set of PHI nodes visited when determining
   /// if a variable's reference has been taken.  This set
   /// is maintained to ensure we don't visit the same PHI node multiple
@@ -100,7 +105,7 @@ private:
   /// stack protector based upon the stack protector level.
   bool RequiresStackProtector();
 
-  bool CreateSSPRetCookie();
+  bool CreateSSPRetCookie(); // OHOS_LOCAL
 
 public:
   static char ID; // Pass identification, replacement for typeid.

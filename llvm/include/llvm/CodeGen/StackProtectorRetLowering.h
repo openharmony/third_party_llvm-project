@@ -6,6 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+/// OHOS_LOCAL begin
 #ifndef LLVM_CODEGEN_STACKPROTECTORRETLOWERING_H
 #define LLVM_CODEGEN_STACKPROTECTORRETLOWERING_H
 
@@ -55,3 +56,4 @@ public:
 } // namespace llvm
 
 #endif
+/// OHOS_LOCAL end

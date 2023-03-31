@@ -1910,26 +1910,37 @@ static void adjustCallerSSPLevel(Function &Caller, const Function &Callee) {
   AttributeMask OldSSPAttr;
   OldSSPAttr.addAttribute(Attribute::StackProtect)
       .addAttribute(Attribute::StackProtectStrong)
+      .addAttribute(Attribute::StackProtectRetStrong) // OHOS_LOCAL
       .addAttribute(Attribute::StackProtectReq)
-      .addAttribute(Attribute::StackProtectRet);
+      .addAttribute(Attribute::StackProtectRetReq); // OHOS_LOCAL
 
-  if (Callee.hasFnAttribute(Attribute::StackProtectRet) &&
-             !Caller.hasFnAttribute(Attribute::StackProtect) &&
-             !Caller.hasFnAttribute(Attribute::StackProtectReq) &&
-             !Caller.hasFnAttribute(Attribute::StackProtectStrong)) {
+  // OHOS_LOCAL begin
+  // sspretreq > sspreq > sspretstrong > sspstrong > ssp
+  if (Callee.hasFnAttribute(Attribute::StackProtectRetReq)) {
     Caller.removeFnAttrs(OldSSPAttr);
-    Caller.addFnAttr(Attribute::StackProtectRet);
-  } else if (Callee.hasFnAttribute(Attribute::StackProtectReq)) {
+    Caller.addFnAttr(Attribute::StackProtectRetReq);
+  } else if (Callee.hasFnAttribute(Attribute::StackProtectReq) &&
+             !Caller.hasFnAttribute(Attribute::StackProtectRetReq)) {
     Caller.removeFnAttrs(OldSSPAttr);
     Caller.addFnAttr(Attribute::StackProtectReq);
-  } else if (Callee.hasFnAttribute(Attribute::StackProtectStrong) &&
+  } else if (Callee.hasFnAttribute(Attribute::StackProtectRetStrong) &&
+             !Caller.hasFnAttribute(Attribute::StackProtectRetReq) &&
              !Caller.hasFnAttribute(Attribute::StackProtectReq)) {
+    Caller.removeFnAttrs(OldSSPAttr);
+    Caller.addFnAttr(Attribute::StackProtectRetStrong);
+  } else if (Callee.hasFnAttribute(Attribute::StackProtectStrong) &&
+             !Caller.hasFnAttribute(Attribute::StackProtectRetReq) &&
+             !Caller.hasFnAttribute(Attribute::StackProtectReq) &&
+             !Caller.hasFnAttribute(Attribute::StackProtectRetStrong)) {
     Caller.removeFnAttrs(OldSSPAttr);
     Caller.addFnAttr(Attribute::StackProtectStrong);
   } else if (Callee.hasFnAttribute(Attribute::StackProtect) &&
              !Caller.hasFnAttribute(Attribute::StackProtectReq) &&
-             !Caller.hasFnAttribute(Attribute::StackProtectStrong))
+             !Caller.hasFnAttribute(Attribute::StackProtectStrong) &&
+             !Caller.hasFnAttribute(Attribute::StackProtectRetReq) &&
+             !Caller.hasFnAttribute(Attribute::StackProtectRetStrong))
     Caller.addFnAttr(Attribute::StackProtect);
+  // OHOS_LOCAL end
 }
 
 /// If the inlined function required stack probes, then ensure that

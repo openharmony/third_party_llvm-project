@@ -13,7 +13,7 @@
 #ifndef LLVM_LIB_TARGET_AARCH64_AARCH64FRAMELOWERING_H
 #define LLVM_LIB_TARGET_AARCH64_AARCH64FRAMELOWERING_H
 
-#include "AArch64StackProtectorRetLowering.h"
+#include "AArch64StackProtectorRetLowering.h" // OHOS_LOCAL
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/Support/TypeSize.h"
 
@@ -23,12 +23,11 @@ class MCCFIInstruction;
 
 class AArch64FrameLowering : public TargetFrameLowering {
 public:
-  const AArch64StackProtectorRetLowering SPRL;
+  const AArch64StackProtectorRetLowering SPRL; // OHOS_LOCAL
 
   explicit AArch64FrameLowering()
       : TargetFrameLowering(StackGrowsDown, Align(16), 0, Align(16),
-                            true /*StackRealignable*/),
-        SPRL() {}
+                            true /*StackRealignable*/), SPRL() {} // OHOS_LOCAL
 
   void emitCalleeSavedFrameMoves(MachineBasicBlock &MBB,
                                  MachineBasicBlock::iterator MBBI) const;
@@ -44,7 +43,7 @@ public:
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
 
-  const StackProtectorRetLowering *getStackProtectorRet() const override;
+  const StackProtectorRetLowering *getStackProtectorRet() const override; // OHOS_LOCAL
 
   bool canUseAsPrologue(const MachineBasicBlock &MBB) const override;
 

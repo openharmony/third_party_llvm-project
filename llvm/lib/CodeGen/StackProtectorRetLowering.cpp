@@ -5,7 +5,15 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
+//
+// This is an enhanced function of OHOS for the stack protection. It has made
+// special backward cfi protection measures against ROP attacks by adding LR/FP
+// checks in the function's prologue and epilogue. It can greatly reduce the
+// number of ROP gadgets in the object.
+// 
+//===----------------------------------------------------------------------===//
 
+/// OHOS_LOCAL begin
 #include "llvm/CodeGen/StackProtectorRetLowering.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
@@ -23,7 +31,7 @@ using namespace llvm;
 
 /// Check if backward CFI protection is required.
 void StackProtectorRetLowering::setupStackProtectorRet(MachineFunction &MF) const {
-  if (MF.getFunction().hasFnAttribute(Attribute::StackProtectRet)) {
+  if (MF.getFunction().hasFnAttribute("sspret-randomdata")) {
     for (auto &MBB : MF) {
       for (auto &T : MBB.terminators()) {
         if (instrIsRet(T.getOpcode())) {
@@ -109,3 +117,4 @@ void StackProtectorRetLowering::insertStackProtectorRets(MachineFunction &MF) co
     MF.front().addLiveIn(Reg);
   }
 }
+/// OHOS_LOCAL end

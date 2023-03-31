@@ -868,6 +868,10 @@ static StringRef getOutputDataSegmentName(const InputChunk &seg) {
     return ".bss";
   if (seg.name.startswith(".rodata."))
     return ".rodata";
+  // OHOS_LOCAL begin
+  if (seg.name.startswith(".ohos.randomdata."))
+    return ".ohos.randomdata";
+  // OHOS_LOCAL end
   return seg.name;
 }
 

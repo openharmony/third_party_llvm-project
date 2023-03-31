@@ -373,6 +373,11 @@ VALUE_CODEGENOPT(SmallDataLimit, 32, 0)
 /// The lower bound for a buffer to be considered for stack protection.
 VALUE_CODEGENOPT(SSPBufferSize, 32, 0)
 
+/// OHOS_LOCAL begin
+/// The maximum total of cookies used by backward cfi for stack protection.
+VALUE_CODEGENOPT(SSPRetCookieSize, 32, 1)
+/// OHOS_LOCAL end
+
 /// The kind of generated debug info.
 ENUM_CODEGENOPT(DebugInfo, codegenoptions::DebugInfoKind, 4, codegenoptions::NoDebugInfo)
 

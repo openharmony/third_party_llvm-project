@@ -728,8 +728,12 @@ static uint64_t getAttrKindEncoding(Attribute::AttrKind Kind) {
     return bitc::ATTR_KIND_STACK_ALIGNMENT;
   case Attribute::StackProtect:
     return bitc::ATTR_KIND_STACK_PROTECT;
-  case Attribute::StackProtectRet:
-    return bitc::ATTR_KIND_STACK_PROTECT_RET;
+  /// OHOS_LOCAL begin
+  case Attribute::StackProtectRetReq:
+    return bitc::ATTR_KIND_STACK_PROTECT_RET_REQ;
+  case Attribute::StackProtectRetStrong:
+    return bitc::ATTR_KIND_STACK_PROTECT_RET_STRONG;
+  /// OHOS_LOCAL end
   case Attribute::StackProtectReq:
     return bitc::ATTR_KIND_STACK_PROTECT_REQ;
   case Attribute::StackProtectStrong:

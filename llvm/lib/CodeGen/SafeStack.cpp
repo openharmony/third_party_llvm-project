@@ -809,7 +809,10 @@ bool SafeStack::run() {
   if (F.hasFnAttribute(Attribute::StackProtect) ||
       F.hasFnAttribute(Attribute::StackProtectStrong) ||
       F.hasFnAttribute(Attribute::StackProtectReq) ||
-      F.hasFnAttribute(Attribute::StackProtectRet)) {
+      // OHOS_LOCAL begin
+      F.hasFnAttribute(Attribute::StackProtectRetStrong) ||
+      F.hasFnAttribute(Attribute::StackProtectRetReq)) {
+      // OHOS_LOCAL end
     Value *StackGuard = getStackGuard(IRB, F);
     StackGuardSlot = IRB.CreateAlloca(StackPtrTy, nullptr);
     IRB.CreateStore(StackGuard, StackGuardSlot);
