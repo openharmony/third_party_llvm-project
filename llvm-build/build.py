@@ -950,6 +950,7 @@ class LlvmLibs(BuildUtils):
         rt_defines['LIBCXXABI_USE_COMPILER_RT'] = 'ON'
         rt_defines['LIBCXXABI_USE_LLVM_UNWINDER'] = 'ON'
         rt_defines['LIBCXXABI_ENABLE_STATIC_UNWINDER'] = 'ON'
+        rt_defines['LIBCXXABI_STATICALLY_LINK_UNWINDER_IN_STATIC_LIBRARY'] = 'OFF'
         rt_defines['LIBCXXABI_HAS_CXA_THREAD_ATEXIT_IMPL'] = 'OFF'
         rt_defines['LIBCXXABI_ENABLE_SHARED'] = 'OFF'
         rt_defines['LIBCXXABI_LIBCXX_INCLUDES'] = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'libcxx', 'include'))
