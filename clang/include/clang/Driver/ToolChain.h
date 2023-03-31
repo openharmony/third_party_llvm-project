@@ -475,7 +475,7 @@ public:
                                     FileType Type = ToolChain::FT_Static) const;
 
   // Returns target specific runtime paths.
-  path_list getRuntimePaths() const;
+  virtual path_list getRuntimePaths() const; // OHOS_LOCAL
 
   // Returns target specific standard library paths.
   path_list getStdlibPaths() const;
