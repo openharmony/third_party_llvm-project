@@ -3291,10 +3291,11 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
   for (const Arg *A : Args.filtered(options::OPT__param)) {
     StringRef Str(A->getValue());
     if (Str.startswith("ssp-buffer-size=")) {
+      size_t size = sizeof("ssp-buffer-size=");
       if (StackProtectorLevel) {
         CmdArgs.push_back("-stack-protector-buffer-size");
         // FIXME: Verify the argument is a valid integer.
-        CmdArgs.push_back(Args.MakeArgString(Str.drop_front(16)));
+        CmdArgs.push_back(Args.MakeArgString(Str.drop_front(size)));
       }
       A->claim();
     }
@@ -3307,15 +3308,16 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
           << Str.take_front(19) << EffectiveTriple.getTriple();
         continue;
       }
+      size_t size = sizeof("ssp-ret-cookie-size=");
       // The parameter must be greater than 0.
-      if (Str.drop_front(20).getAsInteger(10, SSPRetCookieSize) || !SSPRetCookieSize) {
+      if (Str.drop_front(size).getAsInteger(10, SSPRetCookieSize) || !SSPRetCookieSize) {
         D.Diag(diag::err_drv_invalid_int_value)
-          << Str.take_front(19) << Str.drop_front(20);
+          << Str.take_front(size - 1) << Str.drop_front(size);
         continue;
       }
       if (StackProtectorLevel) {
         CmdArgs.push_back("-stack-protector-ret-cookie-size");
-        CmdArgs.push_back(Args.MakeArgString(Str.drop_front(20)));
+        CmdArgs.push_back(Args.MakeArgString(Str.drop_front(size)));
       }
       A->claim();
     }
