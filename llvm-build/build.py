@@ -900,10 +900,9 @@ class LlvmLibs(BuildUtils):
             self.build_runtimes(llvm_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
 
             libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
-            libcxx_ndk_install_tmp = self.merge_out_path('libcxx-ndk-tmp')
             self.check_create_dir(libcxx_ndk_install)
-            self.build_runtimes(libcxx_ndk_install_tmp, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple,
-                                    arch, multilib_suffix, defines, libcxx_ndk_install)
+            self.build_runtimes(libcxx_ndk_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple,
+                                    arch, multilib_suffix, defines, True)
 
             self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines,
                                 first_time=False)
@@ -930,12 +929,14 @@ class LlvmLibs(BuildUtils):
                        arch,
                        multilib_suffix,
                        defines,
-                       libcxx_ndk_install=None):
+                       is_libcxx_ndk_install=False):
 
         self.logger().info('Building runtimes(%s) for %s', rt_list, arch)
 
-        ndk_suffix = '-ndk' if libcxx_ndk_install else ''
+        ndk_suffix = '-ndk' if is_libcxx_ndk_install else ''
         out_path = self.merge_out_path('lib', rt_list.replace(';', '-') + ndk_suffix + '-' + str(llvm_triple))
+
+        libcxx_install_include_path = self.merge_out_path(llvm_install, 'include', 'libcxx-ohos', 'include', 'c++', 'v1')
 
         rt_cflags = list(cflags)
         rt_cflags.append('-fstack-protector-strong')
@@ -958,6 +959,8 @@ class LlvmLibs(BuildUtils):
         rt_defines['LIBCXX_USE_COMPILER_RT'] = 'ON'
         rt_defines['LIBCXX_ENABLE_ABI_LINKER_SCRIPT'] = 'OFF'
         rt_defines['LIBCXX_ENABLE_STATIC_ABI_LIBRARY'] = 'ON'
+        rt_defines['LIBCXX_INSTALL_INCLUDE_DIR'] = libcxx_install_include_path
+        rt_defines['LIBCXX_INSTALL_INCLUDE_TARGET_DIR'] = libcxx_install_include_path
         rt_defines['CMAKE_ASM_FLAGS'] = ' '.join(rt_cflags)
         rt_defines['CMAKE_C_FLAGS'] = ' '.join(rt_cflags)
         rt_defines['CMAKE_CXX_FLAGS'] = ' '.join(rt_cflags)
@@ -967,12 +970,11 @@ class LlvmLibs(BuildUtils):
         rt_defines['CMAKE_CROSSCOMPILING'] = 'True'
         rt_defines['CMAKE_TRY_COMPILE_TARGET_TYPE'] = 'STATIC_LIBRARY'
 
-        if libcxx_ndk_install:
+        if is_libcxx_ndk_install:
             rt_defines['LIBCXX_ABI_NAMESPACE'] = '__n1'
             rt_defines['LIBCXX_OUTPUT_NAME'] = 'c++_shared'
             rt_defines['LIBCXX_OUTPUT_STATIC_NAME'] = 'c++_static'
-            rt_defines['LIBCXX_INSTALL_INCLUDE_DIR'] = self.merge_out_path(libcxx_ndk_install, 'include', 'libcxx-ohos', 'include', 'c++', 'v1')
-            rt_defines['LIBCXX_INSTALL_LIBRARY_DIR'] = self.merge_out_path(libcxx_ndk_install, 'lib', llvm_triple, 'c++', multilib_suffix)
+            rt_defines['LIBCXXABI_INSTALL_INCLUDE_DIR'] = libcxx_install_include_path
             rt_defines['LIBCXXABI_INSTALL_LIBRARY'] = 'OFF'
             rt_defines['LIBUNWIND_INSTALL_LIBRARY'] = 'OFF'
         else:
@@ -1448,13 +1450,12 @@ class LlvmPackage(BuildUtils):
 
     def package_libcxx(self):
         libcxx_ndk_install=self.merge_out_path('libcxx-ndk')
-        libcxx_ndk_install_tmp=self.merge_out_path('libcxx-ndk-tmp')
         libcxx_ndk_install_include=self.merge_out_path(libcxx_ndk_install, 'include', 'libcxx-ohos', 'include', 'c++', 'v1')
         hosts_list=['linux-x86_64', 'darwin-x86_64', 'windows-x86_64', 'darwin-arm64']
 
         if os.path.exists(libcxx_ndk_install):
             for headerfile in os.listdir(libcxx_ndk_install_include):
-                if not headerfile =='__config':
+                if headerfile not in ['__config', '__config_site']:
                     if os.path.isdir(os.path.join(libcxx_ndk_install_include, headerfile)):
                         shutil.rmtree(os.path.join(libcxx_ndk_install_include, headerfile))
                     else:
@@ -1468,7 +1469,6 @@ class LlvmPackage(BuildUtils):
                 args = ['tar', '-chjC', self.build_config.OUT_PATH, '-f', package_path, 'libcxx-ndk']
                 self.check_call(args)
             self.check_rm_tree(libcxx_ndk_install)
-            self.check_rm_tree(libcxx_ndk_install_tmp)
 
     @staticmethod
     def merge_tree(src_dir, dst_dir):

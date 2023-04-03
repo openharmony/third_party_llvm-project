@@ -259,6 +259,17 @@ void OHOS::AddClangCXXStdlibIncludeArgs(const ArgList &DriverArgs,
       addSystemInclude(DriverArgs, CC1Args, makePath({IncPath, "c++", "v1"}));
       addSystemInclude(DriverArgs, CC1Args, IncTargetPath);
     }
+
+    // OHOS_LOCAL begin
+
+    std::string IncOHOSPath =
+        makePath({IncPath, "libcxx-ohos", "include", "c++", "v1"});
+    if (getVFS().exists(IncOHOSPath)) {
+      addSystemInclude(DriverArgs, CC1Args, IncOHOSPath);
+    }
+
+    // OHOS_LOCAL end
+
     break;
   }
 

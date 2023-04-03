@@ -165,11 +165,11 @@ if(OS_NAME MATCHES "Linux|Fuchsia" AND
                  -DLIBCXXABI_ENABLE_EXCEPTIONS=OFF
                  -DLIBCXX_ABI_NAMESPACE=__Fuzzer
                  -DLIBCXX_ENABLE_EXCEPTIONS=OFF)
-    target_compile_options(RTfuzzer.${arch} PRIVATE -isystem ${LIBCXX_${arch}_PREFIX}/include/c++/v1)
+    target_compile_options(RTfuzzer.${arch} PRIVATE -isystem "${LIBCXX_${arch}_PREFIX}/include/c++/v1") # OHOS_LOCAL
     add_dependencies(RTfuzzer.${arch} libcxx_fuzzer_${arch}-build)
-    target_compile_options(RTfuzzer_main.${arch} PRIVATE -isystem ${LIBCXX_${arch}_PREFIX}/include/c++/v1)
+    target_compile_options(RTfuzzer_main.${arch} PRIVATE -isystem "${LIBCXX_${arch}_PREFIX}/include/c++/v1") # OHOS_LOCAL
     add_dependencies(RTfuzzer_main.${arch} libcxx_fuzzer_${arch}-build)
-    target_compile_options(RTfuzzer_interceptors.${arch} PRIVATE -isystem ${LIBCXX_${arch}_PREFIX}/include/c++/v1)
+    target_compile_options(RTfuzzer_interceptors.${arch} PRIVATE -isystem "${LIBCXX_${arch}_PREFIX}/include/c++/v1") # OHOS_LOCAL
     add_dependencies(RTfuzzer_interceptors.${arch} libcxx_fuzzer_${arch}-build)
     partially_link_libcxx(fuzzer_no_main ${LIBCXX_${arch}_PREFIX} ${arch})
     partially_link_libcxx(fuzzer_interceptors ${LIBCXX_${arch}_PREFIX} ${arch})
