@@ -550,20 +550,6 @@ void llvm_writeout_files(void) {
   }
 }
 
-#ifndef _WIN32
-// __attribute__((destructor)) and destructors whose priorities are greater than
-// 100 run before this function and can thus be tracked. The priority is
-// compatible with GCC 7 onwards.
-#if __GNUC__ >= 9
-#pragma GCC diagnostic ignored "-Wprio-ctor-dtor"
-#endif
-__attribute__((destructor(100)))
-#endif
-static void llvm_writeout_and_clear(void) {
-  llvm_writeout_files();
-  fn_list_remove(&writeout_fn_list);
-}
-
 COMPILER_RT_VISIBILITY
 void llvm_register_reset_function(fn_ptr fn) {
   fn_list_insert(&reset_fn_list, fn);
@@ -582,6 +568,29 @@ void llvm_reset_counters(void) {
     }
     curr = curr->next;
   }
+}
+
+#ifndef _WIN32
+// __attribute__((destructor)) and destructors whose priorities are greater than
+// 100 run before this function and can thus be tracked. The priority is
+// compatible with GCC 7 onwards.
+#if __GNUC__ >= 9
+#pragma GCC diagnostic ignored "-Wprio-ctor-dtor"
+#endif
+__attribute__((destructor(100)))
+#endif
+static void llvm_writeout_and_clear(void) {
+  llvm_writeout_files();
+  fn_list_remove(&writeout_fn_list);
+
+// OHOS_LOCAL begin
+
+#if defined(__OHOS__)
+  /* Make sure we write out the data and delete the data structures. */
+  llvm_delete_reset_function_list();
+#endif
+
+// OHOS_LOCAL end
 }
 
 #if !defined(_WIN32)
@@ -616,8 +625,15 @@ void llvm_gcov_init(fn_ptr wfn, fn_ptr rfn) {
   if (atexit_ran == 0) {
     atexit_ran = 1;
 
+// OHOS_LOCAL begin
+
+#if !defined(__OHOS__)
     /* Make sure we write out the data and delete the data structures. */
     atexit(llvm_delete_reset_function_list);
+#endif
+
+// OHOS_LOCAL end
+
 #ifdef _WIN32
     atexit(llvm_writeout_and_clear);
 #endif

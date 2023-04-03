@@ -1127,7 +1127,14 @@ int __llvm_orderfile_dump(void) {
   return rc;
 }
 
+// OHOS_LOCAL begin
+
+#if defined(__OHOS__)
+__attribute__((destructor(0)))
+#endif
 static void writeFileWithoutReturn(void) { __llvm_profile_write_file(); }
+
+// OHOS_LOCAL end
 
 COMPILER_RT_VISIBILITY
 int __llvm_profile_register_write_file_atexit(void) {
@@ -1139,6 +1146,15 @@ int __llvm_profile_register_write_file_atexit(void) {
   lprofSetupValueProfiler();
 
   HasBeenRegistered = 1;
+
+// OHOS_LOCAL begin
+
+#if defined(__OHOS__)
+  return 0;
+#endif
+
+// OHOS_LOCAL end
+
   return atexit(writeFileWithoutReturn);
 }
 

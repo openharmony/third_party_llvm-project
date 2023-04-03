@@ -1022,6 +1022,7 @@ class LlvmLibs(BuildUtils):
         crt_defines['COMPILER_RT_TEST_COMPILER_CFLAGS'] = ' '.join(cflags)
         crt_defines['OHOS'] = '1'
         crt_defines['COMPILER_RT_TEST_TARGET_TRIPLE'] = llvm_triple
+        crt_defines['COMPILER_RT_TEST_STANDALONE_BUILD_LIBS'] = 'OFF'
         crt_defines['COMPILER_RT_INCLUDE_TESTS'] = 'ON'
         crt_defines['CMAKE_INSTALL_PREFIX'] = crt_install
         crt_defines['LLVM_TARGET_MULTILIB_SUFFIX'] = multilib_suffix
