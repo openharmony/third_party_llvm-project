@@ -80,7 +80,7 @@ elif [ $TARGET_TRIPLE == "arm-linux-ohos" ]; then
 elif [ $TARGET_TRIPLE == "mipsel-linux-ohos" ]; then
     TARGET_USER="linux_user"
     TARGETS_PREFIX="mips"
-    CFLAGS_FOR_TARGET=("-march=mips32r2")
+    CFLAGS_FOR_TARGET=(" " "-mnan=legacy")
 elif [ $TARGET_TRIPLE == "riscv64-linux-ohos" ]; then
     TARGET_USER="linux_user"
     TARGETS_PREFIX="riscv64"
@@ -107,7 +107,7 @@ make musl_header_install_for_${TARGET_USER} CLANG="${CLANG_BIN_ROOT}/clang" TOPD
 # build musl_libs
 if ((make_libs == 1)); then
     if [ $TARGET_TRIPLE == "aarch64-linux-ohos" ] || [ $TARGET_TRIPLE == "riscv64-linux-ohos" ] || \
-       [ $TARGET_TRIPLE == "mipsel-linux-ohos" ] || [ $TARGET_TRIPLE == "x86_64-linux-ohos" ]; then
+       [ $TARGET_TRIPLE == "x86_64-linux-ohos" ]; then
         make CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${TOPDIR} SYSROOTDIR=${OUT}/sysroot TARGETS=${TARGET_USER}\
             TARGET=${TARGET_TRIPLE} ARCH=${TARGETS_PREFIX} -f Makefile
     else
