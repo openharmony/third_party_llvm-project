@@ -35,10 +35,10 @@ python3 ./toolchain/llvm-project/llvm-build/build.py
 ```
 
 1. env_prepare (one time only)
-![输入图片说明](../data/one_time_setup.png)
+![输入图片说明](data/one_time_setup.png)
 
 2. build
-![输入图片说明](../data/llvm_build.png)
+![输入图片说明](data/llvm_build.png)
 
 </br>
 
