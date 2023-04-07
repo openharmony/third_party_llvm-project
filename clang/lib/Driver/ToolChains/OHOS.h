@@ -74,7 +74,7 @@ public:
     return new tools::gnutools::Assembler(*this);
   }
 
-  path_list getRuntimePaths() const;
+  virtual path_list getRuntimePaths() const override; // OHOS_LOCAL
 
 protected:
   std::string getMultiarchTriple(const llvm::Triple &T) const;
