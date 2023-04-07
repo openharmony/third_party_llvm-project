@@ -49,10 +49,15 @@ void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &
                 Inc = ArrayTy->getSize().getZExtValue();
             }
             // pac_protected_data [not] support structure type or structure array.
+            if (TagDecl->isUnion()) {
+                Diags.Report(Field->getLocation(), diag::warn_unsupported_pac_dfi_type) << "union"
+                    << Field->getAttr<PacDataTagAttr>()->getSpelling();
+                continue;
+            }
             if (ElemTy->isStructureOrClassType()) {
                 Diags.Report(Field->getLocation(), diag::warn_unsupported_pac_dfi_type) << Field->getType()
                     << Field->getAttr<PacDataTagAttr>()->getSpelling();
-                    continue;
+                continue;
             }
             ArraySize += Inc;
             PacFieldNames.push_back(Field);
@@ -61,7 +66,7 @@ void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &
             if (!ElemTy->isAnyPointerType()) {
                 Diags.Report(Field->getLocation(), diag::warn_unsupported_pac_dfi_type) << Field->getType()
                     << Field->getAttr<PacPtrTagAttr>()->getSpelling();
-                    continue;
+                continue;
             }
             PacPtrNames.push_back(Field);
         }
