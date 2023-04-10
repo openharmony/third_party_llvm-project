@@ -135,6 +135,16 @@ Status CreateHostSysRootModuleLink(const FileSpec &root_dir_spec,
                platform_module_spec.GetPath().c_str());
 
   if (FileSystem::Instance().Exists(sysroot_module_path_spec)) {
+    // OHOS_LOCAL begin
+    if (FileSystem::Instance().Exists(local_module_spec)) {
+      UUID sysroot_module_sp_uuid = (std::make_shared<Module>(ModuleSpec(sysroot_module_path_spec)))->GetUUID();
+      UUID module_spec_uuid = (std::make_shared<Module>(ModuleSpec(local_module_spec)))->GetUUID();
+      if (sysroot_module_sp_uuid.IsValid() && (sysroot_module_sp_uuid == module_spec_uuid)) {
+        delete_existing = false;
+      }
+      LLDB_LOGF(log, "CreateHostSysRootModuleLink delete_existing(%i)", delete_existing);
+    }
+    // OHOS_LOCAL end
     if (!delete_existing)
       return Status();
 
