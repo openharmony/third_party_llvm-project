@@ -33,6 +33,18 @@ static uint32_t g_initialize_count = 0;
 static const unsigned int g_hos_default_cache_size = 2048;
 LLDB_PLUGIN_DEFINE(PlatformHOS)
 
+using PrefixMap = std::pair<llvm::StringRef, llvm::StringRef>;
+
+static constexpr std::array<PrefixMap, 7> PATH_PREFIX_MAP {{
+  { "/data", "/data/ohos_data" },
+  { "/vendor/aosp/system/lib64/libqdMetaData.system.so", "/system/system_ext/lib64/libqdMetaData.system.so"},
+  { "/vendor/aosp/system/lib64/libgralloc.system.qti.so", "/system/system_ext/lib64/libgralloc.system.qti.so"},
+  { "/vendor/aosp/vendor/lib64", "/vendor/lib64" },
+  { "/vendor/aosp/system/lib64", "/system/lib64" },
+  { "/vendor/lib64", "/system/ohos/vendor/lib64" },
+  { "/system", "/system/ohos/system" },
+}};
+
 static void platform_setenv(const char *env, const char *val) {
 #if HAVE_SETENV || _MSC_VER
   setenv(env, val, true);
@@ -45,13 +57,14 @@ static void platform_setenv(const char *env, const char *val) {
 
 void PlatformHOS::Initialize() {
   PlatformLinux::Initialize();
-  Log *log = GetLog(LLDBLog::Platform);
+
   if (g_initialize_count++ == 0) {
 #if defined(__HOS__)
     PlatformSP default_platform_sp(new PlatformHOS(true));
     default_platform_sp->SetSystemArchitecture(HostInfo::GetArchitecture());
     Platform::SetHostPlatform(default_platform_sp);
-    LLDB_LOGF(log, "Hsu file(%s)%d PlatformHOS::%s new PlatformHOS(true)",
+    Log *log = GetLog(LLDBLog::Platform);
+    LLDB_LOGF(log, "PlatformHOS::%s new PlatformHOS(true)",
               __FILE__, __LINE__, __FUNCTION__);
 #endif
     PluginManager::RegisterPlugin(
@@ -116,6 +129,14 @@ PlatformHOS::PlatformHOS(bool is_host)
 }
 
 PlatformHOS::~PlatformHOS() {}
+
+llvm::StringRef PlatformHOS::GetPluginName() {
+  if (GetContainer()) {
+    return "remote-hos-inner";
+  }
+  
+  return GetPluginNameStatic(IsHost());
+}
 
 llvm::StringRef PlatformHOS::GetPluginNameStatic(bool is_host) {
   Log *log = GetLog(LLDBLog::Platform);
@@ -191,20 +212,69 @@ Status PlatformHOS::GetFile(const FileSpec &source,
     source_spec = GetRemoteWorkingDirectory().CopyByAppendingPathComponent(
         source_spec.GetCString(false));
 
+  if (GetContainer()) {
+    return GetFileFromContainer(source_spec, destination);
+  }
+
+  return DoGetFile(source_spec, destination);
+}
+
+// Precondition: source and destination represent POSIX-style
+//               and aboslute paths.
+Status PlatformHOS::GetFileFromContainer(const FileSpec &source,
+                                         const FileSpec &destination) {
+  Log *log = GetLog(LLDBLog::Platform);
+  llvm::StringRef path(source.GetCString(false));
+
+  for (const auto& map : PATH_PREFIX_MAP) {
+    const auto& prefix = map.first;
+    const auto& new_prefix = map.second;
+
+    if (path.startswith(prefix)) {
+      FileSpec new_source(new_prefix, FileSpec::Style::posix);
+      new_source.AppendPathComponent(path.substr(prefix.size()));
+
+      LLDB_LOGF(log, "path '%s' inside container is converted to '%s'",
+                source.GetCString(false), new_source.GetCString(false));
+
+      Status error = DoGetFile(new_source, destination);
+
+      if (error.Fail()) {
+          LLDB_LOGF(log, "failed to get file '%s': %s",
+                    new_source.GetCString(false), error.AsCString());
+          LLDB_LOGF(log, "try to get file '%s' as a fallback",
+                    source.GetCString(false));
+          error = DoGetFile(source, destination);
+      }
+
+      return error;
+    }
+  }
+
+  LLDB_LOGF(log, "try to get file '%s' inside container without conversion",
+            source.GetCString(false));
+
+  return DoGetFile(source, destination);
+}
+
+// Precondition: source and destination represent POSIX-style
+//               and aboslute paths.
+Status PlatformHOS::DoGetFile(const FileSpec &source,
+                              const FileSpec &destination) {
   Status error;
   auto sync_service = GetSyncService(error);
   if (error.Fail())
     return error;
 
   uint32_t mode = 0, size = 0, mtime = 0;
-  error = sync_service->Stat(source_spec, mode, size, mtime);
+  error = sync_service->Stat(source, mode, size, mtime);
   if (error.Fail())
     return error;
 
   if (mode != 0)
-    return sync_service->PullFile(source_spec, destination);
+    return sync_service->PullFile(source, destination);
 
-  auto source_file = source_spec.GetCString(false);
+  const auto *source_file = source.GetCString(false);
 
   Log *log = GetLog(LLDBLog::Platform);
   LLDB_LOGF(log, "Got mode == 0 on '%s': try to get file via 'shell cat'",
@@ -215,47 +285,11 @@ Status PlatformHOS::GetFile(const FileSpec &source,
 
   // mode == 0 can signify that adbd cannot access the file due security
   // constraints - try "cat ..." as a fallback.
-  LLDB_LOGF(log, "Hsu file(%s):%d PlatformHOS::%s source_file(%s)", __FILE__,
-            __LINE__, __FUNCTION__, source_file);
   HdcClient hdc(m_device_id);
 
   char cmd[PATH_MAX];
-  int len = strlen(source_file);
-  std::string tempFile(source_file);
-  if (m_container) {
-    /*
-    /data       /data/ohos_data
-    /vendor      /sytem/ohos/vendor
-    /system     /system/ohos/system
-    */
-    const std::string str_data = "/data";
-    const std::string str_vendor = "/vendor";
-    const std::string str_system = "/system";
-    const std::string str_data_append = "/data/ohos_data";
-    const std::string str_vendor_append = "/vendor/ohos/vendor";
-    const std::string str_system_append = "/system/ohos/system";
-    if (!strncmp(source_file, str_data.c_str(), strlen(str_data.c_str()))) {
-      tempFile = str_data_append + tempFile.substr(strlen(str_data.c_str()));
-      snprintf(cmd, sizeof(cmd), "cat '%s'", tempFile.c_str());
-      return hdc.ShellToFile(cmd, minutes(1), destination);
-    }
-    if (!strncmp(source_file, str_vendor.c_str(), strlen(str_vendor.c_str()))) {
-      tempFile =
-          str_vendor_append + tempFile.substr(strlen(str_vendor.c_str()));
-      snprintf(cmd, sizeof(cmd), "cat '%s'", tempFile.c_str());
-      return hdc.ShellToFile(cmd, minutes(1), destination);
-    }
+  snprintf(cmd, sizeof(cmd), "cat '%s'", source_file);
 
-    if (!strncmp(source_file, str_system.c_str(), strlen(str_system.c_str()))) {
-      tempFile =
-          str_system_append + tempFile.substr(strlen(str_system.c_str()));
-      snprintf(cmd, sizeof(cmd), "cat '%s'", tempFile.c_str());
-      return hdc.ShellToFile(cmd, minutes(1), destination);
-    }
-    return error;
-  } else {
-    snprintf(cmd, sizeof(cmd), "cat '%s'", source_file);
-  }
 
   LLDB_LOGF(log, "Hsu file(%s):%d PlatformHOS::%s source_file(%s)", __FILE__,
             __LINE__, __FUNCTION__, source_file);
