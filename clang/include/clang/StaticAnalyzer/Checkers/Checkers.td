@@ -1773,6 +1773,18 @@ def SignalHandlerChecker : Checker<"SignalHandler">,
                   Released>,
   ]>,
   Documentation<HasDocumentation>;
+
+def NapiScopeManagerChecker : Checker<"Napi.Scope">,
+  HelpText<"Check the use of napi_handle_scope">,
+  Documentation<HasDocumentation>;
+
+def NapiGetArrBufferDataChecker : Checker<"Napi.GetArrayBuffer">,
+  HelpText<"Check the use of napi_handle_scope">,
+  Documentation<HasDocumentation>;
+
+def NapiWrapParamChecker : Checker<"Napi.Wrap">,
+  HelpText<"Check the use of napi_handle_scope">,
+  Documentation<HasDocumentation>;
 }
 
 // OHOS_LOCAL end

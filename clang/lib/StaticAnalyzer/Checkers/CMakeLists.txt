@@ -135,10 +135,18 @@ add_clang_library(clangStaticAnalyzerCheckers
   WebKit/UncountedCallArgsChecker.cpp
   WebKit/UncountedLambdaCapturesChecker.cpp
   WebKit/UncountedLocalVarsChecker.cpp
+
+  # OHOS_LOCAL begin
+
   OpenHarmony/UnixAPIArgsChecker.cpp
   OpenHarmony/MemcpyChecker.cpp
   OpenHarmony/PrintSensitiveInfoChecker.cpp
   OpenHarmony/SignalHandlerChecker.cpp
+  OpenHarmony/NapiScopeManagerChecker.cpp
+  OpenHarmony/NapiGetArrBufferDataChecker.cpp
+  OpenHarmony/NapiWrapParamChecker.cpp
+
+  # OHOS_LOCAL end
 
   LINK_LIBS
   clangAST
