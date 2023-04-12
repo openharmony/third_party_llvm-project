@@ -13280,6 +13280,15 @@ bool IntExprEvaluator::VisitUnaryExprOrTypeTraitExpr(
       return false;
     return Success(Sizeof, E);
   }
+  // OHOS_LOCAL Begin
+  case UETT_PacModifierByType: {
+    QualType FuncTy = E->getTypeOfArgument();
+    if (!FuncTy->isFunctionType()) {
+      return false;
+    }
+    return Success(0, E);
+  }
+  // OHOS_LOCAL End
   case UETT_OpenMPRequiredSimdAlign:
     assert(E->isArgumentType());
     return Success(

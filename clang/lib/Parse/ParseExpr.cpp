@@ -1422,6 +1422,7 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
   case tok::kw_vec_step:   // unary-expression: OpenCL 'vec_step' expression
   // unary-expression: '__builtin_omp_required_simd_align' '(' type-name ')'
   case tok::kw___builtin_omp_required_simd_align:
+  case tok::kw___builtin_get_modifier_bytype: // OHOS_LOCAL
     if (NotPrimaryExpression)
       *NotPrimaryExpression = true;
     AllowSuffix = false;
@@ -2284,7 +2285,9 @@ Parser::ParseExprAfterUnaryExprOrTypeTrait(const Token &OpTok,
 
   assert(OpTok.isOneOf(tok::kw_typeof, tok::kw_sizeof, tok::kw___alignof,
                        tok::kw_alignof, tok::kw__Alignof, tok::kw_vec_step,
-                       tok::kw___builtin_omp_required_simd_align) &&
+                       tok::kw___builtin_omp_required_simd_align,
+                       tok::kw___builtin_get_modifier_bytype // OHOS_LOCAL
+                       ) &&
          "Not a typeof/sizeof/alignof/vec_step expression!");
 
   ExprResult Operand;
@@ -2294,7 +2297,9 @@ Parser::ParseExprAfterUnaryExprOrTypeTrait(const Token &OpTok,
     // If construct allows a form without parenthesis, user may forget to put
     // pathenthesis around type name.
     if (OpTok.isOneOf(tok::kw_sizeof, tok::kw___alignof, tok::kw_alignof,
-                      tok::kw__Alignof)) {
+                      tok::kw__Alignof,
+                      tok::kw___builtin_get_modifier_bytype // OHOS_LOCAL
+                      )) {
       if (isTypeIdUnambiguously()) {
         DeclSpec DS(AttrFactory);
         ParseSpecifierQualifierList(DS);
@@ -2479,7 +2484,10 @@ ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
     ExprKind = UETT_VecStep;
   else if (OpTok.is(tok::kw___builtin_omp_required_simd_align))
     ExprKind = UETT_OpenMPRequiredSimdAlign;
-
+  // OHOS_LOCAL Begin
+  else if (OpTok.is(tok::kw___builtin_get_modifier_bytype))
+    ExprKind = UETT_PacModifierByType;
+  // OHOS_LOCAL End
   if (isCastExpr)
     return Actions.ActOnUnaryExprOrTypeTraitExpr(OpTok.getLocation(),
                                                  ExprKind,

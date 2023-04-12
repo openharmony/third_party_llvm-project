@@ -434,6 +434,8 @@ KEYWORD(__builtin_LINE              , KEYALL)
 KEYWORD(__builtin_COLUMN            , KEYALL)
 KEYWORD(__builtin_source_location   , KEYCXX)
 
+UNARY_EXPR_OR_TYPE_TRAIT(__builtin_get_modifier_bytype, PacModifierByType, KEYALL) // OHOS_LOCAL
+
 // __builtin_types_compatible_p is a GNU C extension that we handle like a C++
 // type trait.
 TYPE_TRAIT_2(__builtin_types_compatible_p, TypeCompatible, KEYNOCXX)

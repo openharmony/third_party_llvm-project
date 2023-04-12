@@ -22,6 +22,9 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/RecordLayout.h"
 #include "clang/CodeGen/CGFunctionInfo.h"
+// OHOS_LOCAL start
+#include "clang/Pac/PacDfi.h"
+// OHOS_LOCAL end
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Module.h"
@@ -852,6 +855,7 @@ llvm::StructType *CodeGenTypes::ConvertRecordDeclType(const RecordDecl *RD) {
   if (!Entry) {
     Entry = llvm::StructType::create(getLLVMContext());
     addRecordTypeName(RD, Entry, "");
+    PacDfiRecordDecl2StructName(RD, Entry); // OHOS_LOCAL
   }
   llvm::StructType *Ty = Entry;
 

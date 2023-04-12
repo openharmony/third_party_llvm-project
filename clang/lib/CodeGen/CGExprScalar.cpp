@@ -42,6 +42,7 @@
 #include "llvm/IR/MatrixBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Support/TypeSize.h"
+#include "llvm/PARTS/Parts.h" // OHOS_LOCAL
 #include <cstdarg>
 
 using namespace clang;
@@ -2999,7 +3000,16 @@ ScalarExprEmitter::VisitUnaryExprOrTypeTraitExpr(
                 E->getTypeOfArgument()->getPointeeType()))
             .getQuantity();
     return llvm::ConstantInt::get(CGF.SizeTy, Alignment);
+    // OHOS_LOCAL Begin
+  } else if (E->getKind() == clang::UETT_PacModifierByType) {
+    auto ArgTy = E->getTypeOfArgument();
+    auto *FuncTy = ConvertType(ArgTy);
+    if (!FuncTy) {
+      return llvm::ConstantInt::get(CGF.Int64Ty, 0);
+    }
+    return llvm::ConstantInt::get(CGF.Int64Ty, llvm::PARTS::getTypeIdFor(FuncTy));
   }
+  // OHOS_LOCAL End
 
   // If this isn't sizeof(vla), the result must be constant; use the constant
   // folding logic so we don't have to duplicate it here.

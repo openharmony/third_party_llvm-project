@@ -1747,7 +1747,7 @@ class RCPCLoad<bits<2> sz, string asm, RegisterClass RC>
 
 class AuthBase<bits<1> M, dag oops, dag iops, string asm, string operands,
                list<dag> pattern>
-  : I<oops, iops, asm, operands, "", pattern>, Sched<[]> {
+  : I<oops, iops, asm, operands, "", pattern>, Sched<[WriteBrReg]> { // OHOS_LOCAL
   let isAuthenticated = 1;
   let Inst{31-25} = 0b1101011;
   let Inst{20-11} = 0b1111100001;

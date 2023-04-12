@@ -28,6 +28,7 @@ add_clang_library(clangParse
   clangBasic
   clangLex
   clangSema
+  pacDfi # OHOS_LOCAL
 
   DEPENDS
   omp_gen

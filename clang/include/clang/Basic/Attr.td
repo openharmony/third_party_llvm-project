@@ -1742,6 +1742,22 @@ def NoUniqueAddress : InheritableAttr, TargetSpecificAttr<TargetItaniumCXXABI> {
   let SimpleHandler = 1;
 }
 
+// OHOS_LOCAL start
+def PacDataTag : InheritableAttr {
+  let Spellings = [GCC<"pac_protected_data">];
+  let Subjects = SubjectList<[Field], ErrorDiag>;
+  let Documentation = [PacDataTagDocs];
+  let SimpleHandler = 1;
+}
+
+def PacPtrTag : InheritableAttr {
+  let Spellings = [GCC<"pac_protected_ptr">];
+  let Subjects = SubjectList<[Field], ErrorDiag>;
+  let Documentation = [PacPtrTagDocs];
+  let SimpleHandler = 1;
+}
+// OHOS_LOCAL end
+
 def ReturnsTwice : InheritableAttr {
   let Spellings = [GCC<"returns_twice">];
   let Subjects = SubjectList<[Function]>;

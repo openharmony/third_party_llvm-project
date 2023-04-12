@@ -43,6 +43,7 @@ if (LLVM_INCLUDE_TESTS)
 endif()
 add_subdirectory(WindowsDriver)
 add_subdirectory(WindowsManifest)
+add_subdirectory(PARTS) # OHOS_LOCAL
 
 set(LLVMCONFIGLIBRARYDEPENDENCIESINC "${LLVM_BINARY_DIR}/tools/llvm-config/LibraryDependencies.inc")
 

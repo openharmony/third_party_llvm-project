@@ -8415,3 +8415,4 @@ include "AArch64InstrAtomics.td"
 include "AArch64SVEInstrInfo.td"
 include "AArch64SMEInstrInfo.td"
 include "AArch64InstrGISel.td"
+include "llvm/PARTS/AArch64InstInfo.td" // OHOS_LOCAL
