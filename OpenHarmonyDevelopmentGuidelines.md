@@ -18,6 +18,13 @@ All OHOS-related changes to mainline LLVM / clang code MUST be clearly marked su
 unsigned LoopSizeThreshold = 32; // OHOS_LOCAL
 ```
 
+or
+
+```
+// OHOS_LOCAL
+unsigned LoopSizeThreshold = Really(Long()).LineOfExtremely()->NecessaryCode();
+```
+
 or in case of multiline change:
 
 ```
@@ -29,6 +36,32 @@ Some local OHOS change
 ```
 
 The presence of such marks greatly simplifies porting such code snippets to new LLVM versions. All such changes MUST be accompanied with a test case that MUST fail should the change is reverted.
+
+---------------------
+
+### Commit title and message
+
+Commit title and message should be in English.
+
+Commit title should starts with tag in brackets (name of changed component), e.g.:
+
+```
+[lldb] Add support for backward debugging
+```
+
+or, in case of several components:
+
+```
+[lldb][mips][test] Add tests for support for backward debugging on MIPS
+```
+
+Commit message should briefly describe **how** it is achieved, e.g.:
+
+```
+[lldb] Add support for backward debugging
+
+To support backward steps, auxiliary information is stored in SomeUsefulComponent
+```
 
 ---------------------
 
