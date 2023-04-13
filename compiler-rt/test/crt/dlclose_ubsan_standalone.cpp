@@ -5,6 +5,7 @@
 // RUN: %clangxx %s -DRT=\"%device_rundir/libclang_rt.ubsan_standalone.so\" -o %t -ldl
 // RUN: %push_to_device %shared_ubsan_standalone %device_rundir/libclang_rt.ubsan_standalone.so
 // RUN: %run %t 2>&1 | FileCheck %s
+// REQUIRES: ohos_family
 
 #include <dlfcn.h>
 #include <stdio.h>

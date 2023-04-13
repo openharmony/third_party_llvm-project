@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import os, sys, subprocess
 from ohos_common import *
@@ -37,7 +37,7 @@ while args:
             append_args += ['-Wl,--dynamic-linker=' + os.path.join(HOS_TMPDIR, dyld)]
 
 if output == None:
-    print "No output file name!"
+    print ("No output file name!")
     sys.exit(1)
 
 ret = subprocess.call(sys.argv[1:] + append_args)
