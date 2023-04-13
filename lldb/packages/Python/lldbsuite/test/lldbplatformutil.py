@@ -54,9 +54,51 @@ def _run_adb_command(cmd, device_id):
     stdout, stderr = p.communicate()
     return p.returncode, stdout, stderr
 
+# OHOS_LOCAL begin
+
+def getHostPlatform():
+    """Returns the host platform running the test suite."""
+    # Attempts to return a platform name matching a target Triple platform.
+    if sys.platform.startswith('linux'):
+        return 'linux'
+    elif sys.platform.startswith('win32') or sys.platform.startswith('cygwin'):
+        return 'windows'
+    elif sys.platform.startswith('darwin'):
+        return 'macosx'
+    elif sys.platform.startswith('freebsd'):
+        return 'freebsd'
+    elif sys.platform.startswith('netbsd'):
+        return 'netbsd'
+    else:
+        return sys.platform
+
+def getPlatform():
+    """Returns the target platform which the tests are running on."""
+    # Use the Apple SDK to determine the platform if set.
+    if configuration.apple_sdk:
+        platform = configuration.apple_sdk
+        dot = platform.find('.')
+        if dot != -1:
+            platform = platform[:dot]
+        if platform == 'iphoneos':
+            platform = 'ios'
+        return platform
+
+    platform = configuration.lldb_platform_name
+    if platform is None:
+        platform = "host"
+    if platform == "qemu-user":
+        platform = "host"
+    if platform == "host":
+        return getHostPlatform()
+    if platform.startswith("remote-"):
+        if platform == "remote-android":
+            return "linux"
+        return platform[7:]
+    return platform
 
 def target_is_android():
-    return configuration.lldb_platform_name == "remote-android"
+    return getPlatform() == "android"
 
 def android_device_api():
     if not hasattr(android_device_api, 'result'):
@@ -101,49 +143,10 @@ def finalize_build_dictionary(dictionary):
     return dictionary
 
 
-def getHostPlatform():
-    """Returns the host platform running the test suite."""
-    # Attempts to return a platform name matching a target Triple platform.
-    if sys.platform.startswith('linux'):
-        return 'linux'
-    elif sys.platform.startswith('win32') or sys.platform.startswith('cygwin'):
-        return 'windows'
-    elif sys.platform.startswith('darwin'):
-        return 'macosx'
-    elif sys.platform.startswith('freebsd'):
-        return 'freebsd'
-    elif sys.platform.startswith('netbsd'):
-        return 'netbsd'
-    else:
-        return sys.platform
-
-
 def getDarwinOSTriples():
     return lldbplatform.translate(lldbplatform.darwin_all)
 
-def getPlatform():
-    """Returns the target platform which the tests are running on."""
-    # Use the Apple SDK to determine the platform if set.
-    if configuration.apple_sdk:
-        platform = configuration.apple_sdk
-        dot = platform.find('.')
-        if dot != -1:
-            platform = platform[:dot]
-        if platform == 'iphoneos':
-            platform = 'ios'
-        return platform
-
-    platform = configuration.lldb_platform_name
-    if platform is None:
-        platform = "host"
-    if platform == "qemu-user":
-        platform = "host"
-    if platform == "host":
-        return getHostPlatform()
-    if platform.startswith("remote-"):
-        return platform[7:]
-    return platform
-
+# OHOS_LOCAL end
 
 def platformIsDarwin():
     """Returns true if the OS triple for the selected platform is any valid apple OS"""
