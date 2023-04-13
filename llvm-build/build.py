@@ -442,6 +442,7 @@ class LlvmCore(BuildUtils):
             llvm_defines['LLDB_ENABLE_PYTHON'] = 'ON'
             llvm_defines['COMPILER_RT_BUILD_LIBFUZZER'] = 'OFF'
             llvm_defines['LLVM_BUILD_EXTERNAL_COMPILER_RT'] = 'ON'
+            llvm_defines['LLVM_ENABLE_ZSTD'] = 'OFF'
 
     def llvm_compile_linux_defines(self,
                                    llvm_defines,
