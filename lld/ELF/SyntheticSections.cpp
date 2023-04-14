@@ -627,24 +627,22 @@ SmallVector<EhFrameSection::FdeData, 0> EhFrameSection::getFdeData() const {
   return ret;
 }
 
-static uint64_t readFdeAddr(uint8_t *buf, int size) {
-  switch (size) {
-  case DW_EH_PE_udata2:
-    return read16(buf);
-  case DW_EH_PE_sdata2:
-    return (int16_t)read16(buf);
-  case DW_EH_PE_udata4:
-    return read32(buf);
-  case DW_EH_PE_sdata4:
-    return (int32_t)read32(buf);
-  case DW_EH_PE_udata8:
-  case DW_EH_PE_sdata8:
-    return read64(buf);
-  case DW_EH_PE_absptr:
-    return readUint(buf);
-  }
-  fatal("unknown FDE size encoding");
+// OHOS_LOCAL begin
+
+static uint64_t readFdeAddr(uint8_t *buf, uint8_t enc) {
+  DWARFDataExtractor dataExtractor(/* Data = */ ArrayRef<uint8_t>(buf,
+                                                                  size_t(-1)),
+                                   /* IsLittleEndian = */ config->isLE,
+                                   /* AddressSize = */ config->wordsize);
+  uint64_t offset = 0;
+  Optional<uint64_t> fdeAddr =
+      dataExtractor.getRawEncodedPointer(&offset, enc);
+  if (fdeAddr == None)
+    fatal("unknown FDE size encoding");
+  return *fdeAddr;
 }
+
+// OHOS_LOCAL end
 
 // Returns the VA to which a given FDE (on a mmap'ed buffer) is applied to.
 // We need it to create .eh_frame_hdr section.
@@ -653,7 +651,7 @@ uint64_t EhFrameSection::getFdePc(uint8_t *buf, size_t fdeOff,
   // The starting address to which this FDE applies is
   // stored at FDE + 8 byte.
   size_t off = fdeOff + 8;
-  uint64_t addr = readFdeAddr(buf + off, enc & 0xf);
+  uint64_t addr = readFdeAddr(buf + off, enc); // OHOS_LOCAL
   // OHOS_LOCAL begin
   // We've converted DW_EH_PE_absptr to DW_EH_PE_pcrel earlier in
   // convertCieAbsEncodingsToPcrel().
