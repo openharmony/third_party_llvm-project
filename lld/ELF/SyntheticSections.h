@@ -21,6 +21,7 @@
 #define LLD_ELF_SYNTHETIC_SECTIONS_H
 
 #include "Config.h"
+#include "EhFrame.h" // OHOS_LOCAL
 #include "InputSection.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/MapVector.h"
@@ -57,6 +58,7 @@ public:
 
 struct CieRecord {
   EhSectionPiece *cie = nullptr;
+  EhPointerEncodings encodings; // OHOS_LOCAL
   SmallVector<EhSectionPiece *, 0> fdes;
 };
 
@@ -514,7 +516,17 @@ public:
   /// Add a dynamic relocation without writing an addend to the output section.
   /// This overload can be used if the addends are written directly instead of
   /// using relocations on the input section (e.g. MipsGotSection::writeTo()).
-  void addReloc(const DynamicReloc &reloc) { relocs.push_back(reloc); }
+  void addReloc(const DynamicReloc &reloc) {
+    // OHOS_LOCAL begin
+    // We have already converted R_ABS relocations in the .eh_frame section to
+    // R_PC so they can be resolved statically. (see
+    // RelocationScanner::scanOne() for details). We are not supposed to create
+    // dynamic relocations in the .eh_frame section since it usually belongs to
+    // a read-only text segment.
+    assert(!isa<EhInputSection>(reloc.inputSec));
+    // OHOS_LOCAL end
+    relocs.push_back(reloc);
+  }
   /// Add a dynamic relocation against \p sym with an optional addend.
   void addSymbolReloc(RelType dynType, InputSectionBase &isec,
                       uint64_t offsetInSec, Symbol &sym, int64_t addend = 0,

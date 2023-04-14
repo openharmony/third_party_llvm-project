@@ -1440,6 +1440,31 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
     sym.hasDirectReloc = true;
   }
 
+  // OHOS_LOCAL begin
+
+  // We convert R_ABS relocations in the .eh_frame section to R_PC to avoid
+  // creating dynamic relocations in the resulting .eh_frame section since it
+  // usually belongs to a non-writeable text segment. A dynamic relocation might
+  // be needed because the base address might not be known until the program
+  // start. We also change encoding of the pointers matching the converted
+  // relocations in the .eh_frame section from DW_EH_PE_absptr to
+  // DW_EH_PE_pcrel. For some architectures (e.g. Mips) compilers produce object
+  // files containing such absolute-encoded pointers in .eh_frame so the
+  // conversion is needed on the linker side. The bfd linker from GNU binutils
+  // does that, so we mimic this behavior as well.
+  if (config->isPic && isa<EhInputSection>(sec) && expr == R_ABS) {
+    expr = R_PC;
+    if (!target.convertAbsRelToPC(type)) {
+      fatal("relocation " + toString(type) + " cannot be used against " +
+            (sym.getName().empty() ? "local symbol "
+                                   : "symbol '" + toString(sym) + "' ") +
+            "in .eh_frame section; recompile with -fPIC" +
+            getLocation(sec, sym, offset));
+    }
+  }
+
+  // OHOS_LOCAL end
+
   processAux(expr, type, offset, sym, addend);
 }
 

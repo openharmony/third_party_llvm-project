@@ -68,61 +68,76 @@ uint64_t DWARFDataExtractor::getRelocatedValue(uint32_t Size, uint64_t *Off,
   return R;
 }
 
+
+// OHOS_LOCAL begin
+
 Optional<uint64_t>
-DWARFDataExtractor::getEncodedPointer(uint64_t *Offset, uint8_t Encoding,
-                                      uint64_t PCRelOffset) const {
+DWARFDataExtractor::getRawEncodedPointer(Cursor &C, uint8_t Encoding) const {
   if (Encoding == dwarf::DW_EH_PE_omit)
     return None;
 
-  uint64_t Result = 0;
-  uint64_t OldOffset = *Offset;
-  // First get value
   switch (Encoding & 0x0F) {
   case dwarf::DW_EH_PE_absptr:
+  case dwarf::DW_EH_PE_signed:
     switch (getAddressSize()) {
     case 2:
     case 4:
     case 8:
-      Result = getUnsigned(Offset, getAddressSize());
-      break;
+      return dwarf::DW_EH_PE_absptr == (Encoding & 0x0F)
+                 ? getUnsigned(C, getAddressSize())
+                 : getSigned(C, getAddressSize());
     default:
       return None;
     }
-    break;
   case dwarf::DW_EH_PE_uleb128:
-    Result = getULEB128(Offset);
-    break;
+    return getULEB128(C);
   case dwarf::DW_EH_PE_sleb128:
-    Result = getSLEB128(Offset);
-    break;
+    return getSLEB128(C);
   case dwarf::DW_EH_PE_udata2:
-    Result = getUnsigned(Offset, 2);
-    break;
+    return getUnsigned(C, 2);
   case dwarf::DW_EH_PE_udata4:
-    Result = getUnsigned(Offset, 4);
-    break;
+    return getUnsigned(C, 4);
   case dwarf::DW_EH_PE_udata8:
-    Result = getUnsigned(Offset, 8);
-    break;
+    return getUnsigned(C, 8);
   case dwarf::DW_EH_PE_sdata2:
-    Result = getSigned(Offset, 2);
-    break;
+    return getSigned(C, 2);
   case dwarf::DW_EH_PE_sdata4:
-    Result = SignExtend64<32>(getRelocatedValue(4, Offset));
-    break;
+    return SignExtend64<32>(getRelocatedValue(C, 4));
   case dwarf::DW_EH_PE_sdata8:
-    Result = getRelocatedValue(8, Offset);
-    break;
+    return getRelocatedValue(C, 8);
   default:
     return None;
   }
+}
+
+Optional<uint64_t>
+DWARFDataExtractor::getRawEncodedPointer(uint64_t *Offset,
+                                         uint8_t Encoding) const {
+  DWARFDataExtractor::Cursor C(*Offset);
+  Optional<uint64_t> Ret = getRawEncodedPointer(C, Encoding);
+  if (!C)
+    return None;
+  *Offset = C.tell();
+  return Ret;
+}
+
+Optional<uint64_t>
+DWARFDataExtractor::getEncodedPointer(uint64_t *Offset, uint8_t Encoding,
+                                      uint64_t PCRelOffset) const {
+  uint64_t OldOffset = *Offset;
+
+  // First get value
+  Optional<uint64_t> Result = getRawEncodedPointer(Offset, Encoding);
+  if (Result == None)
+    return None;
+
   // Then add relative offset, if required
   switch (Encoding & 0x70) {
   case dwarf::DW_EH_PE_absptr:
     // do nothing
     break;
   case dwarf::DW_EH_PE_pcrel:
-    Result += PCRelOffset;
+    *Result += PCRelOffset;
     break;
   case dwarf::DW_EH_PE_datarel:
   case dwarf::DW_EH_PE_textrel:
@@ -135,3 +150,5 @@ DWARFDataExtractor::getEncodedPointer(uint64_t *Offset, uint8_t Encoding,
 
   return Result;
 }
+
+// OHOS_LOCAL end

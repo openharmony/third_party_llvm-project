@@ -137,20 +137,24 @@ uint64_t DataExtractor::getUnsigned(uint64_t *offset_ptr, uint32_t byte_size,
   llvm_unreachable("getUnsigned unhandled case!");
 }
 
-int64_t
-DataExtractor::getSigned(uint64_t *offset_ptr, uint32_t byte_size) const {
+// OHOS_LOCAL begin
+
+int64_t DataExtractor::getSigned(uint64_t *offset_ptr, uint32_t byte_size,
+                                 llvm::Error *Err) const {
   switch (byte_size) {
   case 1:
-    return (int8_t)getU8(offset_ptr);
+    return (int8_t)getU8(offset_ptr, Err);
   case 2:
-    return (int16_t)getU16(offset_ptr);
+    return (int16_t)getU16(offset_ptr, Err);
   case 4:
-    return (int32_t)getU32(offset_ptr);
+    return (int32_t)getU32(offset_ptr, Err);
   case 8:
-    return (int64_t)getU64(offset_ptr);
+    return (int64_t)getU64(offset_ptr, Err);
   }
   llvm_unreachable("getSigned unhandled case!");
 }
+
+// OHOS_LOCAL end
 
 StringRef DataExtractor::getCStrRef(uint64_t *OffsetPtr, Error *Err) const {
   ErrorAsOutParameter ErrAsOut(Err);

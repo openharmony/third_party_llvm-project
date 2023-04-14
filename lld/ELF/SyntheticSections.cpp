@@ -506,6 +506,27 @@ static void writeCieFde(uint8_t *buf, ArrayRef<uint8_t> d) {
   write32(buf, aligned - 4);
 }
 
+// OHOS_LOCAL begin
+
+// Change encoding of DW_EH_PE_absptr pointers in .eh_frame CIE records to
+// DW_EH_PE_pcrel. See details in RelocationScanner::scanOne().
+static void convertCieAbsEncodingsToPcrel(CieRecord *rec) {
+  rec->encodings = getEhPointerEncodings(*rec->cie);
+  if (!config->isPic)
+    return;
+
+  auto helper = [](EhPointerEncoding &encoding) {
+    if (encoding.offsetInCie != size_t(-1) &&
+        (encoding.encoding & 0x70) == DW_EH_PE_absptr)
+      encoding.encoding |= DW_EH_PE_pcrel;
+  };
+  helper(rec->encodings.personalityEncoding);
+  helper(rec->encodings.fdeEncoding);
+  helper(rec->encodings.lsdaEncoding);
+}
+
+// OHOS_LOCAL end
+
 void EhFrameSection::finalizeContents() {
   assert(!this->size); // Not finalized.
 
@@ -535,6 +556,8 @@ void EhFrameSection::finalizeContents() {
     rec->cie->outputOff = off;
     off += alignToPowerOf2(rec->cie->size, config->wordsize);
 
+    convertCieAbsEncodingsToPcrel(rec); // OHOS_LOCAL
+
     for (EhSectionPiece *fde : rec->fdes) {
       fde->outputOff = off;
       off += alignToPowerOf2(fde->size, config->wordsize);
@@ -550,6 +573,25 @@ void EhFrameSection::finalizeContents() {
   this->size = off;
 }
 
+// OHOS_LOCAL begin
+
+static uint8_t getFdeEncoding(const CieRecord &cie) {
+  if (cie.encodings.fdeEncoding.offsetInCie != size_t(-1))
+    return cie.encodings.fdeEncoding.encoding;
+  if (config->emachine == EM_386 || config->emachine == EM_X86_64) {
+    // From System V Application Binary Interface for both i386 and AMD64:
+    // If 'R' is missing from the CIE Augmentation String, the field is an
+    // 8-byte absolute pointer.
+    return DW_EH_PE_udata8 | DW_EH_PE_absptr;
+  }
+  // TODO: reveal the default encoding for other architectures. Using just
+  // absptr with platform-native pointer size seemed to work fine for a while
+  // though.
+  return DW_EH_PE_absptr;
+}
+
+// OHOS_LOCAL end
+
 // Returns data for .eh_frame_hdr. .eh_frame_hdr is a binary search table
 // to get an FDE from an address to which FDE is applied. This function
 // returns a list of such pairs.
@@ -559,7 +601,7 @@ SmallVector<EhFrameSection::FdeData, 0> EhFrameSection::getFdeData() const {
 
   uint64_t va = getPartition().ehFrameHdr->getVA();
   for (CieRecord *rec : cieRecords) {
-    uint8_t enc = getFdeEncoding(rec->cie);
+    uint8_t enc = getFdeEncoding(*rec); // // OHOS_LOCAL
     for (EhSectionPiece *fde : rec->fdes) {
       uint64_t pc = getFdePc(buf, fde->outputOff, enc);
       uint64_t fdeVA = getParent()->addr + fde->outputOff;
@@ -612,6 +654,11 @@ uint64_t EhFrameSection::getFdePc(uint8_t *buf, size_t fdeOff,
   // stored at FDE + 8 byte.
   size_t off = fdeOff + 8;
   uint64_t addr = readFdeAddr(buf + off, enc & 0xf);
+  // OHOS_LOCAL begin
+  // We've converted DW_EH_PE_absptr to DW_EH_PE_pcrel earlier in
+  // convertCieAbsEncodingsToPcrel().
+  assert(!config->isPic || (enc & 0x70) != DW_EH_PE_absptr);
+  // OHOS_LOCAL end
   if ((enc & 0x70) == DW_EH_PE_absptr)
     return addr;
   if ((enc & 0x70) == DW_EH_PE_pcrel)
@@ -624,6 +671,18 @@ void EhFrameSection::writeTo(uint8_t *buf) {
   for (CieRecord *rec : cieRecords) {
     size_t cieOffset = rec->cie->outputOff;
     writeCieFde(buf + cieOffset, rec->cie->data());
+
+    // OHOS_LOCAL begin
+    if (config->isPic) {
+      auto helper = [buf, cieOffset](EhPointerEncoding encoding) {
+        if (encoding.offsetInCie != size_t(-1))
+          *(buf + cieOffset + encoding.offsetInCie) = encoding.encoding;
+      };
+      helper(rec->encodings.personalityEncoding);
+      helper(rec->encodings.fdeEncoding);
+      helper(rec->encodings.lsdaEncoding);
+    }
+    // OHOS_LOCAL end
 
     for (EhSectionPiece *fde : rec->fdes) {
       size_t off = fde->outputOff;

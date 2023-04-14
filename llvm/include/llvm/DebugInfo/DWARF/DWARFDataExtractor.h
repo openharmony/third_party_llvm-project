@@ -77,6 +77,19 @@ public:
                              &getError(C));
   }
 
+  // OHOS_LOCAL begin
+
+  /// Extracts a DWARF-encoded pointer in cursor \p C using \p Encoding without
+  /// a PC-relative adjustment.
+  Optional<uint64_t> getRawEncodedPointer(Cursor &C,
+                                               uint8_t Encoding) const;
+  /// Extracts a DWARF-encoded pointer in \p Offset using \p Encoding without a
+  /// PC-relative adjustment.
+  Optional<uint64_t> getRawEncodedPointer(uint64_t *Offset,
+                                               uint8_t Encoding) const;
+
+  // OHOS_LOCAL end
+
   /// Extracts a DWARF-encoded pointer in \p Offset using \p Encoding.
   /// There is a DWARF encoding that uses a PC-relative adjustment.
   /// For these values, \p AbsPosOffset is used to fix them, which should

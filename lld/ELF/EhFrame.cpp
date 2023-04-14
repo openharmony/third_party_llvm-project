@@ -15,181 +15,191 @@
 //
 //===----------------------------------------------------------------------===//
 
+// OHOS_LOCAL begin
+
 #include "EhFrame.h"
 #include "Config.h"
 #include "InputSection.h"
-#include "Relocations.h"
-#include "Target.h"
 #include "lld/Common/ErrorHandler.h"
-#include "lld/Common/Strings.h"
-#include "llvm/BinaryFormat/Dwarf.h"
-#include "llvm/Object/ELF.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/DebugInfo/DWARF/DWARFDataExtractor.h"
 
 using namespace llvm;
-using namespace llvm::ELF;
-using namespace llvm::dwarf;
-using namespace llvm::object;
-using namespace lld;
-using namespace lld::elf;
 
+namespace lld {
+namespace elf {
 namespace {
-class EhReader {
+
+// The reason for having a class for parsing a EH CIE frame instead of a single
+// function is need for hasLSDA() used by ICF<ELFT>::handleLSDA(). We'd better
+// parse each CIE only once but at this point the EhFrameSection::cieRecords
+// vector is not filled yet (it's done in EhFrameSection::finalizeContents()
+// later). So, to avoid parsing unneeded CIE parts, we split parsing into 2
+// phases, and use a class just to save internal parsing state between them.
+class EhCieReader {
 public:
-  EhReader(InputSectionBase *s, ArrayRef<uint8_t> d) : isec(s), d(d) {}
-  uint8_t getFdeEncoding();
+  EhCieReader(const EhSectionPiece &cie);
+
   bool hasLSDA();
+  EhPointerEncodings getEhPointerEncodings();
 
 private:
-  template <class P> void failOn(const P *loc, const Twine &msg) {
-    fatal("corrupted .eh_frame: " + msg + "\n>>> defined in " +
-          isec->getObjMsg((const uint8_t *)loc - isec->rawData.data()));
-  }
+  void failOnCursorPos(const Twine &msg);
 
-  uint8_t readByte();
-  void skipBytes(size_t count);
-  StringRef readString();
-  void skipLeb128();
-  void skipAugP();
-  StringRef getAugmentation();
+  void parseUntilAugmentationString();
+  void parseAll();
 
-  InputSectionBase *isec;
-  ArrayRef<uint8_t> d;
+  const EhSectionPiece &cie;
+  DWARFDataExtractor dataExtractor;
+  DWARFDataExtractor::Cursor cursor = DWARFDataExtractor::Cursor(0);
+
+  uint8_t version;
+  StringRef augmentationString;
+
+  EhPointerEncodings encodings;
 };
+
+EhCieReader::EhCieReader(const EhSectionPiece &cie)
+    : cie(cie), dataExtractor(
+                    /* Data = */ cie.data(),
+                    /* IsLittleEndian = */ config->isLE,
+                    /* AddressSize = */ config->wordsize) {}
+
+bool EhCieReader::hasLSDA() {
+  parseUntilAugmentationString();
+  return augmentationString.contains('L');
 }
 
-// Read a byte and advance D by one byte.
-uint8_t EhReader::readByte() {
-  if (d.empty())
-    failOn(d.data(), "unexpected end of CIE");
-  uint8_t b = d.front();
-  d = d.slice(1);
-  return b;
+EhPointerEncodings EhCieReader::getEhPointerEncodings() {
+  parseAll();
+  return encodings;
 }
 
-void EhReader::skipBytes(size_t count) {
-  if (d.size() < count)
-    failOn(d.data(), "CIE is too small");
-  d = d.slice(count);
+void EhCieReader::failOnCursorPos(const Twine &msg) {
+  fatal("malformed CIE in .eh_frame: " + msg + "\n>>> defined in " +
+        cie.sec->getObjMsg(cie.data().data() + cursor.tell() -
+                           cie.sec->data().data()));
 }
 
-// Read a null-terminated string.
-StringRef EhReader::readString() {
-  const uint8_t *end = llvm::find(d, '\0');
-  if (end == d.end())
-    failOn(d.data(), "corrupted CIE (failed to read string)");
-  StringRef s = toStringRef(d.slice(0, end - d.begin()));
-  d = d.slice(s.size() + 1);
-  return s;
-}
+void EhCieReader::parseUntilAugmentationString() {
+  // Parsing is intended to be run only once.
+  assert(cursor.tell() == 0);
 
-// Skip an integer encoded in the LEB128 format.
-// Actual number is not of interest because only the runtime needs it.
-// But we need to be at least able to skip it so that we can read
-// the field that follows a LEB128 number.
-void EhReader::skipLeb128() {
-  const uint8_t *errPos = d.data();
-  while (!d.empty()) {
-    uint8_t val = d.front();
-    d = d.slice(1);
-    if ((val & 0x80) == 0)
-      return;
-  }
-  failOn(errPos, "corrupted CIE (failed to read LEB128)");
-}
+  /* length = */ dataExtractor.getU32(cursor);
+  uint32_t id = dataExtractor.getU32(cursor);
+  if (!cursor)
+    failOnCursorPos("corrupted length or id");
 
-static size_t getAugPSize(unsigned enc) {
-  switch (enc & 0x0f) {
-  case DW_EH_PE_absptr:
-  case DW_EH_PE_signed:
-    return config->wordsize;
-  case DW_EH_PE_udata2:
-  case DW_EH_PE_sdata2:
-    return 2;
-  case DW_EH_PE_udata4:
-  case DW_EH_PE_sdata4:
-    return 4;
-  case DW_EH_PE_udata8:
-  case DW_EH_PE_sdata8:
-    return 8;
-  }
-  return 0;
-}
+  if (id != 0)
+    failOnCursorPos("id must be 0, got " + Twine(id));
 
-void EhReader::skipAugP() {
-  uint8_t enc = readByte();
-  if ((enc & 0xf0) == DW_EH_PE_aligned)
-    failOn(d.data() - 1, "DW_EH_PE_aligned encoding is not supported");
-  size_t size = getAugPSize(enc);
-  if (size == 0)
-    failOn(d.data() - 1, "unknown FDE encoding");
-  if (size >= d.size())
-    failOn(d.data() - 1, "corrupted CIE");
-  d = d.slice(size);
-}
-
-uint8_t elf::getFdeEncoding(EhSectionPiece *p) {
-  return EhReader(p->sec, p->data()).getFdeEncoding();
-}
-
-bool elf::hasLSDA(const EhSectionPiece &p) {
-  return EhReader(p.sec, p.data()).hasLSDA();
-}
-
-StringRef EhReader::getAugmentation() {
-  skipBytes(8);
-  int version = readByte();
+  version = dataExtractor.getU8(cursor);
+  if (!cursor)
+    failOnCursorPos("corrupted version");
   if (version != 1 && version != 3)
-    failOn(d.data() - 1,
-           "FDE version 1 or 3 expected, but got " + Twine(version));
+    failOnCursorPos("version must be 1 or 3, got " +
+                    Twine(static_cast<int>(version)));
 
-  StringRef aug = readString();
+  augmentationString = dataExtractor.getCStrRef(cursor);
+  if (!cursor)
+    failOnCursorPos("corrupted augmentation string");
+}
 
-  // Skip code and data alignment factors.
-  skipLeb128();
-  skipLeb128();
+void EhCieReader::parseAll() {
+  parseUntilAugmentationString();
 
-  // Skip the return address register. In CIE version 1 this is a single
-  // byte. In CIE version 3 this is an unsigned LEB128.
+  dataExtractor.getULEB128(cursor);
+  dataExtractor.getSLEB128(cursor);
+  if (!cursor)
+    failOnCursorPos("corrupted code or data align factor");
+
+  // Skip ret address reg
   if (version == 1)
-    readByte();
+    dataExtractor.getU8(cursor);
   else
-    skipLeb128();
-  return aug;
+    dataExtractor.getULEB128(cursor);
+  if (!cursor)
+    failOnCursorPos("corrupted ret address reg");
+
+  if (augmentationString.empty())
+    return;
+
+  uint64_t augmentationSectionBegin = 0;
+  uint64_t augmentationSectionExpectedSize;
+  if (augmentationString.front() == 'z') {
+    augmentationSectionExpectedSize = dataExtractor.getULEB128(cursor);
+    if (!cursor)
+      failOnCursorPos("corrupted augmentation section size");
+    augmentationSectionBegin = cursor.tell();
+    augmentationString = augmentationString.slice(1, StringRef::npos);
+  }
+
+  auto helper = [this](EhPointerEncoding &encoding, char c) {
+    if (encoding.offsetInCie != size_t(-1))
+      failOnCursorPos("duplicate occurrance of " + Twine(c) +
+                      " in augmentation string \"" + augmentationString + "\"");
+    encoding.offsetInCie = cursor.tell();
+    encoding.encoding = dataExtractor.getU8(cursor);
+  };
+
+  for (char c : augmentationString) {
+    switch (c) {
+    case 'R':
+      helper(encodings.fdeEncoding, c);
+      break;
+    case 'L':
+      helper(encodings.lsdaEncoding, c);
+      break;
+    case 'P':
+      helper(encodings.personalityEncoding, c);
+      if (dataExtractor.getRawEncodedPointer(
+              cursor, encodings.personalityEncoding.encoding) == None)
+        failOnCursorPos(
+            "cannot get personality pointer for personality encoding " +
+            Twine(static_cast<int>(encodings.personalityEncoding.encoding)));
+      if ((encodings.personalityEncoding.encoding & 0xf0) ==
+          dwarf::DW_EH_PE_aligned)
+        failOnCursorPos(
+            "DW_EH_PE_aligned personality encoding is not supported");
+      break;
+    case 'B':
+      // B-Key is used for signing functions associated with this
+      // augmentation string
+    case 'S':
+      // Current frame is a signal trampoline.
+    case 'G':
+      // This stack frame contains MTE tagged data, so needs to be
+      // untagged on unwind.
+      break;
+    default:
+      failOnCursorPos("unexpected character in CIE augmentation string: " +
+                      augmentationString);
+    }
+    if (!cursor)
+      failOnCursorPos("corrupted CIE augmentation section");
+  }
+
+  uint64_t augmentationSectionActualSize =
+      cursor.tell() - augmentationSectionBegin;
+
+  if (augmentationSectionBegin != 0 &&
+      augmentationSectionActualSize != augmentationSectionExpectedSize)
+    failOnCursorPos("augmentation section size " +
+                    Twine(augmentationSectionExpectedSize) +
+                    "does not match the actual size " +
+                    Twine(augmentationSectionActualSize));
 }
 
-uint8_t EhReader::getFdeEncoding() {
-  // We only care about an 'R' value, but other records may precede an 'R'
-  // record. Unfortunately records are not in TLV (type-length-value) format,
-  // so we need to teach the linker how to skip records for each type.
-  StringRef aug = getAugmentation();
-  for (char c : aug) {
-    if (c == 'R')
-      return readByte();
-    if (c == 'z')
-      skipLeb128();
-    else if (c == 'L')
-      readByte();
-    else if (c == 'P')
-      skipAugP();
-    else if (c != 'B' && c != 'S' && c != 'G')
-      failOn(aug.data(), "unknown .eh_frame augmentation string: " + aug);
-  }
-  return DW_EH_PE_absptr;
+} // namespace
+
+EhPointerEncodings getEhPointerEncodings(const EhSectionPiece &cie) {
+  return EhCieReader(cie).getEhPointerEncodings();
 }
 
-bool EhReader::hasLSDA() {
-  StringRef aug = getAugmentation();
-  for (char c : aug) {
-    if (c == 'L')
-      return true;
-    if (c == 'z')
-      skipLeb128();
-    else if (c == 'P')
-      skipAugP();
-    else if (c == 'R')
-      readByte();
-    else if (c != 'B' && c != 'S' && c != 'G')
-      failOn(aug.data(), "unknown .eh_frame augmentation string: " + aug);
-  }
-  return false;
-}
+bool hasLSDA(const EhSectionPiece &cie) { return EhCieReader(cie).hasLSDA(); }
+
+} // namespace elf
+} // namespace lld
+
+// OHOS_LOCAL end

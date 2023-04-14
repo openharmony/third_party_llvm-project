@@ -3,7 +3,9 @@
 # RUN: llvm-mc -filetype=obj -triple=x86_64-pc-linux %s -o %t
 # RUN: not ld.lld --eh-frame-hdr %t -o /dev/null 2>&1 | FileCheck %s
 
-# CHECK: corrupted .eh_frame: unknown .eh_frame augmentation string:
+# OHOS_LOCAL begin
+# CHECK: error: malformed CIE in .eh_frame: unexpected character in CIE augmentation string:
+# OHOS_LOCAL end
 
 .section .eh_frame,"a",@unwind
   .byte 0x0E

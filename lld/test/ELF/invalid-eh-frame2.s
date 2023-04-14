@@ -3,7 +3,9 @@
 # RUN: llvm-mc -filetype=obj -triple=x86_64-pc-linux %s -o %t
 # RUN: not ld.lld --eh-frame-hdr %t -o /dev/null 2>&1 | FileCheck %s
 
-# CHECK:      error: corrupted .eh_frame: corrupted CIE (failed to read string)
+# OHOS_LOCAL begin
+# CHECK:      error: malformed CIE in .eh_frame: corrupted augmentation string
+# OHOS_LOCAL end
 # CHECK-NEXT: >>> defined in {{.*}}:(.eh_frame+0x9)
 
 .section .eh_frame,"a",@unwind

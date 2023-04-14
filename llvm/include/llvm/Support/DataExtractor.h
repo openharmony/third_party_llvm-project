@@ -300,10 +300,30 @@ public:
   /// @param[in] size
   ///     The size in bytes of the integer to extract.
   ///
+  // OHOS_LOCAL begin
+  /// @param[in,out] Err
+  ///     A pointer to an Error object. Upon return the Error object is set to
+  ///     indicate the result (success/failure) of the function. If the Error
+  ///     object is already set when calling this function, no extraction is
+  ///     performed.
+  ///
+  // OHOS_LOCAL end
   /// @return
   ///     The sign extended signed integer value that was extracted,
   ///     or zero on failure.
-  int64_t getSigned(uint64_t *offset_ptr, uint32_t size) const;
+  // OHOS_LOCAL begin
+  int64_t getSigned(uint64_t *offset_ptr, uint32_t size,
+                    Error *Err = nullptr) const;
+  // OHOS_LOCAL end
+
+  // OHOS_LOCAL begin
+  /// Extract a signed integer of the given size from the location given by
+  /// the cursor. In case of an extraction error, or if the cursor is already in
+  /// an error state, zero is returned.
+  int64_t getSigned(Cursor &C, uint32_t Size) const {
+    return getSigned(&C.Offset, Size, &C.Err);
+  }
+  // OHOS_LOCAL end
 
   //------------------------------------------------------------------
   /// Extract an pointer from \a *offset_ptr.
