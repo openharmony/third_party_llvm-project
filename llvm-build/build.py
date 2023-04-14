@@ -957,6 +957,7 @@ class LlvmLibs(BuildUtils):
         rt_defines['LIBCXXABI_HAS_CXA_THREAD_ATEXIT_IMPL'] = 'OFF'
         rt_defines['LIBCXXABI_ENABLE_SHARED'] = 'OFF'
         rt_defines['LIBCXXABI_LIBCXX_INCLUDES'] = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'libcxx', 'include'))
+        rt_defines['LIBCXXABI_INSTALL_INCLUDE_DIR'] = libcxx_install_include_path
         rt_defines['LIBCXX_USE_COMPILER_RT'] = 'ON'
         rt_defines['LIBCXX_ENABLE_ABI_LINKER_SCRIPT'] = 'OFF'
         rt_defines['LIBCXX_ENABLE_STATIC_ABI_LIBRARY'] = 'ON'
@@ -975,7 +976,6 @@ class LlvmLibs(BuildUtils):
             rt_defines['LIBCXX_ABI_NAMESPACE'] = '__n1'
             rt_defines['LIBCXX_OUTPUT_NAME'] = 'c++_shared'
             rt_defines['LIBCXX_OUTPUT_STATIC_NAME'] = 'c++_static'
-            rt_defines['LIBCXXABI_INSTALL_INCLUDE_DIR'] = libcxx_install_include_path
             rt_defines['LIBCXXABI_INSTALL_LIBRARY'] = 'OFF'
             rt_defines['LIBUNWIND_INSTALL_LIBRARY'] = 'OFF'
         else:
