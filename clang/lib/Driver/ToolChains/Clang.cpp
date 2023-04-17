@@ -3291,7 +3291,7 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
   for (const Arg *A : Args.filtered(options::OPT__param)) {
     StringRef Str(A->getValue());
     if (Str.startswith("ssp-buffer-size=")) {
-      size_t size = sizeof("ssp-buffer-size=");
+      size_t size = strlen("ssp-buffer-size=");
       if (StackProtectorLevel) {
         CmdArgs.push_back("-stack-protector-buffer-size");
         // FIXME: Verify the argument is a valid integer.
@@ -3302,13 +3302,13 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
     // OHOS_LOCAL begin
     if (Str.startswith("ssp-ret-cookie-size=")) {
       unsigned int SSPRetCookieSize = 0;
+      size_t size = strlen("ssp-ret-cookie-size=");
       // Currently only supports AArch64 architecture.
       if (!EffectiveTriple.isAArch64() || !EffectiveTriple.isOSBinFormatELF()) {
         D.Diag(diag::err_drv_unsupported_opt_for_target)
-          << Str.take_front(19) << EffectiveTriple.getTriple();
+          << Str.take_front(size - 1) << EffectiveTriple.getTriple();
         continue;
       }
-      size_t size = sizeof("ssp-ret-cookie-size=");
       // The parameter must be greater than 0.
       if (Str.drop_front(size).getAsInteger(10, SSPRetCookieSize) || !SSPRetCookieSize) {
         D.Diag(diag::err_drv_invalid_int_value)
