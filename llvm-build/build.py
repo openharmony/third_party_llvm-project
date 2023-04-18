@@ -439,7 +439,7 @@ class LlvmCore(BuildUtils):
             llvm_defines['LIBUNWIND_ENABLE_SHARED'] = 'OFF'
             llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'OFF'
             llvm_defines['LLDB_NO_DEBUGSERVER'] = 'ON'
-            llvm_defines['LLDB_ENABLE_PYTHON'] = 'ON'
+            llvm_defines['LLDB_ENABLE_PYTHON'] = 'OFF'
             llvm_defines['COMPILER_RT_BUILD_LIBFUZZER'] = 'OFF'
             llvm_defines['LLVM_BUILD_EXTERNAL_COMPILER_RT'] = 'ON'
             llvm_defines['LLVM_ENABLE_ZSTD'] = 'OFF'
@@ -465,7 +465,7 @@ class LlvmCore(BuildUtils):
             llvm_defines['COMPILER_RT_BUILD_ORC'] = 'OFF'
             llvm_defines['LIBUNWIND_USE_COMPILER_RT'] = 'ON'
             llvm_defines['LLVM_BINUTILS_INCDIR'] = '/usr/include'
-
+            llvm_defines['LLDB_ENABLE_PYTHON'] = 'OFF'
 
             if not build_instrumented and not no_lto and not debug_build:
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
@@ -485,7 +485,6 @@ class LlvmCore(BuildUtils):
         llvm_defines['OPENMP_TEST_FLAGS'] = '-Wl,-ldl'
         llvm_defines['CLANG_BUILD_EXAMPLES'] = 'OFF'
         llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'OFF'
-        llvm_defines['LLDB_ENABLE_PYTHON'] = 'ON'
         llvm_defines['COMPILER_RT_BUILD_SANITIZERS'] = 'OFF'
         llvm_defines['COMPILER_RT_BUILD_MEMPROF'] = 'OFF'
         llvm_defines['CMAKE_ASM_FLAGS'] = cflags
