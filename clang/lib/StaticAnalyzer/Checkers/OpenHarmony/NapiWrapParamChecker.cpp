@@ -59,7 +59,7 @@ NapiWrapParamChecker::NapiWrapParamChecker()
 // A callback before the function is executed to track napi_wrap
 void NapiWrapParamChecker::checkPreCall(const CallEvent &Call,
                                         CheckerContext &C) const {
-  if (!Call.isCalled(this->NapiWrap)) {
+  if (!this->NapiWrap.matches(Call)) {
     return;
   }
   ProgramStateRef State = C.getState();

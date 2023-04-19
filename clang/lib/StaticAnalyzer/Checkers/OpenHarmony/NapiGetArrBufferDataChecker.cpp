@@ -72,7 +72,7 @@ NapiGetArrBufferDataChecker::NapiGetArrBufferDataChecker()
 // napi_get_arraybuffer_info
 void NapiGetArrBufferDataChecker::checkPostCall(const CallEvent &Call,
                                                 CheckerContext &C) const {
-  if (!Call.isCalled(this->NapiGetArrBuffer)) {
+  if (!this->NapiGetArrBuffer.matches(Call)) {
     return;
   }
   ProgramStateRef State = C.getState();
@@ -90,7 +90,7 @@ void NapiGetArrBufferDataChecker::checkPostCall(const CallEvent &Call,
 // A callback before the function is executed to track free
 void NapiGetArrBufferDataChecker::checkPreCall(const CallEvent &Call,
                                                CheckerContext &C) const {
-  if (!Call.isCalled(this->Free)) {
+  if (!this->Free.matches(Call)) {
     return;
   }
   ProgramStateRef State = C.getState();

@@ -206,7 +206,7 @@ void NapiScopeManagerChecker::UvCallbackDetect(CheckerContext &C,
 // napi_close_handle_scope
 void NapiScopeManagerChecker::checkPreCall(const CallEvent &Call,
                                            CheckerContext &C) const {
-  if (!Call.isCalled(this->CloseHandleScope)) {
+  if (!this->CloseHandleScope.matches(Call)) {
     return;
   }
   ProgramStateRef State = C.getState();
@@ -233,7 +233,7 @@ void NapiScopeManagerChecker::checkPreCall(const CallEvent &Call,
 // A callback after the function is executed to track the napi_open_handle_scope
 void NapiScopeManagerChecker::checkPostCall(const CallEvent &Call,
                                             CheckerContext &C) const {
-  if (!Call.isCalled(this->OpenHandleScope)) {
+  if (!this->OpenHandleScope.matches(Call)) {
     return;
   }
   ProgramStateRef State = C.getState();
