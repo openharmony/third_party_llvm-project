@@ -965,6 +965,7 @@ class LlvmLibs(BuildUtils):
         rt_defines['CMAKE_ASM_FLAGS'] = ' '.join(rt_cflags)
         rt_defines['CMAKE_C_FLAGS'] = ' '.join(rt_cflags)
         rt_defines['CMAKE_CXX_FLAGS'] = ' '.join(rt_cflags)
+        rt_defines['CMAKE_BUILD_TYPE'] = 'Release'
         rt_defines['CMAKE_INSTALL_PREFIX'] = llvm_install
         rt_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
         rt_defines['CMAKE_SYSTEM_NAME'] = 'OHOS'
@@ -1232,6 +1233,7 @@ class LlvmLibs(BuildUtils):
         cmake_defines['CMAKE_ASM_FLAGS'] = ' '.join(cflags)
         cmake_defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
         cmake_defines['CMAKE_CXX_FLAGS'] = ' '.join(cflags)
+        cmake_defines['CMAKE_BUILD_TYPE'] = 'Release'
         cmake_defines['CMAKE_TRY_COMPILE_TARGET_TYPE'] = 'STATIC_LIBRARY'
         cmake_defines['CMAKE_INSTALL_PREFIX'] = install_dir
         cmake_defines['LLVM_CONFIG_PATH'] = os.path.join(toolchain_dir, 'bin', 'llvm-config')
