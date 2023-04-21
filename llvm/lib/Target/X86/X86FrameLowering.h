@@ -102,6 +102,14 @@ public:
                               MutableArrayRef<CalleeSavedInfo> CSI,
                               const TargetRegisterInfo *TRI) const override;
 
+  // OHOS_LOCAL begin
+  bool supportsArkSpills() const override {
+    return true;
+  }
+
+  int getArkFrameAdaptationOffset(const MachineFunction &MF) const override;
+  // OHOS_LOCAL end
+
   bool hasFP(const MachineFunction &MF) const override;
   bool hasReservedCallFrame(const MachineFunction &MF) const override;
   bool canSimplifyCallFramePseudos(const MachineFunction &MF) const override;

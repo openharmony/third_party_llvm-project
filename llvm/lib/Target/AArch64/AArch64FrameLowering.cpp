@@ -299,6 +299,30 @@ static int64_t getArgumentStackToRestore(MachineFunction &MF,
   return ArgumentPopSize;
 }
 
+// OHOS_LOCAL begin
+int AArch64FrameLowering::getArkFrameAdaptationOffset(
+    const MachineFunction &MF) const {
+
+  const auto &F = MF.getFunction();
+  if (F.getMetadata("use-ark-frame") != nullptr)
+    return 0x10; // FP & LR
+
+  const auto &FRI = MF.getFrameInfo();
+  const auto &CSI = FRI.getCalleeSavedInfo();
+  auto End = CSI.end();
+  auto FP_iter = std::find_if(CSI.begin(), End, [](auto &csi) {
+    return csi.getReg() == AArch64::FP;
+  });
+
+  assert(FP_iter != End &&
+         "FP register has not been callee-saved as expected");
+
+  int32_t offset = FRI.getObjectOffset(FP_iter->getFrameIdx());
+  assert(offset < 0 && "FP register is expected to be above SP");
+  return -offset;
+}
+// OHOS_LOCAL end
+
 static bool produceCompactUnwindFrame(MachineFunction &MF);
 static bool needsWinCFI(const MachineFunction &MF);
 static StackOffset getSVEStackSize(const MachineFunction &MF);
@@ -3324,6 +3348,15 @@ int64_t AArch64FrameLowering::assignSVEStackObjectOffsets(
 void AArch64FrameLowering::processFunctionBeforeFrameFinalized(
     MachineFunction &MF, RegScavenger *RS) const {
   MachineFrameInfo &MFI = MF.getFrameInfo();
+
+  // OHOS_LOCAL begin
+  int ArkSpillNo = 0;
+  for (int I = 0, E = MFI.getObjectIndexEnd(); I != E; ++I)
+    if (MFI.isArkSpillSlotObjectIndex(I)) {
+      MFI.setObjectOffset(I, MF.getArkSpillOffset(ArkSpillNo));
+      ArkSpillNo++;
+    }
+  // OHOS_LOCAL end
 
   assert(getStackGrowthDirection() == TargetFrameLowering::StackGrowsDown &&
          "Upwards growing stack unsupported");

@@ -272,6 +272,19 @@ public:
     return false;
   }
 
+  // OHOS_LOCAL begin
+  /// Return true if the target implements spilling & restoring caller-saved
+  /// registers from Ark spill slots.
+  virtual bool supportsArkSpills() const {
+    return false;
+  }
+
+  /// Return offset of Ark frame adaptation
+  virtual int getArkFrameAdaptationOffset(const MachineFunction &MF) const {
+    return 0;
+  }
+  // OHOS_LOCAL end
+
   /// restoreCalleeSavedRegisters - Issues instruction(s) to restore all callee
   /// saved registers and returns true if it isn't possible / profitable to do
   /// so by issuing a series of load instructions via loadRegToStackSlot().

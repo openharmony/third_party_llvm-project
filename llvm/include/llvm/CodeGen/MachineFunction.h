@@ -577,6 +577,14 @@ public:
   MachineFunction &operator=(const MachineFunction &) = delete;
   ~MachineFunction();
 
+  // OHOS_LOCAL begin
+  unsigned getMaxArkSpills() const;
+
+  int getArkSpillOffset(int ArgIdx) const;
+
+  int getArkFrameSize() const;
+  // OHOS_LOCAL end
+
   /// Reset the instance as if it was just created.
   void reset() {
     clear();

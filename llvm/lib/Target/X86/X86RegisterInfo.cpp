@@ -843,6 +843,7 @@ X86RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   MachineInstr &MI = *II;
   MachineBasicBlock &MBB = *MI.getParent();
   MachineFunction &MF = *MBB.getParent();
+  const MachineFrameInfo &MFI = MF.getFrameInfo(); // OHOS_LOCAL
   MachineBasicBlock::iterator MBBI = MBB.getFirstTerminator();
   bool IsEHFuncletEpilogue = MBBI == MBB.end() ? false
                                                : isFuncletReturnInstr(*MBBI);
@@ -896,11 +897,28 @@ X86RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   if (Opc == TargetOpcode::STACKMAP || Opc == TargetOpcode::PATCHPOINT) {
     assert(BasePtr == FramePtr && "Expected the FP as base register");
     int64_t Offset = MI.getOperand(FIOperandNum + 1).getImm() + FIOffset;
+    // OHOS_LOCAL begin
+    if (MFI.isArkSpillSlotObjectIndex(FrameIndex)) {
+      assert(TFI->supportsArkSpills());
+      auto Adaptation = TFI->getArkFrameAdaptationOffset(MF);
+      Offset = MFI.getObjectOffset(FrameIndex) + Adaptation;
+    }
+    // OHOS_LOCAL end
     MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
     return;
   }
 
   if (MI.getOperand(FIOperandNum+3).isImm()) {
+    // OHOS_LOCAL begin
+    if (MFI.isArkSpillSlotObjectIndex(FrameIndex)) {
+      assert(BasePtr == FramePtr && "Expected the FP as base register");
+      assert(TFI->supportsArkSpills());
+      auto Adaptation = TFI->getArkFrameAdaptationOffset(MF);
+      int64_t Offset = MFI.getObjectOffset(FrameIndex) + Adaptation;
+      MI.getOperand(FIOperandNum + 3).ChangeToImmediate(Offset);
+      return;
+    }
+    // OHOS_LOCAL end
     // Offset is a 32-bit integer.
     int Imm = (int)(MI.getOperand(FIOperandNum + 3).getImm());
     int Offset = FIOffset + Imm;
