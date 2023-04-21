@@ -140,6 +140,15 @@ add_clang_library(clangStaticAnalyzerCheckers
   OpenHarmony/PrintSensitiveInfoChecker.cpp
   OpenHarmony/SignalHandlerChecker.cpp
 
+  # OHOS_LOCAL begin
+  
+  OpenHarmony/RefBaseDeleteChecker.cpp
+  OpenHarmony/OHPtrImplicitConversionChecker.cpp
+  OpenHarmony/NotHeapObjChecker.cpp
+  OpenHarmony/OHPtrNotInitChecker.cpp
+
+  # OHOS_LOCAL end
+
   LINK_LIBS
   clangAST
   clangASTMatchers
