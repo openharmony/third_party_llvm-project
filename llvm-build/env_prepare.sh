@@ -53,10 +53,10 @@ function download_and_archive() {
 copy_config="""
 """
 
+CLANG_LINUX_BUILD=clang_linux-x86_64-025192-20230330
 copy_config_linux_x86_64="""
 prebuilts/cmake,https://mirrors.huaweicloud.com/harmonyos/compiler/cmake/3.16.5/${host_platform}/cmake-${host_platform}-x86-3.16.5.tar.gz
-prebuilts/clang/ohos/${host_platform}-${host_cpu},https://mirrors.huaweicloud.com/openharmony/compiler/clang/10.0.1-62608/${host_platform}/llvm.tar.gz
-prebuilts/clang/ohos/${host_platform}-${host_cpu},https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/clang+llvm-10.0.1-x86_64-linux-gnu-ubuntu-16.04.tar.xz
+prebuilts/clang/ohos/${host_platform}-${host_cpu},https://mirrors.huaweicloud.com/openharmony/compiler/clang/15.0.4-025192/linux/${CLANG_LINUX_BUILD}.tar.bz2
 """
 
 
@@ -95,19 +95,25 @@ do
 done
 
 
-if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-62608" ];then
-    rm -rf "${code_dir}/prebuilts/clang/ohos/linux-x86_64/llvm"
-    mv "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-62608" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/llvm"
-    ln -snf 10.0.1 "${code_dir}/prebuilts/clang/ohos/linux-x86_64/llvm/lib/clang/current"
-fi
-
-
-if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang+llvm-10.0.1-x86_64-linux-gnu-ubuntu-16.04" ];then
-    rm -rf "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-10.0.1"
-    mv "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang+llvm-10.0.1-x86_64-linux-gnu-ubuntu-16.04" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-10.0.1"
-fi
-
 if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang+llvm-12.0.0-x86_64-apple-darwin" ];then
     rm -rf "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-10.0.1"
     mv "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang+llvm-12.0.0-x86_64-apple-darwin" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-10.0.1"
 fi
+
+
+if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/${CLANG_LINUX_BUILD}" ]; then
+    SET_CLANG_VERSION='15.0.4'
+    mv "${code_dir}/prebuilts/clang/ohos/linux-x86_64/${CLANG_LINUX_BUILD}" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-${SET_CLANG_VERSION}"
+fi
+
+# try to detect version ...
+BASE_CLANG_DIR="${code_dir}/prebuilts/clang/ohos/${host_platform}-x86_64"
+CLANG_FOUND_VERSION=$(cd ${BASE_CLANG_DIR}; basename $(ls -d clang* | head -1) | sed s/clang-//)
+
+# check that pipe above didn't fail and that we have (any) clang version
+if [ ! $? == 0 ] || [ x == x${CLANG_FOUND_VERSION} ] ; then 
+    echo "env_prepare.sh: could not detect clang version" 2>&1
+    exit 1
+fi
+# ... and put it to python file
+echo "prebuilts_clang_version='${CLANG_FOUND_VERSION}'" > $(dirname $0)/prebuilts_clang_version.py

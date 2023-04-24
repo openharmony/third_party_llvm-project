@@ -27,6 +27,7 @@ import argparse
 import mingw
 import stat
 
+from prebuilts_clang_version import prebuilts_clang_version
 
 class BuildConfig():
     # Defines public methods and functions and obtains script parameters.
@@ -61,7 +62,7 @@ class BuildConfig():
         self.OPENHOS_SFX = '-linux-ohos'
         self.LITEOS_SFX = '-liteos-ohos'
         self.LLDB_PY_VERSION = '3.10'
-        self.CLANG_VERSION = '10.0.1'
+        self.CLANG_VERSION = prebuilts_clang_version
         self.MINGW_TRIPLE = 'x86_64-windows-gnu'
         logging.basicConfig(level=logging.INFO)
 
