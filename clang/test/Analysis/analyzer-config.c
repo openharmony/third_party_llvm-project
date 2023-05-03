@@ -103,6 +103,10 @@
 // CHECK-NEXT: notes-as-events = false
 // CHECK-NEXT: nullability:NoDiagnoseCallsToSystemHeaders = false
 // CHECK-NEXT: objc-inlining = true
+// OHOS_LOCAL begin
+// CHECK-NEXT: openharmony.PrintSensitiveInfo:Config = ""
+// CHECK-NEXT: openharmony.SignalHandler:Config = ""
+// OHOS_LOCAL end
 // CHECK-NEXT: optin.cplusplus.UninitializedObject:CheckPointeeInitialization = false
 // CHECK-NEXT: optin.cplusplus.UninitializedObject:IgnoreGuardedFields = false
 // CHECK-NEXT: optin.cplusplus.UninitializedObject:IgnoreRecordsWithField = ""
