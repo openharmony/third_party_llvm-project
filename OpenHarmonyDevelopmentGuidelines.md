@@ -32,7 +32,7 @@ or in case of multiline change:
 
 Some local OHOS change
 
-// OHOS_LOCAL begin
+// OHOS_LOCAL end
 ```
 
 The presence of such marks greatly simplifies porting such code snippets to new LLVM versions. All such changes MUST be accompanied with a test case that MUST fail should the change is reverted.
@@ -61,6 +61,16 @@ Commit message should briefly describe **how** it is achieved, e.g.:
 [lldb] Add support for backward debugging
 
 To support backward steps, auxiliary information is stored in SomeUsefulComponent
+```
+
+Commit message should contain a link to related issue:
+
+```
+[lldb] Add support for backward debugging
+
+To support backward steps, auxiliary information is stored in SomeUsefulComponent
+
+Issue: https://gitee.com/openharmony/third_party_llvm-project/issues/I6ZYBW
 ```
 
 ---------------------
