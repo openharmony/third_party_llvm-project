@@ -270,11 +270,12 @@ ArchSpec Platform::GetAugmentedArchSpec(Platform *platform, llvm::StringRef trip
 /// Default Constructor
 Platform::Platform(bool is_host)
     : m_is_host(is_host), m_os_version_set_while_connected(false),
-      m_system_arch_set_while_connected(false), m_max_uid_name_len(0),
+      m_system_arch_set_while_connected(false), m_container(false),
+      m_max_uid_name_len(0),
       m_max_gid_name_len(0), m_supports_rsync(false), m_rsync_opts(),
       m_rsync_prefix(), m_supports_ssh(false), m_ssh_opts(),
       m_ignores_remote_hostname(false), m_trap_handlers(),
-      m_container(false), m_calculated_trap_handlers(false),
+      m_calculated_trap_handlers(false),
       m_module_cache(std::make_unique<ModuleCache>()) {
   Log *log = GetLog(LLDBLog::Object);
   LLDB_LOGF(log, "%p Platform::Platform()", static_cast<void *>(this));
