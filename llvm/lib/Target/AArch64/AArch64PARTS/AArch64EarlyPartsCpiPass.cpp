@@ -127,7 +127,7 @@ inline MachineInstr* AArch64EarlyPartsCpiPass::findIndirectCallMachineInstr(Mach
     unsigned BLRinstr_oper0 = 0;
     for (auto &MBB: MF) {
         for (auto MIi = MBB.instr_begin(), MIie = MBB.instr_end(); MIi != MIie; ++MIi) {
-            if (&*MIi != nullptr && isIndirectCall(*MIi)) {
+            if (isIndirectCall(*MIi)) {
                 BLRinstr_oper0 = MIi->getOperand(0).getReg();
                 if (AUTCALLinstr_oper0 == BLRinstr_oper0) {
                     return  &*MIi;
