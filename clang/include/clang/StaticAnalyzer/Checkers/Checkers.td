@@ -1774,6 +1774,18 @@ def SignalHandlerChecker : Checker<"SignalHandler">,
   ]>,
   Documentation<HasDocumentation>;
 
+def NapiScopeManagerChecker : Checker<"Napi.Scope">,
+  HelpText<"Check the use of napi_handle_scope">,
+  Documentation<NotDocumented>;
+
+def NapiGetArrBufferDataChecker : Checker<"Napi.GetArrayBuffer">,
+  HelpText<"Check the use of napi_get_arraybuffer_info">,
+  Documentation<NotDocumented>;
+
+def NapiWrapParamChecker : Checker<"Napi.Wrap">,
+  HelpText<"Check the use of napi_wrap">,
+  Documentation<NotDocumented>;
+  
 def RefBaseDeleteChecker : Checker<"RefBaseDelete">,
   HelpText<"Check for delete refbase managed by sptr/wptr">,
   Documentation<NotDocumented>;
