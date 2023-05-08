@@ -12,8 +12,11 @@
 
 #include "LoongArchTargetMachine.h"
 #include "LoongArch.h"
+#include "LoongArchMachineFunctionInfo.h"
+#include "LoongArchTargetTransformInfo.h"
 #include "MCTargetDesc/LoongArchBaseInfo.h"
 #include "TargetInfo/LoongArchTargetInfo.h"
+#include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
@@ -126,6 +129,11 @@ bool LoongArchPassConfig::addInstSelector() {
   addPass(createLoongArchISelDag(getLoongArchTargetMachine()));
 
   return false;
+}
+
+TargetTransformInfo
+LoongArchTargetMachine::getTargetTransformInfo(const Function &F) const {
+  return TargetTransformInfo(LoongArchTTIImpl(this, F));
 }
 
 void LoongArchPassConfig::addPreEmitPass() { addPass(&BranchRelaxationPassID); }
