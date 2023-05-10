@@ -592,7 +592,7 @@ void AArch64PassConfig::addIRPasses() {
   if (TM->getTargetTriple().isOSWindows())
     addPass(createCFGuardCheckPass());
 
-  // OHOS_LOCAL start
+  // OHOS_LOCAL begin
   if (PARTS::useFeCfi())
     addPass(PARTS::createPartsPluginPass());
   // OHOS_LOCAL end
@@ -649,7 +649,7 @@ bool AArch64PassConfig::addInstSelector() {
       getOptLevel() != CodeGenOpt::None)
     addPass(createAArch64CleanupLocalDynamicTLSPass());
 
-  // OHOS_LOCAL start
+  // OHOS_LOCAL begin
   if (PARTS::useFeCfi())
     // Replace indirect jump instruction such as : BR BLR --> BRAA BLRAA
     addPass(createAArch64EarlyPartsCpiPass());
@@ -817,7 +817,7 @@ void AArch64PassConfig::addPreEmitPass() {
       TM->getTargetTriple().isOSBinFormatMachO())
     addPass(createAArch64CollectLOHPass());
 
-  // OHOS_LOCAL start
+  // OHOS_LOCAL begin
   if (PARTS::useFeCfi())
     addPass(createAArch64PartsCpiPass());
   if ((PARTS::useDataPointerProtection()))

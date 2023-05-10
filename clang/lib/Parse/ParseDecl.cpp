@@ -25,7 +25,7 @@
 #include "clang/Sema/ParsedTemplate.h"
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/SemaDiagnostic.h"
-// OHOS_LOCAL start
+// OHOS_LOCAL begin
 #include "clang/Pac/PacDfi.h"
 // OHOS_LOCAL end
 #include "llvm/ADT/Optional.h"

@@ -146,6 +146,10 @@
 // CHECK-NEXT: OptimizeNone (SubjectMatchRule_function, SubjectMatchRule_objc_method)
 // CHECK-NEXT: Overloadable (SubjectMatchRule_function)
 // CHECK-NEXT: Owner (SubjectMatchRule_record_not_is_union)
+// OHOS_LOCAL begin
+// CHECK-NEXT: PacDataTag (SubjectMatchRule_field)
+// CHECK-NEXT: PacPtrTag (SubjectMatchRule_field)
+// OHOS_LOCAL end
 // CHECK-NEXT: ParamTypestate (SubjectMatchRule_variable_is_parameter)
 // CHECK-NEXT: PassObjectSize (SubjectMatchRule_variable_is_parameter)
 // CHECK-NEXT: PatchableFunctionEntry (SubjectMatchRule_function, SubjectMatchRule_objc_method)

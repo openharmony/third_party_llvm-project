@@ -1742,7 +1742,7 @@ def NoUniqueAddress : InheritableAttr, TargetSpecificAttr<TargetItaniumCXXABI> {
   let SimpleHandler = 1;
 }
 
-// OHOS_LOCAL start
+// OHOS_LOCAL begin
 def PacDataTag : InheritableAttr {
   let Spellings = [GCC<"pac_protected_data">];
   let Subjects = SubjectList<[Field], ErrorDiag>;

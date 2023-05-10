@@ -68,7 +68,7 @@ FunctionPass *createAArch64PostLegalizerLowering();
 FunctionPass *createAArch64PostSelectOptimize();
 FunctionPass *createAArch64StackTaggingPass(bool IsOptNone);
 FunctionPass *createAArch64StackTaggingPreRAPass();
-// OHOS_LOCAL start
+// OHOS_LOCAL begin
 FunctionPass *createAArch64EarlyPartsCpiPass();
 FunctionPass *createAArch64PartsCpiPass();
 FunctionPass *createPartsPassDpi();

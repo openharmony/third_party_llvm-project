@@ -1610,7 +1610,7 @@ def ext_hlsl_access_specifiers : ExtWarn<
   "access specifiers are a clang HLSL extension">,
   InGroup<HLSLExtension>;
 
-// OHOS_LOCAL start
+// OHOS_LOCAL begin
 def warn_unsupported_pac_dfi_type : Warning<
     "unsupported type %0 for attribute '%1'">;
 // OHOS_LOCAL end

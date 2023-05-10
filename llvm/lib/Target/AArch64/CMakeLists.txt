@@ -86,7 +86,7 @@ add_llvm_target(AArch64CodeGen
   AArch64TargetTransformInfo.cpp
   SVEIntrinsicOpts.cpp
   AArch64SIMDInstrOpt.cpp
-  # OHOS_LOCAL start
+  # OHOS_LOCAL begin
   AArch64PARTS/AArch64EarlyPartsCpiPass.cpp
   AArch64PARTS/AArch64PartsCpiPass.cpp
   AArch64PARTS/AArch64PartsDpiPass.cpp
@@ -94,7 +94,7 @@ add_llvm_target(AArch64CodeGen
 
   DEPENDS
   intrinsics_gen
-  # OHOS_LOCAL start
+  # OHOS_LOCAL begin
   Parts
 
   LINK_LIBS

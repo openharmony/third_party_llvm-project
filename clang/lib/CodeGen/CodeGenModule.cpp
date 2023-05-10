@@ -47,7 +47,7 @@
 #include "clang/CodeGen/BackendUtil.h"
 #include "clang/CodeGen/ConstantInitBuilder.h"
 #include "clang/Frontend/FrontendDiagnostic.h"
-// OHOS_LOCAL start
+// OHOS_LOCAL begin
 #include "clang/Pac/PacDfi.h"
 // OHOS_LOCAL end
 #include "llvm/ADT/StringSwitch.h"

@@ -1355,7 +1355,7 @@ in C++11 onwards.
   }];
 }
 
-// OHOS_LOCAL start
+// OHOS_LOCAL begin
 def PacDataTagDocs : Documentation {
   let Category = DocCatField;
   let Content = [{

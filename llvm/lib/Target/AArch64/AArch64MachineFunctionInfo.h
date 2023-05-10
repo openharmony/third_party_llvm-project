@@ -435,7 +435,7 @@ public:
 
   bool needsDwarfUnwindInfo() const;
   bool needsAsyncDwarfUnwindInfo() const;
-  // OHOS_LOCAL start
+  // OHOS_LOCAL begin
   void setPartsSym(MCSymbol *Sym) { PartsSym = Sym; }
   MCSymbol *getPartsSym() const { return PartsSym; }
   // OHOS_LOCAL end
