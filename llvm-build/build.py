@@ -61,6 +61,8 @@ class BuildConfig():
         self.OPENHOS_SFX = '-linux-ohos'
         self.LITEOS_SFX = '-liteos-ohos'
         self.LLDB_PY_VERSION = '3.10'
+        self.LLDB_PYTHON = 'python3'
+        self.LLDB_PY_DETAILED_VERSION = self.LLDB_PY_VERSION + '.2'
         self.CLANG_VERSION = prebuilts_clang_version
         self.MINGW_TRIPLE = 'x86_64-windows-gnu'
         logging.basicConfig(level=logging.INFO)
@@ -380,6 +382,10 @@ class BuildUtils(object):
         defines['COMPILER_RT_BUILD_XRAY'] = 'OFF'
         return defines
 
+    def get_python_dir(self):
+        python_dir = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts', self.build_config.LLDB_PYTHON,
+            self.platform_prefix(), self.build_config.LLDB_PY_DETAILED_VERSION)
+        return python_dir
 
 class LlvmCore(BuildUtils):
 
@@ -439,10 +445,11 @@ class LlvmCore(BuildUtils):
             llvm_defines['LIBUNWIND_ENABLE_SHARED'] = 'OFF'
             llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'OFF'
             llvm_defines['LLDB_NO_DEBUGSERVER'] = 'ON'
-            llvm_defines['LLDB_ENABLE_PYTHON'] = 'OFF'
             llvm_defines['COMPILER_RT_BUILD_LIBFUZZER'] = 'OFF'
             llvm_defines['LLVM_BUILD_EXTERNAL_COMPILER_RT'] = 'ON'
             llvm_defines['LLVM_ENABLE_ZSTD'] = 'OFF'
+            llvm_defines['Python3_LIBRARIES'] = os.path.join(self.get_python_dir(),
+                'lib', 'libpython%s.dylib' % self.build_config.LLDB_PY_VERSION)
 
     def llvm_compile_linux_defines(self,
                                    llvm_defines,
@@ -465,13 +472,13 @@ class LlvmCore(BuildUtils):
             llvm_defines['COMPILER_RT_BUILD_ORC'] = 'OFF'
             llvm_defines['LIBUNWIND_USE_COMPILER_RT'] = 'ON'
             llvm_defines['LLVM_BINUTILS_INCDIR'] = '/usr/include'
-            llvm_defines['LLDB_ENABLE_PYTHON'] = 'OFF'
+            llvm_defines['Python3_LIBRARIES'] = os.path.join(self.get_python_dir(),
+                'lib', 'libpython%s.so' % self.build_config.LLDB_PY_VERSION)
 
             if not build_instrumented and not no_lto and not debug_build:
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
 
-    @staticmethod
-    def llvm_compile_llvm_defines(llvm_defines, llvm_root, cflags, ldflags):
+    def llvm_compile_llvm_defines(self, llvm_defines, llvm_root, cflags, ldflags):
         llvm_defines['LLVM_ENABLE_PROJECTS'] = 'clang;lld;clang-tools-extra;openmp;lldb'
         llvm_defines['LLVM_ENABLE_RUNTIMES'] = 'libunwind;libcxxabi;libcxx;compiler-rt'
         llvm_defines['LLVM_ENABLE_BINDINGS'] = 'OFF'
@@ -494,6 +501,13 @@ class LlvmCore(BuildUtils):
         llvm_defines['CMAKE_SHARED_LINKER_FLAGS'] = ldflags
         llvm_defines['CMAKE_MODULE_LINKER_FLAGS'] = ldflags
         llvm_defines['CMAKE_POSITION_INDEPENDENT_CODE'] = 'ON'
+        llvm_defines['LLDB_ENABLE_PYTHON'] = 'ON'
+        llvm_defines['LLDB_EMBED_PYTHON_HOME'] = 'ON'
+        llvm_defines['LLDB_PYTHON_HOME'] = os.path.join('..', self.build_config.LLDB_PYTHON)
+        llvm_defines['Python3_INCLUDE_DIRS'] = os.path.join(self.get_python_dir(),
+            'include', 'python%s' % self.build_config.LLDB_PY_VERSION)
+        llvm_defines['Python3_EXECUTABLE'] = os.path.join(self.get_python_dir(), 'bin', self.build_config.LLDB_PYTHON)
+        llvm_defines['SWIG_EXECUTABLE'] = self.find_program('swig')
 
     def llvm_compile(self,
                      build_name,
@@ -1317,9 +1331,13 @@ class LlvmPackage(BuildUtils):
         self.merge_tree(os.path.join(py_root, 'lib'),
                         os.path.join(bin_root, 'python', 'lib', 'python%s' % self.build_config.LLDB_PY_VERSION))
 
-
-
-
+    def copy_python_to_host(self, install_dir):
+        if(self.host_is_linux()):
+            need_file = 'libpython' + self.build_config.LLDB_PY_VERSION + '.so.1.0'
+        if(self.host_is_darwin()):
+            need_file = 'libpython' + self.build_config.LLDB_PY_VERSION + '.dylib'
+        shutil.copyfile(os.path.join(self.get_python_dir(), "lib", need_file), os.path.join(install_dir, 'lib', need_file))
+        self.check_copy_tree(self.get_python_dir(), os.path.join(install_dir, self.build_config.LLDB_PYTHON))
 
     def windows_lib_files_operation(self, lib_files, lib_dir, install_dir):
 
@@ -1651,6 +1669,9 @@ def main():
             build_config.no_lto,
             build_config.build_instrumented,
             build_config.xunit_xml_output)
+        llvm_make = build_utils.merge_out_path('llvm_make')
+        llvm_package.copy_python_to_host(llvm_make)
+        llvm_package.copy_python_to_host(llvm_install)
 
     llvm_core.set_clang_version(llvm_install)
 

@@ -66,6 +66,7 @@ CLANG_LINUX_BUILD=clang_linux-x86_64-025192-20230330
 copy_config_linux_x86_64="""
 prebuilts/cmake,https://mirrors.huaweicloud.com/harmonyos/compiler/cmake/3.16.5/${host_platform}/cmake-${host_platform}-x86-3.16.5.tar.gz
 prebuilts/clang/ohos/${host_platform}-${host_cpu},https://mirrors.huaweicloud.com/openharmony/compiler/clang/15.0.4-025192/linux/${CLANG_LINUX_BUILD}.tar.bz2
+prebuilts/python3,https://mirrors.huaweicloud.com/harmonyos/compiler/python/3.10.2/${host_platform}/python-${host_platform}-x86-3.10.2_20230604.tar.gz
 """
 
 
@@ -73,8 +74,12 @@ CLANG_DARWIN_BUILD=clang_darwin-x86_64-8e906c-20230415
 copy_config_darwin_x86_64="""
 prebuilts/cmake,https://mirrors.huaweicloud.com/harmonyos/compiler/cmake/3.16.5/${host_platform}/cmake-${host_platform}-x86-3.16.5.tar.gz
 prebuilts/clang/ohos/${host_platform}-${host_cpu},http://mirrors.huaweicloud.com/harmonyos/compiler/clang/15.0.4-8e906c/darwin/${CLANG_DARWIN_BUILD}.tar.bz2
+prebuilts/python3,https://mirrors.huaweicloud.com/harmonyos/compiler/python/3.10.2/${host_platform}/python-${host_platform}-x86-3.10.2_20230604.tar.gz
 """
 
+copy_config_darwin_arm64="""
+prebuilts/python3,https://mirrors.huaweicloud.com/harmonyos/compiler/python/3.10.2/${host_platform}/python-${host_platform}-x86-3.10.2_20230604.tar.gz
+"""
 
 if [[ "${host_platform}" == "linux" ]]; then
     if [[ "${host_cpu}" == "x86_64" ]]; then
@@ -88,6 +93,7 @@ elif [[ "${host_platform}" == "darwin" ]]; then
         copy_config+=${copy_config_darwin_x86_64}
         echo "add x86-64 mac here"
     elif [[ "${host_cpu}" == "arm64" ]]; then
+        copy_config+=${copy_config_darwin_arm64}
         echo "add m1 config here"
     else
         echo "unknwon host_cpu - ${host_cpu} for darwin"
