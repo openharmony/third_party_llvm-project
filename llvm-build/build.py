@@ -940,6 +940,8 @@ class LlvmLibs(BuildUtils):
 
         rt_cflags = list(cflags)
         rt_cflags.append('-fstack-protector-strong')
+        rt_cflags.append('-funwind-tables')
+        rt_cflags.append('-fno-omit-frame-pointer')
 
         rt_defines = defines.copy()
         rt_defines['OHOS'] = '1'
