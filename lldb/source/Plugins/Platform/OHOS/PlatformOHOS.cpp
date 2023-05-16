@@ -172,7 +172,7 @@ Status PlatformOHOS::GetFile(const FileSpec &source,
         source_spec.GetCString(false));
 
   HdcClient hdc(m_device_id);
-  Status error = hdc.RecvFile(source, destination);
+  Status error = hdc.RecvFile(source_spec, destination);
   return error;
 }
 

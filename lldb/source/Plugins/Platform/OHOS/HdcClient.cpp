@@ -272,7 +272,7 @@ Status HdcClient::TransferFile(const char *direction, const FileSpec &src,
     return Status(ec);
 
   std::stringstream cmd;
-  cmd << "file " << direction << " -cwd ";
+  cmd << "file " << direction << " -m " << " -cwd ";
   cmd.write(cwd.data(), cwd.size());
   cmd << " " << src.GetPath() << " " << dst.GetPath();
   Status error = SendMessage(cmd.str());
