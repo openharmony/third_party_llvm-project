@@ -262,7 +262,7 @@ void PrintSensitiveInfoChecker::saveVardeclStateForBo(const Expr *lhs, const Exp
 void PrintSensitiveInfoChecker::saveVardeclStateForDeclStmt(const DeclStmt *ds, CheckerContext &c) const {
 
     const VarDecl *varDecl = llvm::dyn_cast_or_null<VarDecl>(ds->getSingleDecl());
-    if (varDecl == nullptr) {
+    if (varDecl == nullptr || varDecl->getInit()==nullptr) {
         return;
     }
     const Expr *expr = varDecl->getInit()->IgnoreParenImpCasts();
