@@ -31,12 +31,17 @@ if [ ! -d "${bin_dir}" ];then
     mkdir -p "${bin_dir}"
 fi
 
+DOWNLOADER="wget -t3 -T10 -O "
 
 function download_and_archive() {
     archive_dir=$1
     download_source_url=$2
     bin_file=$(basename ${download_source_url})
-    wget -t3 -T10 -O "${bin_dir}/${bin_file}" "${download_source_url}"
+    ${DOWNLOADER} "${bin_dir}/${bin_file}" "${download_source_url}"
+    if (( $? )) ; then
+        echo "Failed to download ${download_source_url}" 2>& 1
+        exit 1
+    fi
     if [ ! -d "${code_dir}/${archive_dir}" ];then
         mkdir -p "${code_dir}/${archive_dir}"
     fi
@@ -46,6 +51,10 @@ function download_and_archive() {
         tar -xvzf "${bin_dir}/${bin_file}" -C "${code_dir}/${archive_dir}"
     else
         tar -xvf "${bin_dir}/${bin_file}" -C "${code_dir}/${archive_dir}"
+    fi
+    if (( $? )) ; then
+        echo "Failed to unpack ${bin_dir}/${bin_file}, corrupted?" 2>& 1
+        exit 1
     fi
 }
 
@@ -60,9 +69,10 @@ prebuilts/clang/ohos/${host_platform}-${host_cpu},https://mirrors.huaweicloud.co
 """
 
 
+CLANG_DARWIN_BUILD=clang_darwin-x86_64-8e906c-20230415
 copy_config_darwin_x86_64="""
 prebuilts/cmake,https://mirrors.huaweicloud.com/harmonyos/compiler/cmake/3.16.5/${host_platform}/cmake-${host_platform}-x86-3.16.5.tar.gz
-prebuilts/clang/ohos/${host_platform}-${host_cpu},https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.0/clang+llvm-12.0.0-x86_64-apple-darwin.tar.xz
+prebuilts/clang/ohos/${host_platform}-${host_cpu},http://mirrors.huaweicloud.com/harmonyos/compiler/clang/15.0.4-8e906c/darwin/${CLANG_DARWIN_BUILD}.tar.bz2
 """
 
 
@@ -95,25 +105,25 @@ do
 done
 
 
-if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang+llvm-12.0.0-x86_64-apple-darwin" ];then
-    rm -rf "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-10.0.1"
-    mv "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang+llvm-12.0.0-x86_64-apple-darwin" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-10.0.1"
-fi
-
-
 if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/${CLANG_LINUX_BUILD}" ]; then
     SET_CLANG_VERSION='15.0.4'
     mv "${code_dir}/prebuilts/clang/ohos/linux-x86_64/${CLANG_LINUX_BUILD}" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-${SET_CLANG_VERSION}"
 fi
 
+if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/${CLANG_DARWIN_BUILD}" ]; then
+    SET_CLANG_VERSION='15.0.4'
+    mv "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/${CLANG_DARWIN_BUILD}" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-${SET_CLANG_VERSION}"
+fi
+
 # try to detect version ...
 BASE_CLANG_DIR="${code_dir}/prebuilts/clang/ohos/${host_platform}-x86_64"
-CLANG_FOUND_VERSION=$(cd ${BASE_CLANG_DIR}; basename $(ls -d clang* | head -1) | sed s/clang-//)
+CLANG_FOUND_VERSION=$(cd ${BASE_CLANG_DIR}; basename $(ls -d clang*/ | head -1) | sed s/clang-//)
 
 # check that pipe above didn't fail and that we have (any) clang version
 if [ ! $? == 0 ] || [ x == x${CLANG_FOUND_VERSION} ] ; then 
     echo "env_prepare.sh: could not detect clang version" 2>&1
     exit 1
 fi
-# ... and put it to python file
-echo "prebuilts_clang_version='${CLANG_FOUND_VERSION}'" > $(dirname $0)/prebuilts_clang_version.py
+# ... and compare it with one in python file
+echo "prebuilts_clang_version='${CLANG_FOUND_VERSION}'" | diff -q - $(dirname $0)/prebuilts_clang_version.py || ( echo Clang versions mismatch ; exit 1 )
+exit 0
