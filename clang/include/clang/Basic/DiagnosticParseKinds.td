@@ -1612,7 +1612,8 @@ def ext_hlsl_access_specifiers : ExtWarn<
 
 // OHOS_LOCAL begin
 def warn_unsupported_pac_dfi_type : Warning<
-    "unsupported type %0 for attribute '%1'">;
+  "unsupported type %0 for attribute '%1'">,
+  InGroup<DiagGroup<"unsupported-pac-dfi-type">>;
 // OHOS_LOCAL end
 
 } // end of Parser diagnostics
