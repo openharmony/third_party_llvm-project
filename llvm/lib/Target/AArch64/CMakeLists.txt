@@ -95,10 +95,10 @@ add_llvm_target(AArch64CodeGen
   DEPENDS
   intrinsics_gen
   # OHOS_LOCAL begin
-  Parts
+  LLVMParts
 
   LINK_LIBS
-  Parts
+  LLVMParts
   # OHOS_LOCAL end
 
   LINK_COMPONENTS
