@@ -1,4 +1,4 @@
-add_llvm_component_library(Parts
+add_llvm_component_library(LLVMParts
   Parts.cpp
   PartsPluginPass.cpp
 
@@ -20,4 +20,4 @@ add_llvm_component_library(Parts
   LLVMTransformUtils
   LLVMCodeGen
   )
-set_property(TARGET Parts PROPERTY LLVM_SYSTEM_LIBS)
+set_property(TARGET LLVMParts PROPERTY LLVM_SYSTEM_LIBS)
