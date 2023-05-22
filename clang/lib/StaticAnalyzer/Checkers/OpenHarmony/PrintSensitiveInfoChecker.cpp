@@ -120,6 +120,8 @@ const VarDecl *PrintSensitiveInfoChecker::GetVarDeclFromExpr(const Expr *E) cons
 }
 
 string PrintSensitiveInfoChecker::GetCurrentCalleeName(const CallExpr *CE) const {
+    assert(CE);
+    assert(CE->getDirectCallee());
     return CE->getDirectCallee()->getNameInfo().getName().getAsString();
 }
 
@@ -198,7 +200,7 @@ void PrintSensitiveInfoChecker::checkPreStmt(const BinaryOperator *binary, Check
 }
 
 void PrintSensitiveInfoChecker::checkPreStmt(const CallExpr *call, CheckerContext &c) const {
-    if (call == nullptr) {
+    if (!call || !call->getDirectCallee()) {
         return;
     }
     string funcName = GetCurrentCalleeName(call);
@@ -248,6 +250,9 @@ void PrintSensitiveInfoChecker::saveVardeclStateForBo(const Expr *lhs, const Exp
     }
     if (isa<CallExpr>(rhs)) {
         const CallExpr *call = llvm::dyn_cast_or_null<CallExpr>(rhs);
+        if (!call || !call->getDirectCallee()) {
+            return;
+        }
         string funcName = GetCurrentCalleeName(call);
         if (m_sensitive_func_set.find(convertStrToLowerCase(funcName)) != m_sensitive_func_set.end()) {
             ProgramStateRef state = c.getState();
@@ -272,6 +277,9 @@ void PrintSensitiveInfoChecker::saveVardeclStateForDeclStmt(const DeclStmt *ds, 
 
     if (isa<CallExpr>(expr)) {
         const CallExpr *call = llvm::dyn_cast_or_null<CallExpr>(expr);
+        if (!call || !call->getDirectCallee()) {
+            return;
+        }
         string funcName = GetCurrentCalleeName(call);
         if (m_sensitive_func_set.find(convertStrToLowerCase(funcName)) != m_sensitive_func_set.end()) {
             ProgramStateRef state = c.getState();
