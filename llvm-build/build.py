@@ -494,6 +494,7 @@ class LlvmCore(BuildUtils):
         llvm_defines['CMAKE_EXE_LINKER_FLAGS'] = ldflags
         llvm_defines['CMAKE_SHARED_LINKER_FLAGS'] = ldflags
         llvm_defines['CMAKE_MODULE_LINKER_FLAGS'] = ldflags
+        llvm_defines['CMAKE_POSITION_INDEPENDENT_CODE'] = 'ON'
 
     def llvm_compile(self,
                      build_name,
@@ -542,7 +543,7 @@ class LlvmCore(BuildUtils):
             resource_dir = "lib/clang/10.0.1/lib/linux/libclang_rt.profile-x86_64.a"
             ldflags += ' %s' % os.path.join(llvm_clang_install, resource_dir)
 
-        cflags = '-fstack-protector-strong -fPIE'
+        cflags = '-fstack-protector-strong'
         if not self.host_is_darwin():
             ldflags += ' -Wl,-z,relro,-z,now -pie'
             if self.build_config.strip:
@@ -821,6 +822,7 @@ class LlvmLibs(BuildUtils):
         defines['CMAKE_FIND_ROOT_PATH_MODE_LIBRARY'] = 'ONLY'
         defines['CMAKE_FIND_ROOT_PATH_MODE_PACKAGE'] = 'ONLY'
         defines['CMAKE_FIND_ROOT_PATH_MODE_PROGRAM'] = 'NEVER'
+        defines['CMAKE_POSITION_INDEPENDENT_CODE'] = 'ON'
 
         ldflag = [
                 '-fuse-ld=lld',
@@ -837,8 +839,7 @@ class LlvmLibs(BuildUtils):
         ldflags.extend(ldflag)
 
         cflag = [
-                '-fstack-protector-strong',
-                '-fPIE',
+                '-fstack-protector-strong', 
                 '--target=%s' % llvm_triple,
                 '-ffunction-sections',
                 '-fdata-sections',
@@ -1294,8 +1295,8 @@ class LldbMi(BuildUtils):
 
         ldflags.append('-L%s' % os.path.join(llvm_path, 'lib'))
         cxxflags.append('-std=c++14')
-        cxxflags.append('-fstack-protector-strong -fPIE')
-        cflags.append('-fstack-protector-strong -fPIE')
+        cxxflags.append('-fstack-protector-strong')
+        cflags.append('-fstack-protector-strong')
 
         lldb_mi_defines = {}
         lldb_mi_defines['CMAKE_C_COMPILER'] = os.path.join(llvm_path, 'bin', 'clang')
