@@ -174,7 +174,11 @@ static void initialize(TargetLibraryInfoImpl &TLI, const Triple &T,
     TLI.setAvailable(LibFunc_getchar_unlocked);
     TLI.setAvailable(LibFunc_putc_unlocked);
     TLI.setAvailable(LibFunc_putchar_unlocked);
-    TLI.setUnavailable(LibFunc_memrchr); // OHOS_LOCAL TODO
+
+    // OHOS_LOCAL begin
+    // memrchr is not implemented in macOS libc
+    TLI.setUnavailable(LibFunc_memrchr);
+    // OHOS_LOCAL end
 
     if (T.isMacOSXVersionLT(10, 5)) {
       TLI.setUnavailable(LibFunc_memset_pattern4);
