@@ -62,7 +62,6 @@ build.py options：
 --no-build              # optional, skip some targets
     windows
     libs
-    lldb-mi
     lldb-server
     linux 
     check-api

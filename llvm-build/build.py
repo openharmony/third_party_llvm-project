@@ -44,7 +44,6 @@ class BuildConfig():
         self.xunit_xml_output = args.xunit_xml_output
         self.enable_assertions = args.enable_assertions
         self.need_libs = self.do_build and 'libs' not in args.no_build
-        self.need_lldb_mi = self.do_build and 'lldb-mi' not in args.no_build
         self.need_lldb_server = self.do_build and 'lldb-server' not in args.no_build
 
         self.no_build_arm = args.skip_build or args.no_build_arm
@@ -175,7 +174,7 @@ class BuildConfig():
 
         self.parse_add_argument(parser)
 
-        known_platforms = ('windows', 'libs', 'lldb-mi', 'lldb-server', 'linux', 'check-api')
+        known_platforms = ('windows', 'libs', 'lldb-server', 'linux', 'check-api')
         known_platforms_str = ', '.join(known_platforms)
 
         class SeparatedListByCommaAction(argparse.Action):
@@ -1263,167 +1262,6 @@ class LlvmLibs(BuildUtils):
                           install=True)
 
 
-
-class LldbMi(BuildUtils):
-
-    def __init__(self, build_config, llvm_package):
-        super(LldbMi, self).__init__(build_config)
-        self.llvm_package = llvm_package
-
-    def build_lldb_mi(self, llvm_install):
-        self.logger().info('Building lldb-mi for linux.')
-
-        llvm_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR,
-                                                 'prebuilts/clang/ohos', self.use_platform(), 'clang-%s' % self.build_config.CLANG_VERSION))
-        lldb_mi_cmake_path = os.path.join(self.build_config.LLVM_PROJECT_DIR, '../lldb-mi')
-        lldb_mi_path = self.merge_out_path('lldb_mi_build')
-
-        self.check_rm_tree(lldb_mi_path)
-        self.rm_cmake_cache(lldb_mi_path)
-
-        if self.host_is_darwin():
-            cflags = []
-            cxxflags =[]
-            ldflags = ['-Wl,-rpath,%s' % '@loader_path/../lib']
-        else:
-            cflags = []
-            cxxflags =[]
-            ldflags = ['-fuse-ld=lld', '-Wl,-rpath,%s' % '\$ORIGIN/../lib']
-            ldflags.append('-Wl,-z,relro,-z,now -pie')
-            if self.build_config.strip:
-                ldflags.append('-s')
-
-        ldflags.append('-L%s' % os.path.join(llvm_path, 'lib'))
-        cxxflags.append('-std=c++14')
-        cxxflags.append('-fstack-protector-strong')
-        cflags.append('-fstack-protector-strong')
-
-        lldb_mi_defines = {}
-        lldb_mi_defines['CMAKE_C_COMPILER'] = os.path.join(llvm_path, 'bin', 'clang')
-        lldb_mi_defines['CMAKE_CXX_COMPILER'] = os.path.join(llvm_path, 'bin', 'clang++')
-        lldb_mi_defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
-        lldb_mi_defines['CMAKE_CXX_FLAGS'] = ' '.join(cxxflags)
-        lldb_mi_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(ldflags)
-        lldb_mi_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
-        lldb_mi_defines['CMAKE_MODULE_LINKER_FLAGS'] = ' '.join(ldflags)
-        lldb_mi_defines['LLVM_DIR'] = os.path.join(llvm_install, 'lib/cmake/llvm/')
-        lldb_mi_defines['LLVM_ENABLE_LIBCXX'] = 'ON'
-        lldb_mi_defines['CMAKE_INSTALL_PREFIX'] = llvm_install
-
-        self.invoke_cmake(lldb_mi_cmake_path,
-                          lldb_mi_path,
-                          lldb_mi_defines,
-                          env=dict(self.build_config.ORIG_ENV))
-
-        self.invoke_ninja(lldb_mi_path,
-                          env=dict(self.build_config.ORIG_ENV),
-                          install=False)
-
-        self.llvm_package.copy_lldb_mi_to_llvm_install(lldb_mi_path, llvm_install)
-
-    @staticmethod
-    def ldflags_lists_define():
-        ldflags_lists = ['-Wl,--dynamicbase',
-                    '-Wl,--nxcompat',
-                    '-lucrt',
-                    '-lucrtbase',
-                    '-L', ]
-        return ldflags_lists
-
-    @staticmethod
-    def cflags_lists_define():
-        cflags_lists = ['-D_LARGEFILE_SOURCE',
-                    '-D_FILE_OFFSET_BITS=64',
-                    '-D_WIN32_WINNT=0x0600',
-                    '-DWINVER=0x0600',
-                    '-D__MSVCRT_VERSION__=0x1400',
-                    '-DMS_WIN64', ]
-        return cflags_lists
-
-    # Extra cmake defines to use while building for Windows
-    def lldb_mi_windefines_dictionary(self, cc, cxx, windows_sysroot, cflags, cxxflags, ldflags):
-        lldb_mi_windefines = {}
-        lldb_mi_windefines['CMAKE_C_COMPILER'] = cc
-        lldb_mi_windefines['CMAKE_CXX_COMPILER'] = cxx
-        lldb_mi_windefines['CMAKE_C_COMPILER_WORKS'] = '1'
-        lldb_mi_windefines['CMAKE_CXX_COMPILER_WORKS'] = '1'
-        lldb_mi_windefines['CMAKE_SYSTEM_NAME'] = 'Windows'
-        lldb_mi_windefines['CMAKE_SYSTEM_PROCESSOR'] = 'x86_64'
-        lldb_mi_windefines['LLVM_ENABLE_LIBCXX'] = 'ON'
-        lldb_mi_windefines['CMAKE_SYSROOT'] = windows_sysroot
-        lldb_mi_windefines['LLVM_INSTALL_PREFIX'] = self.merge_out_path('windows-x86_64-install')
-        lldb_mi_windefines['LLVM_DIR'] = self.merge_out_path('windows-x86_64-install/lib/cmake/llvm/')
-        lldb_mi_windefines['CMAKE_C_FLAGS'] = ' '.join(cflags)
-        lldb_mi_windefines['CMAKE_CXX_FLAGS'] = ' '.join(cxxflags)
-        lldb_mi_windefines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(ldflags)
-        lldb_mi_windefines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
-        lldb_mi_windefines['CMAKE_MODULE_LINKER_FLAGS'] = ' '.join(ldflags)
-
-        if self.build_config.enable_assertions:
-            lldb_mi_windefines['LLVM_ENABLE_ASSERTIONS'] = 'ON'
-
-        return lldb_mi_windefines
-
-
-    def build_lldb_mi_for_windows(self):
-        self.logger().info('Building lldb-mi for windows.')
-
-        build_dir = self.merge_out_path('llvm-install')
-        lldb_mi_windows64_path = self.merge_out_path('windows-x86_64-lldb-mi')
-        lldb_mi_cmake_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, '../lldb-mi'))
-        windows64_install = self.merge_out_path('windows-x86_64-install')
-        cc = os.path.join(build_dir, 'bin', 'clang')
-        cxx = os.path.join(build_dir, 'bin', 'clang++')
-
-        windows_sysroot = self.merge_out_path('mingw', self.build_config.MINGW_TRIPLE)
-        self.check_create_dir(lldb_mi_windows64_path)
-
-        ldflags = ['-fuse-ld=lld',
-                   '--rtlib=compiler-rt',
-                   '-lunwind',
-                   '-L%s' % os.path.join(windows64_install, 'lib'),
-                   ]
-        ldflags.extend(self.ldflags_lists_define())
-        ldflags.append(os.path.join(windows64_install, 'lib'))
-        ldflags.append('-Wl,--high-entropy-va')
-
-
-        cflags = ['-stdlib=libc++',
-                  '--target=x86_64-pc-windows-gnu',
-                 ]
-        cflags.extend(self.cflags_lists_define())
-        cflags.append('-fno-exceptions')
-        cflags.append('-fno-rtti')
-
-        cxxflags = list(cflags)
-        cxxflags.extend(('-I', os.path.join(windows64_install, 'include', 'c++', 'v1')))
-
-        zlib_path = os.path.abspath(
-            os.path.join('../../', 'prebuilts', 'clang', 'host', 'windows-x86', 'toolchain-prebuilts', 'zlib'))
-        zlib_inc = os.path.join(zlib_path, 'include')
-        zlib_lib = os.path.join(zlib_path, 'lib')
-
-        cflags.extend(['-I', zlib_inc])
-        cxxflags.extend(['-I', zlib_inc])
-        ldflags.extend(['-L', zlib_lib])
-
-
-        lldb_mi_env = dict(self.build_config.ORIG_ENV)
-        lldb_mi_env['LD_LIBRARY_PATH'] = os.path.join(build_dir, 'lib')
-        self.rm_cmake_cache(lldb_mi_windows64_path)
-
-        self.invoke_cmake(lldb_mi_cmake_path,
-                          lldb_mi_windows64_path,
-                          self.lldb_mi_windefines_dictionary(cc, cxx, windows_sysroot, cflags, cxxflags, ldflags),
-                          env=lldb_mi_env)
-
-        self.invoke_ninja(lldb_mi_windows64_path,
-                          env=lldb_mi_env,
-                          install=False)
-
-        self.llvm_package.copy_lldb_mi_to_windows(windows64_install, lldb_mi_windows64_path)
-
-
 class LlvmPackage(BuildUtils):
 
     def __init__(self, build_config):
@@ -1436,23 +1274,6 @@ class LlvmPackage(BuildUtils):
         dst_dir = os.path.join(crt_install, 'bin', llvm_triple)
         self.check_create_dir(dst_dir)
         self.check_copy_file(src_lib, os.path.join(dst_dir, libname))
-
-    def copy_lldb_mi_to_llvm_install(self, lldb_mi_path, llvm_install):
-        # Copy lldb-mi
-        lldb_mi_dst = os.path.join(llvm_install, 'bin', 'lldb-mi')
-        lldb_mi_src = os.path.join(lldb_mi_path, 'src', 'lldb-mi')
-
-        if os.path.exists(lldb_mi_dst):
-            os.remove(lldb_mi_dst)
-        self.check_copy_file(lldb_mi_src, lldb_mi_dst)
-
-    def copy_lldb_mi_to_windows(self, windows64_install, lldb_mi_windows64_path):
-        # Copy lldb-mi for windows
-        lldb_mi_dst = os.path.join(windows64_install, 'bin', 'lldb-mi.exe')
-        lldb_mi_src = os.path.join(lldb_mi_windows64_path, 'src', 'lldb-mi.exe')
-        if os.path.exists(lldb_mi_dst):
-            os.remove(lldb_mi_dst)
-        self.check_copy_file(lldb_mi_src, lldb_mi_dst)
 
     def package_libcxx(self):
         libcxx_ndk_install=self.merge_out_path('libcxx-ndk')
@@ -1758,8 +1579,6 @@ class LlvmPackage(BuildUtils):
         self.package_llvm_bin_file(necessary_bin_files, ext)
         self.package_scan_bin_file(necessary_bin_files, ext)
 
-        if self.build_config.need_lldb_mi:
-            necessary_bin_files.append('lldb-mi%s' % ext)
         self.remove_unnecessary_bin(necessary_bin_files, host, lib_dir, install_dir, ext, shlib_ext)
 
         # Scripts that should not be stripped
@@ -1796,7 +1615,6 @@ def main():
     sysroot_composer = SysrootComposer(build_config)
     llvm_core = LlvmCore(build_config)
     llvm_package = LlvmPackage(build_config)
-    lldb_mi = LldbMi(build_config, llvm_package)
     llvm_libs = LlvmLibs(build_config, sysroot_composer, llvm_package)
 
     args = build_config.parse_args()
@@ -1851,11 +1669,6 @@ def main():
                                           build_config.enable_assertions,
                                           build_config.build_name)
 
-        if build_config.need_lldb_mi:
-            lldb_mi.build_lldb_mi_for_windows()
-
-    if build_config.do_build and build_config.need_lldb_mi and need_host:
-        lldb_mi.build_lldb_mi(llvm_install)
 
     if build_config.do_package:
         if build_utils.host_is_linux():
