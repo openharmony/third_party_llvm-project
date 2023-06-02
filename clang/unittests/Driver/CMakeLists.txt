@@ -8,6 +8,7 @@ set(LLVM_LINK_COMPONENTS
 add_clang_unittest(ClangDriverTests
   DistroTest.cpp
   ToolChainTest.cpp
+  OHOSTCTest.cpp
   ModuleCacheTest.cpp
   MultilibTest.cpp
   SanitizerArgsTest.cpp
