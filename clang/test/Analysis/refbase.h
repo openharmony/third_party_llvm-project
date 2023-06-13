@@ -34,8 +34,10 @@ namespace OHOS
         sptr(T *other) : refs_(other){};
         sptr(const sptr<T> &other) : refs_(other.GetRefPtr()) {}
         sptr(sptr<T> &&other) : refs_(other.GetRefPtr()) {}
+        template <typename O>
+        sptr(const sptr<O> &other) : refs_(other.GetRefPtr()){}
         ~sptr() { 
-            delete refs_; // expected-warning {{Attempt to delete released memory}}
+            delete refs_; 
         }
         sptr<T> &operator=(sptr<T> &&other)
         {

@@ -1,13 +1,13 @@
 // RUN: %clang --analyze -Xanalyzer -analyzer-checker=openharmony.OHPtrImplicitConversion %s
 
-#include "refbase.h"
+#include "./refbase.h"
 
-using namespace std;
 using namespace OHOS;
 
 class Derived:public RefBase{};
+class Other{};
 void sptr_test_good_case01(){
-    sptr<RefBase> s(new RefBase);
+    sptr<RefBase> s(new RefBase());
 }
 
 void sptr_test_good_case02(){
@@ -19,18 +19,15 @@ void sptr_test_good_case03(){
     sptr<RefBase> s(new Derived());
 }
 
-sptr<RefBase> sptr_test_good_case0405_helper(sptr<RefBase> s){
-    return s;
-}
-
 void sptr_test_good_case04(){
-    sptr<RefBase> s(new RefBase());
-    sptr<RefBase> sp = sptr_test_good_case0405_helper(s);
+    sptr<Derived> s(new Derived());
+    sptr<RefBase> p = s;
 }
 
 sptr<RefBase> sptr_test_good_case05(){
     sptr<RefBase> s(new RefBase());
-    sptr<RefBase> p = sptr_test_good_case0405_helper(s);
+    sptr<RefBase> p = s;
+    return p;
 }
 
 void sptr_test_bad_case01(){
@@ -55,11 +52,15 @@ void sptr_test_bad_case04(){
     sptr<RefBase> s = nullptr;  // expected-warning {{Implicit convert pointer to sptr/wptr}}
 }
 
-
 /********************wptr******************/
 void wptr_test_good_case01(){
     wptr<RefBase> w(new RefBase());
     wptr<RefBase> wp = w;
+}
+
+void wptr_test_good_case02(){
+    wptr<Derived> w(new Derived());
+    wptr<RefBase> s = w;
 }
 
 void wptr_test_bad_case01(){
