@@ -70,6 +70,14 @@ public:
   /// Can this function use the red zone for local allocations.
   bool canUseRedZone(const MachineFunction &MF) const;
 
+  // OHOS_LOCAL begin
+  bool supportsArkSpills() const override {
+    return true;
+  }
+
+  int getArkFrameAdaptationOffset(const MachineFunction &MF) const override;
+  // OHOS_LOCAL end
+
   bool hasFP(const MachineFunction &MF) const override;
   bool hasReservedCallFrame(const MachineFunction &MF) const override;
 

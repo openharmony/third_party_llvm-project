@@ -236,6 +236,52 @@ MachineFunction::~MachineFunction() {
   clear();
 }
 
+// OHOS_LOCAL begin
+unsigned MachineFunction::getMaxArkSpills() const {
+  const auto *TFI = getSubtarget().getFrameLowering();
+  if (!TFI->supportsArkSpills())
+    return 0;
+
+  const auto *Module = F.getParent();
+  auto *ArkFrameInfoMd = Module->getNamedMetadata("ark.frame.info");
+  assert(ArkFrameInfoMd != nullptr && "ArkSpills require ark.frame.info MD");
+
+  constexpr auto ArkInfoOffsetsIdx = 1U;
+  return ArkFrameInfoMd->getOperand(ArkInfoOffsetsIdx)->getNumOperands();
+}
+
+static ssize_t getConstantFromArkFrameMeta(NamedMDNode *MD, int Idx0, int Idx1) {
+  auto Meta = dyn_cast<llvm::ConstantAsMetadata>(MD->getOperand(Idx0)->getOperand(Idx1));
+  return dyn_cast<llvm::ConstantInt>(Meta->getValue())->getSExtValue();
+}
+
+int MachineFunction::getArkSpillOffset(int ArgIdx) const {
+  const auto *Module = F.getParent();
+  auto *ArkFrameInfoMd = Module->getNamedMetadata("ark.frame.info");
+  assert(ArkFrameInfoMd != nullptr && "ArkSpills require ark.frame.info MD");
+
+  // Extract frame size
+  constexpr auto ArkInfoAdaptationId = 0U;
+  auto FrameAdaptationSize =
+    getConstantFromArkFrameMeta(ArkFrameInfoMd, ArkInfoAdaptationId, 0);
+
+  // And inner offset in it
+  constexpr auto ArkInfoOffsetsIdx = 1U;
+  auto InnerOffset =
+    getConstantFromArkFrameMeta(ArkFrameInfoMd, ArkInfoOffsetsIdx, ArgIdx);
+  return FrameAdaptationSize + InnerOffset;
+}
+
+int MachineFunction::getArkFrameSize() const {
+  const auto *Module = F.getParent();
+  auto *ArkFrameInfoMd = Module->getNamedMetadata("ark.frame.info");
+  assert(ArkFrameInfoMd != nullptr && "ArkSpills require ark.frame.info MD");
+
+  constexpr auto ArkInfoFrameSizeIdx = 2U;
+  return getConstantFromArkFrameMeta(ArkFrameInfoMd, ArkInfoFrameSizeIdx, 0);
+}
+// OHOS_LOCAL end
+
 void MachineFunction::clear() {
   Properties.reset();
   // Don't call destructors on MachineInstr and MachineOperand. All of their

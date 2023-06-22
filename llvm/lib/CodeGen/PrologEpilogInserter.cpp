@@ -671,6 +671,15 @@ void PEI::spillCalleeSavedRegs(MachineFunction &MF) {
   // Assign stack slots for any callee-saved registers that must be spilled.
   assignCalleeSavedSpillSlots(MF, SavedRegs, MinCSFrameIndex, MaxCSFrameIndex);
 
+  // OHOS_LOCAL begin
+  bool NeedPadding = F.getMetadata("use-ark-frame") != nullptr;
+  NeedPadding &= TFI->supportsArkSpills();
+  if (NeedPadding) {
+    auto FrameSize = MF.getArkFrameSize();
+    MFI.CreateFixedObject(FrameSize, -FrameSize, false);
+  }
+  // OHOS_LOCAL end
+
   // Add the code to save and restore the callee saved registers.
   if (!F.hasFnAttribute(Attribute::Naked)) {
     MFI.setCalleeSavedInfoValid(true);
@@ -1112,6 +1121,10 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
       continue;
     if (ProtectedObjs.count(i))
       continue;
+    // OHOS_LOCAL begin
+    if (MFI.isArkSpillSlotObjectIndex(i))
+      continue;
+    // OHOS_LOCAL end
     // Only allocate objects on the default stack.
     if (MFI.getStackID(i) != TargetStackID::Default)
       continue;
@@ -1497,17 +1510,29 @@ void PEI::replaceFrameIndices(MachineBasicBlock *BB, MachineFunction &MF,
       // implementation other than historical accident.  The only
       // remaining difference is the unconditional use of the stack
       // pointer as the base register.
+      MachineFrameInfo &MFI = MF.getFrameInfo(); // OHOS_LOCAL
       if (MI.getOpcode() == TargetOpcode::STATEPOINT) {
         assert((!MI.isDebugValue() || i == 0) &&
                "Frame indicies can only appear as the first operand of a "
                "DBG_VALUE machine instruction");
         Register Reg;
         MachineOperand &Offset = MI.getOperand(i + 1);
-        StackOffset refOffset = TFI->getFrameIndexReferencePreferSP(
-            MF, MI.getOperand(i).getIndex(), Reg, /*IgnoreSPUpdates*/ false);
-        assert(!refOffset.getScalable() &&
-               "Frame offsets with a scalable component are not supported");
-        Offset.setImm(Offset.getImm() + refOffset.getFixed() + SPAdj);
+        // OHOS_LOCAL begin
+        int FI = MI.getOperand(i).getIndex();
+        if (!MFI.isArkSpillSlotObjectIndex(FI) || !TFI->supportsArkSpills()) {
+          StackOffset refOffset = TFI->getFrameIndexReferencePreferSP(
+            MF, FI, Reg, /*IgnoreSPUpdates*/ false);
+          assert(!refOffset.getScalable() &&
+                 "Frame offsets with a scalable component are not supported");
+          Offset.setImm(Offset.getImm() + refOffset.getFixed() + SPAdj);
+        } else {
+          // Ark Spills require only offset over FP
+          Reg = TRI.getFrameRegister(MF);
+          auto Adaptation = TFI->getArkFrameAdaptationOffset(MF);
+          Offset.setImm(MFI.getObjectOffset(FI) + Adaptation);
+        }
+        // OHOS_LOCAL end
+
         MI.getOperand(i).ChangeToRegister(Reg, false /*isDef*/);
         continue;
       }
