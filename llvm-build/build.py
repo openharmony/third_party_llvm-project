@@ -384,11 +384,19 @@ class BuildUtils(object):
         defines['LLVM_USE_NEWPM'] = 'ON'
         defines['LLVM_ENABLE_BINDINGS'] = 'OFF'
         defines['CLANG_REPOSITORY_STRING'] = 'llvm-project'
+        defines['Python3_EXECUTABLE'] = os.path.join(self.get_python_dir(), 'bin', self.build_config.LLDB_PYTHON)
+        defines['Python3_INCLUDE_DIRS'] = os.path.join(self.get_python_dir(), 'include',
+            'python%s' % self.build_config.LLDB_PY_VERSION)
 
         if self.host_is_darwin():
             defines['CMAKE_OSX_DEPLOYMENT_TARGET'] = mac_min_version
             defines['LLDB_INCLUDE_TESTS'] = 'OFF'
             defines['LIBCXX_INCLUDE_TESTS'] = 'OFF'
+            defines['Python3_LIBRARIES'] = os.path.join(self.get_python_dir(),
+                'lib', 'libpython%s.dylib' % self.build_config.LLDB_PY_VERSION)
+        else:
+            defines['Python3_LIBRARIES'] = os.path.join(self.get_python_dir(),
+                'lib', 'libpython%s.so' % self.build_config.LLDB_PY_VERSION)
 
         defines['COMPILER_RT_BUILD_XRAY'] = 'OFF'
         return defines
@@ -468,8 +476,6 @@ class LlvmCore(BuildUtils):
             llvm_defines['COMPILER_RT_BUILD_LIBFUZZER'] = 'OFF'
             llvm_defines['LLVM_BUILD_EXTERNAL_COMPILER_RT'] = 'ON'
             llvm_defines['LLVM_ENABLE_ZSTD'] = 'OFF'
-            llvm_defines['Python3_LIBRARIES'] = os.path.join(self.get_python_dir(),
-                'lib', 'libpython%s.dylib' % self.build_config.LLDB_PY_VERSION)
             llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.0.dylib')
             libncurse = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libncurses.6.dylib')
             libpanel = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libpanel.6.dylib')
@@ -477,6 +483,7 @@ class LlvmCore(BuildUtils):
             ncurses_libs = ';'.join([libncurse, libpanel, libform])
             llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
             llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
+            llvm_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.dylib'
 
     def llvm_compile_linux_defines(self,
                                    llvm_defines,
@@ -499,8 +506,6 @@ class LlvmCore(BuildUtils):
             llvm_defines['COMPILER_RT_BUILD_ORC'] = 'OFF'
             llvm_defines['LIBUNWIND_USE_COMPILER_RT'] = 'ON'
             llvm_defines['LLVM_BINUTILS_INCDIR'] = '/usr/include'
-            llvm_defines['Python3_LIBRARIES'] = os.path.join(self.get_python_dir(),
-                'lib', 'libpython%s.so' % self.build_config.LLDB_PY_VERSION)
             llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.so.0.0.68')
             libncurse = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libncurses.so.6.3')
             libpanel = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libpanel.so.6.3')
@@ -508,6 +513,7 @@ class LlvmCore(BuildUtils):
             ncurses_libs = ';'.join([libncurse, libpanel, libform])
             llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
             llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
+            llvm_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.so'
 
             if not build_instrumented and not no_lto and not debug_build:
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
@@ -538,9 +544,9 @@ class LlvmCore(BuildUtils):
         llvm_defines['LLDB_ENABLE_PYTHON'] = 'ON'
         llvm_defines['LLDB_EMBED_PYTHON_HOME'] = 'ON'
         llvm_defines['LLDB_PYTHON_HOME'] = os.path.join('..', self.build_config.LLDB_PYTHON)
-        llvm_defines['Python3_INCLUDE_DIRS'] = os.path.join(self.get_python_dir(),
-            'include', 'python%s' % self.build_config.LLDB_PY_VERSION)
-        llvm_defines['Python3_EXECUTABLE'] = os.path.join(self.get_python_dir(), 'bin', self.build_config.LLDB_PYTHON)
+        llvm_defines['LLDB_PYTHON_RELATIVE_PATH'] = os.path.join('bin', 'python', 'lib', 'python%s'
+            % self.build_config.LLDB_PY_VERSION)
+        llvm_defines['LLDB_PYTHON_EXE_RELATIVE_PATH'] = os.path.join('bin', self.build_config.LLDB_PYTHON)
         llvm_defines['SWIG_EXECUTABLE'] = self.find_program('swig')
         llvm_defines['LLDB_ENABLE_CURSES'] = 'OFF'
         if llvm_defines['LLDB_ENABLE_CURSES'] == 'ON' and llvm_defines['LLDB_ENABLE_LIBEDIT'] == 'ON':
@@ -628,15 +634,16 @@ class LlvmCore(BuildUtils):
         windows_defines['LLDB_ENABLE_PYTHON'] = 'ON'
         windows_defines['LLDB_PYTHON_HOME'] = 'python'
         windows_defines['LLDB_PYTHON_RELATIVE_PATH'] = \
-          'bin/python/lib/python%s' % (self.build_config.LLDB_PY_VERSION)
+            'bin/python/lib/python%s' % (self.build_config.LLDB_PY_VERSION)
         windows_defines['LLDB_PYTHON_EXE_RELATIVE_PATH'] = 'bin/python'
         windows_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.pys'
-        windows_defines['PYTHON_INCLUDE_DIRS'] = os.path.join(win_sysroot,
-                                        'include', 'python%s' % self.build_config.LLDB_PY_VERSION)
-        windows_defines['PYTHON_LIBRARIES'] = os.path.join(win_sysroot, 'lib', 'libpython%s.dll.a'
-                                                            % self.build_config.LLDB_PY_VERSION)
+        windows_defines['Python3_INCLUDE_DIRS'] = os.path.join(win_sysroot, 'include',
+            'python%s' % self.build_config.LLDB_PY_VERSION)
+        windows_defines['Python3_LIBRARIES'] = os.path.join(win_sysroot, 'lib', 'libpython%s.dll.a'
+            % self.build_config.LLDB_PY_VERSION)
+        windows_defines['Python3_EXECUTABLE'] = os.path.join(self.get_python_dir(), 'bin',
+            self.build_config.LLDB_PYTHON)
         windows_defines['SWIG_EXECUTABLE'] = self.find_program('swig')
-        windows_defines['PYTHON_EXECUTABLE'] = self.find_program('python3')
 
         windows_defines['CMAKE_C_COMPILER'] = cc
         windows_defines['CMAKE_CXX_COMPILER'] = cxx
@@ -932,7 +939,7 @@ class LlvmLibs(BuildUtils):
 
             has_lldb_server = arch not in ['riscv64', 'mipsel']
 
-            defines = {}
+            defines = self.base_cmake_defines()
             ldflags = []
             cflags = []
             self.logger().info('Build libs for %s', llvm_triple)
@@ -998,6 +1005,7 @@ class LlvmLibs(BuildUtils):
         rt_cflags.append('-fno-omit-frame-pointer')
 
         rt_defines = defines.copy()
+        rt_defines.update(self.base_cmake_defines())
         rt_defines['OHOS'] = '1'
         rt_defines['LLVM_ENABLE_PER_TARGET_RUNTIME_DIR'] = 'ON'
         rt_defines['LLVM_TARGET_MULTILIB_SUFFIX'] = multilib_suffix
@@ -1242,6 +1250,11 @@ class LlvmLibs(BuildUtils):
         lldb_defines['CMAKE_CXX_FLAGS'] = ' '.join(lldb_cflags)
         lldb_defines['CMAKE_INSTALL_PREFIX'] = crt_install
         lldb_defines['LLVM_ENABLE_PER_TARGET_RUNTIME_DIR'] = 'ON'
+        lldb_defines['LLDB_PYTHON_HOME'] = os.path.join('..', self.build_config.LLDB_PYTHON)
+        lldb_defines['LLDB_PYTHON_RELATIVE_PATH'] = os.path.join('bin', self.build_config.LLDB_PYTHON, 'lib',
+            'python%s' % self.build_config.LLDB_PY_VERSION, llvm_triple)
+        lldb_defines['LLDB_PYTHON_EXE_RELATIVE_PATH'] = os.path.join('bin', self.build_config.LLDB_PYTHON)
+        lldb_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.so'
         lldb_defines['COMPILER_RT_USE_BUILTINS_LIBRARY'] = 'ON'
         lldb_defines['CMAKE_SYSTEM_NAME'] = 'OHOS'
         lldb_defines['CMAKE_CROSSCOMPILING'] = 'True'
@@ -1301,6 +1314,8 @@ class LlvmLibs(BuildUtils):
         cmake_defines['LIBCXXABI_USE_LLVM_UNWINDER'] = 'ON'
         cmake_defines['LLVM_ENABLE_RUNTIMES'] = 'libunwind;libcxxabi;libcxx'
         cmake_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON' if enable_assertions else 'OFF'
+        cmake_defines['Python3_EXECUTABLE'] = os.path.join(self.get_python_dir(), 'bin',
+            self.build_config.LLDB_PYTHON)
 
         out_path = self.merge_out_path('lib', 'windows-runtimes')
         cmake_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'runtimes'))
