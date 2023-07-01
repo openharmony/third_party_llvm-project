@@ -1776,7 +1776,22 @@ class LlvmPackage(BuildUtils):
 
         # Strip lldb-server
         self.strip_lldb_server(host, install_dir)
-
+        
+        # Copy lldb script
+        script_lldb_dir = os.path.join(self.build_config.LLVM_PROJECT_DIR, 'lldb', 'scripts')
+        if host.startswith('windows'):
+            script_lldb_path = os.path.join(script_lldb_dir, 'lldb.cmd')
+        else:
+            script_lldb_path = os.path.join(script_lldb_dir, 'lldb.sh')
+     
+        self.check_copy_file(script_lldb_path, os.path.join(install_dir, 'bin'))
+        script_python_path = os.path.join(self.build_config.LLVM_PROJECT_DIR, 'lldb', 'scripts', 'lldb_python.py')
+        
+        self.check_create_dir(os.path.join(install_dir, 'script'))
+        self.logger().info('install_dir is %s', install_dir)
+        
+        shutil.copyfile(script_python_path, os.path.join(install_dir, 'script', 'lldb_python.py'))
+        
         for necessary_bin_file in necessary_bin_files:
             if not os.path.isfile(os.path.join(bin_dir, necessary_bin_file)):
                 print('Did not find %s in %s' % (necessary_bin_file, bin_dir))
