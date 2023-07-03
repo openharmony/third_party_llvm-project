@@ -16,6 +16,9 @@
 #include "AArch64StackProtectorRetLowering.h" // OHOS_LOCAL
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/Support/TypeSize.h"
+#ifdef ARK_GC_SUPPORT
+#include "llvm/ADT/Triple.h"
+#endif
 
 namespace llvm {
 
@@ -42,6 +45,10 @@ public:
   /// the function.
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+#ifdef ARK_GC_SUPPORT
+  Triple::ArchType GetArkSupportTarget() const override;
+  int GetFixedFpPosition() const override;
+#endif
 
   const StackProtectorRetLowering *getStackProtectorRet() const override; // OHOS_LOCAL
 
