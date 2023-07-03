@@ -383,9 +383,17 @@ class BuildUtils(object):
         return defines
 
     def get_python_dir(self):
+        platform_path = self.platform_prefix()
+        if (self.host_is_darwin()):
+            platform_path = "darwin-x86"
         python_dir = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts', self.build_config.LLDB_PYTHON,
-            self.platform_prefix(), self.build_config.LLDB_PY_DETAILED_VERSION)
+            platform_path, self.build_config.LLDB_PY_DETAILED_VERSION)
         return python_dir
+
+    def get_prebuilts_dir(self, name):
+        prebuilts_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts', name))
+        return prebuilts_dir
+
 
 class LlvmCore(BuildUtils):
 
@@ -443,13 +451,19 @@ class LlvmCore(BuildUtils):
     def llvm_compile_darwin_defines(self, llvm_defines):
         if self.host_is_darwin():
             llvm_defines['LIBUNWIND_ENABLE_SHARED'] = 'OFF'
-            llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'OFF'
             llvm_defines['LLDB_NO_DEBUGSERVER'] = 'ON'
             llvm_defines['COMPILER_RT_BUILD_LIBFUZZER'] = 'OFF'
             llvm_defines['LLVM_BUILD_EXTERNAL_COMPILER_RT'] = 'ON'
             llvm_defines['LLVM_ENABLE_ZSTD'] = 'OFF'
             llvm_defines['Python3_LIBRARIES'] = os.path.join(self.get_python_dir(),
                 'lib', 'libpython%s.dylib' % self.build_config.LLDB_PY_VERSION)
+            llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.0.dylib')
+            libncurse = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libncurses.6.dylib')
+            libpanel = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libpanel.6.dylib')
+            libform = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libform.6.dylib')
+            ncurses_libs = ';'.join([libncurse, libpanel, libform])
+            llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
+            llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
 
     def llvm_compile_linux_defines(self,
                                    llvm_defines,
@@ -474,6 +488,13 @@ class LlvmCore(BuildUtils):
             llvm_defines['LLVM_BINUTILS_INCDIR'] = '/usr/include'
             llvm_defines['Python3_LIBRARIES'] = os.path.join(self.get_python_dir(),
                 'lib', 'libpython%s.so' % self.build_config.LLDB_PY_VERSION)
+            llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.so.0.0.68')
+            libncurse = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libncurses.so.6.3')
+            libpanel = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libpanel.so.6.3')
+            libform = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libform.so.6.3')
+            ncurses_libs = ';'.join([libncurse, libpanel, libform])
+            llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
+            llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
 
             if not build_instrumented and not no_lto and not debug_build:
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
@@ -508,6 +529,10 @@ class LlvmCore(BuildUtils):
             'include', 'python%s' % self.build_config.LLDB_PY_VERSION)
         llvm_defines['Python3_EXECUTABLE'] = os.path.join(self.get_python_dir(), 'bin', self.build_config.LLDB_PYTHON)
         llvm_defines['SWIG_EXECUTABLE'] = self.find_program('swig')
+        llvm_defines['LLDB_ENABLE_CURSES'] = 'OFF'
+        if llvm_defines['LLDB_ENABLE_CURSES'] == 'ON' and llvm_defines['LLDB_ENABLE_LIBEDIT'] == 'ON':
+            llvm_defines['LibEdit_INCLUDE_DIRS'] = os.path.join(self.get_prebuilts_dir('libedit'), 'include')
+            llvm_defines['CURSES_INCLUDE_DIRS'] = os.path.join(self.get_prebuilts_dir('ncurses'), 'include')
 
     def llvm_compile(self,
                      build_name,
@@ -1275,6 +1300,54 @@ class LlvmLibs(BuildUtils):
                           env=dict(self.build_config.ORIG_ENV),
                           install=True)
 
+    def build_ncurses(self, llvm_make, llvm_install):
+        self.logger().info('Building ncurses.')
+
+        libncurses_src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'ncurses'))
+        libncurses_build_path = self.merge_out_path('ncurses')
+        libncurses_install_path = self.get_prebuilts_dir('ncurses')
+        prebuilts_path = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts')
+
+        self.check_rm_tree(libncurses_build_path)
+        self.rm_cmake_cache(libncurses_build_path)
+        self.check_rm_tree(libncurses_install_path)
+        self.rm_cmake_cache(libncurses_install_path)
+
+        cur_dir = os.getcwd()
+        os.chdir(self.build_config.LLVM_BUILD_DIR)
+        clang_version = self.build_config.CLANG_VERSION
+        args = ['./build_ncurses.sh', libncurses_src_dir, libncurses_build_path, libncurses_install_path, prebuilts_path, clang_version]
+        self.check_call(args)
+        os.chdir(cur_dir)
+
+        self.llvm_package.copy_ncurses_to_llvm(llvm_make)
+        self.llvm_package.copy_ncurses_to_llvm(llvm_install)
+
+    def build_libedit(self, llvm_make, llvm_install):
+        self.logger().info('Building libedit')
+
+        libedit_src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libedit'))
+        libedit_build_path = self.merge_out_path('libedit')
+        libedit_install_path = self.get_prebuilts_dir('libedit')
+        prebuilts_path = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts')
+
+        self.check_rm_tree(libedit_build_path)
+        self.rm_cmake_cache(libedit_build_path)
+        self.check_rm_tree(libedit_install_path)
+        self.rm_cmake_cache(libedit_install_path)
+
+        libncurses_path = self.get_prebuilts_dir('ncurses')
+
+        cur_dir = os.getcwd()
+        os.chdir(self.build_config.LLVM_BUILD_DIR)
+        clang_version = self.build_config.CLANG_VERSION
+        args = ['./build_libedit.sh', libedit_src_dir, libedit_build_path , libedit_install_path, libncurses_path, prebuilts_path, clang_version]
+        self.check_call(args)
+        os.chdir(cur_dir)
+
+        self.llvm_package.copy_libedit_to_llvm(llvm_make)
+        self.llvm_package.copy_libedit_to_llvm(llvm_install)
+
 
 class LlvmPackage(BuildUtils):
 
@@ -1552,6 +1625,101 @@ class LlvmPackage(BuildUtils):
             args = ['tar', '-chjC', self.build_config.OUT_PATH, '-f', package_ndk_path, 'sysroot']
             self.check_call(args)
 
+    def get_dependency_list(self, install_dir, lib):
+        dependency_list = []
+        cmd = "otool -L {}".format(lib)
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, shell=True).stdout.decode()
+        # Remove the library itself
+        res = res.split('\n')[1:]
+        for line in res:
+            line = line.strip()
+            if line.startswith("/"):
+                # Process lines similar to the following format:
+                # /usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1311.100.3)
+                lib_path = line.split()[0]
+                dependency_list.append(lib_path)
+        return dependency_list
+
+    def update_lib_id_link(self, install_dir, lib):
+        self.logger().info('update_lib_id_link lib is %s', lib)
+        if not self.host_is_darwin():
+            return;
+        else:
+            dependency_list = self.get_dependency_list(install_dir, lib)
+
+            # Update LC_ID_DYLIB, so that users of the library won't link with absolute path
+            dylib_name = os.path.basename(lib)
+            subprocess.check_call(["install_name_tool", "-id", "@rpath/%s" % dylib_name, lib])
+
+            library_list = ["libedit", "libncurses", "libpanel", "libform"]
+
+            # Update LC_LOAD_DYLIB. The lib may already reference other libs.
+            for dependency in dependency_list:
+                lib_name =  os.path.basename(dependency)
+                for library in library_list:
+                    index_link = dependency.rfind(library)
+                    if index_link != -1:
+                        subprocess.check_call(["install_name_tool", "-change", dependency, "@loader_path/../lib/%s" % lib_name, lib])
+
+    def copy_ncurses_to_llvm(self, install_dir):
+        self.logger().info('copy_ncurses_to_llvm install_dir is %s', install_dir)
+
+        if self.host_is_darwin():
+            shlib_ext = '.6.dylib'
+        if self.host_is_linux():
+            shlib_ext = '.so.6'
+
+        lib_dst_path = os.path.join(install_dir, 'lib')
+
+        lib_src_path = self.merge_out_path('../prebuilts', 'ncurses', 'lib')
+        libncurses_src = os.path.join(lib_src_path, 'libncurses%s' % shlib_ext)
+        libpanel_src = os.path.join(lib_src_path, 'libpanel%s' % shlib_ext)
+        libform_src = os.path.join(lib_src_path, 'libform%s' % shlib_ext)
+
+        libncurses_dst = os.path.join(lib_dst_path, 'libncurses%s' % shlib_ext)
+        libpanel_dst = os.path.join(lib_dst_path, 'libpanel%s' % shlib_ext)
+        libform_dst =os.path.join(lib_dst_path, 'libform%s' % shlib_ext)
+
+        if not os.path.exists(lib_dst_path):
+            os.makedirs(lib_dst_path)
+
+        for lib_file in (libncurses_src, libpanel_src, libform_src):
+            self.update_lib_id_link(lib_src_path, lib_file)
+
+        # Clear historical libraries
+        for lib in (libncurses_dst, libpanel_dst, libform_dst):
+            if os.path.exists(lib):
+                os.remove(lib)
+
+        for lib_src in (libncurses_src, libpanel_src, libform_src):
+            self.check_copy_file(lib_src, lib_dst_path)
+
+    def copy_libedit_to_llvm(self, install_dir):
+        self.logger().info('LlvmPackage copy_libedit_to_llvm install_dir is %s', install_dir)
+
+        if self.host_is_darwin():
+            shlib_ext = '.0.dylib'
+        if self.host_is_linux():
+            shlib_ext = '.so.0'
+
+        libedit_lib_path = self.merge_out_path('../prebuilts', 'libedit', 'lib')
+        libedit_src = os.path.join(libedit_lib_path, 'libedit%s' % shlib_ext)
+
+        lib_dst_path = os.path.join(install_dir, 'lib')
+
+        libedit_dst = os.path.join(lib_dst_path, 'libedit%s' % shlib_ext)
+
+        if not os.path.exists(lib_dst_path):
+            os.makedirs(lib_dst_path)
+
+        self.update_lib_id_link(libedit_lib_path, libedit_src)
+
+        # Clear historical library
+        if os.path.exists(libedit_dst):
+            os.remove(libedit_dst)
+
+        self.check_copy_file(libedit_src, lib_dst_path)
+
     # Packing Operation.
 
     def package_operation(self, build_dir, host):
@@ -1641,6 +1809,7 @@ def main():
                    ('windows' not in args.no_build)
 
     llvm_install = build_utils.merge_out_path('llvm-install')
+    llvm_make = build_utils.merge_out_path('llvm_make')
     windows64_install = build_utils.merge_out_path('windows-x86_64-install')
 
     configs = []
@@ -1660,6 +1829,8 @@ def main():
     if not build_config.no_build_x86_64:
         configs.append(('x86_64', build_utils.open_ohos_triple('x86_64')))
 
+    llvm_libs.build_ncurses(llvm_make, llvm_install)
+    llvm_libs.build_libedit(llvm_make, llvm_install)
 
     if build_config.do_build and need_host:
         llvm_core.llvm_compile(
@@ -1669,7 +1840,6 @@ def main():
             build_config.no_lto,
             build_config.build_instrumented,
             build_config.xunit_xml_output)
-        llvm_make = build_utils.merge_out_path('llvm_make')
         llvm_package.copy_python_to_host(llvm_make)
         llvm_package.copy_python_to_host(llvm_install)
 
