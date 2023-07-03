@@ -27,6 +27,7 @@ import argparse
 import mingw
 import stat
 
+from python_builder import MinGWPythonBuilder
 from prebuilts_clang_version import prebuilts_clang_version
 
 class BuildConfig():
@@ -46,6 +47,7 @@ class BuildConfig():
         self.build_clean = args.build_clean
         self.need_libs = self.do_build and 'libs' not in args.no_build
         self.need_lldb_server = self.do_build and 'lldb-server' not in args.no_build
+        self.build_python = args.build_python
 
         self.no_build_arm = args.skip_build or args.no_build_arm
         self.no_build_aarch64 = args.skip_build or args.no_build_aarch64
@@ -162,6 +164,12 @@ class BuildConfig():
             default=False,
             help='Delete out folder after build packages')
 
+        parser.add_argument(
+            '--build-python',
+            action='store_true',
+            default=False,
+            help='Build Python (not using prebuilt one, currently effective for Windows)')
+
     def parse_args(self):
 
         parser = argparse.ArgumentParser(description='Process some integers.')
@@ -240,6 +248,7 @@ class BuildUtils(object):
 
         self.CMAKE_BIN_DIR = os.path.abspath(
             os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts/cmake', self.platform_prefix(), 'bin'))
+        self._mingw_python_dir = None
 
     def open_ohos_triple(self, arch):
         return arch + self.build_config.OPENHOS_SFX
@@ -416,6 +425,12 @@ class BuildUtils(object):
     def rm_build_output(self):
         return self.check_rm_tree(self.build_config.OUT_PATH)
 
+    def set_mingw_python_dir(self, mingw_python_dir):
+        self._mingw_python_dir = mingw_python_dir
+
+    def get_mingw_python_dir(self):
+        return self._mingw_python_dir
+
 class LlvmCore(BuildUtils):
 
     def __init__(self, build_config):
@@ -467,7 +482,6 @@ class LlvmCore(BuildUtils):
                           env=env,
                           target=None,
                           install=True)
-
 
     def llvm_compile_darwin_defines(self, llvm_defines):
         if self.host_is_darwin():
@@ -629,17 +643,18 @@ class LlvmCore(BuildUtils):
 
             windows_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON'
 
+        mingw_python_dir = self.get_mingw_python_dir()
+        py_dir = mingw_python_dir if mingw_python_dir else windows_sysroot
         windows_defines['LLDB_RELOCATABLE_PYTHON'] = 'OFF'
-        win_sysroot = self.merge_out_path('mingw', self.build_config.MINGW_TRIPLE)
         windows_defines['LLDB_ENABLE_PYTHON'] = 'ON'
         windows_defines['LLDB_PYTHON_HOME'] = 'python'
         windows_defines['LLDB_PYTHON_RELATIVE_PATH'] = \
             'bin/python/lib/python%s' % (self.build_config.LLDB_PY_VERSION)
         windows_defines['LLDB_PYTHON_EXE_RELATIVE_PATH'] = 'bin/python'
         windows_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.pys'
-        windows_defines['Python3_INCLUDE_DIRS'] = os.path.join(win_sysroot, 'include',
+        windows_defines['Python3_INCLUDE_DIRS'] = os.path.join(py_dir, 'include',
             'python%s' % self.build_config.LLDB_PY_VERSION)
-        windows_defines['Python3_LIBRARIES'] = os.path.join(win_sysroot, 'lib', 'libpython%s.dll.a'
+        windows_defines['Python3_LIBRARIES'] = os.path.join(py_dir, 'lib', 'libpython%s.dll.a'
             % self.build_config.LLDB_PY_VERSION)
         windows_defines['Python3_EXECUTABLE'] = os.path.join(self.get_python_dir(), 'bin',
             self.build_config.LLDB_PYTHON)
@@ -1423,15 +1438,25 @@ class LlvmPackage(BuildUtils):
             else:
                 shutil.copytree(src_path, dst_path)
 
-
     def install_mingw_python(self, install_dir):
-        py_root = self.merge_out_path('../third_party', 'mingw-w64', 'mingw-w64-python',
-                                        self.build_config.LLDB_PY_VERSION)
+        py_version = f'python{self.build_config.LLDB_PY_VERSION}'
+        py_dll_name = 'libpython' + self.build_config.LLDB_PY_VERSION + '.dll'
+        mingw_python_dir = self.get_mingw_python_dir()
+        if mingw_python_dir is None:
+            py_root = self.merge_out_path(
+                '..', 'third_party', 'mingw-w64', 'mingw-w64-python',
+                self.build_config.LLDB_PY_VERSION)
+            py_dll_path = os.path.join(py_root, py_dll_name)
+            py_lib_path = os.path.join(py_root, 'lib')
+        else:
+            py_root = mingw_python_dir
+            py_dll_path = os.path.join(py_root, 'bin', py_dll_name)
+            py_lib_path = os.path.join(py_root, 'lib', py_version)
+
         bin_root = os.path.join(install_dir, 'bin')
-        py_dll = 'libpython' + self.build_config.LLDB_PY_VERSION + '.dll'
-        shutil.copyfile(os.path.join(py_root, py_dll), os.path.join(bin_root, py_dll))
-        self.merge_tree(os.path.join(py_root, 'lib'),
-                        os.path.join(bin_root, 'python', 'lib', 'python%s' % self.build_config.LLDB_PY_VERSION))
+        shutil.copyfile(py_dll_path, os.path.join(bin_root, py_dll_name))
+        self.merge_tree(py_lib_path,
+                        os.path.join(bin_root, 'python', 'lib', py_version))
 
     def copy_python_to_host(self, install_dir):
         if(self.host_is_linux()):
@@ -1893,9 +1918,18 @@ def main():
             for (arch, target) in configs:
                 llvm_libs.build_libs(build_config.need_lldb_server, llvm_install, target)
 
+    windows_python_builder = None
+
     if build_config.do_build and need_windows:
         mingw.main(build_config.VERSION)
         llvm_libs.build_runtimes_for_windows(build_config.enable_assertions)
+
+        if build_config.build_python:
+            # Use just built LLVM and MinGW-w64 to cross-compile Python
+            windows_python_builder = MinGWPythonBuilder(build_config)
+            windows_python_builder.build()
+            windows_python_builder.prepare_for_package()
+            llvm_core.set_mingw_python_dir(windows_python_builder.install_dir)
         llvm_core.llvm_compile_for_windows(build_config.TARGETS,
                                           build_config.enable_assertions,
                                           build_config.build_name)
@@ -1905,7 +1939,11 @@ def main():
         if build_utils.host_is_linux():
             llvm_package.package_libcxx()
         llvm_package.package_operation(llvm_install, build_utils.use_platform())
-        if build_config.do_package and need_windows:
+
+        if build_config.build_python and windows_python_builder:
+            llvm_package.set_mingw_python_dir(windows_python_builder.install_dir)
+
+        if need_windows:
             llvm_package.package_operation(windows64_install, 'windows-x86_64')
 
     if build_config.build_clean:
