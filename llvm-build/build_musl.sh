@@ -99,22 +99,24 @@ echo "TOPDIR=${TOPDIR}"
 echo "TARGETS=${TARGET_USER}"
 echo "OUT=${OUT}"
 echo "SYSROOTDIR=${OUT}/sysroot"
+echo "MUSLCOPYDIR=${OUT}/musl_build"
 
 # build musl_headers
 make musl_header_install_for_${TARGET_USER} CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${TOPDIR} \
-     SYSROOTDIR=${OUT}/sysroot TARGETS=${TARGET_USER} TARGET=${TARGET_TRIPLE} ARCH=${TARGETS_PREFIX} -f Makefile
+     SYSROOTDIR=${OUT}/sysroot TARGETS=${TARGET_USER} MUSLCOPYDIR=${OUT}/musl_build TARGET=${TARGET_TRIPLE} \
+     ARCH=${TARGETS_PREFIX} -f Makefile
 
 # build musl_libs
 if ((make_libs == 1)); then
     if [ $TARGET_TRIPLE == "aarch64-linux-ohos" ] || [ $TARGET_TRIPLE == "riscv64-linux-ohos" ] || \
        [ $TARGET_TRIPLE == "x86_64-linux-ohos" ]; then
-        make CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${TOPDIR} SYSROOTDIR=${OUT}/sysroot TARGETS=${TARGET_USER}\
-            TARGET=${TARGET_TRIPLE} ARCH=${TARGETS_PREFIX} -f Makefile
+        make CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${TOPDIR} SYSROOTDIR=${OUT}/sysroot MUSLCOPYDIR=${OUT}/musl_build \
+            TARGETS=${TARGET_USER} TARGET=${TARGET_TRIPLE} ARCH=${TARGETS_PREFIX} -f Makefile
     else
         for ARCH_CFLAG in "${CFLAGS_FOR_TARGET[@]}"
         do
-            make CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${TOPDIR} SYSROOTDIR=${OUT}/sysroot TARGETS=${TARGET_USER}\
-            TARGET=${TARGET_TRIPLE} ARCH=${TARGETS_PREFIX} ARCH_CFLAGS="${ARCH_CFLAG}" -f Makefile
+            make CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${TOPDIR} SYSROOTDIR=${OUT}/sysroot MUSLCOPYDIR=${OUT}/musl_build \
+            TARGETS=${TARGET_USER} TARGET=${TARGET_TRIPLE} ARCH=${TARGETS_PREFIX} ARCH_CFLAGS="${ARCH_CFLAG}" -f Makefile
         done
     fi
 fi
