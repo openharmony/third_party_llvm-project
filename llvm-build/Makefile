@@ -54,6 +54,7 @@ NUTTXDIR = $(TOPDIR)/third_party/NuttX
 SYSROOTDIR = $(TOPDIR)/prebuilts/lite/sysroot
 LITEOSADIR = $(TOPDIR)/kernel/liteos_a
 LINUXDIR = $(TOPDIR)/kernel/linux/linux-5.10
+MUSLCOPYDIR = $(TOPDIR)
 
 TARGETS = $(if $(wildcard $(LITEOSADIR)),liteos_a_user,)
 TARGETS += $(if $(wildcard $(LINUXDIR)),linux_user,)
@@ -122,19 +123,19 @@ CFLAGS += -Wno-int-conversion
 all: $(TARGETS:%=musl_install_for_%)
 
 $(TARGETS:%=musl_copy_for_%):
-		$(HIDE) mkdir -p $@
-		$(HIDE) cp -rfu $(MUSLDIR)/[!p]* $@
+		$(HIDE) mkdir -p $(MUSLCOPYDIR)/$@
+		$(HIDE) cp -rfu $(MUSLDIR)/[!p]* $(MUSLCOPYDIR)/$@
 
 optimized_routines_install_for_liteos_a_user: musl_copy_for_liteos_a_user
 ifneq ($(ARCH),)
-		$(HIDE) cp -rfp $(OPTRTDIR)/string/$(ARCH)/* $</src/string/$(ARCH)/
-		$(HIDE) cp -rfp $(OPTRTDIR)/string/asmdefs.h $</src/string/asmdefs.h
+		$(HIDE) cp -rfp $(OPTRTDIR)/string/$(ARCH)/* $(MUSLCOPYDIR)/$</src/string/$(ARCH)/
+		$(HIDE) cp -rfp $(OPTRTDIR)/string/asmdefs.h $(MUSLCOPYDIR)/$</src/string/asmdefs.h
 ifeq ($(ARCH),arm)
-		$(HIDE) rm -f $</src/string/arm/memcpy.c
-		$(HIDE) rm -f $</src/string/arm/memcpy_le.S
-		$(HIDE) rm -f $</src/string/arm/memset.S
-		$(HIDE) rm -f $</src/string/arm/strcpy.c
-		$(HIDE) true >> $</src/string/arm/strlen.S
+		$(HIDE) rm -f $(MUSLCOPYDIR)/$</src/string/arm/memcpy.c
+		$(HIDE) rm -f $(MUSLCOPYDIR)/$</src/string/arm/memcpy_le.S
+		$(HIDE) rm -f $(MUSLCOPYDIR)/$</src/string/arm/memset.S
+		$(HIDE) rm -f $(MUSLCOPYDIR)/$</src/string/arm/strcpy.c
+		$(HIDE) true >> $(MUSLCOPYDIR)/$</src/string/arm/strlen.S
 
 CFLAGS += \
 		-D__strlen_armv6t2=strlen \
@@ -147,22 +148,22 @@ endif
 endif
 
 nuttx_header_install_for_liteos_a_user: musl_copy_for_liteos_a_user
-	$(HIDE) sed '/^#include/d' $(NUTTXDIR)/include/nuttx/video/fb.h | sed 's,FAR ,,g' | sed 's,LosVmMapRegion,void,g' > $</include/fb.h
+	$(HIDE) sed '/^#include/d' $(NUTTXDIR)/include/nuttx/video/fb.h | sed 's,FAR ,,g' | sed 's,LosVmMapRegion,void,g' > $(MUSLCOPYDIR)/$</include/fb.h
 
 linux_header_install_for_liteos_a_user: musl_copy_for_liteos_a_user
-	$(HIDE) make -sj headers_install ARCH=$(ARCH) O=$(shell pwd)/$@ -C $(LINUXKERNELDIR)
-	$(HIDE) install -p -m 644 -D $@/usr/include/linux/capability.h $</include/linux/capability.h
-	$(HIDE) echo "$$LINUX_TYPES_H" > $</include/linux/types.h
+	$(HIDE) make -sj headers_install ARCH=$(ARCH) O=$(MUSLCOPYDIR)/$@ -C $(LINUXKERNELDIR)
+	$(HIDE) install -p -m 644 -D $(MUSLCOPYDIR)/$@/usr/include/linux/capability.h $(MUSLCOPYDIR)/$</include/linux/capability.h
+	$(HIDE) echo "$$LINUX_TYPES_H" > $(MUSLCOPYDIR)/$</include/linux/types.h
 
 musl_patch_for_liteos_a_user: nuttx_header_install_for_liteos_a_user
 musl_patch_for_liteos_a_user: linux_header_install_for_liteos_a_user
 musl_patch_for_liteos_a_user: optimized_routines_install_for_liteos_a_user
 musl_patch_for_liteos_a_user: musl_copy_for_liteos_a_user
-	$(HIDE) cp -rfp $(MUSLDIR)/porting/liteos_a/user/* $</
+	$(HIDE) cp -rfp $(MUSLDIR)/porting/liteos_a/user/* $(MUSLCOPYDIR)/$</
 
 musl_patch_for_liteos_a_user_debug: musl_patch_for_liteos_a_user
 musl_patch_for_liteos_a_user_debug: musl_copy_for_liteos_a_user
-	$(HIDE) cp -rfp $(MUSLDIR)/porting/liteos_a/user_debug/* $</
+	$(HIDE) cp -rfp $(MUSLDIR)/porting/liteos_a/user_debug/* $(MUSLCOPYDIR)/$</
 
 ifeq ($(BUILD_DEBUG),true)
 ifeq ($(GCC),)
@@ -175,7 +176,7 @@ musl_install_for_liteos_a_user: musl_patch_for_liteos_a_user_debug
 endif
 
 musl_header_install_for_liteos_a_user: musl_patch_for_liteos_a_user
-		$(HIDE) cd musl_copy_for_liteos_a_user && mkdir -p $(MUSLBUILDDIR) && cd $(MUSLBUILDDIR) && \
+		$(HIDE) cd $(MUSLCOPYDIR)/musl_copy_for_liteos_a_user && mkdir -p $(MUSLBUILDDIR) && cd $(MUSLBUILDDIR) && \
 		../configure --prefix=$(SYSROOTDIR)/$(TARGET)/usr --target=$(TARGET) \
 				--includedir=$(SYSROOTDIR)/$(TARGET)/usr/include \
 				--libdir=$(SYSROOTDIR)/$(TARGET)/usr/lib/$(MULTILIB) \
@@ -186,7 +187,7 @@ musl_header_install_for_liteos_a_user: musl_patch_for_liteos_a_user
 		make -sj install-headers
 
 musl_install_for_liteos_a_user: musl_patch_for_liteos_a_user
-		$(HIDE) cd musl_copy_for_liteos_a_user && mkdir -p $(MUSLBUILDDIR) && cd $(MUSLBUILDDIR) && \
+		$(HIDE) cd $(MUSLCOPYDIR)/musl_copy_for_liteos_a_user && mkdir -p $(MUSLBUILDDIR) && cd $(MUSLBUILDDIR) && \
 		../configure --prefix=$(SYSROOTDIR)/$(TARGET)/usr --target=$(TARGET) \
 				--includedir=$(SYSROOTDIR)/$(TARGET)/usr/include \
 				--libdir=$(SYSROOTDIR)/$(TARGET)/usr/lib/$(MULTILIB) \
@@ -197,14 +198,14 @@ musl_install_for_liteos_a_user: musl_patch_for_liteos_a_user
 		make -sj install
 
 musl_patch_for_linux_user: musl_copy_for_linux_user
-		$(HIDE) cp -rfp $(MUSLDIR)/porting/linux/user/* $</
+		$(HIDE) cp -rfp $(MUSLDIR)/porting/linux/user/* $(MUSLCOPYDIR)/$</
 
 ifeq ($(GCC),)
 musl_install_for_linux_user: TARGET = $(ARCH)-linux-ohos
 endif
 
 musl_header_install_for_linux_user: musl_patch_for_linux_user
-		$(HIDE) cd musl_copy_for_linux_user && mkdir -p $(MUSLBUILDDIR) && cd $(MUSLBUILDDIR) && \
+		$(HIDE) cd $(MUSLCOPYDIR)/musl_copy_for_linux_user && mkdir -p $(MUSLBUILDDIR) && cd $(MUSLBUILDDIR) && \
 		../configure --prefix=$(SYSROOTDIR)/$(TARGET)/usr --target=$(TARGET) \
 				--includedir=$(SYSROOTDIR)/$(TARGET)/usr/include \
 				--libdir=$(SYSROOTDIR)/$(TARGET)/usr/lib/$(MULTILIB) \
@@ -214,7 +215,7 @@ musl_header_install_for_linux_user: musl_patch_for_linux_user
 		make -sj install-headers
 
 musl_install_for_linux_user: musl_patch_for_linux_user
-		$(HIDE) cd musl_copy_for_linux_user && mkdir -p $(MUSLBUILDDIR) && cd $(MUSLBUILDDIR) && \
+		$(HIDE) cd $(MUSLCOPYDIR)/musl_copy_for_linux_user && mkdir -p $(MUSLBUILDDIR) && cd $(MUSLBUILDDIR) && \
 		../configure --prefix=$(SYSROOTDIR)/$(TARGET)/usr --target=$(TARGET) \
 				--includedir=$(SYSROOTDIR)/$(TARGET)/usr/include \
 				--libdir=$(SYSROOTDIR)/$(TARGET)/usr/lib/$(MULTILIB) \

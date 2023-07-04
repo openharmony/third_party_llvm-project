@@ -65,6 +65,7 @@ build.py options：
     lldb-server
     linux 
     check-api
+--build-clean           # delete out folder after build packages
 ```
 </br>
 

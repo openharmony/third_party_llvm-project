@@ -43,6 +43,7 @@ class BuildConfig():
         self.build_instrumented = args.build_instrumented
         self.xunit_xml_output = args.xunit_xml_output
         self.enable_assertions = args.enable_assertions
+        self.build_clean = args.build_clean
         self.need_libs = self.do_build and 'libs' not in args.no_build
         self.need_lldb_server = self.do_build and 'lldb-server' not in args.no_build
 
@@ -80,6 +81,7 @@ class BuildConfig():
 
         self.LLVM_PROJECT_DIR = os.path.join(self.REPOROOT_DIR, 'toolchain', 'llvm-project')
         self.OUT_PATH = os.path.join(self.REPOROOT_DIR, 'out')
+        self.PACKAGES_PATH = os.path.join(self.REPOROOT_DIR, 'packages')
 
     @staticmethod
     def parse_add_argument(parser):
@@ -153,6 +155,12 @@ class BuildConfig():
             '--xunit-xml-output',
             default=None,
             help='Output path for LLVM unit tests XML report')
+
+        parser.add_argument(
+            '--build-clean',
+            action='store_true',
+            default=False,
+            help='Delete out folder after build packages')
 
     def parse_args(self):
 
@@ -329,6 +337,9 @@ class BuildUtils(object):
     def merge_out_path(self, *args):
         return os.path.abspath(os.path.join(self.build_config.OUT_PATH, *args))
 
+    def merge_packages_path(self, *args):
+        return os.path.abspath(os.path.join(self.build_config.PACKAGES_PATH, *args))
+
     @staticmethod
     def use_platform():
         sysstr = platform.system().lower()
@@ -394,6 +405,8 @@ class BuildUtils(object):
         prebuilts_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts', name))
         return prebuilts_dir
 
+    def rm_build_output(self):
+        return self.check_rm_tree(self.build_config.OUT_PATH)
 
 class LlvmCore(BuildUtils):
 
@@ -974,7 +987,8 @@ class LlvmLibs(BuildUtils):
         self.logger().info('Building runtimes(%s) for %s', rt_list, arch)
 
         ndk_suffix = '-ndk' if is_libcxx_ndk_install else ''
-        out_path = self.merge_out_path('lib', rt_list.replace(';', '-') + ndk_suffix + '-' + str(llvm_triple))
+        multi_suffix = '-' + multilib_suffix if multilib_suffix else ''
+        out_path = self.merge_out_path('lib', rt_list.replace(';', '-') + ndk_suffix + '-' + str(llvm_triple) + multi_suffix)
 
         libcxx_install_include_path = self.merge_out_path(llvm_install, 'include', 'libcxx-ohos', 'include', 'c++', 'v1')
 
@@ -1378,11 +1392,11 @@ class LlvmPackage(BuildUtils):
             #Package libcxx-ndk
             for host in hosts_list:
                 tarball_name = 'libcxx-ndk-%s-%s' % (self.build_config.build_name, host)
-                package_path = '%s%s' % (self.merge_out_path(tarball_name), '.tar.bz2')
+                package_path = '%s%s' % (self.merge_packages_path(tarball_name), '.tar.bz2')
                 self.logger().info('Packaging %s', package_path)
                 args = ['tar', '-chjC', self.build_config.OUT_PATH, '-f', package_path, 'libcxx-ndk']
+                self.check_create_dir(self.build_config.PACKAGES_PATH)
                 self.check_call(args)
-            self.check_rm_tree(libcxx_ndk_install)
 
     @staticmethod
     def merge_tree(src_dir, dst_dir):
@@ -1607,7 +1621,7 @@ class LlvmPackage(BuildUtils):
     def package_up_resulting(self, package_name, host, install_host_dir):
         # Package up the resulting trimmed install/ directory.
         tarball_name = '%s-%s' % (package_name, host)
-        package_path = '%s%s' % (self.merge_out_path(tarball_name), '.tar.bz2')
+        package_path = '%s%s' % (self.merge_packages_path(tarball_name), '.tar.bz2')
         self.logger().info('Packaging %s', package_path)
         args = ['tar', '-cjC', install_host_dir, '-f', package_path, package_name]
         if host.startswith('windows'):
@@ -1615,12 +1629,13 @@ class LlvmPackage(BuildUtils):
             # replace them with file copies
             args.insert(1, '--dereference')
 
+        self.check_create_dir(self.build_config.PACKAGES_PATH)
         self.check_call(args)
 
         # Package ohos NDK
         if os.path.exists(self.merge_out_path('sysroot')):
             tarball_ndk_name = 'ohos-sysroot-%s' % self.build_config.build_name
-            package_ndk_path = '%s%s' % (self.merge_out_path(tarball_ndk_name), '.tar.bz2')
+            package_ndk_path = '%s%s' % (self.merge_packages_path(tarball_ndk_name), '.tar.bz2')
             self.logger().info('Packaging %s', package_ndk_path)
             args = ['tar', '-chjC', self.build_config.OUT_PATH, '-f', package_ndk_path, 'sysroot']
             self.check_call(args)
@@ -1867,6 +1882,9 @@ def main():
         llvm_package.package_operation(llvm_install, build_utils.use_platform())
         if build_config.do_package and need_windows:
             llvm_package.package_operation(windows64_install, 'windows-x86_64')
+
+    if build_config.build_clean:
+        build_utils.rm_build_output()
 
 if __name__ == '__main__':
     main()
