@@ -1752,3 +1752,66 @@ WorkingDir: /data/local/tmp
 
 多个服务调试同两个服务调试步骤，只需要开启多个LLDB命令行窗口即可。
 
+# 5 LLDB 命令行调试辅助脚本
+
+## 5.1 运行 Python 代码
+
+LLDB 支持运行 Python 代码。目前，该功能已在 OpenHarmony 发布的 Linux、Windows 和 macOS 版本 NDK 支持。
+
+1. 执行单行 Python 代码
+
+```
+script print("Hello OpenHarmony!")
+```
+
+2. 执行 `script` 命令进入 Python shell，然后执行 Python 代码
+
+```python
+import os
+env_path_value = os.environ.get("PATH", "")
+print(f"PATH='{env_path_value}'")
+```
+
+## 5.2 使用辅助脚本连接和启动 `lldb-server`
+
+使用 OpenHarmony NDK 的 LLDB 命令行远程调试时，通常需要以下步骤：
+
+1. 将 `lldb-server` 推送到 OpenHarmony 设备上。
+
+2. 在 OpenHarmony 设备上启动 `lldb-server`。
+
+3. 开发者在电脑上运行 `lldb` 和连接 `lldb-server`。
+
+4. attach 正在运行的进程或者启动命令行程序，然后执行调试命令。
+
+OpenHarmony NDK 提供了辅助脚本，简化了调试流程，输入以下指令即可完成 `lldb-server` 的启动和连接：
+
+```
+script import lldb_python
+script lldb_python.main()
+```
+
+### 5.2.1 查看参数
+ 
+查看脚本使用的 `lldb-server` 启动和连接参数：
+
+```
+script lldb_python.show_server_configs()
+```
+
+### 5.2.2 修改参数
+
+修改启动和连接参数：
+
+```
+script lldb_python.set_server_config("tcp-listen-port", 8080)
+```
+
+目前支持下列参数：
+
+| 参数名 | 默认值 | 说明 |
+| --- | --- | --- |
+| `arch` | `unknown` | 可选值：`arm` 表示 ARM 32位架构；`aarch64` 表示 ARM 64位架构；`x86_64` 表示 x86 64位架构。根据硬件架构，选择响应的 `lldb-server`。参数值为 `unknown` 时，会尝试判断设备的架构；如果自动判断架构出错，用户可以手动设置成其他值，关闭架构发现功能（使用用户指定的架构）。 |
+| `install-path` | `/data/local/tmp/lldb/lldb-server` | `lldb-server` 在 OpenHarmony 设备上的安装路径。 |
+| `tcp-listen-port` | `1234` | `lldb-server` 监听的 tcp 端口号 |
+| `platform` | `remote-ohos` | `lldb-server` 所在设备平台。 |
