@@ -4400,8 +4400,13 @@ X86TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
     report_fatal_error("failed to perform tail call elimination on a call "
                        "site marked musttail");
 
+#ifdef ARK_GC_SUPPORT
+   assert(!(isVarArg && canGuaranteeTCO(CallConv) && (CallConv != CallingConv::GHC)) &&
+         "Var args not supported with calling convention fastcc, ghc or hipe");
+#else
   assert(!(isVarArg && canGuaranteeTCO(CallConv)) &&
          "Var args not supported with calling convention fastcc, ghc or hipe");
+#endif
 
   // Analyze operands of the call, assigning locations to each operand.
   SmallVector<CCValAssign, 16> ArgLocs;

@@ -52,6 +52,10 @@ LLVMContext::LLVMContext() : pImpl(new LLVMContextImpl(*this)) {
     (void)ID;
   }
 
+#ifdef ARK_GC_SUPPORT
+  setOpaquePointers(false);
+#endif
+
   auto *DeoptEntry = pImpl->getOrInsertBundleTag("deopt");
   assert(DeoptEntry->second == LLVMContext::OB_deopt &&
          "deopt operand bundle id drifted!");

@@ -1403,6 +1403,18 @@ static void emitShadowCallStackEpilogue(const TargetInstrInfo &TII,
   }
 }
 
+#ifdef ARK_GC_SUPPORT
+Triple::ArchType AArch64FrameLowering::GetArkSupportTarget() const
+{
+    return Triple::aarch64;
+}
+
+int AArch64FrameLowering::GetFixedFpPosition() const
+{
+  return -1;
+}
+#endif
+
 void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
                                         MachineBasicBlock &MBB) const {
   MachineBasicBlock::iterator MBBI = MBB.begin();
@@ -1501,8 +1513,11 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
 
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+  #ifndef ARK_GC_SUPPORT
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+  #endif
+  // asm-int GHC call webkit function, we need push regs to stack.
 
   // OHOS_LOCAL begin
   if (HasFP && (MF.getFunction().getCallingConv() == CallingConv::ArkFast0 ||
@@ -1970,8 +1985,11 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
 
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+  #ifndef ARK_GC_SUPPORT
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+  #endif
+  // asm-int GHC call webkit function, we need push regs to stack.
 
   // How much of the stack used by incoming arguments this function is expected
   // to restore in this particular epilogue.
@@ -2995,8 +3013,11 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
                                                 RegScavenger *RS) const {
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+  #ifndef ARK_GC_SUPPORT
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+  #endif
+  // asm-int GHC call webkit function, we need push regs to stack.
 
   TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
   const AArch64RegisterInfo *RegInfo = static_cast<const AArch64RegisterInfo *>(

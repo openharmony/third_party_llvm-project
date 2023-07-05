@@ -18,6 +18,9 @@
 #include "llvm/Support/TypeSize.h"
 #include "llvm/IR/CallingConv.h" // OHOS_LOCAL
 #include <vector>
+#ifdef ARK_GC_SUPPORT
+#include "llvm/ADT/Triple.h"
+#endif
 
 namespace llvm {
   class BitVector;
@@ -222,6 +225,26 @@ public:
   /// emitZeroCallUsedRegs - Zeros out call used registers.
   virtual void emitZeroCallUsedRegs(BitVector RegsToZero,
                                     MachineBasicBlock &MBB) const {}
+  #ifdef ARK_GC_SUPPORT
+  template <typename T>
+  constexpr T RoundUp(T x, size_t n) const
+  {
+      static_assert(std::is_integral<T>::value, "T must be integral");
+      return (static_cast<size_t>(x) + n - 1U) & (-n);
+  }
+
+  virtual Triple::ArchType GetArkSupportTarget() const
+  {
+    return Triple::UnknownArch;
+  }
+
+  virtual int GetFixedFpPosition() const
+  {
+    return 2;
+  }
+
+  virtual int GetFrameReserveSize(MachineFunction &MF) const;
+  #endif
 
   /// OHOS_LOCAL begin
   /// Instances about backward cfi and stack protection provided by different architectures.

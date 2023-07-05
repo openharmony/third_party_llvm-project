@@ -6239,8 +6239,13 @@ SDValue AArch64TargetLowering::LowerCallResult(
 
 /// Return true if the calling convention is one that we can guarantee TCO for.
 static bool canGuaranteeTCO(CallingConv::ID CC, bool GuaranteeTailCalls) {
+#ifdef ARK_GC_SUPPORT
+  return ((CC == CallingConv::GHC || CC == CallingConv::Fast) && GuaranteeTailCalls) ||
+         CC == CallingConv::Tail || CC == CallingConv::SwiftTail;
+#else
   return (CC == CallingConv::Fast && GuaranteeTailCalls) ||
          CC == CallingConv::Tail || CC == CallingConv::SwiftTail;
+#endif
 }
 
 /// Return true if we might ever do TCO for calls with this calling convention.
@@ -6491,8 +6496,13 @@ SDValue AArch64TargetLowering::addTokenForArgument(SDValue Chain,
 
 bool AArch64TargetLowering::DoesCalleeRestoreStack(CallingConv::ID CallCC,
                                                    bool TailCallOpt) const {
+#ifdef ARK_GC_SUPPORT
+  return ((CallCC == CallingConv::GHC || CallCC == CallingConv::Fast) && TailCallOpt) ||
+         CallCC == CallingConv::Tail || CallCC == CallingConv::SwiftTail;
+#else
   return (CallCC == CallingConv::Fast && TailCallOpt) ||
          CallCC == CallingConv::Tail || CallCC == CallingConv::SwiftTail;
+#endif
 }
 
 // Check if the value is zero-extended from i1 to i8

@@ -29,6 +29,9 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
+#ifdef ARK_GC_SUPPORT
+#include "llvm/Target/TargetMachine.h"
+#endif
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -599,10 +602,11 @@ void StackMaps::emitFunctionFrameRecords(MCStreamer &OS) {
   // Function Frame records.
   LLVM_DEBUG(dbgs() << WSMP << "functions:\n");
   for (auto const &FR : FnInfos) {
-    LLVM_DEBUG(dbgs() << WSMP << "function addr: " << FR.first
-                      << " frame size: " << FR.second.StackSize
-                      << " callsite count: " << FR.second.RecordCount << '\n');
-    OS.emitSymbolValue(FR.first, 8);
+    #ifdef ARK_GC_SUPPORT
+      OS.emitSymbolValue(FR.first, AP.TM.getProgramPointerSize());
+    #else
+      OS.emitSymbolValue(FR.first, 8);
+    #endif
     OS.emitIntValue(FR.second.StackSize, 8);
     OS.emitIntValue(FR.second.RecordCount, 8);
   }
