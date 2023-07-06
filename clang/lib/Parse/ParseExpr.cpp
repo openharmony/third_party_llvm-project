@@ -2408,8 +2408,9 @@ ExprResult Parser::ParseSYCLUniqueStableNameExpression() {
 ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
   assert(Tok.isOneOf(tok::kw_sizeof, tok::kw___alignof, tok::kw_alignof,
                      tok::kw__Alignof, tok::kw_vec_step,
-                     tok::kw___builtin_omp_required_simd_align) &&
-         "Not a sizeof/alignof/vec_step expression!");
+                     tok::kw___builtin_omp_required_simd_align,
+                     tok::kw___builtin_get_modifier_bytype) && // OHOS_LOCAL
+         "Not a sizeof/alignof/vec_step/get_modifier_bytype expression!");
   Token OpTok = Tok;
   ConsumeToken();
 

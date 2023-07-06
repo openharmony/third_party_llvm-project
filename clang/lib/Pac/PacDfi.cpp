@@ -91,19 +91,24 @@ void PacDfiCreateMetaData(std::map<RecordDecl*, std::vector<FieldDecl*>> &fieldI
     llvm::Module &M, llvm::LLVMContext &VMContext, CodeGen::CodeGenModule *CGM)
 {
     llvm::NamedMDNode *PacNMD = M.getOrInsertNamedMetadata(mdName);
+    llvm::NamedMDNode *PacNMDName = M.getOrInsertNamedMetadata(mdName.str() + "name");
     for (auto item : fieldInfos) {
         if (RecordDecl2StructName.find(item.first) == RecordDecl2StructName.end()) {
             continue;
         }
         std::vector<llvm::Metadata *> PacFields;
+        std::vector<llvm::Metadata *> PacFieldsName;
         auto styName = RecordDecl2StructName.find(item.first)->second;
         PacFields.push_back(llvm::MDString::get(VMContext, styName));
+        PacFieldsName.push_back(llvm::MDString::get(VMContext, styName));
         for (auto *Field : item.second) {
+            PacFieldsName.push_back(llvm::MDString::get(VMContext, Field->getName()));
             unsigned idx = CodeGen::getLLVMFieldNumber(*CGM, item.first, Field);
             PacFields.push_back(llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(
                 llvm::Type::getInt32Ty(VMContext), idx)));
         }
         PacNMD->addOperand(llvm::MDNode::get(VMContext, PacFields));
+        PacNMDName->addOperand(llvm::MDNode::get(VMContext, PacFieldsName));
     }
 }
 
