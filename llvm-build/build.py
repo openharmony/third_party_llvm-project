@@ -1783,7 +1783,7 @@ class LlvmPackage(BuildUtils):
         repo_tool = os.path.join(self.build_config.REPOROOT_DIR, '.repo', 'repo', 'repo')
         if os.path.isfile(repo_tool):
             self.logger().info('Generating manifest.')
-            subprocess.run([repo_tool, 'manifest', '-r', '-o', manifest], shell=False,
+            subprocess.run(['python2.7', repo_tool, 'manifest', '-r', '-o', manifest], shell=False,
                            stdout=subprocess.PIPE, cwd=self.build_config.REPOROOT_DIR)
         else:
             self.logger().error('Cannot generate manifest, repo tool not found.')
