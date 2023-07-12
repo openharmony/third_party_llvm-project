@@ -1815,3 +1815,98 @@ script lldb_python.set_server_config("tcp-listen-port", 8080)
 | `install-path` | `/data/local/tmp/lldb/lldb-server` | `lldb-server` 在 OpenHarmony 设备上的安装路径。 |
 | `tcp-listen-port` | `1234` | `lldb-server` 监听的 tcp 端口号 |
 | `platform` | `remote-ohos` | `lldb-server` 所在设备平台。 |
+
+
+# 6. LLDB Standalone调试
+
+Standalone调试区别于远程调试，无需配置远程连接，直接在设备上进行调试。
+
+## 6.1 LLDB Standalone工具获取
+
+该工具需要通过编译LLVM工程时增加`--build-lldb-static`参数获取。
+
+LLVM工程编译参考：[llvm-build](https://gitee.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md)
+
+编译完成后，可通过如下路径获取到Standalone版本的工具：
+
+1）生成路径： llvm-project/out/lib/lldb-server-[platform]-linux-ohos/bin
+
+2）Install路径：llvm-project/out/llvm-install/lib/clang/15.0.4/bin/[platform]-linux-ohos
+
+3）package压缩包：llvm-project/out/clang-dev-linux-x86_64.tar.bz2内，clang-dev/lib/clang/15.0.4/bin/[platform]-linux-ohos
+
+​	[platform]值根据调试设备架构，支持arm和aarch64
+
+## 6.2 LLDB Standalone调试准备
+
+1）使用HDC工具将[6.1 LLDB Standalone工具获取](#61-lldb-standalone工具获取)中获取到的lldb和lldb-server传输到设备工作路径，以/data/local/tmp为例
+
+```
+hdc.exe file send lldb /data/local/tmp
+hdc.exe file send lldb-server /data/local/tmp
+```
+
+2）进入命令行交互模式
+
+```
+hdc.exe shell
+```
+
+3）赋予lldb工具执行权限
+
+```
+# chmod +x /data/local/tmp/lldb
+# chmod +x /data/local/tmp/lldb-server
+```
+## 6.3 LLDB Standalone调试
+
+通常情况下，通过Attach到运行中的进程或者直接通过LLDB启动目标程序来开始调试。当成功Attach到目标进程或者通过LLDB启动目标程序后，就可以结合调试目的，使用[3. LLDB命令](#3-lldb命令)中相应的LLDB调试命令来调试目标程序。
+
+> **提示：**
+>
+> - 命令print、call、expr命令尚不支持调用函数
+> - 如遇删除键（Backspace）功能无法正常删除时，使用Ctrl+Backspace删除
+
+### 6.3.1 Attach 到运行的进程
+#### 6.3.1.1 启动LLDB
+
+```
+# /data/local/tmp/lldb
+(lldb)
+```
+
+通过ps或者top等命令获取目标程序进程PID或进程名。
+
+#### 6.3.1.2 通过进程ID<pid> attach到进程
+
+```
+(lldb) attach -p <pid>
+```
+
+#### 6.3.1.3 通过进程名<name> attach到进程
+
+```
+(lldb) process attach --name <name>
+```
+
+### 6.3.2 通过LLDB启动目标程序
+
+#### 6.3.2.1 启动LLDB的同时指定目标程序hello_world
+
+```
+# /data/local/tmp/lldb /data/local/tmp/hello_world
+```
+
+#### 6.3.2.2 使用target create命令指定调试目标程序hello_world
+
+```
+# /data/local/tmp/lldb
+(lldb) target create /data/local/tmp/hello_world
+```
+
+#### 6.3.2.3 设置断点并启动目标程序
+
+```
+(lldb) b main
+(lldb) r
+```
