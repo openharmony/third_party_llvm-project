@@ -1775,6 +1775,14 @@ class LlvmPackage(BuildUtils):
 
         self.check_copy_file(libedit_src, lib_dst_path)
 
+    def copy_wrappers(self, bin_dir):
+        for sh_filename in os.listdir(os.path.join(self.build_config.LLVM_BUILD_DIR, 'wrappers')):
+            shutil.copy(os.path.join(self.build_config.LLVM_BUILD_DIR, 'wrappers', sh_filename),
+                            bin_dir)
+            st = os.stat(os.path.join(bin_dir, sh_filename))
+            os.chmod(os.path.join(bin_dir, sh_filename), st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+
+
     # Packing Operation.
 
     def package_operation(self, build_dir, host):
@@ -1851,6 +1859,8 @@ class LlvmPackage(BuildUtils):
         self.check_rm_tree(cmake_dir)
 
         self.notice_prebuilts_file(host, self.package_license_project_tuple(), install_dir)
+
+        self.copy_wrappers(bin_dir)
 
         create_tar = True
         if create_tar:
