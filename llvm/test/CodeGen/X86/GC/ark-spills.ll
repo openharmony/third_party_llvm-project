@@ -1,6 +1,8 @@
 ; RUN: llc < %s | FileCheck %s
 ; RUN: llc -opaque-pointers < %s | FileCheck %s
 
+target triple = "x86_64-pc-linux-gnu"
+
 define weak void @foo(ptr addrspace(1) %ref) {
     ret void
 }
