@@ -54,6 +54,8 @@ class BuildConfig():
         self.no_build_riscv64 = args.skip_build or args.no_build_riscv64
         self.no_build_mipsel = args.skip_build or args.no_build_mipsel
         self.no_build_x86_64 = args.skip_build or args.no_build_x86_64
+        self.build_ncurses = args.build_ncurses
+        self.build_libedit = args.build_libedit
 
         self.discover_paths()
 
@@ -169,6 +171,18 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Build Python (not using prebuilt one, currently effective for Windows)')
+
+        parser.add_argument(
+            '--build-ncurses',
+            action='store_true',
+            default=False,
+            help='Build ncurses tool for Linux, Mac x86-64 or M1')
+
+        parser.add_argument(
+            '--build-libedit',
+            action='store_true',
+            default=False,
+            help='Build libedit tool for Linux, Mac x86-64 or M1')
 
     def parse_args(self):
 
@@ -490,14 +504,18 @@ class LlvmCore(BuildUtils):
             llvm_defines['COMPILER_RT_BUILD_LIBFUZZER'] = 'OFF'
             llvm_defines['LLVM_BUILD_EXTERNAL_COMPILER_RT'] = 'ON'
             llvm_defines['LLVM_ENABLE_ZSTD'] = 'OFF'
-            llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.0.dylib')
-            libncurse = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libncurses.6.dylib')
-            libpanel = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libpanel.6.dylib')
-            libform = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libform.6.dylib')
-            ncurses_libs = ';'.join([libncurse, libpanel, libform])
-            llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
-            llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
             llvm_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.dylib'
+            if self.build_config.build_ncurses:
+                libncurse = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libncurses.6.dylib')
+                libpanel = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libpanel.6.dylib')
+                libform = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libform.6.dylib')
+                ncurses_libs = ';'.join([libncurse, libpanel, libform])
+                llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
+                llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
+
+            if self.build_config.build_libedit:
+                llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.0.dylib')
+
 
     def llvm_compile_linux_defines(self,
                                    llvm_defines,
@@ -520,14 +538,17 @@ class LlvmCore(BuildUtils):
             llvm_defines['COMPILER_RT_BUILD_ORC'] = 'OFF'
             llvm_defines['LIBUNWIND_USE_COMPILER_RT'] = 'ON'
             llvm_defines['LLVM_BINUTILS_INCDIR'] = '/usr/include'
-            llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.so.0.0.68')
-            libncurse = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libncurses.so.6.3')
-            libpanel = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libpanel.so.6.3')
-            libform = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libform.so.6.3')
-            ncurses_libs = ';'.join([libncurse, libpanel, libform])
-            llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
-            llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
             llvm_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.so'
+            if self.build_config.build_ncurses:
+                libncurse = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libncurses.so.6.3')
+                libpanel = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libpanel.so.6.3')
+                libform = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libform.so.6.3')
+                ncurses_libs = ';'.join([libncurse, libpanel, libform])
+                llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
+                llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
+
+            if self.build_config.build_libedit:
+                llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.so.0.0.68')
 
             if not build_instrumented and not no_lto and not debug_build:
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
@@ -563,9 +584,14 @@ class LlvmCore(BuildUtils):
         llvm_defines['LLDB_PYTHON_EXE_RELATIVE_PATH'] = os.path.join('bin', self.build_config.LLDB_PYTHON)
         llvm_defines['SWIG_EXECUTABLE'] = self.find_program('swig')
         llvm_defines['LLDB_ENABLE_CURSES'] = 'OFF'
-        if llvm_defines['LLDB_ENABLE_CURSES'] == 'ON' and llvm_defines['LLDB_ENABLE_LIBEDIT'] == 'ON':
-            llvm_defines['LibEdit_INCLUDE_DIRS'] = os.path.join(self.get_prebuilts_dir('libedit'), 'include')
+
+        if self.build_config.build_ncurses:
+            llvm_defines['LLDB_ENABLE_CURSES'] = 'ON'
             llvm_defines['CURSES_INCLUDE_DIRS'] = os.path.join(self.get_prebuilts_dir('ncurses'), 'include')
+        if self.build_config.build_libedit:
+            llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
+            llvm_defines['LibEdit_INCLUDE_DIRS'] = os.path.join(self.get_prebuilts_dir('libedit'), 'include')
+
 
     def llvm_compile(self,
                      build_name,
@@ -1706,7 +1732,13 @@ class LlvmPackage(BuildUtils):
             dylib_name = os.path.basename(lib)
             subprocess.check_call(["install_name_tool", "-id", "@rpath/%s" % dylib_name, lib])
 
-            library_list = ["libedit", "libncurses", "libpanel", "libform"]
+            library_list = []
+
+            if self.build_config.build_ncurses:
+                library_list.extend(["libncurses", "libpanel", "libform"])
+
+            if self.build_config.build_libedit:
+                library_list.append("libedit")
 
             # Update LC_LOAD_DYLIB. The lib may already reference other libs.
             for dependency in dependency_list:
@@ -1894,8 +1926,11 @@ def main():
     if not build_config.no_build_x86_64:
         configs.append(('x86_64', build_utils.open_ohos_triple('x86_64')))
 
-    llvm_libs.build_ncurses(llvm_make, llvm_install)
-    llvm_libs.build_libedit(llvm_make, llvm_install)
+    if build_config.build_ncurses:
+        llvm_libs.build_ncurses(llvm_make, llvm_install)
+
+    if build_config.build_libedit:
+        llvm_libs.build_libedit(llvm_make, llvm_install)
 
     if build_config.do_build and need_host:
         llvm_core.llvm_compile(
