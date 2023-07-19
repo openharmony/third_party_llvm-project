@@ -56,6 +56,8 @@ class BuildConfig():
         self.no_build_x86_64 = args.skip_build or args.no_build_x86_64
         self.build_ncurses = args.build_ncurses
         self.build_libedit = args.build_libedit
+        self.build_lldb_static = args.build_lldb_static
+        self.need_lldb_tools = self.need_lldb_server or self.build_lldb_static
 
         self.discover_paths()
 
@@ -159,6 +161,12 @@ class BuildConfig():
             '--xunit-xml-output',
             default=None,
             help='Output path for LLVM unit tests XML report')
+
+        parser.add_argument(
+            '--build-lldb-static',
+            action='store_true',
+            default=False,
+            help='Build statically lldb tool for ARM and AARCH64')
 
         parser.add_argument(
             '--build-clean',
@@ -276,7 +284,7 @@ class BuildUtils(object):
     def invoke_ninja(self,
                      out_path,
                      env,
-                     target=None,
+                     target=None, # target support list type
                      install=True,
                      build_threads=False):
 
@@ -284,7 +292,7 @@ class BuildUtils(object):
 
         ninja_list = ['-l{}'.format(build_threads)] if build_threads else []
 
-        ninja_target = [target] if target else []
+        ninja_target = target if target else []
 
         self.check_call([ninja_bin_path] + ninja_list + ninja_target, cwd=out_path, env=env)
         if install:
@@ -888,15 +896,14 @@ class LlvmLibs(BuildUtils):
         self.sysroot_composer = sysroot_composer
         self.llvm_package = llvm_package
 
-    def build_crt_libs(self, configs, llvm_install, need_lldb_server):
+    def build_crt_libs(self, configs, llvm_install):
         for (arch, target) in configs:
             self.sysroot_composer.build_musl(llvm_install, target)
             if target.endswith(self.build_config.OPENHOS_SFX):
                 self.sysroot_composer.install_linux_headers(arch, target)
-            self.build_libs(need_lldb_server,
-                                llvm_install,
-                                target,
-                                precompilation=True)
+            self.build_libs(llvm_install,
+                            target,
+                            precompilation=True)
             self.sysroot_composer.build_musl(llvm_install, target, '-l')
 
     def build_libs_defines(self,
@@ -946,7 +953,7 @@ class LlvmLibs(BuildUtils):
 
         cflags.extend(cflag)
 
-    def build_libs(self, need_lldb_server, llvm_install, llvm_build, precompilation=False):
+    def build_libs(self, llvm_install, llvm_build, precompilation=False):
         configs_list = [
             ('arm', self.liteos_triple('arm'), '-march=armv7-a -mfloat-abi=soft', ''),
             ('arm', self.liteos_triple('arm'), '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=soft', 'a7_soft'),
@@ -978,7 +985,7 @@ class LlvmLibs(BuildUtils):
             if llvm_build != llvm_triple:
                 continue
 
-            has_lldb_server = arch not in ['riscv64', 'mipsel']
+            has_lldb_tools = arch not in ['riscv64', 'mipsel']
 
             defines = self.base_cmake_defines()
             ldflags = []
@@ -1009,16 +1016,16 @@ class LlvmLibs(BuildUtils):
                                 first_time=False)
 
             if llvm_triple in arch_list:
-                if need_lldb_server and has_lldb_server and llvm_triple not in seen_arch_list:
-                    self.build_lldb_server(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags,
+                if self.build_config.need_lldb_tools and has_lldb_tools and llvm_triple not in seen_arch_list:
+                    self.build_lldb_tools(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags,
                                                    defines)
                     seen_arch_list.append(llvm_triple)
                 continue
 
             self.build_libomp(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
             self.build_libz(arch, llvm_triple, cflags, ldflags, defines)
-            if need_lldb_server and has_lldb_server and llvm_triple not in seen_arch_list:
-                self.build_lldb_server(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags, defines)
+            if self.build_config.need_lldb_tools and has_lldb_tools and llvm_triple not in seen_arch_list:
+                self.build_lldb_tools(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags, defines)
                 seen_arch_list.append(llvm_triple)
 
     def build_runtimes(self,
@@ -1257,7 +1264,7 @@ class LlvmLibs(BuildUtils):
 
         self.sysroot_composer.copy_libz_to_sysroot(libz_path, llvm_triple)
 
-    def build_lldb_server(self,
+    def build_lldb_tools(self,
                           llvm_install,
                           llvm_path,
                           arch,
@@ -1291,6 +1298,7 @@ class LlvmLibs(BuildUtils):
         lldb_defines['CMAKE_CXX_FLAGS'] = ' '.join(lldb_cflags)
         lldb_defines['CMAKE_INSTALL_PREFIX'] = crt_install
         lldb_defines['LLVM_ENABLE_PER_TARGET_RUNTIME_DIR'] = 'ON'
+        lldb_defines['LLDB_ENABLE_PYTHON'] = 'OFF'
         lldb_defines['LLDB_PYTHON_HOME'] = os.path.join('..', self.build_config.LLDB_PYTHON)
         lldb_defines['LLDB_PYTHON_RELATIVE_PATH'] = os.path.join('bin', self.build_config.LLDB_PYTHON, 'lib',
             'python%s' % self.build_config.LLDB_PY_VERSION, llvm_triple)
@@ -1309,6 +1317,12 @@ class LlvmLibs(BuildUtils):
         lldb_defines['LLVM_TARGET_ARCH'] = arch
         lldb_defines['LLVM_TARGETS_TO_BUILD'] = self.build_config.TARGETS
 
+        lldb_target = ['lldb-server'] if self.build_config.need_lldb_server else []
+
+        if self.build_config.build_lldb_static and llvm_triple in ['aarch64-linux-ohos', 'arm-linux-ohos']:
+            lldb_defines['LIBLLDB_BUILD_STATIC'] = 'ON'
+            lldb_target.append('lldb')
+
         lldb_cmake_path = os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm')
 
         self.invoke_cmake(lldb_cmake_path,
@@ -1318,11 +1332,10 @@ class LlvmLibs(BuildUtils):
 
         self.invoke_ninja(out_path=lldb_path,
                           env=dict(self.build_config.ORIG_ENV),
-                          target='lldb-server',
+                          target=lldb_target,
                           install=False)
 
-        self.llvm_package.copy_lldb_server_to_llvm_install(lldb_path, crt_install, llvm_triple)
-
+        self.llvm_package.copy_lldb_tools_to_llvm_install(lldb_target, lldb_path, crt_install, llvm_triple)
 
     def build_runtimes_for_windows(self, enable_assertions):
 
@@ -1424,13 +1437,13 @@ class LlvmPackage(BuildUtils):
     def __init__(self, build_config):
         super(LlvmPackage, self).__init__(build_config)
 
-    def copy_lldb_server_to_llvm_install(self, lldb_path, crt_install, llvm_triple):
-        # Copy lldb-server
-        libname = 'lldb-server'
-        src_lib = os.path.join(lldb_path, 'bin', libname)
+    def copy_lldb_tools_to_llvm_install(self, tools, lldb_path, crt_install, llvm_triple):
         dst_dir = os.path.join(crt_install, 'bin', llvm_triple)
         self.check_create_dir(dst_dir)
-        self.check_copy_file(src_lib, os.path.join(dst_dir, libname))
+        for tool in tools:
+        # Copy lldb-tool
+            src_bin = os.path.join(lldb_path, 'bin', tool)
+            self.check_copy_file(src_bin, os.path.join(dst_dir, tool))
 
     def package_libcxx(self):
         libcxx_ndk_install=self.merge_out_path('libcxx-ndk')
@@ -1957,11 +1970,11 @@ def main():
 
     if build_config.do_build and build_utils.host_is_linux():
         sysroot_composer.setup_cmake_platform(llvm_install)
-        llvm_libs.build_crt_libs(configs, llvm_install, build_config.need_lldb_server)
+        llvm_libs.build_crt_libs(configs, llvm_install)
 
         if build_config.need_libs:
             for (arch, target) in configs:
-                llvm_libs.build_libs(build_config.need_lldb_server, llvm_install, target)
+                llvm_libs.build_libs(llvm_install, target)
 
     windows_python_builder = None
 
