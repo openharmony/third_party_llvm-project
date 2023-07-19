@@ -59,6 +59,9 @@ build.py options：
 --no-lto  				# disable LTO optimization when build toolchain
 --build-instrumented	# enable instrument pgo when build toolchain
 --xunit-xml-output 		# specify LLVM unit test XML report path
+--build-python          # build python (not using prebuilt one, currently effective for Windows)
+--build-ncurses         # build ncurses tool for linux, Mac x86-64 or M1
+--build-libedit         # build libedit tool for linux, Mac x86-64 or M1
 --no-build              # optional, skip some targets
     windows
     libs

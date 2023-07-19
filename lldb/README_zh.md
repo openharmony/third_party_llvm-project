@@ -1312,6 +1312,48 @@ LLDB支持使用`history <cmd-options>`命令处理会话中命令的历史记�
   (lldb) history -s 2 -e 3
   ```
 
+### 3.16.5 命令自动联想补齐
+
+LLDB支持输入命令起始字符，按`Tab`键实现命令自动联想补齐。
+
+> 说明
+>
+> - 需要通过编译LLVM工程时添加`--build-libedit`参数使能此功能。建议和`--build-ncurses`参数一起使用。
+> - 命令自动联想补齐功能适配平台有：Linux, Mac x86-64 和 M1。
+
+- 输入pl，按`Tab`键实现命令自动联想。(LLDB命令中包含多个以"pl"开头的命令)
+
+  ```
+  (lldb) pl
+  Available completions:
+          platform -- Commands to manage and create platforms.
+          plugin   -- Commands for managing LLDB plugins.
+  (lldb) pl
+  ```
+
+- 输入his，按`Tab`键实现命令自动补全。(LLDB命令中仅包含一个以"his"开头的命令)
+
+  ```
+  (lldb) history
+     0: history
+  ```
+
+### 3.16.6 图形化界面
+
+LLDB支持使用`gui`命令进入图形化调试界面。
+
+> 说明
+>
+> - 需要通过编译LLVM工程时添加`--build-ncurses`参数使能此功能。
+>
+> - 图形化调试界面适配平台有：Linux, Mac x86-64 和 M1。
+
+- 进入图形化调试界面。
+
+  ```
+  (lldb) gui
+  ```
+
 # 4. windows平台远程调试
 
 ## 4.1 可执行文件调试
@@ -1792,7 +1834,7 @@ script lldb_python.main()
 ```
 
 ### 5.2.1 查看参数
- 
+
 查看脚本使用的 `lldb-server` 启动和连接参数：
 
 ```
