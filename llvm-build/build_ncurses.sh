@@ -45,6 +45,8 @@ if [ -e ${ncurses_package} ]; then
     patch -Np1 < ncurses-kbs.patch
     patch -Np1 < ncurses-libs.patch
     patch -Np1 < backport-CVE-2022-29458.patch
+    patch -Np1 < backport-0001-CVE-2023-29491-fix-configure-root-args-option.patch
+    patch -Np1 < backport-0002-CVE-2023-29491-env-access.patch
 
     if [ ! -b ${NCURSES_BUILD_PATH} ]; then
         mkdir -p ${NCURSES_BUILD_PATH}
