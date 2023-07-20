@@ -40,13 +40,13 @@ class LLDBException(Exception):
 
 class _ServerConfig:
     arch: Arch = Arch.UNKNOWN
-    install_path: PosixPath = PosixPath("/data/local/tmp/lldb/lldb-server")
+    install_path: PurePosixPath = PurePosixPath("/data/local/tmp/lldb/lldb-server")
     tcp_listen_port: int = 1234
     platform: str = "remote-ohos"
 
 _server_config_item_mapping: Mapping[str, Tuple[str, type]] = {
     "arch": ("arch", Arch),
-    "install-path": ("install_path", PosixPath),
+    "install-path": ("install_path", PurePosixPath),
     "tcp-listen-port": ("tcp_listen_port", int),
     "platform": ("platform", str)
 }
@@ -110,7 +110,7 @@ def _find_lldb_server(arch: Arch) -> Path:
     lldb_server_path = curr_script_dir / ".." / "lib" / "clang" / version / "bin" / f"{arch.value}-linux-ohos" / "lldb-server"
     return lldb_server_path
 
-def _install_lldb_server(lldb_server_path: Path, install_path: PosixPath) -> None:
+def _install_lldb_server(lldb_server_path: Path, install_path: PurePosixPath) -> None:
     if not lldb_server_path.exists():
         raise LLDBException(f"file '{lldb_server_path}' does not exists")
     if not lldb_server_path.is_file():
@@ -120,7 +120,7 @@ def _install_lldb_server(lldb_server_path: Path, install_path: PosixPath) -> Non
     subprocess.run(['hdc', 'file', 'send', str(lldb_server_path), str(install_path)])
     subprocess.run(['hdc', 'shell', 'chmod', 'u+x', str(install_path)])
 
-def _start_lldb_server(lldb_server_path: PosixPath, tcp_listen_port: int) -> None:
+def _start_lldb_server(lldb_server_path: PurePosixPath, tcp_listen_port: int) -> None:
     subprocess.Popen(['hdc', 'shell', str(lldb_server_path), 'platform', '--listen', f'*:{tcp_listen_port}'], stdout=subprocess.PIPE)
     time.sleep(3)
 
