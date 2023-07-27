@@ -25,6 +25,7 @@ set(LLVM_LINK_COMPONENTS
   Support
   Target
   TransformUtils
+  Parts # OHOS_LOCAL
   )
 
 add_clang_library(clangCodeGen
