@@ -88,7 +88,8 @@ void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &
 }
 
 void PacDfiCreateMetaData(std::map<RecordDecl*, std::vector<FieldDecl*>> &fieldInfos, StringRef mdName,
-    llvm::Module &M, llvm::LLVMContext &VMContext, CodeGen::CodeGenModule *CGM)
+    llvm::Module &M, CodeGen::CodeGenModule *CGM,
+    std::function<unsigned(CodeGen::CodeGenModule&, const RecordDecl*, const FieldDecl*)> func)
 {
     llvm::NamedMDNode *PacNMD = M.getOrInsertNamedMetadata(mdName);
     llvm::NamedMDNode *PacNMDName = M.getOrInsertNamedMetadata(mdName.str() + "name");
@@ -99,30 +100,31 @@ void PacDfiCreateMetaData(std::map<RecordDecl*, std::vector<FieldDecl*>> &fieldI
         std::vector<llvm::Metadata *> PacFields;
         std::vector<llvm::Metadata *> PacFieldsName;
         auto styName = RecordDecl2StructName.find(item.first)->second;
-        PacFields.push_back(llvm::MDString::get(VMContext, styName));
-        PacFieldsName.push_back(llvm::MDString::get(VMContext, styName));
+        PacFields.push_back(llvm::MDString::get(M.getContext(), styName));
+        PacFieldsName.push_back(llvm::MDString::get(M.getContext(), styName));
         for (auto *Field : item.second) {
-            PacFieldsName.push_back(llvm::MDString::get(VMContext, Field->getName()));
-            unsigned idx = CodeGen::getLLVMFieldNumber(*CGM, item.first, Field);
+            PacFieldsName.push_back(llvm::MDString::get(M.getContext(), Field->getName()));
+            unsigned idx = func(*CGM, item.first, Field);
             PacFields.push_back(llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(
-                llvm::Type::getInt32Ty(VMContext), idx)));
+                llvm::Type::getInt32Ty(M.getContext()), idx)));
         }
-        PacNMD->addOperand(llvm::MDNode::get(VMContext, PacFields));
-        PacNMDName->addOperand(llvm::MDNode::get(VMContext, PacFieldsName));
+        PacNMD->addOperand(llvm::MDNode::get(M.getContext(), PacFields));
+        PacNMDName->addOperand(llvm::MDNode::get(M.getContext(), PacFieldsName));
     }
 }
 
-void PacDfiEmitStructFieldsMetadata(llvm::Module &M, llvm::LLVMContext &VMContext, CodeGen::CodeGenModule *CGM)
+void PacDfiEmitStructFieldsMetadata(llvm::Module &M, CodeGen::CodeGenModule *CGM,
+    std::function<unsigned(CodeGen::CodeGenModule&, const RecordDecl*, const FieldDecl*)> func)
 {
     if (!llvm::PARTS::useDataFieldTag()) {
         return;
     }
     // emit struct fields that need to protect with PA
     if (!PacFieldNameInfos.empty()) {
-        PacDfiCreateMetaData(PacFieldNameInfos, "pa_field_info", M, VMContext, CGM);
+        PacDfiCreateMetaData(PacFieldNameInfos, "pa_field_info", M, CGM, func);
     }
     if (!PacPtrNameInfos.empty()) {
-        PacDfiCreateMetaData(PacPtrNameInfos, "pa_ptr_field_info", M, VMContext, CGM);
+        PacDfiCreateMetaData(PacPtrNameInfos, "pa_ptr_field_info", M, CGM, func);
     }
 }
 

@@ -18,10 +18,12 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Module.h"
 #include "clang/CodeGen/CodeGenABITypes.h"
+#include <functional>
 using namespace clang;
 
 void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &Diags);
-void PacDfiEmitStructFieldsMetadata(llvm::Module &M, llvm::LLVMContext &VMContext, CodeGen::CodeGenModule *CGM);
+void PacDfiEmitStructFieldsMetadata(llvm::Module &M, CodeGen::CodeGenModule *CGM,
+    std::function<unsigned(CodeGen::CodeGenModule&, const RecordDecl*, const FieldDecl*)> func);
 void PacDfiRecordDecl2StructName(const RecordDecl *RD, llvm::StructType *Entry);
 
 #endif
