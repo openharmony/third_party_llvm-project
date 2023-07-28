@@ -144,16 +144,8 @@ lldb::ValueObjectSP lldb_private::formatters::
     return lldb::ValueObjectSP();
   StreamString stream;
   stream.Printf("[%" PRIu64 "]", (uint64_t)idx);
-  DataExtractor data;
-  Status error;
-  val_hash.first->GetData(data, error);
-  if (error.Fail())
-    return lldb::ValueObjectSP();
-  const bool thread_and_frame_only_if_stopped = true;
-  ExecutionContext exe_ctx = val_hash.first->GetExecutionContextRef().Lock(
-      thread_and_frame_only_if_stopped);
-  return CreateValueObjectFromData(stream.GetString(), data, exe_ctx,
-                                   val_hash.first->GetCompilerType());
+  // OHOS_LOCAL
+  return m_elements_cache.back().first->Clone(ConstString(stream.GetString()));
 }
 
 bool lldb_private::formatters::LibcxxStdUnorderedMapSyntheticFrontEnd::
