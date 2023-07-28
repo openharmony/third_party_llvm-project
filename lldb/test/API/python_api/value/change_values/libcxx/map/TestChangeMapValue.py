@@ -47,5 +47,7 @@ class LibcxxChangeValueTestCase(TestBase):
         self.assertTrue(pair0_second.IsValid(), "Got the SBValue for [0].second")
         result = pair0_second.SetValueFromCString("12345")
         self.assertTrue(result, "Setting val returned True.")
+        # OHOS_LOCAL
+        self.assertTrue(pair0_second.GetValueDidChange(), "LLDB noticed that value changed")
         result = pair0_second.GetValueAsUnsigned()
         self.assertTrue(result == 12345, "Got correct value (12345)")
