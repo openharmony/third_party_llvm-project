@@ -9,6 +9,9 @@ NCURSES_BUILD_PATH=$2
 NCURSES_INSTALL_PATH=$3
 PREBUILT_PATH=$4
 CLANG_VERSION=$5
+NCURSES_VERSION=$6
+
+SPECFILE="${NCURSES_SRC_DIR}/ncurses.spec"
 
 case $(uname -s) in
     Linux)
@@ -35,18 +38,22 @@ esac
 CC_PATH=${PREBUILT_PATH}/clang/ohos/${host_platform}-${host_cpu}/clang-${CLANG_VERSION}/bin/clang
 CXX_PATH=${PREBUILT_PATH}/clang/ohos/${host_platform}-${host_cpu}/clang-${CLANG_VERSION}/bin/clang++
 
-ncurses_package=${NCURSES_SRC_DIR}/ncurses-6.3.tar.gz
+ncurses_package=${NCURSES_SRC_DIR}/ncurses-${NCURSES_VERSION}.tar.gz
 if [ -e ${ncurses_package} ]; then
     tar -xvzf ${ncurses_package} --strip-components 1 -C ${NCURSES_SRC_DIR}
     cd ${NCURSES_SRC_DIR}
-    # apply patches in order
-    patch -Np1 < ncurses-urxvt.patch
-    patch -Np1 < ncurses-config.patch
-    patch -Np1 < ncurses-kbs.patch
-    patch -Np1 < ncurses-libs.patch
-    patch -Np1 < backport-CVE-2022-29458.patch
-    patch -Np1 < backport-0001-CVE-2023-29491-fix-configure-root-args-option.patch
-    patch -Np1 < backport-0002-CVE-2023-29491-env-access.patch
+
+    # Get the list of patch files for ncurses.spec
+    # The format in the ncurses.spec is as follows:
+    # Patch8:        ncurses-config.patch
+    # Patch9:        ncurses-libs.patch
+    # Patch11:       ncurses-urxvt.patch
+    patches=($(grep -E '^Patch[0-9]+:' "${SPECFILE}" | sed 's/^[^:]*: *//'))
+    # Apply patches in order
+    for patch in "${patches[@]}"
+    do
+        patch -Np1 < $patch
+    done
 
     if [ ! -b ${NCURSES_BUILD_PATH} ]; then
         mkdir -p ${NCURSES_BUILD_PATH}

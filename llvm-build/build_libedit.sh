@@ -11,6 +11,14 @@ NCURSES_PATH=$4
 PREBUILT_PATH=$5
 CLANG_VERSION=$6
 
+# Get version and date form libedit.spec (Compatible with Linux and Mac)
+# The format in the libedit.spec is as follows:
+# Version:	3.1
+# %global _date 20210910
+SPECFILE="${LIBEDIT_SRC_DIR}/libedit.spec"
+LIBEDIT_VERSION=$(grep -E '^Version:*' ${SPECFILE} | awk '{print $2}')
+DATE=$(grep -E '^%global _date' ${SPECFILE} | sed 's/^.*\(20[0-9]\{6\}\).*$/\1/')
+
 case $(uname -s) in
     Linux)
 
@@ -36,7 +44,7 @@ esac
 CC_PATH=${PREBUILT_PATH}/clang/ohos/${host_platform}-${host_cpu}/clang-${CLANG_VERSION}/bin/clang
 CXX_PATH=${PREBUILT_PATH}/clang/ohos/${host_platform}-${host_cpu}/clang-${CLANG_VERSION}/bin/clang++
 
-libedit_package=${LIBEDIT_SRC_DIR}/libedit-20210910-3.1.tar.gz
+libedit_package=${LIBEDIT_SRC_DIR}/libedit-${DATE}-${LIBEDIT_VERSION}.tar.gz
 if [ -e ${libedit_package} ]; then
     tar -xzvf ${libedit_package} --strip-components 1 -C ${LIBEDIT_SRC_DIR}
 

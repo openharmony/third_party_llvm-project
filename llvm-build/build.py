@@ -453,6 +453,19 @@ class BuildUtils(object):
     def get_mingw_python_dir(self):
         return self._mingw_python_dir
 
+    def get_ncurses_version(self):
+        ncurses_spec = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'ncurses', 'ncurses.spec')
+        with open(ncurses_spec, 'r') as file:
+            lines = file.readlines()
+
+        prog = re.compile(r'Version:\s*(\S+)')
+        for line in lines:
+            version_match = prog.match(line)
+            if version_match:
+                return version_match.group(1)
+
+        return None
+
 class LlvmCore(BuildUtils):
 
     def __init__(self, build_config):
@@ -547,11 +560,14 @@ class LlvmCore(BuildUtils):
             llvm_defines['LIBUNWIND_USE_COMPILER_RT'] = 'ON'
             llvm_defines['LLVM_BINUTILS_INCDIR'] = '/usr/include'
             llvm_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.so'
-            if self.build_config.build_ncurses:
-                libncurse = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libncurses.so.6.3')
-                libpanel = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libpanel.so.6.3')
-                libform = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libform.so.6.3')
-                ncurses_libs = ';'.join([libncurse, libpanel, libform])
+            ncurses_version = self.get_ncurses_version()
+            if self.build_config.build_ncurses and ncurses_version is not None:
+                ncurses_libs = []
+                prebuilts_dir = self.get_prebuilts_dir('ncurses')
+                for library in ['libncurses', 'libpanel', 'libform']:
+                    library_path = os.path.join(prebuilts_dir, 'lib', f'{library}.so.%s' % ncurses_version)
+                    ncurses_libs.append(library_path)
+                ncurses_libs = ';'.join(ncurses_libs)
                 llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
                 llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
 
@@ -1399,12 +1415,16 @@ class LlvmLibs(BuildUtils):
         cur_dir = os.getcwd()
         os.chdir(self.build_config.LLVM_BUILD_DIR)
         clang_version = self.build_config.CLANG_VERSION
-        args = ['./build_ncurses.sh', libncurses_src_dir, libncurses_build_path, libncurses_install_path, prebuilts_path, clang_version]
-        self.check_call(args)
-        os.chdir(cur_dir)
 
-        self.llvm_package.copy_ncurses_to_llvm(llvm_make)
-        self.llvm_package.copy_ncurses_to_llvm(llvm_install)
+        ncurses_version = self.get_ncurses_version()
+        if ncurses_version is not None:
+            args = ['./build_ncurses.sh', libncurses_src_dir, libncurses_build_path, libncurses_install_path,
+                    prebuilts_path, clang_version, ncurses_version]
+            self.check_call(args)
+            os.chdir(cur_dir)
+
+            self.llvm_package.copy_ncurses_to_llvm(llvm_make)
+            self.llvm_package.copy_ncurses_to_llvm(llvm_install)
 
     def build_libedit(self, llvm_make, llvm_install):
         self.logger().info('Building libedit')
