@@ -11,7 +11,8 @@
 #include "llvm/ExecutionEngine/Orc/Shared/OrcRTBridge.h"
 #include "llvm/Support/WindowsError.h"
 
-#if defined(LLVM_ON_UNIX) && !defined(__ANDROID__)
+// OHOS_LOCAL
+#if defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -174,14 +175,16 @@ InProcessMemoryMapper::~InProcessMemoryMapper() {
 SharedMemoryMapper::SharedMemoryMapper(ExecutorProcessControl &EPC,
                                        SymbolAddrs SAs, size_t PageSize)
     : EPC(EPC), SAs(SAs), PageSize(PageSize) {
-#if (!defined(LLVM_ON_UNIX) || defined(__ANDROID__)) && !defined(_WIN32)
+// OHOS_LOCAL
+#if (!defined(LLVM_ON_UNIX) || defined(__ANDROID__) || defined(__OHOS__)) && !defined(_WIN32)
   llvm_unreachable("SharedMemoryMapper is not supported on this platform yet");
 #endif
 }
 
 Expected<std::unique_ptr<SharedMemoryMapper>>
 SharedMemoryMapper::Create(ExecutorProcessControl &EPC, SymbolAddrs SAs) {
-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__)) || defined(_WIN32)
+// OHOS_LOCAL
+#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)) || defined(_WIN32)
   auto PageSize = sys::Process::getPageSize();
   if (!PageSize)
     return PageSize.takeError();
@@ -196,7 +199,8 @@ SharedMemoryMapper::Create(ExecutorProcessControl &EPC, SymbolAddrs SAs) {
 
 void SharedMemoryMapper::reserve(size_t NumBytes,
                                  OnReservedFunction OnReserved) {
-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__)) || defined(_WIN32)
+// OHOS_LOCAL
+#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)) || defined(_WIN32)
 
   EPC.callSPSWrapperAsync<
       rt::SPSExecutorSharedMemoryMapperServiceReserveSignature>(
@@ -344,7 +348,8 @@ void SharedMemoryMapper::deinitialize(
 
 void SharedMemoryMapper::release(ArrayRef<ExecutorAddr> Bases,
                                  OnReleasedFunction OnReleased) {
-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__)) || defined(_WIN32)
+// OHOS_LOCAL
+#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)) || defined(_WIN32)
   Error Err = Error::success();
 
   {
