@@ -12,7 +12,7 @@ LLDB（Low Lever Debugger）是新一代高性能调试器。当前Openharmony�
 # 2. LLDB工具获取
 **LLDB工具获取方式：**
 
-通过OpenHarmony的SDK获取，获取路径：[每日构建](http://ci.openharmony.cn/dailys/dailybuilds) 。
+通过OpenHarmony的SDK获取，获取路径：[每日构建](http://ci.openharmony.cn/workbench/cicd/dailybuild) 。
 
 LLDB工具在SDK中的路径：**\ohos-sdk\\\[system]\native\llvm。
 
@@ -1212,9 +1212,10 @@ PC寄存器会存储程序下一条要执行的指令，通过修改这个寄存
 
 ### 3.16.2 命令别名
 
-LLDB中的命令别名机制可以为常用命令构造别名。使用command alias <cmd-options> -- <alias-name> <cmd-name> [<options-for-aliased-command>]构造命令别名。
+LLDB中的命令别名机制可以为常用命令构造别名。使用`command alias <cmd-options> -- <alias-name> <cmd-name> [<options-for-aliased-command>]`构造命令别名。
 
 - 构造断点命令别名
+
   原始命令
   ```
   (lldb) breakpoint set --file hello.cpp --line 12
@@ -1452,9 +1453,9 @@ Process ... detached
 >
 > 如果源文件不再位于与生成程序时相同的位置（可能程序是在其他计算机上生成的），则需要告诉调试器如何在其本地文件路径而不是生成系统的文件路径中查找源，则需要使用`settings set target.source-map /buildbot/path /my/path`重新映射调试会话的源文件路径名。
 >
-> 其中“/buildbot/path”为原始代码编译时的路径，“/my/path”为当前调试机器上源代码路径。
+> 其中“/buildbot/path”为原始代码编译时的路径，“/my/path”为源代码当前所在路径。
 >
-> 例如：当要在另一台windows机器上调试此程序时，如果源码位置为“F:\Test\hello_world.cpp”，则命令为`settings set target.source-map "D:\demo" "F:\Test"`
+> 例如：当要在另一台windows机器上调试此程序时，如果构建时源码路径为“D:\demo\hello_world.cpp”，当前源码路径为“F:\Test\hello_world.cpp”，则命令为`settings set target.source-map "D:\demo" "F:\Test"`
 >
 > 如果使用的编译参数OHOS_STL=c++_shared，调试的设备是arm32位，则还需要上传libc++_shared.so到/system/lib目录下；如果调试的设备是aarch64位，则上传libc++_shared.so到/system/lib64目录；如果使用的编译参数OHOS_STL=c++_static，则无需上传libc++_shared.so。
 > 
