@@ -7,7 +7,7 @@
 // RUN:     --sysroot=%S/Inputs/ohos_native_tree/sysroot -fuse-ld=lld -march=armv7-a -mcpu=cortex-a7 -mfloat-abi=soft 2>&1 \
 // RUN:     | FileCheck -check-prefixes=CHECK,CHECK-ARM-A7-SOFT %s
 // CHECK: {{.*}}clang{{.*}}" "-cc1"
-// CHECK-NOT: "--mrelax-relocations"
+// CHECK: "--mrelax-relocations"
 // CHECK-NOT: "-munwind-tables"
 // CHECK: "-resource-dir" "[[RESOURCE_DIR:[^"]+]]"
 // CHECK: "-isysroot" "[[SYSROOT:[^"]+]]"
