@@ -11659,9 +11659,4 @@ def err_non_designated_init_used : Error<
 def err_cast_from_randomized_struct : Error<
   "casting from randomized structure pointer type %0 to %1">;
 
-// LoongArch-specific Diagnostics
-def err_loongarch_builtin_requires_la64 : Error<
-  "this builtin requires target: loongarch64">;
-def err_loongarch_builtin_requires_la32 : Error<
-  "this builtin requires target: loongarch32">;
 } // end of sema component.
