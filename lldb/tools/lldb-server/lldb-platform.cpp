@@ -47,6 +47,7 @@ using namespace llvm;
 static int g_debug = 0;
 static int g_verbose = 0;
 static int g_server = 0;
+static int g_timeout_sec = 300;
 
 static struct option g_long_options[] = {
     {"debug", no_argument, &g_debug, 1},
@@ -82,6 +83,15 @@ static void signal_handler(int signo) {
     llvm::errs() << "SIGHUP received, exiting lldb-server...\n";
     abort();
     break;
+  // OHOS_LOCAL begin
+  case SIGALRM:
+    llvm::errs() << llvm::formatv(
+        "In non-server mode with a timeout of {0}s. "
+        "SIGALRM received because of timeout, exiting lldb-server...\n",
+        g_timeout_sec);
+    exit(-1);
+    break;
+    // OHOS_LOCAL end
   }
 }
 #endif
@@ -146,6 +156,8 @@ int main_platform(int argc, char *argv[]) {
 #if !defined(_WIN32)
   signal(SIGPIPE, SIG_IGN);
   signal(SIGHUP, signal_handler);
+  // OHOS_LOCAL
+  signal(SIGALRM, signal_handler);
 #endif
   int long_option_index = 0;
   Status error;
@@ -318,11 +330,35 @@ int main_platform(int argc, char *argv[]) {
 
     const bool children_inherit_accept_socket = true;
     Connection *conn = nullptr;
+
+    // OHOS_LOCAL begin
+#if !defined(_WIN32)
+    char *lldb_server_listimeout = getenv("LLDB_SERVER_LISTIMEOUT");
+    if (!g_server && lldb_server_listimeout != nullptr) {
+      if (!llvm::to_integer(lldb_server_listimeout, g_timeout_sec) ||
+          g_timeout_sec <= 0) {
+        WithColor::error() << "Invalid environment variable: "
+                           << "LLDB_SERVER_LISTIMEOUT="
+                           << lldb_server_listimeout << "\n";
+        exit(0);
+      }
+      alarm(g_timeout_sec);
+    }
+#endif
+    // OHOS_LOCAL end
+
     error = acceptor_up->Accept(children_inherit_accept_socket, conn);
     if (error.Fail()) {
       WithColor::error() << error.AsCString() << '\n';
       exit(socket_error);
     }
+
+    // OHOS_LOCAL begin
+#if !defined(_WIN32)
+    alarm(0);
+#endif
+    // OHOS_LOCAL end
+
     printf("Connection established.\n");
     if (g_server) {
       // Collect child zombie processes.
