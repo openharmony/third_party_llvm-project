@@ -58,6 +58,7 @@ class BuildConfig():
         self.build_libedit = args.build_libedit
         self.build_lldb_static = args.build_lldb_static
         self.need_lldb_tools = self.need_lldb_server or self.build_lldb_static
+        self.build_libxml2 = args.build_libxml2
 
         self.discover_paths()
 
@@ -191,6 +192,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Build libedit tool for Linux, Mac x86-64 or M1')
+
+        parser.add_argument(
+            '--build-libxml2',
+            action='store_true',
+            default=False,
+            help='Build libxml2 tool')
 
     def parse_args(self):
 
@@ -466,6 +473,28 @@ class BuildUtils(object):
 
         return None
 
+    def get_libxml2_version(self):
+        version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'configure.ac')
+        if os.path.isfile(version_file):
+            with open(version_file, 'r') as file:
+                lines = file.readlines()
+                MAJOR_VERSION = ''
+                MINOR_VERSION = ''
+                MICRO_VERSION = ''
+                for line in lines:
+                    if "m4_define([MAJOR_VERSION]" in line:
+                        MAJOR_VERSION = re.findall(r'\d+', line)[1]
+                    elif "m4_define([MINOR_VERSION]" in line:
+                        MINOR_VERSION = re.findall(r'\d+', line)[1]
+                    elif "m4_define([MICRO_VERSION]" in line:
+                        MICRO_VERSION = re.findall(r'\d+', line)[1]
+
+                    if  MAJOR_VERSION != '' and MINOR_VERSION != '' and MICRO_VERSION != '' :
+                        return MAJOR_VERSION+'.'+MINOR_VERSION+'.'+MICRO_VERSION
+                return None
+
+        return None
+
 class LlvmCore(BuildUtils):
 
     def __init__(self, build_config):
@@ -537,6 +566,9 @@ class LlvmCore(BuildUtils):
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.0.dylib')
 
+            if self.build_config.build_libxml2:
+                llvm_defines['LIBXML2_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', 'libxml2.dylib')
+
 
     def llvm_compile_linux_defines(self,
                                    llvm_defines,
@@ -577,6 +609,10 @@ class LlvmCore(BuildUtils):
             if not build_instrumented and not no_lto and not debug_build:
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
 
+            libxml2_version = self.get_libxml2_version()
+            if self.build_config.build_libxml2:
+                llvm_defines['LIBXML2_LIBRARY'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.so.{libxml2_version}')
+
     def llvm_compile_llvm_defines(self, llvm_defines, llvm_root, cflags, ldflags):
         llvm_defines['LLVM_ENABLE_PROJECTS'] = 'clang;lld;clang-tools-extra;openmp;lldb'
         llvm_defines['LLVM_ENABLE_RUNTIMES'] = 'libunwind;libcxxabi;libcxx;compiler-rt'
@@ -616,6 +652,9 @@ class LlvmCore(BuildUtils):
             llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
             llvm_defines['LibEdit_INCLUDE_DIRS'] = os.path.join(self.get_prebuilts_dir('libedit'), 'include')
 
+        if self.build_config.build_libxml2:
+            llvm_defines['LLDB_ENABLE_LIBXML2'] = 'ON'
+            llvm_defines['LIBXML2_INCLUDE_DIR'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'include', 'libxml2')
 
     def llvm_compile(self,
                      build_name,
@@ -729,6 +768,11 @@ class LlvmCore(BuildUtils):
         windows_defines['CMAKE_FIND_ROOT_PATH_MODE_PROGRAM'] = 'NEVER'
         windows_defines['LLDB_ENABLE_LIBEDIT'] = 'OFF'
         windows_defines['LLDB_RELOCATABLE_PYTHON'] = 'OFF'
+
+        if self.build_config.build_libxml2:
+            windows_defines['LLDB_ENABLE_LIBXML2'] = 'ON'
+            windows_defines['LIBXML2_INCLUDE_DIR'] = os.path.join(self.get_prebuilts_dir('libxml2'), 'windows-x86_64', 'include', 'libxml2')
+            windows_defines['LIBXML2_LIBRARY'] = os.path.join(self.get_prebuilts_dir('libxml2'), 'windows-x86_64', 'lib', 'libxml2.dll.a')
 
     def llvm_compile_windows_flags(self,
                                    windows_defines,
@@ -1451,6 +1495,91 @@ class LlvmLibs(BuildUtils):
         self.llvm_package.copy_libedit_to_llvm(llvm_make)
         self.llvm_package.copy_libedit_to_llvm(llvm_install)
 
+    def build_libxml2_defines(self):
+        libxml2_defines = {}
+        libxml2_defines['LIBXML2_WITH_PYTHON'] = 'OFF'
+        libxml2_defines['LIBXML2_WITH_PROGRAMS'] = 'OFF'
+        libxml2_defines['LIBXML2_WITH_LZMA'] = 'OFF'
+        libxml2_defines['LIBXML2_WITH_ICONV'] = 'OFF'
+        libxml2_defines['LIBXML2_WITH_ZLIB'] = 'OFF'
+
+        return libxml2_defines
+
+    def build_libxml2(self, llvm_make, llvm_install):
+        self.logger().info('Building libxml2')
+
+        libxml2_defines = self.build_libxml2_defines()
+
+        libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2'))
+
+        libxml2_build_path = self.merge_out_path('libxml2')
+        libxml2_install_path = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform())
+        libxml2_defines['CMAKE_INSTALL_PREFIX'] = libxml2_install_path
+
+        self.rm_cmake_cache(libxml2_build_path)
+
+        self.invoke_cmake(libxml2_cmake_path,
+                         libxml2_build_path,
+                         libxml2_defines,
+                         env=dict(self.build_config.ORIG_ENV))
+
+        self.invoke_ninja(out_path=libxml2_build_path,
+                         env=dict(self.build_config.ORIG_ENV),
+                         target=None,
+                         install=True)
+
+        self.llvm_package.copy_libxml2_to_llvm(llvm_make)
+        self.llvm_package.copy_libxml2_to_llvm(llvm_install)
+
+    def build_libxml2_for_windows(self, windows64_install):
+        self.logger().info('Building libxml2 for windows')
+
+        windows_sysroot = self.merge_out_path('mingw', self.build_config.MINGW_TRIPLE)
+        windowstool_path = self.merge_out_path('llvm-install')
+        libxml2_build_path = self.merge_out_path('libxml2-windows-build')
+        libxml2_install_path = os.path.join(self.get_prebuilts_dir('libxml2'), 'windows-x86_64')
+
+        cflags = ['--target=x86_64-pc-windows-gnu']
+        cflags.extend(('-I', os.path.join(windows_sysroot, 'include')))
+
+        ldflags = ['-fuse-ld=lld',
+                  '--rtlib=compiler-rt']
+        ldflags.extend(('-L', os.path.join(windows_sysroot, 'lib')))
+
+        rcflags = []
+        rcflags.extend(('-I', os.path.join(windows_sysroot, 'include')))
+
+        libxml2_defines = self.build_libxml2_defines()
+
+        libxml2_defines['LIBXML2_WITH_TESTS'] = 'OFF'
+        libxml2_defines['CMAKE_C_COMPILER'] = os.path.join(windowstool_path, 'bin', 'clang')
+        libxml2_defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
+        libxml2_defines['CMAKE_SYSTEM_NAME'] = 'Windows'
+        libxml2_defines['CMAKE_SYSROOT'] = windows_sysroot
+        libxml2_defines['CMAKE_INSTALL_PREFIX'] = libxml2_install_path
+        libxml2_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(ldflags)
+        libxml2_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
+        libxml2_defines['CMAKE_MODULE_LINKER_FLAGS'] = ' '.join(ldflags)
+        libxml2_defines['CMAKE_RC_COMPILER'] = os.path.join(windowstool_path, 'bin', 'llvm-windres')
+        libxml2_defines['CMAKE_RC_FLAGS'] = ' '.join(rcflags)
+        libxml2_defines['XML_INCLUDEDIR'] = os.path.join(windows_sysroot, 'include')
+
+        libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2'))
+                
+        self.invoke_cmake(libxml2_cmake_path,
+                          libxml2_build_path,
+                          libxml2_defines,
+                          env=dict(self.build_config.ORIG_ENV))
+
+        self.invoke_ninja(libxml2_build_path,
+                          env=dict(self.build_config.ORIG_ENV),
+                          target=None,
+                          install=True)
+        
+        if not os.path.exists(os.path.join(windows64_install, 'bin')):
+            os.makedirs(os.path.join(windows64_install, 'bin'))
+        shutil.copyfile(os.path.join(libxml2_build_path, 'libxml2.dll'), os.path.join(windows64_install, 'bin', 'libxml2.dll'))
+
 
 class LlvmPackage(BuildUtils):
 
@@ -1702,7 +1831,7 @@ class LlvmPackage(BuildUtils):
             # Redefining necessary bin files for Windows.
             windows_forbidden_list_bin_files = ['clang-%s%s' % (vers_major, ext), 'scan-build%s' % ext,
                                            'scan-view%s' % ext]
-            windows_additional_bin_files = ['liblldb%s' % shlib_ext, 'libpython3.10%s' % shlib_ext]
+            windows_additional_bin_files = ['liblldb%s' % shlib_ext, 'libpython3.10%s' % shlib_ext, 'libxml2%s' % shlib_ext]
 
             new_necessary_bin_files = list(set(necessary_bin_files) - set(windows_forbidden_list_bin_files))
             new_necessary_bin_files.extend(windows_additional_bin_files)
@@ -1847,6 +1976,32 @@ class LlvmPackage(BuildUtils):
             st = os.stat(os.path.join(bin_dir, sh_filename))
             os.chmod(os.path.join(bin_dir, sh_filename), st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
 
+    def copy_libxml2_to_llvm(self, install_dir):
+        self.logger().info('LlvmPackage copy_libxml2_to_llvm install_dir is %s', install_dir)
+
+        libxml2_version = self.get_libxml2_version()
+        if self.host_is_darwin():
+            shlib_ext = '.dylib'
+        if self.host_is_linux():
+            shlib_ext = f'.so.{libxml2_version}'
+
+        libxml2_lib_path = self.merge_out_path('libxml2')
+        libxml2_src = os.path.join(libxml2_lib_path, 'libxml2%s' % shlib_ext)
+
+        lib_dst_path = os.path.join(install_dir, 'lib')
+
+        libxml2_dst = os.path.join(lib_dst_path, 'libxml2%s' % shlib_ext)
+
+        if not os.path.exists(lib_dst_path):
+            os.makedirs(lib_dst_path)
+
+        self.update_lib_id_link(libxml2_lib_path, libxml2_src)
+
+        # Clear historical library
+        if os.path.isfile(libxml2_dst):
+            os.remove(libxml2_dst)
+
+        self.check_copy_file(libxml2_src, lib_dst_path)
 
     # Packing Operation.
 
@@ -1975,6 +2130,10 @@ def main():
     if build_config.build_libedit:
         llvm_libs.build_libedit(llvm_make, llvm_install)
 
+    if build_config.build_libxml2:
+        build_utils.get_libxml2_version()
+        llvm_libs.build_libxml2(llvm_make, llvm_install)
+        
     if build_config.do_build and need_host:
         llvm_core.llvm_compile(
             build_config.build_name,
@@ -2001,6 +2160,9 @@ def main():
     if build_config.do_build and need_windows:
         mingw.main(build_config.VERSION)
         llvm_libs.build_runtimes_for_windows(build_config.enable_assertions)
+
+        if build_config.build_libxml2:
+            llvm_libs.build_libxml2_for_windows(windows64_install)
 
         if build_config.build_python:
             # Use just built LLVM and MinGW-w64 to cross-compile Python
