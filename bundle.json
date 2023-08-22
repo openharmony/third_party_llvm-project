@@ -1,0 +1,33 @@
+{
+    "name": "@ohos/llvm-project",
+    "description": "The LLVM Compiler Infrastructure",
+    "version": "3.1",
+    "license": "Apache License v2.0 with LLVM Exceptions",
+    "publishAs": "code-segment",
+    "segment": {
+        "destPath": "third_party/llvm-project"
+    },
+    "dirs": {},
+    "scripts": {},
+    "readmePath": {
+        "en": ""
+    },
+    "component": {
+        "name": "llvm-project",
+        "subsystem": "thirdparty",
+        "syscap": [],
+        "features": [],
+        "adapted_system_type": [ "standard", "small" ],
+        "rom": "",
+        "ram": "",
+        "deps": {
+            "components": [],
+            "third_party": []
+        },
+        "build": {
+            "sub_component": [],
+            "inner_kits": [],
+            "test": []
+        }
+    }
+}
