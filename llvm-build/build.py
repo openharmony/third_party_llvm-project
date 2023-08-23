@@ -455,14 +455,15 @@ class BuildUtils(object):
 
     def get_ncurses_version(self):
         ncurses_spec = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'ncurses', 'ncurses.spec')
-        with open(ncurses_spec, 'r') as file:
-            lines = file.readlines()
+        if os.path.exists(ncurses_spec):
+            with open(ncurses_spec, 'r') as file:
+                lines = file.readlines()
 
-        prog = re.compile(r'Version:\s*(\S+)')
-        for line in lines:
-            version_match = prog.match(line)
-            if version_match:
-                return version_match.group(1)
+            prog = re.compile(r'Version:\s*(\S+)')
+            for line in lines:
+                version_match = prog.match(line)
+                if version_match:
+                    return version_match.group(1)
 
         return None
 
@@ -609,7 +610,7 @@ class LlvmCore(BuildUtils):
         llvm_defines['SWIG_EXECUTABLE'] = self.find_program('swig')
         llvm_defines['LLDB_ENABLE_CURSES'] = 'OFF'
 
-        if self.build_config.build_ncurses:
+        if self.build_config.build_ncurses and self.get_ncurses_version() is not None:
             llvm_defines['LLDB_ENABLE_CURSES'] = 'ON'
             llvm_defines['CURSES_INCLUDE_DIRS'] = os.path.join(self.get_prebuilts_dir('ncurses'), 'include')
         if self.build_config.build_libedit:
