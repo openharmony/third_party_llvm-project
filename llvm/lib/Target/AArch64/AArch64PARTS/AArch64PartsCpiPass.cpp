@@ -56,6 +56,9 @@ private:
 
 }
 
+INITIALIZE_PASS(AArch64PartsCpiPass, "aarch64-parts-cpi-pass",
+                "AArch64 Parts Cpi", false, false)
+
 FunctionPass *llvm::createAArch64PartsCpiPass() {
     return new AArch64PartsCpiPass();
 }

@@ -49,6 +49,9 @@ public:
 };
 }
 
+INITIALIZE_PASS(AArch64PartsDpiPass, "aarch64-parts-dpi-pass",
+                "AArch64 Parts Dpi", false, false)
+
 FunctionPass *llvm::createPartsPassDpi() {
     return new AArch64PartsDpiPass();
 }

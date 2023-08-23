@@ -37,7 +37,6 @@ bool useDataPointerProtection();
 bool useDataFieldTag();
 bool useDataFieldProtection();
 PartsBeCfiType getBeCfiType();
-Pass *createPartsPluginPass();
 uint16_t getTypeIdFor(const Type *T);
 }
 }
