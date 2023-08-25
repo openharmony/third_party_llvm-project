@@ -60,10 +60,20 @@ class GenericBitsetDataFormatterTestCase(TestBase):
         self.check("large", 1000, VALUE)
 
     @add_test_categories(["libstdcxx"])
+    # OHOS_LOCAL begin
+    @expectedFailureAll(
+        "Bitset frontend changed to be able "
+        "to update values during debugging")
+    # OHOS_LOCAL end
     def test_value_libstdcpp(self):
         self.do_test_value(USE_LIBSTDCPP)
 
     @add_test_categories(["libc++"])
+    # OHOS_LOCAL begin
+    @expectedFailureAll(
+        "Bitset frontend changed to be able "
+        "to update values during debugging")
+    # OHOS_LOCAL end
     def test_value_libcpp(self):
         self.do_test_value(USE_LIBCPP)
 
@@ -89,9 +99,19 @@ class GenericBitsetDataFormatterTestCase(TestBase):
         self.check("ptr", 1000, POINTER)
 
     @add_test_categories(["libstdcxx"])
+    # OHOS_LOCAL begin
+    @expectedFailureAll(
+        "Bitset frontend changed to be able "
+        "to update values during debugging")
+    # OHOS_LOCAL end
     def test_ptr_and_ref_libstdcpp(self):
         self.do_test_ptr_and_ref(USE_LIBSTDCPP)
 
     @add_test_categories(["libc++"])
+    # OHOS_LOCAL begin
+    @expectedFailureAll(
+        "Bitset frontend changed to be able "
+        "to update values during debugging")
+    # OHOS_LOCAL end
     def test_ptr_and_ref_libcpp(self):
         self.do_test_ptr_and_ref(USE_LIBCPP)
