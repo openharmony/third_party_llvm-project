@@ -63,6 +63,7 @@ build.py options：
 --build-python          # build python (not using prebuilt one, currently effective for Windows)
 --build-ncurses         # build ncurses tool for linux, Mac x86-64 or M1
 --build-libedit         # build libedit tool for linux, Mac x86-64 or M1
+--build-libxml2         # build libxml2 tool for linux, windows, Mac x86_64 or M1
 --no-build              # optional, skip some targets
     windows
     libs
