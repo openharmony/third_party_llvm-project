@@ -42,7 +42,9 @@ namespace {
 class AArch64PartsDpiPass : public MachineFunctionPass, private AArch64PartsPassCommon {
 public:
     static char ID;
-    AArch64PartsDpiPass() : MachineFunctionPass(ID) {}
+    AArch64PartsDpiPass() : MachineFunctionPass(ID) {
+        initializeAArch64PartsDpiPassPass(*PassRegistry::getPassRegistry());
+    }
     StringRef getPassName() const override {return DEBUG_TYPE; }
     bool runOnMachineFunction(MachineFunction &) override;
     bool lowerDpiIntrinsics(MachineFunction &MF);
