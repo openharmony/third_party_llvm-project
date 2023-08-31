@@ -39,6 +39,7 @@ class BuildConfig():
         self.do_package = not args.skip_package
         self.build_name = args.build_name
         self.debug = args.debug
+        self.target_debug = args.target_debug
         self.strip = args.strip
         self.no_lto = args.no_lto
         self.build_instrumented = args.build_instrumented
@@ -109,6 +110,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Building Clang and LLVM Tools for Debugging (only affects stage2)')
+
+        parser.add_argument(
+            '--target-debug',
+            action='store_true',
+            default=False,
+            help='Building libraries, runtimes and lldb for the target for debugging')
 
         parser.add_argument(
             '--strip',
@@ -1052,6 +1059,8 @@ class LlvmLibs(BuildUtils):
             ldflags = []
             cflags = []
             self.logger().info('Build libs for %s', llvm_triple)
+            if self.build_config.target_debug:
+                defines['CMAKE_BUILD_TYPE'] = 'Debug'
             self.build_libs_defines(llvm_triple, defines, cc, cxx, ar, llvm_config, ldflags, cflags, extra_flags)
             if arch == 'mipsel':
                 ldflags.append('-Wl,-z,notext')
@@ -1114,7 +1123,6 @@ class LlvmLibs(BuildUtils):
         rt_cflags.append('-fno-omit-frame-pointer')
 
         rt_defines = defines.copy()
-        rt_defines.update(self.base_cmake_defines())
         rt_defines['OHOS'] = '1'
         rt_defines['LLVM_ENABLE_PER_TARGET_RUNTIME_DIR'] = 'ON'
         rt_defines['LLVM_TARGET_MULTILIB_SUFFIX'] = multilib_suffix
@@ -1138,7 +1146,6 @@ class LlvmLibs(BuildUtils):
         rt_defines['CMAKE_ASM_FLAGS'] = ' '.join(rt_cflags)
         rt_defines['CMAKE_C_FLAGS'] = ' '.join(rt_cflags)
         rt_defines['CMAKE_CXX_FLAGS'] = ' '.join(rt_cflags)
-        rt_defines['CMAKE_BUILD_TYPE'] = 'Release'
         rt_defines['CMAKE_INSTALL_PREFIX'] = llvm_install
         rt_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
         rt_defines['CMAKE_SYSTEM_NAME'] = 'OHOS'
@@ -1184,12 +1191,11 @@ class LlvmLibs(BuildUtils):
         crt_install = os.path.join(llvm_install, 'lib', 'clang', self.build_config.VERSION)
 
         crt_extra_flags = []
-        if not self.build_config.debug:
+        if not self.build_config.target_debug:
             # Remove absolute paths from compiler-rt debug info emitted with -gline-tables-only
             crt_extra_flags = ['-ffile-prefix-map=%s=.' % self.build_config.REPOROOT_DIR]
 
         crt_defines = defines.copy()
-        crt_defines.update(self.base_cmake_defines())
         crt_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(ldflags)
         crt_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
         crt_defines['CMAKE_MODULE_LINKER_FLAGS'] = ' '.join(ldflags)
@@ -1249,7 +1255,6 @@ class LlvmLibs(BuildUtils):
         libomp_cflags.append('-fPIC')
 
         libomp_defines = defines.copy()
-        libomp_defines.update(self.base_cmake_defines())
         libomp_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(ldflags)
         libomp_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
         libomp_defines['CMAKE_MODULE_LINKER_FLAGS'] = ' '.join(ldflags)
@@ -1300,7 +1305,6 @@ class LlvmLibs(BuildUtils):
         libz_cflags.append('-fPIC')
 
         libz_defines = defines.copy()
-        libz_defines.update(self.base_cmake_defines())
         libz_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(ldflags)
         libz_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
         libz_defines['CMAKE_MODULE_LINKER_FLAGS'] = ' '.join(ldflags)
@@ -1347,7 +1351,6 @@ class LlvmLibs(BuildUtils):
         lldb_ldflags.append('-static')
 
         lldb_defines = defines.copy()
-        lldb_defines.update(self.base_cmake_defines())
 
         lldb_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(lldb_ldflags)
         lldb_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(lldb_ldflags)
