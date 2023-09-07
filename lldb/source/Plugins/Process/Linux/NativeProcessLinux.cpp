@@ -248,7 +248,7 @@ NativeProcessLinux::Factory::Launch(ProcessLaunchInfo &launch_info,
 
   ProcessInstanceInfo Info;
   if (!Host::GetProcessInfo(pid, Info)) {
-    return llvm::make_error<StringError>("Cannot get process architecture",
+    return llvm::make_error<StringError>("Cannot get information of the process",
                                          llvm::inconvertibleErrorCode());
   }
 
@@ -277,7 +277,7 @@ NativeProcessLinux::Factory::Attach(
   // Retrieve the architecture for the running process.
   ProcessInstanceInfo Info;
   if (!Host::GetProcessInfo(pid, Info)) {
-    return llvm::make_error<StringError>("Cannot get process architecture",
+    return llvm::make_error<StringError>("Cannot get information of the process",
                                          llvm::inconvertibleErrorCode());
   }
 
