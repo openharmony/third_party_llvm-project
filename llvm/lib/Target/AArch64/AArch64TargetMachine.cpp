@@ -592,11 +592,6 @@ void AArch64PassConfig::addIRPasses() {
   if (TM->getTargetTriple().isOSWindows())
     addPass(createCFGuardCheckPass());
 
-  // OHOS_LOCAL begin
-  if (PARTS::useFeCfi())
-    addPass(PARTS::createPartsPluginPass());
-  // OHOS_LOCAL end
-
   if (TM->Options.JMCInstrument)
     addPass(createJMCInstrumenterPass());
 }

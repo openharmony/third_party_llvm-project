@@ -39,7 +39,9 @@ namespace {
 class AArch64PartsCpiPass : public MachineFunctionPass {
 public:
     static char ID;
-    AArch64PartsCpiPass() : MachineFunctionPass(ID) {}
+    AArch64PartsCpiPass() : MachineFunctionPass(ID) {
+        initializeAArch64PartsCpiPassPass(*PassRegistry::getPassRegistry());
+    }
     StringRef getPassName() const override {return DEBUG_TYPE; }
     bool doInitialization(Module &M) override;
     bool runOnMachineFunction(MachineFunction &) override;
@@ -55,6 +57,9 @@ private:
 };
 
 }
+
+INITIALIZE_PASS(AArch64PartsCpiPass, "aarch64-parts-cpi-pass",
+                "AArch64 Parts Cpi", false, false)
 
 FunctionPass *llvm::createAArch64PartsCpiPass() {
     return new AArch64PartsCpiPass();

@@ -7,54 +7,26 @@
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
-
-#include "AArch64.h"
-#include "AArch64Subtarget.h"
 #include "AArch64RegisterInfo.h"
 #include "llvm/ADT/Statistic.h"
-#include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
-#include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/Module.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/PARTS/Parts.h"
-
-#define DEBUG_TYPE "AArch64EarlyPartsCpiPass"
+#include "AArch64EarlyPartsCpiPass.h"
 
 STATISTIC(StatAutcall, DEBUG_TYPE ": inserted authenticate and branch instructions");
 
 using namespace llvm;
 using namespace llvm::PARTS;
 
-namespace {
-
-class AArch64EarlyPartsCpiPass : public MachineFunctionPass {
-public:
-    static char ID;
-    AArch64EarlyPartsCpiPass() : MachineFunctionPass(ID) {}
-    StringRef getPassName() const override { return DEBUG_TYPE; }
-    virtual bool doInitialization(Module &M) override;
-    bool runOnMachineFunction(MachineFunction &) override;
-private:
-    const AArch64Subtarget *STI = nullptr;
-    const AArch64InstrInfo *TII = nullptr;
-    inline bool handleInstruction(MachineFunction &MF, MachineBasicBlock &MBB, MachineBasicBlock::instr_iterator &MIi);
-    inline MachineInstr *findIndirectCallMachineInstr(MachineFunction &MF, MachineBasicBlock &MBB,
-        MachineInstr *MIptr);
-    void triggerCompilationErrorOrphanAUTCALL(MachineBasicBlock &MBB);
-    inline bool isIndirectCall(const MachineInstr &MI) const;
-    inline bool isPartsAUTCALLIntrinsic(unsigned Opcode);
-    inline const MCInstrDesc &getIndirectCallAuth(MachineInstr *MI_indcall);
-    inline void replaceBranchByAuthenticatedBranch(MachineBasicBlock &MBB, MachineInstr *MI_indcall, MachineInstr &MI);
-    inline void insertCOPYInstr(MachineBasicBlock &MBB, MachineInstr *MI_indcall, MachineInstr &MI);
-};
-}
+INITIALIZE_PASS(AArch64EarlyPartsCpiPass, "aarch64-early-parts-cpi-pass",
+                "AArch64 Early Parts Cpi", false, false)
 
 FunctionPass *llvm::createAArch64EarlyPartsCpiPass() {
     return new AArch64EarlyPartsCpiPass();
@@ -90,13 +62,19 @@ inline bool AArch64EarlyPartsCpiPass::handleInstruction(MachineFunction &MF, Mac
         return false;
     }
     auto MIptr = &*MIi;
-    MachineInstr *MI_indcall = findIndirectCallMachineInstr(MF, MBB, MIptr);
-    if (MI_indcall == nullptr) {
+    SmallVector<MachineInstr*> IndCallVec;
+    findIndirectCallMachineInstr(MF, MBB, MIptr, IndCallVec);
+    if (IndCallVec.empty()) {
         outs() << "MI_indcall is NULL!!!\n";
         triggerCompilationErrorOrphanAUTCALL(MBB);
     }
     auto &MI = *MIi--;
-    replaceBranchByAuthenticatedBranch(MBB, MI_indcall, MI);
+    for (auto &MI_indcall : IndCallVec) {
+        replaceBranchByAuthenticatedBranch(MBB, MI_indcall, MI);
+    }
+    // insert a copy instruction, same dest register as MI, keep subsequent instructions do not need to modified
+    insertCOPYInstr(MBB, &MI, MI);
+    MI.removeFromParent();
     ++StatAutcall;
     return true;
 }
@@ -121,21 +99,63 @@ inline const MCInstrDesc& AArch64EarlyPartsCpiPass::getIndirectCallAuth(MachineI
     return TII->get(AArch64::TCRETURNriAA);
 }
 
-inline MachineInstr* AArch64EarlyPartsCpiPass::findIndirectCallMachineInstr(MachineFunction &MF,
-    MachineBasicBlock &MBB, MachineInstr *MIptr) {
+inline bool AArch64EarlyPartsCpiPass::handlePhi(MachineFunction &MF, MachineInstr *MIptr, unsigned AutCall) {
+    MachineRegisterInfo *MRI = &MF.getRegInfo();
+    MachineInstr *PhiMi = MRI->getVRegDef(MIptr->getOperand(0).getReg());
+    if (!PhiMi->isPHI()) {
+        return false;
+    }
+    for (unsigned i = 1, e = PhiMi->getNumOperands(); i < e; i += 2) {
+        MachineOperand &Opnd = PhiMi->getOperand(i);
+        // An incomming value of phi is the return value of autcall
+        if (Opnd.getReg() == AutCall) {
+            return true;
+        }
+        // An incomming value of phi is a copy of autcall return value
+        MachineInstr *CopyMi = MRI->getVRegDef(Opnd.getReg());
+        if (CopyMi->isCopy() && (CopyMi->getOperand(1).getReg() == AutCall)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+inline void AArch64EarlyPartsCpiPass::findIndirectCallMachineInstr(MachineFunction &MF,
+    MachineBasicBlock &MBB, MachineInstr *MIptr, SmallVector<MachineInstr*> &IndCallVec) {
     unsigned AUTCALLinstr_oper0 = MIptr->getOperand(0).getReg();
     unsigned BLRinstr_oper0 = 0;
-    for (auto &MBB: MF) {
+    MachineRegisterInfo *MRI = &MF.getRegInfo();
+    for (auto &MBB : MF) {
         for (auto MIi = MBB.instr_begin(), MIie = MBB.instr_end(); MIi != MIie; ++MIi) {
             if (isIndirectCall(*MIi)) {
                 BLRinstr_oper0 = MIi->getOperand(0).getReg();
                 if (AUTCALLinstr_oper0 == BLRinstr_oper0) {
-                    return  &*MIi;
+                    IndCallVec.push_back(&*MIi);
+                    continue;
+                }
+                MachineInstr *CopyMi = MRI->getVRegDef(BLRinstr_oper0);
+                if (CopyMi->isCopy() && (CopyMi->getOperand(1).getReg() == AUTCALLinstr_oper0)) {
+                    IndCallVec.push_back(&*MIi);
+                    continue;
+                }
+                if (handlePhi(MF, &*MIi, AUTCALLinstr_oper0)) {
+                    IndCallVec.push_back(&*MIi);
+                    continue;
+                }
+            } else if (isIndirectAutCall(*MIi)) {
+                BLRinstr_oper0 = MIi->getOperand(0).getReg();
+                if (AUTCALLinstr_oper0 == BLRinstr_oper0) {
+                    IndCallVec.push_back(&*MIi);
+                    continue;
+                }
+                if (handlePhi(MF, &*MIi, AUTCALLinstr_oper0)) {
+                    IndCallVec.push_back(&*MIi);
+                    continue;
                 }
             }
         }
     }
-    return nullptr;
+    return;
 }
 
 inline bool AArch64EarlyPartsCpiPass::isIndirectCall(const MachineInstr &MI) const {
@@ -147,25 +167,58 @@ inline bool AArch64EarlyPartsCpiPass::isIndirectCall(const MachineInstr &MI) con
     return false;
 }
 
+inline bool AArch64EarlyPartsCpiPass::isIndirectAutCall(const MachineInstr &MI) const {
+    switch (MI.getOpcode()) {
+        case AArch64::BLRAA: // Normal indirect call
+        case AArch64::TCRETURNriAA: // Indirect tail call
+            return true;
+    }
+    return false;
+}
+
 void AArch64EarlyPartsCpiPass::triggerCompilationErrorOrphanAUTCALL(MachineBasicBlock &MBB) {
     LLVM_DEBUG(MBB.dump());
     llvm_unreachable("failed to find BLR for AUTCALL");
 }
 
+inline void AArch64EarlyPartsCpiPass::addPhiForModifier(MachineInstr *Indirect, Register *ModReg) {
+    MachineRegisterInfo *MRI = &Indirect->getParent()->getParent()->getRegInfo();
+    MachineInstr *PhiMi = MRI->getVRegDef(Indirect->getOperand(0).getReg());
+    if (!PhiMi->isPHI()) {
+        return;
+    }
+    *ModReg = MRI->createVirtualRegister(&AArch64::GPR64spRegClass);
+    auto BMI = BuildMI(*PhiMi->getParent(), *PhiMi, PhiMi->getDebugLoc(), TII->get(AArch64::PHI));
+    BMI.addDef(*ModReg);
+    for (unsigned i = 1, e = PhiMi->getNumOperands(); i < e; i += 2) {
+        MachineOperand &Opnd = PhiMi->getOperand(i);
+        MachineInstr *CopyMi = MRI->getVRegDef(Opnd.getReg());
+        MachineInstr *AutCall = CopyMi->isCopy() ? MRI->getVRegDef(CopyMi->getOperand(1).getReg()) : CopyMi;
+        BMI.addReg(AutCall->getOperand(2).getReg());
+        BMI.addMBB(AutCall->getParent());
+    }
+    return;
+}
+
 inline void AArch64EarlyPartsCpiPass::replaceBranchByAuthenticatedBranch(MachineBasicBlock &MBB,
     MachineInstr *MI_indcall, MachineInstr &MI) {
-    auto modOperand = MI.getOperand(2);
-    insertCOPYInstr(MBB, MI_indcall, MI);
-    auto BMI = BuildMI(MBB, *MI_indcall, MI_indcall->getDebugLoc(), getIndirectCallAuth(MI_indcall));
+
+    if (isIndirectAutCall(*MI_indcall)) {
+        return;
+    }
+    Register ModReg = MI.getOperand(2).getReg();
+
+    addPhiForModifier(MI_indcall, &ModReg);
+
+    auto BMI = BuildMI(*MI_indcall->getParent(), *MI_indcall, MI_indcall->getDebugLoc(), getIndirectCallAuth(MI_indcall));
     BMI.addUse(MI_indcall->getOperand(0).getReg());
     if (MI_indcall->getOpcode() == AArch64::TCRETURNri) {
         BMI.add(MI_indcall->getOperand(1)); // Copy FPDiff from original tail call pseudo instruction
     }
-    BMI.add(modOperand);
+    BMI.addUse(ModReg);
     BMI.copyImplicitOps(*MI_indcall);
 
     MI_indcall->removeFromParent();
-    MI.removeFromParent();
 }
 inline void AArch64EarlyPartsCpiPass::insertCOPYInstr(MachineBasicBlock &MBB, MachineInstr *MI_indcall,
     MachineInstr &MI) {

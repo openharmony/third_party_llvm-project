@@ -106,6 +106,11 @@ void initializeLDTLSCleanupPass(PassRegistry&);
 void initializeSVEIntrinsicOptsPass(PassRegistry&);
 void initializeAArch64StackTaggingPass(PassRegistry&);
 void initializeAArch64StackTaggingPreRAPass(PassRegistry&);
+// OHOS_LOCAL begin
+void initializeAArch64EarlyPartsCpiPassPass(PassRegistry&);
+void initializeAArch64PartsDpiPassPass(PassRegistry&);
+void initializeAArch64PartsCpiPassPass(PassRegistry&);
+// OHOS_LOCAL end
 } // end namespace llvm
 
 #endif
