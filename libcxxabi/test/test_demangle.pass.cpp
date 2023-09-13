@@ -30114,9 +30114,6 @@ const char* cases[][2] =
      " std::allocator<char>>::basic_string()"},
     {"_ZN1SB8ctor_tagC2Ev", "S[abi:ctor_tag]::S()"},
     {"_ZN1SB8ctor_tagD2Ev", "S[abi:ctor_tag]::~S()"},
-
-    // clang builtin type transform
-    {"_Z2f5IiEvu7__decayIT_E", "void f5<int>(__decay(int))"},
 };
 
 const unsigned N = sizeof(cases) / sizeof(cases[0]);
