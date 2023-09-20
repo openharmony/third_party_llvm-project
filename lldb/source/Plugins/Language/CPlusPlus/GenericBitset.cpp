@@ -85,8 +85,13 @@ bool GenericBitsetFrontEnd::Update() {
 
   size_t size = 0;
 
+  // OHOS_LOCAL begin
+  const size_t bit_in_byte_cnt = 8;
+  const size_t sizeof_sizet_in_bits = sizeof(size_t) * bit_in_byte_cnt;
+
   if (auto arg = m_backend.GetCompilerType().GetIntegralTemplateArgument(0))
-    size = arg->value.getLimitedValue();
+    size = (arg->value.getLimitedValue() + sizeof_sizet_in_bits - 1) / sizeof_sizet_in_bits;
+  // OHOS_LOCAL end
 
   m_elements.assign(size, ValueObjectSP());
   m_first = m_backend.GetChildMemberWithName(GetDataContainerMemberName(), true)
@@ -102,32 +107,23 @@ ValueObjectSP GenericBitsetFrontEnd::GetChildAtIndex(size_t idx) {
     return m_elements[idx];
 
   ExecutionContext ctx = m_backend.GetExecutionContextRef().Lock(false);
-  CompilerType type;
   ValueObjectSP chunk;
   // For small bitsets __first_ is not an array, but a plain size_t.
-  if (m_first->GetCompilerType().IsArrayType(&type)) {
-    llvm::Optional<uint64_t> bit_size =
-        type.GetBitSize(ctx.GetBestExecutionContextScope());
-    if (!bit_size || *bit_size == 0)
-      return {};
-    chunk = m_first->GetChildAtIndex(idx / *bit_size, true);
+  // OHOS_LOCAL begin
+  if (m_first->GetCompilerType().IsArrayType(nullptr)) {
+    chunk = m_first->GetChildAtIndex(idx, true);
+  // OHOS_LOCAL end
   } else {
-    type = m_first->GetCompilerType();
     chunk = m_first->GetSP();
   }
-  if (!type || !chunk)
+  // OHOS_LOCAL begin
+  if (!chunk)
     return {};
 
-  llvm::Optional<uint64_t> bit_size =
-      type.GetBitSize(ctx.GetBestExecutionContextScope());
-  if (!bit_size || *bit_size == 0)
-    return {};
-  size_t chunk_idx = idx % *bit_size;
-  uint8_t value = !!(chunk->GetValueAsUnsigned(0) & (uint64_t(1) << chunk_idx));
-  DataExtractor data(&value, sizeof(value), m_byte_order, m_byte_size);
-
-  m_elements[idx] = CreateValueObjectFromData(llvm::formatv("[{0}]", idx).str(),
-                                              data, ctx, m_bool_type);
+  StreamString name;
+  name.Printf("[%" PRIu64 "]", (uint64_t)idx);
+  m_elements[idx] = chunk->Clone(ConstString(name.GetString()));
+  // OHOS_LOCAL end
 
   return m_elements[idx];
 }
