@@ -60,6 +60,7 @@ class BuildConfig():
         self.build_lldb_static = args.build_lldb_static
         self.need_lldb_tools = self.need_lldb_server or self.build_lldb_static
         self.build_libxml2 = args.build_libxml2
+        self.lldb_timeout = args.lldb_timeout
 
         self.discover_paths()
 
@@ -205,6 +206,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Build libxml2 tool')
+
+        parser.add_argument(
+            '--lldb-timeout',
+            action='store_true',
+            default=False,
+            help='Automatically exit when timeout (currently effective for lldb-server)')
 
     def parse_args(self):
 
@@ -1386,6 +1393,9 @@ class LlvmLibs(BuildUtils):
         if self.build_config.build_lldb_static and llvm_triple in ['aarch64-linux-ohos', 'arm-linux-ohos']:
             lldb_defines['LIBLLDB_BUILD_STATIC'] = 'ON'
             lldb_target.append('lldb')
+
+        if self.build_config.lldb_timeout:
+            lldb_defines['LLDB_ENABLE_TIMEOUT'] = 'True'
 
         lldb_cmake_path = os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm')
 

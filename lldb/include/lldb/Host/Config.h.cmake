@@ -49,6 +49,11 @@
 
 #cmakedefine01 LLDB_EMBED_PYTHON_HOME
 
+// OHOS_LOCAL begin
+/* Define to 1 If the tool timeout automatic exit option is enabled. */
+#cmakedefine01 LLDB_ENABLE_TIMEOUT
+// OHOS_LOCAL end
+
 #cmakedefine LLDB_PYTHON_HOME R"(${LLDB_PYTHON_HOME})"
 
 #define LLDB_LIBDIR_SUFFIX "${LLVM_LIBDIR_SUFFIX}"
