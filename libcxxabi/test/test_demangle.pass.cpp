@@ -30161,6 +30161,15 @@ const char* cases[][2] =
      " std::allocator<char>>::basic_string()"},
     {"_ZN1SB8ctor_tagC2Ev", "S[abi:ctor_tag]::S()"},
     {"_ZN1SB8ctor_tagD2Ev", "S[abi:ctor_tag]::~S()"},
+
+    // clang builtin type transform
+    {"_Z2f5IiEvu22__add_lvalue_referenceIT_E", "void f5<int>(__add_lvalue_reference(int))"},
+    {"_Z2f5IiEvu13__add_pointerIT_E", "void f5<int>(__add_pointer(int))"},
+    {"_Z2f5IiEvu7__decayIT_E", "void f5<int>(__decay(int))"},
+    {"_Z2f5IjEvu13__make_signedIT_E", "void f5<unsigned int>(__make_signed(unsigned int))"},
+    {"_Z2f5IKiEvu14__remove_constIT_E", "void f5<int const>(__remove_const(int const))"},
+    {"_Z2f5IPiEvu16__remove_pointerIT_E", "void f5<int*>(__remove_pointer(int*))"},
+    {"_Z2f5IiEvu14__remove_cvrefIT_E", "void f5<int>(__remove_cvref(int))"},
 };
 
 const unsigned N = sizeof(cases) / sizeof(cases[0]);
