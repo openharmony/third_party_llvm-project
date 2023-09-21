@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_LIBC_SRC_SUPPORT_RYU_LONG_DOUBLE_CONSTANTS_H
-#define LLVM_LIBC_SRC_SUPPORT_RYU_LONG_DOUBLE_CONSTANTS_H
+#ifndef LLVM_LIBC_SRC___SUPPORT_RYU_LONG_DOUBLE_CONSTANTS_H
+#define LLVM_LIBC_SRC___SUPPORT_RYU_LONG_DOUBLE_CONSTANTS_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -119923,4 +119923,4 @@ constexpr uint64_t POW10_SPLIT_2[][5] = {
     {0u, 0u, 0u, 16717361816799281152u, 3479003u},
 };
 
-#endif // LLVM_LIBC_SRC_SUPPORT_RYU_LONG_DOUBLE_CONSTANTS_H
+#endif // LLVM_LIBC_SRC___SUPPORT_RYU_LONG_DOUBLE_CONSTANTS_H
