@@ -451,7 +451,9 @@ static bool shouldRewriteFunction(Function &F) {
     const auto &FunctionGCName = F.getGC();
     const StringRef StatepointExampleName("statepoint-example");
     const StringRef CoreCLRName("coreclr");
+    const StringRef ArkName("ark"); // OHOS_LOCAL
     return (StatepointExampleName == FunctionGCName) ||
+           (ArkName == FunctionGCName) || // OHOS_LOCAL
            (CoreCLRName == FunctionGCName);
   } else
     return false;

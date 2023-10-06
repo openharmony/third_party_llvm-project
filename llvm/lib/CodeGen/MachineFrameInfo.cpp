@@ -236,6 +236,10 @@ void MachineFrameInfo::print(const MachineFunction &MF, raw_ostream &OS) const{
     else
       OS << "size=" << SO.Size;
     OS << ", align=" << SO.Alignment.value();
+    // OHOS_LOCAL begin
+    if (SO.isArkSpillSlot)
+      OS << ", arkSpillObject";
+    // OHOS_LOCAL end
 
     if (i < NumFixedObjects)
       OS << ", fixed";

@@ -78,6 +78,14 @@ cl::opt<unsigned> MaxRegistersForGCPointers(
     "max-registers-for-gc-values", cl::Hidden, cl::init(0),
     cl::desc("Max number of VRegs allowed to pass GC pointer meta args in"));
 
+// OHOS_LOCAL begin
+// Useful when gc managed references are 32-bit wide but runtime supports only
+// 64-bit slots
+cl::opt<unsigned> SpillSlotMinSize("spill-slot-min-size-bytes", cl::Hidden,
+                                   cl::init(1),
+                                   cl::desc("Minimum size of a spill slot"));
+// OHOS_LOCAL end
+
 typedef FunctionLoweringInfo::StatepointRelocationRecord RecordType;
 
 static void pushStackMapConstant(SmallVectorImpl<SDValue>& Ops,
@@ -414,8 +422,10 @@ spillIncomingStatepointValue(SDValue Incoming, SDValue Chain,
     // OHOS_LOCAL begin
     int Index;
     if (!AssignedFI.has_value()) {
-      Loc = Builder.StatepointLowering.allocateStackSlot(Incoming.getValueType(),
-                                                        Builder);
+      auto VT = Incoming.getValueType();
+      if (SpillSlotMinSize * 8 > VT.getSizeInBits())
+        VT = EVT{MVT::getIntegerVT(SpillSlotMinSize * 8)};
+      Loc = Builder.StatepointLowering.allocateStackSlot(VT, Builder);
       Index = cast<FrameIndexSDNode>(Loc)->getIndex();
     } else {
       Index = AssignedFI.value();
@@ -424,16 +434,14 @@ spillIncomingStatepointValue(SDValue Incoming, SDValue Chain,
     // We use TargetFrameIndex so that isel will not select it into LEA
     Loc = Builder.DAG.getTargetFrameIndex(Index, Builder.getFrameIndexTy());
 
-    // Right now we always allocate spill slots that are of the same
-    // size as the value we're about to spill (the size of spillee can
-    // vary since we spill vectors of pointers too).  At some point we
-    // can consider allowing spills of smaller values to larger slots
-    // (i.e. change the '==' in the assert below to a '>=').
+    // OHOS_LOCAL begin
     MachineFrameInfo &MFI = Builder.DAG.getMachineFunction().getFrameInfo();
-    assert((MFI.getObjectSize(Index) * 8) ==
+    // We allow spills of smaller values to larger slots
+    assert((MFI.getObjectSize(Index) * 8) >=
                (-8 & (7 + // Round up modulo 8.
                       (int64_t)Incoming.getValueSizeInBits())) &&
            "Bad spill:  stack slot does not match!");
+    // OHOS_LOCAL end
 
     // Note: Using the alignment of the spill slot (rather than the abi or
     // preferred alignment) is required for correctness when dealing with spill
@@ -593,6 +601,8 @@ tryAssignStackSlots(SelectionDAGBuilder &Builder, const GCStatepointInst *Inst) 
   for (unsigned I = SL.getArkSpillsCount(); I < AvailableArkSpills; ++I) {
     constexpr bool RequireArkSpill = true;
     auto FrameIndexTy = Builder.getFrameIndexTy();
+    if (SpillSlotMinSize * 8 > FrameIndexTy.getSizeInBits())
+      FrameIndexTy = MVT::getIntegerVT(SpillSlotMinSize * 8);
     auto Loc = SL.allocateStackSlot(FrameIndexTy, Builder, RequireArkSpill);
     int FI = cast<FrameIndexSDNode>(Loc)->getIndex();
     MFI.setObjectOffset(FI, MF.getArkSpillOffset(I));
