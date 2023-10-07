@@ -581,8 +581,9 @@ class LlvmCore(BuildUtils):
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.0.dylib')
 
-            if self.build_config.build_libxml2:
-                llvm_defines['LIBXML2_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', 'libxml2.dylib')
+            libxml2_version = self.get_libxml2_version()
+            if self.build_config.build_libxml2 and libxml2_version is not None:
+                llvm_defines['LIBXML2_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.{libxml2_version}.dylib')
 
 
     def llvm_compile_linux_defines(self,
@@ -625,7 +626,7 @@ class LlvmCore(BuildUtils):
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
 
             libxml2_version = self.get_libxml2_version()
-            if self.build_config.build_libxml2:
+            if self.build_config.build_libxml2 and libxml2_version is not None:
                 llvm_defines['LIBXML2_LIBRARY'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.so.{libxml2_version}')
 
     def llvm_compile_llvm_defines(self, llvm_defines, llvm_root, cflags, ldflags):
@@ -1996,28 +1997,29 @@ class LlvmPackage(BuildUtils):
         self.logger().info('LlvmPackage copy_libxml2_to_llvm install_dir is %s', install_dir)
 
         libxml2_version = self.get_libxml2_version()
-        if self.host_is_darwin():
-            shlib_ext = '.dylib'
-        if self.host_is_linux():
-            shlib_ext = f'.so.{libxml2_version}'
+        if libxml2_version is not None:
+            if self.host_is_darwin():
+                shlib_ext = f'.{libxml2_version}.dylib'
+            if self.host_is_linux():
+                shlib_ext = f'.so.{libxml2_version}'
 
-        libxml2_lib_path = self.merge_out_path('libxml2')
-        libxml2_src = os.path.join(libxml2_lib_path, 'libxml2%s' % shlib_ext)
+            libxml2_lib_path = self.merge_out_path('libxml2')
+            libxml2_src = os.path.join(libxml2_lib_path, 'libxml2%s' % shlib_ext)
 
-        lib_dst_path = os.path.join(install_dir, 'lib')
+            lib_dst_path = os.path.join(install_dir, 'lib')
 
-        libxml2_dst = os.path.join(lib_dst_path, 'libxml2%s' % shlib_ext)
+            libxml2_dst = os.path.join(lib_dst_path, 'libxml2%s' % shlib_ext)
 
-        if not os.path.exists(lib_dst_path):
-            os.makedirs(lib_dst_path)
+            if not os.path.exists(lib_dst_path):
+                os.makedirs(lib_dst_path)
 
-        self.update_lib_id_link(libxml2_lib_path, libxml2_src)
+            self.update_lib_id_link(libxml2_lib_path, libxml2_src)
 
-        # Clear historical library
-        if os.path.isfile(libxml2_dst):
-            os.remove(libxml2_dst)
+            # Clear historical library
+            if os.path.isfile(libxml2_dst):
+                os.remove(libxml2_dst)
 
-        self.check_copy_file(libxml2_src, lib_dst_path)
+            self.check_copy_file(libxml2_src, lib_dst_path)
 
     # Packing Operation.
 
