@@ -36,7 +36,6 @@ def main():
                 '-pie',
                 '-Wl,--build-id=sha1',
                 '-Wl,-z,relro,-z,now',
-                '-Wl,--dynamic-linker=/lib/ld-musl-aarch64.so.1',
               ]
 
     if build_config.strip:
@@ -58,11 +57,16 @@ def main():
     llvm_defines['LLVM_TARGET_ARCH'] = 'AArch64'
     llvm_defines['LLVM_DEFAULT_TARGET_TRIPLE'] = llvm_triple
     llvm_defines['LLVM_BUILD_LLVM_DYLIB'] = 'ON'
-    llvm_defines['LLVM_LINK_LLVM_DYLIB'] = 'ON'
-    llvm_defines['LLVM_ENABLE_PROJECTS'] = 'clang;lld'
+    llvm_defines['LLVM_ENABLE_FFI'] = 'OFF'
+    llvm_defines['LLVM_ENABLE_TERMINFO'] = 'OFF'
+    llvm_defines['LLVM_INCLUDE_BENCHMARKS'] = 'OFF'
+    llvm_defines['LLVM_INCLUDE_EXAMPLES'] = 'OFF'
+    llvm_defines['LLVM_INCLUDE_TESTS'] = 'OFF'
+    llvm_defines['LLVM_BUILD_TOOLS'] = 'ON'
+    llvm_defines['LLVM_ENABLE_ZLIB'] = 'OFF'
+    llvm_defines['LLVM_DISTRIBUTION_COMPONENTS'] = 'cmake-exports;llvm-headers;LLVM'
     llvm_defines['LLVM_CONFIG_PATH'] = os.path.join(llvm_root, 'bin', 'llvm-config')
     llvm_defines['LLVM_TABLEGEN'] = os.path.join(llvm_root, 'bin', 'llvm-tblgen')
-    llvm_defines['CLANG_TABLEGEN'] = build_utils.merge_out_path('llvm_make', 'bin', 'clang-tblgen')
     llvm_defines['CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN'] = llvm_root
     llvm_defines['CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN'] = llvm_root
     llvm_defines['CMAKE_ASM_COMPILER_EXTERNAL_TOOLCHAIN'] = llvm_root
@@ -105,7 +109,7 @@ def main():
 
     build_utils.invoke_cmake(llvm_project_path, llvm_path, llvm_defines, env=env)
 
-    build_utils.invoke_ninja(out_path=llvm_path, env=env, target=['clang', 'lld'], install=True)
+    build_utils.invoke_ninja(out_path=llvm_path, env=env, target=None, install=True)
 
 
 if __name__ == '__main__':
