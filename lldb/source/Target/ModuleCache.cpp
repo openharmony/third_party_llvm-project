@@ -15,6 +15,7 @@
 #include "lldb/Host/LockFile.h"
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/FileUtilities.h"
 
@@ -306,6 +307,7 @@ Status ModuleCache::GetAndPut(const FileSpec &root_dir_spec,
                               const SymfileDownloader &symfile_downloader,
                               lldb::ModuleSP &cached_module_sp,
                               bool *did_create_ptr) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_MODULES);    // OHOS_LOCAL
   const auto module_spec_dir =
       GetModuleDirectory(root_dir_spec, module_spec.GetUUID());
   auto error = MakeDirectory(module_spec_dir);

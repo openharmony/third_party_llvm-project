@@ -32,6 +32,7 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/RegisterValue.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 #include "lldb/lldb-enumerations.h"
 
@@ -297,6 +298,7 @@ Block *StackFrame::GetFrameBlock() {
 // one will ever have to look things up manually.
 const SymbolContext &
 StackFrame::GetSymbolContext(SymbolContextItem resolve_scope) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_THREAD);   // OHOS_LOCAL
   std::lock_guard<std::recursive_mutex> guard(m_mutex);
   // Copy our internal symbol context into "sc".
   if ((m_flags.Get() & resolve_scope) != resolve_scope) {
@@ -421,6 +423,7 @@ StackFrame::GetSymbolContext(SymbolContextItem resolve_scope) {
 }
 
 VariableList *StackFrame::GetVariableList(bool get_file_globals) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_THREAD);   // OHOS_LOCAL
   std::lock_guard<std::recursive_mutex> guard(m_mutex);
   if (m_flags.IsClear(RESOLVED_VARIABLES)) {
     m_flags.Set(RESOLVED_VARIABLES);

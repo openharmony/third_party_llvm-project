@@ -61,6 +61,7 @@ class BuildConfig():
         self.need_lldb_tools = self.need_lldb_server or self.build_lldb_static
         self.build_libxml2 = args.build_libxml2
         self.lldb_timeout = args.lldb_timeout
+        self.enable_monitoring = args.enable_monitoring
 
         self.discover_paths()
 
@@ -212,6 +213,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Automatically exit when timeout (currently effective for lldb-server)')
+        
+        parser.add_argument(
+            '--enable-monitoring',
+            action='store_true',
+            default=False,
+            help='Enable lldb performance monitoring')
 
     def parse_args(self):
 
@@ -671,6 +678,9 @@ class LlvmCore(BuildUtils):
         if self.build_config.build_libxml2:
             llvm_defines['LLDB_ENABLE_LIBXML2'] = 'ON'
             llvm_defines['LIBXML2_INCLUDE_DIR'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'include', 'libxml2')
+        
+        if self.build_config.enable_monitoring:
+            llvm_defines['LLDB_ENABLE_PERFORMANCE'] = 'ON'
 
     def llvm_compile(self,
                      build_name,
@@ -789,6 +799,9 @@ class LlvmCore(BuildUtils):
             windows_defines['LLDB_ENABLE_LIBXML2'] = 'ON'
             windows_defines['LIBXML2_INCLUDE_DIR'] = os.path.join(self.get_prebuilts_dir('libxml2'), 'windows-x86_64', 'include', 'libxml2')
             windows_defines['LIBXML2_LIBRARY'] = os.path.join(self.get_prebuilts_dir('libxml2'), 'windows-x86_64', 'lib', 'libxml2.dll.a')
+
+        if self.build_config.enable_monitoring:
+            windows_defines['LLDB_ENABLE_PERFORMANCE'] = 'ON'
 
     def llvm_compile_windows_flags(self,
                                    windows_defines,
@@ -1388,6 +1401,9 @@ class LlvmLibs(BuildUtils):
         lldb_defines['LLVM_HOST_TRIPLE'] = llvm_triple
         lldb_defines['LLVM_TARGET_ARCH'] = arch
         lldb_defines['LLVM_TARGETS_TO_BUILD'] = self.build_config.TARGETS
+
+        if self.build_config.enable_monitoring:
+            lldb_defines['LLDB_ENABLE_PERFORMANCE'] = 'ON'
 
         lldb_target = ['lldb-server'] if self.build_config.need_lldb_server else []
 

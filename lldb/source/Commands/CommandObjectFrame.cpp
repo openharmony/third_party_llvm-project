@@ -30,6 +30,7 @@
 #include "lldb/Target/Target.h"
 #include "lldb/Target/Thread.h"
 #include "lldb/Utility/Args.h"
+#include "lldb/Utility/LLDBLog.h"   // OHOS_LOCAL
 
 #include <memory>
 #include <string>
@@ -706,6 +707,8 @@ protected:
       target_stats.GetFrameVariableStats().NotifySuccess();
     else
       target_stats.GetFrameVariableStats().NotifyFailure();
+    
+    LLDB_PERFORMANCE_LOG("Completed frame variable.");     // OHOS_LOCAL
     return res;
   }
 

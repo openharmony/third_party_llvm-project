@@ -13,6 +13,7 @@
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/RangeMap.h"
 #include "lldb/Utility/State.h"
+#include "lldb/Utility/Timer.h"     // OHOS_LOCAL
 
 #include <cinttypes>
 #include <memory>
@@ -125,6 +126,7 @@ bool MemoryCache::RemoveInvalidRange(lldb::addr_t base_addr,
 
 size_t MemoryCache::Read(addr_t addr, void *dst, size_t dst_len,
                          Status &error) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
   size_t bytes_left = dst_len;
 
   // Check the L1 cache for a range that contain the entire memory read. If we

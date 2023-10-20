@@ -19,6 +19,7 @@
 #include "lldb/Utility/Endian.h"
 #include "lldb/Utility/RegisterValue.h"
 #include "lldb/Utility/Scalar.h"
+#include "lldb/Utility/Timer.h"     // OHOS_LOCAL
 
 using namespace lldb;
 using namespace lldb_private;
@@ -298,6 +299,7 @@ bool RegisterContext::HardwareSingleStep(bool enable) { return false; }
 Status RegisterContext::ReadRegisterValueFromMemory(
     const RegisterInfo *reg_info, lldb::addr_t src_addr, uint32_t src_len,
     RegisterValue &reg_value) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_TARGET);   // OHOS_LOCAL
   Status error;
   if (reg_info == nullptr) {
     error.SetErrorString("invalid register info argument.");

@@ -1834,6 +1834,8 @@ bool CommandInterpreter::HandleCommand(const char *command_line,
                                        LazyBool lazy_add_to_history,
                                        CommandReturnObject &result) {
 
+  LLDB_PERFORMANCE_LOG("HandleCommand: %s", command_line);   // OHOS_LOCAL
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_COMMANDS);   // OHOS_LOCAL
   std::string command_string(command_line);
   std::string original_command_string(command_line);
 

@@ -359,6 +359,7 @@ ProcessSP Process::FindPlugin(lldb::TargetSP target_sp,
                               ListenerSP listener_sp,
                               const FileSpec *crash_file_path,
                               bool can_connect) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);    // OHOS_LOCAL
   static uint32_t g_process_unique_id = 0;
 
   ProcessSP process_sp;
@@ -648,6 +649,7 @@ StateType Process::WaitForProcessToStop(const Timeout<std::micro> &timeout,
                                         EventSP *event_sp_ptr, bool wait_always,
                                         ListenerSP hijack_listener_sp,
                                         Stream *stream, bool use_run_lock) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);    // OHOS_LOCAL
   // We can't just wait for a "stopped" event, because the stopped event may
   // have restarted the target. We have to actually check each event, and in
   // the case of a stopped event check the restarted flag on the event.
@@ -944,6 +946,7 @@ bool Process::HandleProcessStateChangedEvent(const EventSP &event_sp,
 }
 
 bool Process::HijackProcessEvents(ListenerSP listener_sp) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);    // OHOS_LOCAL
   if (listener_sp) {
     return HijackBroadcaster(listener_sp, eBroadcastBitStateChanged |
                                               eBroadcastBitInterrupt);
@@ -1337,6 +1340,7 @@ void Process::SetPublicState(StateType new_state, bool restarted) {
 }
 
 Status Process::Resume() {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
   Log *log(GetLog(LLDBLog::State | LLDBLog::Process));
   LLDB_LOGF(log, "Process::Resume -- locking run lock");
   if (!m_public_run_lock.TrySetRunning()) {
@@ -2034,6 +2038,7 @@ size_t Process::ReadCStringFromMemory(addr_t addr, char *dst,
 size_t Process::ReadMemoryFromInferior(addr_t addr, void *buf, size_t size,
                                        Status &error) {
   LLDB_SCOPED_TIMER();
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);    // OHOS_LOCAL
 
   if (ABISP abi_sp = GetABI())
     addr = abi_sp->FixAnyAddress(addr);
@@ -2354,6 +2359,7 @@ Status Process::DeallocateMemory(addr_t ptr) {
 ModuleSP Process::ReadModuleFromMemory(const FileSpec &file_spec,
                                        lldb::addr_t header_addr,
                                        size_t size_to_read) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);    // OHOS_LOCAL
   Log *log = GetLog(LLDBLog::Host);
   if (log) {
     LLDB_LOGF(log,
@@ -2431,6 +2437,7 @@ Process::WaitForProcessStopPrivate(EventSP &event_sp,
 }
 
 void Process::LoadOperatingSystemPlugin(bool flush) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);    // OHOS_LOCAL
   if (flush)
     m_thread_list.Clear();
   m_os_up.reset(OperatingSystem::FindPlugin(this, nullptr));
@@ -2757,6 +2764,8 @@ ListenerSP ProcessAttachInfo::GetListenerForProcess(Debugger &debugger) {
 }
 
 Status Process::Attach(ProcessAttachInfo &attach_info) {
+  LLDB_PERFORMANCE_LOG("Attach start");                     // OHOS_LOCAL
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
   m_abi_sp.reset();
   m_process_input_reader.reset();
   m_dyld_up.reset();
@@ -2881,6 +2890,7 @@ void Process::CompleteAttach() {
   Log *log(GetLog(LLDBLog::Process | LLDBLog::Target));
   LLDB_LOGF(log, "Process::%s()", __FUNCTION__);
 
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
   // Let the process subclass figure out at much as it can about the process
   // before we go looking for a dynamic loader plug-in.
   ArchSpec process_arch;
@@ -3005,9 +3015,11 @@ void Process::CompleteAttach() {
                         : "<none>");
     }
   }
+  LLDB_PERFORMANCE_LOG("CompleteAttach end");     // OHOS_LOCAL
 }
 
 Status Process::ConnectRemote(llvm::StringRef remote_url) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);    // OHOS_LOCAL
   m_abi_sp.reset();
   m_process_input_reader.reset();
 
@@ -3040,6 +3052,7 @@ Status Process::ConnectRemote(llvm::StringRef remote_url) {
 }
 
 Status Process::PrivateResume() {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
   Log *log(GetLog(LLDBLog::Process | LLDBLog::Step));
   LLDB_LOGF(log,
             "Process::PrivateResume() m_stop_id = %u, public state: %s "
@@ -3348,6 +3361,7 @@ uint32_t Process::GetAddressByteSize() const {
 }
 
 bool Process::ShouldBroadcastEvent(Event *event_ptr) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
   const StateType state =
       Process::ProcessEventData::GetStateFromEvent(event_ptr);
   bool return_value = true;
@@ -3630,6 +3644,7 @@ void Process::SendAsyncInterrupt() {
 }
 
 void Process::HandlePrivateEvent(EventSP &event_sp) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
   Log *log = GetLog(LLDBLog::Process);
   m_resume_requested = false;
 
@@ -4008,6 +4023,7 @@ bool Process::ProcessEventData::ShouldStop(Event *event_ptr,
 }
 
 void Process::ProcessEventData::DoOnRemoval(Event *event_ptr) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
   ProcessSP process_sp(m_process_wp.lock());
 
   if (!process_sp)
@@ -5687,6 +5703,7 @@ addr_t Process::ResolveIndirectFunction(const Address *address, Status &error) {
 }
 
 void Process::ModulesDidLoad(ModuleList &module_list) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
   // Inform the system runtime of the modified modules.
   SystemRuntime *sys_runtime = GetSystemRuntime();
   if (sys_runtime)
@@ -5853,6 +5870,7 @@ Process::AdvanceAddressToNextBranchInstruction(Address default_stop_addr,
 
 Status Process::GetMemoryRegionInfo(lldb::addr_t load_addr,
                                     MemoryRegionInfo &range_info) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);    // OHOS_LOCAL
   if (const lldb::ABISP &abi = GetABI())
     load_addr = abi->FixAnyAddress(load_addr);
   return DoGetMemoryRegionInfo(load_addr, range_info);

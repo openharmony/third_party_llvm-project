@@ -12,6 +12,7 @@
 
 #include "lldb/Target/UnixSignals.h"
 #include "lldb/Utility/LLDBAssert.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 #include "ProcessGDBRemoteLog.h"
 
@@ -40,6 +41,7 @@ StateType GDBRemoteClientBase::SendContinuePacketAndWaitForResponse(
     ContinueDelegate &delegate, const UnixSignals &signals,
     llvm::StringRef payload, std::chrono::seconds interrupt_timeout,
     StringExtractorGDBRemote &response) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   Log *log = GetLog(GDBRLog::Process);
   response.Clear();
 
@@ -182,6 +184,7 @@ GDBRemoteCommunication::PacketResult
 GDBRemoteClientBase::SendPacketAndWaitForResponse(
     llvm::StringRef payload, StringExtractorGDBRemote &response,
     std::chrono::seconds interrupt_timeout) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   Lock lock(*this, interrupt_timeout);
   if (!lock) {
     if (Log *log = GetLog(GDBRLog::Process))

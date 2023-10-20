@@ -15,6 +15,7 @@
 #include "lldb/Symbol/VariableList.h"
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 #include <memory>
 
@@ -414,6 +415,7 @@ Block::AppendBlockVariables(bool can_create, bool get_child_block_variables,
                             bool stop_if_child_block_is_inlined_function,
                             const std::function<bool(Variable *)> &filter,
                             VariableList *variable_list) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_SYMBOLS);   // OHOS_LOCAL
   uint32_t num_variables_added = 0;
   VariableList *block_var_list = GetBlockVariableList(can_create).get();
   if (block_var_list) {

@@ -11,6 +11,7 @@
 #include "lldb/Interpreter/CommandReturnObject.h"
 #include "lldb/Target/Process.h"
 #include "lldb/Target/Thread.h"
+#include "lldb/Utility/LLDBLog.h"   // OHOS_LOCAL
 
 using namespace lldb;
 using namespace lldb_private;
@@ -43,6 +44,7 @@ bool CommandObjectIterateOverThreads::DoExecute(Args &command,
     Thread *thread = m_exe_ctx.GetThreadPtr();
     if (!thread || !HandleOneThread(thread->GetID(), result))
       return false;
+    LLDB_PERFORMANCE_LOG("Completed backtrace.");     // OHOS_LOCAL
     return result.Succeeded();
   } else if (command.GetArgumentCount() == 1) {
     all_threads = ::strcmp(command.GetArgumentAtIndex(0), "all") == 0;

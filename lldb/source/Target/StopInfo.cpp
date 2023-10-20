@@ -24,6 +24,7 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/StreamString.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 using namespace lldb;
 using namespace lldb_private;
@@ -145,6 +146,7 @@ public:
   StopReason GetStopReason() const override { return eStopReasonBreakpoint; }
 
   bool ShouldStopSynchronous(Event *event_ptr) override {
+    LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
     ThreadSP thread_sp(m_thread_wp.lock());
     if (thread_sp) {
       if (!m_should_stop_is_valid) {
@@ -699,6 +701,7 @@ protected:
     // StopInfoWatchpoint::ShouldStop() and
     // Event::DoOnRemoval()->Process::ProcessEventData::DoOnRemoval()->
     // StopInfoWatchpoint::PerformAction().
+    LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
     if (m_should_stop_is_valid)
       return m_should_stop;
 
