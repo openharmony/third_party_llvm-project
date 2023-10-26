@@ -929,11 +929,16 @@ void SetAbortMessage(const char *str) {}
 
 #if SANITIZER_OHOS
 static thread_local bool safe_to_call_printf = true; // OHOS_LOCAL
-@@ -1097,7 +1097,7 @@ void LogMessageOnPrintf(const char *str) {
+#endif
+
+void LogMessageOnPrintf(const char *str) {
+#if SANITIZER_OHOS
+  // We need to call it before "WriteToSyslog" because "WriteToSyslog" will remove "\n".
+  if (&ohos_dfx_log) {
+    // The ohos_dfx_log is exclusively for LLVM Sanitizers to flush logs to
     //  disk. The ohos_dfx_log may perform dynamic memory allocation, potentiallt
     //  leading to the sanitizer triggering a recursive call.
     safe_to_call_printf = false;
-    ohos_dfx_log(str);
     ohos_dfx_log(str, common_flags()->log_path);
     safe_to_call_printf = true;
   }
@@ -943,14 +948,7 @@ static thread_local bool safe_to_call_printf = true; // OHOS_LOCAL
 }
 // OHOS_LOCAL end
 
-//OHOS_LOCAL begin
-#if SANITIZER_OHOS
-bool SafeToCallPrintf() { return safe_to_call_printf; }
-#endif
-// OHOS_LOCAL end
-
 #endif  // SANITIZER_LINUX
-
 
 #if SANITIZER_GLIBC && !SANITIZER_GO
 // glibc crashes when using clock_gettime from a preinit_array function as the
