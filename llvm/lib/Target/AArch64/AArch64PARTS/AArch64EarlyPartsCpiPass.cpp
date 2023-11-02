@@ -211,10 +211,10 @@ inline void AArch64EarlyPartsCpiPass::replaceBranchByAuthenticatedBranch(Machine
     addPhiForModifier(MI_indcall, &ModReg);
     if (MI_indcall->getOpcode() == AArch64::TCRETURNri) {
         MachineRegisterInfo *MRI = &MI_indcall->getMF()->getRegInfo();
-        Register TcModReg = MRI->createVirtualRegister(&AArch64::tcGRP64RegClass);
+        Register TcModReg = MRI->createVirtualRegister(&AArch64::tcGPR64RegClass);
         auto CopyMi = BuildMI(*MI_indcall->getParent(), *MI_indcall, MI_indcall->getDebugLoc(),
             TII->get(AArch64::COPY), TcModReg);
-        CopyMi->addUse(ModReg);
+        CopyMi.addUse(ModReg);
         ModReg = TcModReg;
     }
 
