@@ -125,8 +125,8 @@ inline void AArch64EarlyPartsCpiPass::findIndirectCallMachineInstr(MachineFuncti
     unsigned AUTCALLinstr_oper0 = MIptr->getOperand(0).getReg();
     unsigned BLRinstr_oper0 = 0;
     MachineRegisterInfo *MRI = &MF.getRegInfo();
-    for (auto &MBB : MF) {
-        for (auto MIi = MBB.instr_begin(), MIie = MBB.instr_end(); MIi != MIie; ++MIi) {
+    for (auto &MBBTmp : MF) {
+        for (auto MIi = MBBTmp.instr_begin(), MIie = MBBTmp.instr_end(); MIi != MIie; ++MIi) {
             if (isIndirectCall(*MIi)) {
                 BLRinstr_oper0 = MIi->getOperand(0).getReg();
                 if (AUTCALLinstr_oper0 == BLRinstr_oper0) {
@@ -209,6 +209,14 @@ inline void AArch64EarlyPartsCpiPass::replaceBranchByAuthenticatedBranch(Machine
     Register ModReg = MI.getOperand(2).getReg();
 
     addPhiForModifier(MI_indcall, &ModReg);
+    if (MI_indcall->getOpcode() == AArch64::TCRETURNri) {
+        MachineRegisterInfo *MRI = &MI_indcall->getMF()->getRegInfo();
+        Register TcModReg = MRI->createVirtualRegister(&AArch64::tcGRP64RegClass);
+        auto CopyMi = BuildMI(*MI_indcall->getParent(), *MI_indcall, MI_indcall->getDebugLoc(),
+            TII->get(AArch64::COPY), TcModReg);
+        CopyMi->addUse(ModReg);
+        ModReg = TcModReg;
+    }
 
     auto BMI = BuildMI(*MI_indcall->getParent(), *MI_indcall, MI_indcall->getDebugLoc(), getIndirectCallAuth(MI_indcall));
     BMI.addUse(MI_indcall->getOperand(0).getReg());
