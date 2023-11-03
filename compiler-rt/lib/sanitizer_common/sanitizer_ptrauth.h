@@ -11,7 +11,7 @@
 
 #if __has_feature(ptrauth_calls)
 #include <ptrauth.h>
-#elif defined(__ARM_FEATURE_PAC_DEFAULT) && !defined(__APPLE__)
+#elif SANITIZER_CAN_USE_PAC && !defined(__APPLE__) // OHOS_LOCAL
 inline unsigned long ptrauth_strip(void* __value, unsigned int __key) {
   // On the stack the link register is protected with Pointer
   // Authentication Code when compiled with -mbranch-protection.

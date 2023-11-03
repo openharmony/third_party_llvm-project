@@ -115,6 +115,18 @@
 #endif
 #endif  // SANITIZER_CAN_USE_PREINIT_ARRAY
 
+// OHOS_LOCAL begin
+// Allow the sanitizer to use the Armv8.3-A PAuth instructions when ptrauth_calls
+// feature is not available
+#ifndef SANITIZER_CAN_USE_PAC
+#if defined(__ARM_FEATURE_PAC_DEFAULT) || (SANITIZER_ARM64 && SANITIZER_OHOS)
+# define SANITIZER_CAN_USE_PAC 1
+#else
+# define SANITIZER_CAN_USE_PAC 0
+#endif
+#endif // SANITIZER_CAN_USE_PAC
+// OHOS_LOCAL end
+
 // GCC does not understand __has_feature
 #if !defined(__has_feature)
 # define __has_feature(x) 0
