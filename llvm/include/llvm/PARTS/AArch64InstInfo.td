@@ -37,6 +37,6 @@ let isPseudo = 1, hasNoSchedulingInfo = 1 in {
 }
 
 let isCall = 1, isTerminator = 1, isReturn = 1, isBarrier = 1, Uses = [SP] in {
-    def TCRETURNriAA : Pseudo<(outs), (ins tcGPR64:$dst, i32imm:$FPDiff, GPR64sp:$mod), []>,
+    def TCRETURNriAA : Pseudo<(outs), (ins tcGPR64:$dst, i32imm:$FPDiff, tcGPR64:$mod), []>,
         Sched<[WriteBrReg]>;
 }
