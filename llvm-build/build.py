@@ -917,17 +917,120 @@ class SysrootComposer(BuildUtils):
             os.remove(os.path.join(dst_dir, ohos_cmake))
         shutil.copy2(src_file, dst_dir)
 
+    def run_hb_build(self, product_name, target_cpu, target_name, gn_args=''):
+        self.logger().info('run product-name %s target-cpu %s target-name %s gn-args %s',
+                           product_name, target_cpu, target_name, gn_args)
+        hb_build_py = os.path.join(
+            self.build_config.REPOROOT_DIR, 'build', 'hb', 'main.py')
+        python_execute_dir = os.path.join(
+            self.get_python_dir(), 'bin', self.build_config.LLDB_PYTHON)
+        llvm_gn_args = 'is_llvm_build=true startup_init_with_param_base=true use_thin_lto=false'
+        subprocess.run([python_execute_dir, hb_build_py, 'build', '--product-name', product_name, '--target-cpu',
+                        target_cpu, '--build-target', target_name, '--gn-args', 
+                        gn_args, llvm_gn_args, '--deps-guard=false'],
+                        shell=False, stdout=subprocess.PIPE, cwd=self.build_config.REPOROOT_DIR)
+    
+    def build_musl_libs(self, product_name, target_cpu, target_name, ohos_lib_dir, sysroot_lib_dir,
+                        ld_musl_lib, gn_args=''):
+        self.run_hb_build(product_name, target_cpu, target_name, gn_args)
+        libc_name = 'libc.so'
+        crtplus_lib = self.merge_out_path('llvm_build', 'obj', 'out', 'llvm_build', 'obj', 'third_party', 'musl',
+                                    'intermidiates', 'linux', 'musl_src_ported', 'crt', 'soft_musl_crt', 'crtplus.o')
+        self.check_copy_tree(ohos_lib_dir, sysroot_lib_dir)
+        if product_name == 'llvm_build':
+            self.check_copy_file(crtplus_lib, sysroot_lib_dir)
+        os.symlink(libc_name, ld_musl_lib)
 
-    def build_musl(self, llvm_install, target, *extra_args):
-        cur_dir = os.getcwd()
+    def build_musl_header(self, arch, target):
+        product_name = 'llvm_build'
+        target_name = 'musl_headers'
+        target_cpu = arch
+        if arch == 'riscv':
+            target_cpu = 'riscv64'
+        ohos_header_dir = self.merge_out_path(
+            'llvm_build', 'obj', 'third_party', 'musl', 'usr', 'include', target)
+        sysroot_header_dir = self.merge_out_path(
+            'sysroot', target, 'usr', 'include')
+
+        if target == self.liteos_triple('arm'):
+            product_name = 'llvm_build_lite'
+            target_name = 'build_sysroot_header'
+            ohos_header_dir = self.merge_out_path(
+                'llvm_build', product_name, 'sysroot', 'usr', 'include', target)
+
         os.chdir(self.build_config.LLVM_BUILD_DIR)
-        self.logger().info('build musl %s', self.merge_out_path('install'))
-        args = ['./build_musl.sh', '-t', target,
-                '-c', self.merge_out_path(llvm_install, 'bin'),
-                '-o', self.merge_out_path(),
-                '-T', self.build_config.REPOROOT_DIR] + list(extra_args)
-        self.check_call(args)
-        os.chdir(cur_dir)
+        self.logger().info('run product-name %s target-name %s', product_name, target_name)
+        self.run_hb_build(product_name, target_cpu, target_name)
+        self.check_copy_tree(ohos_header_dir, sysroot_header_dir)
+
+    def build_musl(self, arch, target):
+        product_name = 'llvm_build'
+        target_name = 'soft_musl_libs'
+        gn_args = ''
+        if arch == 'arm64':
+            target_cpu = 'arm64'
+            ld_arch = 'aarch64'
+        elif arch == 'riscv':
+            target_cpu = 'riscv64'
+            ld_arch = 'riscv64'
+        else:
+            target_cpu = arch
+            ld_arch = arch
+        ohos_lib_dir = self.merge_out_path('llvm_build', 'obj', 'third_party', 'musl', 'usr', 'lib', target)
+        sysroot_lib_dir = self.merge_out_path('sysroot', target, 'usr', 'lib')
+
+        os.chdir(self.build_config.LLVM_BUILD_DIR)
+
+        if target == self.liteos_triple('arm'):
+            product_name = 'llvm_build_lite'
+            target_name = 'sysroot_lite'
+            a7_products = ["", "a7_soft", "a7_softfp_neon-vfpv4", "a7_hard_neon-vfpv4"]
+
+            for a7_key in a7_products:
+                gn_args = 'musl_lite_multi=' + a7_key
+                ohos_lib_dir = self.merge_out_path('llvm_build', product_name, 'sysroot', 'usr', 'lib', target, a7_key)
+                sysroot_lib_dir = self.merge_out_path('sysroot', target, 'usr', 'lib', a7_key)
+                if a7_key == "a7_hard_neon-vfpv4":
+                    ld_musl_lib = os.path.join(sysroot_lib_dir, 'ld-musl-armhf.so.1')
+                else:
+                    ld_musl_lib = os.path.join(sysroot_lib_dir, 'ld-musl-arm.so.1')
+                self.build_musl_libs(product_name, target_cpu, target_name, ohos_lib_dir,
+                                     sysroot_lib_dir, ld_musl_lib, gn_args)
+            return
+
+        ld_musl_lib = os.path.join(sysroot_lib_dir, 'ld-musl-{}.so.1'.format(ld_arch))
+        self.build_musl_libs(product_name, target_cpu, target_name, ohos_lib_dir,
+                             sysroot_lib_dir, ld_musl_lib)
+
+        if target_cpu == 'arm':
+            a7_args = {
+                "a7_soft": "arm_float_abi=soft board_cpu=cortex-a7",
+                "a7_softfp_neon-vfpv4": "arm_fpu=neon-vfpv4 arm_float_abi=softfp board_cpu=cortex-a7",
+                "a7_hard_neon-vfpv4": "arm_fpu=neon-vfpv4 arm_float_abi=hard board_cpu=cortex-a7"
+            }
+
+            for a7_key in a7_args.keys():
+                target_triple_arg = 'musl_target_multilib='+a7_key
+                gn_args = a7_args[a7_key] + ' ' + target_triple_arg
+                multi_lib_dir = os.path.join(ohos_lib_dir, a7_key)
+                sysroot_multi_lib_dir = os.path.join(sysroot_lib_dir, a7_key)
+                if a7_key == "a7_hard_neon-vfpv4":
+                    ld_musl_lib = os.path.join(sysroot_multi_lib_dir, 'ld-musl-armhf.so.1')
+                else:
+                    ld_musl_lib = os.path.join(sysroot_multi_lib_dir, 'ld-musl-arm.so.1')
+                self.logger().info('run a7 product-name %s target-name %s', product_name, target_name)
+                self.build_musl_libs(product_name, target_cpu, target_name, multi_lib_dir,
+                                     sysroot_multi_lib_dir, ld_musl_lib, gn_args)
+
+        if target_cpu == 'mipsel':
+            gn_args += ' is_legacy=true musl_target_multilib=nanlegacy'
+            multi_lib_dir = os.path.join(ohos_lib_dir, 'nanlegacy')
+            sysroot_multi_lib_dir = os.path.join(sysroot_lib_dir, 'nanlegacy')
+            self.run_hb_build(product_name, target_cpu, target_name, gn_args)
+            ld_musl_lib = os.path.join(sysroot_multi_lib_dir, 'ld-musl-{}.so.1'.format(ld_arch))
+            self.build_musl_libs(product_name, target_cpu, target_name, multi_lib_dir,
+                        sysroot_multi_lib_dir, ld_musl_lib, gn_args)
+
 
     def install_linux_headers(self, arch, target):
         dir_suffix = arch
@@ -935,7 +1038,7 @@ class SysrootComposer(BuildUtils):
             dir_suffix = 'x86'
         elif arch == 'mipsel':
             dir_suffix = 'mips'
-        linux_kernel_dir = os.path.join('kernel_linux_patches', 'linux-5.10')
+        linux_kernel_dir = os.path.join('kernel', 'linux', 'patches', 'linux-5.10')
         linux_kernel_path = os.path.join(self.build_config.OUT_PATH, '..', linux_kernel_dir)
         ohosmusl_sysroot_dst = self.merge_out_path('sysroot', target, 'usr')
         headers_tmp_dir = os.path.join(linux_kernel_path, 'prebuilts', 'usr', 'include')
@@ -973,13 +1076,13 @@ class LlvmLibs(BuildUtils):
 
     def build_crt_libs(self, configs, llvm_install):
         for (arch, target) in configs:
-            self.sysroot_composer.build_musl(llvm_install, target)
+            self.sysroot_composer.build_musl_header(arch, target)
             if target.endswith(self.build_config.OPENHOS_SFX):
                 self.sysroot_composer.install_linux_headers(arch, target)
             self.build_libs(llvm_install,
                             target,
                             precompilation=True)
-            self.sysroot_composer.build_musl(llvm_install, target, '-l')
+            self.sysroot_composer.build_musl(arch, target)
 
     def build_libs_defines(self,
                            llvm_triple,
