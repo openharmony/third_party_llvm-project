@@ -131,6 +131,21 @@ void GuardedPoolAllocator::iterate(void *Base, size_t Size, iterate_callback Cb,
   }
 }
 
+// OHOS_LOCAL begin
+bool GuardedPoolAllocator::hasFreeMem()
+{
+  if (NumSampledAllocations < State.MaxSimultaneousAllocations) {
+    return true;
+  }
+
+  if (FreeSlotsLength > 0) {
+    return true;
+  }
+
+  return false;
+}
+// OHOS_LOCAL end
+
 void GuardedPoolAllocator::uninitTestOnly() {
   if (State.GuardedPagePool) {
     unreserveGuardedPool();

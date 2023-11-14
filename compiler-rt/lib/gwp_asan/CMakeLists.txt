@@ -12,6 +12,11 @@ set(GWP_ASAN_SOURCES
   guarded_pool_allocator.cpp
   stack_trace_compressor.cpp
 )
+# OHOS_LOCAL begin
+if(OHOS)
+list(APPEND GWP_ASAN_SOURCES gwp_asan_c_interface.cpp)
+endif()
+# OHOS_LOCAL end
 
 set(GWP_ASAN_HEADERS
   common.h
@@ -58,6 +63,19 @@ set(GWP_ASAN_BACKTRACE_HEADERS
   options.h
   options.inc
 )
+# OHOS_LOCAL begin
+if(OHOS)
+  set(GWP_ASAN_BACKTRACE_SOURCES
+    optional/backtrace_ohos.cpp)
+  set(GWP_ASAN_OBJECT_LIBS
+    RTGwpAsanSegvHandler)
+else()
+  set(GWP_ASAN_BACKTRACE_SOURCES
+    optional/backtrace_linux_libc.cpp)
+  set(GWP_ASAN_OBJECT_LIBS)
+endif()
+# OHOS_LOCAL end
+
 set(GWP_ASAN_SEGV_HANDLER_HEADERS
   optional/segv_handler.h
   options.h)
@@ -74,6 +92,7 @@ if (COMPILER_RT_HAS_GWP_ASAN)
       SOURCES ${GWP_ASAN_SOURCES}
       ADDITIONAL_HEADERS ${GWP_ASAN_HEADERS}
       CFLAGS ${GWP_ASAN_CFLAGS}
+      OBJECT_LIBS ${GWP_ASAN_OBJECT_LIBS}
       PARENT_TARGET gwp_asan
     )
   endforeach()
@@ -83,7 +102,6 @@ if (COMPILER_RT_HAS_GWP_ASAN)
       SOURCES ${GWP_ASAN_SOURCES}
       ADDITIONAL_HEADERS ${GWP_ASAN_HEADERS}
       CFLAGS ${GWP_ASAN_CFLAGS})
-
   add_compiler_rt_object_libraries(RTGwpAsanOptionsParser
       ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
       SOURCES ${GWP_ASAN_OPTIONS_PARSER_SOURCES}
@@ -93,9 +111,10 @@ if (COMPILER_RT_HAS_GWP_ASAN)
   # As above, build the pre-implemented optional backtrace support libraries.
   add_compiler_rt_object_libraries(RTGwpAsanBacktraceLibc
       ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
-      SOURCES optional/backtrace_linux_libc.cpp
+      SOURCES ${GWP_ASAN_BACKTRACE_SOURCES}
       ADDITIONAL_HEADERS ${GWP_ASAN_BACKTRACE_HEADERS}
       CFLAGS ${GWP_ASAN_CFLAGS})
+
   add_compiler_rt_object_libraries(RTGwpAsanSegvHandler
       ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
       SOURCES optional/segv_handler_posix.cpp
