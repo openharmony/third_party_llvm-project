@@ -860,10 +860,12 @@ endif()
 # calling malloc on first use.
 # TODO(hctim): Enable this on Android again. Looks like it's causing a SIGSEGV
 # for Scudo and GWP-ASan, further testing needed.
+# OHOS_LOCAL begin
 if (GWP_ASAN_SUPPORTED_ARCH AND COMPILER_RT_BUILD_GWP_ASAN AND
-    OS_NAME MATCHES "Linux")
+    OS_NAME MATCHES "Linux|OHOS")
   set(COMPILER_RT_HAS_GWP_ASAN TRUE)
 else()
   set(COMPILER_RT_HAS_GWP_ASAN FALSE)
 endif()
+# OHOS_LOCAL end
 pythonize_bool(COMPILER_RT_HAS_GWP_ASAN)

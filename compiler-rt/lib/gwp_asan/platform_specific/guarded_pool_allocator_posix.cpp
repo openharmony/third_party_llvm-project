@@ -19,17 +19,19 @@
 #include <time.h>
 #include <unistd.h>
 
-#ifdef ANDROID
+// OHOS_LOCAL begin
+#if defined(ANDROID) || defined(__OHOS__)
 #include <sys/prctl.h>
 #define PR_SET_VMA 0x53564d41
 #define PR_SET_VMA_ANON_NAME 0
-#endif // ANDROID
+#endif // ANDROID || __OHOS__
+// OHOS_LOCAL end
 
 namespace {
 void MaybeSetMappingName(void *Mapping, size_t Size, const char *Name) {
-#ifdef ANDROID
+#if defined(ANDROID) || defined(__OHOS__)
   prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, Mapping, Size, Name);
-#endif // ANDROID
+#endif // ANDROID || __OHOS__
   // Anonymous mapping names are only supported on Android.
   return;
 }

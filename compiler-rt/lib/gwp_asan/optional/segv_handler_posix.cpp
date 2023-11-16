@@ -22,6 +22,11 @@
 #include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
+// OHOS_LOCAL begin
+#if defined(__OHOS__)
+#include <sigchain.h>
+#endif
+// OHOS_LOCAL end
 
 using gwp_asan::AllocationMetadata;
 using gwp_asan::Error;
@@ -159,6 +164,22 @@ Printf_t PrintfForSignalHandler;
 PrintBacktrace_t PrintBacktraceForSignalHandler;
 SegvBacktrace_t BacktraceForSignalHandler;
 
+// OHOS_LOCAL begin
+#if defined(__OHOS__)
+static bool sigSegvHandlerOhos(int sig, siginfo_t *info, void *ucontext) {
+  if (GPAForSignalHandler) {
+    GPAForSignalHandler->stop();
+    dumpReport(reinterpret_cast<uintptr_t>(info->si_addr),
+               GPAForSignalHandler->getAllocatorState(),
+               GPAForSignalHandler->getMetadataRegion(),
+               BacktraceForSignalHandler, PrintfForSignalHandler,
+               PrintBacktraceForSignalHandler, ucontext);
+  }
+  return false;
+}
+#endif
+// OHOS_LOCAL end
+
 static void sigSegvHandler(int sig, siginfo_t *info, void *ucontext) {
   if (GPAForSignalHandler) {
     GPAForSignalHandler->stop();
@@ -193,6 +214,33 @@ static void sigSegvHandler(int sig, siginfo_t *info, void *ucontext) {
 
 namespace gwp_asan {
 namespace segv_handler {
+
+// OHOS_LOCAL begin
+#if defined(__OHOS__)
+void installSignalHandlersOhos(gwp_asan::GuardedPoolAllocator *GPA, Printf_t Printf,
+                           PrintBacktrace_t PrintBacktrace,
+                           SegvBacktrace_t SegvBacktrace) {
+  assert(GPA && "GPA wasn't provided to installSignalHandlers.");
+  assert(Printf && "Printf wasn't provided to installSignalHandlers.");
+  assert(PrintBacktrace &&
+         "PrintBacktrace wasn't provided to installSignalHandlers.");
+  assert(SegvBacktrace &&
+         "SegvBacktrace wasn't provided to installSignalHandlers.");
+  GPAForSignalHandler = GPA;
+  PrintfForSignalHandler = Printf;
+  PrintBacktraceForSignalHandler = PrintBacktrace;
+  BacktraceForSignalHandler = SegvBacktrace;
+
+  struct signal_chain_action Action = {
+    .sca_sigaction = sigSegvHandlerOhos,
+    .sca_mask = {},
+    .sca_flags = SA_SIGINFO | SA_RESTART,
+  };
+  add_special_signal_handler(SIGSEGV, &Action);
+  SignalHandlerInstalled = true;
+}
+#endif
+// OHOS_LOCAL end
 
 void installSignalHandlers(gwp_asan::GuardedPoolAllocator *GPA, Printf_t Printf,
                            PrintBacktrace_t PrintBacktrace,
