@@ -115,6 +115,16 @@ SymbolizedStack *__ubsan::getSymbolizedLocation(uptr PC) {
   return Symbolizer::GetOrInit()->SymbolizePC(PC);
 }
 
+bool __ubsan::getSymbolizedData(uptr Addr, DataInfo *Info) {
+  InitAsStandaloneIfNecessary();
+  return Symbolizer::GetOrInit()->SymbolizeData(Addr, Info);
+}
+
+const char *__ubsan::demangle(const char *Name) {
+  InitAsStandaloneIfNecessary();
+  return Symbolizer::GetOrInit()->Demangle(Name);
+}
+
 Diag &Diag::operator<<(const TypeDescriptor &V) {
   return AddArg(V.getTypeName());
 }
