@@ -109,6 +109,28 @@ OHOS fetch prebuilts from: https://mirrors.huaweicloud.com/openharmony/compiler/
 License: Apache License v2.0 with LLVM Exceptions
 ```
 
+### Build process of AArch64 LLVM components for Ark Runtime
+
+First build toolchain on Linux.
+Here is an example of starting build process on Linux:
+```
+# build
+python3 ./toolchain/llvm-project/llvm-build/build-ohos-aarch64.py
+```
+
+</br>
+
+build-ohos-aarch64.py options：
+
+```
+--enable-assertions             # enable assertion when compiling
+--debug                         # build debug version llvm toolchain
+--strip                         # strip llvm toolchain binaries
+```
+</br>
+
+When build successfully completed, artifacts will be available in `out/ohos-aarch64-install` directory, including LLVM tools and libLLVM.so for aarch64.
+
 <a name="function_introduction"></a>
 ## Function Introduction
 </br>
