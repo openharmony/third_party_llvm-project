@@ -54,6 +54,7 @@ build.py options：
 --debug					# build debug version llvm toolchain
 --target-debug          # build debug version of target llvm libraries, runtimes, and lldb-server
 --strip					# strip llvm toolchain binaries
+--no-strip-libs         # used with -- strip to preserve the symbols of the lib library
 --no-build-arm			# skip triplet arm
 --no-build-aarch64  	# skip triplet arm64
 --no-build-x86_64 		# skip triplet x86_64

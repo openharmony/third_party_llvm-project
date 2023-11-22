@@ -35,6 +35,7 @@ class BuildConfig():
 
     def __init__(self):
         args = self.parse_args()
+        self.no_strip_libs = args.no_strip_libs
         self.do_build = not args.skip_build
         self.do_package = not args.skip_package
         self.build_name = args.build_name
@@ -94,6 +95,12 @@ class BuildConfig():
 
     @staticmethod
     def parse_add_argument(parser):
+
+        parser.add_argument(
+            '--no-strip-libs',
+            action='store_true',
+            default=False,
+            help='Strip others but not strip libs(use with --strip)')
 
         parser.add_argument(
             '--enable-assertions',
@@ -1118,7 +1125,7 @@ class LlvmLibs(BuildUtils):
 
         if not self.host_is_darwin():
             ldflag.append('-Wl,-z,relro,-z,now -pie')
-            if self.build_config.strip:
+            if self.build_config.strip and not self.build_config.no_strip_libs:
                 ldflag.append('-s')
         
         ldflags.extend(ldflag)
