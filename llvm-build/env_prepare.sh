@@ -61,11 +61,11 @@ function download_and_archive() {
 
 copy_config="""
 """
-
-CLANG_LINUX_BUILD=clang_linux-x86_64-025192-20230330
+CLANG_PACKAGE_VERSION="15.0.4-a36336"
+CLANG_LINUX_BUILD=clang_linux-x86_64-a36336-20231130
 copy_config_linux_x86_64="""
 prebuilts/cmake,https://mirrors.huaweicloud.com/harmonyos/compiler/cmake/3.16.5/${host_platform}/cmake-${host_platform}-x86-3.16.5.tar.gz
-prebuilts/clang/ohos/${host_platform}-${host_cpu},https://mirrors.huaweicloud.com/openharmony/compiler/clang/15.0.4-025192/linux/${CLANG_LINUX_BUILD}.tar.bz2
+prebuilts/clang/ohos/${host_platform}-${host_cpu},https://mirrors.huaweicloud.com/openharmony/compiler/clang/${CLANG_PACKAGE_VERSION}/linux/${CLANG_LINUX_BUILD}.tar.bz2
 prebuilts/python3,https://mirrors.huaweicloud.com/harmonyos/compiler/python/3.10.2/${host_platform}/python-${host_platform}-x86-3.10.2_20230604.tar.gz
 """
 
