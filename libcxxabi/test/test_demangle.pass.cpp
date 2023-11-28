@@ -32,6 +32,7 @@
 // Is long double fp128?
 #define LDBL_FP128 (__LDBL_MANT_DIG__ == 113)
 
+// clang-format off
 const char* cases[][2] =
 {
     {"_Z1A", "A"},
@@ -30175,6 +30176,7 @@ const char* cases[][2] =
     {"_Z2f5IPiEvu16__remove_pointerIT_E", "void f5<int*>(__remove_pointer(int*))"},
     {"_Z2f5IiEvu14__remove_cvrefIT_E", "void f5<int>(__remove_cvref(int))"},
 };
+// clang-format on
 
 const unsigned N = sizeof(cases) / sizeof(cases[0]);
 
