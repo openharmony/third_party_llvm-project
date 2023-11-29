@@ -9,6 +9,9 @@
 // The demangler does not pass all these tests with the system dylibs on macOS.
 // XFAIL: stdlib=apple-libc++ && target={{.+}}-apple-macosx10.{{9|10|11|12|13|14|15}}
 
+// This test is too big for most embedded devices.
+// XFAIL: LIBCXX-PICOLIBC-FIXME
+
 // https://llvm.org/PR51407 was not fixed in some previously-released
 // demanglers, which causes them to run into the infinite loop.
 // UNSUPPORTED: stdlib=apple-libc++ && target={{.+}}-apple-macosx10.{{9|10|11|12|13|14|15}}
