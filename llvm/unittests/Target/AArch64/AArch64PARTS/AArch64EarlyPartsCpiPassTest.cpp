@@ -83,7 +83,7 @@ body: |
     successors: %bb.2, %bb.3
     %99:gpr32 = MOVi32imm 22545
     %100:gpr64sp = SUBREG_TO_REG 0, killed %99:gpr32, %subreg.sub_32
-    %101:gpr64 = PARTS_AUTCALL %58:gpr64(tied-def 0), killed %100:gpr64sp
+    %101:gpr64 = PARTS_AUTCALL %58:gpr64, killed %100:gpr64sp
     ADJCALLSTACKDOWN 0, 0, implicit-def dead $sp, implicit $sp
     $x0 = COPY %57:gpr64
     $x1 = COPY %59:gpr64
@@ -97,7 +97,7 @@ body: |
     successors: %bb.4
     %131:gpr32 = MOVi32imm 22545
     %132:gpr64sp = SUBREG_TO_REG 0, killed %131:gpr32, %subreg.sub_32
-    %133:gpr64 = PARTS_AUTCALL %58:gpr64(tied-def 0), killed %132:gpr64sp
+    %133:gpr64 = PARTS_AUTCALL %58:gpr64, killed %132:gpr64sp
     %31:gpr64 = COPY %133:gpr64
     B %bb.4
 
@@ -106,7 +106,7 @@ body: |
     successors: %bb.4
     %125:gpr32 = MOVi32imm 22545
     %126:gpr64sp = SUBREG_TO_REG 0, killed %125:gpr32, %subreg.sub_32
-    %127:gpr64 = PARTS_AUTCALL %58:gpr64(tied-def 0), killed %126:gpr64sp
+    %127:gpr64 = PARTS_AUTCALL %58:gpr64, killed %126:gpr64sp
     %32:gpr64 = COPY %127:gpr64
     ADJCALLSTACKDOWN 0, 0, implicit-def dead $sp, implicit $sp
     $x0 = COPY %57:gpr64
