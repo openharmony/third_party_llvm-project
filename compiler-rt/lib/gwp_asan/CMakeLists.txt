@@ -41,6 +41,11 @@ set(GWP_ASAN_HEADERS
 set(GWP_ASAN_CFLAGS ${SANITIZER_COMMON_CFLAGS} -fno-rtti -fno-exceptions
     -nostdinc++ -pthread -fno-omit-frame-pointer)
 append_list_if(COMPILER_RT_HAS_FPIC_FLAG -fPIC GWP_ASAN_CFLAGS)
+# OHOS_LOCAL begin
+if(OHOS)
+list(APPEND GWP_ASAN_CFLAGS -fno-emulated-tls)
+endif()
+# OHOS_LOCAL end
 # append_list_if(COMPILER_RT_HAS_SANITIZER_COMMON ${SANITIZER_COMMON_CFLAGS} GWP_ASAN_CFLAGS)
 
 # Remove -stdlib= which is unused when passing -nostdinc++.
