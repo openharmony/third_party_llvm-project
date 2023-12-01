@@ -112,6 +112,25 @@ public:
   }
 };
 
+// OHOS_LOCAL begin
+/// GC strategy for Ark Runtime, it has two address spaces for managed
+/// pointers: 270 and 271.  They match amd64 address spaces for 32-bit
+/// pointers: PTR32_SPTR = 270, PTR32_UPTR = 271.  See X86AS namespace.
+class ArkGC : public StatepointGC {
+public:
+  explicit ArkGC() = default;
+
+  Optional<bool> isGCManagedPointer(const Type *Ty) const override {
+    static constexpr unsigned X86Ptr32SptrAs = 270;
+    static constexpr unsigned X86Ptr32UptrAs = 271;
+    const PointerType *PT = cast<PointerType>(Ty);
+
+    return PT->getAddressSpace() == X86Ptr32SptrAs ||
+           PT->getAddressSpace() == X86Ptr32UptrAs;
+  }
+};
+// OHOS_LOCAL end
+
 } // end anonymous namespace
 
 // Register all the above so that they can be found at runtime.  Note that
@@ -125,6 +144,7 @@ static GCRegistry::Add<ShadowStackGC>
 static GCRegistry::Add<StatepointGC> D("statepoint-example",
                                        "an example strategy for statepoint");
 static GCRegistry::Add<CoreCLRGC> E("coreclr", "CoreCLR-compatible GC");
+static GCRegistry::Add<ArkGC> F("ark", "Ark vm compatible GC"); // OHOS_LOCAL
 
 // Provide hook to ensure the containing library is fully loaded.
 void llvm::linkAllBuiltinGCs() {}

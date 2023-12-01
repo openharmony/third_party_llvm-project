@@ -191,6 +191,14 @@ static cl::opt<bool> EnableGISelLoadStoreOptPostLegal(
     cl::desc("Enable GlobalISel's post-legalizer load/store optimization pass"),
     cl::init(false), cl::Hidden);
 
+// OHOS_LOCAL begin
+static cl::opt<bool> EnablePtr32(
+    "aarch64-enable-ptr32",
+    cl::desc("Enable 32-bit pointers extension - in address spaces 270 and 271"
+             " pointers become 32-bit wide"),
+    cl::init(false), cl::Hidden);
+// OHOS_LOCAL end
+
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeAArch64Target() {
   // Register the target.
   RegisterTargetMachine<AArch64leTargetMachine> X(getTheAArch64leTarget());
@@ -247,16 +255,35 @@ static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
 // Helper function to build a DataLayout string
 static std::string computeDataLayout(const Triple &TT,
                                      const MCTargetOptions &Options,
-                                     bool LittleEndian) {
+                                     bool LittleEndian,
+                                     bool WithPtr32) { // OHOS_LOCAL
   if (TT.isOSBinFormatMachO()) {
+    // OHOS_LOCAL begin
+    if (WithPtr32)
+      report_fatal_error("MachO does not support __ptr32");
+    // OHOS_LOCAL end
     if (TT.getArch() == Triple::aarch64_32)
       return "e-m:o-p:32:32-i64:64-i128:128-n32:64-S128";
     return "e-m:o-i64:64-i128:128-n32:64-S128";
   }
-  if (TT.isOSBinFormatCOFF())
+  if (TT.isOSBinFormatCOFF()) {
+    // OHOS_LOCAL begin
+    if (WithPtr32)
+      report_fatal_error("COFF does not support __ptr32");
+    // OHOS_LOCAL end
     return "e-m:w-p:64:64-i32:32-i64:64-i128:128-n32:64-S128";
+  }
   std::string Endian = LittleEndian ? "e" : "E";
   std::string Ptr32 = TT.getEnvironment() == Triple::GNUILP32 ? "-p:32:32" : "";
+  // OHOS_LOCAL begin
+  if (WithPtr32) {
+    if (TT.getEnvironment() == Triple::GNUILP32)
+      report_fatal_error("GNUILP32 does not support __ptr32");
+    // Organize spaces similar to x86:
+    // Address spaces for 32 bit signed, 32 bit unsigned, and 64 bit pointers.
+    Ptr32 += "-p270:32:32-p271:32:32-p272:64:64";
+  }
+  // OHOS_LOCAL end
   return Endian + "-m:e" + Ptr32 +
          "-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128";
 }
@@ -313,10 +340,12 @@ AArch64TargetMachine::AArch64TargetMachine(const Target &T, const Triple &TT,
                                            CodeGenOpt::Level OL, bool JIT,
                                            bool LittleEndian)
     : LLVMTargetMachine(T,
-                        computeDataLayout(TT, Options.MCOptions, LittleEndian),
-                        TT, computeDefaultCPU(TT, CPU), FS, Options,
-                        getEffectiveRelocModel(TT, RM),
-                        getEffectiveAArch64CodeModel(TT, CM, JIT), OL),
+          // OHOS_LOCAL begin
+          computeDataLayout(TT, Options.MCOptions, LittleEndian, EnablePtr32),
+          TT, computeDefaultCPU(TT, CPU), FS, Options,
+          getEffectiveRelocModel(TT, RM),
+          getEffectiveAArch64CodeModel(TT, CM, JIT), OL),
+          // OHOS_LOCAL end
       TLOF(createTLOF(getTargetTriple())), isLittle(LittleEndian) {
   initAsmInfo();
 
