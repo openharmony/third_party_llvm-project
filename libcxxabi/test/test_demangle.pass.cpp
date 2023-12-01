@@ -30175,6 +30175,16 @@ const char* cases[][2] =
     {"_Z2f5IKiEvu14__remove_constIT_E", "void f5<int const>(__remove_const(int const))"},
     {"_Z2f5IPiEvu16__remove_pointerIT_E", "void f5<int*>(__remove_pointer(int*))"},
     {"_Z2f5IiEvu14__remove_cvrefIT_E", "void f5<int>(__remove_cvref(int))"},
+
+    // C++23 explicit object parameter
+    {"_ZNH3Foo3fooES_i", "Foo::foo(this Foo, int)"},
+    {"_ZNH3Foo3fooERKS_i", "Foo::foo(this Foo const&, int)"},
+    {"_ZNH1X3fooIRS_EEvOT_i", "void X::foo<X&>(this X&, int)"},
+    {"_ZZNH2ns3Foo3fooES0_iENH4Foo24foo2EOKS1_", "ns::Foo::foo(this ns::Foo, int)::Foo2::foo2(this Foo2 const&&)" },
+    {"_ZNH2ns3FooB7Foo_tag3fooB7foo_tagERKS0_i", "ns::Foo[abi:Foo_tag]::foo[abi:foo_tag](this ns::Foo[abi:Foo_tag] const&, int)" },
+    {"_ZZN3Foo3fooEiENH4Foo24foo2EOKS0_", "Foo::foo(int)::Foo2::foo2(this Foo2 const&&)"},
+    {"_ZZNH3Foo3fooES_iENK4Foo24foo2Ev", "Foo::foo(this Foo, int)::Foo2::foo2() const" },
+    {"_ZNH3FooclERKS_", "Foo::operator()(this Foo const&)"},
 };
 // clang-format on
 
