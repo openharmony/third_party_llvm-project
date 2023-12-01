@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.13.4)
 
+# OHOS_LOCAL begin
+option(LLDB_ENABLE_PERFORMANCE "Enable lldb performance monitoring" OFF)
+if(LLDB_ENABLE_PERFORMANCE)
+  add_definitions(-DLLDB_ENABLE_PERFORMANCE_MONITORING)
+endif()
+# OHOS_LOCAL end
+
 # Add path for custom modules.
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}

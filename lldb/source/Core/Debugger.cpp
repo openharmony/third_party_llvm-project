@@ -52,6 +52,7 @@
 #include "lldb/Utility/State.h"
 #include "lldb/Utility/Stream.h"
 #include "lldb/Utility/StreamString.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 #if defined(_WIN32)
 #include "lldb/Host/windows/PosixApi.h"
@@ -311,6 +312,7 @@ const FormatEntity::Entry *Debugger::GetThreadFormat() const {
 }
 
 const FormatEntity::Entry *Debugger::GetThreadStopFormat() const {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_DEBUGGER);   // OHOS_LOCAL
   const uint32_t idx = ePropertyThreadStopFormat;
   return m_collection_sp->GetPropertyAtIndexAsFormatEntity(nullptr, idx);
 }
@@ -1713,6 +1715,7 @@ lldb::thread_result_t Debugger::DefaultEventHandler() {
   while (!done) {
     EventSP event_sp;
     if (listener_sp->GetEvent(event_sp, llvm::None)) {
+    LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_DEBUGGER);   // OHOS_LOCAL
       if (event_sp) {
         Broadcaster *broadcaster = event_sp->GetBroadcaster();
         if (broadcaster) {

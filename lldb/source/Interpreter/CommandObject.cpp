@@ -28,6 +28,7 @@
 #include "lldb/Target/Process.h"
 #include "lldb/Target/Target.h"
 #include "lldb/Utility/FileSpec.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 #include "lldb/Target/Language.h"
 
@@ -717,6 +718,7 @@ Thread *CommandObject::GetDefaultThread() {
 
 bool CommandObjectParsed::Execute(const char *args_string,
                                   CommandReturnObject &result) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_COMMANDS);    // OHOS_LOCAL
   bool handled = false;
   Args cmd_args(args_string);
   if (HasOverrideCallback()) {

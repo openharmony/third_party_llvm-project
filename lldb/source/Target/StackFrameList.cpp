@@ -23,6 +23,7 @@
 #include "lldb/Target/Unwind.h"
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 #include "llvm/ADT/SmallPtrSet.h"
 
 #include <memory>
@@ -436,6 +437,7 @@ void StackFrameList::SynthesizeTailCallFrames(StackFrame &next_frame) {
 
 void StackFrameList::GetFramesUpTo(uint32_t end_idx) {
   // Do not fetch frames for an invalid thread.
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
   if (!m_thread.IsValid())
     return;
 
@@ -646,6 +648,7 @@ void StackFrameList::Dump(Stream *s) {
 }
 
 StackFrameSP StackFrameList::GetFrameAtIndex(uint32_t idx) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
   StackFrameSP frame_sp;
   std::lock_guard<std::recursive_mutex> guard(m_mutex);
   uint32_t original_idx = idx;
@@ -848,6 +851,7 @@ size_t StackFrameList::GetStatus(Stream &strm, uint32_t first_frame,
                                  uint32_t num_frames_with_source,
                                  bool show_unique,
                                  const char *selected_frame_marker) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
   size_t num_frames_displayed = 0;
 
   if (num_frames == 0)

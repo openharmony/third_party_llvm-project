@@ -1111,6 +1111,7 @@ void ProcessGDBRemote::DidLaunch() {
 
 Status ProcessGDBRemote::DoAttachToProcessWithID(
     lldb::pid_t attach_pid, const ProcessAttachInfo &attach_info) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);    // OHOS_LOCAL
   Log *log = GetLog(GDBRLog::Process);
   Status error;
 
@@ -1204,6 +1205,7 @@ void ProcessGDBRemote::DidExit() {
 
 void ProcessGDBRemote::DidAttach(ArchSpec &process_arch) {
   // If you can figure out what the architecture is, fill it in here.
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);    // OHOS_LOCAL
   process_arch.Clear();
   DidLaunchOrAttach(process_arch);
 }
@@ -2499,6 +2501,7 @@ void ProcessGDBRemote::WillPublicStop() {
   // runtime queue information (iOS and MacOSX only), and more. Expediting
   // memory will help stack backtracing be much faster. Expediting registers
   // will make sure we don't have to read the thread registers for GPRs.
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   m_jthreadsinfo_sp = m_gdb_comm.GetThreadsInfo();
 
   if (m_jthreadsinfo_sp) {
@@ -2520,6 +2523,7 @@ void ProcessGDBRemote::WillPublicStop() {
 // Process Memory
 size_t ProcessGDBRemote::DoReadMemory(addr_t addr, void *buf, size_t size,
                                       Status &error) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   GetMaxMemorySize();
   bool binary_memory_read = m_gdb_comm.GetxPacketSupported();
   // M and m packets take 2 bytes for 1 byte of memory
@@ -2923,6 +2927,7 @@ size_t ProcessGDBRemote::PutSTDIN(const char *src, size_t src_len,
 }
 
 Status ProcessGDBRemote::EnableBreakpointSite(BreakpointSite *bp_site) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   Status error;
   assert(bp_site != nullptr);
 
@@ -3423,6 +3428,7 @@ void ProcessGDBRemote::DebuggerInitialize(Debugger &debugger) {
 }
 
 bool ProcessGDBRemote::StartAsyncThread() {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   Log *log = GetLog(GDBRLog::Process);
 
   LLDB_LOGF(log, "ProcessGDBRemote::%s ()", __FUNCTION__);

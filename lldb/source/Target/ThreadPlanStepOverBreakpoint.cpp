@@ -13,6 +13,7 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/Stream.h"
+#include "lldb/Utility/Timer.h"     // OHOS_LOCAL
 
 using namespace lldb;
 using namespace lldb_private;
@@ -169,6 +170,7 @@ bool ThreadPlanStepOverBreakpoint::WillStop() {
 void ThreadPlanStepOverBreakpoint::DidPop() { ReenableBreakpointSite(); }
 
 bool ThreadPlanStepOverBreakpoint::MischiefManaged() {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
   lldb::addr_t pc_addr = GetThread().GetRegisterContext()->GetPC();
 
   if (pc_addr == m_breakpoint_addr || m_handling_signal) {

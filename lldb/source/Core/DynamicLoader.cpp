@@ -18,6 +18,7 @@
 #include "lldb/Target/Process.h"
 #include "lldb/Target/Target.h"
 #include "lldb/Utility/ConstString.h"
+#include "lldb/Utility/Timer.h"    // OHOS_LOCAL
 #include "lldb/lldb-private-interfaces.h"
 
 #include "llvm/ADT/StringRef.h"
@@ -70,6 +71,7 @@ void DynamicLoader::SetStopWhenImagesChange(bool stop) {
 }
 
 ModuleSP DynamicLoader::GetTargetExecutable() {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_DYNAMICLOADER);   // OHOS_LOCAL
   Target &target = m_process->GetTarget();
   ModuleSP executable = target.GetExecutableModule();
 

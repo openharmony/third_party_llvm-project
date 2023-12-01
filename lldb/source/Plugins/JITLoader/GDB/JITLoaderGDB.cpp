@@ -26,6 +26,7 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/StreamString.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 #include "llvm/Support/MathExtras.h"
 
 #include <memory>
@@ -166,6 +167,7 @@ void JITLoaderGDB::DebuggerInitialize(Debugger &debugger) {
 }
 
 void JITLoaderGDB::DidAttach() {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_JITLOADER);   // OHOS_LOCAL
   Target &target = m_process->GetTarget();
   ModuleList &module_list = target.GetImages();
   SetJITBreakpoint(module_list);
@@ -178,6 +180,7 @@ void JITLoaderGDB::DidLaunch() {
 }
 
 void JITLoaderGDB::ModulesDidLoad(ModuleList &module_list) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_JITLOADER);   // OHOS_LOCAL
   if (!DidSetJITBreakpoint() && m_process->IsAlive())
     SetJITBreakpoint(module_list);
 }

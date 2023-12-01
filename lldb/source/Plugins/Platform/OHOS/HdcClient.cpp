@@ -23,6 +23,7 @@
 #include "lldb/Utility/FileSpec.h"
 #include "lldb/Utility/StreamString.h"
 #include "lldb/Utility/Timeout.h"
+#include "lldb/Utility/Timer.h" // OHOS_LOCAL
 
 #if defined(_WIN32)
 #include <winsock.h>
@@ -266,6 +267,7 @@ Status HdcClient::DeletePortForwarding(const uint16_t local_port,
 
 Status HdcClient::TransferFile(const char *direction, const FileSpec &src,
                                const FileSpec &dst) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_HDC);   // OHOS_LOCAL
   llvm::SmallVector<char, 128> cwd;
   std::error_code ec = llvm::sys::fs::current_path(cwd);
   if (ec)

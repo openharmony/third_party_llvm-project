@@ -34,6 +34,7 @@
 #include "lldb/Utility/State.h"
 
 #include "llvm/ADT/ScopeExit.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 #include <bitset>
 
@@ -377,6 +378,7 @@ public:
 
 protected:
   bool DoExecute(Args &command, CommandReturnObject &result) override {
+    LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_COMMANDS);    // OHOS_LOCAL
     PlatformSP platform_sp(
         GetDebugger().GetPlatformList().GetSelectedPlatform());
 
