@@ -218,6 +218,9 @@ struct CommonConfig {
   StringRef AllocSectionsPrefix;
   DiscardType DiscardMode = DiscardType::None;
 
+  // Float abi
+  Optional<uint32_t> FabiValue;
+
   // Repeated options
   std::vector<NewSectionInfo> AddSection;
   std::vector<StringRef> DumpSection;

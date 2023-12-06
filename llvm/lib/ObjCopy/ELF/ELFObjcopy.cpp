@@ -604,6 +604,10 @@ static Error handleArgs(const CommonConfig &Config, const ELFConfig &ELFConfig,
     Obj.OSABI = Config.OutputArch.value().OSABI;
   }
 
+  if (Config.FabiValue) {
+    Obj.Flags |= Config.FabiValue.value();
+  }
+
   if (!Config.SplitDWO.empty() && Config.ExtractDWO) {
     return Obj.removeSections(
         ELFConfig.AllowBrokenLinks,
