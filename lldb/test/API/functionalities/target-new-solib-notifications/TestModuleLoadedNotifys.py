@@ -83,7 +83,11 @@ class ModuleLoadedNotifysTestCase(TestBase):
                         # On macOS Ventura and later, dyld and the main binary
                         # will be loaded again when dyld moves itself into the
                         # shared cache.
-                        if module.file.fullpath not in ['/usr/lib/dyld', exe]:
+                        # OHOS requires lldb to load the interpreter module during
+                        # the launch process to support debugging musl/linker. So
+                        # ld.so will be loaded repeatedly.
+                        if (module.file.fullpath not in ['/usr/lib/dyld', exe] and
+                            not module.file.basename.startswith('ld-')):  # OHOS_LOCAL
                             self.assertTrue(module not in already_loaded_modules, '{} is already loaded'.format(module))
                         already_loaded_modules.append(module)
                         if self.TraceOn():
