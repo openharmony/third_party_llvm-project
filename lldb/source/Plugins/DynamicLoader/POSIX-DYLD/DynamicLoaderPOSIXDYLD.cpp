@@ -193,6 +193,11 @@ void DynamicLoaderPOSIXDYLD::DidLaunch() {
     }
 
     LoadVDSO();
+    // OHOS_LOCAL begin
+    ModuleSP interpreter = m_interpreter_module.lock();
+    if (interpreter)
+      module_list.Append(interpreter);
+    // OHOS_LOCAL end
     m_process->GetTarget().ModulesDidLoad(module_list);
   }
 }
