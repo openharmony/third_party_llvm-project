@@ -25,7 +25,7 @@
             "third_party": []
         },
         "build": {
-            "sub_component": [],
+            "sub_component": ["//toolchain/llvm-project/llvm-build:new_crt"],
             "inner_kits": [],
             "test": []
         }
