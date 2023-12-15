@@ -375,6 +375,8 @@ defm section_start: Eq<"section-start", "Set address of section">,
 
 def shared: F<"shared">, HelpText<"Build a shared object">;
 
+def adlt: F<"adlt">, HelpText<"Build adlt library">;
+
 defm soname: Eq<"soname", "Set DT_SONAME">;
 
 defm sort_section:

@@ -76,17 +76,30 @@ public:
   // Returns sections. It is a runtime error to call this function
   // on files that don't have the notion of sections.
   ArrayRef<InputSectionBase *> getSections() const {
-    assert(fileKind == ObjKind || fileKind == BinaryKind);
+    if (config->adlt)
+      assert(fileKind == SharedKind);
+    else
+      assert(fileKind == ObjKind || fileKind == BinaryKind);
     return sections;
   }
 
   // Returns object file symbols. It is a runtime error to call this
   // function on files of other types.
   ArrayRef<Symbol *> getSymbols() const {
-    assert(fileKind == BinaryKind || fileKind == ObjKind ||
-           fileKind == BitcodeKind);
+    if (config->adlt)
+      assert(fileKind == SharedKind);
+    else
+      assert(fileKind == BinaryKind || fileKind == ObjKind ||
+             fileKind == BitcodeKind);
     return symbols;
   }
+
+  // ADLT beg
+  ArrayRef<Symbol *> getAllSymbols() const { return allSymbols; }
+
+  SmallVector<Symbol *, 0> allSymbols;
+  // ADLT end
+
 
   // Get filename to use for linker script processing.
   StringRef getNameForScript() const;
@@ -161,6 +174,7 @@ private:
 class ELFFileBase : public InputFile {
 public:
   ELFFileBase(Kind k, MemoryBufferRef m);
+  virtual ~ELFFileBase() {}
   static bool classof(const InputFile *f) { return f->isElf(); }
 
   template <typename ELFT> llvm::object::ELFFile<ELFT> getObj() const {
@@ -169,7 +183,7 @@ public:
 
   StringRef getStringTable() const { return stringTable; }
 
-  ArrayRef<Symbol *> getLocalSymbols() {
+  virtual ArrayRef<Symbol *> getLocalSymbols() {
     if (symbols.empty())
       return {};
     return llvm::makeArrayRef(symbols).slice(1, firstGlobal - 1);
@@ -224,6 +238,7 @@ public:
   ObjFile(MemoryBufferRef m, StringRef archiveName) : ELFFileBase(ObjKind, m) {
     this->archiveName = archiveName;
   }
+  virtual ~ObjFile() {}
 
   void parse(bool ignoreComdats = false);
   void parseLazy();
@@ -231,7 +246,7 @@ public:
   StringRef getShtGroupSignature(ArrayRef<Elf_Shdr> sections,
                                  const Elf_Shdr &sec);
 
-  Symbol &getSymbol(uint32_t symbolIndex) const {
+  virtual Symbol &getSymbol(uint32_t symbolIndex) const {
     if (symbolIndex >= this->symbols.size())
       fatal(toString(this) + ": invalid symbol index");
     return *this->symbols[symbolIndex];
@@ -246,6 +261,8 @@ public:
 
   llvm::Optional<llvm::DILineInfo> getDILineInfo(InputSectionBase *, uint64_t);
   llvm::Optional<std::pair<std::string, unsigned>> getVariableLoc(StringRef name);
+
+  ArrayRef<Elf_Word> getShndxTable();
 
   // Name of source file obtained from STT_FILE symbol value,
   // or empty string if there is no such symbol in object file
@@ -276,6 +293,8 @@ public:
 
   void initializeLocalSymbols();
   void postParse();
+
+  bool isPatchedSecName = true; // ADLT
 
 private:
   void initializeSections(bool ignoreComdats,
@@ -364,6 +383,81 @@ private:
                                      const typename ELFT::Shdr *sec);
 };
 
+
+// ADLT
+template <class ELFT>
+class SharedFileExtended : public ObjFile<ELFT> {
+  LLVM_ELF_IMPORT_TYPES_ELFT(ELFT)
+
+public:
+  SharedFileExtended(MemoryBufferRef mb, StringRef soName);
+
+  static bool classof(const InputFile *f) {
+    return f->kind() == InputFile::SharedKind;
+  }
+
+  void parseForAdlt();
+  void postParseForAdlt();
+
+  StringRef addAdltPrefix(StringRef input);
+  bool addAdltPrefix(Symbol *s);
+
+  Defined* findSectionSymbol(uint64_t offset);
+
+  ArrayRef<Symbol *> getLocalSymbols() override {
+    if (this->allSymbols.empty())
+      return {};
+    return llvm::makeArrayRef(this->allSymbols).slice(1, eFirstGlobal - 1);
+  }
+
+  Symbol &getSymbol(uint32_t symbolIndex) const override;
+  Defined *findSymbolByValue(uint32_t value) const;
+
+  Symbol &getSymbolFromElfSymTab(uint32_t symbolIndex) const {
+    if (symbolIndex >= this->allSymbols.size())
+      fatal(toString(this) + ": invalid symbol index");
+    return *this->allSymbols[symbolIndex];
+  }
+
+  void traceElfSymbol(const Elf_Sym &sym, StringRef strTable) const;
+  void traceElfSection(const Elf_Shdr &sec) const;
+
+  void traceSymbol(const Symbol& sym) const;
+  void traceSection(const SectionBase& sec) const;
+
+  int dynSymSecIdx = 0;
+  int symTabSecIdx = 0;
+  int symTabShndxSecIdx = 0;
+  int eFirstGlobal = 0;
+
+  // This is actually a vector of Elf_Verdef pointers.
+  SmallVector<const void *, 0> verdefs;
+  // If the output file needs Elf_Verneed data structures for this file, this is
+  // a vector of Elf_Vernaux version identifiers that map onto the entries in
+  // Verdefs, otherwise it is empty.
+  SmallVector<uint32_t, 0> vernauxs;
+  static unsigned vernauxNum;
+  SmallVector<StringRef, 0> dtNeeded;
+  StringRef soName;
+  StringRef simpleSoName;
+  // Used for --as-needed
+  // bool isNeeded;
+  // Non-weak undefined symbols which are not yet resolved when the SO is
+  // parsed. Only filled for `--no-allow-shlib-undefined`.
+  SmallVector<Symbol *, 0> requiredSymbols;
+
+private:
+  void parseDynamics(); // SharedFile compability
+  void parseElfSymTab(); // ObjectFile compability
+
+  void resolveDuplicatesForAdlt();
+
+  StringRef getShStrTab(ArrayRef<typename ELFT::Shdr> elfSections);
+
+  std::vector<uint32_t> parseVerneed(const llvm::object::ELFFile<ELFT> &obj,
+                                     const typename ELFT::Shdr *sec);
+};
+
 class BinaryFile : public InputFile {
 public:
   explicit BinaryFile(MemoryBufferRef m) : InputFile(BinaryKind, m) {}
@@ -373,6 +467,8 @@ public:
 
 ELFFileBase *createObjFile(MemoryBufferRef mb, StringRef archiveName = "",
                            bool lazy = false);
+
+ELFFileBase *createSharedFileExtended(MemoryBufferRef mb, StringRef soName = "");
 
 std::string replaceThinLTOSuffix(StringRef path);
 

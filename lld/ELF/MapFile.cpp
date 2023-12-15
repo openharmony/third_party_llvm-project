@@ -55,7 +55,8 @@ static void writeHeader(raw_ostream &os, uint64_t vma, uint64_t lma,
 // Returns a list of all symbols that we want to print out.
 static std::vector<Defined *> getSymbols() {
   std::vector<Defined *> v;
-  for (ELFFileBase *file : ctx->objectFiles)
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  for (ELFFileBase *file : files)
     for (Symbol *b : file->getSymbols())
       if (auto *dr = dyn_cast<Defined>(b))
         if (!dr->isSection() && dr->section && dr->section->isLive() &&
@@ -224,7 +225,8 @@ static void writeMapFile(raw_fd_ostream &os) {
 static void writeCref(raw_fd_ostream &os) {
   // Collect symbols and files.
   MapVector<Symbol *, SetVector<InputFile *>> map;
-  for (ELFFileBase *file : ctx->objectFiles) {
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  for (ELFFileBase *file : files) {
     for (Symbol *sym : file->getSymbols()) {
       if (isa<SharedSymbol>(sym))
         map[sym].insert(file);

@@ -1397,9 +1397,23 @@ DynamicSection<ELFT>::computeContents() {
     addInt(config->enableNewDtags ? DT_RUNPATH : DT_RPATH,
            part.dynStrTab->addString(config->rpath));
 
-  for (SharedFile *file : ctx->sharedFiles)
-    if (file->isNeeded)
-      addInt(DT_NEEDED, part.dynStrTab->addString(file->soName));
+  if (config->adlt) {
+    StringRef prevNeeded;
+    for (InputFile *file : ctx->sharedFilesExtended) {
+      auto *f = cast<SharedFileExtended<ELFT>>(file);
+      for (size_t i = 0; i < f->dtNeeded.size(); i++) {
+        StringRef needed = f->dtNeeded[i];
+        if (prevNeeded == needed)
+          continue;
+        addInt(DT_NEEDED, part.dynStrTab->addString(needed));
+        prevNeeded = needed;
+      }
+    }
+    addInt(DT_SONAME, part.dynStrTab->addString(config->outputFile));
+  } else
+    for (SharedFile *file : ctx->sharedFiles)
+      if (file->isNeeded)
+        addInt(DT_NEEDED, part.dynStrTab->addString(file->soName));
 
   if (isMain) {
     if (!config->soName.empty())
@@ -1536,17 +1550,40 @@ DynamicSection<ELFT>::computeContents() {
     addInSec(DT_HASH, *part.hashTab);
 
   if (isMain) {
-    if (Out::preinitArray) {
-      addInt(DT_PREINIT_ARRAY, Out::preinitArray->addr);
-      addInt(DT_PREINIT_ARRAYSZ, Out::preinitArray->size);
-    }
-    if (Out::initArray) {
-      addInt(DT_INIT_ARRAY, Out::initArray->addr);
-      addInt(DT_INIT_ARRAYSZ, Out::initArray->size);
-    }
-    if (Out::finiArray) {
-      addInt(DT_FINI_ARRAY, Out::finiArray->addr);
-      addInt(DT_FINI_ARRAYSZ, Out::finiArray->size);
+    if (config->adlt) {
+      auto findSection = [](StringRef name, unsigned partition = 1) {
+        for (SectionCommand *cmd : script->sectionCommands)
+          if (auto *osd = dyn_cast<OutputDesc>(cmd))
+            if (osd->osec.name == name && osd->osec.partition == partition)
+              return &osd->osec;
+        return (OutputSection *)nullptr;
+      };
+      for (InputFile *file : ctx->sharedFilesExtended) {
+        auto *f = cast<SharedFileExtended<ELFT>>(file);
+        auto initArray = findSection(f->addAdltPrefix(".init_array"));
+        auto finiArray = findSection(f->addAdltPrefix(".fini_array"));
+        if (initArray) {
+          addInt(DT_INIT_ARRAY, initArray->addr);
+          addInt(DT_INIT_ARRAYSZ, initArray->size);
+        }
+        if (finiArray) {
+          addInt(DT_FINI_ARRAY, finiArray->addr);
+          addInt(DT_FINI_ARRAYSZ, finiArray->size);
+        }
+      }
+    } else {
+      if (Out::preinitArray) {
+        addInt(DT_PREINIT_ARRAY, Out::preinitArray->addr);
+        addInt(DT_PREINIT_ARRAYSZ, Out::preinitArray->size);
+      }
+      if (Out::initArray) {
+        addInt(DT_INIT_ARRAY, Out::initArray->addr);
+        addInt(DT_INIT_ARRAYSZ, Out::initArray->size);
+      }
+      if (Out::finiArray) {
+        addInt(DT_FINI_ARRAY, Out::finiArray->addr);
+        addInt(DT_FINI_ARRAYSZ, Out::finiArray->size);
+      }
     }
 
     if (Symbol *b = symtab->find(config->init))
@@ -3410,7 +3447,8 @@ template <class ELFT> void elf::splitSections() {
   llvm::TimeTraceScope timeScope("Split sections");
   // splitIntoPieces needs to be called on each MergeInputSection
   // before calling finalizeContents().
-  parallelForEach(ctx->objectFiles, [](ELFFileBase *file) {
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  parallelForEach(files, [](ELFFileBase *file) {
     for (InputSectionBase *sec : file->getSections()) {
       if (!sec)
         continue;

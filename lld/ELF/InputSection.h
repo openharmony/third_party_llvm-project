@@ -28,6 +28,7 @@ class Defined;
 struct Partition;
 class SyntheticSection;
 template <class ELFT> class ObjFile;
+template <class ELFT> class SharedFileExtended;
 class OutputSection;
 
 extern std::vector<Partition> partitions;
@@ -74,6 +75,9 @@ public:
   uint32_t type;
   uint32_t link;
   uint32_t info;
+  uint64_t address = 0; // store input sec addr for ADLT
+  uint64_t size = 0; // store input sec size for ADLT
+
 
   OutputSection *getOutputSection();
   const OutputSection *getOutputSection() const {
@@ -131,6 +135,11 @@ public:
 
   template <class ELFT> ObjFile<ELFT> *getFile() const {
     return cast_or_null<ObjFile<ELFT>>(file);
+  }
+
+  template <class ELFT>
+  SharedFileExtended<ELFT> *getSharedFile() const {
+    return cast_or_null<SharedFileExtended<ELFT>>(file);
   }
 
   // Used by --optimize-bb-jumps and RISC-V linker relaxation temporarily to
@@ -392,7 +401,7 @@ private:
   template <class ELFT> void copyShtGroup(uint8_t *buf);
 };
 
-static_assert(sizeof(InputSection) <= 160, "InputSection is too big");
+static_assert(sizeof(InputSection) <= 180, "InputSection is too big");
 
 inline bool isDebugSection(const InputSectionBase &sec) {
   return (sec.flags & llvm::ELF::SHF_ALLOC) == 0 &&

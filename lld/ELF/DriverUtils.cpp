@@ -64,6 +64,13 @@ static void handleColorDiagnostics(opt::InputArgList &args) {
     error("unknown option: --color-diagnostics=" + s);
 }
 
+static void handleAdltOption(opt::InputArgList &args) {
+  auto *arg = args.getLastArg(OPT_adlt);
+  if (!arg)
+    return;
+  lld::outs() << "adlt is active\n";
+}
+
 static cl::TokenizerCallback getQuotingStyle(opt::InputArgList &args) {
   if (auto *arg = args.getLastArg(OPT_rsp_quoting)) {
     StringRef s = arg->getValue();
@@ -120,6 +127,7 @@ opt::InputArgList ELFOptTable::parse(ArrayRef<const char *> argv) {
   args = this->ParseArgs(vec, missingIndex, missingCount);
 
   handleColorDiagnostics(args);
+  handleAdltOption(args);
   if (missingCount)
     error(Twine(args.getArgString(missingIndex)) + ": missing argument");
 

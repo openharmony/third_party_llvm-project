@@ -220,6 +220,7 @@ struct Configuration {
   std::vector<std::pair<llvm::GlobPattern, uint32_t>> shuffleSections;
   bool singleRoRx;
   bool shared;
+  bool adlt = false;
   bool symbolic;
   bool isStatic = false;
   bool sysvHash = false;
@@ -384,6 +385,7 @@ struct Ctx {
   SmallVector<std::unique_ptr<MemoryBuffer>> memoryBuffers;
   SmallVector<ELFFileBase *, 0> objectFiles;
   SmallVector<SharedFile *, 0> sharedFiles;
+  SmallVector<ELFFileBase *, 0> sharedFilesExtended;
   SmallVector<BinaryFile *, 0> binaryFiles;
   SmallVector<BitcodeFile *, 0> bitcodeFiles;
   SmallVector<BitcodeFile *, 0> lazyBitcodeFiles;
