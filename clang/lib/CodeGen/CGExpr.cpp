@@ -3446,10 +3446,30 @@ void CodeGenFunction::EmitCfiSlowPathCheck(
 void CodeGenFunction::EmitCfiCheckStub() {
   llvm::Module *M = &CGM.getModule();
   auto &Ctx = M->getContext();
+  auto &C = getContext();
+  QualType QInt8Ty = C.getIntTypeForBitwidth(8, true);
+  QualType QInt64Ty = C.getIntTypeForBitwidth(64, true);
+  QualType QInt8PtrTy = C.getPointerType(QInt8Ty);
+
+  FunctionArgList Args;
+  ImplicitParamDecl ArgCallsiteTypeId(C, QInt64Ty, ImplicitParamDecl::Other);
+  ImplicitParamDecl ArgAddr(C, QInt8PtrTy, ImplicitParamDecl::Other);
+  ImplicitParamDecl ArgCFICheckFailData(C, QInt8PtrTy,
+                                        ImplicitParamDecl::Other);
+  Args.push_back(&ArgCallsiteTypeId);
+  Args.push_back(&ArgAddr);
+  Args.push_back(&ArgCFICheckFailData);
+
+  const CGFunctionInfo &FI =
+      CGM.getTypes().arrangeBuiltinFunctionDeclaration(C.VoidTy, Args);
+
   llvm::Function *F = llvm::Function::Create(
       llvm::FunctionType::get(VoidTy, {Int64Ty, Int8PtrTy, Int8PtrTy}, false),
       llvm::GlobalValue::WeakAnyLinkage, "__cfi_check", M);
+  CGM.SetLLVMFunctionAttributes(GlobalDecl(), FI, F, /*IsThunk=*/false);
+  CGM.SetLLVMFunctionAttributesForDefinition(nullptr, F);
   CGM.setDSOLocal(F);
+
   llvm::BasicBlock *BB = llvm::BasicBlock::Create(Ctx, "entry", F);
   // FIXME: consider emitting an intrinsic call like
   // call void @llvm.cfi_check(i64 %0, i8* %1, i8* %2)
