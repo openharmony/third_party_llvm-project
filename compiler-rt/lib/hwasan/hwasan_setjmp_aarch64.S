@@ -88,6 +88,14 @@ ASM_SIZE(__interceptor_sigsetjmp)
 #if SANITIZER_ANDROID
 WEAK_ALIAS __interceptor_sigsetjmp, sigsetjmp
 WEAK_ALIAS __interceptor_setjmp_bionic, setjmp
+// OHOS_LOCAL begin
+#elif SANITIZER_OHOS
+// musl's setjmp, _setjmp, __setjmp are the same
+// also musl's sigsetjmp, __sigsetjmp are the same
+WEAK_ALIAS __interceptor_sigsetjmp, sigsetjmp
+WEAK_ALIAS __interceptor_sigsetjmp, __sigsetjmp
+WEAK_ALIAS __interceptor_setjmp, setjmp
+// OHOS_LOCAL end
 #else
 WEAK_ALIAS __interceptor_sigsetjmp, __sigsetjmp
 #endif
