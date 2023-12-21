@@ -1354,6 +1354,7 @@ class LlvmLibs(BuildUtils):
         crt_defines['COMPILER_RT_HWASAN_WITH_INTERCEPTORS'] = 'OFF'
         crt_defines['COMPILER_RT_BUILD_SANITIZERS'] = \
             'OFF' if llvm_triple == self.liteos_triple('arm') or first_time else 'ON'
+        crt_defines['COMPILER_RT_EXCLUDE_ATOMIC_BUILTIN'] = 'OFF'
         crt_defines['COMPILER_RT_DEFAULT_TARGET_TRIPLE'] = llvm_triple
         crt_cmake_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'compiler-rt'))
         self.rm_cmake_cache(crt_path)
