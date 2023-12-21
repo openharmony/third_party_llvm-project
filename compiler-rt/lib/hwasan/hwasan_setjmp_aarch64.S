@@ -89,6 +89,13 @@ ASM_INTERCEPTOR_TRAMPOLINE(sigsetjmp)
 #if SANITIZER_ANDROID
 ASM_TRAMPOLINE_ALIAS(sigsetjmp, sigsetjmp)
 ASM_TRAMPOLINE_ALIAS(setjmp, setjmp_bionic)
+// OHOS_LOCAL begin
+#elif SANITIZER_OHOS
+// musl's setjmp, _setjmp, __setjmp are the same
+// also musl's sigsetjmp, __sigsetjmp are the same
+ASM_TRAMPOLINE_ALIAS(sigsetjmp, sigsetjmp)
+ASM_TRAMPOLINE_ALIAS( __sigsetjmp, sigsetjmp)
+ASM_TRAMPOLINE_ALIAS(setjmp, setjmp)
 #else
 ASM_TRAMPOLINE_ALIAS(__sigsetjmp, sigsetjmp)
 #endif

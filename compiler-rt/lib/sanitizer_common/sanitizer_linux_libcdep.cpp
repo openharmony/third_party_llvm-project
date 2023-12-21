@@ -642,10 +642,32 @@ void GetThreadStackAndTls(bool main, uptr *stk_addr, uptr *stk_size,
   if (!main) {
     // If stack and tls intersect, make them non-intersecting.
     if (*tls_addr > *stk_addr && *tls_addr < *stk_addr + *stk_size) {
+    // OHOS_LOCAL begin
+#ifndef SANITIZER_OHOS
       if (*stk_addr + *stk_size < *tls_addr + *tls_size)
         *tls_size = *stk_addr + *stk_size - *tls_addr;
       *stk_size = *tls_addr - *stk_addr;
     }
+#else
+      // Always move tls to the end of thread's stack.
+      // This is how it works before the
+      // "https://github.com/llvm/llvm-project/commit/9be8f8b34d9b150cd1811e3556fe9d0cd735ae29".
+      // ^ In the new version if stack and thread intersects,
+      // then the stack size is reduced. (see the "ifndef" version)
+      // I didn't find the reason why it is done like that,
+      // but it breaks unwinding on OHOS (frame pointer considered out of stack bounds and unwinding stops).
+      // So I've returned previous version for OHOS only.
+      if (*stk_addr + *stk_size < *tls_addr + *tls_size) {
+        *tls_size = *tls_addr + *tls_size - *stk_addr - *stk_size;
+        *tls_addr = *stk_addr + *stk_size;
+      }
+      else {
+        *tls_size = *stk_addr + *stk_size - *tls_addr;
+        *stk_size = *tls_addr - *stk_addr;
+      }
+#endif
+    }
+    // OHOS_LOCAL end
   }
 #  endif
 }
