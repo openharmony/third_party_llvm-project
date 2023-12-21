@@ -74,6 +74,10 @@ build.py options：
     linux 
     check-api
 --build-clean           # delete out folder after build packages
+--build_libs_flags      # which kind of flags for build_crts and build_runtimes
+    OH
+    LLVM
+    BOTH
 ```
 </br>
 

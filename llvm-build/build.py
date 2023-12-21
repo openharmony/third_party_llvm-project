@@ -29,6 +29,7 @@ import stat
 
 from python_builder import MinGWPythonBuilder
 from prebuilts_clang_version import prebuilts_clang_version
+from get_ohos_flags import get_ohos_cflags, get_ohos_ldflags
 
 class BuildConfig():
     # Defines public methods and functions and obtains script parameters.
@@ -63,6 +64,8 @@ class BuildConfig():
         self.build_libxml2 = args.build_libxml2
         self.lldb_timeout = args.lldb_timeout
         self.enable_monitoring = args.enable_monitoring
+        self.build_libs = args.build_libs
+        self.build_libs_flags = args.build_libs_flags
 
         self.discover_paths()
 
@@ -77,6 +80,7 @@ class BuildConfig():
         self.LLDB_PY_DETAILED_VERSION = self.LLDB_PY_VERSION + '.2'
         self.CLANG_VERSION = prebuilts_clang_version
         self.MINGW_TRIPLE = 'x86_64-windows-gnu'
+        self.build_libs_with_hb = self.build_libs_flags == 'OH' or self.build_libs_flags == 'BOTH'
         logging.basicConfig(level=logging.INFO)
 
     def discover_paths(self):
@@ -267,6 +271,21 @@ class BuildConfig():
             action=SeparatedListByCommaAction,
             default=list(),
             help='Don\'t build toolchain for specified platforms.  Choices: ' + known_platforms_str)
+
+        known_libs = ['crts_first_time', 'crts_not_first_time', 'runtimes_libunwind', 'runtimes_libcxx', 'runtimes_libcxx_ndk']
+        known_libs_flags = ['OH', 'BOTH', 'LLVM']
+
+        parser.add_argument(
+            '--build-libs',
+            choices=known_libs,
+            default=None,
+            help=argparse.SUPPRESS)
+
+        parser.add_argument(
+            '--build-libs-flags',
+            choices=known_libs_flags,
+            default="LLVM",
+            help='which kind of flags for build_crts and build_runtimes, Choices:' + ', '.join(known_libs_flags))
 
         return parser.parse_args()
 
@@ -1100,9 +1119,14 @@ class LlvmLibs(BuildUtils):
             self.sysroot_composer.build_musl_header(arch, target)
             if target.endswith(self.build_config.OPENHOS_SFX):
                 self.sysroot_composer.install_linux_headers(arch, target)
-            self.build_libs(llvm_install,
-                            target,
-                            precompilation=True)
+        if self.build_config.build_libs_with_hb:
+            self.run_hb_build_libs('crts_first_time')
+        else:
+            for (arch, target) in configs:
+                self.build_libs(llvm_install,
+                                    target,
+                                    precompilation=True)
+        for (arch, target) in configs:
             self.sysroot_composer.build_musl(arch, target)
 
     def build_libs_defines(self,
@@ -1151,8 +1175,12 @@ class LlvmLibs(BuildUtils):
                 extra_flags, ]
 
         cflags.extend(cflag)
+    
+    def run_hb_build_libs(self, libs_name):
+        gn_args = 'build_libs_flags={} llvm_lib={}'.format(self.build_config.build_libs_flags, libs_name)
+        self.sysroot_composer.run_hb_build('llvm_build', 'arm', 'build_libs', gn_args)
 
-    def build_libs(self, llvm_install, llvm_build, precompilation=False):
+    def libs_argument(self, llvm_install):
         configs_list = [
             ('arm', self.liteos_triple('arm'), '-march=armv7-a -mfloat-abi=soft', ''),
             ('arm', self.liteos_triple('arm'), '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=soft', 'a7_soft'),
@@ -1177,6 +1205,11 @@ class LlvmLibs(BuildUtils):
         cxx = os.path.join(llvm_install, 'bin', 'clang++')
         ar = os.path.join(llvm_install, 'bin', 'llvm-ar')
         llvm_config = os.path.join(llvm_install, 'bin', 'llvm-config')
+        self.set_clang_version(llvm_install)
+        return configs_list, cc, cxx, ar, llvm_config
+
+    def build_libs(self, llvm_install, llvm_build, precompilation=False):
+        configs_list, cc, cxx, ar, llvm_config = self.libs_argument(llvm_install)
         seen_arch_list = [self.liteos_triple('arm')]
 
         self.set_clang_version(llvm_install)
@@ -1201,6 +1234,9 @@ class LlvmLibs(BuildUtils):
             arch_list = [self.liteos_triple('arm'), self.open_ohos_triple('arm'),
                          self.open_ohos_triple('aarch64'), self.open_ohos_triple('riscv64'),
                          self.open_ohos_triple('mipsel'), self.open_ohos_triple('x86_64')]
+            libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
+            self.check_create_dir(libcxx_ndk_install)
+            
             if precompilation:
                 self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
                 continue
@@ -1208,8 +1244,6 @@ class LlvmLibs(BuildUtils):
             self.build_runtimes(llvm_install, "libunwind", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
             self.build_runtimes(llvm_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
 
-            libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
-            self.check_create_dir(libcxx_ndk_install)
             self.build_runtimes(libcxx_ndk_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple,
                                     arch, multilib_suffix, defines, True)
 
@@ -1228,6 +1262,48 @@ class LlvmLibs(BuildUtils):
             if self.build_config.need_lldb_tools and has_lldb_tools and llvm_triple not in seen_arch_list:
                 self.build_lldb_tools(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags, defines)
                 seen_arch_list.append(llvm_triple)
+
+    def build_libs_by_type(self, llvm_install, llvm_build, libs_type, is_first_time, is_ndk_install):
+        configs_list, cc, cxx, ar, llvm_config = self.libs_argument(llvm_install)
+
+        for (arch, llvm_triple, extra_flags, multilib_suffix) in configs_list:
+            if llvm_build != llvm_triple:
+                continue
+            defines = self.base_cmake_defines()
+            ldflags = []
+            cflags = []
+            out_path = self.merge_out_path('llvm_build')
+
+            self.logger().info('Make %s libs for %s build_libs_flags: %s', libs_type, llvm_triple, self.build_config.build_libs_flags)
+            if self.build_config.target_debug:
+                defines['CMAKE_BUILD_TYPE'] = 'Debug'
+            self.build_libs_defines(llvm_triple, defines, cc, cxx, ar, llvm_config, ldflags, cflags, extra_flags)
+            if arch == 'mipsel':
+                ldflags.append('-Wl,-z,notext')
+                ldflags.append('-Wl,--no-check-dynamic-relocations')
+            if self.build_config.build_libs_flags == 'OH':
+                extra_cflags = [extra_flags, '--target=%s' % llvm_triple]
+                cflags = get_ohos_cflags(out_path, extra_cflags)
+                ldflags = get_ohos_ldflags(out_path, [])
+            if self.build_config.build_libs_flags == 'BOTH':
+                cflags = get_ohos_cflags(out_path, cflags)
+                ldflags = get_ohos_ldflags(out_path, ldflags)
+            if libs_type == 'crts':
+                if is_first_time:
+                    self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
+                else:
+                    self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines,
+                                    first_time=False)
+            elif libs_type == 'runtimes':
+                if is_first_time:
+                    self.build_runtimes(llvm_install, "libunwind", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
+                elif is_ndk_install:
+                    libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
+                    self.check_create_dir(libcxx_ndk_install)
+                    self.build_runtimes(libcxx_ndk_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple,
+                                    arch, multilib_suffix, defines, True)
+                else:
+                    self.build_runtimes(llvm_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
 
     def build_runtimes(self,
                        llvm_install,
@@ -2292,13 +2368,28 @@ def main():
 
     llvm_core.set_clang_version(llvm_install)
 
+    if build_config.build_libs:
+        libs_type = 'crts' if 'crts' in build_config.build_libs else 'runtimes'
+        is_first_time = True if build_config.build_libs in ['crts_first_time', 'runtimes_libunwind'] else False
+        is_ndk_install = True if build_config.build_libs == 'runtimes_libcxx_ndk' else False
+
+        for (_, target) in configs:
+            llvm_libs.build_libs_by_type(llvm_install, target, libs_type, is_first_time, is_ndk_install)
+        return
+
     if build_config.do_build and build_utils.host_is_linux():
         sysroot_composer.setup_cmake_platform(llvm_install)
         llvm_libs.build_crt_libs(configs, llvm_install)
 
         if build_config.need_libs:
-            for (arch, target) in configs:
-                llvm_libs.build_libs(llvm_install, target)
+            if build_config.build_libs_with_hb:
+                llvm_libs.run_hb_build_libs('runtimes_libunwind')
+                llvm_libs.run_hb_build_libs('runtimes_libcxx')
+                llvm_libs.run_hb_build_libs('runtimes_libcxx_ndk')
+                llvm_libs.run_hb_build_libs('crts_not_first_time')
+            else:
+                for (arch, target) in configs:
+                    llvm_libs.build_libs(llvm_install, target)
 
     windows_python_builder = None
 
