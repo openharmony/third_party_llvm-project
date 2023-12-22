@@ -40,6 +40,8 @@
 ; SIZE-DEFAULT:          popq    %rbp
 ; SIZE-DEFAULT:          retq
 
+target triple = "x86_64-pc-linux-gnu"
+
 define protected ptr addrspace(271) @bar(ptr addrspace(271) %a0) #0 gc "ark" {
 bb1:
   %0 = call token (i64, i32, ptr, i32, i32, ...) @llvm.experimental.gc.statepoint.p0(i64 8, i32 0, ptr elementtype(ptr addrspace(271) (ptr addrspace(271))) @foo, i32 1, i32 0, ptr addrspace(271) %a0, i32 0, i32 0) [ "gc-live"(ptr addrspace(271) %a0) ]
