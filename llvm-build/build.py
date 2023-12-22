@@ -1992,6 +1992,7 @@ class LlvmPackage(BuildUtils):
             'llvm-cov%s' % ext,
             'llvm-cxxfilt%s' % ext,
             'llvm-dis%s' % ext,
+            'llvm-dwp%s' % ext,
             'llvm-lib%s' % ext,
             'llvm-link%s' % ext,
             'llvm-modextract%s' % ext,
