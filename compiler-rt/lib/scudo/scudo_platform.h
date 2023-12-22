@@ -67,7 +67,7 @@
 namespace __scudo {
 
 #if SANITIZER_CAN_USE_ALLOCATOR64
-#if defined(__aarch64__) && SANITIZER_ANDROID
+#if defined(__aarch64__) && (SANITIZER_ANDROID || SANITIZER_OHOS) // OHOS_LOCAL
 const uptr AllocatorSize = 0x4000000000ULL;  // 256G.
 # elif defined(__aarch64__)
 const uptr AllocatorSize = 0x10000000000ULL;  // 1T.
