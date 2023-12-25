@@ -307,10 +307,12 @@ public:
     return needsCopy || needsGot || needsPlt || needsTlsDesc || needsTlsGd ||
            needsTlsGdToIe || needsGotDtprel || needsTlsIe;
   }
-  void allocateAux() {
-    assert(auxIdx == uint32_t(-1));
+  bool allocateAux() {
+    if (auxIdx != uint32_t(-1))
+      return false;
     auxIdx = symAux.size();
     symAux.emplace_back();
+    return true;
   }
 
   bool isSection() const { return type == llvm::ELF::STT_SECTION; }

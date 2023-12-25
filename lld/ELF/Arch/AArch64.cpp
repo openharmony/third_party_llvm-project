@@ -44,6 +44,8 @@ public:
   uint32_t getThunkSectionSpacing() const override;
   bool inBranchRange(RelType type, uint64_t src, uint64_t dst) const override;
   bool usesOnlyLowPageBits(RelType type) const override;
+  void deRelocate(uint8_t *loc, const Relocation &rel,
+                  uint64_t *val) const override; // ADLT
   void relocate(uint8_t *loc, const Relocation &rel,
                 uint64_t val) const override;
   RelExpr adjustTlsExpr(RelType type, RelExpr expr) const override;
@@ -335,8 +337,95 @@ static void writeSMovWImm(uint8_t *loc, uint32_t imm) {
   write32le(loc, inst | ((imm & 0xFFFF) << 5));
 }
 
+static void adltRelocateDebugMessage(StringRef title, uint8_t *loc,
+                                     const Relocation &rel, uint64_t &val) {
+  lld::outs() << title
+              << " loc: " << loc /*<< " loc val: " << Twine::utohexstr(*loc)*/
+              << " rel expr: " << rel.expr
+              << " rel type: " << lld::toString(rel.type) << " rel offset: 0x"
+              << Twine::utohexstr(rel.offset) << " rel addend: 0x"
+              << Twine::utohexstr(rel.addend)
+              << " val: 0x" << Twine::utohexstr(val)
+              << " rel sym: " << (rel.sym ? rel.sym->getName() : "null!");
+
+  if (rel.sym && rel.sym->isDefined()) {
+    auto d = cast<Defined>(rel.sym);
+    lld::outs() << ": section " << d->section->name
+                << ", value 0x" << Twine::utohexstr(d->value);
+  }
+  lld::outs() << '\n';
+}
+
+void AArch64::deRelocate(uint8_t *loc, const Relocation &rel,
+                         uint64_t *val) const {
+  bool isDebug = false;
+  if (isDebug)
+    adltRelocateDebugMessage("[AArch64::deRelocate]: ", loc, rel, *val);
+
+  auto orClear32le = [&]() {
+    write32le(loc, read32le(loc) & ~((1 << 26) -1));
+  };
+
+  auto orClearAArch64Imm = [&]() {
+    write32le(loc, read32le(loc) & ~(0xFFF << 10));
+  };
+
+  switch (rel.type) {
+  case R_AARCH64_JUMP26:
+  case R_AARCH64_CALL26: {
+    /*if (*val & (1UL << 32)) {
+      if (isDebug)
+        debugMessage("found 32 bit turned on! Disabling");
+      *val = *val & ~(1UL << 32);
+    }*/
+    orClear32le();
+    break;
+  }
+  case R_AARCH64_CONDBR19:
+  case R_AARCH64_LD_PREL_LO19:
+  case R_AARCH64_MOVW_UABS_G0_NC:
+  case R_AARCH64_MOVW_UABS_G1_NC:
+  case R_AARCH64_MOVW_UABS_G2_NC:
+  case R_AARCH64_MOVW_UABS_G3:
+  case R_AARCH64_TSTBR14:
+    orClear32le();
+    break;
+  case R_AARCH64_ADD_ABS_LO12_NC:
+  case R_AARCH64_LDST8_ABS_LO12_NC:
+  case R_AARCH64_TLSLE_LDST8_TPREL_LO12_NC:
+  case R_AARCH64_LDST16_ABS_LO12_NC:
+  case R_AARCH64_TLSLE_LDST16_TPREL_LO12_NC:
+  case R_AARCH64_LDST32_ABS_LO12_NC:
+  case R_AARCH64_TLSLE_LDST32_TPREL_LO12_NC:
+  case R_AARCH64_LDST64_ABS_LO12_NC: {
+    orClearAArch64Imm();
+    break;
+  }
+  case R_AARCH64_ADR_GOT_PAGE:
+  case R_AARCH64_LD64_GOT_LO12_NC:
+  case R_AARCH64_TLSIE_LD64_GOTTPREL_LO12_NC:
+  case R_AARCH64_TLSLE_LDST64_TPREL_LO12_NC:
+  case R_AARCH64_TLSDESC_LD64_LO12:
+  case R_AARCH64_LDST128_ABS_LO12_NC:
+  case R_AARCH64_TLSLE_LDST128_TPREL_LO12_NC:
+  case R_AARCH64_LD64_GOTPAGE_LO15:
+  case R_AARCH64_TLSLE_ADD_TPREL_HI12:
+  case R_AARCH64_TLSLE_ADD_TPREL_LO12_NC:
+  case R_AARCH64_TLSDESC_ADD_LO12:
+    orClearAArch64Imm();
+    break;
+  }
+}
+
 void AArch64::relocate(uint8_t *loc, const Relocation &rel,
                        uint64_t val) const {
+  bool isDebug = false;
+  if (config->adlt) {
+    deRelocate(loc, rel, &val);
+  }
+  if (config->adlt && isDebug)
+    adltRelocateDebugMessage("[AArch64::relocate]: ", loc, rel, val);
+
   switch (rel.type) {
   case R_AARCH64_ABS16:
   case R_AARCH64_PREL16:

@@ -88,6 +88,9 @@ public:
   virtual bool inBranchRange(RelType type, uint64_t src,
                              uint64_t dst) const;
 
+  virtual void deRelocate(uint8_t *loc, const Relocation &rel,
+                          uint64_t *val) const {}; // ADLT
+
   virtual void relocate(uint8_t *loc, const Relocation &rel,
                         uint64_t val) const = 0;
   void relocateNoSym(uint8_t *loc, RelType type, uint64_t val) const {

@@ -1221,7 +1221,7 @@ class LlvmLibs(BuildUtils):
 
             defines = self.base_cmake_defines()
             ldflags = []
-            cflags = []
+            cflags = ["-g -gdwarf-4 -O0"]
             self.logger().info('Build libs for %s', llvm_triple)
             if self.build_config.target_debug:
                 defines['CMAKE_BUILD_TYPE'] = 'Debug'

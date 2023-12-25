@@ -274,8 +274,12 @@ void LinkerDriver::addFile(StringRef path, bool withLOption) {
     // the directory part is ignored. Note that path may be a temporary and
     // cannot be stored into SharedFile::soName.
     path = mbref.getBufferIdentifier();
-    files.push_back(
-        make<SharedFile>(mbref, withLOption ? path::filename(path) : path));
+    if (config->adlt)
+      files.push_back(createSharedFileExtended(
+          mbref, withLOption ? path::filename(path) : path));
+    else
+      files.push_back(
+          make<SharedFile>(mbref, withLOption ? path::filename(path) : path));
     return;
   case file_magic::bitcode:
     files.push_back(make<BitcodeFile>(mbref, "", 0, inLib));
@@ -843,7 +847,8 @@ static std::pair<bool, bool> getPackDynRelocs(opt::InputArgList &args) {
 static void readCallGraph(MemoryBufferRef mb) {
   // Build a map from symbol name to section
   DenseMap<StringRef, Symbol *> map;
-  for (ELFFileBase *file : ctx->objectFiles)
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  for (ELFFileBase *file : files)
     for (Symbol *sym : file->getSymbols())
       map[sym->getName()] = sym;
 
@@ -922,6 +927,7 @@ processCallGraphRelocations(SmallVector<uint32_t, 32> &symbolIndices,
 template <class ELFT> static void readCallGraphsFromObjectFiles() {
   SmallVector<uint32_t, 32> symbolIndices;
   ArrayRef<typename ELFT::CGProfile> cgProfile;
+  // ADLT TODO
   for (auto file : ctx->objectFiles) {
     auto *obj = cast<ObjFile<ELFT>>(file);
     if (!processCallGraphRelocations(symbolIndices, cgProfile, obj))
@@ -1086,6 +1092,7 @@ static void readConfigs(opt::InputArgList &args) {
     else if (arg->getOption().matches(OPT_Bsymbolic))
       config->bsymbolic = BsymbolicKind::All;
   }
+  config->adlt = args.hasArg(OPT_adlt);
   config->checkSections =
       args.hasFlag(OPT_check_sections, OPT_no_check_sections, true);
   config->chroot = args.getLastArgValue(OPT_chroot);
@@ -1101,7 +1108,7 @@ static void readConfigs(opt::InputArgList &args) {
   config->dwoDir = args.getLastArgValue(OPT_plugin_opt_dwo_dir_eq);
   config->dynamicLinker = getDynamicLinker(args);
   config->ehFrameHdr =
-      args.hasFlag(OPT_eh_frame_hdr, OPT_no_eh_frame_hdr, false);
+      args.hasFlag(OPT_eh_frame_hdr, OPT_no_eh_frame_hdr, config->adlt);
   config->emitLLVM = args.hasArg(OPT_plugin_opt_emit_llvm, false);
   config->emitRelocs = args.hasArg(OPT_emit_relocs);
   config->callGraphProfileSort = args.hasFlag(
@@ -1217,7 +1224,7 @@ static void readConfigs(opt::InputArgList &args) {
 
   config->searchPaths = args::getStrings(args, OPT_library_path);
   config->sectionStartMap = getSectionStartMap(args);
-  config->shared = args.hasArg(OPT_shared);
+  config->shared = config->adlt ? true : args.hasArg(OPT_shared);
   config->singleRoRx = !args.hasFlag(OPT_rosegment, OPT_no_rosegment, true);
   config->soName = args.getLastArgValue(OPT_soname);
   config->sortSection = getSortSection(args);
@@ -1818,7 +1825,8 @@ static void excludeLibs(opt::InputArgList &args) {
         sym->versionId = VER_NDX_LOCAL;
   };
 
-  for (ELFFileBase *file : ctx->objectFiles)
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  for (ELFFileBase *file : files)
     visit(file);
 
   for (BitcodeFile *file : ctx->bitcodeFiles)
@@ -2014,7 +2022,8 @@ static void writeDependencyFile() {
 // symbols of type CommonSymbol.
 static void replaceCommonSymbols() {
   llvm::TimeTraceScope timeScope("Replace common symbols");
-  for (ELFFileBase *file : ctx->objectFiles) {
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  for (ELFFileBase *file : files) {
     if (!file->hasCommonSyms)
       continue;
     for (Symbol *sym : file->getGlobalSymbols()) {
@@ -2090,7 +2099,8 @@ static void findKeepUniqueSections(opt::InputArgList &args) {
 
   // Visit the address-significance table in each object file and mark each
   // referenced symbol as address-significant.
-  for (InputFile *f : ctx->objectFiles) {
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  for (InputFile *f : files) {
     auto *obj = cast<ObjFile<ELFT>>(f);
     ArrayRef<Symbol *> syms = obj->getSymbols();
     if (obj->addrsigSec) {
@@ -2344,7 +2354,8 @@ static void redirectSymbols(ArrayRef<WrappedSymbol> wrapped) {
     return;
 
   // Update pointers in input files.
-  parallelForEach(ctx->objectFiles, [&](ELFFileBase *file) {
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  parallelForEach(files, [&](ELFFileBase *file) {
     for (Symbol *&sym : file->getMutableGlobalSymbols())
       if (Symbol *s = map.lookup(sym))
         sym = s;
@@ -2379,7 +2390,8 @@ static uint32_t getAndFeatures() {
     return 0;
 
   uint32_t ret = -1;
-  for (ELFFileBase *f : ctx->objectFiles) {
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  for (ELFFileBase *f : files) {
     uint32_t features = f->andFeatures;
 
     checkAndReportMissingFeature(
@@ -2462,6 +2474,46 @@ static void postParseObjectFile(ELFFileBase *file) {
   }
 }
 
+static void postParseSharedFileForAdlt(ELFFileBase *file) {
+  switch (config->ekind) {
+  case ELF32LEKind:
+    cast<SharedFileExtended<ELF32LE>>(file)->postParseForAdlt();
+    break;
+  case ELF32BEKind:
+    cast<SharedFileExtended<ELF32BE>>(file)->postParseForAdlt();
+    break;
+  case ELF64LEKind:
+    cast<SharedFileExtended<ELF64LE>>(file)->postParseForAdlt();
+    break;
+  case ELF64BEKind:
+    cast<SharedFileExtended<ELF64BE>>(file)->postParseForAdlt();
+    break;
+  default:
+    llvm_unreachable("");
+  }
+}
+
+static bool isSectionValidForAdlt(int fileIdx, InputSectionBase *s) {
+  if (!s || s == &InputSection::discarded)
+    return false;
+  uint32_t type = s->type;
+  StringRef name = s->name;
+
+  bool isBaseType = type == SHT_NOBITS || type == SHT_NOTE ||
+                    type == SHT_INIT_ARRAY || type == SHT_FINI_ARRAY;
+  // TODO: fix .debug_info relocation
+  bool isNeededProgBits =
+      type == SHT_PROGBITS &&
+      !(name.startswith(".got.plt") || name.startswith(".plt") || name.startswith(".got") ||
+        name.startswith(".eh_frame_hdr"));// || name.startswith(".debug_"));
+  bool ret = isBaseType || isNeededProgBits;
+
+  bool isDebug = false;
+  if (ret && isDebug)
+    lld::outs() << "[isSectionValidForAdlt]: " << name << "\n";
+  return ret;
+}
+
 // Do actual linking. Note that when this function is called,
 // all linker scripts have already been parsed.
 void LinkerDriver::link(opt::InputArgList &args) {
@@ -2531,8 +2583,9 @@ void LinkerDriver::link(opt::InputArgList &args) {
   // producing a shared library.
   // We also need one if any shared libraries are used and for pie executables
   // (probably because the dynamic linker needs it).
-  config->hasDynSymTab =
-      !ctx->sharedFiles.empty() || config->isPic || config->exportDynamic;
+  config->hasDynSymTab = (config->adlt ? !ctx->sharedFilesExtended.empty()
+                                       : !ctx->sharedFiles.empty()) ||
+                         config->isPic || config->exportDynamic;
 
   // Some symbols (such as __ehdr_start) are defined lazily only when there
   // are undefined symbols for them, so we add these to trigger that logic.
@@ -2587,6 +2640,9 @@ void LinkerDriver::link(opt::InputArgList &args) {
 
   // No more lazy bitcode can be extracted at this point. Do post parse work
   // like checking duplicate symbols.
+  if (config->adlt)
+    parallelForEach(ctx->sharedFilesExtended, postParseSharedFileForAdlt);
+
   parallelForEach(ctx->objectFiles, initializeLocalSymbols);
   parallelForEach(ctx->objectFiles, postParseObjectFile);
   parallelForEach(ctx->bitcodeFiles,
@@ -2654,6 +2710,7 @@ void LinkerDriver::link(opt::InputArgList &args) {
   // With this the symbol table should be complete. After this, no new names
   // except a few linker-synthesized ones will be added to the symbol table.
   const size_t numObjsBeforeLTO = ctx->objectFiles.size();
+  const size_t numSoBeforeLTO = ctx->sharedFilesExtended.size();
   invokeELFT(compileBitcodeFiles, skipLinkedOutput);
 
   // Symbol resolution finished. Report backward reference problems,
@@ -2670,6 +2727,11 @@ void LinkerDriver::link(opt::InputArgList &args) {
 
   // compileBitcodeFiles may have produced lto.tmp object files. After this, no
   // more file will be added.
+  if (config->adlt) {
+    auto newSharedFiles =
+        makeArrayRef(ctx->sharedFilesExtended).slice(numSoBeforeLTO);
+    parallelForEach(newSharedFiles, postParseSharedFileForAdlt);
+  }
   auto newObjectFiles = makeArrayRef(ctx->objectFiles).slice(numObjsBeforeLTO);
   parallelForEach(newObjectFiles, initializeLocalSymbols);
   parallelForEach(newObjectFiles, postParseObjectFile);
@@ -2693,6 +2755,13 @@ void LinkerDriver::link(opt::InputArgList &args) {
     // Now that we have a complete list of input files.
     // Beyond this point, no new files are added.
     // Aggregate all input sections into one place.
+    if (config->adlt)
+      for (auto it : llvm::enumerate(ctx->sharedFilesExtended))
+        for (InputSectionBase *s : it.value()->getSections())
+          if (isSectionValidForAdlt(it.index(), s))
+            inputSections.push_back(s);
+
+
     for (InputFile *f : ctx->objectFiles)
       for (InputSectionBase *s : f->getSections())
         if (s && s != &InputSection::discarded)

@@ -455,6 +455,9 @@ private:
   void processAux(RelExpr expr, RelType type, uint64_t offset, Symbol &sym,
                   int64_t addend) const;
   template <class ELFT, class RelTy> void scanOne(RelTy *&i);
+
+  template <class ELFT, class RelTy>
+  void handleRelativeReloc(const RelTy &rel, const Symbol& sym, uint64_t offset);
 };
 } // namespace
 
@@ -1294,7 +1297,8 @@ static unsigned handleTlsRelocation(RelType type, Symbol &sym,
 template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
   const RelTy &rel = *i;
   uint32_t symIndex = rel.getSymbol(config->isMips64EL);
-  Symbol &sym = sec.getFile<ELFT>()->getSymbol(symIndex);
+  auto file = config->adlt ? sec.getSharedFile<ELFT>() : sec.getFile<ELFT>();
+  Symbol &sym = file->getSymbol(symIndex);
   RelType type;
 
   // Deal with MIPS oddity.
@@ -1312,11 +1316,86 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
 
   // Error if the target symbol is undefined. Symbol index 0 may be used by
   // marker relocations, e.g. R_*_NONE and R_ARM_V4BX. Don't error on them.
-  if (sym.isUndefined() && symIndex != 0 &&
+  if (symIndex != 0 && sym.isUndefined() &&
       maybeReportUndefined(cast<Undefined>(sym), sec, offset))
     return;
 
   const uint8_t *relocatedAddr = sec.rawData.begin() + offset;
+  if (config->adlt) {
+    auto file = sec.getSharedFile<ELFT>();
+    bool isDebug = false;
+
+    auto saveSymIfNeeded = [](const Defined& d) {
+      auto found = elf::symtab->find(d.getName());
+      if (!found)
+        in.symTab->addSymbol(elf::symtab->addSymbol(d));
+    };
+
+    auto handleRelativeReloc = [&]() {
+      RelType type = R_AARCH64_ABS64;
+      RelExpr expr = target.getRelExpr(type, sym, relocatedAddr);
+      uint64_t addend = computeAddend<ELFT>(rel, expr, sym.isLocal());
+      StringRef title = "handle relative reloc: ";
+      if (isDebug)
+        lld::outs() << title << "offset: 0x" + Twine::utohexstr(offset)
+          << " addend: 0x" + Twine::utohexstr(addend) + "\n" ;
+
+      // parse offset (where)
+      Defined *foundSymbol = file->findSymbolByValue(offset);
+      if (!foundSymbol) {
+        fatal(title + "sym not found! offset: 0x" + Twine::utohexstr(offset) + "\n");
+        return;
+      }
+      if (!foundSymbol->exportDynamic)
+        file->addAdltPrefix(cast<Symbol>(foundSymbol));
+      Defined &symWhere = *foundSymbol;
+      saveSymIfNeeded(symWhere);
+
+      // parse addent (replacement)
+      foundSymbol = file->findSymbolByValue(addend);
+      if (!foundSymbol) {
+        Defined *d = file->findSectionSymbol(addend);
+        if (!d)
+          fatal(title + "sym not found! addend: 0x" + Twine::utohexstr(addend) + "\n");
+        foundSymbol = d;
+      }
+      Defined &inputSym = *foundSymbol;
+      addend = inputSym.isSection() ? (addend - inputSym.section->address) : 0;
+
+      if (isDebug) {
+        lld::outs() << "handle relative reloc: inputSym: ";
+        file->traceSymbol(inputSym);
+      }
+      if (!foundSymbol->exportDynamic)
+        file->addAdltPrefix(&inputSym);
+      saveSymIfNeeded(inputSym);
+
+      // parse section from offset of relative reloc
+      addRelativeReloc(cast<InputSectionBase>(*symWhere.section),
+                       symWhere.value, inputSym, addend, expr, type);
+    };
+    switch (type) {
+    case R_AARCH64_RELATIVE:
+      handleRelativeReloc();
+      return;
+    case R_AARCH64_GLOB_DAT: {
+      Symbol &s = file->getSymbol(symIndex);
+      s.needsGot = 1;
+      if (s.isUndefined())
+        s.needsPlt = 1;
+      return;
+    }
+    case R_AARCH64_JUMP_SLOT: {
+      Symbol &s = file->getSymbol(symIndex);
+      if (s.isUndefined())
+        s.needsPlt = 1;
+      return;
+    }
+    default:
+      break;
+    }
+  }
+
   RelExpr expr = target.getRelExpr(type, sym, relocatedAddr);
 
   // Ignore R_*_NONE and other marker relocations.
@@ -1325,6 +1404,77 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
 
   // Read an addend.
   int64_t addend = computeAddend<ELFT>(rel, expr, sym.isLocal());
+
+  if (config->adlt) {
+    auto file = sec.getSharedFile<ELFT>();
+    auto traceSym = [&](StringRef debugTitle, Symbol& sym) {
+      lld::outs() << debugTitle;
+      lld::outs() << "type: " << lld::toString(type) << " sym: ";
+      Symbol* p = &sym;
+      if (!p) {
+        lld::outs() << "unknown!\n";
+        return;
+      }
+      file->traceSymbol(sym);
+      if (!sym.isDefined())
+        return;
+      lld::outs() << "sec: ";
+      file->traceSection(*(cast<Defined>(sym).section));
+    };
+
+    bool isDebug = false;
+    auto strType = lld::toString(type);
+    auto debugTitle = "[RelocationScanner::handle relocs]: " + strType + ": ";
+    if (isDebug) {
+      traceSym(debugTitle, sym);
+      lld::outs() << " offset before: 0x" << Twine::utohexstr(offset) << '\n';
+    }
+    if (offset + sec.address)
+      offset -= sec.address;
+
+    Symbol *s = &sym;
+    if (sec.name != "")
+      s = &file->getSymbolFromElfSymTab(symIndex);
+
+    s = sym.getName().size() ? elf::symtab->find(sym.getName()) : &sym;
+
+    if (!s) // if symbol was not found in elf::symtab
+      s = &sym;
+    auto pushReloc = [&]() {
+      sec.relocations.push_back({expr, type, offset, addend, s});
+    };
+
+    switch (type) {
+    // abs relocs
+    case R_AARCH64_ABS32:
+    case R_AARCH64_ABS64:
+    case R_AARCH64_ADD_ABS_LO12_NC:
+    case R_AARCH64_ADR_PREL_PG_HI21:
+    case R_AARCH64_LDST8_ABS_LO12_NC:
+    case R_AARCH64_LDST64_ABS_LO12_NC:
+      pushReloc();
+      return;
+    // plt relocs
+    case R_AARCH64_CALL26:
+    case R_AARCH64_JUMP26: {
+      if (s && s->isDefined())
+        expr = R_PC; // prev: R_PLT_PC
+      pushReloc();
+      return;
+    }
+
+    // got relocs
+    case R_AARCH64_ADR_GOT_PAGE:
+    case R_AARCH64_LD64_GOT_LO12_NC:
+      pushReloc();
+      return;
+    default:
+      fatal("Unhandled reloc: " + strType);
+      break;
+    }
+    if (isDebug)
+      lld::outs() << " offset after: 0x" << Twine::utohexstr(offset) << "\n\n";
+  }
 
   if (config->emachine == EM_PPC64) {
     // We can separate the small code model relocations into 2 categories:
@@ -1628,7 +1778,8 @@ void elf::postScanRelocations() {
       return;
     if (!sym.needsDynReloc())
       return;
-    sym.allocateAux();
+    if (!sym.allocateAux())
+      return;
 
     if (sym.needsGot)
       addGotEntry(sym);
@@ -1720,7 +1871,8 @@ void elf::postScanRelocations() {
 
   // Local symbols may need the aforementioned non-preemptible ifunc and GOT
   // handling. They don't need regular PLT.
-  for (ELFFileBase *file : ctx->objectFiles)
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  for (ELFFileBase *file : files)
     for (Symbol *sym : file->getLocalSymbols())
       fn(*sym);
 }
@@ -2168,7 +2320,8 @@ bool ThunkCreator::createThunks(uint32_t pass,
             // original target so another Thunk can be generated.
             if (pass > 0 && normalizeExistingThunk(rel, src))
               continue;
-
+            if (!rel.sym)
+              continue; // ADLT fix
             if (!target->needsThunk(rel.expr, rel.type, isec->file, src,
                                     *rel.sym, rel.addend))
               continue;

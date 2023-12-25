@@ -145,13 +145,13 @@ static bool isCompatible(InputFile *file) {
   }
 
   InputFile *existing = nullptr;
-  if (!ctx->objectFiles.empty())
-    existing = ctx->objectFiles[0];
-  else if (!ctx->sharedFiles.empty())
-    existing = ctx->sharedFiles[0];
-  else if (!ctx->bitcodeFiles.empty())
-    existing = ctx->bitcodeFiles[0];
-  std::string with;
+      if (!ctx->objectFiles.empty())
+      existing = ctx->objectFiles[0];
+    else if (!ctx->sharedFiles.empty())
+      existing = ctx->sharedFiles[0];
+    else if (!ctx->bitcodeFiles.empty())
+      existing = ctx->bitcodeFiles[0];
+    std::string with;
   if (existing)
     with = " with " + toString(existing);
   error(toString(file) + " is incompatible" + with);
@@ -184,6 +184,13 @@ template <class ELFT> static void doParseFile(InputFile *file) {
     message(toString(file));
 
   // .so file
+  if (config->adlt)
+    if (auto *f = dyn_cast<SharedFileExtended<ELFT>>(file)) {
+      ctx->sharedFilesExtended.push_back(cast<ELFFileBase>(file));
+      f->parseForAdlt();
+      return;
+    }
+
   if (auto *f = dyn_cast<SharedFile>(file)) {
     f->parse<ELFT>();
     return;
@@ -510,6 +517,21 @@ static void handleSectionGroup(ArrayRef<InputSectionBase *> sections,
 }
 
 template <class ELFT>
+ArrayRef<typename ELFT::Word> ObjFile<ELFT>::getShndxTable() {
+  return shndxTable;
+}
+
+static StringRef markItemForAdlt(StringRef input, StringRef filePath) {
+  if (input.empty())
+    return input;
+  StringRef simpleFile = path::stem(filePath);
+  std::string mark = "_" + simpleFile.str();
+  if (input.endswith(mark))
+    return input;
+  return saver().save(input + mark);
+}
+
+template <class ELFT>
 void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
                                        const llvm::object::ELFFile<ELFT> &obj) {
   ArrayRef<Elf_Shdr> objSections = getELFShdrs<ELFT>();
@@ -548,6 +570,13 @@ void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
       this->sections[i] = &InputSection::discarded;
       continue;
     }
+    auto secName = check(obj.getSectionName(sec, shstrtab));
+    if (config->adlt && sec.sh_type == SHT_NULL) {
+      auto name = isPatchedSecName ? markItemForAdlt(secName, archiveName) : secName;
+      this->sections[i] = createInputSection(i, sec, name);
+      this->sections[i]->address = sec.sh_addr;
+      this->sections[i]->size = sec.sh_size;
+    }
 
     switch (sec.sh_type) {
     case SHT_GROUP: {
@@ -569,9 +598,16 @@ void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
           symtab->comdatGroups.try_emplace(CachedHashStringRef(signature), this)
               .second;
       if (keepGroup) {
-        if (config->relocatable)
-          this->sections[i] = createInputSection(
-              i, sec, check(obj.getSectionName(sec, shstrtab)));
+        if (config->relocatable) {
+          auto name = config->adlt && isPatchedSecName
+                          ? markItemForAdlt(secName, archiveName)
+                          : secName;
+          this->sections[i] = createInputSection(i, sec, name);
+          if (config->adlt) {
+            this->sections[i]->address = sec.sh_addr;
+            this->sections[i]->size = sec.sh_size;
+          }
+        }
         selectedGroups.push_back(entries);
         continue;
       }
@@ -598,8 +634,14 @@ void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
       ctx->hasSympart.store(true, std::memory_order_relaxed);
       LLVM_FALLTHROUGH;
     default:
-      this->sections[i] =
-          createInputSection(i, sec, check(obj.getSectionName(sec, shstrtab)));
+      auto name = config->adlt && isPatchedSecName
+                      ? markItemForAdlt(secName, archiveName)
+                      : secName;
+      this->sections[i] = createInputSection(i, sec, name);
+      if (config->adlt) {
+        this->sections[i]->address = sec.sh_addr;
+        this->sections[i]->size = sec.sh_size;
+      }
     }
   }
 
@@ -1028,6 +1070,10 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
     uint8_t stOther = eSym.st_other;
     uint8_t type = eSym.getType();
     uint64_t value = eSym.st_value;
+    if (config->adlt) {
+      const Elf_Shdr *eSec = *obj.getSection(secIdx);
+      value -= eSec->sh_addr;
+    }
     uint64_t size = eSym.st_size;
 
     Symbol *sym = symbols[i];
@@ -1095,9 +1141,12 @@ template <class ELFT> void ObjFile<ELFT>::initializeLocalSymbols() {
     if (eSym.st_shndx == SHN_UNDEF || sec == &InputSection::discarded)
       new (symbols[i]) Undefined(this, name, STB_LOCAL, eSym.st_other, type,
                                  /*discardedSecIdx=*/secIdx);
-    else
+    else {
+      const Elf_Shdr *eSec = *this->getObj().getSection(secIdx);
+      auto value = config->adlt ? eSym.st_value - eSec->sh_addr : eSym.st_value;
       new (symbols[i]) Defined(this, name, STB_LOCAL, eSym.st_other, type,
-                               eSym.st_value, eSym.st_size, sec);
+                               value, eSym.st_size, sec);
+    }
     symbols[i]->isUsedInRegularObj = true;
   }
 }
@@ -1262,6 +1311,36 @@ parseVerdefs(const uint8_t *base, const typename ELFT::Shdr *sec) {
 // of such diagnostics is low.
 template <typename ELFT>
 std::vector<uint32_t> SharedFile::parseVerneed(const ELFFile<ELFT> &obj,
+                                               const typename ELFT::Shdr *sec) {
+  if (!sec)
+    return {};
+  std::vector<uint32_t> verneeds;
+  ArrayRef<uint8_t> data = CHECK(obj.getSectionContents(*sec), this);
+  const uint8_t *verneedBuf = data.begin();
+  for (unsigned i = 0; i != sec->sh_info; ++i) {
+    if (verneedBuf + sizeof(typename ELFT::Verneed) > data.end())
+      fatal(toString(this) + " has an invalid Verneed");
+    auto *vn = reinterpret_cast<const typename ELFT::Verneed *>(verneedBuf);
+    const uint8_t *vernauxBuf = verneedBuf + vn->vn_aux;
+    for (unsigned j = 0; j != vn->vn_cnt; ++j) {
+      if (vernauxBuf + sizeof(typename ELFT::Vernaux) > data.end())
+        fatal(toString(this) + " has an invalid Vernaux");
+      auto *aux = reinterpret_cast<const typename ELFT::Vernaux *>(vernauxBuf);
+      if (aux->vna_name >= this->stringTable.size())
+        fatal(toString(this) + " has a Vernaux with an invalid vna_name");
+      uint16_t version = aux->vna_other & VERSYM_VERSION;
+      if (version >= verneeds.size())
+        verneeds.resize(version + 1);
+      verneeds[version] = aux->vna_name;
+      vernauxBuf += aux->vna_next;
+    }
+    verneedBuf += vn->vn_next;
+  }
+  return verneeds;
+}
+
+template <typename ELFT>
+std::vector<uint32_t> SharedFileExtended<ELFT>::parseVerneed(const ELFFile<ELFT> &obj,
                                                const typename ELFT::Shdr *sec) {
   if (!sec)
     return {};
@@ -1494,6 +1573,433 @@ template <class ELFT> void SharedFile::parse() {
                      sym.getType(), sym.st_value, sym.st_size, alignment});
     if (s->file == this)
       s->verdefIndex = idx;
+  }
+}
+
+template <typename ELFT>
+void SharedFileExtended<ELFT>::resolveDuplicatesForAdlt() {
+  auto pred = [&](DuplicateSymbol dup) {
+    auto sym = dup.sym;
+    if (!sym->isDefined())
+      return true;
+
+    auto d = cast<Defined>(sym);
+    return !d->section && !d->getOutputSection();
+  };
+  static std::mutex mu;
+  {
+    std::lock_guard<std::mutex> lock(mu);
+    llvm::erase_if(ctx->duplicates, pred);
+  }
+
+  if (ctx->duplicates.empty())
+    return;
+
+  {
+    std::lock_guard<std::mutex> lock(mu);
+    for (DuplicateSymbol &dup : ctx->duplicates)
+      warn("duplicate: " + dup.file->getName() + ": " + dup.section->name +
+           ": " + dup.sym->getName());
+    ctx->duplicates.clear();
+  }
+}
+
+template <typename ELFT>
+SharedFileExtended<ELFT>::SharedFileExtended(MemoryBufferRef mb,
+                                             StringRef soName)
+    : ObjFile<ELFT>(mb, soName), soName(soName),
+      simpleSoName(path::stem(soName)) {
+  const_cast<InputFile::Kind &>(this->fileKind) = InputFile::SharedKind;
+}
+
+template <typename ELFT> void SharedFileExtended<ELFT>::parseForAdlt() {
+  this->parse();
+  parseDynamics();
+  parseElfSymTab();
+
+  bool isDebug = false;
+  if (!isDebug)
+    return;
+
+  const ELFFile<ELFT> obj = this->getObj();
+  ArrayRef<Elf_Shdr> objSections = this->template getELFShdrs<ELFT>();
+  StringRef shstrtab = getShStrTab(objSections);
+
+  lld::outs() << "Parse symbols from .symtab:\n";
+  const Elf_Shdr *elfSymTab = *obj.getSection(symTabSecIdx);
+  StringRef strTable = *obj.getStringTableForSymtab(*elfSymTab);
+
+  auto eSyms = *obj.symbols(elfSymTab);
+  this->symbols.resize(this->symbols.size() + eSyms.size());
+  for (const Elf_Sym &sym : eSyms) {
+    if (!sym.isDefined())
+      continue;
+
+    auto rawSec = obj.getSection(sym.st_shndx);
+    if (rawSec.takeError())
+      continue;
+    if (isDebug)
+      traceElfSymbol(sym, strTable);
+  }
+  if (isDebug)
+    lld::outs() << '\n';
+
+  lld::outs() << "Parse offsets of some sections:\n";
+  for (const Elf_Shdr &sec : objSections) {
+    auto name = check(obj.getSectionName(sec, shstrtab));
+    if (name == ".init_array" || name == ".fini_array" || name == ".data")
+      traceElfSection(sec);
+  }
+  lld::outs() << '\n';
+}
+
+template <typename ELFT> void SharedFileExtended<ELFT>::postParseForAdlt() {
+  this->initializeLocalSymbols();
+  this->postParse();
+  resolveDuplicatesForAdlt();
+}
+
+template <typename ELFT>
+StringRef SharedFileExtended<ELFT>::addAdltPrefix(StringRef input) {
+  return markItemForAdlt(input, soName);
+}
+
+template <typename ELFT>
+bool SharedFileExtended<ELFT>::addAdltPrefix(Symbol *s) {
+  StringRef newName = markItemForAdlt(s->getName(), soName);
+  if (s->getName() == newName)
+    return false;
+  s->setName(newName);
+  return true;
+}
+
+template <typename ELFT>
+Defined* SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) {
+  auto predRange = [=](Symbol *sym) {
+    if (!sym || sym->isUndefined() || !sym->isSection())
+      return false;
+    const Defined *d = cast<Defined>(sym);
+    uint64_t low = d->section->address;
+    uint64_t high = low + d->section->size;
+    return (offset >= low) && (offset < high);
+  };
+
+  auto i = this->allSymbols.begin();
+  auto e = this->allSymbols.end();
+  auto ret = std::find_if(i, e, predRange);
+  if (ret != e) // item was found
+    return cast<Defined>(*ret);
+
+  return nullptr;
+}
+
+template <typename ELFT>
+StringRef SharedFileExtended<ELFT>::getShStrTab(ArrayRef<Elf_Shdr> elfSections) {
+  return CHECK(this->getObj().getSectionStringTable(elfSections), this);
+}
+
+template <class ELFT>
+void SharedFileExtended<ELFT>::traceElfSymbol(const Elf_Sym &sym,
+                                              StringRef strTable) const {
+  const ELFFile<ELFT> obj = this->getObj();
+  auto rawSec = obj.getSection(sym.st_shndx);
+  auto parsedSec = !rawSec.takeError() ? *obj.getSection(sym.st_shndx) : nullptr;
+  lld::outs() << "File: " << soName << " symName: " << *sym.getName(strTable)
+              << " val: 0x" << Twine::utohexstr(sym.st_value) << " sec of sym: "
+              << (parsedSec ? *obj.getSectionName(*parsedSec) : "unknown!")
+              << " sym type: 0x" << Twine::utohexstr(sym.getType())
+              << " sym binding: 0x" << Twine::utohexstr(sym.getBinding())
+              << '\n';
+}
+
+template <class ELFT>
+void SharedFileExtended<ELFT>::traceElfSection(const Elf_Shdr &sec) const {
+  const ELFFile<ELFT> obj = this->getObj();
+
+  auto secName = *obj.getSectionName(sec);
+  lld::outs() << "File: " << soName << " sec: " << secName << " sec addr: 0x"
+              << Twine::utohexstr(sec.sh_addr) << " sec offs: 0x"
+              << Twine::utohexstr(sec.sh_offset) << " sec ent size: 0x"
+              << Twine::utohexstr(sec.sh_entsize) << '\n';
+}
+
+template <class ELFT>
+void SharedFileExtended<ELFT>::traceSymbol(const Symbol& sym) const {
+  lld::outs() << "File: " << soName << " symName: " << sym.getName();
+  if (!sym.isDefined()) {
+    lld::outs() << '\n';
+    return;
+  }
+  auto &d = cast<Defined>(sym);
+  lld::outs() << " val: 0x" << Twine::utohexstr(d.value) << " sec of sym: "
+              << (d.section ? d.section->name : "unknown!")
+              << " sym type: 0x" << Twine::utohexstr(sym.type)
+              << " sym binding: 0x" << Twine::utohexstr(sym.binding)
+              << '\n';
+}
+
+template <class ELFT>
+void SharedFileExtended<ELFT>::traceSection(const SectionBase& sec) const {
+  lld::outs() << "File: " << soName << " sec: " << sec.name << " sec addr: 0x"
+              << Twine::utohexstr(sec.address) << " sec offs: 0x"
+              << Twine::utohexstr(sec.getOffset(0)) << " sec ent size: 0x"
+              << Twine::utohexstr(sec.entsize) << '\n';
+}
+
+template <class ELFT>
+Symbol& SharedFileExtended<ELFT>::getSymbol(uint32_t symbolIndex) const {
+  if (symbolIndex >= this->symbols.size())
+    return getSymbolFromElfSymTab(symbolIndex);
+  return *this->symbols[symbolIndex];
+}
+
+template <class ELFT>
+Defined *SharedFileExtended<ELFT>::findSymbolByValue(uint32_t value) const {
+  bool isDebug = false;
+  auto predValues = [=](Symbol *sym) {
+    if (!sym || sym->isUndefined())
+      return false;
+    const Defined *d = cast<Defined>(sym);
+    bool goodVal = d->section->address + d->value == value;
+    bool goodFile = d->file == this;
+    bool isGood = goodVal && goodFile;
+    if (isDebug && isGood)
+      lld::outs() << "good\n";
+    return isGood;
+  };
+
+  // filter by value for .dynsym, else for .symtab
+  SmallVector<Symbol *, 0> matches;
+  auto i = this->symbols.begin();
+  auto e = this->symbols.end();
+  std::copy_if(i, e, std::back_inserter(matches), predValues);
+
+  if (matches.empty()) {
+    auto i = this->allSymbols.begin();
+    auto e = this->allSymbols.end();
+    std::copy_if(i, e, std::back_inserter(matches), predValues);
+  }
+
+  if (matches.empty()) {
+    // warn("Symbol not found! Value: 0x" + Twine::utohexstr(value));
+    return nullptr;
+  }
+
+  // filter by type else return first item
+  i = matches.begin();
+  e = matches.end();
+  auto predTypes = [=](Symbol *sym) {
+    return sym->type == STT_FUNC || sym->type == STT_OBJECT;
+  };
+  auto ret = std::find_if(i, e, predTypes);
+  if (ret != e) // item was found
+    return cast<Defined>(*ret);
+
+  // todo fix it
+  return cast<Defined>(*i);
+}
+
+template <class ELFT> void SharedFileExtended<ELFT>::parseDynamics() {
+  const ELFFile<ELFT> obj = this->getObj();
+  ArrayRef<Elf_Shdr> sections = this->template getELFShdrs<ELFT>();
+
+  ArrayRef<Elf_Dyn> dynamicTags;
+  const Elf_Shdr *versymSec = nullptr;
+  const Elf_Shdr *verdefSec = nullptr;
+  const Elf_Shdr *verneedSec = nullptr;
+
+  // parse external lib deps
+  int secIdx = 0;
+  for (const Elf_Shdr &sec : sections) {
+    switch (sec.sh_type) {
+    case SHT_DYNAMIC:
+      dynamicTags =
+          CHECK(obj.template getSectionContentsAsArray<Elf_Dyn>(sec), this);
+      break;
+    case SHT_DYNSYM:
+      dynSymSecIdx = secIdx;
+      break;
+    case SHT_SYMTAB:
+      symTabSecIdx = secIdx;
+      break;
+    case SHT_SYMTAB_SHNDX:
+      symTabShndxSecIdx = secIdx;
+      break;
+    case SHT_GNU_versym:
+      versymSec = &sec;
+      break;
+    case SHT_GNU_verdef:
+      verdefSec = &sec;
+      break;
+    case SHT_GNU_verneed:
+      verneedSec = &sec;
+      break;
+    }
+    secIdx++;
+  }
+
+  if (versymSec && this->numELFSyms == 0) {
+    error("SHT_GNU_versym should be associated with symbol table");
+    return;
+  }
+
+  // Search for a DT_SONAME tag to initialize this->soName.
+  for (const Elf_Dyn &dyn : dynamicTags) {
+    if (dyn.d_tag == DT_NEEDED) {
+      uint64_t val = dyn.getVal();
+      if (val >= this->stringTable.size())
+        fatal(toString(this) + ": invalid DT_NEEDED entry");
+      dtNeeded.push_back(this->stringTable.data() + val);
+    } else if (dyn.d_tag == DT_SONAME) {
+      uint64_t val = dyn.getVal();
+      if (val >= this->stringTable.size())
+        fatal(toString(this) + ": invalid DT_SONAME entry");
+      soName = this->stringTable.data() + val;
+    }
+  }
+
+  verdefs = parseVerdefs<ELFT>(obj.base(), verdefSec);
+  std::vector<uint32_t> verneeds = parseVerneed(obj, verneedSec);
+
+  // Parse ".gnu.version" section which is a parallel array for the symbol
+  // table. If a given file doesn't have a ".gnu.version" section, we use
+  // VER_NDX_GLOBAL.
+  size_t size = this->numELFSyms - this->firstGlobal;
+  std::vector<uint16_t> versyms(size, VER_NDX_GLOBAL);
+  if (versymSec) {
+    ArrayRef<Elf_Versym> versym =
+        CHECK(obj.template getSectionContentsAsArray<Elf_Versym>(*versymSec),
+              this)
+            .slice(this->firstGlobal);
+    for (size_t i = 0; i < size; ++i)
+      versyms[i] = versym[i].vs_index;
+  }
+
+  // System libraries can have a lot of symbols with versions. Using a
+  // fixed buffer for computing the versions name (foo@ver) can save a
+  // lot of allocations.
+  SmallString<0> versionedNameBuffer;
+
+  // Add symbols to the symbol table.
+  SymbolTable &symtab = *elf::symtab;
+  ArrayRef<Elf_Sym> syms = this->template getGlobalELFSyms<ELFT>();
+  for (size_t i = 0, e = syms.size(); i != e; ++i) {
+    const Elf_Sym &sym = syms[i];
+
+    // ELF spec requires that all local symbols precede weak or global
+    // symbols in each symbol table, and the index of first non-local symbol
+    // is stored to sh_info. If a local symbol appears after some non-local
+    // symbol, that's a violation of the spec.
+    StringRef name = CHECK(sym.getName(this->stringTable), this);
+    if (sym.getBinding() == STB_LOCAL) {
+      warn("found local symbol '" + name +
+           "' in global part of symbol table in file " + toString(this));
+      continue;
+    }
+
+    uint16_t idx = versyms[i] & ~VERSYM_HIDDEN;
+    if (sym.isUndefined()) {
+      // For unversioned undefined symbols, VER_NDX_GLOBAL makes more sense but
+      // as of binutils 2.34, GNU ld produces VER_NDX_LOCAL.
+      if (idx != VER_NDX_LOCAL && idx != VER_NDX_GLOBAL) {
+        if (idx >= verneeds.size()) {
+          error("corrupt input file: version need index " + Twine(idx) +
+                " for symbol " + name + " is out of bounds\n>>> defined in " +
+                toString(this));
+          continue;
+        }
+        StringRef verName = this->stringTable.data() + verneeds[idx];
+        versionedNameBuffer.clear();
+        name = saver().save(
+            (name + "@" + verName).toStringRef(versionedNameBuffer));
+      }
+      Symbol *s = symtab.addSymbol(
+          Undefined{this, name, sym.getBinding(), sym.st_other, sym.getType()});
+      s->exportDynamic = true;
+      if (s->isUndefined() && sym.getBinding() != STB_WEAK &&
+          config->unresolvedSymbolsInShlib != UnresolvedPolicy::Ignore)
+        requiredSymbols.push_back(s);
+      continue;
+    }
+    // MIPS BFD linker puts _gp_disp symbol into DSO files and incorrectly
+    // assigns VER_NDX_LOCAL to this section global symbol. Here is a
+    // workaround for this bug.
+    if (config->emachine == EM_MIPS && idx == VER_NDX_LOCAL &&
+        name == "_gp_disp")
+      continue;
+
+    uint32_t alignment = getAlignment<ELFT>(sections, sym);
+    if (!(versyms[i] & VERSYM_HIDDEN)) {
+      auto *s = symtab.addSymbol(
+          SharedSymbol{*this, name, sym.getBinding(), sym.st_other,
+                       sym.getType(), sym.st_value, sym.st_size, alignment});
+      if (s->file == this)
+        s->verdefIndex = idx;
+    }
+
+    // Also add the symbol with the versioned name to handle undefined symbols
+    // with explicit versions.
+    if (idx == VER_NDX_GLOBAL)
+      continue;
+
+    if (idx >= verdefs.size() || idx == VER_NDX_LOCAL) {
+      error("corrupt input file: version definition index " + Twine(idx) +
+            " for symbol " + name + " is out of bounds\n>>> defined in " +
+            toString(this));
+      continue;
+    }
+
+    StringRef verName =
+        this->stringTable.data() +
+        reinterpret_cast<const Elf_Verdef *>(verdefs[idx])->getAux()->vda_name;
+    versionedNameBuffer.clear();
+    name = (name + "@" + verName).toStringRef(versionedNameBuffer);
+    auto *s = symtab.addSymbol(
+        SharedSymbol{*this, saver().save(name), sym.getBinding(), sym.st_other,
+                     sym.getType(), sym.st_value, sym.st_size, alignment});
+    if (s->file == this)
+      s->verdefIndex = idx;
+  }
+}
+
+template <class ELFT> void SharedFileExtended<ELFT>::parseElfSymTab() {
+  const ELFFile<ELFT> obj = this->getObj();
+  ArrayRef<Elf_Shdr> eSections = this->template getELFShdrs<ELFT>();
+
+  // Find a symbol table.
+  const Elf_Shdr *eSymtabSec = findSection(eSections, SHT_SYMTAB);
+  if (!eSymtabSec)
+    return;
+
+  eFirstGlobal = eSymtabSec->sh_info;
+
+  ArrayRef<Elf_Sym> eSyms = CHECK(obj.symbols(eSymtabSec), this);
+  auto numESyms = uint32_t(eSyms.size());
+  auto eStringTable = CHECK(obj.getStringTableForSymtab(*eSymtabSec, eSections), this);
+  this->allSymbols.resize(numESyms);
+
+  for (size_t i = 0; i < numESyms; i++) {
+    const Elf_Sym &eSym = eSyms[i];
+    StringRef name(eStringTable.data() + eSym.st_name);
+    auto bind = eSym.getBinding();
+    auto type = eSym.getType();
+    auto other = eSym.st_other;
+    if (eSym.isDefined()) {
+      auto secIdx = eSym.st_shndx;
+      if (LLVM_UNLIKELY(secIdx == SHN_XINDEX))
+        secIdx = check(
+            getExtendedSymbolTableIndex<ELFT>(eSym, i, this->getShndxTable()));
+      else if (secIdx >= SHN_LORESERVE)
+        secIdx = 0;
+      const Elf_Shdr *eSec = *this->getObj().getSection(secIdx);
+      InputSectionBase *sec = this->sections[secIdx];
+      auto val = eSym.st_value - eSec->sh_addr;
+      this->allSymbols[i] =
+          make<Defined>(this, name, bind, other, type, val, eSym.st_size, sec);
+    } else {
+      this->allSymbols[i] = make<Undefined>(this, name, bind, other, type,
+                                            /*discardedSecIdx=*/i);
+    }
   }
 }
 
@@ -1733,6 +2239,27 @@ ELFFileBase *elf::createObjFile(MemoryBufferRef mb, StringRef archiveName,
   return f;
 }
 
+ELFFileBase *elf::createSharedFileExtended(MemoryBufferRef mb, StringRef soName) {
+  ELFFileBase *f;
+  switch (getELFKind(mb, soName)) {
+  case ELF32LEKind:
+    f = make<SharedFileExtended<ELF32LE>>(mb, soName);
+    break;
+  case ELF32BEKind:
+    f = make<SharedFileExtended<ELF32BE>>(mb, soName);
+    break;
+  case ELF64LEKind:
+    f = make<SharedFileExtended<ELF64LE>>(mb, soName);
+    break;
+  case ELF64BEKind:
+    f = make<SharedFileExtended<ELF64BE>>(mb, soName);
+    break;
+  default:
+    llvm_unreachable("getELFKind");
+  }
+  return f;
+}
+
 template <class ELFT> void ObjFile<ELFT>::parseLazy() {
   const ArrayRef<typename ELFT::Sym> eSyms = this->getELFSyms<ELFT>();
   SymbolTable &symtab = *elf::symtab;
@@ -1785,3 +2312,8 @@ template void SharedFile::parse<ELF32LE>();
 template void SharedFile::parse<ELF32BE>();
 template void SharedFile::parse<ELF64LE>();
 template void SharedFile::parse<ELF64BE>();
+
+template class elf::SharedFileExtended<ELF32LE>;
+template class elf::SharedFileExtended<ELF32BE>;
+template class elf::SharedFileExtended<ELF64LE>;
+template class elf::SharedFileExtended<ELF64BE>;

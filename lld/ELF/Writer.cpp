@@ -628,7 +628,8 @@ template <class ELFT> static void markUsedLocalSymbols() {
   // See MarkLive<ELFT>::resolveReloc().
   if (config->gcSections)
     return;
-  for (ELFFileBase *file : ctx->objectFiles) {
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  for (ELFFileBase *file : files) {
     ObjFile<ELFT> *f = cast<ObjFile<ELFT>>(file);
     for (InputSectionBase *s : f->getSections()) {
       InputSection *isec = dyn_cast_or_null<InputSection>(s);
@@ -699,7 +700,8 @@ template <class ELFT> void Writer<ELFT>::copyLocalSymbols() {
   llvm::TimeTraceScope timeScope("Add local symbols");
   if (config->copyRelocs && config->discard != DiscardPolicy::None)
     markUsedLocalSymbols<ELFT>();
-  for (ELFFileBase *file : ctx->objectFiles) {
+  auto files = /*config->adlt ? ctx->sharedFilesExtended :*/ ctx->objectFiles;
+  for (ELFFileBase *file : files) {
     for (Symbol *b : file->getLocalSymbols()) {
       assert(b->isLocal() && "should have been caught in initializeSymbols()");
       auto *dr = dyn_cast<Defined>(b);
@@ -1303,7 +1305,8 @@ static DenseMap<const InputSectionBase *, int> buildSectionOrder() {
   for (Symbol *sym : symtab->symbols())
     addSym(*sym);
 
-  for (ELFFileBase *file : ctx->objectFiles)
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  for (ELFFileBase *file : files)
     for (Symbol *sym : file->getLocalSymbols())
       addSym(*sym);
 
@@ -1719,7 +1722,8 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
 // block sections, input sections can shrink when the jump instructions at
 // the end of the section are relaxed.
 static void fixSymbolsAfterShrinking() {
-  for (InputFile *File : ctx->objectFiles) {
+  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  for (InputFile *File : files) {
     parallelForEach(File->getSymbols(), [&](Symbol *Sym) {
       auto *def = dyn_cast<Defined>(Sym);
       if (!def)
@@ -1937,9 +1941,19 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
       // determine if it needs special treatment, such as creating GOT, PLT,
       // copy relocations, etc. Note that relocations for non-alloc sections are
       // directly processed by InputSection::relocateNonAlloc.
-      for (InputSectionBase *sec : inputSections)
-        if (sec->isLive() && isa<InputSection>(sec) && (sec->flags & SHF_ALLOC))
-          scanRelocations<ELFT>(*sec);
+      if (config->adlt)
+        for (InputFile *file : ctx->sharedFilesExtended)
+          for (InputSectionBase *sec : file->getSections()) {
+            bool isExclusive = sec && (sec->type == SHT_NULL ||
+                                       sec->name.startswith(".got.plt") ||
+                                       !sec->name.startswith(".debug_"));
+            if (isExclusive)
+              scanRelocations<ELFT>(*sec);
+          }
+      if (!config->adlt)
+        for (InputSectionBase *sec : inputSections)
+          if (sec->isLive() && isa<InputSection>(sec) && (sec->flags & SHF_ALLOC))
+            scanRelocations<ELFT>(*sec);
       for (Partition &part : partitions) {
         for (EhInputSection *sec : part.ehFrame->sections)
           scanRelocations<ELFT>(*sec);
@@ -2474,6 +2488,9 @@ template <class ELFT> void Writer<ELFT>::fixSectionAlignments() {
     OutputSection *cmd = p->firstSec;
     if (!cmd)
       return;
+    if (config->adlt &&cmd->name == ".text") {
+      lld::outs() << "Writer<ELFT>::fixSectionAlignments()\n";
+    }
     cmd->alignExpr = [align = cmd->alignment]() { return align; };
     if (!cmd->addrExpr) {
       // Prefer advancing to align(dot, maxPageSize) + dot%maxPageSize to avoid
@@ -2611,6 +2628,11 @@ template <class ELFT> void Writer<ELFT>::assignFileOffsets() {
     if (config->zSeparate != SeparateSegmentKind::None && lastRX &&
         lastRX->lastSec == sec)
       off = alignToPowerOf2(off, config->maxPageSize);
+    bool debug = false;
+    if (debug)
+      lld::outs() << "assignFileOffsets() Sec: " << sec->name
+                  << " Off: " << std::to_string(off)
+                  << " Offset: " << std::to_string(sec->offset) << '\n';
   }
   for (OutputSection *osec : outputSections)
     if (!(osec->flags & SHF_ALLOC)) {
