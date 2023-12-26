@@ -1427,7 +1427,7 @@ class LlvmLibs(BuildUtils):
         crt_defines['CMAKE_CROSSCOMPILING'] = 'True'
         crt_defines['SANITIZER_CXX_ABI'] = 'libcxxabi'
         crt_defines['CMAKE_TRY_COMPILE_TARGET_TYPE'] = 'STATIC_LIBRARY'
-        crt_defines['COMPILER_RT_HWASAN_WITH_INTERCEPTORS'] = 'OFF'
+        crt_defines['COMPILER_RT_HWASAN_WITH_INTERCEPTORS'] = 'ON'
         crt_defines['COMPILER_RT_BUILD_SANITIZERS'] = \
             'OFF' if llvm_triple == self.liteos_triple('arm') or first_time else 'ON'
         crt_defines['COMPILER_RT_EXCLUDE_ATOMIC_BUILTIN'] = 'OFF'
