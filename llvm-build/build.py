@@ -66,6 +66,7 @@ class BuildConfig():
         self.enable_monitoring = args.enable_monitoring
         self.build_libs = args.build_libs
         self.build_libs_flags = args.build_libs_flags
+        self.adlt_debug_build = args.adlt_debug_build
 
         self.discover_paths()
 
@@ -230,6 +231,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Enable lldb performance monitoring')
+        
+        parser.add_argument(
+            '--adlt-debug-build',
+            action='store_true',
+            default=False,
+            help='Build adlt with debug flags')
 
     def parse_args(self):
 
@@ -1221,7 +1228,9 @@ class LlvmLibs(BuildUtils):
 
             defines = self.base_cmake_defines()
             ldflags = []
-            cflags = ["-g -gdwarf-4 -O0"]
+            cflags = []
+            if self.build_config.adlt_debug_build:
+                cflags.append("-g -gdwarf-4 -O0")
             self.logger().info('Build libs for %s', llvm_triple)
             if self.build_config.target_debug:
                 defines['CMAKE_BUILD_TYPE'] = 'Debug'
