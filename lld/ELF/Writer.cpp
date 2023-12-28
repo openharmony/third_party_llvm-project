@@ -1944,10 +1944,7 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
       if (config->adlt)
         for (InputFile *file : ctx->sharedFilesExtended)
           for (InputSectionBase *sec : file->getSections()) {
-            bool isExclusive = sec && (sec->type == SHT_NULL ||
-                                       sec->name.startswith(".got.plt") ||
-                                       !sec->name.startswith(".debug_"));
-            if (isExclusive)
+            if (sec && sec->isLive())
               scanRelocations<ELFT>(*sec);
           }
       if (!config->adlt)

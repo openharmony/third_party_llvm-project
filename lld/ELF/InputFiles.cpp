@@ -1070,7 +1070,7 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
     uint8_t stOther = eSym.st_other;
     uint8_t type = eSym.getType();
     uint64_t value = eSym.st_value;
-    if (config->adlt) {
+    if (config->adlt && secIdx != SHN_ABS) {
       const Elf_Shdr *eSec = *obj.getSection(secIdx);
       value -= eSec->sh_addr;
     }

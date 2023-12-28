@@ -1433,13 +1433,22 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
       offset -= sec.address;
 
     Symbol *s = &sym;
-    if (sec.name != "")
-      s = &file->getSymbolFromElfSymTab(symIndex);
+    if (!(expr == R_PLT || expr == R_PLT_PC || expr == R_GOT || expr == R_GOT_PC))
+      if (Symbol *tmp = &file->getSymbolFromElfSymTab(symIndex))
+        if (tmp->getName() != s->getName())
+          s = tmp;
 
     s = sym.getName().size() ? elf::symtab->find(sym.getName()) : &sym;
-
     if (!s) // if symbol was not found in elf::symtab
       s = &sym;
+
+    if (s->isUndefined()) {
+      if (expr == R_PLT || expr == R_PLT_PC)
+        s->needsPlt = 1;
+      else if (expr == R_GOT || expr == R_GOT_PC)
+        s->needsGot = 1;
+    }
+
     auto pushReloc = [&]() {
       sec.relocations.push_back({expr, type, offset, addend, s});
     };
@@ -1451,7 +1460,11 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
     case R_AARCH64_ADD_ABS_LO12_NC:
     case R_AARCH64_ADR_PREL_PG_HI21:
     case R_AARCH64_LDST8_ABS_LO12_NC:
+    case R_AARCH64_LDST32_ABS_LO12_NC:
     case R_AARCH64_LDST64_ABS_LO12_NC:
+    case R_AARCH64_LDST128_ABS_LO12_NC:
+    case R_AARCH64_PREL32:
+    case R_AARCH64_PREL64:
       pushReloc();
       return;
     // plt relocs
@@ -1686,6 +1699,11 @@ void RelocationScanner::scan(ArrayRef<RelTy> rels) {
 
 template <class ELFT> void elf::scanRelocations(InputSectionBase &s) {
   RelocationScanner scanner(s);
+  if (config->adlt) {
+    bool isDebug = false;
+    if (isDebug)
+      lld::outs() << s.file->getName().str() + ": " + s.name.str() + '\n';
+  }
   const RelsOrRelas<ELFT> rels = s.template relsOrRelas<ELFT>();
   if (rels.areRelocsRel())
     scanner.template scan<ELFT>(rels.rels);
