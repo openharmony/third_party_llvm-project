@@ -64,6 +64,14 @@ append_list_if(COMPILER_RT_HAS_FFREESTANDING_FLAG -ffreestanding HWASAN_RTL_CFLA
 # Too many existing bugs, needs cleanup.
 append_list_if(COMPILER_RT_HAS_WNO_FORMAT -Wno-format HWASAN_RTL_CFLAGS)
 
+# OHOS_LOCAL begin
+# OHOS can't use emulated tls with hwasan -
+# it leads to infinite recursion when creating new thread.
+if(OHOS)
+  list(APPEND HWASAN_RTL_CFLAGS -fno-emulated-tls)
+endif()
+#OHOS_LOCAL end
+
 set(HWASAN_DYNAMIC_LINK_FLAGS ${SANITIZER_COMMON_LINK_FLAGS})
 
 if(ANDROID)
