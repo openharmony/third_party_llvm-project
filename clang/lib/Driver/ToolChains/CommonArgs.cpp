@@ -622,6 +622,21 @@ void tools::addLTOOptions(const ToolChain &ToolChain, const ArgList &Args,
                                          Path));
   }
 
+  // OHOS_LOCAL begin
+  // NOTE: this patch already implemented in upstream:
+  // a78816a6b6debb548efbf1717aeeb490df42f401
+  // this changes should be replaced with upstream patch,
+  // when the toolchain will be upgraded.
+  // I didn't cherry-pick upstream patch now, because it has dependencies
+  // and can't be cherry-picked "as-is"
+  if (Arg *A = Args.getLastArg(options::OPT_femulated_tls,
+                               options::OPT_fno_emulated_tls)) {
+    bool Enable = A->getOption().getID() == options::OPT_femulated_tls;
+    CmdArgs.push_back(Args.MakeArgString(
+        Twine("-plugin-opt=") + "-emulated-tls=" + (Enable ? "1" : "0")));
+  }
+  // OHOS_LOCAL end
+
   // Setup statistics file output.
   SmallString<128> StatsFile = getStatsFileName(Args, Output, Input, D);
   if (!StatsFile.empty())
