@@ -63,7 +63,6 @@ public:
   // to allocate memory, until enable() is called.
   void disable();
   void enable();
-  void enableAtFork(); // OHOS_LOCAL
 
   typedef void (*iterate_callback)(uintptr_t base, size_t size, void *arg);
   // Execute the callback Cb for every allocation the lies in [Base, Base +
