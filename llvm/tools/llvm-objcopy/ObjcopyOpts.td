@@ -29,7 +29,8 @@ defm new_symbol_visibility : Eq<"new-symbol-visibility", "Visibility of "
                                 " with --add-symbol unless otherwise"
                                 " specified. The default value is 'default'.">;
 
-defm fabi_riscv : Eq<"fabi-riscv", "Sets float ABI value for riscv arch">;
+/// OHOS_LOCAL
+defm elf_flags : Eq<"elf-flags", "Additional ELF flags of unsigned integer type">;
 
 def compress_debug_sections
     : Joined<["--"], "compress-debug-sections=">,

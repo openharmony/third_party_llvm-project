@@ -218,8 +218,10 @@ struct CommonConfig {
   StringRef AllocSectionsPrefix;
   DiscardType DiscardMode = DiscardType::None;
 
-  // Float abi
-  Optional<uint32_t> FabiValue;
+  // OHOS_LOCAL begin
+  // Additional ELF object flags
+  Optional<uint32_t> ELFObjFlags;
+  // OHOS_LOCAL end
 
   // Repeated options
   std::vector<NewSectionInfo> AddSection;

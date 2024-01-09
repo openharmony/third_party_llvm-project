@@ -662,13 +662,17 @@ objcopy::parseObjcopyOptions(ArrayRef<const char *> RawArgsArr,
                                VisibilityStr.str().c_str());
   }
 
-  if (InputArgs.hasArg(OBJCOPY_fabi_riscv)) {
-    StringRef FabiValue = InputArgs.getLastArgValue(OBJCOPY_fabi_riscv);
-    // TODO: check if this value is correct
+  // OHOS_LOCAL begin
+  if (InputArgs.hasArg(OBJCOPY_elf_flags)) {
+    StringRef ELFObjFlags = InputArgs.getLastArgValue(OBJCOPY_elf_flags);
     uint32_t result;
-    FabiValue.getAsInteger(10, result);
-    Config.FabiValue = result;
+    if (ELFObjFlags.getAsInteger(10, result))
+        return createStringError(errc::invalid_argument,
+                                 "'%s' is not a valid ELF object flags value",
+                                 ELFObjFlags.str().c_str());
+    Config.ELFObjFlags = result;
   }
+  // OHOS_LOCAL end
 
   for (const auto *Arg : InputArgs.filtered(OBJCOPY_subsystem)) {
     StringRef Subsystem, Version;
