@@ -1694,6 +1694,17 @@ Defined* SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) {
 }
 
 template <typename ELFT>
+Defined* SharedFileExtended<ELFT>::findDefinedSymbol(uint64_t offset) {
+  Defined *foundSymbol = findSymbolByValue(offset);
+  if (foundSymbol)
+    return foundSymbol;
+  Defined *d = findSectionSymbol(offset);
+  if (d)
+    return d;
+  return static_cast<Defined*>(nullptr);
+}
+
+template <typename ELFT>
 StringRef SharedFileExtended<ELFT>::getShStrTab(ArrayRef<Elf_Shdr> elfSections) {
   return CHECK(this->getObj().getSectionStringTable(elfSections), this);
 }
@@ -1724,8 +1735,8 @@ void SharedFileExtended<ELFT>::traceElfSection(const Elf_Shdr &sec) const {
 }
 
 template <class ELFT>
-void SharedFileExtended<ELFT>::traceSymbol(const Symbol& sym) const {
-  lld::outs() << "File: " << soName << " symName: " << sym.getName();
+void SharedFileExtended<ELFT>::traceSymbol(const Symbol& sym, StringRef title) const {
+  lld::outs() << "File: " << soName << ": " + title << " symName: " << sym.getName();
   if (!sym.isDefined()) {
     lld::outs() << '\n';
     return;

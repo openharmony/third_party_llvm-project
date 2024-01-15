@@ -1325,7 +1325,7 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
     auto file = sec.getSharedFile<ELFT>();
     bool isDebug = false;
 
-    auto saveSymIfNeeded = [](const Defined& d) {
+    auto saveSymIfNeeded = [&](const Defined& d) {
       auto found = elf::symtab->find(d.getName());
       if (!found)
         in.symTab->addSymbol(elf::symtab->addSymbol(d));
@@ -1341,31 +1341,24 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
           << " addend: 0x" + Twine::utohexstr(addend) + "\n" ;
 
       // parse offset (where)
-      Defined *foundSymbol = file->findSymbolByValue(offset);
-      if (!foundSymbol) {
+      Defined *foundSymbol = file->findDefinedSymbol(offset);
+      if (!foundSymbol)
         fatal(title + "sym not found! offset: 0x" + Twine::utohexstr(offset) + "\n");
-        return;
-      }
-      if (!foundSymbol->exportDynamic)
+      if (!foundSymbol->exportDynamic && !foundSymbol->isSection())
         file->addAdltPrefix(cast<Symbol>(foundSymbol));
       Defined &symWhere = *foundSymbol;
       saveSymIfNeeded(symWhere);
+      offset = symWhere.isSection() ? (offset - symWhere.section->address) : 0;
 
       // parse addent (replacement)
-      foundSymbol = file->findSymbolByValue(addend);
-      if (!foundSymbol) {
-        Defined *d = file->findSectionSymbol(addend);
-        if (!d)
-          fatal(title + "sym not found! addend: 0x" + Twine::utohexstr(addend) + "\n");
-        foundSymbol = d;
-      }
+      foundSymbol = file->findDefinedSymbol(addend);
+      if (!foundSymbol)
+        fatal(title + "sym not found! addend: 0x" + Twine::utohexstr(addend) + "\n");
       Defined &inputSym = *foundSymbol;
       addend = inputSym.isSection() ? (addend - inputSym.section->address) : 0;
 
-      if (isDebug) {
-        lld::outs() << "handle relative reloc: inputSym: ";
-        file->traceSymbol(inputSym);
-      }
+      if (isDebug)
+        file->traceSymbol(inputSym, "handle relative reloc: inputSym: ");
       if (!foundSymbol->exportDynamic)
         file->addAdltPrefix(&inputSym);
       saveSymIfNeeded(inputSym);
@@ -1453,6 +1446,8 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
       sec.relocations.push_back({expr, type, offset, addend, s});
     };
 
+    bool isSymDefined = s && s->isDefined();
+
     switch (type) {
     // abs relocs
     case R_AARCH64_ABS32:
@@ -1470,7 +1465,7 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
     // plt relocs
     case R_AARCH64_CALL26:
     case R_AARCH64_JUMP26: {
-      if (s && s->isDefined())
+      if (isSymDefined)
         expr = R_PC; // prev: R_PLT_PC
       pushReloc();
       return;

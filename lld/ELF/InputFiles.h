@@ -403,6 +403,7 @@ public:
   bool addAdltPrefix(Symbol *s);
 
   Defined* findSectionSymbol(uint64_t offset);
+  Defined* findDefinedSymbol(uint64_t offset);
 
   ArrayRef<Symbol *> getLocalSymbols() override {
     if (this->allSymbols.empty())
@@ -422,7 +423,7 @@ public:
   void traceElfSymbol(const Elf_Sym &sym, StringRef strTable) const;
   void traceElfSection(const Elf_Shdr &sec) const;
 
-  void traceSymbol(const Symbol& sym) const;
+  void traceSymbol(const Symbol& sym, StringRef title = "") const;
   void traceSection(const SectionBase& sec) const;
 
   int dynSymSecIdx = 0;
