@@ -1338,34 +1338,34 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
       StringRef title = "handle relative reloc: ";
       if (isDebug)
         lld::outs() << title << "offset: 0x" + Twine::utohexstr(offset)
-          << " addend: 0x" + Twine::utohexstr(addend) + "\n" ;
+                    << " addend: 0x" + Twine::utohexstr(addend) + "\n";
 
       // parse offset (where)
-      Defined *foundSymbol = file->findDefinedSymbol(offset);
-      if (!foundSymbol)
-        fatal(title + "sym not found! offset: 0x" + Twine::utohexstr(offset) + "\n");
-      if (!foundSymbol->exportDynamic && !foundSymbol->isSection())
-        file->addAdltPrefix(cast<Symbol>(foundSymbol));
-      Defined &symWhere = *foundSymbol;
-      saveSymIfNeeded(symWhere);
-      offset = symWhere.isSection() ? (offset - symWhere.section->address) : 0;
+      const Defined *symWhere = file->findDefinedSymbol(offset);
+      if (!symWhere)
+        fatal(title + "symWhere not found! offset: 0x" +
+              Twine::utohexstr(offset) + "\n");
+      auto iSec = cast<InputSectionBase>(symWhere->section);
+      offset =
+          symWhere->isSection() ? (offset - symWhere->section->address) : 0;
+      saveSymIfNeeded(*symWhere);
 
       // parse addent (replacement)
-      foundSymbol = file->findDefinedSymbol(addend);
-      if (!foundSymbol)
-        fatal(title + "sym not found! addend: 0x" + Twine::utohexstr(addend) + "\n");
-      Defined &inputSym = *foundSymbol;
-      addend = inputSym.isSection() ? (addend - inputSym.section->address) : 0;
+      Defined *inputSym = file->findDefinedSymbol(
+          addend, [](Defined *d) { return !d->isPreemptible; });
+
+      if (!inputSym)
+        fatal(title + "inputSym not found! addend: 0x" +
+              Twine::utohexstr(addend) + "\n");
+      addend =
+          inputSym->isSection() ? (addend - inputSym->section->address) : 0;
 
       if (isDebug)
-        file->traceSymbol(inputSym, "handle relative reloc: inputSym: ");
-      if (!foundSymbol->exportDynamic)
-        file->addAdltPrefix(&inputSym);
-      saveSymIfNeeded(inputSym);
+        file->traceSymbol(*inputSym, "handle relative reloc: inputSym: ");
+      saveSymIfNeeded(*inputSym);
 
-      // parse section from offset of relative reloc
-      addRelativeReloc(cast<InputSectionBase>(*symWhere.section),
-                       symWhere.value, inputSym, addend, expr, type);
+      // finally
+      addRelativeReloc(*iSec, symWhere->value, *inputSym, addend, expr, type);
     };
     switch (type) {
     case R_AARCH64_RELATIVE:
@@ -1455,6 +1455,7 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
     case R_AARCH64_ADD_ABS_LO12_NC:
     case R_AARCH64_ADR_PREL_PG_HI21:
     case R_AARCH64_LDST8_ABS_LO12_NC:
+    case R_AARCH64_LDST16_ABS_LO12_NC:
     case R_AARCH64_LDST32_ABS_LO12_NC:
     case R_AARCH64_LDST64_ABS_LO12_NC:
     case R_AARCH64_LDST128_ABS_LO12_NC:
@@ -1473,6 +1474,15 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
 
     // got relocs
     case R_AARCH64_ADR_GOT_PAGE:
+      if (isSymDefined && !s->needsGot) {
+        if (isDebug) {
+          lld::outs() << "[ADLT] R_AARCH64_ADR_GOT_PAGE: sym not in GOT! ";
+          file->traceSymbol(*s);
+        }
+        expr = R_PC; // prev: R_AARCH64_GOT_PAGE_PC || R_AARCH64_GOT_PAGE ||
+                     // R_GOT || R_GOT_PC
+      }
+      LLVM_FALLTHROUGH;
     case R_AARCH64_LD64_GOT_LO12_NC:
       pushReloc();
       return;
