@@ -67,7 +67,7 @@ copy_config_linux_x86_64="""
 prebuilts/cmake,https://mirrors.huaweicloud.com/harmonyos/compiler/cmake/3.16.5/${host_platform}/cmake-${host_platform}-x86-3.16.5.tar.gz
 prebuilts/clang/ohos/${host_platform}-${host_cpu},https://mirrors.huaweicloud.com/openharmony/compiler/clang/${CLANG_PACKAGE_VERSION}/linux/${CLANG_LINUX_BUILD}.tar.bz2
 prebuilts/python3,https://mirrors.huaweicloud.com/harmonyos/compiler/python/3.10.2/${host_platform}/python-${host_platform}-x86-3.10.2_20230604.tar.gz
-prebuilts/build-tools/${host_platform}-x86/bin,https://repo.huaweicloud.com/openharmony/compiler/gn/2024/linux/gn-linux-x86-20230426.tar.gz
+prebuilts/build-tools/${host_platform}-x86/bin,https://repo.huaweicloud.com/openharmony/compiler/gn/20240115/linux/gn-linux-x86-20240115.tar.gz
 prebuilts/build-tools/${host_platform}-x86/bin,https://repo.huaweicloud.com/openharmony/compiler/ninja/1.11.0/linux/ninja-linux-x86-1.11.0.tar.gz
 """
 
@@ -77,7 +77,7 @@ copy_config_darwin_x86_64="""
 prebuilts/cmake,https://mirrors.huaweicloud.com/harmonyos/compiler/cmake/3.16.5/${host_platform}/cmake-${host_platform}-x86-3.16.5.tar.gz
 prebuilts/clang/ohos/${host_platform}-${host_cpu},http://mirrors.huaweicloud.com/harmonyos/compiler/clang/15.0.4-8e906c/darwin/${CLANG_DARWIN_BUILD}.tar.bz2
 prebuilts/python3,https://mirrors.huaweicloud.com/harmonyos/compiler/python/3.10.2/${host_platform}/python-${host_platform}-x86-3.10.2_20230604.tar.gz
-prebuilts/build-tools/${host_platform}-x86/bin,https://repo.huaweicloud.com/openharmony/compiler/gn/2024/darwin/gn-darwin-x86-20230425.tar.gz
+prebuilts/build-tools/${host_platform}-x86/bin,https://repo.huaweicloud.com/openharmony/compiler/gn/20240115/darwin/gn-darwin-x86-20240115.tar.gz
 prebuilts/build-tools/${host_platform}-x86/bin,https://repo.huaweicloud.com/openharmony/compiler/ninja/1.11.0/darwin/ninja-darwin-x86-1.11.0.tar.gz
 """
 
