@@ -402,8 +402,10 @@ public:
   StringRef addAdltPrefix(StringRef input);
   bool addAdltPrefix(Symbol *s);
 
-  Defined* findSectionSymbol(uint64_t offset);
-  Defined* findDefinedSymbol(uint64_t offset);
+  Defined *findSectionSymbol(uint64_t offset) const;
+  Defined *findDefinedSymbol(
+      uint64_t offset, llvm::function_ref<bool(Defined *)> extraCond =
+                           [](Defined *) { return true; }) const;
 
   ArrayRef<Symbol *> getLocalSymbols() override {
     if (this->allSymbols.empty())
@@ -412,7 +414,6 @@ public:
   }
 
   Symbol &getSymbol(uint32_t symbolIndex) const override;
-  Defined *findSymbolByValue(uint32_t value) const;
 
   Symbol &getSymbolFromElfSymTab(uint32_t symbolIndex) const {
     if (symbolIndex >= this->allSymbols.size())

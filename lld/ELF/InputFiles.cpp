@@ -1209,6 +1209,14 @@ template <class ELFT> void ObjFile<ELFT>::postParse() {
     if (sym.binding == STB_WEAK || binding == STB_WEAK)
       continue;
     std::lock_guard<std::mutex> lock(mu);
+    if (config->adlt) {
+      auto *f = cast<SharedFileExtended<ELFT>>(this);
+      bool isDebug = false;
+      if (isDebug) {
+        lld::outs() << "Put to duplicates for: " << archiveName << "\n";
+        f->traceSymbol(sym);
+      }
+    }
     ctx->duplicates.push_back({&sym, this, sec, eSym.st_value});
   }
 }
@@ -1674,7 +1682,8 @@ bool SharedFileExtended<ELFT>::addAdltPrefix(Symbol *s) {
 }
 
 template <typename ELFT>
-Defined* SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) {
+Defined *SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) const {
+  bool isDebug = false;
   auto predRange = [=](Symbol *sym) {
     if (!sym || sym->isUndefined() || !sym->isSection())
       return false;
@@ -1687,21 +1696,43 @@ Defined* SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) {
   auto i = this->allSymbols.begin();
   auto e = this->allSymbols.end();
   auto ret = std::find_if(i, e, predRange);
-  if (ret != e) // item was found
-    return cast<Defined>(*ret);
+  if (ret == e) // item was not found
+    return nullptr;
 
-  return nullptr;
+  auto d = cast<Defined>(*ret);
+  if (isDebug)
+    traceSymbol(*d, "found section sym: ");
+
+  return d;
 }
 
 template <typename ELFT>
-Defined* SharedFileExtended<ELFT>::findDefinedSymbol(uint64_t offset) {
-  Defined *foundSymbol = findSymbolByValue(offset);
-  if (foundSymbol)
-    return foundSymbol;
-  Defined *d = findSectionSymbol(offset);
-  if (d)
-    return d;
-  return static_cast<Defined*>(nullptr);
+Defined *SharedFileExtended<ELFT>::findDefinedSymbol(
+    uint64_t offset, llvm::function_ref<bool(Defined *)> extraCond) const {
+  bool isDebug = false;
+  SmallVector<Defined *, 0> matches;
+  for (Symbol *sym : this->allSymbols) {
+    if (!sym || sym->isUndefined())
+      continue;
+
+    Defined *d = cast<Defined>(sym);
+    if (d->file != this)
+      continue;
+
+    bool goodVal = d->section->address + d->value == offset;
+    bool goodType = d->type == STT_FUNC || d->type == STT_OBJECT;
+    if (!(goodVal && goodType && extraCond(d)))
+      continue;
+
+    if (isDebug)
+      traceSymbol(*sym, "found sym: ");
+    matches.push_back(d);
+  }
+
+  if (!matches.empty())
+    return matches[0]; // TODO: resolve multiple variants
+
+  return findSectionSymbol(offset);
 }
 
 template <typename ELFT>
@@ -1744,8 +1775,8 @@ void SharedFileExtended<ELFT>::traceSymbol(const Symbol& sym, StringRef title) c
   auto &d = cast<Defined>(sym);
   lld::outs() << " val: 0x" << Twine::utohexstr(d.value) << " sec of sym: "
               << (d.section ? d.section->name : "unknown!")
-              << " sym type: 0x" << Twine::utohexstr(sym.type)
-              << " sym binding: 0x" << Twine::utohexstr(sym.binding)
+              << " sym type: 0x" << Twine::utohexstr(d.type)
+              << " sym binding: 0x" << Twine::utohexstr(d.binding)
               << '\n';
 }
 
@@ -1764,51 +1795,6 @@ Symbol& SharedFileExtended<ELFT>::getSymbol(uint32_t symbolIndex) const {
   return *this->symbols[symbolIndex];
 }
 
-template <class ELFT>
-Defined *SharedFileExtended<ELFT>::findSymbolByValue(uint32_t value) const {
-  bool isDebug = false;
-  auto predValues = [=](Symbol *sym) {
-    if (!sym || sym->isUndefined())
-      return false;
-    const Defined *d = cast<Defined>(sym);
-    bool goodVal = d->section->address + d->value == value;
-    bool goodFile = d->file == this;
-    bool isGood = goodVal && goodFile;
-    if (isDebug && isGood)
-      lld::outs() << "good\n";
-    return isGood;
-  };
-
-  // filter by value for .dynsym, else for .symtab
-  SmallVector<Symbol *, 0> matches;
-  auto i = this->symbols.begin();
-  auto e = this->symbols.end();
-  std::copy_if(i, e, std::back_inserter(matches), predValues);
-
-  if (matches.empty()) {
-    auto i = this->allSymbols.begin();
-    auto e = this->allSymbols.end();
-    std::copy_if(i, e, std::back_inserter(matches), predValues);
-  }
-
-  if (matches.empty()) {
-    // warn("Symbol not found! Value: 0x" + Twine::utohexstr(value));
-    return nullptr;
-  }
-
-  // filter by type else return first item
-  i = matches.begin();
-  e = matches.end();
-  auto predTypes = [=](Symbol *sym) {
-    return sym->type == STT_FUNC || sym->type == STT_OBJECT;
-  };
-  auto ret = std::find_if(i, e, predTypes);
-  if (ret != e) // item was found
-    return cast<Defined>(*ret);
-
-  // todo fix it
-  return cast<Defined>(*i);
-}
 
 template <class ELFT> void SharedFileExtended<ELFT>::parseDynamics() {
   const ELFFile<ELFT> obj = this->getObj();
