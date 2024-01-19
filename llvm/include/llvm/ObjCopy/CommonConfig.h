@@ -218,6 +218,11 @@ struct CommonConfig {
   StringRef AllocSectionsPrefix;
   DiscardType DiscardMode = DiscardType::None;
 
+  // OHOS_LOCAL begin
+  // Additional ELF object flags
+  Optional<uint32_t> ELFObjFlags;
+  // OHOS_LOCAL end
+
   // Repeated options
   std::vector<NewSectionInfo> AddSection;
   std::vector<StringRef> DumpSection;
