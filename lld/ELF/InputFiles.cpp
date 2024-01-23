@@ -1071,7 +1071,11 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
     uint8_t type = eSym.getType();
     uint64_t value = eSym.st_value;
     if (config->adlt && secIdx != SHN_ABS) {
-      const Elf_Shdr *eSec = *obj.getSection(secIdx);
+      auto p = obj.getSection(secIdx);
+      if (p.takeError()) {
+	    fatal("getSection failed: " + llvm::toString(p.takeError()));
+      }
+      const Elf_Shdr *eSec = *p;
       value -= eSec->sh_addr;
     }
     uint64_t size = eSym.st_size;
@@ -1142,7 +1146,11 @@ template <class ELFT> void ObjFile<ELFT>::initializeLocalSymbols() {
       new (symbols[i]) Undefined(this, name, STB_LOCAL, eSym.st_other, type,
                                  /*discardedSecIdx=*/secIdx);
     else {
-      const Elf_Shdr *eSec = *this->getObj().getSection(secIdx);
+      auto p = this->getObj().getSection(secIdx);
+      if (p.takeError()) {
+	    fatal("getSection failed: " + llvm::toString(p.takeError()));
+      }
+      const Elf_Shdr *eSec = *p;
       auto value = config->adlt ? eSym.st_value - eSec->sh_addr : eSym.st_value;
       new (symbols[i]) Defined(this, name, STB_LOCAL, eSym.st_other, type,
                                value, eSym.st_size, sec);
@@ -1634,7 +1642,11 @@ template <typename ELFT> void SharedFileExtended<ELFT>::parseForAdlt() {
   StringRef shstrtab = getShStrTab(objSections);
 
   lld::outs() << "Parse symbols from .symtab:\n";
-  const Elf_Shdr *elfSymTab = *obj.getSection(symTabSecIdx);
+  auto p = obj.getSection(symTabSecIdx);
+  if (p.takeError()) {
+      fatal("getSection failed: " + llvm::toString(p.takeError()));
+  }
+  const Elf_Shdr *elfSymTab = *p;
   StringRef strTable = *obj.getStringTableForSymtab(*elfSymTab);
 
   auto eSyms = *obj.symbols(elfSymTab);
@@ -1988,7 +2000,11 @@ template <class ELFT> void SharedFileExtended<ELFT>::parseElfSymTab() {
             getExtendedSymbolTableIndex<ELFT>(eSym, i, this->getShndxTable()));
       else if (secIdx >= SHN_LORESERVE)
         secIdx = 0;
-      const Elf_Shdr *eSec = *this->getObj().getSection(secIdx);
+      auto p = obj.getSection(secIdx);
+      if (p.takeError()) {
+	    fatal("getSection failed: " + llvm::toString(p.takeError()));
+      }
+      const Elf_Shdr *eSec = *p;
       InputSectionBase *sec = this->sections[secIdx];
       auto val = eSym.st_value - eSec->sh_addr;
       this->allSymbols[i] =
