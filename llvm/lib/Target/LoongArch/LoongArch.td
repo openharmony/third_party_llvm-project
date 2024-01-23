@@ -120,6 +120,11 @@ def FeatureUAL
     : SubtargetFeature<"ual", "HasUAL", "true",
                        "Allow memory accesses to be unaligned">;
 
+// Experimental auto vectorization
+def FeatureAutoVec
+    : SubtargetFeature<"auto-vec", "HasExpAutoVec", "true",
+                       "Experimental auto vectorization">;
+
 //===----------------------------------------------------------------------===//
 // Registers, instruction descriptions ...
 //===----------------------------------------------------------------------===//
