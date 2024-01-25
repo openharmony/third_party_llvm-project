@@ -399,8 +399,8 @@ public:
   void parseForAdlt();
   void postParseForAdlt();
 
-  StringRef addAdltPrefix(StringRef input);
-  bool addAdltPrefix(Symbol *s);
+  StringRef addAdltPostfix(StringRef input);
+  bool addAdltPostfix(Symbol *s);
 
   Defined *findSectionSymbol(uint64_t offset) const;
   Defined *findDefinedSymbol(

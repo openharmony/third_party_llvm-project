@@ -104,7 +104,9 @@ static StringRef getOutputSectionName(const InputSectionBase *s) {
        {".data.rel.ro", ".data", ".rodata", ".bss.rel.ro", ".bss",
         ".gcc_except_table", ".init_array", ".fini_array", ".tbss", ".tdata",
         ".ARM.exidx", ".ARM.extab", ".ctors", ".dtors", ".ohos.randomdata"}) // OHOS_LOCAL
-    if (isSectionPrefix(v, s->name))
+    if (config->adlt && s->name.startswith(v))
+      return s->name;
+    else if (isSectionPrefix(v, s->name))
       return v;
 
   return s->name;

@@ -455,6 +455,8 @@ void AArch64::relocate(uint8_t *loc, const Relocation &rel,
     checkInt(loc, val, 33, rel);
     LLVM_FALLTHROUGH;
   case R_AARCH64_ADR_PREL_PG_HI21_NC:
+    if (config->adlt && *(uint32_t*)loc == 0xd503201f) // ignore nop
+      break;
     write32AArch64Addr(loc, val >> 12);
     break;
   case R_AARCH64_ADR_PREL_LO21:
