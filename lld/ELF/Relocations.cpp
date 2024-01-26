@@ -1427,13 +1427,19 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
 
     Symbol *s = &sym;
     if (!(expr == R_PLT || expr == R_PLT_PC || expr == R_GOT || expr == R_GOT_PC))
-      if (Symbol *tmp = &file->getSymbolFromElfSymTab(symIndex))
-        if (tmp->getName() != s->getName())
-          s = tmp;
+      if (Symbol *tmp = &file->getSymbolFromElfSymTab(symIndex)) {
+        if (isDebug)
+          traceSym(debugTitle + "changed to tmp: ", *tmp);
+        s = tmp;
+      }
 
     s = sym.getName().size() ? elf::symtab->find(sym.getName()) : &sym;
-    if (!s) // if symbol was not found in elf::symtab
+    if (!s) { // if symbol was not found in elf::symtab
       s = &sym;
+      in.symTab->addSymbol(s);
+    }
+    if (isDebug)
+      traceSym(debugTitle + "before push: ", *s);
 
     if (s->isUndefined()) {
       if (expr == R_PLT || expr == R_PLT_PC)

@@ -1667,7 +1667,8 @@ template <typename ELFT> void SharedFileExtended<ELFT>::parseForAdlt() {
   lld::outs() << "Parse offsets of some sections:\n";
   for (const Elf_Shdr &sec : objSections) {
     auto name = check(obj.getSectionName(sec, shstrtab));
-    if (name == ".init_array" || name == ".fini_array" || name == ".data")
+    if (name == ".init_array" || name == ".fini_array" || name == ".data" ||
+        name == ".data.rel.ro" || name == ".bss.rel.ro" || name == ".bss")
       traceElfSection(sec);
   }
   lld::outs() << '\n';
@@ -1680,12 +1681,12 @@ template <typename ELFT> void SharedFileExtended<ELFT>::postParseForAdlt() {
 }
 
 template <typename ELFT>
-StringRef SharedFileExtended<ELFT>::addAdltPrefix(StringRef input) {
+StringRef SharedFileExtended<ELFT>::addAdltPostfix(StringRef input) {
   return markItemForAdlt(input, soName);
 }
 
 template <typename ELFT>
-bool SharedFileExtended<ELFT>::addAdltPrefix(Symbol *s) {
+bool SharedFileExtended<ELFT>::addAdltPostfix(Symbol *s) {
   StringRef newName = markItemForAdlt(s->getName(), soName);
   if (s->getName() == newName)
     return false;
@@ -2007,6 +2008,8 @@ template <class ELFT> void SharedFileExtended<ELFT>::parseElfSymTab() {
       const Elf_Shdr *eSec = *p;
       InputSectionBase *sec = this->sections[secIdx];
       auto val = eSym.st_value - eSec->sh_addr;
+      if (name.startswith("__"))
+        name = addAdltPostfix(name);
       this->allSymbols[i] =
           make<Defined>(this, name, bind, other, type, val, eSym.st_size, sec);
     } else {

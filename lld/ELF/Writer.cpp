@@ -273,7 +273,9 @@ void elf::addReservedSymbols() {
 static OutputSection *findSection(StringRef name, unsigned partition = 1) {
   for (SectionCommand *cmd : script->sectionCommands)
     if (auto *osd = dyn_cast<OutputDesc>(cmd))
-      if (osd->osec.name == name && osd->osec.partition == partition)
+      if ((config->adlt ? osd->osec.name.startswith(name)
+                        : osd->osec.name == name) &&
+          osd->osec.partition == partition)
         return &osd->osec;
   return nullptr;
 }
@@ -831,6 +833,12 @@ static bool isRelroSection(const OutputSection *sec) {
   // ELF in spirit. But in reality many linker features depend on
   // magic section names.
   StringRef s = sec->name;
+  if (config->adlt)
+    return s.startswith(".data.rel.ro") || s.startswith(".bss.rel.ro") ||
+           s.startswith(".ctors") || s.startswith(".dtors") ||
+           s.startswith(".eh_frame") || s.startswith(".fini_array") ||
+           s.startswith(".init_array") || s.startswith(".preinit_array");
+
   return s == ".data.rel.ro" || s == ".bss.rel.ro" || s == ".ctors" ||
          s == ".dtors" || s == ".jcr" || s == ".eh_frame" ||
          s == ".fini_array" || s == ".init_array" ||

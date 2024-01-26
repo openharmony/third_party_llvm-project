@@ -1560,8 +1560,8 @@ DynamicSection<ELFT>::computeContents() {
       };
       for (InputFile *file : ctx->sharedFilesExtended) {
         auto *f = cast<SharedFileExtended<ELFT>>(file);
-        auto initArray = findSection(f->addAdltPrefix(".init_array"));
-        auto finiArray = findSection(f->addAdltPrefix(".fini_array"));
+        auto initArray = findSection(f->addAdltPostfix(".init_array"));
+        auto finiArray = findSection(f->addAdltPostfix(".fini_array"));
         if (initArray) {
           addInt(DT_INIT_ARRAY, initArray->addr);
           addInt(DT_INIT_ARRAYSZ, initArray->size);
