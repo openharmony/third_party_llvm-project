@@ -44,12 +44,26 @@ static_assert(sizeof(ThreadLocalPackedVariables) == sizeof(uint64_t),
 #ifdef GWP_ASAN_PLATFORM_TLS_HEADER
 #include GWP_ASAN_PLATFORM_TLS_HEADER
 #else
+// OHOS_LOCAL begin
+#if defined(__OHOS__)
+// Musl doesn't support libc using TLS variables now,
+// so musl puts gwp_asan tls on the pthread, this interface can return the corresponding address.
+extern "C" void* get_platform_gwp_asan_tls_slot();
+namespace gwp_asan {
+inline ThreadLocalPackedVariables *getThreadLocals() {
+  return reinterpret_cast<ThreadLocalPackedVariables *>(get_platform_gwp_asan_tls_slot());
+}
+} // namespace gwp_asan
+#else
 namespace gwp_asan {
 inline ThreadLocalPackedVariables *getThreadLocals() {
   alignas(8) static GWP_ASAN_TLS_INITIAL_EXEC ThreadLocalPackedVariables Locals;
   return &Locals;
 }
 } // namespace gwp_asan
+#endif // __OHOS__
+// OHOS_LOCAL end
+
 #endif // GWP_ASAN_PLATFORM_TLS_HEADER
 
 #endif // GWP_ASAN_GUARDED_POOL_ALLOCATOR_TLS_H_
