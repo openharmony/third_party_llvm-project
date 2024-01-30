@@ -896,7 +896,34 @@ void SetAbortMessage(const char *str) {
   if (&android_set_abort_message)
     android_set_abort_message(str);
 }
+// OHOS_LOCAL begin
+#elif SANITIZER_OHOS
+
+void AndroidLogInit() {}
+
+static atomic_uint8_t ohos_log_initialized;
+
+void OhosLogInit() {
+  atomic_store(&ohos_log_initialized, 1, memory_order_release);
+}
+
+static bool ShouldLogAfterPrintf() {
+  return atomic_load(&ohos_log_initialized, memory_order_acquire);
+}
+
+extern "C" SANITIZER_WEAK_ATTRIBUTE int musl_log(const char *fmt, ...);
+void WriteOneLineToSyslog(const char *s) {
+  if (&musl_log) {
+    musl_log(s);
+  } else {
+    syslog(LOG_INFO, "%s", s);
+  }
+}
+void SetAbortMessage(const char *str) {}
+
 #else
+void OhosLogInit() {}
+
 void AndroidLogInit() {}
 
 static bool ShouldLogAfterPrintf() { return true; }
@@ -910,6 +937,7 @@ void LogMessageOnPrintf(const char *str) {
   if (common_flags()->log_to_syslog && ShouldLogAfterPrintf())
     WriteToSyslog(str);
 }
+// OHOS_LOCAL end
 
 #endif  // SANITIZER_LINUX
 

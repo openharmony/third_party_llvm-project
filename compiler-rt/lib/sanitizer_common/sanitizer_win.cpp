@@ -1182,6 +1182,8 @@ void LogFullErrorReport(const char *buffer) {
                       TraceLoggingValue(buffer, "AsanReportContents"));
   }
 }
+
+void OhosLogInit(void) {} // OHOS_LOCAL
 #endif // SANITIZER_WIN_TRACE
 
 void InitializePlatformCommonFlags(CommonFlags *cf) {}
