@@ -402,10 +402,18 @@ public:
   StringRef addAdltPostfix(StringRef input);
   bool addAdltPostfix(Symbol *s);
 
+  bool saveSymbol(const Defined& d) const;
+
   Defined *findSectionSymbol(uint64_t offset) const;
   Defined *findDefinedSymbol(
-      uint64_t offset, llvm::function_ref<bool(Defined *)> extraCond =
-                           [](Defined *) { return true; }) const;
+      uint64_t offset,
+      StringRef fatalTitle = "defined symbol not found! offset:",
+      llvm::function_ref<bool(Defined *)> extraCond = [](Defined *) {
+        return true;
+      }) const;
+
+  InputSectionBase *findInputSection(StringRef name) const;
+  InputSectionBase *findInputSection(uint64_t offset) const;
 
   ArrayRef<Symbol *> getLocalSymbols() override {
     if (this->allSymbols.empty())
@@ -413,6 +421,7 @@ public:
     return llvm::makeArrayRef(this->allSymbols).slice(1, eFirstGlobal - 1);
   }
 
+  Symbol &getDynamicSymbol(uint32_t symbolIndex) const;
   Symbol &getSymbol(uint32_t symbolIndex) const override;
 
   Symbol &getSymbolFromElfSymTab(uint32_t symbolIndex) const {
@@ -424,8 +433,8 @@ public:
   void traceElfSymbol(const Elf_Sym &sym, StringRef strTable) const;
   void traceElfSection(const Elf_Shdr &sec) const;
 
-  void traceSymbol(const Symbol& sym, StringRef title = "") const;
-  void traceSection(const SectionBase& sec) const;
+  void traceSymbol(const Symbol &sym, StringRef title = "") const;
+  void traceSection(const SectionBase &sec, StringRef title = "") const;
 
   int dynSymSecIdx = 0;
   int symTabSecIdx = 0;

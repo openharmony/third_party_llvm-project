@@ -81,6 +81,16 @@ AArch64::AArch64() {
 
 RelExpr AArch64::getRelExpr(RelType type, const Symbol &s,
                             const uint8_t *loc) const {
+  if (config->adlt)
+    switch (type) {
+    case R_AARCH64_GLOB_DAT:
+    case R_AARCH64_JUMP_SLOT:
+    case R_AARCH64_RELATIVE:
+      return R_ABS;
+    default:
+      break;
+    }
+
   switch (type) {
   case R_AARCH64_ABS16:
   case R_AARCH64_ABS32:
