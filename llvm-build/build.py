@@ -66,6 +66,7 @@ class BuildConfig():
         self.enable_monitoring = args.enable_monitoring
         self.build_libs = args.build_libs
         self.build_libs_flags = args.build_libs_flags
+        self.compression_format = args.compression_format
 
         self.discover_paths()
 
@@ -81,6 +82,9 @@ class BuildConfig():
         self.CLANG_VERSION = prebuilts_clang_version
         self.MINGW_TRIPLE = 'x86_64-windows-gnu'
         self.build_libs_with_hb = self.build_libs_flags == 'OH' or self.build_libs_flags == 'BOTH'
+        
+        self.ARCHIVE_EXTENSION = '.tar.' + self.compression_format
+        self.ARCHIVE_OPTION = '-c' + ('j' if self.compression_format == "bz2" else 'z')
         logging.basicConfig(level=logging.INFO)
 
     def discover_paths(self):
@@ -230,6 +234,15 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Enable lldb performance monitoring')
+        
+        compression_formats = ['bz2', 'gz']
+
+        parser.add_argument(
+            '--compression-format',
+            choices=compression_formats,
+            default='bz2',
+            help='Choose compression output format (bz2 or gz)'
+        )
 
     def parse_args(self):
 
@@ -1828,9 +1841,9 @@ class LlvmPackage(BuildUtils):
             #Package libcxx-ndk
             for host in hosts_list:
                 tarball_name = 'libcxx-ndk-%s-%s' % (self.build_config.build_name, host)
-                package_path = '%s%s' % (self.merge_packages_path(tarball_name), '.tar.bz2')
+                package_path = '%s%s' % (self.merge_packages_path(tarball_name), self.build_config.ARCHIVE_EXTENSION)
                 self.logger().info('Packaging %s', package_path)
-                args = ['tar', '-chjC', self.build_config.OUT_PATH, '-f', package_path, 'libcxx-ndk']
+                args = ['tar', self.build_config.ARCHIVE_OPTION, '-h', '-C', self.build_config.OUT_PATH, '-f', package_path, 'libcxx-ndk']
                 self.check_create_dir(self.build_config.PACKAGES_PATH)
                 self.check_call(args)
 
@@ -2070,9 +2083,9 @@ class LlvmPackage(BuildUtils):
     def package_up_resulting(self, package_name, host, install_host_dir):
         # Package up the resulting trimmed install/ directory.
         tarball_name = '%s-%s' % (package_name, host)
-        package_path = '%s%s' % (self.merge_packages_path(tarball_name), '.tar.bz2')
+        package_path = '%s%s' % (self.merge_packages_path(tarball_name), self.build_config.ARCHIVE_EXTENSION)
         self.logger().info('Packaging %s', package_path)
-        args = ['tar', '-cjC', install_host_dir, '-f', package_path, package_name]
+        args = ['tar', self.build_config.ARCHIVE_OPTION, '-C', install_host_dir, '-f', package_path, package_name]
         if host.startswith('windows'):
             # windows do not support symlinks,
             # replace them with file copies
@@ -2084,9 +2097,9 @@ class LlvmPackage(BuildUtils):
         # Package ohos NDK
         if os.path.exists(self.merge_out_path('sysroot')):
             tarball_ndk_name = 'ohos-sysroot-%s' % self.build_config.build_name
-            package_ndk_path = '%s%s' % (self.merge_packages_path(tarball_ndk_name), '.tar.bz2')
+            package_ndk_path = '%s%s' % (self.merge_packages_path(tarball_ndk_name), self.build_config.ARCHIVE_EXTENSION)
             self.logger().info('Packaging %s', package_ndk_path)
-            args = ['tar', '-chjC', self.build_config.OUT_PATH, '-f', package_ndk_path, 'sysroot']
+            args = ['tar', self.build_config.ARCHIVE_OPTION, '-h', '-C', self.build_config.OUT_PATH, '-f', package_ndk_path, 'sysroot']
             self.check_call(args)
 
     def get_dependency_list(self, install_dir, lib):
