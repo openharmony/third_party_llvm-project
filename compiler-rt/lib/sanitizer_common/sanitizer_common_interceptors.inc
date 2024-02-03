@@ -3250,7 +3250,7 @@ static void read_msghdr_control(void *ctx, void *control, uptr controllen) {
     __sanitizer_cmsghdr *cmsg = (__sanitizer_cmsghdr *)p;
     COMMON_INTERCEPTOR_READ_RANGE(ctx, &cmsg->cmsg_len, sizeof(cmsg->cmsg_len));
 
-    if (p + RoundUpTo(cmsg->cmsg_len, sizeof(uptr)) > control_end) break;
+    if (control_end - p < RoundUpTo(cmsg->cmsg_len, sizeof(uptr))) break; // OHOS_LOCAL
 
     COMMON_INTERCEPTOR_READ_RANGE(ctx, &cmsg->cmsg_level,
                                   sizeof(cmsg->cmsg_level));
