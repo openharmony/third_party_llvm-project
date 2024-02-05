@@ -64,7 +64,7 @@ def main():
     llvm_defines['LLVM_INCLUDE_TESTS'] = 'OFF'
     llvm_defines['LLVM_BUILD_TOOLS'] = 'ON'
     llvm_defines['LLVM_ENABLE_ZLIB'] = 'OFF'
-    llvm_defines['LLVM_DISTRIBUTION_COMPONENTS'] = 'cmake-exports;llvm-headers;LLVM'
+    llvm_defines['LLVM_ENABLE_PROJECTS'] = 'clang;lld;clang-tools-extra'
     llvm_defines['LLVM_CONFIG_PATH'] = os.path.join(llvm_root, 'bin', 'llvm-config')
     llvm_defines['LLVM_TABLEGEN'] = os.path.join(llvm_root, 'bin', 'llvm-tblgen')
     llvm_defines['CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN'] = llvm_root
@@ -111,6 +111,11 @@ def main():
 
     build_utils.invoke_ninja(out_path=llvm_path, env=env, target=None, install=True)
 
+    # Copy required aarch64-linux-ohos libs from main toolchain build.
+    build_utils.check_copy_tree(os.path.join(llvm_root, 'lib', llvm_triple),
+                                os.path.join(llvm_install, 'lib', llvm_triple))
+    build_utils.check_copy_tree(os.path.join(llvm_root, 'lib', 'clang', '15.0.4', 'lib', llvm_triple),
+                                os.path.join(llvm_install, 'lib', 'clang', '15.0.4', 'lib', llvm_triple))
 
 if __name__ == '__main__':
     main()
