@@ -47,6 +47,7 @@ class BuildConfig():
         self.build_instrumented = args.build_instrumented
         self.xunit_xml_output = args.xunit_xml_output
         self.enable_assertions = args.enable_assertions
+        self.build_gtest_libs = args.build_gtest_libs
         self.build_clean = args.build_clean
         self.need_libs = self.do_build and 'libs' not in args.no_build
         self.need_lldb_server = self.do_build and 'lldb-server' not in args.no_build
@@ -113,6 +114,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Apply assertions, some parameters are affected.')
+
+        parser.add_argument(
+            '--build-gtest-libs',
+            action='store_true',
+            default=False,
+            help='Build gtest libraries.')
 
         parser.add_argument(
             '--build-name',
@@ -1722,6 +1729,60 @@ class LlvmLibs(BuildUtils):
         self.llvm_package.copy_libedit_to_llvm(llvm_make)
         self.llvm_package.copy_libedit_to_llvm(llvm_install)
 
+    def copy_gtest_to_sysroot(self, build_dir):
+        build_lib_dir = os.path.join(build_dir, 'lib')
+        self.logger().info('LlvmPackage copy_gtest_to_sysroot from %s', build_lib_dir)
+        libs = [ "libLLVMSupport.so", "libLLVMDemangle.so", "libllvm_gtest.so" ]
+        sysroot_lib_dir = self.merge_out_path('sysroot', 'aarch64-linux-ohos', 'usr', 'lib')
+
+        os.chdir(build_lib_dir)
+        for f in libs:
+            self.check_copy_file(f'{f}.15', sysroot_lib_dir)
+            os.chdir(sysroot_lib_dir)
+            os.symlink(f'{f}.15', f)
+            os.chdir(build_lib_dir)
+
+    def build_gtest_defines(self, llvm_install):
+        gtest_defines = {}
+        gtest_defines['BUILD_SHARED_LIBS'] = 'YES'
+        gtest_defines['CMAKE_BUILD_TYPE'] = 'Release'
+        gtest_defines['CMAKE_C_COMPILER'] = os.path.join(llvm_install, 'bin', 'clang')
+        gtest_defines['CMAKE_CXX_COMPILER'] = os.path.join(llvm_install, 'bin', 'clang++')
+        gtest_defines['LLVM_TABLEGEN'] = os.path.join(llvm_install, 'bin', 'llvm-tblgen')
+        gtest_defines['CMAKE_LINKER'] = os.path.join(llvm_install, 'bin', 'ld.lld')
+        gtest_defines['CMAKE_C_FLAGS'] = '--target=aarch64-linux-ohos'
+        gtest_defines['CMAKE_CXX_FLAGS'] = '--target=aarch64-linux-ohos'
+
+        return gtest_defines
+
+    def build_gtest(self, llvm_install):
+        gtest_defines = self.build_gtest_defines(llvm_install)
+        gtest_cmake_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm'))
+
+        gtest_build_path = self.merge_out_path('gtest')
+
+        self.rm_cmake_cache(gtest_build_path)
+
+        self.invoke_cmake(gtest_cmake_path,
+                          gtest_build_path,
+                          gtest_defines,
+                          env=dict(self.build_config.ORIG_ENV))
+
+        self.invoke_ninja(out_path=gtest_build_path,
+                          env=dict(self.build_config.ORIG_ENV),
+                          target=[ "LLVMSupport", "LLVMDemangle",  "llvm_gtest" ],
+                          install=False)
+
+        self.copy_gtest_to_sysroot(gtest_build_path)
+        shutil.copytree(
+            os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm', 'utils', 'unittest', 'googlemock', 'include', 'gmock'),
+            os.path.join(llvm_install, 'include', 'gmock'), 
+            dirs_exist_ok = True)
+        shutil.copytree(
+            os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm', 'utils', 'unittest', 'googletest', 'include', 'gtest'),
+            os.path.join(llvm_install, 'include', 'gtest'), 
+            dirs_exist_ok = True)
+
     def build_libxml2_defines(self):
         libxml2_defines = {}
         libxml2_defines['LIBXML2_WITH_PYTHON'] = 'OFF'
@@ -2320,7 +2381,6 @@ class LlvmPackage(BuildUtils):
         return
 
 
-
 def main():
     build_config = BuildConfig()
     build_utils = BuildUtils(build_config)
@@ -2420,6 +2480,8 @@ def main():
                                           build_config.enable_assertions,
                                           build_config.build_name)
 
+    if build_config.build_gtest_libs:
+        llvm_libs.build_gtest(llvm_install)
 
     if build_config.do_package:
         if build_utils.host_is_linux():
