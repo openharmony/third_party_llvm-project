@@ -64,7 +64,8 @@ def main():
     llvm_defines['LLVM_INCLUDE_TESTS'] = 'OFF'
     llvm_defines['LLVM_BUILD_TOOLS'] = 'ON'
     llvm_defines['LLVM_ENABLE_ZLIB'] = 'OFF'
-    llvm_defines['LLVM_ENABLE_PROJECTS'] = 'clang;lld;clang-tools-extra'
+    llvm_defines['LLVM_ENABLE_PROJECTS'] = 'clang;clang-tools-extra;lld;lldb;openmp'
+    # We do not build runtimes, since they will be copied from main toolchain build
     llvm_defines['LLVM_CONFIG_PATH'] = os.path.join(llvm_root, 'bin', 'llvm-config')
     llvm_defines['LLVM_TABLEGEN'] = os.path.join(llvm_root, 'bin', 'llvm-tblgen')
     llvm_defines['CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN'] = llvm_root
