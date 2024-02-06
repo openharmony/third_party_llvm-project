@@ -15,6 +15,12 @@ if(COMPILER_RT_TSAN_DEBUG_OUTPUT)
   list(APPEND TSAN_CFLAGS -DTSAN_DEBUG_OUTPUT=2)
 endif()
 
+# OHOS_LOCAL begin
+if(OHOS)
+  list(APPEND TSAN_CFLAGS -fno-emulated-tls)
+endif()
+# OHOS_LOCAL end
+
 # Add the actual runtime library.
 option(TSAN_USE_OLD_RUNTIME "Use the old tsan runtime (temporal option for emergencies)." OFF)
 if (TSAN_USE_OLD_RUNTIME)
