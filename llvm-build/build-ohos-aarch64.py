@@ -68,7 +68,7 @@ def main():
     llvm_defines['CMAKE_INSTALL_PREFIX'] = llvm_install
     llvm_defines['CMAKE_SYSROOT'] = sysroot
     llvm_defines['CMAKE_LIBRARY_ARCHITECTURE'] = llvm_triple
-    llvm_defines['LLVM_TARGETS_TO_BUILD'] = 'AArch64'
+    llvm_defines['LLVM_TARGETS_TO_BUILD'] = build_config.TARGETS
     llvm_defines['LLVM_TARGET_ARCH'] = 'AArch64'
     llvm_defines['LLVM_DEFAULT_TARGET_TRIPLE'] = llvm_triple
     llvm_defines['LLVM_BUILD_LLVM_DYLIB'] = 'ON'
@@ -128,10 +128,18 @@ def main():
     build_utils.invoke_ninja(out_path=llvm_path, env=env, target=None, install=True)
 
     # Copy required aarch64-linux-ohos libs from main toolchain build.
-    build_utils.check_copy_tree(os.path.join(llvm_root, 'lib', llvm_triple),
-                                os.path.join(llvm_install, 'lib', llvm_triple))
-    build_utils.check_copy_tree(os.path.join(llvm_root, 'lib', 'clang', '15.0.4', 'lib', llvm_triple),
-                                os.path.join(llvm_install, 'lib', 'clang', '15.0.4', 'lib', llvm_triple))
+    arch_list = [build_utils.liteos_triple('arm'), build_utils.open_ohos_triple('arm'),
+                         build_utils.open_ohos_triple('aarch64'), build_utils.open_ohos_triple('riscv64'),
+                         build_utils.open_ohos_triple('mipsel'), build_utils.open_ohos_triple('x86_64')]
+    for arch in arch_list:
+        build_utils.check_copy_tree(os.path.join(llvm_root, 'lib', arch),
+                                    os.path.join(llvm_install, 'lib', arch))
+        build_utils.check_copy_tree(os.path.join(llvm_root, 'lib', 'clang', '15.0.4', 'lib', arch),
+                                    os.path.join(llvm_install, 'lib', 'clang', '15.0.4', 'lib', arch))
+
+    #Copy required c++ headerfiles from main toolchain build.
+    build_utils.check_copy_tree(os.path.join(llvm_root, 'include', 'c++'), os.path.join(llvm_install, 'include', 'c++'))
+    build_utils.check_copy_tree(os.path.join(llvm_root, 'include', 'libcxx-ohos'), os.path.join(llvm_install, 'include', 'libcxx-ohos'))
 
     # Package ohos-aarch64 toolchain.
     if build_config.do_package:
