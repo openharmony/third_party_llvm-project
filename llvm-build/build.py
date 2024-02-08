@@ -38,7 +38,7 @@ class BuildConfig():
         args = self.parse_args()
         self.no_strip_libs = args.no_strip_libs
         self.do_build = not args.skip_build
-        self.do_package = not args.skip_package
+        self.do_package = not args.skip_package and not args.build_only
         self.build_name = args.build_name
         self.debug = args.debug
         self.target_debug = args.target_debug
@@ -50,8 +50,12 @@ class BuildConfig():
         self.build_gtest_libs = args.build_gtest_libs
         self.build_clean = args.build_clean
         self.need_libs = self.do_build and 'libs' not in args.no_build
-        self.need_lldb_server = self.do_build and 'lldb-server' not in args.no_build
+        self.need_lldb_server = self.do_build and 'lldb-server' not in args.no_build and not args.build_only
         self.build_python = args.build_python
+
+        self.build_only = True if args.build_only else False
+        self.build_only_llvm = args.build_only["llvm"] if self.build_only else []
+        self.build_only_libs = args.build_only["libs"] if self.build_only else []
 
         self.no_build_arm = args.skip_build or args.no_build_arm
         self.no_build_aarch64 = args.skip_build or args.no_build_aarch64
@@ -301,6 +305,31 @@ class BuildConfig():
             default="LLVM",
             help='which kind of flags for build_crts and build_runtimes, Choices:' + ', '.join(known_libs_flags))
 
+        llvm_components = ("lld", "llvm-readelf", "llvm-objdump")
+        libs_components = ("musl", "compiler-rt", "libcxx")
+        llvm_components_str = ', '.join(llvm_components)
+        libs_components_str = ', '.join(libs_components)
+
+        class SeparatedListByCommaToDictAction(argparse.Action):
+            def __call__(self, parser, namespace, vals, option_string):
+                vals_dct = {"llvm": [], "libs": []}
+                for val in vals.split(','):
+                    if val in llvm_components:
+                        vals_dct["llvm"].append(val)
+                        continue
+                    elif val in libs_components:
+                        vals_dct["libs"].append(val)
+                        continue
+                    else:
+                        error = '\'{}\' invalid.  Choose from {}, {}'.format(val, llvm_components, libs_components)
+                        raise argparse.ArgumentError(self, error)
+                setattr(namespace, self.dest, vals_dct)
+
+        parser.add_argument(
+            '--build-only',
+            action=SeparatedListByCommaToDictAction,
+            default=dict(),
+            help=f'Build only {llvm_components_str} llvm components and {libs_components_str} lib components.')
         return parser.parse_args()
 
 
@@ -567,6 +596,7 @@ class LlvmCore(BuildUtils):
                    build_dir,
                    install_dir,
                    build_name,
+                   build_target=None,
                    extra_defines=None,
                    extra_env=None):
 
@@ -597,6 +627,7 @@ class LlvmCore(BuildUtils):
         if extra_env is not None:
             env.update(extra_env)
 
+        install = False if build_target else True
         llvm_project_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm'))
 
         self.invoke_cmake(llvm_project_path,
@@ -606,8 +637,28 @@ class LlvmCore(BuildUtils):
 
         self.invoke_ninja(out_path=build_dir,
                           env=env,
-                          target=None,
-                          install=True)
+                          target=build_target,
+                          install=install)
+        if not install:
+            self.llvm_python_install(build_dir, install_dir)
+
+    def llvm_python_install(self, build_dir, install_dir):
+        target_dirs = ["bin", "include", "lib", "python3", "libexec", "share"]
+        for target_dir in target_dirs:
+            target_dir = f"{build_dir}/{target_dir}"
+            if not os.path.exists(target_dir):
+                continue
+            for (root, dirs, files) in os.walk(target_dir):
+                src_path = root
+                dst_path = root.replace(build_dir, install_dir)
+                for file in files:
+                    if file.endswith(".cpp.o") or file == "cmake_install.cmake":
+                        continue
+                    os.makedirs(dst_path, exist_ok=True)
+                    shutil.copy2(
+                        os.path.join(src_path, file),
+                        os.path.join(dst_path, file)
+                    )
 
     def llvm_compile_darwin_defines(self, llvm_defines):
         if self.host_is_darwin():
@@ -728,6 +779,7 @@ class LlvmCore(BuildUtils):
                      debug_build=False,
                      no_lto=False,
                      build_instrumented=False,
+                     build_target=None,
                      xunit_xml_output=None):
 
         llvm_clang_install = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR,
@@ -785,6 +837,7 @@ class LlvmCore(BuildUtils):
                         build_dir=llvm_path,
                         install_dir=out_dir,
                         build_name=build_name,
+                        build_target=build_target,
                         extra_defines=llvm_defines,
                         extra_env=llvm_extra_env)
 
@@ -1279,8 +1332,8 @@ class LlvmLibs(BuildUtils):
                 self.build_lldb_tools(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags, defines)
                 seen_arch_list.append(llvm_triple)
 
-    def build_libs_by_type(self, llvm_install, llvm_build, libs_type, is_first_time, is_ndk_install):
-        configs_list, cc, cxx, ar, llvm_config = self.libs_argument(llvm_install)
+    def build_libs_by_type(self, compiler_path, llvm_install, llvm_build, libs_type, is_first_time, is_ndk_install):
+        configs_list, cc, cxx, ar, llvm_config = self.libs_argument(compiler_path)
 
         for (arch, llvm_triple, extra_flags, multilib_suffix) in configs_list:
             if llvm_build != llvm_triple:
@@ -1743,6 +1796,9 @@ class LlvmLibs(BuildUtils):
             os.chdir(build_lib_dir)
 
     def build_gtest_defines(self, llvm_install):
+        sysroot = f'{self.build_config.OUT_PATH}/sysroot/aarch64-linux-ohos/usr'
+        common_flags = f'--target=aarch64-linux-ohos -B{sysroot}/lib -L{sysroot}/lib'
+
         gtest_defines = {}
         gtest_defines['BUILD_SHARED_LIBS'] = 'YES'
         gtest_defines['CMAKE_BUILD_TYPE'] = 'Release'
@@ -1750,13 +1806,16 @@ class LlvmLibs(BuildUtils):
         gtest_defines['CMAKE_CXX_COMPILER'] = os.path.join(llvm_install, 'bin', 'clang++')
         gtest_defines['LLVM_TABLEGEN'] = os.path.join(llvm_install, 'bin', 'llvm-tblgen')
         gtest_defines['CMAKE_LINKER'] = os.path.join(llvm_install, 'bin', 'ld.lld')
-        gtest_defines['CMAKE_C_FLAGS'] = '--target=aarch64-linux-ohos'
-        gtest_defines['CMAKE_CXX_FLAGS'] = '--target=aarch64-linux-ohos'
+        gtest_defines['CMAKE_EXE_LINKER_FLAGS'] = f'{common_flags}'
+        gtest_defines['CMAKE_C_FLAGS'] = f'{common_flags} -I{sysroot}/include'
+        gtest_defines['CMAKE_CXX_FLAGS'] = f'{common_flags} \
+            -I{self.build_config.OUT_PATH}/llvm-install/include/libcxx-ohos/include/c++/v1 \
+            -I{sysroot}/include'
 
         return gtest_defines
 
-    def build_gtest(self, llvm_install):
-        gtest_defines = self.build_gtest_defines(llvm_install)
+    def build_gtest(self, compiler_path, llvm_install):
+        gtest_defines = self.build_gtest_defines(compiler_path)
         gtest_cmake_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm'))
 
         gtest_build_path = self.merge_out_path('gtest')
@@ -2391,12 +2450,14 @@ def main():
 
     args = build_config.parse_args()
     need_host = build_utils.host_is_darwin() or ('linux' not in args.no_build)
-    need_windows = build_utils.host_is_linux() and \
+    need_windows = build_utils.host_is_linux() and not build_config.build_only and \
                    ('windows' not in args.no_build)
 
     llvm_install = build_utils.merge_out_path('llvm-install')
     llvm_make = build_utils.merge_out_path('llvm_make')
     windows64_install = build_utils.merge_out_path('windows-x86_64-install')
+    llvm_path = llvm_install if not build_config.build_only else \
+        os.path.join(build_config.REPOROOT_DIR, 'prebuilts', 'clang', 'ohos', 'linux-x86_64', f'clang-{build_config.CLANG_VERSION}')
 
     configs = []
     if not build_config.no_build_arm:
@@ -2424,21 +2485,22 @@ def main():
     if build_config.build_libxml2:
         build_utils.get_libxml2_version()
         llvm_libs.build_libxml2(llvm_make, llvm_install)
-        
-    if build_config.do_build and need_host:
+
+    if build_config.do_build and need_host and (build_config.build_only_llvm or not build_config.build_only):
         llvm_core.llvm_compile(
             build_config.build_name,
             llvm_install,
             build_config.debug,
             build_config.no_lto,
             build_config.build_instrumented,
+            build_config.build_only_llvm,
             build_config.xunit_xml_output)
         llvm_package.copy_python_to_host(llvm_make)
         llvm_package.copy_python_to_host(llvm_install)
 
-    llvm_core.set_clang_version(llvm_install)
+    llvm_core.set_clang_version(llvm_path)
 
-    if build_config.build_libs:
+    if build_config.build_libs and not build_config.build_only:
         libs_type = 'crts' if 'crts' in build_config.build_libs else 'runtimes'
         is_first_time = True if build_config.build_libs in ['crts_first_time', 'runtimes_libunwind'] else False
         is_ndk_install = True if build_config.build_libs == 'runtimes_libcxx_ndk' else False
@@ -2447,7 +2509,7 @@ def main():
             llvm_libs.build_libs_by_type(llvm_install, target, libs_type, is_first_time, is_ndk_install)
         return
 
-    if build_config.do_build and build_utils.host_is_linux():
+    if build_config.do_build and build_utils.host_is_linux() and not build_config.build_only:
         sysroot_composer.setup_cmake_platform(llvm_install)
         llvm_libs.build_crt_libs(configs, llvm_install)
 
@@ -2460,6 +2522,35 @@ def main():
             else:
                 for (arch, target) in configs:
                     llvm_libs.build_libs(llvm_install, target)
+
+    if build_config.build_only:
+        if "musl" in build_config.build_only_libs:
+            # change compiller path to prebuilds in clang.gni file
+            file = os.path.join(build_config.REPOROOT_DIR, "build", "config", "clang", "clang.gni")
+            file_tmp = f"{file}_tmp"
+            shutil.move(file, file_tmp)
+            with open(file_tmp, 'r') as f1:
+                data = f1.read()
+            with open(file, 'w') as f2:
+                data = data.replace("//out/llvm-install", "${toolchains_dir}/${host_platform_dir}/" + f"clang-{build_config.CLANG_VERSION}")
+                f2.write(data)
+            # build musl
+            for (arch, target) in configs:
+                sysroot_composer.build_musl_header(arch, target)
+                sysroot_composer.build_musl(arch, target)
+            # return original version of clang.gni
+            shutil.move(file_tmp, file)
+
+        if "compiler-rt" in build_config.build_only_libs:
+            assert os.path.exists(os.path.join(build_config.REPOROOT_DIR, "out", "sysroot")), "Error! Compiler-rt require musl!"
+            for (_, target) in configs:
+                llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'crts', True, False)
+                llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'crts', False, False)
+
+        if "libcxx" in build_config.build_only_libs:
+            assert os.path.exists(os.path.join(build_config.REPOROOT_DIR, "out", "sysroot")), "Error! Libcxx require musl!"
+            for (_, target) in configs:
+                llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'runtimes', False, False)
 
     windows_python_builder = None
 
@@ -2481,7 +2572,7 @@ def main():
                                           build_config.build_name)
 
     if build_config.build_gtest_libs:
-        llvm_libs.build_gtest(llvm_install)
+        llvm_libs.build_gtest(llvm_path, llvm_install)
 
     if build_config.do_package:
         if build_utils.host_is_linux():
