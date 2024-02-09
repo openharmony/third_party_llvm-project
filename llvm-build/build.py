@@ -307,8 +307,6 @@ class BuildConfig():
 
         llvm_components = ("lld", "llvm-readelf", "llvm-objdump")
         libs_components = ("musl", "compiler-rt", "libcxx")
-        llvm_components_str = ', '.join(llvm_components)
-        libs_components_str = ', '.join(libs_components)
 
         class SeparatedListByCommaToDictAction(argparse.Action):
             def __call__(self, parser, namespace, vals, option_string):
@@ -329,7 +327,7 @@ class BuildConfig():
             '--build-only',
             action=SeparatedListByCommaToDictAction,
             default=dict(),
-            help=f'Build only {llvm_components_str} llvm components and {libs_components_str} lib components.')
+            help=f'Build only {", ".join(llvm_components)} llvm components and {", ".join(libs_components)} lib components.')
         return parser.parse_args()
 
 
@@ -1796,8 +1794,10 @@ class LlvmLibs(BuildUtils):
             os.chdir(build_lib_dir)
 
     def build_gtest_defines(self, llvm_install):
-        sysroot = f'{self.build_config.OUT_PATH}/sysroot/aarch64-linux-ohos/usr'
+        sysroot = self.merge_out_path('sysroot', 'aarch64-linux-ohos', 'usr')
         common_flags = f'--target=aarch64-linux-ohos -B{sysroot}/lib -L{sysroot}/lib'
+        libcxx = self.merge_out_path('llvm-install', 'include', 'libcxx-ohos', 'include', 'c++', 'v1')
+        libc = os.path.join(sysroot, "include")
 
         gtest_defines = {}
         gtest_defines['BUILD_SHARED_LIBS'] = 'YES'
@@ -1807,10 +1807,8 @@ class LlvmLibs(BuildUtils):
         gtest_defines['LLVM_TABLEGEN'] = os.path.join(llvm_install, 'bin', 'llvm-tblgen')
         gtest_defines['CMAKE_LINKER'] = os.path.join(llvm_install, 'bin', 'ld.lld')
         gtest_defines['CMAKE_EXE_LINKER_FLAGS'] = f'{common_flags}'
-        gtest_defines['CMAKE_C_FLAGS'] = f'{common_flags} -I{sysroot}/include'
-        gtest_defines['CMAKE_CXX_FLAGS'] = f'{common_flags} \
-            -I{self.build_config.OUT_PATH}/llvm-install/include/libcxx-ohos/include/c++/v1 \
-            -I{sysroot}/include'
+        gtest_defines['CMAKE_C_FLAGS'] = f'{common_flags} -I{libc}'
+        gtest_defines['CMAKE_CXX_FLAGS'] = f'{common_flags} -I{libcxx} -I{libc}'
 
         return gtest_defines
 
