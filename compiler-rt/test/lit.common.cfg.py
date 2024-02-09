@@ -7,6 +7,7 @@ import os
 import platform
 import re
 import subprocess
+import sys # OHOS_LOCAL
 import json
 
 import lit.formats
@@ -273,10 +274,6 @@ elif is_ohos_family_mobile():
   config.compile_wrapper = compile_wrapper
   config.substitutions.append( ('%run', "") )
   config.substitutions.append( ('%env ', "env ") )
-  # TODO: Implement `%device_rm` to perform removal of files on a device.  For
-  # now just make it a no-op.
-  lit_config.warning('%device_rm is not implemented')
-  config.substitutions.append( ('%device_rm', 'echo ') )
 elif config.host_os == 'Darwin' and config.apple_platform != "osx":
   # Darwin tests can be targetting macOS, a device or a simulator. All devices
   # are declared as "ios", even for iOS derivatives (tvOS, watchOS). Similarly,
@@ -521,14 +518,18 @@ if config.android:
 # OHOS_LOCAL begin
 
 elif config.host_os == 'OHOS':
+  hdc_imp = os.path.join(os.path.dirname(__file__), 'sanitizer_common', 'ohos_family_commands')
+  sys.path.append(hdc_imp)
+  import hdc_constants
   env = os.environ.copy()
-  adb = os.environ.get('ADB', 'adb')
-  device_tmpdir = '/data/local/tmp/Output/'
-  config.substitutions.append( ('%device_rundir/', device_tmpdir) )
-  config.substitutions.append( ('%push_to_device', "%s push " % adb) )
-  config.substitutions.append( ('%adb_shell ', "%s shell " % adb) )
-  config.substitutions.append( ('%device_rm', "%s shell 'rm ' " % adb) )
-  subprocess.check_call([adb, "shell", "mkdir", "-p", device_tmpdir], env=env)
+  config.substitutions.append( ('%device_rundir/', hdc_constants.TMPDIR) )
+  prefix = hdc_constants.get_hdc_cmd_prefix()
+  prefix_str = ' '.join(prefix)
+  config.substitutions.append(('%push_to_device', "%s file send " % prefix_str) )
+  config.substitutions.append(('%adb_shell ', "%s shell " % prefix_str) )
+  config.substitutions.append(('%device_rm', "%s shell 'rm ' " % prefix_str) )
+  subprocess.check_call(prefix + ['tconn'], env=env)
+  subprocess.check_call(prefix + ['shell', 'mkdir', '-p', hdc_constants.TMPDIR], env=env)
 
 # OHOS_LOCAL end
 else:
@@ -710,7 +711,11 @@ elif config.android or is_ohos_family_mobile():
 
 # Allow tests to use REQUIRES=stable-runtime.  For use when you cannot use XFAIL
 # because the test hangs or fails on one configuration and not the other.
-if config.android or (config.target_arch not in ['arm', 'armhf', 'aarch64']):
+# OHOS_LOCAL begin
+if config.android or config.host_os == 'OHOS' or (
+    config.target_arch not in ['arm', 'armhf', 'aarch64']
+  ):
+# OHOS_LOCAL end
   config.available_features.add('stable-runtime')
 
 if config.asan_shadow_scale:
