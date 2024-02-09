@@ -118,5 +118,15 @@ def main():
     build_utils.check_copy_tree(os.path.join(llvm_root, 'lib', 'clang', '15.0.4', 'lib', llvm_triple),
                                 os.path.join(llvm_install, 'lib', 'clang', '15.0.4', 'lib', llvm_triple))
 
+    # Package ohos-aarch64 toolchain.
+    if build_config.do_package:
+        tarball_name = 'clang-%s-ohos-aarch64' % (build_config.build_name)
+        package_path = '%s%s' % (build_utils.merge_packages_path(tarball_name), build_config.ARCHIVE_EXTENSION)
+        build_utils.logger().info('Packaging %s', package_path)
+        args = ['tar', build_config.ARCHIVE_OPTION, '-h', '-C', build_config.OUT_PATH, '-f', package_path, 'ohos-aarch64-install']
+        build_utils.check_create_dir(build_config.PACKAGES_PATH)
+        build_utils.check_call(args)
+
+
 if __name__ == '__main__':
     main()
