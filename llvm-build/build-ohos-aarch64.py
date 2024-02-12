@@ -1,3 +1,18 @@
+#!/usr/bin/env python3
+# Copyright (C) 2023 Huawei Device Co., Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 
 from build import BuildConfig, BuildUtils
@@ -117,6 +132,16 @@ def main():
                                 os.path.join(llvm_install, 'lib', llvm_triple))
     build_utils.check_copy_tree(os.path.join(llvm_root, 'lib', 'clang', '15.0.4', 'lib', llvm_triple),
                                 os.path.join(llvm_install, 'lib', 'clang', '15.0.4', 'lib', llvm_triple))
+
+    # Package ohos-aarch64 toolchain.
+    if build_config.do_package:
+        tarball_name = 'clang-%s-ohos-aarch64' % (build_config.build_name)
+        package_path = '%s%s' % (build_utils.merge_packages_path(tarball_name), build_config.ARCHIVE_EXTENSION)
+        build_utils.logger().info('Packaging %s', package_path)
+        args = ['tar', build_config.ARCHIVE_OPTION, '-h', '-C', build_config.OUT_PATH, '-f', package_path, 'ohos-aarch64-install']
+        build_utils.check_create_dir(build_config.PACKAGES_PATH)
+        build_utils.check_call(args)
+
 
 if __name__ == '__main__':
     main()
