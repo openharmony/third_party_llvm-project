@@ -124,7 +124,7 @@ fi
 if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/${CLANG_DARWIN_BUILD}" ]; then
     SET_CLANG_VERSION='15.0.4'
     mv "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/${CLANG_DARWIN_BUILD}" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-${SET_CLANG_VERSION}"
-    ln -s "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-${SET_CLANG_VERSION}" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/llvm"
+    ln -s "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-${SET_CLANG_VERSION}" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/llvm"
 fi
 
 # try to detect version ...

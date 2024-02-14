@@ -36,6 +36,9 @@ class BuildConfig():
 
     def __init__(self):
         args = self.parse_args()
+        
+        assert not(args.no_build and args.build_only), "Error! --no-build and --build-only flags aren't incompatible."
+
         self.no_strip_libs = args.no_strip_libs
         self.do_build = not args.skip_build
         self.do_package = not args.skip_package and not args.build_only
@@ -625,7 +628,7 @@ class LlvmCore(BuildUtils):
         if extra_env is not None:
             env.update(extra_env)
 
-        install = False if build_target else True
+        install = not self.build_config.build_only
         llvm_project_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm'))
 
         self.invoke_cmake(llvm_project_path,
@@ -2524,12 +2527,12 @@ def main():
     if build_config.build_only:
         if "musl" in build_config.build_only_libs:
             # change compiller path to prebuilds in clang.gni file
-            file = os.path.join(build_config.REPOROOT_DIR, "build", "config", "clang", "clang.gni")
-            file_tmp = f"{file}_tmp"
-            shutil.move(file, file_tmp)
-            with open(file_tmp, 'r') as f1:
+            clang_gni = os.path.join(build_config.REPOROOT_DIR, "build", "config", "clang", "clang.gni")
+            clang_gni_tmp = f"{clang_gni}_tmp"
+            shutil.move(clang_gni, clang_gni_tmp)
+            with open(clang_gni_tmp, 'r') as f1:
                 data = f1.read()
-            with open(file, 'w') as f2:
+            with open(clang_gni, 'w') as f2:
                 data = data.replace("//out/llvm-install", "${toolchains_dir}/${host_platform_dir}/" + f"clang-{build_config.CLANG_VERSION}")
                 f2.write(data)
             # build musl
@@ -2537,7 +2540,7 @@ def main():
                 sysroot_composer.build_musl_header(arch, target)
                 sysroot_composer.build_musl(arch, target)
             # return original version of clang.gni
-            shutil.move(file_tmp, file)
+            shutil.move(clang_gni_tmp, clang_gni)
 
         if "compiler-rt" in build_config.build_only_libs:
             assert os.path.exists(os.path.join(build_config.REPOROOT_DIR, "out", "sysroot")), "Error! Compiler-rt require musl!"
