@@ -28,15 +28,27 @@ function(compiler_rt_build_runtime runtime)
     if(${runtime} STREQUAL tsan)
       add_subdirectory(tsan/dd)
     endif()
-    if(${runtime} STREQUAL scudo)
-      add_subdirectory(scudo/standalone)
-    endif()
+    # Disable standalone scudo until this PR merged
+    # https://gitee.com/openharmony/third_party_musl/pulls/1235/files
+    # if(${runtime} STREQUAL scudo)
+    #   add_subdirectory(scudo/standalone)
+    # endif()
   endif()
 endfunction()
 
 if(COMPILER_RT_BUILD_SANITIZERS OR COMPILER_RT_BUILD_MEMPROF)
   compiler_rt_build_runtime(interception)
 endif()
+
+# OHOS_LOCAL begin
+if(COMPILER_RT_DEFAULT_TARGET_TRIPLE MATCHES "arm-linux-ohos|mipsel-linux-ohos")
+  # temporary disable scudo and gwp_asan for arm
+  # arm scudo build failed due to the abcsence of the `_aeabi_unwind_cpp_pr1` symbol
+  # on mipsel -latomic is not found.
+  # gwp_asan depends on scudo
+  list(REMOVE_ITEM COMPILER_RT_SANITIZERS_TO_BUILD "scudo" "gwp_asan")
+endif()
+# OHOS_LOCAL end
 
 if(COMPILER_RT_BUILD_SANITIZERS)
   if(COMPILER_RT_HAS_SANITIZER_COMMON)

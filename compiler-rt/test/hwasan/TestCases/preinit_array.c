@@ -3,6 +3,10 @@
 // RUN: %clang_hwasan %s -o %t
 // RUN: %run %t
 
+// OHOS_LOCAL
+// musl doesn't have .preinit_array section
+// REQUIRES: !ohos_family
+
 volatile int Global;
 void StoreToGlobal() { Global = 42; }
 

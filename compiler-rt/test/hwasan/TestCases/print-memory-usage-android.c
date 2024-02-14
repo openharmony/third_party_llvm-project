@@ -1,6 +1,7 @@
 // Tests __hwasan_print_memory_usage through /proc/$PID/maps.
 // RUN: %clang_hwasan %s -o %t && %env_hwasan_opts=export_memory_stats=1 %run %t 2>&1 | FileCheck %s
-// REQUIRES: android
+// OHOS_LOCAL
+// REQUIRES: android && !ohos_family
 
 #include <sys/types.h>
 #include <unistd.h>
