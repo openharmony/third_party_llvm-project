@@ -16,6 +16,19 @@ MacOS X >= 10.15.4
 
 </br>
 
+### Environmental preparation 
+
+ubuntu 
+```
+sudo apt-get install build-essential swig python3-dev libedit-dev libncurses5-dev binutils-dev gcc-multilib  
+```
+mac 
+```
+brew install swig  git-lfs java coreutils wget 
+```
+
+</br>
+
 ### Get Code
 ```
 repo init -u https://gitee.com/OpenHarmony/manifest.git -b master -m llvm-toolchain.xml
