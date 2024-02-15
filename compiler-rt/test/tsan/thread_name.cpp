@@ -1,7 +1,8 @@
 // RUN: %clangxx_tsan -O1 %s -o %t && %deflake %run %t | FileCheck %s
 #include "test.h"
 
-#if defined(__linux__)
+// OHOS_LOCAL
+#if defined(__linux__) && !defined(__OHOS__)
 #define USE_PTHREAD_SETNAME_NP __GLIBC_PREREQ(2, 12)
 #define tsan_pthread_setname_np pthread_setname_np
 #elif defined(__FreeBSD__)
@@ -11,6 +12,11 @@
 #elif defined(__NetBSD__)
 #define USE_PTHREAD_SETNAME_NP 1
 #define tsan_pthread_setname_np(a, b) pthread_setname_np((a), "%s", (void *)(b))
+// OHOS_LOCAL begin
+#elif defined(__OHOS__)
+#define USE_PTHREAD_SETNAME_NP 1
+#define tsan_pthread_setname_np pthread_setname_np
+// OHOS_LOCAL end
 #else
 #define USE_PTHREAD_SETNAME_NP 0
 #endif

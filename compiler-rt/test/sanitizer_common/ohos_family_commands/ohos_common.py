@@ -55,4 +55,4 @@ def push_to_device(path):
     dst_path = host_to_device_path(path)
     # hdc do not auto create directories on device
     hdc(['shell', 'mkdir', '-p', os.path.dirname(dst_path)])
-    hdc(['file', 'send', path, dst_path], attempts=5, check_stdout='FileTransfer finish')
+    hdc(['file', 'send', '-m', path, dst_path], attempts=5, check_stdout='FileTransfer finish')

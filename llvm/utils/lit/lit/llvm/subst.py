@@ -29,6 +29,18 @@ class FindTool(object):
                 command += ' go=' + exe
         return command
 
+# OHOS_LOCAL begin
+class WrapTool(FindTool):
+    def __init__(self, name, wrapper):
+        super().__init__(name)
+        self.wrapper = wrapper
+
+    def resolve(self, config, dirs):
+        command = super().resolve(config, dirs)
+        if not command:
+            return None
+        return self.wrapper + " " + command
+# OHOS_LOCAL end
 
 class ToolSubst(object):
     """String-like class used to build regex substitution patterns for llvm

@@ -15,6 +15,12 @@ set(TSAN_UNITTEST_CFLAGS
   -fno-rtti
 )
 
+# OHOS_LOCAL begin
+if(OHOS)
+  list(APPEND TSAN_UNITTEST_CFLAGS -fno-emulated-tls)
+endif()
+# OHOS_LOCAL end
+
 if(COMPILER_RT_TSAN_DEBUG_OUTPUT)
   # Need to match these flags with the runtime.
   list(APPEND TSAN_UNITTEST_CFLAGS -DTSAN_COLLECT_STATS=1

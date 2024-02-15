@@ -122,11 +122,15 @@ if(COMPILER_RT_INCLUDE_TESTS)
       ${CMAKE_CURRENT_SOURCE_DIR}/Unit/lit.site.cfg.py.in
       ${CMAKE_CURRENT_BINARY_DIR}/Unit/dynamic/lit.site.cfg.py)
   endif()
-  list(APPEND TSAN_TEST_DEPS TsanUnitTests)
-  list(APPEND TSAN_TESTSUITES ${CMAKE_CURRENT_BINARY_DIR}/Unit)
-  if(COMPILER_RT_TSAN_HAS_STATIC_RUNTIME)
-    list(APPEND TSAN_DYNAMIC_TESTSUITES ${CMAKE_CURRENT_BINARY_DIR}/Unit/dynamic)
+  # OHOS_LOCAL begin
+  if (NOT OHOS)
+    list(APPEND TSAN_TEST_DEPS TsanUnitTests)
+    list(APPEND TSAN_TESTSUITES ${CMAKE_CURRENT_BINARY_DIR}/Unit)
+    if(COMPILER_RT_TSAN_HAS_STATIC_RUNTIME)
+      list(APPEND TSAN_DYNAMIC_TESTSUITES ${CMAKE_CURRENT_BINARY_DIR}/Unit/dynamic)
+    endif()
   endif()
+  # OHOS_LOCAL end
 endif()
 
 add_lit_testsuite(check-tsan "Running ThreadSanitizer tests"

@@ -33,4 +33,6 @@ int main() {
 // CHECK-FreeBSD:   Location is TLS of thread T1.
 // CHECK-NetBSD:   Location is TLS of thread T1.
 // CHECK-Darwin:   Location is heap block of size 4
+// OHOS_LOCAL
+// CHECK-OHOS:   Location is heap block of size
 // CHECK: DONE
