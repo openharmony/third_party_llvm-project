@@ -433,6 +433,8 @@ static void AsanInitInternal() {
   // AsanInitInternal -> android_log_write -> __interceptor_strcmp
   AndroidLogInit();
 
+  OhosLogInit(); // OHOS_LOCAL
+
   ReplaceSystemMalloc();
 
   DisableCoreDumperIfNecessary();
