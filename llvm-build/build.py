@@ -37,7 +37,7 @@ class BuildConfig():
     def __init__(self):
         args = self.parse_args()
         
-        assert not(args.no_build and args.build_only), "Error! --no-build and --build-only flags aren't incompatible."
+        assert not(args.no_build and args.build_only), "Error! --no-build and --build-only flags aren't compatible."
 
         self.no_strip_libs = args.no_strip_libs
         self.do_build = not args.skip_build
@@ -1344,7 +1344,7 @@ class LlvmLibs(BuildUtils):
             cflags = []
             if self.build_config.adlt_debug_build:
                 cflags.append("-g -gdwarf-4 -O0")
-            self.logger().info('Build %slibs for %s', libs_type, llvm_triple)
+            self.logger().info('Build %s libs for %s', libs_type, llvm_triple)
             out_path = self.merge_out_path('llvm_build')
 
             self.logger().info('Make %s libs for %s build_libs_flags: %s', libs_type, llvm_triple, self.build_config.build_libs_flags)
