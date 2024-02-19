@@ -58,16 +58,6 @@ function(compiler_rt_test_runtime runtime)
   endif()
 endfunction()
 
-# OHOS_LOCAL begin
-if(COMPILER_RT_DEFAULT_TARGET_TRIPLE MATCHES "arm-linux-ohos|mipsel-linux-ohos")
-  # temporary disable scudo and gwp_asan for arm
-  # arm scudo build failed due to the abcsence of the `_aeabi_unwind_cpp_pr1` symbol
-  # on mipsel -latomic is not found.
-  # gwp_asan depends on scudo
-  list(REMOVE_ITEM COMPILER_RT_SANITIZERS_TO_BUILD "scudo" "gwp_asan")
-endif()
-# OHOS_LOCAL end
-
 # Run sanitizer tests only if we're sure that clang would produce
 # working binaries.
 if(COMPILER_RT_CAN_EXECUTE_TESTS)
@@ -89,13 +79,9 @@ if(COMPILER_RT_CAN_EXECUTE_TESTS)
 
     foreach(sanitizer ${COMPILER_RT_SANITIZERS_TO_BUILD})
       # cfi testing is gated on ubsan
-      # OHOS_LOCAL begin
-      # can't test gwp-asan, because it is depends on scudo-standalone
-      if(NOT ${sanitizer} STREQUAL cfi AND
-         NOT ${sanitizer} STREQUAL gwp_asan)
-         compiler_rt_test_runtime(${sanitizer})
+      if(NOT ${sanitizer} STREQUAL cfi)
+        compiler_rt_test_runtime(${sanitizer})
       endif()
-      # OHOS_LOCAL end
     endforeach()
   endif()
   if(COMPILER_RT_BUILD_PROFILE AND COMPILER_RT_HAS_PROFILE)
