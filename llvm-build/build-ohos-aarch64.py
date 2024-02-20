@@ -115,6 +115,8 @@ def main():
     llvm_defines['CMAKE_C_FLAGS_RELEASE'] = cflags_release
     llvm_defines['CMAKE_CXX_FLAGS_RELEASE'] = cflags_release
     llvm_defines['CMAKE_ASM_FLAGS_RELEASE'] = cflags_release
+    llvm_defines['OPENMP_STANDALONE_BUILD'] = 'ON'
+    llvm_defines['LLVM_DIR'] = os.path.join(llvm_root, 'lib', 'cmake', 'llvm')
 
     if build_config.enable_assertions:
         llvm_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON'
