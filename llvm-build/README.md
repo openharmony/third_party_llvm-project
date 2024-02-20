@@ -78,6 +78,13 @@ build.py options：
     OH
     LLVM
     BOTH
+--build-only            # build only some targets, skip building windows, lldb-server and package step
+    lld
+    llvm-readelf
+    llvm-objdump
+    musl
+    compiler-rt
+    libcxx
 ```
 </br>
 
