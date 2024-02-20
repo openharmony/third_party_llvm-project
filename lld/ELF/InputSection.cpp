@@ -845,7 +845,7 @@ void InputSection::relocateNonAlloc(uint8_t *buf, ArrayRef<RelTy> rels) {
     if (!RelTy::IsRela)
       addend += target.getImplicitAddend(bufLoc, type);
 
-    Symbol &sym = config->adlt ? getSharedFile<ELFT>()->getSymbol(
+    Symbol &sym = config->adlt ? getSharedFile<ELFT>()->getSymbolFromElfSymTab(
                                      rel.getSymbol(config->isMips64EL))
                                : getFile<ELFT>()->getRelocTargetSym(rel);
     if (config->adlt) { // TODO improve
