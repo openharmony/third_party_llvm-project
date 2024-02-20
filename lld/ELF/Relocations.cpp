@@ -462,7 +462,8 @@ private:
 
   template <class ELFT, class RelTy>
   void addRelativeRelocForAdlt(const RelTy &rel, Defined &symWhere,
-                               Defined &inputSym);
+                               Defined &inputSym) const;
+  void pushRelocAdlt(Relocation *r) const;
 
   template <class RelTy>
   void tracePushRelocADLT(Defined &symWhere, Relocation &r) const;
@@ -1306,7 +1307,7 @@ static unsigned handleTlsRelocation(RelType type, Symbol &sym,
 template <class ELFT, class RelTy>
 void RelocationScanner::addRelativeRelocForAdlt(const RelTy &rel,
                                                 Defined &symWhere,
-                                                Defined &inputSym) {
+                                                Defined &inputSym) const {
   // auto file = sec.getSharedFile<ELFT>();
   std::string title = "addRelativeRelocForAdlt: ";
   std::string failTitle = "";
@@ -1331,6 +1332,10 @@ void RelocationScanner::addRelativeRelocForAdlt(const RelTy &rel,
                    inputSym, addend, expr, type);
 }
 
+void RelocationScanner::pushRelocAdlt(Relocation *r) const {
+  sec.relocations.push_back(*r);
+}
+
 template <class ELFT>
 void RelocationScanner::tracePushRelocADLT(Defined &symWhere,
                                            Relocation &r) const {
@@ -1342,7 +1347,7 @@ void RelocationScanner::tracePushRelocADLT(Defined &symWhere,
   lld::outs() << "symWhere: ";
   file->traceSymbol(symWhere);
 
-  lld::outs() << "inputSym: ";
+  lld::outs() << "r->sym: ";
   file->traceSymbol(*r.sym);
   lld::outs() << "\n";
 }
@@ -1350,8 +1355,8 @@ void RelocationScanner::tracePushRelocADLT(Defined &symWhere,
 template <class ELFT, class RelTy>
 void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r) {
   auto file = sec.getSharedFile<ELFT>();
-  // uint32_t symIndex = rel.getSymbol(config->isMips64EL);
-  std::string title = "processForADLT: ";
+  uint32_t symIndex = rel.getSymbol(config->isMips64EL);
+  std::string title = "processForADLT: symIndex: " + toString(symIndex) + " ";
   bool isDebug = false;
 
   // parse offset (where)
@@ -1359,8 +1364,8 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r) {
   Defined *symWhere = file->findDefinedSymbol(r->offset, failTitle);
   file->saveSymbol(*symWhere);
 
-  /*if (r->offset == 0x22c4) // debug hint
-    isDebug = true;*/
+  /*if (r->offset == 0x23dc) // debug hint
+    isDebug = true; */
 
   // process offset
   failTitle = "offset: 0x" + utohexstr(r->offset) + " was not decreased!";
@@ -1370,56 +1375,30 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r) {
     file->traceSection(sec, failTitle);
 
   // prepare to resolve relocs
-  auto pushReloc = [=](Symbol *s) {
-    r->sym = s;
-    if (isDebug)
-      tracePushRelocADLT<ELFT>(*symWhere, *r);
-    sec.relocations.push_back(*r);
-  };
+  /*if (r->sym->getName() == "__ubsan_handle_cfi_check_fail") // debug hint
+    isDebug = true;*/
 
-  auto findGlobalSymbol = [=]() {
-    StringRef name = r->sym->getName();
-    if (name.empty())
-      return static_cast<Symbol *>(nullptr);
-    auto res = elf::symtab->find(name);
-    if (res && res->exportDynamic) {
-      if (isDebug)
-        lld::outs() << "found glob sym: " + name + "\n";
-      return res;
-    }
-    return static_cast<Symbol *>(nullptr);
-  };
-
-  Symbol *inputSym = findGlobalSymbol();
-  if (!inputSym) { // if symbol was not found in elf::symtab
-    inputSym = r->sym; // assign local sym
-    auto found = llvm::find_if(
-        in.symTab->getSymbols(), [&](const SymbolTableEntry &entry) {
-          return entry.sym->getName() == inputSym->getName();
-        });
-    // add a local sym if it was not previously added
-    if (found == in.symTab->getSymbols().end())
-      in.symTab->addSymbol(inputSym);
-  }
+  if (isDebug)
+    tracePushRelocADLT<ELFT>(*symWhere, *r);
 
   // resolve relocs
   switch (r->type) {
   // dyn relocs
   case R_AARCH64_RELATIVE:
     failTitle =
-        title + " " + toString(r->type) + ": inputSym not found! addend: ";
+        title + " " + toString(r->type) + ": r->sym not found! addend: ";
     if (auto *d = file->findDefinedSymbol(
             r->addend, failTitle, [](Defined *d) { return !d->isPreemptible; }))
       addRelativeRelocForAdlt<ELFT>(rel, *symWhere, *d);
     return;
   case R_AARCH64_GLOB_DAT:
-    inputSym->needsGot = 1;
-    if (inputSym->isUndefined())
-      inputSym->needsPlt = 1;
+    r->sym->needsGot = 1;
+    if (r->sym->isUndefined())
+      r->sym->needsPlt = 1;
     return;
   case R_AARCH64_JUMP_SLOT:
-    if (inputSym->isUndefined())
-      inputSym->needsPlt = 1;
+    if (r->sym->isUndefined())
+      r->sym->needsPlt = 1;
     return;
   // abs relocs
   case R_AARCH64_ABS32:
@@ -1433,28 +1412,28 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r) {
   case R_AARCH64_LDST128_ABS_LO12_NC:
   case R_AARCH64_PREL32:
   case R_AARCH64_PREL64:
-    pushReloc(inputSym);
+    pushRelocAdlt(r);
     return;
   // plt relocs
   case R_AARCH64_CALL26:
   case R_AARCH64_JUMP26:
-    if (inputSym->isDefined())
+    if (r->sym->isDefined())
       r->expr = R_PC; // prev: R_PLT_PC
-    pushReloc(inputSym);
+    pushRelocAdlt(r);
     return;
   // got relocs
   case R_AARCH64_ADR_GOT_PAGE:
-    if (inputSym->isDefined() && !inputSym->needsGot) {
+    if (r->sym->isDefined() && !r->sym->needsGot) {
       if (isDebug) {
         lld::outs() << "[ADLT] R_AARCH64_ADR_GOT_PAGE: sym not in GOT! ";
-        file->traceSymbol(*inputSym);
+        file->traceSymbol(*r->sym);
       }
       r->expr = R_PC; // prev: R_AARCH64_GOT_PAGE_PC || R_AARCH64_GOT_PAGE ||
                       // R_GOT || R_GOT_PC
     }
     LLVM_FALLTHROUGH;
   case R_AARCH64_LD64_GOT_LO12_NC:
-    pushReloc(inputSym);
+    pushRelocAdlt(r);
     return;
   default:
     fatal("Unhandled reloc: " + toString(r->type));
@@ -1466,8 +1445,11 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r) {
 template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
   const RelTy &rel = *i;
   uint32_t symIndex = rel.getSymbol(config->isMips64EL);
-  auto file = config->adlt ? sec.getSharedFile<ELFT>() : sec.getFile<ELFT>();
-  Symbol &sym = file->getSymbol(symIndex);
+  bool fromDynamic = sec.type == SHT_NULL || sec.name.startswith(".got.plt");
+  Symbol &sym =
+      config->adlt
+          ? sec.getSharedFile<ELFT>()->getSymbolADLT(symIndex, fromDynamic)
+          : sec.getFile<ELFT>()->getSymbol(symIndex);
   RelType type;
 
   // Deal with MIPS oddity.

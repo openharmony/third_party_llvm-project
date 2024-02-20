@@ -422,7 +422,7 @@ public:
   }
 
   Symbol &getDynamicSymbol(uint32_t symbolIndex) const;
-  Symbol &getSymbol(uint32_t symbolIndex) const override;
+  Symbol &getSymbolADLT(uint32_t symbolIndex, bool fromDynamic) const;
 
   Symbol &getSymbolFromElfSymTab(uint32_t symbolIndex) const {
     if (symbolIndex >= this->allSymbols.size())

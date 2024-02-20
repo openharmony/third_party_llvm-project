@@ -1702,6 +1702,7 @@ bool SharedFileExtended<ELFT>::addAdltPostfix(Symbol *s) {
   return true;
 }
 
+// TODO: optimize 2 lookups
 template <typename ELFT>
 bool SharedFileExtended<ELFT>::saveSymbol(const Defined& d) const {
   auto found = elf::symtab->find(d.getName());
@@ -1714,7 +1715,7 @@ bool SharedFileExtended<ELFT>::saveSymbol(const Defined& d) const {
 template <typename ELFT>
 Defined *SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) const {
   bool isDebug = false;
-  // if (offset == 0x43e0)
+  // if (offset == 0x43e0) // debug hint
   //   isDebug = true;
   auto predRange = [=](Symbol *sym) {
     if (!sym || sym->isUndefined() || !sym->isSection())
@@ -1857,10 +1858,29 @@ Symbol &SharedFileExtended<ELFT>::getDynamicSymbol(uint32_t symbolIndex) const {
 }
 
 template <class ELFT>
-Symbol &SharedFileExtended<ELFT>::getSymbol(uint32_t symbolIndex) const {
-  if (symbolIndex >= this->symbols.size())
-    return getSymbolFromElfSymTab(symbolIndex);
-  return getDynamicSymbol(symbolIndex);
+Symbol &SharedFileExtended<ELFT>::getSymbolADLT(uint32_t symbolIndex,
+                                                bool fromDynamic) const {
+  Symbol &sym = fromDynamic ? getDynamicSymbol(symbolIndex)
+                            : getSymbolFromElfSymTab(symbolIndex);
+
+  StringRef name = sym.getName();
+  if (name.empty())
+    return sym;
+
+  // check SymbolTable
+  auto res = elf::symtab->find(name);
+  if (res && res->exportDynamic)
+    return *res;
+
+  // check SymbolTableBaseSection
+  auto found = llvm::find_if(
+      in.symTab->getSymbols(), [&](const SymbolTableEntry &entry) {
+        return entry.sym->getName() == name;
+      });
+  // add a local sym if it was not previously added
+  if (found == in.symTab->getSymbols().end())
+    in.symTab->addSymbol(&sym);
+  return sym;
 }
 
 template <class ELFT> void SharedFileExtended<ELFT>::parseDynamics() {
