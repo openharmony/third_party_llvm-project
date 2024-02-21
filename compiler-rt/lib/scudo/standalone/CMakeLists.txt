@@ -30,7 +30,13 @@ endif()
 
 set(SCUDO_LINK_FLAGS)
 
-list(APPEND SCUDO_LINK_FLAGS -Wl,-z,defs,-z,now,-z,relro)
+# OHOS_LOCAL begin
+# We do not have all symbols at build time (get_platform_gwp_asan_tls_slot),
+# since musl is built without them for some reason
+if (NOT OHOS)
+  list(APPEND SCUDO_LINK_FLAGS -Wl,-z,defs,-z,now,-z,relro)
+endif()
+# OHOS_LOCAL end
 
 list(APPEND SCUDO_LINK_FLAGS -ffunction-sections -fdata-sections -Wl,--gc-sections)
 
@@ -141,7 +147,8 @@ append_list_if(COMPILER_RT_HAS_LIBPTHREAD -pthread SCUDO_LINK_FLAGS)
 
 append_list_if(FUCHSIA zircon SCUDO_LINK_LIBS)
 
-if(COMPILER_RT_DEFAULT_TARGET_ARCH MATCHES "mips|mips64|mipsel|mips64el")
+if(COMPILER_RT_DEFAULT_TARGET_ARCH MATCHES "mips|mips64|mipsel|mips64el" AND
+   NOT OHOS) # OHOS_LOCAL OHOS uses compiler-rt
   list(APPEND SCUDO_LINK_LIBS atomic)
 endif()
 
