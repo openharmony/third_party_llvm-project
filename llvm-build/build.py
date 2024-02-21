@@ -2310,8 +2310,6 @@ class LlvmPackage(BuildUtils):
                 print('Did not find %s in %s' % (necessary_bin_file, bin_dir))
                 raise RuntimeError('Did not find %s in %s' % (necessary_bin_file, bin_dir))
 
-        cmake_dir = os.path.join(lib_dir, 'cmake')
-        self.check_rm_tree(cmake_dir)
 
         self.notice_prebuilts_file(host, self.package_license_project_tuple(), install_dir)
 
