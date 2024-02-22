@@ -831,7 +831,7 @@ template <class ELFT> static uint32_t readAndFeatures(const InputSection &sec) {
   ArrayRef<uint8_t> data = sec.rawData;
   auto reportFatal = [&](const uint8_t *place, const char *msg) {
     fatal(toString(sec.file) + ":(" + sec.name + "+0x" +
-          Twine::utohexstr(place - sec.rawData.data()) + "): " + msg);
+          utohexstr(place - sec.rawData.data()) + "): " + msg);
   };
   while (!data.empty()) {
     // Read one NOTE record.
@@ -1725,10 +1725,10 @@ Defined *SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) const {
     uint64_t high = low + d->section->size;
 
     if (isDebug)
-      lld::outs() << "offset: 0x" + Twine::utohexstr(offset) +
+      lld::outs() << "offset: 0x" + utohexstr(offset) +
                          "sect name: " + d->section->name + "low 0x" +
-                         Twine::utohexstr(low) + " high: 0x" +
-                         Twine::utohexstr(offset) + "\n";
+                         utohexstr(low) + " high: 0x" +
+                         utohexstr(offset) + "\n";
     return (offset >= low) && (offset < high);
   };
 
@@ -1785,20 +1785,21 @@ Defined *SharedFileExtended<ELFT>::findDefinedSymbol(
   auto e = this->allSymbols.end();
   auto ret = std::find_if(i, e, predRange);
   if (ret != e) { // item was found
-    Defined* d = cast<Defined>(*ret);
+    Defined *d = cast<Defined>(*ret);
     if (isDebug)
       traceSymbol(*d, "found defined sym: ");
     return d;
   }
 
-  auto* sectionSym = findSectionSymbol(offset);
+  auto *sectionSym = findSectionSymbol(offset);
   if (!sectionSym)
-    fatal(fatalTitle + " 0x" + Twine::utohexstr(offset) + "\n");
+    fatal(fatalTitle + " 0x" + utohexstr(offset) + "\n");
   return sectionSym;
 }
 
 template <typename ELFT>
-StringRef SharedFileExtended<ELFT>::getShStrTab(ArrayRef<Elf_Shdr> elfSections) {
+StringRef
+SharedFileExtended<ELFT>::getShStrTab(ArrayRef<Elf_Shdr> elfSections) {
   return CHECK(this->getObj().getSectionStringTable(elfSections), this);
 }
 
@@ -1807,13 +1808,13 @@ void SharedFileExtended<ELFT>::traceElfSymbol(const Elf_Sym &sym,
                                               StringRef strTable) const {
   const ELFFile<ELFT> obj = this->getObj();
   auto rawSec = obj.getSection(sym.st_shndx);
-  auto parsedSec = !rawSec.takeError() ? *obj.getSection(sym.st_shndx) : nullptr;
+  auto parsedSec =
+      !rawSec.takeError() ? *obj.getSection(sym.st_shndx) : nullptr;
   lld::outs() << "File: " << soName << " symName: " << *sym.getName(strTable)
-              << " val: 0x" << Twine::utohexstr(sym.st_value) << " sec of sym: "
+              << " val: 0x" << utohexstr(sym.st_value) << " sec of sym: "
               << (parsedSec ? *obj.getSectionName(*parsedSec) : "unknown!")
-              << " sym type: 0x" << Twine::utohexstr(sym.getType())
-              << " sym binding: 0x" << Twine::utohexstr(sym.getBinding())
-              << '\n';
+              << " sym type: 0x" << utohexstr(sym.getType())
+              << " sym binding: 0x" << utohexstr(sym.getBinding()) << '\n';
 }
 
 template <class ELFT>
@@ -1822,34 +1823,35 @@ void SharedFileExtended<ELFT>::traceElfSection(const Elf_Shdr &sec) const {
 
   auto secName = *obj.getSectionName(sec);
   lld::outs() << "File: " << soName << " sec: " << secName << " sec addr: 0x"
-              << Twine::utohexstr(sec.sh_addr) << " sec offs: 0x"
-              << Twine::utohexstr(sec.sh_offset) << " sec ent size: 0x"
-              << Twine::utohexstr(sec.sh_entsize) << '\n';
+              << utohexstr(sec.sh_addr) << " sec offs: 0x"
+              << utohexstr(sec.sh_offset) << " sec ent size: 0x"
+              << utohexstr(sec.sh_entsize) << '\n';
 }
 
 template <class ELFT>
 void SharedFileExtended<ELFT>::traceSymbol(const Symbol &sym,
                                            StringRef title) const {
   lld::outs() << "File: " << soName << ": " + title
-              << " symName: " << sym.getName();
+              << " symName: " << sym.getName() << " exportDynamic: 0x"
+              << utohexstr(sym.exportDynamic);
   if (!sym.isDefined()) {
     lld::outs() << '\n';
     return;
   }
   auto &d = cast<Defined>(sym);
-  lld::outs() << " val: 0x" << Twine::utohexstr(d.value)
+  lld::outs() << " val: 0x" << utohexstr(d.value)
               << " sec of sym: " << (d.section ? d.section->name : "unknown!")
-              << " sym type: 0x" << Twine::utohexstr(d.type)
-              << " sym binding: 0x" << Twine::utohexstr(d.binding) << '\n';
+              << " sym type: 0x" << utohexstr(d.type) << " sym binding: 0x"
+              << utohexstr(d.binding) << '\n';
 }
 
 template <class ELFT>
 void SharedFileExtended<ELFT>::traceSection(const SectionBase &sec,
                                             StringRef title) const {
   lld::outs() << "File: " << soName << ": " + title << " sec: " << sec.name
-              << " sec addr: 0x" << Twine::utohexstr(sec.address)
-              << " sec offs: 0x" << Twine::utohexstr(sec.getOffset(0))
-              << " sec ent size: 0x" << Twine::utohexstr(sec.entsize) << '\n';
+              << " sec addr: 0x" << utohexstr(sec.address) << " sec offs: 0x"
+              << utohexstr(sec.getOffset(0)) << " sec ent size: 0x"
+              << utohexstr(sec.entsize) << '\n';
 }
 
 template <class ELFT>
@@ -1867,9 +1869,12 @@ Symbol &SharedFileExtended<ELFT>::getSymbolADLT(uint32_t symbolIndex,
   if (name.empty())
     return sym;
 
+  /*if (name.contains("_ZdlPv")) // debug hint
+    lld::outs() << "debug getSymbolADLT(): " << name << "\n";*/
+
   // check SymbolTable
   auto res = elf::symtab->find(name);
-  if (res && res->exportDynamic)
+  if (res && (res->exportDynamic || res->versionId))
     return *res;
 
   // check SymbolTableBaseSection
