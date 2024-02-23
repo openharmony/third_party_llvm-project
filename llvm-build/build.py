@@ -51,6 +51,7 @@ class BuildConfig():
         self.need_libs = self.do_build and 'libs' not in args.no_build
         self.need_lldb_server = self.do_build and 'lldb-server' not in args.no_build
         self.build_python = args.build_python
+        self.build_with_debug_info = args.build_with_debug_info
 
         self.no_build_arm = args.skip_build or args.no_build_arm
         self.no_build_aarch64 = args.skip_build or args.no_build_aarch64
@@ -243,6 +244,12 @@ class BuildConfig():
             default='bz2',
             help='Choose compression output format (bz2 or gz)'
         )
+	
+        parser.add_argument(
+            '--build-with-debug-info',
+            action='store_true',
+            default=False,
+            help='Default debug version use -O0, build libs with debug info when use -O3')
 
     def parse_args(self):
 
@@ -1186,6 +1193,8 @@ class LlvmLibs(BuildUtils):
                 '-ffunction-sections',
                 '-fdata-sections',
                 extra_flags, ]
+        if self.build_config.build_with_debug_info:
+            cflag.append('-g')
 
         cflags.extend(cflag)
     
