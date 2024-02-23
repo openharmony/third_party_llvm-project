@@ -2670,7 +2670,7 @@ INTERCEPTOR(int, wait3, int *status, int options, void *rusage) {
   }
   return res;
 }
-#if SANITIZER_ANDROID || SANITIZER_OHOS
+#if SANITIZER_ANDROID
 INTERCEPTOR(int, __wait4, int pid, int *status, int options, void *rusage) {
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, __wait4, pid, status, options, rusage);
