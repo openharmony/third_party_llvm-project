@@ -100,7 +100,8 @@ void elf::reportRangeError(uint8_t *loc, const Relocation &rel, const Twine &v,
   ErrorPlace errPlace = getErrorPlace(loc);
   std::string hint;
   if (rel.sym && !rel.sym->isSection())
-    hint = "; references " + lld::toString(*rel.sym);
+    hint = "; references " + lld::toString(*rel.sym) +
+          (config->adlt ? ": raw-name: " + rel.sym->getName().str() + " " : "");
   if (!errPlace.srcLoc.empty())
     hint += "\n>>> referenced by " + errPlace.srcLoc;
   if (rel.sym && !rel.sym->isSection())
@@ -1340,7 +1341,9 @@ template <class ELFT>
 void RelocationScanner::tracePushRelocADLT(Defined &symWhere,
                                            Relocation &r) const {
   auto file = sec.getSharedFile<ELFT>();
-  lld::outs() << "[ADLT] Before push: type: " + toString(r.type) +
+  auto fullOffset = symWhere.section->address + r.offset;
+  lld::outs() << "[ADLT] Before push: [" + utohexstr(fullOffset) +
+                     "] type: " + toString(r.type) +
                      " expr: " + toString(r.expr) + " offset: 0x" +
                      utohexstr(r.offset) + " addend: 0x" + utohexstr(r.addend) +
                      ".\n";
@@ -1375,7 +1378,7 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r) {
     file->traceSection(sec, failTitle);
 
   // prepare to resolve relocs
-  /*if (r->sym->getName() == "__ubsan_handle_cfi_check_fail") // debug hint
+  /*if (r->sym->getName().contains("_ZdlPv")) // debug hint
     isDebug = true;*/
 
   if (isDebug)
