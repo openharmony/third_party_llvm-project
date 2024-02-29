@@ -1367,8 +1367,10 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r) {
   Defined *symWhere = file->findDefinedSymbol(r->offset, failTitle);
   file->saveSymbol(*symWhere);
 
-  /*if (r->offset == 0x23dc) // debug hint
-    isDebug = true; */
+  /*if (r->offset == 0x1f1c) // debug hint
+    isDebug = true;
+  if (r->offset == 0x1f20) // debug hint
+    isDebug = true;*/
 
   // process offset
   failTitle = "offset: 0x" + utohexstr(r->offset) + " was not decreased!";
@@ -1427,10 +1429,8 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r) {
   // got relocs
   case R_AARCH64_ADR_GOT_PAGE:
     if (r->sym->isDefined() && !r->sym->needsGot) {
-      if (isDebug) {
+      if (isDebug)
         lld::outs() << "[ADLT] R_AARCH64_ADR_GOT_PAGE: sym not in GOT! ";
-        file->traceSymbol(*r->sym);
-      }
       r->expr = R_PC; // prev: R_AARCH64_GOT_PAGE_PC || R_AARCH64_GOT_PAGE ||
                       // R_GOT || R_GOT_PC
     }
