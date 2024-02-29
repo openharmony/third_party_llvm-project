@@ -2030,6 +2030,7 @@ class LlvmPackage(BuildUtils):
             'llvm-strings%s' % ext,
             'llvm-strip%s' % ext,
             'llvm-symbolizer%s' % ext,
+            'llvm-dwarfdump%s' % ext,
             ]
         necessary_bin_files.extend(necessary_bin_file)
 
