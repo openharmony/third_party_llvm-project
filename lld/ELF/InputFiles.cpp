@@ -1869,7 +1869,7 @@ Symbol &SharedFileExtended<ELFT>::getSymbolADLT(uint32_t symbolIndex,
   if (name.empty())
     return sym;
 
-  /*if (name.contains("_ZdlPv")) // debug hint
+  /*if (name.contains("__emutls_v.TLS_data1")) // debug hint
     lld::outs() << "debug getSymbolADLT(): " << name << "\n";*/
 
   // check SymbolTable
@@ -2087,7 +2087,11 @@ template <class ELFT> void SharedFileExtended<ELFT>::parseElfSymTab() {
       const Elf_Shdr *eSec = *p;
       InputSectionBase *sec = this->sections[secIdx];
       auto val = eSym.st_value - eSec->sh_addr;
-      if (name.startswith("__"))
+      auto dynSym = llvm::find_if(this->symbols, [=](const Symbol *s) {
+        return s && s->getName() == name;
+      });
+      bool isInDynSym = dynSym != this->symbols.end();
+      if (!isInDynSym)
         name = addAdltPostfix(name);
       this->allSymbols[i] =
           make<Defined>(this, name, bind, other, type, val, eSym.st_size, sec);
