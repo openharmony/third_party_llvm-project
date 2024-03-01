@@ -1,0 +1,65 @@
+# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SYSROOT :=
+INSTALL_DIR :=
+TARGET_TRIPLE :=
+CC :=
+SRCS :=  7zAlloc.c 7zArcIn.c 7zBuf2.c 7zBuf.c 7zCrc.c 7zCrcOpt.c 7zDec.c 7zFile.c 7zStream.c Aes.c AesOpt.c Alloc.c Bcj2.c Bra86.c Bra.c BraIA64.c CpuArch.c Delta.c LzFind.c Lzma2Dec.c Lzma2Enc.c Lzma86Dec.c Lzma86Enc.c LzmaDec.c LzmaEnc.c LzmaLib.c Ppmd7.c Ppmd7Dec.c Ppmd7Enc.c Sha256.c Sha256Opt.c Sort.c Xz.c XzCrc64.c XzCrc64Opt.c XzDec.c XzEnc.c XzIn.c
+SRC_PREFIX :=
+
+ifeq ($(TARGET_TRIPLE),linux-x86_64)
+CFLAGS := --target=x86_64-unknown-linux-gnu -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC
+LDFLAGS := -shared -fuse-ld=lld
+TARGET := liblzma.so
+else
+ifeq ($(TARGET_TRIPLE),windows-x86_64)
+CFLAGS := --target=x86_64-pc-windows-gnu --sysroot=$(SYSROOT) -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC
+LDFLAGS := -shared -fuse-ld=lld --rtlib=compiler-rt -Wl,--out-implib=liblzma.dll.a
+TARGET := liblzma.dll
+TARGET_A := liblzma.dll.a
+else
+ifeq ($(findstring darwin,$(TARGET_TRIPLE)),darwin)
+SDKROOT := $(shell xcrun --sdk macosx --show-sdk-path)
+CFLAGS := -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC
+LDFLAGS := -dynamiclib -fuse-ld=lld -Wl,-syslibroot,$(SDKROOT) -install_name @rpath/liblzma.dylib
+TARGET := liblzma.dylib
+else
+$(warning *** warning: TARGET_TRIPLE $(TARGET_TRIPLE) has not been set in rights)
+endif
+endif
+endif
+
+lzma_header_install:
+	@echo "begin header install"
+	mkdir -p $(INSTALL_DIR)/include
+	cp -rf $(SRC_PREFIX)* $(INSTALL_DIR)/include
+
+$(TARGET): lzma_header_install
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(addprefix $(SRC_PREFIX), $(SRCS))
+
+.PHONY: clean
+
+clean:
+	rm -f $(TARGET) $(SRC_PREFIX)*.o
+
+.PHONY:install
+
+install: $(TARGET)
+	@echo "begin install"
+	mkdir -p $(INSTALL_DIR)/lib/$(TARGET_TRIPLE)
+	mv $(TARGET) $(INSTALL_DIR)/lib/$(TARGET_TRIPLE)
+ifeq ($(TARGET_TRIPLE),windows-x86_64)
+	mv $(TARGET_A) $(INSTALL_DIR)/lib/$(TARGET_TRIPLE)
+endif
+	@echo "install success!"

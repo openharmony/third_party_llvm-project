@@ -65,6 +65,7 @@ class BuildConfig():
         self.build_libxml2 = args.build_libxml2
         self.lldb_timeout = args.lldb_timeout
         self.enable_monitoring = args.enable_monitoring
+        self.enable_lzma_7zip = args.enable_lzma_7zip
         self.build_libs = args.build_libs
         self.build_libs_flags = args.build_libs_flags
         self.compression_format = args.compression_format
@@ -223,6 +224,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Build libxml2 tool')
+
+        parser.add_argument(
+            '--enable-lzma-7zip',
+            action='store_true',
+            default=False,
+            help='Build 7zip tool and enable LZMA compression support in LLDB')
 
         parser.add_argument(
             '--lldb-timeout',
@@ -631,6 +638,9 @@ class LlvmCore(BuildUtils):
                 llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
                 llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
 
+            if self.build_config.enable_lzma_7zip:
+                llvm_defines['LIBLZMA_LIBRARIES'] = self.merge_out_path('lzma', 'lib', self.use_platform(), 'liblzma.dylib')
+
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.0.dylib')
 
@@ -671,6 +681,9 @@ class LlvmCore(BuildUtils):
                 ncurses_libs = ';'.join(ncurses_libs)
                 llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
                 llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
+
+            if self.build_config.enable_lzma_7zip:
+                llvm_defines['LIBLZMA_LIBRARIES'] = self.merge_out_path('lzma', 'lib', 'linux-x86_64', 'liblzma.so')
 
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.so.0.0.68')
@@ -717,6 +730,12 @@ class LlvmCore(BuildUtils):
         if self.build_config.build_ncurses and self.get_ncurses_version() is not None:
             llvm_defines['LLDB_ENABLE_CURSES'] = 'ON'
             llvm_defines['CURSES_INCLUDE_DIRS'] = os.path.join(self.get_prebuilts_dir('ncurses'), 'include')
+
+        if self.build_config.enable_lzma_7zip:
+            llvm_defines['LLDB_ENABLE_LZMA'] = 'ON'
+            llvm_defines['LLDB_ENABLE_LZMA_7ZIP'] = 'ON'
+            llvm_defines['LIBLZMA_INCLUDE_DIRS'] = self.merge_out_path('lzma', 'include')
+
         if self.build_config.build_libedit:
             llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
             llvm_defines['LibEdit_INCLUDE_DIRS'] = os.path.join(self.get_prebuilts_dir('libedit'), 'include')
@@ -848,6 +867,12 @@ class LlvmCore(BuildUtils):
 
         if self.build_config.enable_monitoring:
             windows_defines['LLDB_ENABLE_PERFORMANCE'] = 'ON'
+
+        if self.build_config.enable_lzma_7zip:
+            windows_defines['LLDB_ENABLE_LZMA'] = 'ON'
+            windows_defines['LLDB_ENABLE_LZMA_7ZIP'] = 'ON'
+            windows_defines['LIBLZMA_INCLUDE_DIRS'] = self.merge_out_path('lzma', 'include')
+            windows_defines['LIBLZMA_LIBRARIES'] = self.merge_out_path('lzma', 'lib', 'windows-x86_64', 'liblzma.dll.a')
 
     def llvm_compile_windows_flags(self,
                                    windows_defines,
@@ -1086,7 +1111,6 @@ class SysrootComposer(BuildUtils):
             gn_args += ' is_legacy=true musl_target_multilib=nanlegacy'
             multi_lib_dir = os.path.join(ohos_lib_dir, 'nanlegacy')
             sysroot_multi_lib_dir = os.path.join(sysroot_lib_dir, 'nanlegacy')
-            self.run_hb_build(product_name, target_cpu, target_name, gn_args)
             ld_musl_lib = os.path.join(sysroot_multi_lib_dir, 'ld-musl-{}.so.1'.format(ld_arch))
             self.build_musl_libs(product_name, target_cpu, target_name, multi_lib_dir,
                         sysroot_multi_lib_dir, ld_musl_lib, gn_args)
@@ -1710,6 +1734,36 @@ class LlvmLibs(BuildUtils):
             self.llvm_package.copy_ncurses_to_llvm(llvm_make)
             self.llvm_package.copy_ncurses_to_llvm(llvm_install)
 
+    def build_lzma(self, llvm_install):
+        self.logger().info('Building lzma')
+        target_triple = self.use_platform()
+        liblzma_build_path = self.merge_out_path('lzma')
+        llvm_clang_prebuilts = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR,
+                                                          'prebuilts', 'clang', 'ohos', self.use_platform(),
+                                                          'clang-%s' % self.build_config.CLANG_VERSION, 'bin', 'clang'))
+        src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'lzma', 'C'))
+        cmd = [ 'make',
+                'install',
+                'CC=%s' % llvm_clang_prebuilts,
+                'SRC_PREFIX=%s/' % src_dir,
+                'TARGET_TRIPLE=%s' % target_triple,
+                'INSTALL_DIR=%s' % liblzma_build_path,
+                '-f',
+                'MakeLiblzma']
+        os.chdir(self.build_config.LLVM_BUILD_DIR)
+        self.check_call(cmd)
+
+        self.logger().info('Copy lzma to llvm install dir is %s', llvm_install)
+        if self.host_is_darwin():
+            shlib_ext = '.dylib'
+        if self.host_is_linux():
+            shlib_ext = '.so'
+        lzma_file = os.path.join(liblzma_build_path, 'lib', target_triple, 'liblzma' + shlib_ext)
+        lib_dst_path = os.path.join(llvm_install, 'lib')
+        if not os.path.exists(lib_dst_path):
+            os.makedirs(lib_dst_path)
+        self.check_copy_file(lzma_file, lib_dst_path + '/liblzma' + shlib_ext)
+
     def build_libedit(self, llvm_make, llvm_install):
         self.logger().info('Building libedit')
 
@@ -2077,6 +2131,12 @@ class LlvmPackage(BuildUtils):
             if self.build_config.build_libxml2:
                 windows_additional_bin_files += ['libxml2%s' % shlib_ext]
 
+            if self.build_config.enable_lzma_7zip:
+                windows_additional_bin_files += ['liblzma%s' % shlib_ext]
+                bin_root = os.path.join(install_dir, 'bin')
+                prebuild_dir = self.merge_out_path('lzma', 'lib', 'windows-x86_64', 'liblzma.dll')
+                shutil.copyfile(prebuild_dir, os.path.join(bin_root, 'liblzma.dll'))
+
             new_necessary_bin_files = list(set(necessary_bin_files) - set(windows_forbidden_list_bin_files))
             new_necessary_bin_files.extend(windows_additional_bin_files)
             del necessary_bin_files[:]
@@ -2370,6 +2430,9 @@ def main():
     if build_config.build_ncurses:
         llvm_libs.build_ncurses(llvm_make, llvm_install)
 
+    if build_config.enable_lzma_7zip:
+        llvm_libs.build_lzma(llvm_install)
+
     if build_config.build_libedit:
         llvm_libs.build_libedit(llvm_make, llvm_install)
 
@@ -2428,6 +2491,27 @@ def main():
             windows_python_builder.build()
             windows_python_builder.prepare_for_package()
             llvm_core.set_mingw_python_dir(windows_python_builder.install_dir)
+
+        if build_config.enable_lzma_7zip:
+            build_utils.logger().info('build windows lzma')
+            target_triple = 'windows-x86_64'
+            build_dir = build_utils.merge_out_path('lzma')
+            build_utils.check_create_dir(build_dir)
+            clang_path = build_utils.merge_out_path('llvm-install', 'bin', 'clang')
+            src_dir = os.path.abspath(os.path.join(build_config.REPOROOT_DIR, 'third_party', 'lzma', 'C'))
+            windows_sysroot = build_utils.merge_out_path('mingw', build_config.MINGW_TRIPLE)
+            cmd = [ 'make',
+                    'install',
+                    'CC=%s' % clang_path,
+                    'SRC_PREFIX=%s/' % src_dir,
+                    'SYSROOT=%s' % windows_sysroot,
+                    'TARGET_TRIPLE=%s' % target_triple,
+                    'INSTALL_DIR=%s' % build_dir,
+                    '-f',
+                    'MakeLiblzma']
+            os.chdir(build_config.LLVM_BUILD_DIR)
+            build_utils.check_call(cmd)
+
         llvm_core.llvm_compile_for_windows(build_config.TARGETS,
                                           build_config.enable_assertions,
                                           build_config.build_name)
