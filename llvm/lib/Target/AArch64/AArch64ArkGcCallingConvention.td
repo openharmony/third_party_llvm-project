@@ -506,7 +506,7 @@ def CSR_AArch64_ArkInt : CalleeSavedRegs<(add FP)>;
 
 def CSR_AArch64_ArkFast5
     : CalleeSavedRegs<(add (sub (sequence "X%u", 5, 27), X16, X17), LR,
-                           (sequence "D%u", 0, 31))>;
+                           (sequence "D%u", 0, 29))>;
 def CSR_AArch64_ArkFast4
     : CalleeSavedRegs<(add CSR_AArch64_ArkFast5, X4)>;
 
