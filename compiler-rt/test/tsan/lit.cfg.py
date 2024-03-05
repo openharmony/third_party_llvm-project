@@ -18,24 +18,25 @@ config.name = 'ThreadSanitizer' + config.name_suffix
 config.test_source_root = os.path.dirname(__file__)
 
 # Setup environment variables for running ThreadSanitizer.
-default_tsan_opts = "atexit_sleep_ms=0"
+# OHOS_LOCAL begin
+default_tsan_opts = list(config.default_sanitizer_opts)
+default_tsan_opts += ["atexit_sleep_ms=0"]
 
 if config.host_os == 'Darwin':
-  # On Darwin, we default to `abort_on_error=1`, which would make tests run
-  # much slower. Let's override this and run lit tests with 'abort_on_error=0'.
-  default_tsan_opts += ':abort_on_error=0'
   # On Darwin, we default to ignore_noninstrumented_modules=1, which also
   # suppresses some races the tests are supposed to find. Let's run without this
   # setting, but turn it back on for Darwin tests (see Darwin/lit.local.cfg.py).
-  default_tsan_opts += ':ignore_noninstrumented_modules=0'
-  default_tsan_opts += ':ignore_interceptors_accesses=0'
+  default_tsan_opts += ['ignore_noninstrumented_modules=0']
+  default_tsan_opts += ['ignore_interceptors_accesses=0']
 
 # Platform-specific default TSAN_OPTIONS for lit tests.
-if default_tsan_opts:
-  config.environment['TSAN_OPTIONS'] = default_tsan_opts
-  default_tsan_opts += ':'
+default_tsan_opts_str = ':'.join(default_tsan_opts)
+if default_tsan_opts_str:
+  config.environment['TSAN_OPTIONS'] = default_tsan_opts_str
+  default_tsan_opts_str += ':'
 config.substitutions.append(('%env_tsan_opts=',
-                             'env TSAN_OPTIONS=' + default_tsan_opts))
+                             'env TSAN_OPTIONS=' + default_tsan_opts_str))
+# OHOS_LOCAL end
 
 # GCC driver doesn't add necessary compile/link flags with -fsanitize=thread.
 if config.compiler_id == 'GNU':
@@ -81,7 +82,7 @@ config.substitutions.append( ("%deflake ", os.path.join(os.path.dirname(__file__
 # Default test suffixes.
 config.suffixes = ['.c', '.cpp', '.m', '.mm']
 
-if config.host_os not in ['FreeBSD', 'Linux', 'Darwin', 'NetBSD']:
+if config.host_os not in ['FreeBSD', 'Linux', 'Darwin', 'NetBSD', 'OHOS']: # OHOS_LOCAL
   config.unsupported = True
 
 if config.android:

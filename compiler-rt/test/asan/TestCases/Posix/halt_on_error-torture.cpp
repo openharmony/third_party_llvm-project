@@ -38,7 +38,8 @@ void *run(void *arg) {
 
   for (size_t i = 0; i < niter; ++i) {
     random_delay(&seed);
-    // CHECK: ERROR: AddressSanitizer: use-after-poison
+    // OHOS_LOCAL
+    // CHECK-DAG: ERROR: AddressSanitizer: use-after-poison
     volatile int idx = 0;
     tmp[idx] = 0;
   }
@@ -71,7 +72,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  // CHECK: All threads terminated
+  // OHOS_LOCAL
+  // CHECK-DAG: All threads terminated
   printf("All threads terminated\n");
 
   delete [] tids;

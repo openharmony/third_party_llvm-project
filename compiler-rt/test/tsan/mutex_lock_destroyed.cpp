@@ -5,6 +5,10 @@
 // The pthread_mutex_lock interceptor assumes incompatible internals w/ NetBSD
 // XFAIL: netbsd
 
+// OHOS_LOCAL
+// musl seems to not return error when calling pthread_mutex_lock with a destroyed mutex
+// UNSUPPORTED: ohos_family
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>

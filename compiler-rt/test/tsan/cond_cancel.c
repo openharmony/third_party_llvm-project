@@ -9,6 +9,9 @@
 // however the same version GLIBC-2.17 will not make fail the test on 
 // powerpc64 BE (VMA=46)
 // UNSUPPORTED: powerpc64-unknown-linux-gnu
+// OHOS_LOCAL
+// pthread_cancel not available on OHOS musl
+// UNSUPPORTED: ohos_family
 
 #include "test.h"
 

@@ -79,7 +79,8 @@ __tsan_on_report(void *report) {
           tid, addr, size, write, atomic);
   // CHECK: tid = 1, addr = [[GLOBAL]], size = 8, write = 1, atomic = 0
   fprintf(stderr, "trace[0] = %p, trace[1] = %p\n", trace[0], trace[1]);
-  // CHECK: trace[0] = 0x{{[0-9a-f]+}}, trace[1] = {{0x0|\(nil\)|\(null\)}}
+  // OHOS_LOCAL
+  // CHECK: trace[0] = 0x{{[0-9a-f]+}}, trace[1] = {{0x0|\(nil\)|\(null\)|0}}
 
   __tsan_get_report_mop(report, 1, &tid, &addr, &size, &write, &atomic, trace,
                         16);
@@ -87,7 +88,8 @@ __tsan_on_report(void *report) {
           tid, addr, size, write, atomic);
   // CHECK: tid = 0, addr = [[GLOBAL]], size = 8, write = 1, atomic = 0
   fprintf(stderr, "trace[0] = %p, trace[1] = %p\n", trace[0], trace[1]);
-  // CHECK: trace[0] = 0x{{[0-9a-f]+}}, trace[1] = {{0x0|\(nil\)|\(null\)}}
+  // OHOS_LOCAL
+  // CHECK: trace[0] = 0x{{[0-9a-f]+}}, trace[1] = {{0x0|\(nil\)|\(null\)|0}}
 
   fprintf(stderr, "thread_count = %d\n", thread_count);
   // CHECK: thread_count = 2

@@ -12,6 +12,10 @@ import json
 
 import lit.formats
 import lit.util
+# OHOS_LOCAL begin
+from lit.llvm import llvm_config
+from lit.llvm.subst import ToolSubst, WrapTool, FindTool
+# OHOS_LOCAL end
 
 # Get shlex.quote if available (added in 3.3), and fall back to pipes.quote if
 # it's not available.
@@ -176,8 +180,6 @@ if config.asan_shadow_scale != '':
 if config.memprof_shadow_scale != '':
   config.target_cflags += " -mllvm -memprof-mapping-scale=" + config.memprof_shadow_scale
 
-config.environment = dict(os.environ)
-
 # Clear some environment variables that might affect Clang.
 possibly_dangerous_env_vars = ['ASAN_OPTIONS', 'DFSAN_OPTIONS', 'LSAN_OPTIONS',
                                'MSAN_OPTIONS', 'UBSAN_OPTIONS',
@@ -257,6 +259,7 @@ def get_ios_commands_dir():
   return os.path.join(config.compiler_rt_src_root, "test", "sanitizer_common", "ios_commands")
 
 # Allow tests to be executed on a simulator or remotely.
+tools = [] # OHOS_LOCAL
 if emulator:
   config.substitutions.append(('%run', emulator))
   config.substitutions.append(('%env ', "env "))
@@ -265,6 +268,7 @@ if emulator:
   lit_config.warning('%device_rm is not implemented')
   config.substitutions.append(('%device_rm', 'echo '))
   config.compile_wrapper = ""
+# OHOS_LOCAL begin
 elif is_ohos_family_mobile():
   config.available_features.add('ohos_family')
   # FIXME: some tests for hos also need this now,
@@ -274,6 +278,9 @@ elif is_ohos_family_mobile():
   config.compile_wrapper = compile_wrapper
   config.substitutions.append( ('%run', "") )
   config.substitutions.append( ('%env ', "env ") )
+  tool_wrapper = os.path.join(config.compiler_rt_src_root, "test", "sanitizer_common", "ohos_family_commands", "ohos_tool.py") + " "
+  tools.append(ToolSubst('llvm-objdump', command=WrapTool('llvm-objdump', tool_wrapper), unresolved='fatal'))
+# OHOS_LOCAL end
 elif config.host_os == 'Darwin' and config.apple_platform != "osx":
   # Darwin tests can be targetting macOS, a device or a simulator. All devices
   # are declared as "ios", even for iOS derivatives (tvOS, watchOS). Similarly,
@@ -342,6 +349,9 @@ else:
   # When running locally %device_rm is a no-op.
   config.substitutions.append(('%device_rm', 'echo '))
   config.compile_wrapper = ""
+
+# OHOS_LOCAL
+llvm_config.add_tool_substitutions(tools, [config.llvm_tools_dir] + config.environment['PATH'].split(os.path.pathsep))
 
 # Define CHECK-%os to check for OS-dependent output.
 config.substitutions.append(('CHECK-%os', ("CHECK-" + config.host_os)))
@@ -518,6 +528,16 @@ if config.android:
 # OHOS_LOCAL begin
 
 elif config.host_os == 'OHOS':
+  for var in [
+    'HDC',
+    'HDC_SERVER_IP_PORT',
+    'HDC_UTID',
+    'OHOS_REMOTE_TMP_DIR',
+    'OHOS_REMOTE_DYN_LINKER',
+  ]:
+    if var in os.environ:
+      config.environment[var] = os.environ[var]
+
   hdc_imp = os.path.join(os.path.dirname(__file__), 'sanitizer_common', 'ohos_family_commands')
   sys.path.append(hdc_imp)
   import hdc_constants

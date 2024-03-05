@@ -6,6 +6,10 @@
 // RUN: %clangxx_tsan -O1 %s %link_libcxx_tsan -o %t-dir/executable
 // RUN: %env_tsan_opts=suppressions='%s.supp' %deflake %run %t-dir/executable | FileCheck %s
 
+// OHOS_LOCAL
+// dlopen not intercepted on OHOS
+// UNSUPPORTED: ohos_family
+
 // Tests that called_from_lib suppression matched against 2 libraries
 // causes program crash (this is not supported).
 

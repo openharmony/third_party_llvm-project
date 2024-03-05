@@ -13,6 +13,10 @@
 //                           is matched against 2 libraries".
 // UNSUPPORTED: aarch64
 
+// OHOS_LOCAL
+// dlopen not intercepted on OHOS
+// UNSUPPORTED: ohos_family
+
 // Test longjmp in ignored lib.
 // It used to crash since we jumped out of ScopedInterceptor scope.
 

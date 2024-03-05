@@ -21,20 +21,20 @@ while args:
         output_type = 'object'
     elif arg == '-o':
         output = args.pop(0)
+if hdc_constants.DYN_LINKER:
+    append_args.append('-Wl,--dynamic-linker=' + hdc_constants.DYN_LINKER)
 
 if output == None:
     print ("No output file name!")
     sys.exit(1)
 
-with open(f'{output}.stderr', 'w') as f:
-    ret = subprocess.call(sys.argv[1:] + append_args, stderr=f)
+ret = subprocess.call(sys.argv[1:] + append_args)
 
 if ret != 0:
     sys.exit(ret)
 
 if output_type in ['executable', 'shared']:
     push_to_device(output)
-    hdc(['shell', 'chmod', '+x', host_to_device_path(output)])
 
 if output_type == 'executable':
     os.rename(output, output + '.real')

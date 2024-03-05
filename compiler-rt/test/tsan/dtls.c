@@ -32,6 +32,9 @@ void *Thread2(void *arg) {
 }
 
 int main(int argc, char *argv[]) {
+  // OHOS_LOCAL
+  dlerror(); // Clear any previous errors
+
   char path[4096];
   snprintf(path, sizeof(path), "%s-so.so", argv[0]);
 

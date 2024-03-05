@@ -1,4 +1,7 @@
 // RUN: %clang_tsan -O1 %s -o %t && %run %t 2>&1 | FileCheck %s
+// OHOS_LOCAL
+// pthread_tryjoin_np not available on OHOS musl
+// UNSUPPORTED: ohos_family
 #define _GNU_SOURCE
 #include "../test.h"
 #include <errno.h>
@@ -29,7 +32,7 @@ int main() {
     if (!res)
       break;
     check(res);
-    pthread_yield();
+    sched_yield(); // OHOS_LOCAL
   }
   var = 2;
   fprintf(stderr, "PASS\n");
