@@ -459,11 +459,11 @@ private:
 
   // ADLT
   template <class ELFT, class RelTy>
-  void processForADLT(const RelTy &rel, Relocation *r);
+  void processForADLT(const RelTy &rel, Relocation *r, bool fromDynamic);
 
   template <class ELFT, class RelTy>
   void addRelativeRelocForAdlt(const RelTy &rel, Defined &symWhere,
-                               Defined &inputSym) const;
+                               uint64_t offset, Defined &inputSym) const;
   void pushRelocAdlt(Relocation *r) const;
 
   template <class RelTy>
@@ -1308,6 +1308,7 @@ static unsigned handleTlsRelocation(RelType type, Symbol &sym,
 template <class ELFT, class RelTy>
 void RelocationScanner::addRelativeRelocForAdlt(const RelTy &rel,
                                                 Defined &symWhere,
+                                                uint64_t offset,
                                                 Defined &inputSym) const {
   // auto file = sec.getSharedFile<ELFT>();
   std::string title = "addRelativeRelocForAdlt: ";
@@ -1316,20 +1317,10 @@ void RelocationScanner::addRelativeRelocForAdlt(const RelTy &rel,
   RelType type = R_AARCH64_ABS64;
   RelExpr expr = R_ABS;
   int64_t addend = computeAddend<ELFT>(rel, expr, false);
+  addend -= inputSym.section->address + inputSym.value;
 
-  // todo: rewrite
-  addend = inputSym.isSection() ? (addend - inputSym.section->address) : 0;
-  /*
-  {
-    failTitle = "addend: 0x" + utohexstr(addend) + " was not decreased!";
-    auto *ISec = inputSym.section;
-    if (static_cast<int64_t>(addend - ISec->address) >= 0)
-      addend -= ISec->address;
-    else
-      file->traceSection(*ISec, failTitle);
-  }*/
   // finally
-  addRelativeReloc(*cast<InputSectionBase>(symWhere.section), symWhere.value,
+  addRelativeReloc(*cast<InputSectionBase>(symWhere.section), offset,
                    inputSym, addend, expr, type);
 }
 
@@ -1356,35 +1347,38 @@ void RelocationScanner::tracePushRelocADLT(Defined &symWhere,
 }
 
 template <class ELFT, class RelTy>
-void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r) {
+void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
+                                       bool fromDynamic) {
   auto file = sec.getSharedFile<ELFT>();
   uint32_t symIndex = rel.getSymbol(config->isMips64EL);
-  std::string title = "processForADLT: symIndex: " + toString(symIndex) + " ";
+  std::string title =
+      "processForADLT: symIndex: " + std::to_string(symIndex) + " ";
   bool isDebug = false;
+
+  /*if (r->offset == 0x296) // debug hint
+    isDebug = true;
+  if (r->sym->getName() == "__emutls_t.TLS_data1")
+    isDebug = true;*/
+
 
   // parse offset (where)
   std::string failTitle = title + "symWhere not found! offset: ";
   Defined *symWhere = file->findDefinedSymbol(r->offset, failTitle);
   file->saveSymbol(*symWhere);
 
-  /*if (r->offset == 0x1f1c) // debug hint
-    isDebug = true;
-  if (r->offset == 0x1f20) // debug hint
-    isDebug = true;*/
-
   // process offset
-  failTitle = "offset: 0x" + utohexstr(r->offset) + " was not decreased!";
-  if (static_cast<int64_t>(r->offset - sec.address) >= 0)
-    r->offset -= sec.address;
-  else
-    file->traceSection(sec, failTitle);
-
-  // prepare to resolve relocs
-  /*if (r->sym->getName().contains("_ZdlPv")) // debug hint
-    isDebug = true;*/
+  r->offset -= fromDynamic ? symWhere->section->address : sec.address;
 
   if (isDebug)
     tracePushRelocADLT<ELFT>(*symWhere, *r);
+
+  // read ABS relocs from .rela.dyn or .rela.plt only
+  if (r->type == target.symbolicRel && fromDynamic && r->sym->exportDynamic) {
+    sec.getPartition().relaDyn->addSymbolReloc(
+        target.symbolicRel, cast<InputSectionBase>(*symWhere->section),
+        r->offset, *r->sym, r->addend, r->type);
+    return;
+  }
 
   // resolve relocs
   switch (r->type) {
@@ -1394,7 +1388,7 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r) {
         title + " " + toString(r->type) + ": r->sym not found! addend: ";
     if (auto *d = file->findDefinedSymbol(
             r->addend, failTitle, [](Defined *d) { return !d->isPreemptible; }))
-      addRelativeRelocForAdlt<ELFT>(rel, *symWhere, *d);
+      addRelativeRelocForAdlt<ELFT>(rel, *symWhere, r->offset, *d);
     return;
   case R_AARCH64_GLOB_DAT:
     r->sym->needsGot = 1;
@@ -1486,7 +1480,7 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
 
   if (config->adlt) {
     Relocation r = {expr, type, offset, addend, &sym};
-    processForADLT<ELFT>(rel, &r);
+    processForADLT<ELFT>(rel, &r, fromDynamic);
     return;
   }
 
