@@ -1715,8 +1715,6 @@ bool SharedFileExtended<ELFT>::saveSymbol(const Defined& d) const {
 template <typename ELFT>
 Defined *SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) const {
   bool isDebug = false;
-  // if (offset == 0x43e0) // debug hint
-  //   isDebug = true;
   auto predRange = [=](Symbol *sym) {
     if (!sym || sym->isUndefined() || !sym->isSection())
       return false;
@@ -1734,6 +1732,8 @@ Defined *SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) const {
 
   auto i = this->allSymbols.begin();
   auto e = this->allSymbols.end();
+  /*if (offset == 0x4a18) // debug hint
+    isDebug = true; */
   auto ret = std::find_if(i, e, predRange);
   if (ret == e) // item was not found
     return nullptr;
@@ -1777,23 +1777,27 @@ Defined *SharedFileExtended<ELFT>::findDefinedSymbol(
       return false;
 
     bool goodVal = d->section->address + d->value == offset;
-    bool goodType = d->type == STT_FUNC || d->type == STT_OBJECT;
-    return goodVal && goodType && extraCond(d);
+    return goodVal && extraCond(d);
   };
 
   auto i = this->allSymbols.begin();
   auto e = this->allSymbols.end();
+  /*if (offset == 0x4a18) // debug hint
+    isDebug = true; */
   auto ret = std::find_if(i, e, predRange);
   if (ret != e) { // item was found
     Defined *d = cast<Defined>(*ret);
     if (isDebug)
-      traceSymbol(*d, "found defined sym: ");
+      traceSymbol(*d, d->isSection() ? "found section sym: "
+                                     : "found defined sym: ");
     return d;
   }
 
   auto *sectionSym = findSectionSymbol(offset);
   if (!sectionSym)
     fatal(fatalTitle + " 0x" + utohexstr(offset) + "\n");
+  if (isDebug)
+    traceSymbol(*sectionSym, "found section sym: ");
   return sectionSym;
 }
 
