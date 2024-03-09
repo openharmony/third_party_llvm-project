@@ -356,6 +356,13 @@ def CC_AArch64_ArkFast5 : CallingConv<[
 ]>;
 
 let Entry = 1 in
+def CC_AArch64_ArkFast6 : CallingConv<[
+  CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
+  CCIfType<[i32], CCAssignToRegWithShadow<[W0, W1, W2, W3, W4, W5, W28, W29], [X0, X1, X2, X3, X4, X5, X28, FP]>>,
+  CCIfType<[i64], CCAssignToRegWithShadow<[X0, X1, X2, X3, X4, X5, X28, FP], [W0, W1, W2, W3, W4, W5, W28, W29]>>,
+]>;
+
+let Entry = 1 in
 def CC_AArch64_ArkResolver : CallingConv<[
   CCIfType<[i1, i8, i16], CCPromoteToType<i32>>,
   CCIfType<[i32], CCAssignToRegWithShadow<[W16], [X16]>>,
@@ -503,9 +510,12 @@ def CSR_AArch64_StackProbe_Windows
 // OHOS_LOCAL begin
 def CSR_AArch64_ArkInt : CalleeSavedRegs<(add FP)>;
 
-def CSR_AArch64_ArkFast5
-    : CalleeSavedRegs<(add (sub (sequence "X%u", 5, 27), X16, X17), LR,
+def CSR_AArch64_ArkFast6
+    : CalleeSavedRegs<(add (sub (sequence "X%u", 6, 27), X16, X17), LR,
                            (sequence "D%u", 0, 29))>;
+def CSR_AArch64_ArkFast5
+    : CalleeSavedRegs<(add CSR_AArch64_ArkFast6, X5)>;
+
 def CSR_AArch64_ArkFast4
     : CalleeSavedRegs<(add CSR_AArch64_ArkFast5, X4)>;
 

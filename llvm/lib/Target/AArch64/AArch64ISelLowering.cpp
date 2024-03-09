@@ -5750,6 +5750,8 @@ CCAssignFn *AArch64TargetLowering::CCAssignFnForCall(CallingConv::ID CC,
      return CC_AArch64_ArkFast4;
    case CallingConv::ArkFast5:
      return CC_AArch64_ArkFast5;
+   case CallingConv::ArkFast6:
+     return CC_AArch64_ArkFast6;
    case CallingConv::ArkResolver:
      return CC_AArch64_ArkResolver;
    // OHOS_LOCAL end
@@ -6269,6 +6271,7 @@ static bool mayTailCallThisCC(CallingConv::ID CC) {
   case CallingConv::ArkFast3:
   case CallingConv::ArkFast4:
   case CallingConv::ArkFast5:
+  case CallingConv::ArkFast6:
   // OHOS_LOCAL end
     return true;
   default:

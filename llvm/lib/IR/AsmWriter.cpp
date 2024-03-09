@@ -305,6 +305,7 @@ static void PrintCallingConv(unsigned cc, raw_ostream &Out) {
   case CallingConv::ArkFast3:      Out << "arkfast3cc"; break;
   case CallingConv::ArkFast4:      Out << "arkfast4cc"; break;
   case CallingConv::ArkFast5:      Out << "arkfast5cc"; break;
+  case CallingConv::ArkFast6:      Out << "arkfast6cc"; break;
   case CallingConv::ArkMethod:     Out << "arkmethodcc"; break;
   case CallingConv::ArkResolver:   Out << "arkresolvercc"; break;
   case CallingConv::ArkPlt:        Out << "arkpltcc"; break;
