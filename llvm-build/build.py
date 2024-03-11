@@ -36,7 +36,7 @@ class BuildConfig():
 
     def __init__(self):
         args = self.parse_args()
-        
+
         assert not(args.no_build and args.build_only), "Error! --no-build and --build-only flags aren't compatible."
 
         self.no_strip_libs = args.no_strip_libs
@@ -239,13 +239,13 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Automatically exit when timeout (currently effective for lldb-server)')
-        
+
         parser.add_argument(
             '--enable-monitoring',
             action='store_true',
             default=False,
             help='Enable lldb performance monitoring')
-        
+
         parser.add_argument(
             '--adlt-debug-build',
             action='store_true',
@@ -770,7 +770,7 @@ class LlvmCore(BuildUtils):
         if self.build_config.build_libxml2:
             llvm_defines['LLDB_ENABLE_LIBXML2'] = 'ON'
             llvm_defines['LIBXML2_INCLUDE_DIR'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'include', 'libxml2')
-        
+
         if self.build_config.enable_monitoring:
             llvm_defines['LLDB_ENABLE_PERFORMANCE'] = 'ON'
 
@@ -1034,12 +1034,15 @@ class SysrootComposer(BuildUtils):
             self.get_python_dir(), 'bin', self.build_config.LLDB_PYTHON)
         llvm_gn_args = 'is_llvm_build=true startup_init_with_param_base=true use_thin_lto=false'
         subprocess.run([python_execute_dir, hb_build_py, 'build', '--product-name', product_name, '--target-cpu',
-                        target_cpu, '--build-target', target_name, '--gn-args', 
+                        target_cpu, '--build-target', target_name, '--gn-args',
                         gn_args, llvm_gn_args, '--deps-guard=false'],
                         shell=False, stdout=subprocess.PIPE, cwd=self.build_config.REPOROOT_DIR)
-    
+
     def build_musl_libs(self, product_name, target_cpu, target_name, ohos_lib_dir, sysroot_lib_dir,
                         ld_musl_lib, gn_args=''):
+        if (self.build_config.debug):
+            gn_args = f"is_debug=true ohos_extra_cflags=-O0 {gn_args}"
+
         self.run_hb_build(product_name, target_cpu, target_name, gn_args)
         libc_name = 'libc.so'
         crtplus_lib = self.merge_out_path('llvm_build', 'obj', 'out', 'llvm_build', 'obj', 'third_party', 'musl',
@@ -1232,18 +1235,18 @@ class LlvmLibs(BuildUtils):
             ldflag.append('-Wl,-z,relro,-z,now -pie')
             if self.build_config.strip and not self.build_config.no_strip_libs:
                 ldflag.append('-s')
-        
+
         ldflags.extend(ldflag)
 
         cflag = [
-                '-fstack-protector-strong', 
+                '-fstack-protector-strong',
                 '--target=%s' % llvm_triple,
                 '-ffunction-sections',
                 '-fdata-sections',
                 extra_flags, ]
 
         cflags.extend(cflag)
-    
+
     def run_hb_build_libs(self, libs_name):
         gn_args = 'build_libs_flags={} llvm_lib={}'.format(self.build_config.build_libs_flags, libs_name)
         self.sysroot_composer.run_hb_build('llvm_build', 'arm', 'build_libs', gn_args)
@@ -1306,7 +1309,7 @@ class LlvmLibs(BuildUtils):
                          self.open_ohos_triple('mipsel'), self.open_ohos_triple('x86_64')]
             libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
             self.check_create_dir(libcxx_ndk_install)
-            
+
             if precompilation:
                 self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
                 continue
@@ -1440,10 +1443,10 @@ class LlvmLibs(BuildUtils):
             rt_defines['LIBUNWIND_INSTALL_LIBRARY'] = 'OFF'
         else:
             rt_defines['LIBCXX_ABI_NAMESPACE'] = '__h'
- 
+
         self.check_rm_tree(out_path)
         cmake_rt = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'runtimes'))
- 
+
         self.invoke_cmake(cmake_rt,
                           out_path,
                           rt_defines,
@@ -1839,11 +1842,11 @@ class LlvmLibs(BuildUtils):
         self.copy_gtest_to_sysroot(gtest_build_path)
         shutil.copytree(
             os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm', 'utils', 'unittest', 'googlemock', 'include', 'gmock'),
-            os.path.join(llvm_install, 'include', 'gmock'), 
+            os.path.join(llvm_install, 'include', 'gmock'),
             dirs_exist_ok = True)
         shutil.copytree(
             os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm', 'utils', 'unittest', 'googletest', 'include', 'gtest'),
-            os.path.join(llvm_install, 'include', 'gtest'), 
+            os.path.join(llvm_install, 'include', 'gtest'),
             dirs_exist_ok = True)
 
     def build_libxml2_defines(self):
@@ -1916,7 +1919,7 @@ class LlvmLibs(BuildUtils):
         libxml2_defines['XML_INCLUDEDIR'] = os.path.join(windows_sysroot, 'include')
 
         libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2'))
-                
+
         self.invoke_cmake(libxml2_cmake_path,
                           libxml2_build_path,
                           libxml2_defines,
@@ -1926,7 +1929,7 @@ class LlvmLibs(BuildUtils):
                           env=dict(self.build_config.ORIG_ENV),
                           target=None,
                           install=True)
-        
+
         if not os.path.exists(os.path.join(windows64_install, 'bin')):
             os.makedirs(os.path.join(windows64_install, 'bin'))
         shutil.copyfile(os.path.join(libxml2_build_path, 'libxml2.dll'), os.path.join(windows64_install, 'bin', 'libxml2.dll'))
@@ -2094,7 +2097,7 @@ class LlvmPackage(BuildUtils):
             'opt%s' % ext,
 
             ]
-            
+
         necessary_bin_files.extend(necessary_bin_file)
 
     @staticmethod
@@ -2414,7 +2417,7 @@ class LlvmPackage(BuildUtils):
 
         # Strip lldb-server
         self.strip_lldb_server(host, install_dir)
-        
+
         # Copy lldb script
         lldb_script_file = 'lldb.cmd' if host.startswith('windows') else 'lldb.sh'
         self.check_copy_file(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'lldb', 'scripts', lldb_script_file), os.path.join(install_dir, 'bin'))
