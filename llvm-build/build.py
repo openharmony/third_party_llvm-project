@@ -791,8 +791,9 @@ class LlvmCore(BuildUtils):
             llvm_defines['LLVM_BUILD_INSTRUMENTED'] = 'ON'
             llvm_defines['LLVM_PROFDATA'] = llvm_profdata
 
-            resource_dir = "lib/clang/10.0.1/lib/linux/libclang_rt.profile-x86_64.a"
-            ldflags += ' %s' % os.path.join(llvm_clang_install, resource_dir)
+            resource_dir = os.path.join(llvm_clang_install, 'lib', 'clang', self.build_config.CLANG_VERSION,
+                                        'lib', 'x86_64-unknown-linux-gnu', 'libclang_rt.profile.a')
+            ldflags += ' %s' % resource_dir
 
         cflags = '-fstack-protector-strong'
         if not self.host_is_darwin():
@@ -802,8 +803,7 @@ class LlvmCore(BuildUtils):
 
         self.llvm_compile_llvm_defines(llvm_defines, llvm_clang_install, cflags, ldflags)
 
-        linker_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts', 'clang',
-            'ohos', 'linux-x86_64', 'llvm', 'bin', 'ld.lld'))
+        linker_path = os.path.join(llvm_clang_install, 'bin', 'ld.lld')
         llvm_defines['CMAKE_LINKER'] = linker_path
 
         self.build_llvm(targets=self.build_config.TARGETS,
