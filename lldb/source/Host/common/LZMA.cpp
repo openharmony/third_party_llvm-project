@@ -17,7 +17,7 @@
 #else
 #include <7zCrc.h>
 #include <Xz.h>
-#include <XzCrc64.h">
+#include <XzCrc64.h>
 #define EXPAND_FACTOR 2
 #endif
 // OHOS_LOCAL end
