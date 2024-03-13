@@ -1372,14 +1372,6 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
   if (isDebug)
     tracePushRelocADLT<ELFT>(*symWhere, *r);
 
-  // read ABS relocs from .rela.dyn or .rela.plt only
-  if (r->type == target.symbolicRel && fromDynamic && r->sym->exportDynamic) {
-    sec.getPartition().relaDyn->addSymbolReloc(
-        target.symbolicRel, cast<InputSectionBase>(*symWhere->section),
-        r->offset, *r->sym, r->addend, r->type);
-    return;
-  }
-
   // resolve relocs
   switch (r->type) {
   // dyn relocs
@@ -1391,17 +1383,27 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
       addRelativeRelocForAdlt<ELFT>(rel, *symWhere, r->offset, *d);
     return;
   case R_AARCH64_GLOB_DAT:
+    assert(r->sym->exportDynamic);
     r->sym->needsGot = 1;
     if (r->sym->isUndefined())
       r->sym->needsPlt = 1;
     return;
   case R_AARCH64_JUMP_SLOT:
+    assert(r->sym->exportDynamic);
     if (r->sym->isUndefined())
       r->sym->needsPlt = 1;
     return;
   // abs relocs
   case R_AARCH64_ABS32:
   case R_AARCH64_ABS64:
+    if (fromDynamic) {
+      assert(r->sym->exportDynamic);
+      sec.getPartition().relaDyn->addSymbolReloc(
+          target.symbolicRel, cast<InputSectionBase>(*symWhere->section),
+          r->offset, *r->sym, r->addend, r->type);
+      return;
+    }
+    LLVM_FALLTHROUGH;
   case R_AARCH64_ADD_ABS_LO12_NC:
   case R_AARCH64_ADR_PREL_PG_HI21:
   case R_AARCH64_LDST8_ABS_LO12_NC:
@@ -1433,7 +1435,8 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
     pushRelocAdlt(r);
     return;
   default:
-    fatal("Unhandled reloc: " + toString(r->type));
+    fatal("Unhandled " + toString(fromDynamic ? "dynamic" : "") +
+          "reloc: " + toString(r->type));
     break;
   }
 }
