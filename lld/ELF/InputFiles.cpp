@@ -1076,7 +1076,8 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
 	    fatal("getSection failed: " + llvm::toString(p.takeError()));
       }
       const Elf_Shdr *eSec = *p;
-      value -= eSec->sh_addr;
+      if (type != STT_TLS)
+        value -= eSec->sh_addr;
     }
     uint64_t size = eSym.st_size;
 
@@ -1715,6 +1716,8 @@ bool SharedFileExtended<ELFT>::saveSymbol(const Defined& d) const {
 template <typename ELFT>
 Defined *SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) const {
   bool isDebug = false;
+  /*if (offset == 0x7738) // debug hint
+    isDebug = true;*/
   auto predRange = [=](Symbol *sym) {
     if (!sym || sym->isUndefined() || !sym->isSection())
       return false;
@@ -1724,16 +1727,14 @@ Defined *SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) const {
 
     if (isDebug)
       lld::outs() << "offset: 0x" + utohexstr(offset) +
-                         "sect name: " + d->section->name + "low 0x" +
+                         " sect name: " + d->section->name + "low 0x" +
                          utohexstr(low) + " high: 0x" +
-                         utohexstr(offset) + "\n";
+                         utohexstr(high) + "\n";
     return (offset >= low) && (offset < high);
   };
 
   auto i = this->allSymbols.begin();
   auto e = this->allSymbols.end();
-  /*if (offset == 0x4a18) // debug hint
-    isDebug = true; */
   auto ret = std::find_if(i, e, predRange);
   if (ret == e) // item was not found
     return nullptr;
@@ -1768,6 +1769,8 @@ Defined *SharedFileExtended<ELFT>::findDefinedSymbol(
     uint64_t offset, StringRef fatalTitle,
     llvm::function_ref<bool(Defined *)> extraCond) const {
   bool isDebug = false;
+  /*if (offset == 0x7738) // debug hint
+    isDebug = true;*/
   auto predRange = [=](Symbol *sym) {
     if (!sym || sym->isUndefined())
       return false;
@@ -1782,8 +1785,6 @@ Defined *SharedFileExtended<ELFT>::findDefinedSymbol(
 
   auto i = this->allSymbols.begin();
   auto e = this->allSymbols.end();
-  /*if (offset == 0x4a18) // debug hint
-    isDebug = true; */
   auto ret = std::find_if(i, e, predRange);
   if (ret != e) { // item was found
     Defined *d = cast<Defined>(*ret);
@@ -2090,13 +2091,17 @@ template <class ELFT> void SharedFileExtended<ELFT>::parseElfSymTab() {
       }
       const Elf_Shdr *eSec = *p;
       InputSectionBase *sec = this->sections[secIdx];
-      auto val = eSym.st_value - eSec->sh_addr;
+      auto val = eSym.st_value;
+      if (type != STT_TLS)
+       val -= eSec->sh_addr;
       auto dynSym = llvm::find_if(this->symbols, [=](const Symbol *s) {
         return s && s->getName() == name;
       });
       bool isInDynSym = dynSym != this->symbols.end();
       if (!isInDynSym)
         name = addAdltPostfix(name);
+      /*if (name == "TLS_data1") // debug hint
+        lld::outs() << name << '\n'; */
       this->allSymbols[i] =
           make<Defined>(this, name, bind, other, type, val, eSym.st_size, sec);
     } else {

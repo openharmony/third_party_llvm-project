@@ -1000,6 +1000,8 @@ void InputSectionBase::relocateAlloc(uint8_t *buf, uint8_t *bufEnd) {
     if (auto *sec = dyn_cast<InputSection>(this))
       secAddr += sec->outSecOff;
     const uint64_t addrLoc = secAddr + offset;
+    /*if (config->adlt && addrLoc == 68600) // debug hint
+      lld::outs() << "addrLoc 0x" << utohexstr(addrLoc) << "\n";*/
     const uint64_t targetVA =
         SignExtend64(getRelocTargetVA(file, rel.type, rel.addend, addrLoc,
                                       *rel.sym, rel.expr),
