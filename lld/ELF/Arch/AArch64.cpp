@@ -87,6 +87,10 @@ RelExpr AArch64::getRelExpr(RelType type, const Symbol &s,
     case R_AARCH64_JUMP_SLOT:
     case R_AARCH64_RELATIVE:
       return R_ABS;
+    case R_AARCH64_TLSDESC:
+      return R_TLSDESC;
+    case R_AARCH64_TLS_TPREL64:
+      return R_TPREL;
     default:
       break;
     }
@@ -382,15 +386,7 @@ void AArch64::deRelocate(uint8_t *loc, const Relocation &rel,
 
   switch (rel.type) {
   case R_AARCH64_JUMP26:
-  case R_AARCH64_CALL26: {
-    /*if (*val & (1UL << 32)) {
-      if (isDebug)
-        debugMessage("found 32 bit turned on! Disabling");
-      *val = *val & ~(1UL << 32);
-    }*/
-    orClear32le();
-    break;
-  }
+  case R_AARCH64_CALL26:
   case R_AARCH64_CONDBR19:
   case R_AARCH64_LD_PREL_LO19:
   case R_AARCH64_MOVW_UABS_G0_NC:
@@ -407,10 +403,7 @@ void AArch64::deRelocate(uint8_t *loc, const Relocation &rel,
   case R_AARCH64_TLSLE_LDST16_TPREL_LO12_NC:
   case R_AARCH64_LDST32_ABS_LO12_NC:
   case R_AARCH64_TLSLE_LDST32_TPREL_LO12_NC:
-  case R_AARCH64_LDST64_ABS_LO12_NC: {
-    orClearAArch64Imm();
-    break;
-  }
+  case R_AARCH64_LDST64_ABS_LO12_NC:
   case R_AARCH64_ADR_GOT_PAGE:
   case R_AARCH64_LD64_GOT_LO12_NC:
   case R_AARCH64_TLSIE_LD64_GOTTPREL_LO12_NC:
