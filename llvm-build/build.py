@@ -87,6 +87,7 @@ class BuildConfig():
         
         self.ARCHIVE_EXTENSION = '.tar.' + self.compression_format
         self.ARCHIVE_OPTION = '-c' + ('j' if self.compression_format == "bz2" else 'z')
+        self.LIBXML2_VERSION = None
         logging.basicConfig(level=logging.INFO)
 
     def discover_paths(self):
@@ -549,23 +550,17 @@ class BuildUtils(object):
         return None
 
     def get_libxml2_version(self):
-        version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'configure.ac')
+        version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'libxml2.spec')
         if os.path.isfile(version_file):
+            pattern = r'Version:\s+(\d+\.\d+\.\d+)'
             with open(version_file, 'r') as file:
                 lines = file.readlines()
-                MAJOR_VERSION = ''
-                MINOR_VERSION = ''
-                MICRO_VERSION = ''
+                VERSION = ''
                 for line in lines:
-                    if "m4_define([MAJOR_VERSION]" in line:
-                        MAJOR_VERSION = re.findall(r'\d+', line)[1]
-                    elif "m4_define([MINOR_VERSION]" in line:
-                        MINOR_VERSION = re.findall(r'\d+', line)[1]
-                    elif "m4_define([MICRO_VERSION]" in line:
-                        MICRO_VERSION = re.findall(r'\d+', line)[1]
-
-                    if  MAJOR_VERSION != '' and MINOR_VERSION != '' and MICRO_VERSION != '' :
-                        return MAJOR_VERSION+'.'+MINOR_VERSION+'.'+MICRO_VERSION
+                    if 'Version: ' in line:
+                        VERSION = re.search(pattern, line).group(1)
+                    if VERSION != '':
+                        return VERSION
                 return None
 
         return None
@@ -644,9 +639,8 @@ class LlvmCore(BuildUtils):
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.0.dylib')
 
-            libxml2_version = self.get_libxml2_version()
-            if self.build_config.build_libxml2 and libxml2_version is not None:
-                llvm_defines['LIBXML2_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.{libxml2_version}.dylib')
+            if self.build_config.build_libxml2:
+                llvm_defines['LIBXML2_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.{self.build_config.LIBXML2_VERSION}.dylib')
 
 
     def llvm_compile_linux_defines(self,
@@ -691,9 +685,8 @@ class LlvmCore(BuildUtils):
             if not build_instrumented and not no_lto and not debug_build:
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
 
-            libxml2_version = self.get_libxml2_version()
-            if self.build_config.build_libxml2 and libxml2_version is not None:
-                llvm_defines['LIBXML2_LIBRARY'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.so.{libxml2_version}')
+            if self.build_config.build_libxml2:
+                llvm_defines['LIBXML2_LIBRARY'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.so.{self.build_config.LIBXML2_VERSION}')
 
     def llvm_compile_llvm_defines(self, llvm_defines, llvm_root, cflags, ldflags):
         llvm_defines['LLVM_ENABLE_PROJECTS'] = 'clang;lld;clang-tools-extra;openmp;lldb'
@@ -1804,7 +1797,7 @@ class LlvmLibs(BuildUtils):
 
         libxml2_defines = self.build_libxml2_defines()
 
-        libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2'))
+        libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'out', ('libxml2-' + self.build_config.LIBXML2_VERSION)))
 
         libxml2_build_path = self.merge_out_path('libxml2')
         libxml2_install_path = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform())
@@ -1858,7 +1851,7 @@ class LlvmLibs(BuildUtils):
         libxml2_defines['CMAKE_RC_FLAGS'] = ' '.join(rcflags)
         libxml2_defines['XML_INCLUDEDIR'] = os.path.join(windows_sysroot, 'include')
 
-        libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2'))
+        libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'out', ('libxml2-' + self.build_config.LIBXML2_VERSION)))
                 
         self.invoke_cmake(libxml2_cmake_path,
                           libxml2_build_path,
@@ -2436,10 +2429,19 @@ def main():
     if build_config.build_libedit:
         llvm_libs.build_libedit(llvm_make, llvm_install)
 
+    build_config.LIBXML2_VERSION = build_utils.get_libxml2_version()
+    if build_config.LIBXML2_VERSION is None:
+        build_config.build_libxml2 = False
+
     if build_config.build_libxml2:
-        build_utils.get_libxml2_version()
+        libxml2_untar_py = os.path.join(
+            build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'install.py')
+        if not os.path.exists(build_config.REPOROOT_DIR + '/out'):
+            os.makedirs(build_config.REPOROOT_DIR + '/out')
+        subprocess.run(['python3', libxml2_untar_py, '--gen-dir', build_config.REPOROOT_DIR + '/out',
+                        '--source-file', build_config.REPOROOT_DIR + '/third_party/libxml2'])
         llvm_libs.build_libxml2(llvm_make, llvm_install)
-        
+
     if build_config.do_build and need_host:
         llvm_core.llvm_compile(
             build_config.build_name,
