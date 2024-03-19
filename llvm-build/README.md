@@ -20,7 +20,7 @@ MacOS X >= 10.15.4
 
 ubuntu 
 ```
-sudo apt-get install build-essential swig python3-dev libedit-dev libncurses5-dev binutils-dev gcc-multilib  
+sudo apt-get install build-essential swig python3-dev libedit-dev libncurses5-dev binutils-dev gcc-multilib abigail-tools
 ```
 mac 
 ```
@@ -91,6 +91,7 @@ build.py options：
     OH
     LLVM
     BOTH
+--enable-check-abi      # Check libc++_shared.so ABI. If the ABI was changed then interrupt a build process and report an error.
 ```
 </br>
 

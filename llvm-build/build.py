@@ -30,6 +30,7 @@ import stat
 from python_builder import MinGWPythonBuilder
 from prebuilts_clang_version import prebuilts_clang_version
 from get_ohos_flags import get_ohos_cflags, get_ohos_ldflags
+from abi_check import AbiCheck
 
 class BuildConfig():
     # Defines public methods and functions and obtains script parameters.
@@ -69,7 +70,7 @@ class BuildConfig():
         self.build_libs = args.build_libs
         self.build_libs_flags = args.build_libs_flags
         self.compression_format = args.compression_format
-
+        self.enable_check_abi = args.enable_check_abi
         self.discover_paths()
 
         self.TARGETS = 'AArch64;ARM;BPF;Mips;RISCV;X86'
@@ -251,12 +252,19 @@ class BuildConfig():
             default='bz2',
             help='Choose compression output format (bz2 or gz)'
         )
-	
+
         parser.add_argument(
             '--build-with-debug-info',
             action='store_true',
             default=False,
             help='Append -g to build flags in build_libs')
+
+        parser.add_argument(
+            '--enable-check-abi',
+            nargs='?',
+            const=True,
+            default=False,
+            help='check libc++_shared.so abi')
 
     def parse_args(self):
 
@@ -1879,6 +1887,52 @@ class LlvmLibs(BuildUtils):
             os.makedirs(os.path.join(windows64_install, 'bin'))
         shutil.copyfile(os.path.join(libxml2_build_path, 'libxml2.dll'), os.path.join(windows64_install, 'bin', 'libxml2.dll'))
 
+    def run_abi_checks(self, enable_check_abi, llvm_install, configs):
+        diff_dict = {}
+        for (arch, target) in configs:
+            configs_list, cc, cxx, ar, llvm_config = self.libs_argument(llvm_install)
+            for (_, llvm_triple, _, multilib_suffix) in configs_list:
+                if target != llvm_triple:
+                    continue
+                if multilib_suffix:
+                    baseline_abi_file_path = self.merge_out_path(self.build_config.LLVM_BUILD_DIR,
+                                             "libcxx_abidiff", llvm_triple, multilib_suffix, "libc++_shared.abi")
+                    elf_common_path = self.merge_out_path('lib', 
+                                      f"libunwind-libcxxabi-libcxx-ndk-{str(llvm_triple)}-{multilib_suffix}",
+                                      'lib', llvm_triple, multilib_suffix)
+                else:
+                    baseline_abi_file_path = self.merge_out_path(self.build_config.LLVM_BUILD_DIR,
+                                             "libcxx_abidiff", llvm_triple, "libc++_shared.abi")
+                    elf_common_path = self.merge_out_path('lib', 
+                                      f"libunwind-libcxxabi-libcxx-ndk-{str(llvm_triple)}", 'lib', llvm_triple)
+                elf_file_path = self.merge_out_path(elf_common_path, "libc++_shared.so")
+                abi_file_path = self.merge_out_path(elf_common_path, "libc++_shared.abi")
+                header_dir = self.merge_out_path('lib', 
+                             f"libunwind-libcxxabi-libcxx-ndk-{str(llvm_triple)}", 'include', "c++", "v1")
+                res = self.run_abi_check(elf_file_path, abi_file_path, baseline_abi_file_path, header_dir)
+                if res:
+                    diff_dict[abi_file_path] = baseline_abi_file_path
+        if len(diff_dict) > 0:
+            if enable_check_abi is True:
+                user_check = input("ABI files are different, please confirm if you want to update [Y/n] : \n")
+                if user_check.lower() == "y" or user_check.lower() == "yes":
+                    for key, value in diff_dict.items():
+                        shutil.copy2(key, value)
+                        self.logger().info('update abi file %s ', value)
+                    return True
+            else:
+                raise Exception("ABI files are different, please check it")
+        return False
+
+    def run_abi_check(self, elf_file_path, abi_file_path, baseline_abi_file_path, header_dir):
+        abi_args = argparse.Namespace()
+        abi_args.elf_file = elf_file_path
+        abi_args.abi_file = abi_file_path
+        abi_args.compare_files = [baseline_abi_file_path, abi_file_path]
+        abi_args.headers_dir = header_dir
+        abi_check = AbiCheck(abi_args)
+        abi_check.gen_abi_file()
+        return abi_check.compare_abi_files()
 
 class LlvmPackage(BuildUtils):
 
@@ -2393,7 +2447,6 @@ class LlvmPackage(BuildUtils):
         create_tar = True
         if create_tar:
             self.package_up_resulting(package_name, host, install_host_dir)
-
         return
 
 
@@ -2480,6 +2533,11 @@ def main():
             else:
                 for (arch, target) in configs:
                     llvm_libs.build_libs(llvm_install, target)
+    if build_config.enable_check_abi:
+        has_diff = llvm_libs.run_abi_checks(build_config.enable_check_abi, llvm_install, configs)
+        if has_diff:
+            print("Build is interrupted because of libCxx ABI changed")
+            return
 
     windows_python_builder = None
 
