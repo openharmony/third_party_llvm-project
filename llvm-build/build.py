@@ -1734,7 +1734,7 @@ class LlvmLibs(BuildUtils):
             self.llvm_package.copy_ncurses_to_llvm(llvm_make)
             self.llvm_package.copy_ncurses_to_llvm(llvm_install)
 
-    def build_lzma(self, llvm_install):
+    def build_lzma(self, llvm_make, llvm_install):
         self.logger().info('Building lzma')
         target_triple = self.use_platform()
         liblzma_build_path = self.merge_out_path('lzma')
@@ -1753,15 +1753,20 @@ class LlvmLibs(BuildUtils):
         os.chdir(self.build_config.LLVM_BUILD_DIR)
         self.check_call(cmd)
 
-        self.logger().info('Copy lzma to llvm install dir is %s', llvm_install)
         if self.host_is_darwin():
             shlib_ext = '.dylib'
         if self.host_is_linux():
             shlib_ext = '.so'
         lzma_file = os.path.join(liblzma_build_path, 'lib', target_triple, 'liblzma' + shlib_ext)
+
+        self.logger().info('Copy lzma to llvm make dir is %s', llvm_make)
+        lib_make_path = os.path.join(llvm_make, 'lib')
+        self.check_create_dir(lib_make_path)
+        self.check_copy_file(lzma_file, lib_make_path + '/liblzma' + shlib_ext)
+
+        self.logger().info('Copy lzma to llvm install dir is %s', llvm_install)
         lib_dst_path = os.path.join(llvm_install, 'lib')
-        if not os.path.exists(lib_dst_path):
-            os.makedirs(lib_dst_path)
+        self.check_create_dir(lib_dst_path)
         self.check_copy_file(lzma_file, lib_dst_path + '/liblzma' + shlib_ext)
 
     def build_libedit(self, llvm_make, llvm_install):
@@ -2431,7 +2436,7 @@ def main():
         llvm_libs.build_ncurses(llvm_make, llvm_install)
 
     if build_config.enable_lzma_7zip:
-        llvm_libs.build_lzma(llvm_install)
+        llvm_libs.build_lzma(llvm_make, llvm_install)
 
     if build_config.build_libedit:
         llvm_libs.build_libedit(llvm_make, llvm_install)
