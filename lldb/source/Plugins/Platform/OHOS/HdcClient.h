@@ -34,10 +34,8 @@ public:
 
   static Status CreateByDeviceID(const std::string &device_id, HdcClient &hdc);
 
-  explicit HdcClient(const std::string &connect_addr,
-                     const std::string &device_id = "");
-
-  HdcClient(HdcClient &&);
+  HdcClient();
+  explicit HdcClient(const std::string &device_id);
 
   ~HdcClient();
 
@@ -65,37 +63,18 @@ public:
                std::string *output);
 
 private:
-  bool IsServerLocal();
   Status Connect();
 
-  Status LocalTransferFile(const char *direction, const FileSpec &src,
-                           const FileSpec &dst);
-
-  Status FileCheck(int FD, size_t &file_size);
-  Status PullFileChunk(std::vector<char> &buffer);
-
-  Status FileInit(size_t file_size, uint32_t perm, uint32_t u_id, uint32_t g_id,
-                  const std::string &remote_path);
-  Status PushFileChunk(std::vector<char> &buffer, size_t chunk_size,
-                       size_t index);
+  Status TransferFile(const char *direction, const FileSpec &src,
+                      const FileSpec &dst);
 
   void SetDeviceID(const std::string &device_id);
 
   Status SendMessage(llvm::StringRef packet, const bool reconnect = true);
 
+  Status SendDeviceMessage(const std::string &packet);
+
   Status ReadMessage(std::vector<char> &message);
-
-  Status SendCommandMessage(uint16_t command, llvm::ArrayRef<char> packet);
-
-  Status ReadCommandMessagePrefix(uint16_t &command, std::vector<char> &message,
-                                  size_t prefix_size);
-  Status ReadCommandMessage(uint16_t &command, std::vector<char> &message);
-
-  Status ExpectCommandMessage(uint16_t expected_command,
-                              std::vector<char> &message);
-  Status ExpectCommandMessagePrefix(uint16_t expected_command,
-                                    std::vector<char> &message,
-                                    size_t prefix_size);
 
   Status ReadMessageStream(std::vector<char> &message,
                            std::chrono::milliseconds timeout);
@@ -104,7 +83,6 @@ private:
 
   Status ReadAllBytes(void *buffer, size_t size);
 
-  std::string m_connect_addr;
   std::string m_device_id;
   std::unique_ptr<Connection> m_conn;
 };

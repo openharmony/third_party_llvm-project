@@ -66,10 +66,7 @@ protected:
   llvm::StringRef
   GetLibdlFunctionDeclarations(lldb_private::Process *process) override;
 
-  HdcClient CreateHdcClient();
-
 private:
-  std::string m_connect_addr;
   std::string m_device_id;
   uint32_t m_sdk_version;
 
