@@ -129,13 +129,8 @@ llvm::StringRef PlatformOHOS::GetPluginName() {
   return GetPluginNameStatic(IsHost());
 }
 
-HdcClient PlatformOHOS::CreateHdcClient() {
-  return HdcClient(m_connect_addr, m_device_id);
-}
-
 Status PlatformOHOS::ConnectRemote(Args &args) {
   m_device_id.clear();
-  m_connect_addr = "localhost";
 
   if (IsHost()) {
     return Status("can't connect to the host platform '%s', always connected",
@@ -151,26 +146,17 @@ Status PlatformOHOS::ConnectRemote(Args &args) {
   llvm::Optional<URI> uri = URI::Parse(url);
   if (!uri)
     return Status("Invalid URL: %s", url);
-
-  Log *log = GetLog(LLDBLog::Platform);
-  if (PlatformOHOSRemoteGDBServer::IsHostnameDeviceID(
-          uri->hostname)) { // accepts no (empty) hostname too
-    m_device_id = uri->hostname.str();
-    LLDB_LOG(log, "Treating hostname as device id: \"{0}\"", m_device_id);
-  } else {
-    m_connect_addr = uri->hostname.str();
-    LLDB_LOG(log, "Treating hostname as remote HDC server address: \"{0}\"",
-             m_connect_addr);
-  }
+  if (uri->hostname != "localhost")
+    m_device_id = static_cast<std::string>(uri->hostname);
 
   auto error = PlatformLinux::ConnectRemote(args);
   if (error.Success()) {
-    HdcClient hdc(m_connect_addr);
-    error = HdcClient::CreateByDeviceID(m_device_id, hdc);
+    HdcClient adb;
+    error = HdcClient::CreateByDeviceID(m_device_id, adb);
     if (error.Fail())
       return error;
 
-    m_device_id = hdc.GetDeviceID();
+    m_device_id = adb.GetDeviceID();
   }
   return error;
 }
@@ -185,7 +171,7 @@ Status PlatformOHOS::GetFile(const FileSpec &source,
     source_spec = GetRemoteWorkingDirectory().CopyByAppendingPathComponent(
         source_spec.GetCString(false));
 
-  HdcClient hdc = CreateHdcClient();
+  HdcClient hdc(m_device_id);
   Status error = hdc.RecvFile(source_spec, destination);
   return error;
 }
@@ -202,7 +188,7 @@ Status PlatformOHOS::PutFile(const FileSpec &source,
         destination_spec.GetCString(false));
 
   // TODO: Set correct uid and gid on remote file.
-  HdcClient hdc = CreateHdcClient();
+  HdcClient hdc(m_device_id);
   Status error = hdc.SendFile(source, destination_spec);
   return error;
 }
@@ -223,7 +209,6 @@ Status PlatformOHOS::DisconnectRemote() {
   Status error = PlatformLinux::DisconnectRemote();
   if (error.Success()) {
     m_device_id.clear();
-    m_connect_addr.clear();
     m_sdk_version = 0;
     m_remote_platform_sp.reset();
   }
@@ -242,7 +227,7 @@ uint32_t PlatformOHOS::GetSdkVersion() {
     return m_sdk_version;
 
   std::string version_string;
-  HdcClient hdc = CreateHdcClient();
+  HdcClient hdc(m_device_id);
   Status error =
       hdc.Shell("param get const.ohos.apiversion", seconds(5), &version_string);
   version_string = llvm::StringRef(version_string).trim().str();
