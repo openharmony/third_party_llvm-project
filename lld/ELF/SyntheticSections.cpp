@@ -1398,15 +1398,14 @@ DynamicSection<ELFT>::computeContents() {
            part.dynStrTab->addString(config->rpath));
 
   if (config->adlt) {
-    StringRef prevNeeded;
     for (InputFile *file : ctx->sharedFilesExtended) {
       auto *f = cast<SharedFileExtended<ELFT>>(file);
       for (size_t i = 0; i < f->dtNeeded.size(); i++) {
-        StringRef needed = f->dtNeeded[i];
-        if (prevNeeded == needed)
-          continue;
-        addInt(DT_NEEDED, part.dynStrTab->addString(needed));
-        prevNeeded = needed;
+        auto tag = DT_NEEDED;
+        auto val = part.dynStrTab->addString(f->dtNeeded[i]);
+        if (llvm::find(entries, std::pair<int32_t, uint64_t>{tag, val}) ==
+            entries.end())
+          addInt(tag, val);
       }
     }
     addInt(DT_SONAME, part.dynStrTab->addString(config->outputFile));
