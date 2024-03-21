@@ -1415,6 +1415,9 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
         lld::outs() << "[ADLT] R_AARCH64_ADR_GOT_PAGE: sym not in GOT! ";
       r->expr = R_PC; // prev: R_AARCH64_GOT_PAGE_PC || R_AARCH64_GOT_PAGE ||
                       // R_GOT || R_GOT_PC
+      // TODO: replace reloc R_AARCH64_ADR_GOT_PAGE
+      sec.relocations.push_back(*r);
+      return;
     }
     LLVM_FALLTHROUGH;
   case R_AARCH64_LD64_GOT_LO12_NC:
