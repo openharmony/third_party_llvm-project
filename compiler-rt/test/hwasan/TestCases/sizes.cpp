@@ -23,6 +23,10 @@
 // allocator can allocate. Tests that an integer overflow in the parameters of
 // calloc is caught.
 
+// OHOS_LOCAL
+// we can't link with libstdc++
+// REQUIRES: !ohos_family
+
 #include <assert.h>
 #include <malloc.h>
 #include <stdlib.h>

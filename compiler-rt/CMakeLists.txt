@@ -565,6 +565,14 @@ if(COMPILER_RT_USE_LLVM_UNWINDER)
   endif()
 endif()
 
+# OHOS_LOCAL begin
+if (COMPILER_RT_HAS_SCUDO_STANDALONE AND
+    NOT COMPILER_RT_USE_LLVM_UNWINDER AND # unwinder not set yet
+    COMPILER_RT_DEFAULT_TARGET_TRIPLE MATCHES "^arm-.*")
+  list(APPEND COMPILER_RT_UNWINDER_LINK_LIBS "unwind")
+endif()
+# OHOS_LOCAL end
+
 if (COMPILER_RT_CXX_LIBRARY STREQUAL "libcxx")
   # We are using the in-tree libc++ so avoid including the default one.
   append_list_if(COMPILER_RT_HAS_NOSTDINCXX_FLAG -nostdinc++ COMPILER_RT_COMMON_CFLAGS)

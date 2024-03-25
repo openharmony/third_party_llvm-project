@@ -32,6 +32,8 @@
 #cmakedefine01 LLDB_ENABLE_TERMIOS
 
 #cmakedefine01 LLDB_ENABLE_LZMA
+// OHOS_LOCAL
+#cmakedefine01 LLDB_ENABLE_LZMA_7ZIP
 
 #cmakedefine01 LLDB_ENABLE_CURSES
 
