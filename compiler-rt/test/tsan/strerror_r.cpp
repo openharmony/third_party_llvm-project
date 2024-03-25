@@ -1,7 +1,8 @@
 // RUN: %clangxx_tsan -O1 -DTEST_ERROR=ERANGE %s -o %t && %run %t 2>&1 | FileCheck --check-prefixes=CHECK,CHECK-SYS %s
 // RUN: %clangxx_tsan -O1 -DTEST_ERROR=-1 %s -o %t && not %run %t 2>&1 | FileCheck --check-prefixes=CHECK,CHECK-USER %s
 // This test is for GNU specific version of strerror_r()
-// UNSUPPORTED: darwin, netbsd, freebsd
+// OHOS_LOCAL
+// UNSUPPORTED: darwin, netbsd, freebsd, ohos_family
 
 #include "test.h"
 

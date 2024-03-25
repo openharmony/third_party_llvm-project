@@ -1,6 +1,9 @@
 // RUN: %clang_tsan -O1 %s -o %t && %deflake %run %t 2>&1 | FileCheck %s
 // UNSUPPORTED: tvos, watchos
 // XFAIL: ios && !iossim
+// OHOS_LOCAL
+// ucontext.h not available on musl
+// UNSUPPORTED: ohos_family
 #include "sanitizer_common/sanitizer_ucontext.h"
 #include "test.h"
 

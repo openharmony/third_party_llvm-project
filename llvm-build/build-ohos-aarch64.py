@@ -1,3 +1,18 @@
+#!/usr/bin/env python3
+# Copyright (C) 2023 Huawei Device Co., Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 
 from build import BuildConfig, BuildUtils
@@ -53,7 +68,7 @@ def main():
     llvm_defines['CMAKE_INSTALL_PREFIX'] = llvm_install
     llvm_defines['CMAKE_SYSROOT'] = sysroot
     llvm_defines['CMAKE_LIBRARY_ARCHITECTURE'] = llvm_triple
-    llvm_defines['LLVM_TARGETS_TO_BUILD'] = 'AArch64'
+    llvm_defines['LLVM_TARGETS_TO_BUILD'] = build_config.TARGETS
     llvm_defines['LLVM_TARGET_ARCH'] = 'AArch64'
     llvm_defines['LLVM_DEFAULT_TARGET_TRIPLE'] = llvm_triple
     llvm_defines['LLVM_BUILD_LLVM_DYLIB'] = 'ON'
@@ -63,8 +78,10 @@ def main():
     llvm_defines['LLVM_INCLUDE_EXAMPLES'] = 'OFF'
     llvm_defines['LLVM_INCLUDE_TESTS'] = 'OFF'
     llvm_defines['LLVM_BUILD_TOOLS'] = 'ON'
+    llvm_defines['LLVM_INSTALL_UTILS'] = 'ON'
     llvm_defines['LLVM_ENABLE_ZLIB'] = 'OFF'
-    llvm_defines['LLVM_DISTRIBUTION_COMPONENTS'] = 'cmake-exports;llvm-headers;LLVM'
+    llvm_defines['LLVM_ENABLE_PROJECTS'] = 'clang;clang-tools-extra;lld;lldb;openmp'
+    # We do not build runtimes, since they will be copied from main toolchain build
     llvm_defines['LLVM_CONFIG_PATH'] = os.path.join(llvm_root, 'bin', 'llvm-config')
     llvm_defines['LLVM_TABLEGEN'] = os.path.join(llvm_root, 'bin', 'llvm-tblgen')
     llvm_defines['CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN'] = llvm_root
@@ -98,6 +115,8 @@ def main():
     llvm_defines['CMAKE_C_FLAGS_RELEASE'] = cflags_release
     llvm_defines['CMAKE_CXX_FLAGS_RELEASE'] = cflags_release
     llvm_defines['CMAKE_ASM_FLAGS_RELEASE'] = cflags_release
+    llvm_defines['OPENMP_STANDALONE_BUILD'] = 'ON'
+    llvm_defines['LLVM_DIR'] = os.path.join(llvm_root, 'lib', 'cmake', 'llvm')
 
     if build_config.enable_assertions:
         llvm_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON'
@@ -110,6 +129,29 @@ def main():
     build_utils.invoke_cmake(llvm_project_path, llvm_path, llvm_defines, env=env)
 
     build_utils.invoke_ninja(out_path=llvm_path, env=env, target=None, install=True)
+
+    # Copy required aarch64-linux-ohos libs from main toolchain build.
+    arch_list = [build_utils.liteos_triple('arm'), build_utils.open_ohos_triple('arm'),
+                         build_utils.open_ohos_triple('aarch64'), build_utils.open_ohos_triple('riscv64'),
+                         build_utils.open_ohos_triple('mipsel'), build_utils.open_ohos_triple('x86_64')]
+    for arch in arch_list:
+        build_utils.check_copy_tree(os.path.join(llvm_root, 'lib', arch),
+                                    os.path.join(llvm_install, 'lib', arch))
+        build_utils.check_copy_tree(os.path.join(llvm_root, 'lib', 'clang', '15.0.4', 'lib', arch),
+                                    os.path.join(llvm_install, 'lib', 'clang', '15.0.4', 'lib', arch))
+
+    #Copy required c++ headerfiles from main toolchain build.
+    build_utils.check_copy_tree(os.path.join(llvm_root, 'include', 'c++'), os.path.join(llvm_install, 'include', 'c++'))
+    build_utils.check_copy_tree(os.path.join(llvm_root, 'include', 'libcxx-ohos'), os.path.join(llvm_install, 'include', 'libcxx-ohos'))
+
+    # Package ohos-aarch64 toolchain.
+    if build_config.do_package:
+        tarball_name = 'clang-%s-ohos-aarch64' % (build_config.build_name)
+        package_path = '%s%s' % (build_utils.merge_packages_path(tarball_name), build_config.ARCHIVE_EXTENSION)
+        build_utils.logger().info('Packaging %s', package_path)
+        args = ['tar', build_config.ARCHIVE_OPTION, '-h', '-C', build_config.OUT_PATH, '-f', package_path, 'ohos-aarch64-install']
+        build_utils.check_create_dir(build_config.PACKAGES_PATH)
+        build_utils.check_call(args)
 
 
 if __name__ == '__main__':

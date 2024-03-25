@@ -37,9 +37,9 @@ void *Thread3(void *p) {
   Heap* heap = (Heap*)p;
   pthread_barrier_wait(&heap->barrier_finalizer);
   while (__atomic_load_n(&heap->ready, __ATOMIC_ACQUIRE) != 1)
-    pthread_yield();
+    sched_yield(); // OHOS_LOCAL
   while (__atomic_load_n(&heap->finalized, __ATOMIC_RELAXED) != 1)
-    pthread_yield();
+    sched_yield(); // OHOS_LOCAL
   __atomic_fetch_add(&heap->wg, 1, __ATOMIC_RELEASE);
   return 0;
 }
@@ -70,7 +70,7 @@ int main() {
     pthread_join(ballast[i], 0);
   pthread_barrier_wait(&heap->barrier_finalizer);
   while (__atomic_load_n(&heap->wg, __ATOMIC_ACQUIRE) != 2)
-    pthread_yield();
+    sched_yield(); // OHOS_LOCAL
   if (heap->data != 1)
     exit(printf("no data\n"));
   for (int i = 0; i < 3; i++)

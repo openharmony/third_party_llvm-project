@@ -8141,6 +8141,14 @@ AArch64InstrInfo::getTailDuplicateSize(CodeGenOpt::Level OptLevel) const {
   return OptLevel >= CodeGenOpt::Aggressive ? 6 : 2;
 }
 
+// OHOS_LOCAL begin
+bool AArch64InstrInfo::preservesZeroValueInReg(
+    const MachineInstr *MI, const Register NullValueReg,
+    const TargetRegisterInfo *TRI) const {
+    return !MI->modifiesRegister(NullValueReg, TRI);
+}
+// OHOS_LOCAL end
+
 unsigned llvm::getBLRCallOpcode(const MachineFunction &MF) {
   if (MF.getSubtarget<AArch64Subtarget>().hardenSlsBlr())
     return AArch64::BLRNoIP;

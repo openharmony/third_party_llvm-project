@@ -2090,7 +2090,41 @@ bool SignalContext::IsTrueFaultingAddress() const {
 }
 
 void SignalContext::DumpAllRegisters(void *context) {
-  // FIXME: Implement this.
+  // OHOS_LOCAL begin
+  Report("Register values:\n");
+
+  ucontext_t *ucontext = (ucontext_t*)context;
+  # define DUMPREG64(r) \
+    Printf("x%s = 0x%016llx  ", #r, ucontext->uc_mcontext.regs[r]);
+  # define DUMPREGA64(r) \
+    Printf("%s = 0x%016llx  ", #r, ucontext->uc_mcontext. r);
+  # define DUMPREG32(r) \
+    Printf("%s = 0x%08x  ", #r, ucontext->uc_mcontext->__ss.__ ## r);
+  # define DUMPREG_(r)   Printf(" "); DUMPREG(r);
+  # define DUMPREG__(r)  Printf("  "); DUMPREG(r);
+  # define DUMPREG___(r) Printf("   "); DUMPREG(r);
+
+  #if defined(__aarch64__)
+  #define DUMPREG(r) DUMPREG64(r)
+    DUMPREG_(0); DUMPREG_(1); DUMPREG_(2); DUMPREG_(3); Printf("\n");
+    DUMPREG_(4); DUMPREG_(5); DUMPREG_(6); DUMPREG_(7); Printf("\n");
+    DUMPREG_(8); DUMPREG_(9); DUMPREG(10); DUMPREG(11); Printf("\n");
+    DUMPREG(12); DUMPREG(13); DUMPREG(14); DUMPREG(15); Printf("\n");
+    DUMPREG(16); DUMPREG(17); DUMPREG(18); DUMPREG(19); Printf("\n");
+    DUMPREG(20); DUMPREG(21); DUMPREG(22); DUMPREG(23); Printf("\n");
+    DUMPREG(24); DUMPREG(25); DUMPREG(26); DUMPREG(27); Printf("\n");
+    DUMPREG(28); DUMPREG(29); DUMPREG(30); DUMPREGA64(sp); Printf("\n");
+
+  #endif
+
+  # undef DUMPREG64
+  # undef DUMPREGA64
+  # undef DUMPREG32
+  # undef DUMPREG_
+  # undef DUMPREG__
+  # undef DUMPREG___
+  # undef DUMPREG
+  // OHOS_LOCAL end
 }
 
 static void GetPcSpBp(void *context, uptr *pc, uptr *sp, uptr *bp) {

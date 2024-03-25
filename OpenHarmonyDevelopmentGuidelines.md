@@ -37,6 +37,10 @@ Some local OHOS change
 
 The presence of such marks greatly simplifies porting such code snippets to new LLVM versions. All such changes MUST be accompanied with a test case that MUST fail should the change is reverted.
 
+If the change is from the upstream and is a mainline patch, the OHOS_LOCAL flag does not need to be added. Similar PRs, such as:
+- https://gitee.com/openharmony/third_party_llvm-project/pulls/93
+- https://gitee.com/openharmony/third_party_llvm-project/pulls/409
+
 ---------------------
 
 ### Commit title and message

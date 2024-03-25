@@ -925,9 +925,11 @@ inline void LogMessageOnPrintf(const char *str) {}
 #if SANITIZER_LINUX || SANITIZER_WIN_TRACE
 // Initialize Android logging. Any writes before this are silently lost.
 void AndroidLogInit();
+void OhosLogInit(); // OHOS_LOCAL
 void SetAbortMessage(const char *);
 #else
 inline void AndroidLogInit() {}
+inline void OhosLogInit() {} // OHOS_LOCAL
 // FIXME: MacOS implementation could use CRSetCrashLogMessage.
 inline void SetAbortMessage(const char *) {}
 #endif

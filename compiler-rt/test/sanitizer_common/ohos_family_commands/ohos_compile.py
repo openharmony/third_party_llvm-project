@@ -21,26 +21,15 @@ while args:
         output_type = 'object'
     elif arg == '-o':
         output = args.pop(0)
-    elif arg == '-target':
-        check_trgt = True
-    elif check_trgt or arg.startswith('--target='):
-        check_trgt = False
-        if arg.endswith('-linux-ohos'):
-            arg = arg.split('=')[-1]
-            dyld = 'unknown_hos_dyld'
-            # FIXME: Handle -mfloat-abi=hard for arm
-            # TODO: Support x86_64
-            if arg.startswith('arm'):
-                dyld = 'ld-musl-arm.so.1'
-            elif arg.startswith('aarch64'):
-                dyld = 'ld-musl-aarch64.so.1'
-            append_args += ['-Wl,--dynamic-linker=' + os.path.join(HOS_TMPDIR, dyld)]
+if hdc_constants.DYN_LINKER:
+    append_args.append('-Wl,--dynamic-linker=' + hdc_constants.DYN_LINKER)
 
 if output == None:
     print ("No output file name!")
     sys.exit(1)
 
 ret = subprocess.call(sys.argv[1:] + append_args)
+
 if ret != 0:
     sys.exit(ret)
 
