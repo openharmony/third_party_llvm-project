@@ -1083,6 +1083,8 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
 
     Symbol *sym = symbols[i];
     sym->isUsedInRegularObj = true;
+    if (config->adlt)
+      sym->exportDynamic = true;
     if (LLVM_UNLIKELY(eSym.st_shndx == SHN_COMMON)) {
       if (value == 0 || value >= UINT32_MAX)
         fatal(toString(this) + ": common symbol '" + sym->getName() +
@@ -1111,6 +1113,8 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
                            eSym.getType()});
     sym->isUsedInRegularObj = true;
     sym->referenced = true;
+    if (config->adlt)
+      sym->exportDynamic = true;
   }
 }
 

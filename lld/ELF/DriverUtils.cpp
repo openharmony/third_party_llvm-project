@@ -68,7 +68,7 @@ static void handleAdltOption(opt::InputArgList &args) {
   auto *arg = args.getLastArg(OPT_adlt);
   if (!arg)
     return;
-  lld::outs() << "adlt is active\n";
+  // slld::outs() << "adlt is active\n";
 }
 
 static cl::TokenizerCallback getQuotingStyle(opt::InputArgList &args) {
