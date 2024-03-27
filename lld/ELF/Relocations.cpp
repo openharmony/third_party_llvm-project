@@ -2338,8 +2338,6 @@ bool ThunkCreator::createThunks(uint32_t pass,
             // original target so another Thunk can be generated.
             if (pass > 0 && normalizeExistingThunk(rel, src))
               continue;
-            if (!rel.sym)
-              continue; // ADLT fix
             if (!target->needsThunk(rel.expr, rel.type, isec->file, src,
                                     *rel.sym, rel.addend))
               continue;

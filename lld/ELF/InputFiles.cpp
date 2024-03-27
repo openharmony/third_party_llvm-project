@@ -145,13 +145,13 @@ static bool isCompatible(InputFile *file) {
   }
 
   InputFile *existing = nullptr;
-      if (!ctx->objectFiles.empty())
-      existing = ctx->objectFiles[0];
-    else if (!ctx->sharedFiles.empty())
-      existing = ctx->sharedFiles[0];
-    else if (!ctx->bitcodeFiles.empty())
-      existing = ctx->bitcodeFiles[0];
-    std::string with;
+  if (!ctx->objectFiles.empty())
+    existing = ctx->objectFiles[0];
+  else if (!ctx->sharedFiles.empty())
+    existing = ctx->sharedFiles[0];
+  else if (!ctx->bitcodeFiles.empty())
+    existing = ctx->bitcodeFiles[0];
+  std::string with;
   if (existing)
     with = " with " + toString(existing);
   error(toString(file) + " is incompatible" + with);
