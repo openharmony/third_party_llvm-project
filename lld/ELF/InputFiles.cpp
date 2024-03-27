@@ -1769,6 +1769,11 @@ SharedFileExtended<ELFT>::findInputSection(uint64_t offset) const {
 }
 
 template <typename ELFT>
+bool SharedFileExtended<ELFT>::isDynamicSection(InputSectionBase &sec) const {
+  return sec.type == llvm::ELF::SHT_NULL || sec.name.startswith(".got.plt");
+}
+
+template <typename ELFT>
 Defined *SharedFileExtended<ELFT>::findDefinedSymbol(
     uint64_t offset, StringRef fatalTitle,
     llvm::function_ref<bool(Defined *)> extraCond) const {

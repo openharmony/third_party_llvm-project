@@ -1447,7 +1447,7 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
 template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
   const RelTy &rel = *i;
   uint32_t symIndex = rel.getSymbol(config->isMips64EL);
-  bool fromDynamic = sec.type == SHT_NULL || sec.name.startswith(".got.plt");
+  bool fromDynamic = sec.getSharedFile<ELFT>()->isDynamicSection(sec);
   Symbol &sym =
       config->adlt
           ? sec.getSharedFile<ELFT>()->getSymbolADLT(symIndex, fromDynamic)
