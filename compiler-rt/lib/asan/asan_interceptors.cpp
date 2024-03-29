@@ -137,6 +137,18 @@ DECLARE_REAL_AND_INTERCEPTOR(void, free, void *)
       CheckNoDeepBind(filename, flag);              \
       REAL(dlopen)(filename, flag);                 \
     })
+// OHOS_LOCAL begin
+#if SANITIZER_OHOS
+#define COMMON_INTERCEPTOR_DLOPEN_IMPL(filename, flag, namespace, caller_addr, \
+                                       extinfo)                                \
+  ({                                                                           \
+    if (flags()->strict_init_order)                                            \
+      StopInitOrderChecking();                                                 \
+    CheckNoDeepBind(filename, flag);                                           \
+    REAL(dlopen_impl)(filename, flag, namespace, caller_addr, extinfo);        \
+  })
+#endif
+// OHOS_LOCAL end
 #  define COMMON_INTERCEPTOR_ON_EXIT(ctx) OnExit()
 #  define COMMON_INTERCEPTOR_LIBRARY_LOADED(filename, handle)
 #  define COMMON_INTERCEPTOR_LIBRARY_UNLOADED()

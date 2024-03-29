@@ -20,7 +20,9 @@
 #include "sanitizer_common.h"
 #include "sanitizer_atomic.h"
 #include "sanitizer_mutex.h"
-
+#if SANITIZER_OHOS
+#include "sanitizer_vector.h" // OHOS_LOCAL
+#endif
 namespace __sanitizer {
 
 class LibIgnore {
@@ -48,17 +50,32 @@ class LibIgnore {
   // Checks whether the provided PC belongs to an instrumented module.
   bool IsPcInstrumented(uptr pc) const;
 
- private:
+#if SANITIZER_OHOS
+  bool IsAddressRangeInstrumented(uptr beg, uptr end) const;
+
+  // Find all instrumented ranges which is overlapped by this range.
+  template <typename Callback>
+  void IterateOverlappingRanges(uptr beg, uptr end,
+                                Callback &callback) const; // OHOS_LOCAL
+#endif
+
+private:
   struct Lib {
     char *templ;
     char *name;
     char *real_name;  // target of symlink
     bool loaded;
+#if SANITIZER_OHOS
+    uptr idx; // OHOS_LOCAL
+#endif
   };
 
   struct LibCodeRange {
     uptr begin;
     uptr end;
+#if SANITIZER_OHOS
+    atomic_uint8_t invalid; // OHOS_LOCAL
+#endif
   };
 
   inline bool IsInRange(uptr pc, const LibCodeRange &range) const {
@@ -90,7 +107,13 @@ class LibIgnore {
 inline bool LibIgnore::IsIgnored(uptr pc, bool *pc_in_ignored_lib) const {
   const uptr n = atomic_load(&ignored_ranges_count_, memory_order_acquire);
   for (uptr i = 0; i < n; i++) {
+#if SANITIZER_OHOS
+    if (IsInRange(pc, ignored_code_ranges_[i]) &&
+        !atomic_load(&(ignored_code_ranges_[i].invalid),
+                     memory_order_acquire)) { // OHOS_LOCAL
+#else
     if (IsInRange(pc, ignored_code_ranges_[i])) {
+#endif
       *pc_in_ignored_lib = true;
       return true;
     }
@@ -104,11 +127,55 @@ inline bool LibIgnore::IsIgnored(uptr pc, bool *pc_in_ignored_lib) const {
 inline bool LibIgnore::IsPcInstrumented(uptr pc) const {
   const uptr n = atomic_load(&instrumented_ranges_count_, memory_order_acquire);
   for (uptr i = 0; i < n; i++) {
+#if SANITIZER_OHOS
+    if (IsInRange(pc, instrumented_code_ranges_[i]) &&
+        !atomic_load(&(instrumented_code_ranges_[i].invalid),
+                     memory_order_acquire)) // OHOS_LOCAL
+#else
     if (IsInRange(pc, instrumented_code_ranges_[i]))
+#endif
       return true;
   }
   return false;
 }
+#if SANITIZER_OHOS
+// OHOS_LOCAL begin
+inline bool LibIgnore::IsAddressRangeInstrumented(uptr beg, uptr end) const {
+  const uptr n = atomic_load(&instrumented_ranges_count_, memory_order_acquire);
+  for (uptr i = 0; i < n; i++) {
+    if ((beg == instrumented_code_ranges_[i].begin) &&
+        (end == instrumented_code_ranges_[i].end) &&
+        !atomic_load(&(instrumented_code_ranges_[i].invalid),
+                     memory_order_acquire)) // OHOS_LOCAL
+      return true;
+  }
+  return false;
+}
+
+inline bool IsOverlapping(uptr beg1, uptr end1, uptr beg2, uptr end2) {
+  if (beg1 < end2 && beg2 < end1) {
+    return true;
+  }
+  return false;
+}
+
+template <typename Callback>
+void LibIgnore::IterateOverlappingRanges(uptr beg, uptr end,
+                                         Callback &callback) const {
+  const uptr n = atomic_load(&instrumented_ranges_count_, memory_order_acquire);
+  for (uptr i = 0; i < n; i++) {
+    if (IsOverlapping(beg, end, instrumented_code_ranges_[i].begin,
+                      instrumented_code_ranges_[i].end)) {
+      if (!atomic_load(&(instrumented_code_ranges_[i].invalid),
+                       memory_order_acquire)) {
+        callback(i);
+      }
+    }
+  }
+  return;
+}
+// OHOS_LOCAL end
+#endif
 
 }  // namespace __sanitizer
 
