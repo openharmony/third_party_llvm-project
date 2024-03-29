@@ -3,6 +3,10 @@
 // Data race randomly triggered.
 // UNSUPPORTED: netbsd
 
+// Musl try to visit all opening files and close it at exit,
+// there will be potential deadlock if this file lock is held by getline on
+// another thread. UNSUPPORTED: ohos_family
+
 // Make sure TSan doesn't deadlock on a file stream lock at program shutdown.
 // See https://github.com/google/sanitizers/issues/454
 #ifdef __FreeBSD__

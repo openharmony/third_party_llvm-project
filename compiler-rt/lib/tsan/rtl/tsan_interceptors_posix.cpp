@@ -2391,7 +2391,20 @@ static void HandleRecvmsg(ThreadState *thr, uptr pc,
     ThreadIgnoreEnd(thr);                         \
     res;                                          \
   })
-
+// OHOS_LOCAL begin
+#if SANITIZER_OHOS
+#define COMMON_INTERCEPTOR_DLOPEN_IMPL(filename, flag, namespace, caller_addr, \
+                                       extinfo)                                \
+  ({                                                                           \
+    CheckNoDeepBind(filename, flag);                                           \
+    ThreadIgnoreBegin(thr, 0);                                                 \
+    void *res =                                                                \
+        REAL(dlopen_impl)(filename, flag, namespace, caller_addr, extinfo);    \
+    ThreadIgnoreEnd(thr);                                                      \
+    res;                                                                       \
+  })
+#endif
+// OHOS_LOCAL end
 #define COMMON_INTERCEPTOR_LIBRARY_LOADED(filename, handle) \
   libignore()->OnLibraryLoaded(filename)
 
