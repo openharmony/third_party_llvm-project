@@ -12,7 +12,7 @@
 // REQUIRES: stable-runtime
 
 // OHOS_LOCAL
-// dlopen not intercepted on OHOS
+// The expected log will not be printed because ohos libignore support dlclose.
 // UNSUPPORTED: ohos_family
 
 #ifndef LIB
