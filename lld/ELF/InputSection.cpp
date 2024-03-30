@@ -347,11 +347,9 @@ void InputSection::copyRelocations(uint8_t *buf, ArrayRef<RelTy> rels) {
 
   for (const RelTy &rel : rels) {
     RelType type = rel.getType(config->isMips64EL);
-    const ObjFile<ELFT> *file =
-        config->adlt ? getSharedFile<ELFT>() : getFile<ELFT>();
-    Symbol &sym = config->adlt
-                      ? getSharedFile<ELFT>()->getRelocTargetSymADLT(rel, *sec)
-                      : file->getRelocTargetSym(rel);
+    const ELFFileBase *file = cast_or_null<ELFFileBase>(file);
+    Symbol &sym = config->adlt ? getSharedFile<ELFT>()->getRelocTargetSym(rel)
+                               : getFile<ELFT>()->getRelocTargetSym(rel);
 
     auto *p = reinterpret_cast<typename ELFT::Rela *>(buf);
     buf += sizeof(RelTy);
@@ -386,7 +384,7 @@ void InputSection::copyRelocations(uint8_t *buf, ArrayRef<RelTy> rels) {
           uint32_t secIdx = cast<Undefined>(sym).discardedSecIdx;
           Elf_Shdr_Impl<ELFT> sec = file->template getELFShdrs<ELFT>()[secIdx];
           warn("relocation refers to a discarded section: " +
-               CHECK(file->getObj().getSectionName(sec), file) +
+               CHECK(file->getObj<ELFT>().getSectionName(sec), file) +
                "\n>>> referenced by " + getObjMsg(p->r_offset));
         }
         p->setSymbolAndType(0, 0, false);
