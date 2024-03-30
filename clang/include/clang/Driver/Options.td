@@ -1822,6 +1822,11 @@ defm sanitize_cfi_cross_dso : BoolOption<"f", "sanitize-cfi-cross-dso",
   PosFlag<SetTrue, [], "Enable">, NegFlag<SetFalse, [CoreOption, NoXarchOption], "Disable">,
   BothFlags<[], " control flow integrity (CFI) checks for cross-DSO calls.">>,
   Group<f_clang_Group>;
+defm sanitize_cfi_cross_dso_req : BoolOption<"f", "sanitize-cfi-cross-dso-req",
+  CodeGenOpts<"SanitizeCfiCrossDsoReq">, DefaultFalse,
+  PosFlag<SetTrue, [], "Enable">, NegFlag<SetFalse, [CoreOption, NoXarchOption], "Disable">,
+  BothFlags<[], " the requirement for cross-DSO control flow integrity (CFI) checks for all LTO modules.">>,
+  Group<f_clang_Group>;
 def fsanitize_cfi_icall_generalize_pointers : Flag<["-"], "fsanitize-cfi-icall-generalize-pointers">,
                                               Group<f_clang_Group>,
                                               HelpText<"Generalize pointers in CFI indirect call type signature checks">,

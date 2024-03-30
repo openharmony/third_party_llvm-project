@@ -35,6 +35,7 @@ class SanitizerArgs {
   bool MsanUseAfterDtor = true;
   bool MsanParamRetval = false;
   bool CfiCrossDso = false;
+  bool CfiCrossDsoReq = false;
   bool CfiICallGeneralizePointers = false;
   bool CfiCanonicalJumpTables = false;
   int AsanFieldPadding = 0;
