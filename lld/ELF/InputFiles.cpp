@@ -1743,12 +1743,11 @@ Defined *SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) const {
   if (candidates.empty()) // no suitable items found
     return nullptr;
 
-  if (candidates.size() > 1)
-    llvm::sort(candidates, [=](Defined *d1, Defined *d2) {
-      auto a1 = d1->section->address;
-      auto a2 = d2->section->address;
-      return (offset - a1 < offset - a2);
-    });
+  llvm::sort(candidates, [offset](Defined *d1, Defined *d2) {
+    auto a1 = d1->section->address;
+    auto a2 = d2->section->address;
+    return (offset - a1 < offset - a2);
+  });
 
   auto d = *candidates.begin();
   if (isDebug)
