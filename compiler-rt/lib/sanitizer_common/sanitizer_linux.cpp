@@ -597,11 +597,9 @@ u64 NanoTime() {
 }
 #endif
 
-// Like getenv, but reads env directly from /proc (on Linux) or parses the
-// 'environ' array (on some others) and does not use libc. This function
-// should be called first inside __asan_init.
-const char *GetEnv(const char *name) {
-#if SANITIZER_FREEBSD || SANITIZER_NETBSD || SANITIZER_SOLARIS
+// OHOS_LOCAL begin
+static const char *GetEnvDirectly(const char *name)
+{
   if (::environ != 0) {
     uptr NameLen = internal_strlen(name);
     for (char **Env = ::environ; *Env != 0; Env++) {
@@ -610,6 +608,15 @@ const char *GetEnv(const char *name) {
     }
   }
   return 0;  // Not found.
+}
+// OHOS_LOCAL end
+
+// Like getenv, but reads env directly from /proc (on Linux) or parses the
+// 'environ' array (on some others) and does not use libc. This function
+// should be called first inside __asan_init.
+const char *GetEnv(const char *name) {
+#if SANITIZER_FREEBSD || SANITIZER_NETBSD || SANITIZER_SOLARIS
+  return GetEnvDirectly(name); // // OHOS_LOCAL
 #elif SANITIZER_LINUX
   static char *environ;
   static uptr len;
@@ -620,7 +627,18 @@ const char *GetEnv(const char *name) {
     if (!ReadFileToBuffer("/proc/self/environ", &environ, &environ_size, &len))
       environ = nullptr;
   }
-  if (!environ || len == 0) return nullptr;
+  if (!environ || len == 0) {
+// OHOS_LOCAL begin
+#if SANITIZER_OHOS
+      // "/proc/self/environ" can't be accessed by non-root processes,
+      // Let's fall back to read env directly from environ.
+      return GetEnvDirectly(name);
+#else 
+      return nullptr;
+#endif
+// OHOS_LOCAL end
+  }
+  
   uptr namelen = internal_strlen(name);
   const char *p = environ;
   while (*p != '\0') {  // will happen at the \0\0 that terminates the buffer
