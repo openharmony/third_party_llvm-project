@@ -312,6 +312,13 @@ template <class ELFT> void elf::createSyntheticSections() {
     in.symTabShndx = std::make_unique<SymtabShndxSection>();
   }
 
+  if (config->adlt) {
+    in.adltStrTab = std::make_unique<StringTableSection>(".adlt.strtab", false);
+    in.adltData = std::make_unique<adlt::AdltSection<ELFT>>(*in.adltStrTab);
+    add(*in.adltStrTab);
+    add(*in.adltData);
+  }
+
   in.bss = std::make_unique<BssSection>(".bss", 0, 1);
   add(*in.bss);
 
@@ -2127,6 +2134,11 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
     finalizeSynthetic(in.iplt.get());
     finalizeSynthetic(in.ppc32Got2.get());
     finalizeSynthetic(in.partIndex.get());
+    
+    if (config->adlt) {
+      finalizeSynthetic(in.adltData.get());
+      finalizeSynthetic(in.adltStrTab.get());
+    }
 
     // Dynamic section must be the last one in this list and dynamic
     // symbol table section (dynSymTab) must be the first one.

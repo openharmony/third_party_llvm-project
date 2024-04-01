@@ -3949,6 +3949,8 @@ void InStruct::reset() {
   strTab.reset();
   symTab.reset();
   symTabShndx.reset();
+  adltData.reset();
+  adltStrTab.reset();
 }
 
 constexpr char kMemtagAndroidNoteName[] = "Android";
@@ -3994,6 +3996,264 @@ size_t PackageMetadataNote::getSize() const {
   return sizeof(llvm::ELF::Elf64_Nhdr) + 4 +
          alignTo(config->packageMetadata.size() + 1, 4);
 }
+
+
+// OHOS_LOCAL begin
+namespace lld { namespace elf { namespace adlt {
+
+template <typename ELFT>
+AdltSection<ELFT>::AdltSection(StringTableSection& strTabSec)
+  : SyntheticSection(SHF_ALLOC, SHT_PROGBITS, 4, ".adlt")
+  , strTabSec(strTabSec)
+{
+  assert(config->adlt);
+}
+
+template <typename ELFT>
+void AdltSection<ELFT>::finalizeContents() {
+  soInputs.clear();
+  soInputs.reserve(ctx->sharedFilesExtended.size());
+  for (InputFile* file : ctx->sharedFilesExtended) { 
+    auto* soext = cast<SharedFileExtended<ELFT>>(file);
+    soInputs.push_back(makeSoData(soext));
+  }
+
+  assert((soInputs.size() < 1<<16) && 
+    "the number of input libs exeeds ELF limit on number of sections");
+  const Elf64_Half soNum = soInputs.size();
+
+  header = AdltSectionHeader{
+    {1, 0, 0},      // .schemaVersion
+    sizeof(PSOD),   // .schemaPSODSize
+    soNum,          // .sharedObjectsNum
+    HashType::MUSL_GNU_HASH, // .stringHashType
+    getBlobStartOffset(), // .blobStart
+    estimateBlobSize(),   // .blobSize
+  };
+
+  buildSonameIndex();
+  linkInternalDtNeeded();
+  extractInitFiniArray();
+}
+
+template <typename ELFT>
+void AdltSection<ELFT>::buildSonameIndex() {
+  for (const auto& it : llvm::enumerate(soInputs)) {
+    const auto& soData = it.value();
+    auto res = sonameToIndexMap.try_emplace(
+      CachedHashStringRef(soData.soName.ref), it.index());
+    if (!res.second) {
+      warn(Twine(".adlt-section: duplicated soname: ") + soData.soName.ref +
+        " at pos=" +  Twine(it.index()) +
+        " collided with pos=" + Twine(res.first->second));
+    }
+  }
+}
+
+template <typename ELFT>
+void AdltSection<ELFT>::linkInternalDtNeeded() {
+  for (auto it : llvm::enumerate(soInputs)) {
+    auto& soData = it.value();
+    for (auto& needed : soData.dtNeededs) {
+      auto cref = CachedHashStringRef(needed.str.ref);
+      auto res = sonameToIndexMap.find(cref);
+      if (res != sonameToIndexMap.end()) {
+        needed.psodIndex = res->second;
+      }
+    }
+  }
+}
+
+template <typename ELFT>
+OutputSection* AdltSection<ELFT>::findOutSection(StringRef name) {
+  if (name.empty()) return nullptr;
+  const unsigned partition = 1;
+
+  for (SectionCommand* cmd : script->sectionCommands) {
+    if (auto* osd = dyn_cast<OutputDesc>(cmd))
+      if (osd->osec.name == name && osd->osec.partition == partition)
+        return &osd->osec;
+  }
+  return nullptr;
+}
+
+template <typename ELFT>
+void AdltSection<ELFT>::extractInitFiniArray() {
+  for (auto& soData : soInputs) {
+    auto initArrayName = soData.initArrayName;
+    auto finiArrayName = soData.finiArrayName;
+    soData.initArraySec = findOutSection(initArrayName);
+    soData.finiArraySec = findOutSection(finiArrayName);
+  }
+}
+
+template <typename ELFT>
+typename AdltSection<ELFT>::SoData
+AdltSection<ELFT>::makeSoData(const SharedFileExtended<ELFT>* soext) {
+  assert(soext);
+  SoData data = {};
+  StringRef soname = soext->soName;
+  data.soName = SectionString{soname, strTabSec.addString(soname)};
+
+  for (const auto& neededName: soext->dtNeeded) {
+    data.dtNeededs.push_back({
+      SectionString{neededName, strTabSec.addString(neededName)},
+      {}, // internal PSOD index is uknown by the moment, will be linked
+    });
+  }
+
+  data.initArrayName = soext->addAdltPostfix(".init_array");
+  data.finiArrayName = soext->addAdltPostfix(".fini_array");
+
+  // TODO:
+  // sharedLocalIndex
+  // sharedGlobalIndex
+
+  // TODO: get section index for sharedLocalIndex
+  // TODO: get section index for sharedGlobalIndex
+
+  return data;
+}
+
+template <typename ELFT>
+Elf64_Xword AdltSection<ELFT>::calculateHash(StringRef str) const {
+  switch(header.stringHashType) {
+  case HashType::NONE:
+    return 0x0;
+  case HashType::MUSL_GNU_HASH:
+    return hashGnu(str);
+  case HashType::DEBUG_CONST:
+    return 0xdeadbeef1337c0de;
+  default:
+    llvm_unreachable(".adlt hash type not implemented");
+  }
+}
+
+template <typename ELFT>
+PSOD AdltSection<ELFT>::serialize(const SoData& soData) const {
+  return PSOD {
+    soData.soName.strtabOff, // .soName
+    calculateHash(soData.soName.ref), // .soNameHash
+    soData.initArraySec ? CrossSectionVec{ // .initArray
+      soData.initArraySec->sectionIndex,
+      soData.initArraySec->size / sizeof(Elf64_Addr), // size
+      soData.initArraySec->addr,
+    } : CrossSectionVec{0, 0, 0},
+    soData.finiArraySec ? CrossSectionVec{ // .finiArray
+      soData.finiArraySec->sectionIndex,
+      soData.finiArraySec->size / sizeof(Elf64_Addr), // size
+      soData.finiArraySec->addr,
+    } : CrossSectionVec{0, 0, 0},
+    0x0, // .dtNeeded // filled by blob serialization
+    soData.dtNeededs.size(), // .dtNeededSz
+    CrossSectionRef {
+      0, // .sectionIndex
+      soData.sharedLocalIndex, // .offsetFromStart
+    }, // .sharedLocalSymbolIndex
+    CrossSectionRef {
+      0, // .sectionIndex
+      soData.sharedGlobalIndex, // .offsetFromStart
+    }, // .sharedGlobalSymbolIndex
+  };
+}
+
+template <typename ELFT>
+Elf64_Off AdltSection<ELFT>::getBlobStartOffset() const {
+  return sizeof(header) + sizeof(PSOD) * soInputs.size();
+}
+
+template <typename ELFT>
+size_t AdltSection<ELFT>::estimateBlobSize() const {
+  size_t blobSize = sizeof(BlobStartMark);
+
+  for (const auto& soData: soInputs) {
+    blobSize += sizeof(DtNeededIndex) * soData.dtNeededs.size();
+  };
+
+  return blobSize;
+}
+
+template <typename ELFT>
+size_t AdltSection<ELFT>::writeDtNeededVec(
+  uint8_t* buff, const DtNeededsVec& neededVec) const {
+  if (neededVec.empty()) return 0;
+
+  SmallVector<DtNeededIndex> needIndexes;
+  needIndexes.reserve(neededVec.size());
+  for (const auto& need_data : neededVec) {
+    needIndexes.push_back(DtNeededIndex{
+      need_data.psodIndex.has_value(),  // .hasInternalPSOD
+      need_data.psodIndex.value_or(0),  // .PSODindex
+      need_data.str.strtabOff,          // .sonameOffset          
+    });
+  }
+
+  memcpy(buff, needIndexes.data(), needIndexes.size_in_bytes());
+  return needIndexes.size_in_bytes();
+}
+
+template <typename ELFT>
+void AdltSection<ELFT>::writeTo(uint8_t* buf) {
+  // TODO: take care of endianness, use write32 / write64 etc.
+  // pre-serialized SoData, enriched with offsets during blob writing
+  SmallVector<PSOD> psods;
+
+  for (const auto& it: llvm::enumerate(soInputs)) {
+    const SoData& soData = it.value();
+    PSOD psod = serialize(soData);
+    psods.push_back(psod);
+  }
+
+  // serialize blob data
+  {
+    uint8_t* const blob_buf = buf + header.blobStart;
+    size_t blob_off = 0;
+    memcpy(blob_buf + blob_off, &BlobStartMark, sizeof(BlobStartMark));
+    blob_off += sizeof(BlobStartMark);
+  
+    // dt-needed
+    for(const auto& it : llvm::enumerate(soInputs)) {
+      const auto& soData = it.value();
+      PSOD& psod = psods[it.index()];
+
+      psod.dtNeededSz = soData.dtNeededs.size();
+      psod.dtNeeded = blob_off;
+      blob_off += writeDtNeededVec(blob_buf + blob_off, soData.dtNeededs);
+    }
+
+    // finalize header.blobSize
+    assert((blob_off <= header.blobSize) &&
+      ".adlt-section: blob output exeeds its initial estimation");
+    header.blobSize = blob_off;
+  }
+
+  // header
+  {
+    memcpy(buf, &header, sizeof(header));
+  }
+
+  // PSODs
+  {
+    uint8_t* const psods_buf = buf + sizeof(header);
+    size_t psods_off = 0;
+    for (const auto& it: llvm::enumerate(soInputs)) {
+      PSOD& psod = psods[it.index()];
+      memcpy(psods_buf + psods_off, &psod, sizeof(PSOD));
+      psods_off += sizeof(PSOD);
+    }
+  }
+}
+
+template <typename ELFT>
+size_t AdltSection<ELFT>::getSize() const {
+  const size_t pre_blob_size = sizeof(header) + sizeof(PSOD) * soInputs.size();
+  assert(pre_blob_size <= header.blobStart);
+  return header.blobStart + header.blobSize;
+}
+
+}}} // namespace lld::elf::adlt
+// OHOS_LOCAL end
+
 
 InStruct elf::in;
 
@@ -4083,3 +4343,8 @@ template class elf::PartitionProgramHeadersSection<ELF32LE>;
 template class elf::PartitionProgramHeadersSection<ELF32BE>;
 template class elf::PartitionProgramHeadersSection<ELF64LE>;
 template class elf::PartitionProgramHeadersSection<ELF64BE>;
+
+template class elf::adlt::AdltSection<ELF32LE>;
+template class elf::adlt::AdltSection<ELF32BE>;
+template class elf::adlt::AdltSection<ELF64LE>;
+template class elf::adlt::AdltSection<ELF64BE>;

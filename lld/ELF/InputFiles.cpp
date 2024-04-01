@@ -1693,8 +1693,9 @@ template <typename ELFT> void SharedFileExtended<ELFT>::postParseForAdlt() {
   resolveDuplicatesForAdlt();
 }
 
+
 template <typename ELFT>
-StringRef SharedFileExtended<ELFT>::addAdltPostfix(StringRef input) {
+StringRef SharedFileExtended<ELFT>::addAdltPostfix(StringRef input) const {
   return markItemForAdlt(input, soName);
 }
 

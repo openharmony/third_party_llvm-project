@@ -34,6 +34,7 @@ namespace elf {
 class Defined;
 struct PhdrEntry;
 class SymbolTableBaseSection;
+template <class ELFT> class SharedFileExtended;
 
 class SyntheticSection : public InputSection {
 public:
@@ -1220,6 +1221,149 @@ public:
   size_t getSize() const override;
 };
 
+
+namespace adlt {
+
+using llvm::ELF::Elf64_Half;
+using llvm::ELF::Elf64_Off;
+using llvm::ELF::Elf64_Addr;
+using llvm::ELF::Elf64_Word;
+using llvm::ELF::Elf64_Xword;
+using Elf64_Byte = uint8_t;
+
+struct CrossSectionRef {
+  Elf64_Word  sectionIndex;
+  Elf64_Off   offsetFromStart;
+};
+
+struct SemanticVersion {
+  Elf64_Half major: 6;
+  Elf64_Half minor: 6;
+  Elf64_Half patch: 4;
+};
+
+static_assert(
+  sizeof(SemanticVersion) == sizeof(Elf64_Half),
+  ".adlt semantic version is designed to occupy uint16_t"
+);
+
+enum HashType : Elf64_Byte {
+  NONE            = 0,
+  MUSL_GNU_HASH   = 1,
+  MUSL_SYSV_HASH  = 2,
+  MUSL_KEYHASH    = 3,
+  DEBUG_CONST     = 0xff,
+};
+
+struct DtNeededIndex {
+  bool hasInternalPSOD    : 1;  // true if soname 
+  Elf64_Off PSODindex     : 16; // PSOD in the current ADLT image
+  Elf64_Off sonameOffset  : 47; // string start in bound strTabSec
+};
+
+static_assert(
+  sizeof(DtNeededIndex) == sizeof(Elf64_Off),
+  "DtNeededIndex have to be an offset with intrused flags"
+);
+
+struct CrossSectionVec {
+  Elf64_Xword secIndex;
+  Elf64_Xword numElem;
+  Elf64_Addr  addr;
+};
+
+// Serializable representation per-shared-object-data in .adlt section
+struct PSOD {
+  Elf64_Off   soName; // offset in strTabSec
+  Elf64_Xword soNameHash;
+  CrossSectionVec initArray;
+  CrossSectionVec finiArray;
+  Elf64_Off   dtNeeded; // offset to DtNeededIndex[] in blob
+  Elf64_Xword dtNeededSz;
+  CrossSectionRef sharedLocalSymbolIndex;
+  CrossSectionRef sharedGlobalSymbolIndex;
+};
+
+struct AdltSectionHeader {
+  SemanticVersion schemaVersion = {1, 0, 0};
+  Elf64_Half      schemaPSODSize = sizeof(PSOD);
+  Elf64_Half  sharedObjectsNum;
+  HashType    stringHashType = HashType::NONE;
+  Elf64_Off   blobStart; // binary blob start offset from the .adlt start
+  Elf64_Xword blobSize;
+};
+
+constexpr char BlobStartMark[4] = {0xA, 0xD, 0x1, 0x7};
+
+
+template <typename ELFT>
+class AdltSection final : public SyntheticSection {
+public:
+  struct SectionString {
+    StringRef ref;
+    Elf64_Off strtabOff; // offset in strTabSec
+  };
+
+  // will be serialized to DtNeededIndex
+  struct DtNeededData {
+    SectionString str;
+    llvm::Optional<size_t> psodIndex;
+  };
+  
+  using SectionStringVector = SmallVector<SectionString, 0>;
+  using DtNeededsVec = SmallVector<DtNeededData, 0>;
+
+  // will be serialized to PSOD
+  struct SoData {
+    SectionString soName;
+    DtNeededsVec dtNeededs;
+
+    StringRef initArrayName;
+    StringRef finiArrayName;
+
+    OutputSection* initArraySec;
+    OutputSection* finiArraySec;
+
+    Elf64_Off sharedLocalIndex; // TODO
+    Elf64_Off sharedGlobalIndex; // TODO
+  };
+
+
+public:
+  AdltSection(StringTableSection& strTabSec);
+
+  void writeTo(uint8_t* buf) override;
+  size_t getSize() const override;
+  void finalizeContents() override;
+
+  Elf64_Off getBlobStartOffset() const;
+
+private:
+  static OutputSection* findOutSection(StringRef name);
+
+  void buildSonameIndex();
+  void linkInternalDtNeeded();
+  void extractInitFiniArray();
+
+  Elf64_Xword calculateHash(StringRef str) const;
+  SoData makeSoData(const SharedFileExtended<ELFT>*);
+  PSOD serialize(const SoData&) const;
+
+  size_t estimateBlobSize() const;
+  size_t writeDtNeededVec(uint8_t* buff, const DtNeededsVec& neededVec) const;
+
+private:
+  StringTableSection& strTabSec;
+
+  AdltSectionHeader header = {};
+  SmallVector<SoData> soInputs;
+  llvm::DenseMap<llvm::CachedHashStringRef, size_t> sonameToIndexMap;
+};
+
+} // namespace adlt
+
+
+
 InputSection *createInterpSection();
 MergeInputSection *createCommentSection();
 template <class ELFT> void splitSections();
@@ -1295,6 +1439,8 @@ struct InStruct {
   std::unique_ptr<StringTableSection> strTab;
   std::unique_ptr<SymbolTableBaseSection> symTab;
   std::unique_ptr<SymtabShndxSection> symTabShndx;
+  std::unique_ptr<SyntheticSection> adltData;
+  std::unique_ptr<StringTableSection> adltStrTab;
 
   void reset();
 };

@@ -399,7 +399,7 @@ public:
   void parseForAdlt();
   void postParseForAdlt();
 
-  StringRef addAdltPostfix(StringRef input);
+  StringRef addAdltPostfix(StringRef input) const;
   bool addAdltPostfix(Symbol *s);
 
   bool saveSymbol(const Defined& d) const;
@@ -436,6 +436,7 @@ public:
   void traceSymbol(const Symbol &sym, StringRef title = "") const;
   void traceSection(const SectionBase &sec, StringRef title = "") const;
 
+public:
   int dynSymSecIdx = 0;
   int symTabSecIdx = 0;
   int symTabShndxSecIdx = 0;
