@@ -1722,31 +1722,36 @@ Defined *SharedFileExtended<ELFT>::findSectionSymbol(uint64_t offset) const {
   bool isDebug = false;
   /*if (offset == 0x7738) // debug hint
     isDebug = true;*/
-  auto predRange = [=](Symbol *sym) {
-    if (!sym || sym->isUndefined() || !sym->isSection())
-      return false;
-    const Defined *d = cast<Defined>(sym);
+  llvm::SmallVector<Defined *> candidates;
+  for (auto *sym : this->allSymbols) {
+    if (!sym || !sym->isSection())
+      continue;
+    assert(sym->isDefined());
+    Defined *d = cast<Defined>(sym);
     uint64_t low = d->section->address;
     uint64_t high = low + d->section->size;
 
     if (isDebug)
       lld::outs() << "offset: 0x" + utohexstr(offset) +
                          " sect name: " + d->section->name + "low 0x" +
-                         utohexstr(low) + " high: 0x" +
-                         utohexstr(high) + "\n";
-    return (offset >= low) && (offset < high);
-  };
-
-  auto i = this->allSymbols.begin();
-  auto e = this->allSymbols.end();
-  auto ret = std::find_if(i, e, predRange);
-  if (ret == e) // item was not found
+                         utohexstr(low) + " high: 0x" + utohexstr(high) + "\n";
+    bool isGood = (offset >= low) && (offset < high);
+    if (!isGood)
+      continue;
+    candidates.push_back(d);
+  }
+  if (candidates.empty()) // no suitable items found
     return nullptr;
 
-  auto d = cast<Defined>(*ret);
+  llvm::sort(candidates, [offset](Defined *d1, Defined *d2) {
+    auto a1 = d1->section->address;
+    auto a2 = d2->section->address;
+    return (offset - a1 < offset - a2);
+  });
+
+  auto d = *candidates.begin();
   if (isDebug)
     traceSymbol(*d, "found section sym: ");
-
   return d;
 }
 
