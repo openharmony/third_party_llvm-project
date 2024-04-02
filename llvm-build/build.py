@@ -91,6 +91,14 @@ class BuildConfig():
         self.LIBXML2_VERSION = None
         logging.basicConfig(level=logging.INFO)
 
+        self.host_projects = args.host_build_projects
+        if 'clang' not in self.host_projects:
+            # Clang not found in the project list,
+            # but it is mandatory to build other projects/runtimes.
+            # Adding clang to project list.
+            self.host_projects.append('clang')
+        self.host_runtimes = args.host_build_runtimes
+
     def discover_paths(self):
         # Location of llvm-build directory
         self.LLVM_BUILD_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -238,7 +246,7 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Automatically exit when timeout (currently effective for lldb-server)')
-        
+
         parser.add_argument(
             '--enable-monitoring',
             action='store_true',
@@ -289,24 +297,32 @@ class BuildConfig():
 
         self.parse_add_argument(parser)
 
-        known_platforms = ('windows', 'libs', 'lldb-server', 'linux', 'check-api')
-        known_platforms_str = ', '.join(known_platforms)
-
         class SeparatedListByCommaAction(argparse.Action):
-            def __call__(self, parser, namespace, vals, option_string):
-                for val in vals.split(','):
-                    if val in known_platforms:
-                        continue
-                    else:
-                        error = '\'{}\' invalid.  Choose from {}'.format(val, known_platforms)
-                        raise argparse.ArgumentError(self, error)
-                setattr(namespace, self.dest, vals.split(','))
 
+            def __init__(self, choice_list, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.choice_list = choice_list
+
+            def __call__(self, parser, namespace, vals, option_string):
+                if not vals:
+                    setattr(namespace, self.dest, [])
+                    return
+                vals = vals.split(',')
+                for val in vals:
+                    if val not in self.choice_list:
+                        error = f'"{val}" is invalid.  Choose from: {self.choice_list}'
+                        raise argparse.ArgumentError(self, error)
+                setattr(namespace, self.dest, vals)
+
+        def choice_wrapper(choices):
+            return lambda *args, **kwargs: SeparatedListByCommaAction(choices, *args, **kwargs)
+
+        known_platforms = ('windows', 'libs', 'lldb-server', 'linux', 'check-api')
         parser.add_argument(
             '--no-build',
-            action=SeparatedListByCommaAction,
+            action=choice_wrapper(known_platforms),
             default=list(),
-            help='Don\'t build toolchain for specified platforms.  Choices: ' + known_platforms_str)
+            help=f"Don't build toolchain for specified platforms. Choices: {', '.join(known_platforms)}")
 
         known_libs = ['crts_first_time', 'crts_not_first_time', 'runtimes_libunwind', 'runtimes_libcxx', 'runtimes_libcxx_ndk']
         known_libs_flags = ['OH', 'BOTH', 'LLVM']
@@ -321,7 +337,21 @@ class BuildConfig():
             '--build-libs-flags',
             choices=known_libs_flags,
             default="LLVM",
-            help='which kind of flags for build_crts and build_runtimes, Choices:' + ', '.join(known_libs_flags))
+            help='which kind of flags for build_crts and build_runtimes')
+
+        llvm_projects = ('clang', 'lld', 'clang-tools-extra', 'openmp', 'lldb')
+        parser.add_argument(
+            '--host-build-projects',
+            action=choice_wrapper(llvm_projects),
+            default=llvm_projects,
+            help=f'Projects to build for host. Choices: {", ".join(llvm_projects)}')
+
+        llvm_runtimes = ('libunwind', 'libcxxabi', 'libcxx', 'compiler-rt')
+        parser.add_argument(
+            '--host-build-runtimes',
+            action=choice_wrapper(llvm_runtimes),
+            default=llvm_runtimes,
+            help=f'Runtimes to build for host. Choices: {", ".join(llvm_runtimes)}')
 
         return parser.parse_args()
 
@@ -697,8 +727,8 @@ class LlvmCore(BuildUtils):
                 llvm_defines['LIBXML2_LIBRARY'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.so.{self.build_config.LIBXML2_VERSION}')
 
     def llvm_compile_llvm_defines(self, llvm_defines, llvm_root, cflags, ldflags):
-        llvm_defines['LLVM_ENABLE_PROJECTS'] = 'clang;lld;clang-tools-extra;openmp;lldb'
-        llvm_defines['LLVM_ENABLE_RUNTIMES'] = 'libunwind;libcxxabi;libcxx;compiler-rt'
+        llvm_defines['LLVM_ENABLE_PROJECTS'] = ';'.join(self.build_config.host_projects)
+        llvm_defines['LLVM_ENABLE_RUNTIMES'] = ';'.join(self.build_config.host_runtimes)
         llvm_defines['LLVM_ENABLE_BINDINGS'] = 'OFF'
         llvm_defines['CMAKE_C_COMPILER'] = os.path.join(llvm_root, 'bin', 'clang')
         llvm_defines['CMAKE_CXX_COMPILER'] = os.path.join(llvm_root, 'bin', 'clang++')
@@ -820,6 +850,12 @@ class LlvmCore(BuildUtils):
                                      cxx,
                                      windows_sysroot):
 
+        win_projects = list(self.build_config.host_projects)
+        if 'openmp' in win_projects:
+            # Currently we have build problems with
+            # windows openmp target (lack of ml.exe)
+            win_projects.remove('openmp')
+
         if self.build_config.enable_assertions:
 
             windows_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON'
@@ -850,7 +886,7 @@ class LlvmCore(BuildUtils):
         windows_defines['LLVM_TOOL_OPENMP_BUILD'] = 'OFF'
         windows_defines['LLVM_INCLUDE_TESTS'] = 'OFF'
         windows_defines['LLVM_ENABLE_LIBCXX'] = 'ON'
-        windows_defines['LLVM_ENABLE_PROJECTS'] = 'clang;clang-tools-extra;lld;lldb'
+        windows_defines['LLVM_ENABLE_PROJECTS'] = ';'.join(win_projects)
         windows_defines['LLVM_BUILD_LLVM_DYLIB'] = 'OFF'
         windows_defines['CLANG_BUILD_EXAMPLES'] = 'OFF'
         windows_defines['CMAKE_SYSROOT'] = windows_sysroot
