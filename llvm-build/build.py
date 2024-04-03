@@ -408,7 +408,7 @@ class BuildUtils(object):
                      install=True,
                      build_threads=False):
 
-        ninja_bin_path = os.path.join(self.CMAKE_BIN_DIR, 'ninja')
+        ninja_bin_path = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts/build-tools', self.platform_prefix(), 'bin', 'ninja')
 
         ninja_list = ['-l{}'.format(build_threads)] if build_threads else []
 
