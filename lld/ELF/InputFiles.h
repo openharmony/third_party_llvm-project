@@ -414,6 +414,13 @@ public:
 
   InputSectionBase *findInputSection(StringRef name) const;
   InputSectionBase *findInputSection(uint64_t offset) const;
+  bool isDynamicSection(InputSectionBase &sec) const;
+
+  template <typename RelT>
+  Symbol &getRelocTargetSymADLT(const RelT &rel, InputSectionBase &sec) const {
+    uint32_t symIndex = rel.getSymbol(config->isMips64EL);
+    return getSymbolADLT(symIndex, isDynamicSection(sec));
+  }
 
   ArrayRef<Symbol *> getLocalSymbols() override {
     if (this->allSymbols.empty())

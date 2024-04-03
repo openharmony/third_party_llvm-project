@@ -1962,7 +1962,7 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
             if (sec && sec->isLive())
               scanRelocations<ELFT>(*sec);
           }
-      if (!config->adlt)
+      else
         for (InputSectionBase *sec : inputSections)
           if (sec->isLive() && isa<InputSection>(sec) && (sec->flags & SHF_ALLOC))
             scanRelocations<ELFT>(*sec);
