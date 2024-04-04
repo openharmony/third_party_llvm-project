@@ -26,6 +26,10 @@
 #   define _LIBCXXABI_USE_CRASHREPORTER_CLIENT
 #endif
 
+#if defined(__OHOS__)
+    extern "C" __attribute__((weak)) void set_fatal_message(const char *msg);
+#endif
+
 void abort_message(const char* format, ...)
 {
     // Write message to stderr. We do this before formatting into a
@@ -52,7 +56,19 @@ void abort_message(const char* format, ...)
     va_end(list);
 
     CRSetCrashLogMessage(buffer);
-#elif defined(__BIONIC__) && !defined(__OHOS__)
+
+#elif defined(__OHOS__)
+    char* buffer;
+    va_list list;
+    va_start(list, format);
+    vasprintf(&buffer, format, list);
+    va_end(list);
+
+    if (&set_fatal_message) {
+        set_fatal_message(buffer);
+    }
+
+#elif defined(__BIONIC__)
     char* buffer;
     va_list list;
     va_start(list, format);
@@ -73,7 +89,7 @@ void abort_message(const char* format, ...)
     // (tombstone and/or logcat) in older releases.
     __assert2(__FILE__, __LINE__, __func__, buffer);
 #   endif // __ANDROID_API__ >= 21
-#endif // __BIONIC__
+#endif // __BIONIC__ || __OHOS__
 
     abort();
 }
