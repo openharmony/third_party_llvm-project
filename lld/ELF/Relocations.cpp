@@ -1404,6 +1404,8 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
   // plt relocs
   case R_AARCH64_CALL26:
   case R_AARCH64_JUMP26:
+  case R_AARCH64_CONDBR19:
+  case R_AARCH64_TSTBR14:
     if (r->sym->isDefined())
       r->expr = R_PC; // prev: R_PLT_PC
     sec.relocations.push_back(*r);
@@ -1421,6 +1423,7 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
     }
     LLVM_FALLTHROUGH;
   case R_AARCH64_LD64_GOT_LO12_NC:
+  case R_AARCH64_LD64_GOTPAGE_LO15:
     processAux(r->expr, r->type, r->offset, *r->sym, r->addend);
     return;
   // tls relocs
