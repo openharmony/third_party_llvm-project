@@ -1,0 +1,106 @@
+//===- ADLTSection.h - ADLT Section data types --------------------*- C -*-===//
+//
+// Copyright (C) 2024 Huawei Device Co., Ltd.
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef LLD_ELF_ADLT_SECTION_H
+#define LLD_ELF_ADLT_SECTION_H
+
+#ifdef __cplusplus
+#include <cstdint>
+namespace lld {
+namespace elf {
+namespace adlt {
+
+#else // __cplusplus
+#include <stdint.h>
+#endif // __cplusplus
+
+// part of #include <elf.h>
+typedef uint16_t Elf64_Half;
+typedef uint64_t Elf64_Off;
+typedef uint64_t Elf64_Addr;
+typedef uint32_t Elf64_Word;
+typedef uint64_t Elf64_Xword;
+typedef uint8_t  Elf64_Byte;
+
+typedef struct {
+  Elf64_Word  secIndex;
+  Elf64_Off   offset;   // in-section offset from start
+} adlt_cross_section_ref_t;
+
+typedef struct {
+  Elf64_Xword secIndex;
+  Elf64_Xword numElem;
+  Elf64_Addr  addr;
+} adlt_cross_section_vec_t;
+
+typedef struct {
+  Elf64_Half major: 6;
+  Elf64_Half minor: 6;
+  Elf64_Half patch: 4;
+} adlt_semver_t;
+
+// DT_NEEDED string index with embedded PSOD index if available
+typedef struct  {
+  Elf64_Off hasInternalPSOD : 1;  // true if soname 
+  Elf64_Off PSODindex       : 16; // PSOD in the current ADLT image
+  Elf64_Off sonameOffset    : 47; // string start in bound .adlt.strtab
+} adlt_dt_needed_index_t;
+
+typedef enum {
+    ADLT_HASH_TYPE_NONE         = 0,
+    ADLT_HASH_TYPE_GNU_HASH     = 1,
+    ADLT_HASH_TYPE_SYSV_HASH    = 2,
+    ADLT_HASH_TYPE_DEBUG_CONST  = 0xfe,
+    ADLT_HASH_TYPE_MAX          = 0xff,
+} adlt_hash_type_enum_t;
+
+typedef uint8_t adlt_hash_type_t;
+
+// Serializable representation per-shared-object-data in .adlt section
+typedef struct {
+  Elf64_Off   soName; // offset in .adlt.strtab
+  Elf64_Xword soNameHash; // algorith according to header.stringHashType value
+  adlt_cross_section_vec_t initArray;
+  adlt_cross_section_vec_t finiArray;
+  Elf64_Off   dtNeeded; // offset to adlt_dt_needed_index_t[] array in blob
+  Elf64_Xword dtNeededSz;
+  adlt_cross_section_ref_t sharedLocalSymbolIndex;
+  adlt_cross_section_ref_t sharedGlobalSymbolIndex;
+} adlt_psod_t;
+
+typedef struct {
+  adlt_semver_t schemaVersion;      // {major, minor, patch}
+  Elf64_Half    schemaHeaderSize;   // >= sizeof(adlt_section_header_t) if comp
+  Elf64_Half    schemaPSODSize;     // >= sizeof(adlt_psod_t) if compatible
+  Elf64_Half    sharedObjectsNum;   // number of PSOD entries
+  adlt_hash_type_t  stringHashType; // contains adlt_hash_type_enum_t value
+  Elf64_Off     blobStart; // offset of binary blob start relative to .adlt
+  Elf64_Xword   blobSize;
+} adlt_section_header_t;
+
+static const char adltBlobStartMark[4] = { 0xA, 0xD, 0x1, 0x7 };
+
+static const adlt_semver_t adltSchemaVersion = {1, 0, 0};
+
+#ifdef __cplusplus
+} // namespace adlt
+} // namespace elf
+} // namespace lld
+#endif // __cplusplus
+
+#endif // LLD_ELF_ADLT_SECTION_H

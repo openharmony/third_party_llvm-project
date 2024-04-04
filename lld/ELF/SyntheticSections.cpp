@@ -4001,6 +4001,34 @@ size_t PackageMetadataNote::getSize() const {
 // OHOS_LOCAL begin
 namespace lld { namespace elf { namespace adlt {
 
+static_assert(
+  sizeof(SemanticVersion) == sizeof(Elf64_Half),
+  ".adlt semantic version is designed to occupy uint16_t"
+);
+
+static_assert(
+  sizeof(DtNeededIndex) == sizeof(Elf64_Off),
+  "DtNeededIndex have to be an offset with intrused flags"
+);
+
+static_assert(
+  sizeof(adlt_hash_type_t) == sizeof(Elf64_Byte),
+  "String hash type enum should occupy only one byte"
+);
+
+static_assert(sizeof(adltBlobStartMark) == 4, 
+  "0xad17 consist of 4 bytes"
+);
+
+static_assert(sizeof(AdltSectionHeader) == 32,
+  "please udpate major version if header has been changed"
+);
+
+static_assert(sizeof(PSOD) == 112,
+  "please udpate version if PSOD layout or content changed"
+);
+
+
 template <typename ELFT>
 AdltSection<ELFT>::AdltSection(StringTableSection& strTabSec)
   : SyntheticSection(SHF_ALLOC, SHT_PROGBITS, 4, ".adlt")
@@ -4023,12 +4051,13 @@ void AdltSection<ELFT>::finalizeContents() {
   const Elf64_Half soNum = soInputs.size();
 
   header = AdltSectionHeader{
-    {1, 0, 0},      // .schemaVersion
-    sizeof(PSOD),   // .schemaPSODSize
-    soNum,          // .sharedObjectsNum
-    HashType::MUSL_GNU_HASH, // .stringHashType
-    getBlobStartOffset(), // .blobStart
-    estimateBlobSize(),   // .blobSize
+    adltSchemaVersion,          // .schemaVersion
+    sizeof(AdltSectionHeader),  // .schemaHeaderSize
+    sizeof(PSOD),               // .schemaPSODSize
+    soNum,                      // .sharedObjectsNum
+    ADLT_HASH_TYPE_GNU_HASH,    // .stringHashType
+    getBlobStartOffset(),       // .blobStart
+    estimateBlobSize(),         // .blobSize
   };
 
   buildSonameIndex();
@@ -4117,12 +4146,12 @@ AdltSection<ELFT>::makeSoData(const SharedFileExtended<ELFT>* soext) {
 
 template <typename ELFT>
 Elf64_Xword AdltSection<ELFT>::calculateHash(StringRef str) const {
-  switch(header.stringHashType) {
-  case HashType::NONE:
+  switch(static_cast<HashType>(header.stringHashType)) {
+  case ADLT_HASH_TYPE_NONE:
     return 0x0;
-  case HashType::MUSL_GNU_HASH:
+  case ADLT_HASH_TYPE_GNU_HASH:
     return hashGnu(str);
-  case HashType::DEBUG_CONST:
+  case ADLT_HASH_TYPE_DEBUG_CONST:
     return 0xdeadbeef1337c0de;
   default:
     llvm_unreachable(".adlt hash type not implemented");
@@ -4147,12 +4176,12 @@ PSOD AdltSection<ELFT>::serialize(const SoData& soData) const {
     0x0, // .dtNeeded // filled by blob serialization
     soData.dtNeededs.size(), // .dtNeededSz
     CrossSectionRef {
-      0, // .sectionIndex
-      soData.sharedLocalIndex, // .offsetFromStart
+      0, // .secIndex
+      soData.sharedLocalIndex, // .offset
     }, // .sharedLocalSymbolIndex
     CrossSectionRef {
-      0, // .sectionIndex
-      soData.sharedGlobalIndex, // .offsetFromStart
+      0, // .secIndex
+      soData.sharedGlobalIndex, // .offset
     }, // .sharedGlobalSymbolIndex
   };
 }
@@ -4164,7 +4193,7 @@ Elf64_Off AdltSection<ELFT>::getBlobStartOffset() const {
 
 template <typename ELFT>
 size_t AdltSection<ELFT>::estimateBlobSize() const {
-  size_t blobSize = sizeof(BlobStartMark);
+  size_t blobSize = sizeof(adltBlobStartMark);
 
   for (const auto& soData: soInputs) {
     blobSize += sizeof(DtNeededIndex) * soData.dtNeededs.size();
@@ -4208,8 +4237,8 @@ void AdltSection<ELFT>::writeTo(uint8_t* buf) {
   {
     uint8_t* const blob_buf = buf + header.blobStart;
     size_t blob_off = 0;
-    memcpy(blob_buf + blob_off, &BlobStartMark, sizeof(BlobStartMark));
-    blob_off += sizeof(BlobStartMark);
+    memcpy(blob_buf + blob_off, &adltBlobStartMark, sizeof(adltBlobStartMark));
+    blob_off += sizeof(adltBlobStartMark);
   
     // dt-needed
     for(const auto& it : llvm::enumerate(soInputs)) {
@@ -4246,8 +4275,7 @@ void AdltSection<ELFT>::writeTo(uint8_t* buf) {
 
 template <typename ELFT>
 size_t AdltSection<ELFT>::getSize() const {
-  const size_t pre_blob_size = sizeof(header) + sizeof(PSOD) * soInputs.size();
-  assert(pre_blob_size <= header.blobStart);
+  assert(sizeof(header) + sizeof(PSOD) * soInputs.size() <= header.blobStart);
   return header.blobStart + header.blobSize;
 }
 
