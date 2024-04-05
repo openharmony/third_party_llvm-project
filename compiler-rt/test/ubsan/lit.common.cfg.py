@@ -68,7 +68,7 @@ config.substitutions.append( ("%gmlt ", " ".join(config.debug_info_flags) + " ")
 config.suffixes = ['.c', '.cpp', '.m']
 
 # Check that the host supports UndefinedBehaviorSanitizer tests
-if config.host_os not in ['Linux', 'Darwin', 'FreeBSD', 'Windows', 'NetBSD', 'SunOS', 'OpenBSD']:
+if config.host_os not in ['Linux', 'Darwin', 'FreeBSD', 'Windows', 'NetBSD', 'SunOS', 'OpenBSD', 'OHOS']: # OHOS_LOCAL
   config.unsupported = True
 
 config.available_features.add('arch=' + config.target_arch)
