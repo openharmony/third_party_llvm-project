@@ -56,6 +56,7 @@ class ScopedReport {
     if (common_flags()->print_module_map >= 2 ||
         (fatal && common_flags()->print_module_map))
       DumpProcessMap();
+    Report("End Hwasan report\n"); // OHOS_LOCAL
     if (fatal)
       Die();
   }
