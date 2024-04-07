@@ -1255,6 +1255,8 @@ public:
 
     Elf64_Off sharedLocalIndex; // TODO
     Elf64_Off sharedGlobalIndex; // TODO
+
+    SmallVector<uint16_t> phIndexes; // TODO
   };
 
 public:

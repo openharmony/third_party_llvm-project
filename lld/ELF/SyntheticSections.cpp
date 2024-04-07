@@ -4024,7 +4024,7 @@ static_assert(sizeof(adlt_section_header_t) == 32,
   "please udpate major version if header has been changed"
 );
 
-static_assert(sizeof(adlt_psod_t) == 112,
+static_assert(sizeof(adlt_psod_t) == 128,
   "please udpate version if adlt_psod_t layout or content changed"
 );
 
@@ -4134,8 +4134,9 @@ AdltSection<ELFT>::makeSoData(const SharedFileExtended<ELFT>* soext) {
   data.initArrayName = soext->addAdltPostfix(".init_array");
   data.finiArrayName = soext->addAdltPostfix(".fini_array");
 
-  // TODO: get section index for sharedLocalIndex
-  // TODO: get section index for sharedGlobalIndex
+  // TODO: fill data.sharedLocalIndex
+  // TODO: fill data.sharedGlobalIndex
+  // TODO: fill data.phIndexes
 
   return data;
 }
@@ -4169,7 +4170,7 @@ adlt_psod_t AdltSection<ELFT>::serialize(const SoData& soData) const {
       0x0, // .fini_array function addresses are located at the start
       soData.finiArraySec->size, // size
     } : adlt_cross_section_array_t{0, 0, 0},
-    adlt_blob_array_t {  // .dtNeeded
+    adlt_blob_array_t { // .dtNeeded
       0x0, // offset, filled array write in blob
       soData.dtNeededs.size() * sizeof(adlt_dt_needed_index_t)
     },
@@ -4181,6 +4182,9 @@ adlt_psod_t AdltSection<ELFT>::serialize(const SoData& soData) const {
       0, // .secIndex // TODO: dynsym?
       soData.sharedGlobalIndex, // .offset
     },
+    adlt_blob_u16_array_t { // .phIndexes
+      0x0, 0
+    }
   };
 }
 
@@ -4195,6 +4199,7 @@ size_t AdltSection<ELFT>::estimateBlobSize() const {
 
   for (const auto& soData: soInputs) {
     blobSize += sizeof(adlt_dt_needed_index_t) * soData.dtNeededs.size();
+    blobSize += sizeof(uint16_t) * soData.phIndexes.size();
   };
 
   return blobSize;
@@ -4240,12 +4245,25 @@ void AdltSection<ELFT>::writeTo(uint8_t* buf) {
   
     // dt-needed
     for(const auto& it : llvm::enumerate(soInputs)) {
-      const auto& soData = it.value();
+      const SoData& soData = it.value();
       adlt_psod_t& psod = psods[it.index()];
 
-      size_t written = writeDtNeededVec(blob_buf + blob_off, soData.dtNeededs);
+      const size_t written = writeDtNeededVec(blob_buf + blob_off, soData.dtNeededs);
       psod.dtNeeded.offset = blob_off;
       psod.dtNeeded.size = written;
+      blob_off += written;
+    }
+
+    // phIndexes
+    for (const auto& it : llvm::enumerate(soInputs)) {
+      const SoData& soData = it.value();
+      adlt_psod_t& psod = psods[it.index()];
+
+      const size_t written = soData.phIndexes.size_in_bytes();;
+      memcpy(blob_buf + blob_off,
+        soData.phIndexes.data(), soData.phIndexes.size_in_bytes());
+      psod.phIndexes.offset = blob_off;
+      psod.phIndexes.size = written;
       blob_off += written;
     }
 

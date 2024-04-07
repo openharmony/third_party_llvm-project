@@ -83,13 +83,14 @@ typedef uint8_t adlt_hash_type_t;
 
 // Serializable representation per-shared-object-data in .adlt section
 typedef struct {
-  Elf64_Off   soName; // offset in .adlt.strtab
-  Elf64_Xword soNameHash; // algorith according to header.stringHashType value
+  Elf64_Off   soName;         // offset in .adlt.strtab
+  Elf64_Xword soNameHash;     // algorithm according to header.stringHashType value
   adlt_cross_section_array_t initArray;
   adlt_cross_section_array_t finiArray;
   adlt_blob_array_t dtNeeded; // array of adlt_dt_needed_index_t[] elems
   adlt_cross_section_ref_t sharedLocalSymbolIndex;
   adlt_cross_section_ref_t sharedGlobalSymbolIndex;
+  adlt_blob_u16_array_t phIndexes; // program header index array, typeof(e_phnum)
 } adlt_psod_t;
 
 typedef struct {
