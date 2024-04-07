@@ -4159,26 +4159,28 @@ adlt_psod_t AdltSection<ELFT>::serialize(const SoData& soData) const {
   return adlt_psod_t {
     soData.soName.strtabOff, // .soName
     calculateHash(soData.soName.ref), // .soNameHash
-    soData.initArraySec ? adlt_cross_section_vec_t{ // .initArray
+    soData.initArraySec ? adlt_cross_section_array_t{ // .initArray
       soData.initArraySec->sectionIndex,
-      soData.initArraySec->size / sizeof(Elf64_Addr), // size
-      soData.initArraySec->addr,
-    } : adlt_cross_section_vec_t{0, 0, 0},
-    soData.finiArraySec ? adlt_cross_section_vec_t{ // .finiArray
+      0x0, // .init_array function addresses are located at the start
+      soData.initArraySec->size, // size
+    } : adlt_cross_section_array_t{0, 0, 0},
+    soData.finiArraySec ? adlt_cross_section_array_t{ // .finiArray
       soData.finiArraySec->sectionIndex,
-      soData.finiArraySec->size / sizeof(Elf64_Addr), // size
-      soData.finiArraySec->addr,
-    } : adlt_cross_section_vec_t{0, 0, 0},
-    0x0, // .dtNeeded // filled by blob serialization
-    soData.dtNeededs.size(), // .dtNeededSz
-    adlt_cross_section_ref_t {
-      0, // .secIndex
+      0x0, // .fini_array function addresses are located at the start
+      soData.finiArraySec->size, // size
+    } : adlt_cross_section_array_t{0, 0, 0},
+    adlt_blob_array_t {  // .dtNeeded
+      0x0, // offset, filled array write in blob
+      soData.dtNeededs.size() * sizeof(adlt_dt_needed_index_t)
+    },
+    adlt_cross_section_ref_t { // .sharedLocalSymbolIndex
+      0, // .secIndex // TODO: dynsym?
       soData.sharedLocalIndex, // .offset
-    }, // .sharedLocalSymbolIndex
-    adlt_cross_section_ref_t {
-      0, // .secIndex
+    },
+    adlt_cross_section_ref_t { // .sharedGlobalSymbolIndex
+      0, // .secIndex // TODO: dynsym?
       soData.sharedGlobalIndex, // .offset
-    }, // .sharedGlobalSymbolIndex
+    },
   };
 }
 
@@ -4241,9 +4243,10 @@ void AdltSection<ELFT>::writeTo(uint8_t* buf) {
       const auto& soData = it.value();
       adlt_psod_t& psod = psods[it.index()];
 
-      psod.dtNeededSz = soData.dtNeededs.size();
-      psod.dtNeeded = blob_off;
-      blob_off += writeDtNeededVec(blob_buf + blob_off, soData.dtNeededs);
+      size_t written = writeDtNeededVec(blob_buf + blob_off, soData.dtNeededs);
+      psod.dtNeeded.offset = blob_off;
+      psod.dtNeeded.size = written;
+      blob_off += written;
     }
 
     // finalize header.blobSize

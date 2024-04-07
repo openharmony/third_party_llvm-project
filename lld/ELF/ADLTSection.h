@@ -39,14 +39,24 @@ typedef uint8_t  Elf64_Byte;
 
 typedef struct {
   Elf64_Word  secIndex;
-  Elf64_Off   offset;   // in-section offset from start
+  Elf64_Off   offset; // from section start
 } adlt_cross_section_ref_t;
 
 typedef struct {
-  Elf64_Xword secIndex;
-  Elf64_Xword numElem;
-  Elf64_Addr  addr;
-} adlt_cross_section_vec_t;
+  Elf64_Word  secIndex;
+  Elf64_Off   offset; // from section start
+  Elf64_Xword size;   // size in bytes
+} adlt_cross_section_array_t;
+
+typedef struct {
+  Elf64_Off   offset; // relative to header.blobStart
+  Elf64_Xword size;   // size in bytes, make convertions for data type
+} adlt_blob_array_t;
+
+typedef adlt_blob_array_t adlt_blob_u8_array_t;
+typedef adlt_blob_array_t adlt_blob_u16_array_t;
+typedef adlt_blob_array_t adlt_blob_u32_array_t;
+typedef adlt_blob_array_t adlt_blob_u64_array_t;
 
 typedef struct {
   Elf64_Half major: 6;
@@ -75,10 +85,9 @@ typedef uint8_t adlt_hash_type_t;
 typedef struct {
   Elf64_Off   soName; // offset in .adlt.strtab
   Elf64_Xword soNameHash; // algorith according to header.stringHashType value
-  adlt_cross_section_vec_t initArray;
-  adlt_cross_section_vec_t finiArray;
-  Elf64_Off   dtNeeded; // offset to adlt_dt_needed_index_t[] array in blob
-  Elf64_Xword dtNeededSz;
+  adlt_cross_section_array_t initArray;
+  adlt_cross_section_array_t finiArray;
+  adlt_blob_array_t dtNeeded; // array of adlt_dt_needed_index_t[] elems
   adlt_cross_section_ref_t sharedLocalSymbolIndex;
   adlt_cross_section_ref_t sharedGlobalSymbolIndex;
 } adlt_psod_t;
