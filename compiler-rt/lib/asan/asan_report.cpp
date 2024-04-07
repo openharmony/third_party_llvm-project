@@ -191,6 +191,7 @@ class ScopedInErrorReport {
       Report("ABORTING\n");
       Die();
     }
+    Report("End Asan report\n"); // OHOS_LOCAL
   }
 
   void ReportError(const ErrorDescription &description) {

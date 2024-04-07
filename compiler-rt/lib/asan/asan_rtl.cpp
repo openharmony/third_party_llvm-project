@@ -63,6 +63,7 @@ static void AsanDie() {
         UnmapOrDie((void*)kLowShadowBeg, kHighShadowEnd - kLowShadowBeg);
     }
   }
+  Report("End Asan report (AsanDie)\n"); // OHOS_LOCAL
 }
 
 static void CheckUnwind() {
