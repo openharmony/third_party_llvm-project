@@ -53,6 +53,7 @@ static void AsanDie() {
     DumpProcessMap();
 
   WaitForDebugger(flags()->sleep_before_dying, "before dying");
+  Report("End Asan report\n"); // OHOS_LOCAL
 
   if (flags()->unmap_shadow_on_exit) {
     if (kMidMemBeg) {

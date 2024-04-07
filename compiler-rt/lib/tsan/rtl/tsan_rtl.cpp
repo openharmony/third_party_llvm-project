@@ -795,6 +795,7 @@ int Finalize(ThreadState *thr) {
   if (common_flags()->print_suppressions)
     PrintMatchedSuppressions();
 
+  Report("End Tsan report\n"); // OHOS_LOCAL
   failed = OnFinalize(failed);
 
   return failed ? common_flags()->exitcode : 0;
