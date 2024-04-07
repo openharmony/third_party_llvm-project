@@ -1225,15 +1225,6 @@ public:
 
 namespace adlt {
 
-using CrossSectionRef = adlt_cross_section_ref_t;
-using CrossSectionVec = adlt_cross_section_vec_t;
-using SemanticVersion = adlt_semver_t;
-using DtNeededIndex = adlt_dt_needed_index_t;
-using PSOD = adlt_psod_t;
-using AdltSectionHeader = adlt_section_header_t;
-using HashType = adlt_hash_type_enum_t;
-
-
 template <typename ELFT>
 class AdltSection final : public SyntheticSection {
 public:
@@ -1242,16 +1233,16 @@ public:
     Elf64_Off strtabOff; // offset in strTabSec
   };
 
-  // will be serialized to DtNeededIndex
+  // will be serialized to adlt_dt_needed_index_t
   struct DtNeededData {
     SectionString str;
     llvm::Optional<size_t> psodIndex;
   };
   
-  using SectionStringVector = SmallVector<SectionString, 0>;
-  using DtNeededsVec = SmallVector<DtNeededData, 0>;
+  using SectionStringVector = SmallVector<SectionString>;
+  using DtNeededsVec = SmallVector<DtNeededData>;
 
-  // will be serialized to PSOD
+  // will be serialized to adlt_psod_t
   struct SoData {
     SectionString soName;
     DtNeededsVec dtNeededs;
@@ -1265,7 +1256,6 @@ public:
     Elf64_Off sharedLocalIndex; // TODO
     Elf64_Off sharedGlobalIndex; // TODO
   };
-
 
 public:
   AdltSection(StringTableSection& strTabSec);
@@ -1285,7 +1275,7 @@ private:
 
   Elf64_Xword calculateHash(StringRef str) const;
   SoData makeSoData(const SharedFileExtended<ELFT>*);
-  PSOD serialize(const SoData&) const;
+  adlt_psod_t serialize(const SoData&) const;
 
   size_t estimateBlobSize() const;
   size_t writeDtNeededVec(uint8_t* buff, const DtNeededsVec& neededVec) const;
@@ -1293,7 +1283,7 @@ private:
 private:
   StringTableSection& strTabSec;
 
-  AdltSectionHeader header = {};
+  adlt_section_header_t header = {};
   SmallVector<SoData> soInputs;
   llvm::DenseMap<llvm::CachedHashStringRef, size_t> sonameToIndexMap;
 };
