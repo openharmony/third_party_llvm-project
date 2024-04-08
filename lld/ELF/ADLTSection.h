@@ -53,10 +53,11 @@ typedef struct {
   Elf64_Xword size;   // size in bytes, make convertions for data type
 } adlt_blob_array_t;
 
-typedef adlt_blob_array_t adlt_blob_u8_array_t;
-typedef adlt_blob_array_t adlt_blob_u16_array_t;
-typedef adlt_blob_array_t adlt_blob_u32_array_t;
-typedef adlt_blob_array_t adlt_blob_u64_array_t;
+// plain-C has no strict typedefs, but aliases used to interpred underlying data
+typedef adlt_blob_array_t adlt_blob_u8_array_t;   // uint8_t[]
+typedef adlt_blob_array_t adlt_blob_u16_array_t;  // uint16_t[]
+typedef adlt_blob_array_t adlt_blob_u32_array_t;  // uint32_t[]
+typedef adlt_blob_array_t adlt_blob_u64_array_t;  // uint64_t[]
 
 typedef struct {
   Elf64_Half major: 6;
