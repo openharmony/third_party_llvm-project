@@ -4002,13 +4002,13 @@ size_t PackageMetadataNote::getSize() const {
 namespace lld { namespace elf { namespace adlt {
 
 static_assert(
-  sizeof(SemanticVersion) == sizeof(Elf64_Half),
+  sizeof(adlt_semver_t) == sizeof(Elf64_Half),
   ".adlt semantic version is designed to occupy uint16_t"
 );
 
 static_assert(
-  sizeof(DtNeededIndex) == sizeof(Elf64_Off),
-  "DtNeededIndex have to be an offset with intrused flags"
+  sizeof(adlt_dt_needed_index_t) == sizeof(Elf64_Off),
+  "adlt_dt_needed_index_t have to be an offset with intrused flags"
 );
 
 static_assert(
@@ -4020,12 +4020,12 @@ static_assert(sizeof(adltBlobStartMark) == 4,
   "0xad17 consist of 4 bytes"
 );
 
-static_assert(sizeof(AdltSectionHeader) == 32,
+static_assert(sizeof(adlt_section_header_t) == 32,
   "please udpate major version if header has been changed"
 );
 
-static_assert(sizeof(PSOD) == 112,
-  "please udpate version if PSOD layout or content changed"
+static_assert(sizeof(adlt_psod_t) == 128,
+  "please udpate version if adlt_psod_t layout or content changed"
 );
 
 
@@ -4050,14 +4050,14 @@ void AdltSection<ELFT>::finalizeContents() {
     "the number of input libs exeeds ELF limit on number of sections");
   const Elf64_Half soNum = soInputs.size();
 
-  header = AdltSectionHeader{
-    adltSchemaVersion,          // .schemaVersion
-    sizeof(AdltSectionHeader),  // .schemaHeaderSize
-    sizeof(PSOD),               // .schemaPSODSize
-    soNum,                      // .sharedObjectsNum
-    ADLT_HASH_TYPE_GNU_HASH,    // .stringHashType
-    getBlobStartOffset(),       // .blobStart
-    estimateBlobSize(),         // .blobSize
+  header = adlt_section_header_t{
+    adltSchemaVersion,              // .schemaVersion
+    sizeof(adlt_section_header_t),  // .schemaHeaderSize
+    sizeof(adlt_psod_t),            // .schemaPSODSize
+    soNum,                          // .sharedObjectsNum
+    ADLT_HASH_TYPE_GNU_HASH,        // .stringHashType
+    getBlobStartOffset(),           // .blobStart
+    estimateBlobSize(),             // .blobSize
   };
 
   buildSonameIndex();
@@ -4127,26 +4127,23 @@ AdltSection<ELFT>::makeSoData(const SharedFileExtended<ELFT>* soext) {
   for (const auto& neededName: soext->dtNeeded) {
     data.dtNeededs.push_back({
       SectionString{neededName, strTabSec.addString(neededName)},
-      {}, // internal PSOD index is uknown by the moment, will be linked
+      {}, // unknown now, filled by linkInternalDtNeeded
     });
   }
 
   data.initArrayName = soext->addAdltPostfix(".init_array");
   data.finiArrayName = soext->addAdltPostfix(".fini_array");
 
-  // TODO:
-  // sharedLocalIndex
-  // sharedGlobalIndex
-
-  // TODO: get section index for sharedLocalIndex
-  // TODO: get section index for sharedGlobalIndex
+  // TODO: fill data.sharedLocalIndex
+  // TODO: fill data.sharedGlobalIndex
+  // TODO: fill data.phIndexes
 
   return data;
 }
 
 template <typename ELFT>
 Elf64_Xword AdltSection<ELFT>::calculateHash(StringRef str) const {
-  switch(static_cast<HashType>(header.stringHashType)) {
+  switch(static_cast<adlt_hash_type_enum_t>(header.stringHashType)) {
   case ADLT_HASH_TYPE_NONE:
     return 0x0;
   case ADLT_HASH_TYPE_GNU_HASH:
@@ -4159,36 +4156,41 @@ Elf64_Xword AdltSection<ELFT>::calculateHash(StringRef str) const {
 }
 
 template <typename ELFT>
-PSOD AdltSection<ELFT>::serialize(const SoData& soData) const {
-  return PSOD {
+adlt_psod_t AdltSection<ELFT>::serialize(const SoData& soData) const {
+  return adlt_psod_t {
     soData.soName.strtabOff, // .soName
     calculateHash(soData.soName.ref), // .soNameHash
-    soData.initArraySec ? CrossSectionVec{ // .initArray
+    soData.initArraySec ? adlt_cross_section_array_t{ // .initArray
       soData.initArraySec->sectionIndex,
-      soData.initArraySec->size / sizeof(Elf64_Addr), // size
-      soData.initArraySec->addr,
-    } : CrossSectionVec{0, 0, 0},
-    soData.finiArraySec ? CrossSectionVec{ // .finiArray
+      0x0, // .init_array function addresses are located at the start
+      soData.initArraySec->size, // size
+    } : adlt_cross_section_array_t{0, 0, 0},
+    soData.finiArraySec ? adlt_cross_section_array_t{ // .finiArray
       soData.finiArraySec->sectionIndex,
-      soData.finiArraySec->size / sizeof(Elf64_Addr), // size
-      soData.finiArraySec->addr,
-    } : CrossSectionVec{0, 0, 0},
-    0x0, // .dtNeeded // filled by blob serialization
-    soData.dtNeededs.size(), // .dtNeededSz
-    CrossSectionRef {
-      0, // .secIndex
+      0x0, // .fini_array function addresses are located at the start
+      soData.finiArraySec->size, // size
+    } : adlt_cross_section_array_t{0, 0, 0},
+    adlt_blob_array_t { // .dtNeeded
+      0x0, // offset, filled array write in blob
+      soData.dtNeededs.size() * sizeof(adlt_dt_needed_index_t)
+    },
+    adlt_cross_section_ref_t { // .sharedLocalSymbolIndex
+      0, // .secIndex // TODO: dynsym?
       soData.sharedLocalIndex, // .offset
-    }, // .sharedLocalSymbolIndex
-    CrossSectionRef {
-      0, // .secIndex
+    },
+    adlt_cross_section_ref_t { // .sharedGlobalSymbolIndex
+      0, // .secIndex // TODO: dynsym?
       soData.sharedGlobalIndex, // .offset
-    }, // .sharedGlobalSymbolIndex
+    },
+    adlt_blob_u16_array_t { // .phIndexes
+      0x0, 0
+    }
   };
 }
 
 template <typename ELFT>
 Elf64_Off AdltSection<ELFT>::getBlobStartOffset() const {
-  return sizeof(header) + sizeof(PSOD) * soInputs.size();
+  return sizeof(adlt_section_header_t) + sizeof(adlt_psod_t) * soInputs.size();
 }
 
 template <typename ELFT>
@@ -4196,7 +4198,8 @@ size_t AdltSection<ELFT>::estimateBlobSize() const {
   size_t blobSize = sizeof(adltBlobStartMark);
 
   for (const auto& soData: soInputs) {
-    blobSize += sizeof(DtNeededIndex) * soData.dtNeededs.size();
+    blobSize += sizeof(adlt_dt_needed_index_t) * soData.dtNeededs.size();
+    blobSize += sizeof(uint16_t) * soData.phIndexes.size();
   };
 
   return blobSize;
@@ -4207,10 +4210,10 @@ size_t AdltSection<ELFT>::writeDtNeededVec(
   uint8_t* buff, const DtNeededsVec& neededVec) const {
   if (neededVec.empty()) return 0;
 
-  SmallVector<DtNeededIndex> needIndexes;
+  SmallVector<adlt_dt_needed_index_t> needIndexes;
   needIndexes.reserve(neededVec.size());
   for (const auto& need_data : neededVec) {
-    needIndexes.push_back(DtNeededIndex{
+    needIndexes.push_back(adlt_dt_needed_index_t{
       need_data.psodIndex.has_value(),  // .hasInternalPSOD
       need_data.psodIndex.value_or(0),  // .PSODindex
       need_data.str.strtabOff,          // .sonameOffset          
@@ -4225,11 +4228,11 @@ template <typename ELFT>
 void AdltSection<ELFT>::writeTo(uint8_t* buf) {
   // TODO: take care of endianness, use write32 / write64 etc.
   // pre-serialized SoData, enriched with offsets during blob writing
-  SmallVector<PSOD> psods;
+  SmallVector<adlt_psod_t> psods;
 
   for (const auto& it: llvm::enumerate(soInputs)) {
     const SoData& soData = it.value();
-    PSOD psod = serialize(soData);
+    adlt_psod_t psod = serialize(soData);
     psods.push_back(psod);
   }
 
@@ -4242,12 +4245,26 @@ void AdltSection<ELFT>::writeTo(uint8_t* buf) {
   
     // dt-needed
     for(const auto& it : llvm::enumerate(soInputs)) {
-      const auto& soData = it.value();
-      PSOD& psod = psods[it.index()];
+      const SoData& soData = it.value();
+      adlt_psod_t& psod = psods[it.index()];
 
-      psod.dtNeededSz = soData.dtNeededs.size();
-      psod.dtNeeded = blob_off;
-      blob_off += writeDtNeededVec(blob_buf + blob_off, soData.dtNeededs);
+      const size_t written = writeDtNeededVec(blob_buf + blob_off, soData.dtNeededs);
+      psod.dtNeeded.offset = blob_off;
+      psod.dtNeeded.size = written;
+      blob_off += written;
+    }
+
+    // phIndexes
+    for (const auto& it : llvm::enumerate(soInputs)) {
+      const SoData& soData = it.value();
+      adlt_psod_t& psod = psods[it.index()];
+
+      const size_t written = soData.phIndexes.size_in_bytes();;
+      memcpy(blob_buf + blob_off,
+        soData.phIndexes.data(), soData.phIndexes.size_in_bytes());
+      psod.phIndexes.offset = blob_off;
+      psod.phIndexes.size = written;
+      blob_off += written;
     }
 
     // finalize header.blobSize
@@ -4266,16 +4283,18 @@ void AdltSection<ELFT>::writeTo(uint8_t* buf) {
     uint8_t* const psods_buf = buf + sizeof(header);
     size_t psods_off = 0;
     for (const auto& it: llvm::enumerate(soInputs)) {
-      PSOD& psod = psods[it.index()];
-      memcpy(psods_buf + psods_off, &psod, sizeof(PSOD));
-      psods_off += sizeof(PSOD);
+      adlt_psod_t& psod = psods[it.index()];
+      memcpy(psods_buf + psods_off, &psod, sizeof(adlt_psod_t));
+      psods_off += sizeof(adlt_psod_t);
     }
   }
 }
 
 template <typename ELFT>
 size_t AdltSection<ELFT>::getSize() const {
-  assert(sizeof(header) + sizeof(PSOD) * soInputs.size() <= header.blobStart);
+  assert(sizeof(adlt_section_header_t) +
+         sizeof(adlt_psod_t) * soInputs.size()
+         <= header.blobStart);
   return header.blobStart + header.blobSize;
 }
 
