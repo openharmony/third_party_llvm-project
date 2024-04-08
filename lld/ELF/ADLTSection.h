@@ -102,6 +102,7 @@ typedef struct {
   adlt_hash_type_t  stringHashType; // contains adlt_hash_type_enum_t value
   Elf64_Off     blobStart; // offset of binary blob start relative to .adlt
   Elf64_Xword   blobSize;
+  Elf64_Xword   overallMappedSize;  // bytes, required to map the whole ADLT image
 } adlt_section_header_t;
 
 static const char adltBlobStartMark[4] = { 0xA, 0xD, 0x1, 0x7 };
