@@ -2134,7 +2134,7 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
     finalizeSynthetic(in.iplt.get());
     finalizeSynthetic(in.ppc32Got2.get());
     finalizeSynthetic(in.partIndex.get());
-    
+
     if (config->adlt) {
       finalizeSynthetic(in.adltData.get());
       finalizeSynthetic(in.adltStrTab.get());
@@ -2312,6 +2312,19 @@ static uint64_t computeFlags(uint64_t flags) {
   return flags;
 }
 
+static InputSection *getInputSection(OutputSection *sec) {
+  if (!sec || !sec->hasInputSections || sec->commands.empty())
+    return nullptr;
+  SectionCommand *cmd = sec->commands.front();
+  InputSectionDescription *isd = cast<InputSectionDescription>(cmd);
+  return isd->sections.front();
+}
+
+struct LoadInfoForADLT {
+  int phIndex; // input
+  SmallVector<OutputSection *, 0> phSections;
+};
+
 // Decide which program headers to create and which sections to include in each
 // one.
 template <class ELFT>
@@ -2320,6 +2333,10 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
   auto addHdr = [&](unsigned type, unsigned flags) -> PhdrEntry * {
     ret.push_back(make<PhdrEntry>(type, flags));
     return ret.back();
+  };
+
+  auto getCurrentIndex = [&]() -> int {
+    return static_cast<int>(ret.size()) - 1;
   };
 
   unsigned partNo = part.getNumber();
@@ -2376,6 +2393,9 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
     }
   }
 
+  // ADLT: Collect load headers info
+  SmallVector<LoadInfoForADLT> adltLoadInfo;
+
   for (OutputSection *sec : outputSections) {
     if (!needsPtLoad(sec))
       continue;
@@ -2407,9 +2427,35 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
           (sameLMARegion || load->lastSec == Out::programHeaders))) {
       load = addHdr(PT_LOAD, newFlags);
       flags = newFlags;
+      if (config->adlt) {
+        adltLoadInfo.emplace_back();
+        adltLoadInfo.back().phIndex = getCurrentIndex();
+      }
     }
 
     load->add(sec);
+    if (config->adlt && !adltLoadInfo.empty())
+      adltLoadInfo.back().phSections.push_back(sec);
+  }
+
+  // ADLT: Fill load headers info
+  if (config->adlt) {
+    for (LoadInfoForADLT &info : adltLoadInfo)
+      for (OutputSection *sec : info.phSections) {
+        auto *isec = getInputSection(sec);
+        assert(isec);
+        auto *file = isec->file;
+        if (!file)  // skip generated sections.
+          continue; // TODO: fix .rodata_$ADLT_POSTFIX sections.
+        auto *soFile = cast<SharedFileExtended<ELFT>>(file);
+        soFile->programHeaderIndexes.insert(info.phIndex);
+      }
+
+    // Check outputs
+    for (ELFFileBase *baseFile : ctx->sharedFilesExtended) {
+      auto *soFile = cast<SharedFileExtended<ELFT>>(baseFile);
+      assert(!soFile->programHeaderIndexes.empty());
+    }
   }
 
   // Add a TLS segment if any.

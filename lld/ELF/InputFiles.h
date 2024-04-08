@@ -449,6 +449,11 @@ public:
   int symTabShndxSecIdx = 0;
   int eFirstGlobal = 0;
 
+  // Output information data:
+  llvm::SetVector<int> programHeaderIndexes;
+  // TODO: dynamic relocation indexes
+
+  // SharedFile compability layer:
   // This is actually a vector of Elf_Verdef pointers.
   SmallVector<const void *, 0> verdefs;
   // If the output file needs Elf_Verneed data structures for this file, this is
