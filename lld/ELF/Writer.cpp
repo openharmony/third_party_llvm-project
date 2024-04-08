@@ -2343,6 +2343,10 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
     if (OutputSection *cmd = findSection(".interp", partNo))
       addHdr(PT_INTERP, cmd->getPhdrFlags())->add(cmd);
 
+    // PT_ADLT info.
+    if (OutputSection *adlt = findSection(".adlt", partNo))
+      addHdr(PT_ADLT, adlt->getPhdrFlags())->add(adlt);
+
     // Add the headers. We will remove them if they don't fit.
     // In the other partitions the headers are ordinary sections, so they don't
     // need to be added here.

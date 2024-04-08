@@ -1416,6 +1416,7 @@ static StringRef segmentTypeToString(unsigned Arch, unsigned Type) {
     LLVM_READOBJ_ENUM_CASE(ELF, PT_OPENBSD_BOOTDATA);
 
     LLVM_READOBJ_ENUM_CASE(ELF, PT_OHOS_RANDOMDATA); // OHOS_LOCAL
+    LLVM_READOBJ_ENUM_CASE(ELF, PT_ADLT); // ADLT info
   default:
     return "";
   }

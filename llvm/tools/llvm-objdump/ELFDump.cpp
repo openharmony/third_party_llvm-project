@@ -261,6 +261,9 @@ static void printProgramHeaders(const ELFFile<ELFT> &Obj, StringRef FileName) {
       outs() << "    OHOS_RANDOMDATA ";
       break;
     // OHOS_LOCAL end
+    case ELF::PT_ADLT:
+      outs() << "    ADLT ";
+      break;
     case ELF::PT_PHDR:
       outs() << "    PHDR ";
       break;
