@@ -4020,8 +4020,8 @@ static_assert(sizeof(adltBlobStartMark) == 4,
   "0xad17 consist of 4 bytes"
 );
 
-static_assert(sizeof(adlt_section_header_t) == 32,
-  "please udpate major version if header has been changed"
+static_assert(sizeof(adlt_section_header_t) == 40,
+  "please udpate version if header has been changed"
 );
 
 static_assert(sizeof(adlt_psod_t) == 128,
@@ -4058,7 +4058,10 @@ void AdltSection<ELFT>::finalizeContents() {
     ADLT_HASH_TYPE_GNU_HASH,        // .stringHashType
     getBlobStartOffset(),           // .blobStart
     estimateBlobSize(),             // .blobSize
+    0,                              // .overallMappedSize
   };
+
+  // TODO: estimate and fill overallMappedSize
 
   buildSonameIndex();
   linkInternalDtNeeded();
