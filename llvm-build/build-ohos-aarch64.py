@@ -18,7 +18,7 @@ import os
 from build import BuildConfig, BuildUtils
 
 def main():
-    print('Start building LLVM toolchain for OHOS AArch64 host')
+    print('Start cross-compiling LLVM toolchain for OHOS AArch64 host on linux')
     build_config = BuildConfig()
     build_utils = BuildUtils(build_config)
 
@@ -68,6 +68,7 @@ def main():
     llvm_defines['CMAKE_INSTALL_PREFIX'] = llvm_install
     llvm_defines['CMAKE_SYSROOT'] = sysroot
     llvm_defines['CMAKE_LIBRARY_ARCHITECTURE'] = llvm_triple
+    llvm_defines['LLVM_HOST_TRIPLE'] = llvm_triple
     llvm_defines['LLVM_TARGETS_TO_BUILD'] = build_config.TARGETS
     llvm_defines['LLVM_TARGET_ARCH'] = 'AArch64'
     llvm_defines['LLVM_DEFAULT_TARGET_TRIPLE'] = llvm_triple
@@ -80,7 +81,7 @@ def main():
     llvm_defines['LLVM_BUILD_TOOLS'] = 'ON'
     llvm_defines['LLVM_INSTALL_UTILS'] = 'ON'
     llvm_defines['LLVM_ENABLE_ZLIB'] = 'OFF'
-    llvm_defines['LLVM_ENABLE_PROJECTS'] = 'clang;clang-tools-extra;lld;lldb;openmp'
+    llvm_defines['LLVM_ENABLE_PROJECTS'] = ';'.join(build_config.host_projects)
     # We do not build runtimes, since they will be copied from main toolchain build
     llvm_defines['LLVM_CONFIG_PATH'] = os.path.join(llvm_root, 'bin', 'llvm-config')
     llvm_defines['LLVM_TABLEGEN'] = os.path.join(llvm_root, 'bin', 'llvm-tblgen')
@@ -118,6 +119,9 @@ def main():
     llvm_defines['OPENMP_STANDALONE_BUILD'] = 'ON'
     llvm_defines['LLVM_DIR'] = os.path.join(llvm_root, 'lib', 'cmake', 'llvm')
 
+    lldb_defines = set_lldb_defines()
+    llvm_defines.update(lldb_defines)
+
     if build_config.enable_assertions:
         llvm_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON'
 
@@ -153,6 +157,20 @@ def main():
         build_utils.check_create_dir(build_config.PACKAGES_PATH)
         build_utils.check_call(args)
 
+def set_lldb_defines():
+    lldb_defines = {}
+    lldb_defines['LLDB_INCLUDE_TESTS'] = 'OFF'
+    lldb_defines['LLDB_ENABLE_TIMEOUT'] = 'False'
+    # Optional Dependencies
+    lldb_defines['LLDB_ENABLE_LIBEDIT'] = 'OFF'
+    lldb_defines['LLDB_ENABLE_CURSE'] = 'OFF'
+    lldb_defines['LLDB_ENABLE_LIBXML2'] = 'OFF'
+    lldb_defines['LLDB_ENABLE_LZMA'] = 'OFF'
+    lldb_defines['LLDB_ENABLE_PYTHON'] = 'OFF'
+    # Debug & Tuning
+    lldb_defines['LLDB_ENABLE_PERFORMANCE'] = 'OFF'
+
+    return lldb_defines
 
 if __name__ == '__main__':
     main()
