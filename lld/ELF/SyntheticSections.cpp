@@ -4139,7 +4139,10 @@ AdltSection<ELFT>::makeSoData(const SharedFileExtended<ELFT>* soext) {
 
   // TODO: fill data.sharedLocalIndex
   // TODO: fill data.sharedGlobalIndex
-  // TODO: fill data.phIndexes
+
+  std::copy(soext->programHeaderIndexes.begin(),
+            soext->programHeaderIndexes.end(),
+            std::back_inserter(data.phIndexes));
 
   return data;
 }
