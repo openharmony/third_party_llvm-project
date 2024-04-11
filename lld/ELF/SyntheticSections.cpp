@@ -4070,12 +4070,10 @@ void AdltSection<ELFT>::finalizeContents() {
     ADLT_HASH_TYPE_GNU_HASH,        // .stringHashType
     getBlobStartOffset(),           // .blobStart
     estimateBlobSize(),             // .blobSize
-    0,                              // .overallMappedSize
+    0,                              // .overallMappedSize, known on writeTo
     {0, 0},                         // .relaDynSegs, filled in writeTo
     {0, 0},                         // .relaPltSegs, filled in writeTo
   };
-
-  // TODO: estimate and fill overallMappedSize
 
   buildSonameIndex();
   linkInternalDtNeeded();
@@ -4131,6 +4129,15 @@ void AdltSection<ELFT>::extractInitFiniArray() {
     soData.initArraySec = findOutSection(initArrayName);
     soData.finiArraySec = findOutSection(finiArrayName);
   }
+}
+
+template <typename ELFT>
+size_t AdltSection<ELFT>::estimateOverallMappedSize() {
+  size_t totalMemsz = 0;
+  for (PhdrEntry* ph : mainPart->phdrs)
+    if (ph->p_type == PT_LOAD)
+      totalMemsz += ph->p_memsz;
+  return totalMemsz;
 }
 
 template <typename ELFT>
@@ -4266,6 +4273,12 @@ adlt_blob_array_t AdltSection<ELFT>::writeDtNeeded(
 }
 
 template <typename ELFT>
+void AdltSection<ELFT>::finalizeOnWrite() {
+  // require Writer::setPhdrs previously been called
+  header.overallMappedSize = estimateOverallMappedSize();
+}
+
+template <typename ELFT>
 void AdltSection<ELFT>::writeTo(uint8_t* buf) {
   // TODO: take care of endianness, use write32 / write64 etc.
   // pre-serialized SoData, enriched with offsets during blob writing
@@ -4276,6 +4289,8 @@ void AdltSection<ELFT>::writeTo(uint8_t* buf) {
     adlt_psod_t psod = serialize(soData);
     psods.push_back(psod);
   }
+
+  finalizeOnWrite();
 
   // serialize blob data
   {
