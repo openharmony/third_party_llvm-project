@@ -1282,14 +1282,15 @@ private:
   void buildSonameIndex();
   void linkInternalDtNeeded();
   void extractInitFiniArray();
+  size_t estimateOverallMappedSize();
+  Elf64_Xword calculateHash(StringRef str) const;
 
   CommonData makeCommonData();
   SoData makeSoData(const SharedFileExtended<ELFT>*);
-
-  Elf64_Xword calculateHash(StringRef str) const;
   adlt_psod_t serialize(const SoData&) const;
-
   size_t estimateBlobSize() const;
+
+  void finalizeOnWrite();
 
   template <typename T, unsigned N>
   adlt_blob_array_t writeArray(uint8_t* buff, size_t offset,
