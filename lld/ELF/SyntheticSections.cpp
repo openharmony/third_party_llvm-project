@@ -4012,19 +4012,29 @@ static_assert(
 );
 
 static_assert(
+  sizeof(adlt_relocations_segment_t) == 16,
+  "adlt_relocations_segment_t size is 16 bytes"
+);
+
+static_assert(
   sizeof(adlt_hash_type_t) == sizeof(Elf64_Byte),
   "String hash type enum should occupy only one byte"
+);
+
+static_assert(
+  sizeof(adlt_blob_array_t) == 16,
+  "blob array reference occupies 16 bytes in PSOD"
 );
 
 static_assert(sizeof(adltBlobStartMark) == 4, 
   "0xad17 consist of 4 bytes"
 );
 
-static_assert(sizeof(adlt_section_header_t) == 40,
-  "please udpate version if header has been changed"
+static_assert(sizeof(adlt_section_header_t) == 72,
+  "please update version if header has been changed"
 );
 
-static_assert(sizeof(adlt_psod_t) == 128,
+static_assert(sizeof(adlt_psod_t) == 160,
   "please udpate version if adlt_psod_t layout or content changed"
 );
 
@@ -4050,6 +4060,8 @@ void AdltSection<ELFT>::finalizeContents() {
     "the number of input libs exeeds ELF limit on number of sections");
   const Elf64_Half soNum = soInputs.size();
 
+  common = makeCommonData();
+
   header = adlt_section_header_t{
     adltSchemaVersion,              // .schemaVersion
     sizeof(adlt_section_header_t),  // .schemaHeaderSize
@@ -4059,6 +4071,8 @@ void AdltSection<ELFT>::finalizeContents() {
     getBlobStartOffset(),           // .blobStart
     estimateBlobSize(),             // .blobSize
     0,                              // .overallMappedSize
+    {0, 0},                         // .relaDynSegs, filled in writeTo
+    {0, 0},                         // .relaPltSegs, filled in writeTo
   };
 
   // TODO: estimate and fill overallMappedSize
@@ -4120,6 +4134,18 @@ void AdltSection<ELFT>::extractInitFiniArray() {
 }
 
 template <typename ELFT>
+typename AdltSection<ELFT>::CommonData
+AdltSection<ELFT>::makeCommonData() {
+  // TODO: fill relaDynSegs
+  // TODO: fill relaPltSegs
+
+  return CommonData {
+    {}, // .relaDynSegs
+    {}, // .relaPltSegs
+  };
+}
+
+template <typename ELFT>
 typename AdltSection<ELFT>::SoData
 AdltSection<ELFT>::makeSoData(const SharedFileExtended<ELFT>* soext) {
   assert(soext);
@@ -4139,6 +4165,8 @@ AdltSection<ELFT>::makeSoData(const SharedFileExtended<ELFT>* soext) {
 
   // TODO: fill data.sharedLocalIndex
   // TODO: fill data.sharedGlobalIndex
+  // TODO: fill data.relaDynSegs
+  // TODO: fill data.relaPltSegs
 
   std::copy(soext->programHeaderIndexes.begin(),
             soext->programHeaderIndexes.end(),
@@ -4170,27 +4198,18 @@ adlt_psod_t AdltSection<ELFT>::serialize(const SoData& soData) const {
       soData.initArraySec->sectionIndex,
       0x0, // .init_array function addresses are located at the start
       soData.initArraySec->size, // size
-    } : adlt_cross_section_array_t{0, 0, 0},
+    } : adlt_cross_section_array_t{},
     soData.finiArraySec ? adlt_cross_section_array_t{ // .finiArray
       soData.finiArraySec->sectionIndex,
       0x0, // .fini_array function addresses are located at the start
       soData.finiArraySec->size, // size
-    } : adlt_cross_section_array_t{0, 0, 0},
-    adlt_blob_array_t { // .dtNeeded
-      0x0, // offset, filled array write in blob
-      soData.dtNeededs.size() * sizeof(adlt_dt_needed_index_t)
-    },
-    adlt_cross_section_ref_t { // .sharedLocalSymbolIndex
-      0, // .secIndex // TODO: dynsym?
-      soData.sharedLocalIndex, // .offset
-    },
-    adlt_cross_section_ref_t { // .sharedGlobalSymbolIndex
-      0, // .secIndex // TODO: dynsym?
-      soData.sharedGlobalIndex, // .offset
-    },
-    adlt_blob_u16_array_t { // .phIndexes
-      0x0, 0
-    }
+    } : adlt_cross_section_array_t{},
+    adlt_blob_array_t {}, // .dtNeeded, filled in writeTo
+    adlt_cross_section_ref_t {}, // .sharedLocalSymbolIndex TODO
+    adlt_cross_section_ref_t {}, // .sharedGlobalSymbolIndex TOOD
+    adlt_blob_u16_array_t {}, // .phIndexes, filled in writeTo
+    adlt_blob_array_t {}, // .relaDynSegs, filled in writeTo
+    adlt_blob_array_t {}, // .relaPltSegs, filled in writeTo
   };
 }
 
@@ -4206,15 +4225,32 @@ size_t AdltSection<ELFT>::estimateBlobSize() const {
   for (const auto& soData: soInputs) {
     blobSize += sizeof(adlt_dt_needed_index_t) * soData.dtNeededs.size();
     blobSize += sizeof(uint16_t) * soData.phIndexes.size();
+    blobSize += sizeof(adlt_relocations_segment_t) * soData.relaDynSegs.size();
+    blobSize += sizeof(adlt_relocations_segment_t) * soData.relaPltSegs.size();
   };
+
+  blobSize += sizeof(adlt_relocations_segment_t) * common.relaDynSegs.size();
+  blobSize += sizeof(adlt_relocations_segment_t) * common.relaPltSegs.size();
 
   return blobSize;
 }
 
 template <typename ELFT>
-size_t AdltSection<ELFT>::writeDtNeededVec(
-  uint8_t* buff, const DtNeededsVec& neededVec) const {
-  if (neededVec.empty()) return 0;
+template <typename T, unsigned N>
+adlt_blob_array_t AdltSection<ELFT>::writeArray(
+  uint8_t* buff, size_t offset, const SmallVector<T, N>& data) {
+  if (data.empty()) return {0x0, 0};
+
+  const size_t to_write = data.size_in_bytes();
+  memcpy(buff + offset, data.data(), to_write);
+
+  return {offset, to_write};
+}
+
+template <typename ELFT>
+adlt_blob_array_t AdltSection<ELFT>::writeDtNeeded(
+  uint8_t* buff, size_t offset, const DtNeededsVec& neededVec) {
+  if (neededVec.empty()) return {0x0, 0};
 
   SmallVector<adlt_dt_needed_index_t> needIndexes;
   needIndexes.reserve(neededVec.size());
@@ -4226,8 +4262,7 @@ size_t AdltSection<ELFT>::writeDtNeededVec(
     });
   }
 
-  memcpy(buff, needIndexes.data(), needIndexes.size_in_bytes());
-  return needIndexes.size_in_bytes();
+  return writeArray(buff, offset, needIndexes);
 }
 
 template <typename ELFT>
@@ -4244,39 +4279,42 @@ void AdltSection<ELFT>::writeTo(uint8_t* buf) {
 
   // serialize blob data
   {
-    uint8_t* const blob_buf = buf + header.blobStart;
-    size_t blob_off = 0;
-    memcpy(blob_buf + blob_off, &adltBlobStartMark, sizeof(adltBlobStartMark));
-    blob_off += sizeof(adltBlobStartMark);
+    uint8_t* const blobBuf = buf + header.blobStart;
+    size_t blobOff = 0;
+    memcpy(blobBuf + blobOff, &adltBlobStartMark, sizeof(adltBlobStartMark));
+    blobOff += sizeof(adltBlobStartMark);
   
-    // dt-needed
+    // psod-related data
     for(const auto& it : llvm::enumerate(soInputs)) {
-      const SoData& soData = it.value();
-      adlt_psod_t& psod = psods[it.index()];
+      const auto& soData = it.value();
+      auto& psod = psods[it.index()];
 
-      const size_t written = writeDtNeededVec(blob_buf + blob_off, soData.dtNeededs);
-      psod.dtNeeded.offset = blob_off;
-      psod.dtNeeded.size = written;
-      blob_off += written;
+      psod.dtNeeded = writeDtNeeded(blobBuf, blobOff, soData.dtNeededs);
+      blobOff += psod.dtNeeded.size;
+
+      psod.phIndexes = writeArray(blobBuf, blobOff, soData.phIndexes);
+      blobOff += psod.phIndexes.size;
+
+      psod.relaDynSegs = writeArray(blobBuf, blobOff, soData.relaDynSegs);
+      blobOff += psod.relaDynSegs.size;
+
+      psod.relaPltSegs = writeArray(blobBuf, blobOff, soData.relaPltSegs);
+      blobOff += psod.relaPltSegs.size;
     }
 
-    // phIndexes
-    for (const auto& it : llvm::enumerate(soInputs)) {
-      const SoData& soData = it.value();
-      adlt_psod_t& psod = psods[it.index()];
+    // common data
+    {
+      header.relaDynSegs = writeArray(blobBuf, blobOff, common.relaDynSegs);
+      blobOff += header.relaDynSegs.size;
 
-      const size_t written = soData.phIndexes.size_in_bytes();;
-      memcpy(blob_buf + blob_off,
-        soData.phIndexes.data(), soData.phIndexes.size_in_bytes());
-      psod.phIndexes.offset = blob_off;
-      psod.phIndexes.size = written;
-      blob_off += written;
+      header.relaPltSegs = writeArray(blobBuf, blobOff, common.relaPltSegs);
+      blobOff += header.relaPltSegs.size;
     }
 
     // finalize header.blobSize
-    assert((blob_off <= header.blobSize) &&
+    assert((blobOff <= header.blobSize) &&
       ".adlt-section: blob output exeeds its initial estimation");
-    header.blobSize = blob_off;
+    header.blobSize = blobOff;
   }
 
   // header

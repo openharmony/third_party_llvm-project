@@ -29,6 +29,7 @@ namespace adlt {
 #include <stdint.h>
 #endif // __cplusplus
 
+#ifndef _ELF_H
 // part of #include <elf.h>
 typedef uint16_t Elf64_Half;
 typedef uint64_t Elf64_Off;
@@ -36,6 +37,7 @@ typedef uint64_t Elf64_Addr;
 typedef uint32_t Elf64_Word;
 typedef uint64_t Elf64_Xword;
 typedef uint8_t  Elf64_Byte;
+#endif // _ELF_H
 
 typedef struct {
   Elf64_Word  secIndex;
@@ -66,11 +68,17 @@ typedef struct {
 } adlt_semver_t;
 
 // DT_NEEDED string index with embedded PSOD index if available
-typedef struct  {
+typedef struct {
   Elf64_Off hasInternalPSOD : 1;  // true if soname 
   Elf64_Off PSODindex       : 16; // PSOD in the current ADLT image
   Elf64_Off sonameOffset    : 47; // string start in bound .adlt.strtab
 } adlt_dt_needed_index_t;
+
+typedef struct {
+  Elf64_Word  relType;      // relocation type
+  Elf64_Word  count;        // segment length
+  Elf64_Off   startOffset;  // segment start offset in .rela.dyn
+} adlt_relocations_segment_t;
 
 typedef enum {
     ADLT_HASH_TYPE_NONE         = 0,
@@ -85,13 +93,15 @@ typedef uint8_t adlt_hash_type_t;
 // Serializable representation per-shared-object-data in .adlt section
 typedef struct {
   Elf64_Off   soName;         // offset in .adlt.strtab
-  Elf64_Xword soNameHash;     // algorithm according to header.stringHashType value
+  Elf64_Xword soNameHash;     // algorithm according to hdr.stringHashType value
   adlt_cross_section_array_t initArray;
   adlt_cross_section_array_t finiArray;
   adlt_blob_array_t dtNeeded; // array of adlt_dt_needed_index_t[] elems
   adlt_cross_section_ref_t sharedLocalSymbolIndex;
   adlt_cross_section_ref_t sharedGlobalSymbolIndex;
-  adlt_blob_u16_array_t phIndexes; // program header index array, typeof(e_phnum)
+  adlt_blob_u16_array_t phIndexes;  // program header indexes, typeof(e_phnum)
+  adlt_blob_array_t relaDynSegs;    // lib's adlt_relocations_segment_t[]
+  adlt_blob_array_t relaPltSegs;    // lib's adlt_relocations_segment_t[]
 } adlt_psod_t;
 
 typedef struct {
@@ -103,6 +113,8 @@ typedef struct {
   Elf64_Off     blobStart; // offset of binary blob start relative to .adlt
   Elf64_Xword   blobSize;
   Elf64_Xword   overallMappedSize;  // bytes, required to map the whole ADLT image
+  adlt_blob_array_t relaDynSegs;    // common adlt_relocations_segment_t[]
+  adlt_blob_array_t relaPltSegs;    // common adlt_relocations_segment_t[]
 } adlt_section_header_t;
 
 static const char adltBlobStartMark[4] = { 0xA, 0xD, 0x1, 0x7 };

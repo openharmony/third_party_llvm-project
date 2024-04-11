@@ -1257,6 +1257,14 @@ public:
     Elf64_Off sharedGlobalIndex; // TODO
 
     SmallVector<uint16_t> phIndexes; // TODO
+    SmallVector<adlt_relocations_segment_t> relaDynSegs; // TODO
+    SmallVector<adlt_relocations_segment_t> relaPltSegs; // TODO
+  };
+
+  // will be used to form some header data
+  struct CommonData {
+    SmallVector<adlt_relocations_segment_t> relaDynSegs; // TODO
+    SmallVector<adlt_relocations_segment_t> relaPltSegs; // TODO
   };
 
 public:
@@ -1275,18 +1283,29 @@ private:
   void linkInternalDtNeeded();
   void extractInitFiniArray();
 
-  Elf64_Xword calculateHash(StringRef str) const;
+  CommonData makeCommonData();
   SoData makeSoData(const SharedFileExtended<ELFT>*);
+
+  Elf64_Xword calculateHash(StringRef str) const;
   adlt_psod_t serialize(const SoData&) const;
 
   size_t estimateBlobSize() const;
-  size_t writeDtNeededVec(uint8_t* buff, const DtNeededsVec& neededVec) const;
+
+  template <typename T, unsigned N>
+  adlt_blob_array_t writeArray(uint8_t* buff, size_t offset,
+                               const SmallVector<T, N>& data);
+
+  adlt_blob_array_t writeDtNeeded(uint8_t* buff, size_t offset,
+                                  const DtNeededsVec& neededVec);
 
 private:
   StringTableSection& strTabSec;
 
   adlt_section_header_t header = {};
-  SmallVector<SoData> soInputs;
+
+  CommonData common = {};
+  SmallVector<SoData, 0> soInputs;
+
   llvm::DenseMap<llvm::CachedHashStringRef, size_t> sonameToIndexMap;
 };
 
