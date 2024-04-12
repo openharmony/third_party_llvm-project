@@ -116,6 +116,11 @@ static void removeEmptyPTLoad(SmallVector<PhdrEntry *, 0> &phdrs) {
   for (OutputSection *sec : outputSections)
     if (removed.count(sec->ptLoad))
       sec->ptLoad = nullptr;
+  
+  if (config->adlt) {
+    assert(it == phdrs.end() && "adlt: ph-index in .adlt invalid due to shift");
+  }
+
   phdrs.erase(it, phdrs.end());
 }
 
