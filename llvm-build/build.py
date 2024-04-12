@@ -1033,7 +1033,7 @@ class SysrootComposer(BuildUtils):
         # but it didn't contain these two lines, so we still need OHOS.cmake.
         ohos_cmake = 'OHOS.cmake'
         dst_dir = self.merge_out_path(
-            '../prebuilts/cmake/%s/share/cmake-3.16/Modules/Platform' % self.platform_prefix())
+            '../prebuilts/cmake/%s/share/cmake-3.28/Modules/Platform' % self.platform_prefix())
         src_file = '%s/%s' % (self.build_config.LLVM_BUILD_DIR, ohos_cmake)
         if os.path.exists(os.path.join(dst_dir, ohos_cmake)):
             os.remove(os.path.join(dst_dir, ohos_cmake))
