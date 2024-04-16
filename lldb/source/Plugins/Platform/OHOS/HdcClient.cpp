@@ -290,7 +290,7 @@ Status HdcClient::LocalTransferFile(const char *direction, const FileSpec &src,
   std::stringstream cmd;
   cmd << "file " << direction << " -m " << " -cwd ";
   cmd.write(cwd.data(), cwd.size());
-  cmd << " " << src.GetPath() << " " << dst.GetPath();
+  cmd << " \"" << src.GetPath() << "\" \"" << dst.GetPath() << "\"";
   Status error = SendMessage(cmd.str());
   if (error.Fail())
     return error;
@@ -594,7 +594,7 @@ Status HdcClient::RecvFile(const FileSpec &src, const FileSpec &dst) {
 
   std::stringstream cmd;
   cmd << "file recv remote -m";
-  cmd << " " << src.GetPath() << " " << dst.GetPath();
+  cmd << " \"" << src.GetPath() << "\" \"" << dst.GetPath() << "\"";
   Status error = SendMessage(cmd.str());
   if (error.Fail())
     return error;
@@ -701,7 +701,7 @@ Status HdcClient::SendFile(const FileSpec &src, const FileSpec &dst) {
     return Status("Unable to open local file %s", local_file_path.c_str());
 
   std::stringstream cmd;
-  cmd << "file send remote -m " << src.GetPath() << " " << dst.GetPath();
+  cmd << "file send remote -m \"" << src.GetPath() << "\" \"" << dst.GetPath() << "\"";
   Status error = SendMessage(cmd.str());
   if (error.Fail())
     return error;
