@@ -2462,7 +2462,7 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
 
     // Check outputs
     for (ELFFileBase *baseFile : ctx->sharedFilesExtended) {
-      auto *soFile = cast<SharedFileExtended<ELFT>>(baseFile);
+      __attribute__((unused)) auto *soFile = cast<SharedFileExtended<ELFT>>(baseFile);
       assert(!soFile->programHeaderIndexes.empty());
     }
   }

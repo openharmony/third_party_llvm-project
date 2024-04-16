@@ -2243,6 +2243,11 @@ void SymbolTableBaseSection::sortSymTabSymbols() {
   size_t numLocals = e - symbols.begin();
   getParent()->info = numLocals + 1;
 
+  if (config->adlt && this->type == SHT_SYMTAB) {
+    invokeELFT(sortSymTabSymbolsInAdlt, numLocals);
+    return;
+  }
+
   // We want to group the local symbols by file. For that we rebuild the local
   // part of the symbols vector. We do not need to care about the STT_FILE
   // symbols, they are already naturally placed first in each group. That
@@ -2256,6 +2261,50 @@ void SymbolTableBaseSection::sortSymTabSymbols() {
   for (auto &p : arr)
     for (SymbolTableEntry &entry : p.second)
       *i++ = entry;
+}
+
+template <class ELFT>
+void SymbolTableBaseSection::sortSymTabSymbolsInAdlt(size_t numLocals) {
+  auto localEnd = symbols.begin() + numLocals;
+
+  using SortKey = std::tuple<ssize_t, const InputFile*>;
+  auto makeKey = [](const SymbolTableEntry& ent) -> SortKey {
+    const InputFile* file = ent.sym->file;
+    if(auto* soext = dyn_cast_or_null<const SharedFileExtended<ELFT>>(file)) {
+      return {static_cast<ssize_t>(soext->orderIdx), file};
+    }
+    return {-1, file};
+  };
+
+  for (InputFile* file : ctx->sharedFilesExtended) {
+    auto* soext = cast<SharedFileExtended<ELFT>>(file);
+    soext->sharedLocalSymbolIndex = llvm::None;
+    soext->sharedGlobalSymbolIndex = llvm::None;
+  }
+
+  // sort local symbols
+  llvm::stable_sort(llvm::make_range(symbols.begin(), localEnd),
+    [makeKey](const SymbolTableEntry& lhs, const SymbolTableEntry& rhs) {
+      return makeKey(lhs) <= makeKey(rhs);
+    });
+
+  // sort global symbols
+  llvm::stable_sort(llvm::make_range(localEnd, symbols.end()),
+    [makeKey](const SymbolTableEntry& lhs, const SymbolTableEntry& rhs) {
+      return makeKey(lhs) <= makeKey(rhs);
+    });
+  
+  // extract file boundaries for local symbols
+  for (auto iter = symbols.begin(); iter != localEnd; ++iter)
+    if (auto* soext = dyn_cast_or_null<SharedFileExtended<ELFT>>(iter->sym->file))
+      if (!soext->sharedLocalSymbolIndex)
+        soext->sharedLocalSymbolIndex = std::distance(symbols.begin(), iter);
+
+  // extract file boundaries for global symbols
+  for (auto iter = localEnd; iter != symbols.end(); ++iter)
+    if (auto* soext = dyn_cast_or_null<SharedFileExtended<ELFT>>(iter->sym->file))
+      if (!soext->sharedGlobalSymbolIndex)
+        soext->sharedGlobalSymbolIndex = std::distance(symbols.begin(), iter);
 }
 
 void SymbolTableBaseSection::addSymbol(Symbol *b) {
@@ -4017,6 +4066,16 @@ static_assert(
 );
 
 static_assert(
+  sizeof(adlt_cross_section_ref_t) == 16,
+  "adlt_cross_section_ref_t size is 16 bytes"
+);
+
+static_assert(
+  sizeof(adlt_cross_section_array_t) == 24,
+  "adlt_cross_section_ref_t size is 24 bytes"
+);
+
+static_assert(
   sizeof(adlt_hash_type_t) == sizeof(Elf64_Byte),
   "String hash type enum should occupy only one byte"
 );
@@ -4062,6 +4121,7 @@ void AdltSection<ELFT>::finalizeContents() {
 
   common = makeCommonData();
 
+  std::memset(&header, 0, sizeof(header));
   header = adlt_section_header_t{
     adltSchemaVersion,              // .schemaVersion
     sizeof(adlt_section_header_t),  // .schemaHeaderSize
@@ -4149,6 +4209,7 @@ AdltSection<ELFT>::makeCommonData() {
   return CommonData {
     {}, // .relaDynSegs
     {}, // .relaPltSegs
+    UINT32_MAX, // .symtabSecIndex, filled in writeTo
   };
 }
 
@@ -4170,8 +4231,6 @@ AdltSection<ELFT>::makeSoData(const SharedFileExtended<ELFT>* soext) {
   data.initArrayName = soext->addAdltPostfix(".init_array");
   data.finiArrayName = soext->addAdltPostfix(".fini_array");
 
-  // TODO: fill data.sharedLocalIndex
-  // TODO: fill data.sharedGlobalIndex
   // TODO: fill data.relaDynSegs
   // TODO: fill data.relaPltSegs
 
@@ -4189,6 +4248,8 @@ Elf64_Xword AdltSection<ELFT>::calculateHash(StringRef str) const {
     return 0x0;
   case ADLT_HASH_TYPE_GNU_HASH:
     return hashGnu(str);
+  case ADLT_HASH_TYPE_SYSV_HASH:
+    return hashSysV(str);
   case ADLT_HASH_TYPE_DEBUG_CONST:
     return 0xdeadbeef1337c0de;
   default:
@@ -4212,8 +4273,14 @@ adlt_psod_t AdltSection<ELFT>::serialize(const SoData& soData) const {
       soData.finiArraySec->size, // size
     } : adlt_cross_section_array_t{},
     adlt_blob_array_t {}, // .dtNeeded, filled in writeTo
-    adlt_cross_section_ref_t {}, // .sharedLocalSymbolIndex TODO
-    adlt_cross_section_ref_t {}, // .sharedGlobalSymbolIndex TOOD
+    adlt_cross_section_ref_t {
+      soData.sharedLocalIndex ? common.symtabSecIndex : UINT32_MAX,
+      soData.sharedLocalIndex.value_or(0),
+    }, // .sharedLocalSymbolIndex
+    adlt_cross_section_ref_t {
+      soData.sharedGlobalIndex ? common.symtabSecIndex : UINT32_MAX,
+      soData.sharedGlobalIndex.value_or(0),
+    }, // .sharedGlobalSymbolIndex
     adlt_blob_u16_array_t {}, // .phIndexes, filled in writeTo
     adlt_blob_array_t {}, // .relaDynSegs, filled in writeTo
     adlt_blob_array_t {}, // .relaPltSegs, filled in writeTo
@@ -4276,21 +4343,36 @@ template <typename ELFT>
 void AdltSection<ELFT>::finalizeOnWrite() {
   // require Writer::setPhdrs previously been called
   header.overallMappedSize = estimateOverallMappedSize();
+
+  if (OutputSection* osec = findOutSection(".symtab")) {
+    common.symtabSecIndex = osec->sectionIndex;
+  }
+
+  for (auto& it: llvm::enumerate(soInputs)) {
+    finalizeOnWrite(it.index(), it.value());
+  }
+}
+
+template <typename ELFT>
+void AdltSection<ELFT>::finalizeOnWrite(size_t idx, SoData& soData) {
+  auto* soext = cast<SharedFileExtended<ELFT>>(ctx->sharedFilesExtended[idx]);
+
+  // require SymbolTableBaseSection::sortSymTabSymbolsInAdlt for .symtab called
+  soData.sharedLocalIndex = soext->sharedLocalSymbolIndex;
+  soData.sharedGlobalIndex = soext->sharedGlobalSymbolIndex;
 }
 
 template <typename ELFT>
 void AdltSection<ELFT>::writeTo(uint8_t* buf) {
   // TODO: take care of endianness, use write32 / write64 etc.
+  finalizeOnWrite();
+
   // pre-serialized SoData, enriched with offsets during blob writing
   SmallVector<adlt_psod_t> psods;
-
   for (const auto& it: llvm::enumerate(soInputs)) {
     const SoData& soData = it.value();
-    adlt_psod_t psod = serialize(soData);
-    psods.push_back(psod);
+    psods.push_back(serialize(soData));
   }
-
-  finalizeOnWrite();
 
   // serialize blob data
   {
