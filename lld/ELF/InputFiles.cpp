@@ -186,6 +186,7 @@ template <class ELFT> static void doParseFile(InputFile *file) {
   // .so file
   if (config->adlt)
     if (auto *f = dyn_cast<SharedFileExtended<ELFT>>(file)) {
+      f->orderIdx = ctx->sharedFilesExtended.size();
       ctx->sharedFilesExtended.push_back(cast<ELFFileBase>(file));
       f->parseForAdlt();
       return;

@@ -444,10 +444,17 @@ public:
   void traceSection(const SectionBase &sec, StringRef title = "") const;
 
 public:
+  // the input order of the file as it presented in ADLT image
+  size_t orderIdx;
   int dynSymSecIdx = 0;
   int symTabSecIdx = 0;
   int symTabShndxSecIdx = 0;
   int eFirstGlobal = 0;
+
+  // .symtab's start of local symbols owned by library
+  llvm::Optional<size_t> sharedLocalSymbolIndex; 
+  // .symtab's start of global symbols owned by library
+  llvm::Optional<size_t> sharedGlobalSymbolIndex;
 
   // Output information data:
   llvm::SetVector<int> programHeaderIndexes;

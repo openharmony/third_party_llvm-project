@@ -645,6 +645,7 @@ public:
 
 protected:
   void sortSymTabSymbols();
+  template <class ELFT> void sortSymTabSymbolsInAdlt(size_t numLocals);
 
   // A vector of symbols and their string table offsets.
   SmallVector<SymbolTableEntry, 0> symbols;
@@ -1253,10 +1254,10 @@ public:
     OutputSection* initArraySec;
     OutputSection* finiArraySec;
 
-    Elf64_Off sharedLocalIndex; // TODO
-    Elf64_Off sharedGlobalIndex; // TODO
+    llvm::Optional<Elf64_Off> sharedLocalIndex;
+    llvm::Optional<Elf64_Off> sharedGlobalIndex;
 
-    SmallVector<uint16_t> phIndexes; // TODO
+    SmallVector<uint16_t> phIndexes;
     SmallVector<adlt_relocations_segment_t> relaDynSegs; // TODO
     SmallVector<adlt_relocations_segment_t> relaPltSegs; // TODO
   };
@@ -1265,6 +1266,7 @@ public:
   struct CommonData {
     SmallVector<adlt_relocations_segment_t> relaDynSegs; // TODO
     SmallVector<adlt_relocations_segment_t> relaPltSegs; // TODO
+    uint32_t symtabSecIndex = UINT32_MAX;
   };
 
 public:
@@ -1291,6 +1293,7 @@ private:
   size_t estimateBlobSize() const;
 
   void finalizeOnWrite();
+  void finalizeOnWrite(size_t idx, SoData& sodata);
 
   template <typename T, unsigned N>
   adlt_blob_array_t writeArray(uint8_t* buff, size_t offset,
