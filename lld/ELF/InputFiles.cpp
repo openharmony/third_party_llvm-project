@@ -1647,13 +1647,12 @@ template <typename ELFT> void SharedFileExtended<ELFT>::parseForAdlt() {
         this->allSymbols.push_back(cast<Symbol>(d));
       }
 
-  bool isDebug = false;
+  bool isDebug = false; // debug hint
   if (!isDebug)
     return;
 
   const ELFFile<ELFT> obj = this->getObj();
   ArrayRef<Elf_Shdr> objSections = this->template getELFShdrs<ELFT>();
-  StringRef shstrtab = getShStrTab(objSections);
 
   lld::outs() << "Parse symbols from .symtab:\n";
   auto p = obj.getSection(symTabSecIdx);
@@ -1680,7 +1679,7 @@ template <typename ELFT> void SharedFileExtended<ELFT>::parseForAdlt() {
 
   lld::outs() << "Parse offsets of some sections:\n";
   for (const Elf_Shdr &sec : objSections) {
-    auto name = check(obj.getSectionName(sec, shstrtab));
+    auto name = check(obj.getSectionName(sec));
     if (name == ".init_array" || name == ".fini_array" || name == ".data" ||
         name == ".data.rel.ro" || name == ".bss.rel.ro" || name == ".bss")
       traceElfSection(sec);
@@ -1945,6 +1944,9 @@ template <class ELFT> void SharedFileExtended<ELFT>::parseDynamics() {
       verneedSec = &sec;
       break;
     }
+    auto secName = check(this->getObj().getSectionName(sec));
+    if (secName == ".got.plt")
+      gotPltSecIdx = secIdx;
     secIdx++;
   }
 

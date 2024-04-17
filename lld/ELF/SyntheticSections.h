@@ -1239,7 +1239,7 @@ public:
     SectionString str;
     llvm::Optional<size_t> psodIndex;
   };
-  
+
   using SectionStringVector = SmallVector<SectionString>;
   using DtNeededsVec = SmallVector<DtNeededData>;
 

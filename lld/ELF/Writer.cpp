@@ -116,7 +116,7 @@ static void removeEmptyPTLoad(SmallVector<PhdrEntry *, 0> &phdrs) {
   for (OutputSection *sec : outputSections)
     if (removed.count(sec->ptLoad))
       sec->ptLoad = nullptr;
-  
+
   if (config->adlt) {
     assert(it == phdrs.end() && "adlt: ph-index in .adlt invalid due to shift");
   }
@@ -1871,6 +1871,45 @@ static void removeUnusedSyntheticSections() {
   });
 }
 
+template <class ELFT> static void adltTraceRelocationIndexes() {
+  auto &relaDyn = mainPart->relaDyn;
+  assert(!relaDyn->relocs.empty() && "ADLT: relaDyn can't be empty!");
+  assert(!in.relaPlt->relocs.empty() && "ADLT: relaPlt can't be empty!");
+
+  bool adltRelocsTrace = false; // debug hint
+  if (adltRelocsTrace) {
+    auto traceRelocInfo = [&](auto *relSec, auto &outIndexes) -> void {
+      bool isPlt = relSec == in.relaPlt.get();
+      lld::outs() << (isPlt ? "Plt" : "Dyn") << " indexes: ";
+      for (auto &it : outIndexes) // simple print
+        lld::outs() << it << ' ';
+      lld::outs() << '\n';
+      for (auto &it : outIndexes) // print relocs
+        if (DynamicReloc *rel = &relSec->relocs[it])
+          lld::outs() << it << ": " << rel->inputSec->name << " + 0x"
+                      << utohexstr(rel->offsetInSec) << "\t"
+                      << toString(rel->type) << "\t" << rel->sym->getName()
+                      << " + 0x" << utohexstr(rel->addend) << '\n';
+    };
+    lld::outs() << "[ADLT]\n";
+    lld::outs() << "Dyn relocs (" << relaDyn->relocs.size() << ")\n";
+    lld::outs() << "Plt relocs (" << in.relaPlt->relocs.size() << ")\n";
+    for (auto *file : ctx->sharedFilesExtended)
+      if (auto *soFile = cast<SharedFileExtended<ELFT>>(file)) {
+        lld::outs() << "[ADLT] " << soFile->soName << ":\n";
+        traceRelocInfo(relaDyn.get(), soFile->dynRelIndexes);
+        traceRelocInfo(in.relaPlt.get(), soFile->pltRelIndexes);
+      }
+  }
+  for (auto *file : ctx->sharedFilesExtended) {
+    __attribute__((unused)) auto *soFile = cast<SharedFileExtended<ELFT>>(file);
+    assert(!soFile->dynRelIndexes.empty() &&
+           "ADLT: relaDyn indexes can't be empty!");
+    assert(!soFile->pltRelIndexes.empty() &&
+           "ADLT: relaPlt indexes can't be empty!");
+  }
+}
+
 // Create output section objects and add them to OutputSections.
 template <class ELFT> void Writer<ELFT>::finalizeSections() {
   Out::preinitArray = findSection(".preinit_array");
@@ -1962,11 +2001,25 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
       // copy relocations, etc. Note that relocations for non-alloc sections are
       // directly processed by InputSection::relocateNonAlloc.
       if (config->adlt)
-        for (InputFile *file : ctx->sharedFilesExtended)
-          for (InputSectionBase *sec : file->getSections()) {
-            if (sec && sec->isLive())
-              scanRelocations<ELFT>(*sec);
-          }
+        for (auto &it : llvm::enumerate(ctx->sharedFilesExtended)) {
+          auto *soFile = cast<SharedFileExtended<ELFT>>(it.value());
+          soFile->ctxIdx = it.index();
+          auto sections = soFile->getSections();
+          // scan .rela.dyn (base: SHT_NULL)
+          scanRelocations<ELFT>(*sections[0]);
+          // scan .rela.plt (base: .got.plt)
+          scanRelocations<ELFT>(*sections[soFile->gotPltSecIdx]);
+          // scan other sections
+          // excluding .rela.plt and .rela.dyn
+          auto gotPltIdx = static_cast<size_t>(soFile->gotPltSecIdx);
+          auto isNotExcludedIdx = [&](auto idx) {
+            return idx != 0 && idx != gotPltIdx;
+          };
+          for (auto &it : llvm::enumerate(soFile->getSections()))
+            if (InputSectionBase *sec = it.value())
+              if (sec && sec->isLive() && isNotExcludedIdx(it.index()))
+                scanRelocations<ELFT>(*sec);
+        }
       else
         for (InputSectionBase *sec : inputSections)
           if (sec->isLive() && isa<InputSection>(sec) && (sec->flags & SHF_ALLOC))
@@ -2164,6 +2217,8 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
       finalizeSynthetic(part.verNeed.get());
       finalizeSynthetic(part.dynamic.get());
     }
+    if (config->adlt) // check ouput relocation indexes
+      adltTraceRelocationIndexes<ELFT>();
   }
 
   if (!script->hasSectionsCommand && !config->relocatable)

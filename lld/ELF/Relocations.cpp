@@ -1304,6 +1304,16 @@ static unsigned handleTlsRelocation(RelType type, Symbol &sym,
   return 0;
 }
 
+template <class ELFT>
+static void trackDynRelocAdlt(SharedFileExtended<ELFT> *soFile) {
+  soFile->dynRelIndexes.insert(mainPart->relaDyn->relocs.size() - 1);
+}
+
+template <class ELFT>
+static void trackGotPltAdlt(Symbol *sym, SharedFileExtended<ELFT> *soFile) {
+  ctx->gotPltInfoAdlt[sym].push_back(soFile->ctxIdx);
+}
+
 // ADLT BEGIN
 template <class ELFT>
 void RelocationScanner::tracePushRelocADLT(InputSectionBase &isec,
@@ -1360,21 +1370,24 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
         title + " " + toString(r->type) + ": r->sym not found! addend: ";
     Defined *d = file->findDefinedSymbol(r->addend, failTitle);
     assert(d);
+    r->sym = d;
     r->addend -= d->section->address + d->value;
-    addRelativeReloc(*secWhere, r->offset, *d, r->addend, r->expr,
+    addRelativeReloc(*secWhere, r->offset, *r->sym, r->addend, r->expr,
                      r->type);
+    trackDynRelocAdlt(file);
     return;
   }
   case R_AARCH64_GLOB_DAT:
     assert(r->sym->exportDynamic);
-    r->sym->needsGot = 1;
-    if (r->sym->isUndefined())
-      r->sym->needsPlt = 1;
+    if (!r->sym->needsGot)
+      r->sym->needsGot = 1;
+    trackGotPltAdlt(r->sym, file);
     return;
   case R_AARCH64_JUMP_SLOT:
     assert(r->sym->exportDynamic);
-    if (r->sym->isUndefined())
+    if (r->sym->isUndefined() && !r->sym->needsPlt)
       r->sym->needsPlt = 1;
+    trackGotPltAdlt(r->sym, file);
     return;
   // abs relocs
   case R_AARCH64_ABS32:
@@ -1386,6 +1399,7 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
       sec.getPartition().relaDyn->addSymbolReloc(target.symbolicRel, *secWhere,
                                                  r->offset, *r->sym, r->addend,
                                                  r->type);
+      trackDynRelocAdlt(file);
       return;
     }
     sec.relocations.push_back(*r);
@@ -1428,6 +1442,10 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
     return;
   // tls relocs
   case R_AARCH64_TLSDESC:
+    if (fromDynamic && !r->sym->needsTlsDesc)
+      r->sym->needsTlsDesc = 1;
+    trackDynRelocAdlt(file);
+    return;
   case R_AARCH64_TLSDESC_CALL:
   case R_AARCH64_TLS_TPREL64:
   case R_AARCH64_TLSIE_ADR_GOTTPREL_PAGE21:
@@ -1795,6 +1813,16 @@ static bool handleNonPreemptibleIfunc(Symbol &sym) {
   return true;
 }
 
+template <class ELFT> static void addGotPltIndexAdlt(Symbol *s, bool isPlt) {
+  auto &vec = ctx->gotPltInfoAdlt[s];
+  for (auto &it : vec) {
+    auto *soFile = cast<SharedFileExtended<ELFT>>(ctx->sharedFilesExtended[it]);
+    auto &entries = isPlt ? in.relaPlt->relocs : mainPart->relaDyn->relocs;
+    auto &output = isPlt ? soFile->pltRelIndexes : soFile->dynRelIndexes;
+    output.insert(entries.size() - 1);
+  }
+}
+
 void elf::postScanRelocations() {
   auto fn = [](Symbol &sym) {
     if (handleNonPreemptibleIfunc(sym))
@@ -1804,10 +1832,16 @@ void elf::postScanRelocations() {
     if (!sym.allocateAux())
       return;
 
-    if (sym.needsGot)
+    if (sym.needsGot) {
       addGotEntry(sym);
-    if (sym.needsPlt)
+      if (config->adlt)
+        invokeELFT(addGotPltIndexAdlt, &sym, false);
+    }
+    if (sym.needsPlt) {
       addPltEntry(*in.plt, *in.gotPlt, *in.relaPlt, target->pltRel, sym);
+      if (config->adlt)
+        invokeELFT(addGotPltIndexAdlt, &sym, true);
+    }
     if (sym.needsCopy) {
       if (sym.isObject()) {
         invokeELFT(addCopyRelSymbol, cast<SharedSymbol>(sym));
@@ -1841,6 +1875,7 @@ void elf::postScanRelocations() {
       mainPart->relaDyn->addAddendOnlyRelocIfNonPreemptible(
           target->tlsDescRel, *in.got, in.got->getTlsDescOffset(sym), sym,
           target->tlsDescRel);
+      invokeELFT(addGotPltIndexAdlt, &sym, false);
     }
     if (sym.needsTlsGd) {
       in.got->addDynTlsEntry(sym);

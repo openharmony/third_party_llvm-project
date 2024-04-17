@@ -450,15 +450,20 @@ public:
   int symTabSecIdx = 0;
   int symTabShndxSecIdx = 0;
   int eFirstGlobal = 0;
+  int gotPltSecIdx = 0;
 
   // .symtab's start of local symbols owned by library
-  llvm::Optional<size_t> sharedLocalSymbolIndex; 
+  llvm::Optional<size_t> sharedLocalSymbolIndex;
   // .symtab's start of global symbols owned by library
   llvm::Optional<size_t> sharedGlobalSymbolIndex;
 
+  // Index of this file in context (struct Ctx)
+  unsigned ctxIdx = 0;
   // Output information data:
   llvm::SetVector<int> programHeaderIndexes;
-  // TODO: dynamic relocation indexes
+  // From input .rela.dyn, .rela.plt:
+  llvm::SetVector<int> dynRelIndexes;
+  llvm::SetVector<int> pltRelIndexes;
 
   // SharedFile compability layer:
   // This is actually a vector of Elf_Verdef pointers.
