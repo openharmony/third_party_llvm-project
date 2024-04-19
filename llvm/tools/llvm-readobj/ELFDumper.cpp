@@ -7022,6 +7022,7 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printHashHistograms() {
 
 template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
   using namespace llvm::adlt;
+  constexpr size_t kBinDumpLimit = sizeof(Elf64_Xword) * 0x80;
 
   Expected<ArrayRef<uint8_t>> ContentsOrErr = this->findAdlt();
   if (!ContentsOrErr) {
@@ -7050,21 +7051,6 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
     W.printHex("blob-start", header->blobStart);
     W.printHex("blob-size", header->blobSize);
     W.printHex("overall-mapped-size", header->overallMappedSize);
-
-    if (ver.minor < 1) break;
-
-    {
-      DictScope RDEntry(W, "rela-dyn-segs");
-      const auto& arr = header->relaDynSegs;
-      W.printHex("offset", arr.offset);
-      W.printHex("size", arr.size);
-    }
-    {
-      DictScope RPEntry(W, "rela-plt-segs");
-      const auto& arr = header->relaPltSegs;
-      W.printHex("offset", arr.offset);
-      W.printHex("size", arr.size);
-    }
   } while(0);
 
   ArrayRef<uint8_t> psodsRaw = adltRaw.slice(
@@ -7077,7 +7063,7 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
       "PSOD and blob entries are overlapped");
   if (blob.data() + blob.size() > adltRaw.data() + adltRaw.size())
     return this->reportUniqueWarning("invalid .adlt section: "
-      "blob is out section range");
+      "blob is out of section range");
 
   {
     ListScope LPsods(W, "PSODs");
@@ -7103,10 +7089,11 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
       }
       {
         DictScope DNEntry(W, "dt-needed");
-        W.printHex("size", psod.dtNeeded.size);
-        W.printHex("offset", psod.dtNeeded.offset);
+        const auto& arr = psod.dtNeeded;
+        W.printHex("size", arr.size);
+        W.printHex("offset", arr.offset);
 
-        const auto chunk = blob.slice(psod.dtNeeded.offset, psod.dtNeeded.size);
+        const auto chunk = blob.slice(arr.offset, arr.size);
         if (!chunk.empty()) {
           W.printBinary("raw", chunk);
 
@@ -7140,47 +7127,56 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
         const auto& arr = psod.phIndexes;
         W.printHex("size", arr.size);
         W.printHex("offset", arr.offset);
-        
+
         const auto chunk = blob.slice(arr.offset, arr.size);
         if (!chunk.empty()) {
+          W.printBinary("raw", chunk);
           ArrayRef<uint16_t> phIdxs(
             reinterpret_cast<const uint16_t*>(chunk.data()),
             chunk.size() / sizeof(uint16_t));
-          W.printBinary("raw", chunk);
           W.printList("values", phIdxs);
         }
       }
-
-      if (ver.minor < 1) continue;
-
       {
-        DictScope RDSEntry(W, "rela-dyn-segs");
-        const auto& arr = psod.relaDynSegs;
+        DictScope RDEntry(W, "rela-dyn-idxs");
+        const auto& arr = psod.relaDynIndx;
         W.printHex("size", arr.size);
         W.printHex("offset", arr.offset);
 
         const auto chunk = blob.slice(arr.offset, arr.size);
-        if (!chunk.empty())
-          W.printBinary("raw", chunk);
+        if (!chunk.empty()) {
+          if (chunk.size() > kBinDumpLimit)
+            W.printString("raw", "<too long>");
+          else
+            W.printBinary("raw", chunk);
+        }
       }
       {
-        DictScope RPSEntry(W, "rela-plt-segs");
-        const auto& arr = psod.relaPltSegs;
+        DictScope RPEntry(W, "rela-plt-idsx");
+        const auto& arr = psod.relaPltIndx;
         W.printHex("size", arr.size);
         W.printHex("offset", arr.offset);
 
         const auto chunk = blob.slice(arr.offset, arr.size);
-        if (!chunk.empty())
-          W.printBinary("raw", chunk);
+        if (!chunk.empty()) {
+          if (chunk.size() > kBinDumpLimit)
+            W.printString("raw", "<too long>");
+          else
+            W.printBinary("raw", chunk);
+        }
       }
     }
   }
 
   {
-    DictScope DBlob (W, "Blob");
+    DictScope DBlob(W, "Blob");
     W.printHex("start", header->blobStart);
     W.printHex("size", header->blobSize);
-    W.printBinaryBlock("raw", blob);
+
+    if (blob.size() > kBinDumpLimit * 50)
+      W.printString("raw", "<too long>");
+    else
+      W.printBinaryBlock("raw", blob);
   }
 }
 

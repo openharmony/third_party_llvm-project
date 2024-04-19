@@ -74,12 +74,6 @@ typedef struct {
   Elf64_Off sonameOffset    : 47; // string start in bound .adlt.strtab
 } adlt_dt_needed_index_t;
 
-typedef struct {
-  Elf64_Word  relType;      // relocation type
-  Elf64_Word  count;        // segment length
-  Elf64_Off   startOffset;  // segment start offset in .rela.dyn
-} adlt_relocations_segment_t;
-
 typedef enum {
     ADLT_HASH_TYPE_NONE         = 0,
     ADLT_HASH_TYPE_GNU_HASH     = 1,
@@ -100,8 +94,8 @@ typedef struct {
   adlt_cross_section_ref_t sharedLocalSymbolIndex;
   adlt_cross_section_ref_t sharedGlobalSymbolIndex;
   adlt_blob_u16_array_t phIndexes;  // program header indexes, typeof(e_phnum)
-  adlt_blob_array_t relaDynSegs;    // lib's adlt_relocations_segment_t[]
-  adlt_blob_array_t relaPltSegs;    // lib's adlt_relocations_segment_t[]
+  adlt_blob_u32_array_t relaDynIndx; // .rela.dyn dependent indexes, raw list
+  adlt_blob_u32_array_t relaPltIndx; // .rela.plt dependent indexes, raw list
 } adlt_psod_t;
 
 typedef struct {
@@ -113,8 +107,6 @@ typedef struct {
   Elf64_Off     blobStart; // offset of binary blob start relative to .adlt
   Elf64_Xword   blobSize;
   Elf64_Xword   overallMappedSize;  // bytes, required to map the whole ADLT image
-  adlt_blob_array_t relaDynSegs;    // common adlt_relocations_segment_t[]
-  adlt_blob_array_t relaPltSegs;    // common adlt_relocations_segment_t[]
 } adlt_section_header_t;
 
 static const char adltBlobStartMark[4] = { 0xA, 0xD, 0x1, 0x7 };

@@ -1241,7 +1241,7 @@ public:
     SectionString str;
     llvm::Optional<size_t> psodIndex;
   };
-  
+
   using SectionStringVector = SmallVector<SectionString>;
   using DtNeededsVec = SmallVector<DtNeededData>;
 
@@ -1260,14 +1260,12 @@ public:
     llvm::Optional<Elf64_Off> sharedGlobalIndex;
 
     SmallVector<uint16_t> phIndexes;
-    SmallVector<adlt_relocations_segment_t> relaDynSegs; // TODO
-    SmallVector<adlt_relocations_segment_t> relaPltSegs; // TODO
+    ArrayRef<uint32_t> relaDynIndx; // TODO
+    ArrayRef<uint32_t> relaPltIndx; // TODO
   };
 
   // will be used to form some header data
   struct CommonData {
-    SmallVector<adlt_relocations_segment_t> relaDynSegs; // TODO
-    SmallVector<adlt_relocations_segment_t> relaPltSegs; // TODO
     uint32_t symtabSecIndex = UINT32_MAX;
   };
 
@@ -1300,6 +1298,10 @@ private:
   template <typename T, unsigned N>
   adlt_blob_array_t writeArray(uint8_t* buff, size_t offset,
                                const SmallVector<T, N>& data);
+
+  template <typename T>
+  adlt_blob_array_t writeArray(uint8_t* buff, size_t offset,
+                               const ArrayRef<T>& data);
 
   adlt_blob_array_t writeDtNeeded(uint8_t* buff, size_t offset,
                                   const DtNeededsVec& neededVec);
