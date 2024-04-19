@@ -16,13 +16,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLD_ELF_ADLT_SECTION_H
-#define LLD_ELF_ADLT_SECTION_H
+#ifndef LLVM_BINARYFORMAT_ADLTSECTION_H
+#define LLVM_BINARYFORMAT_ADLTSECTION_H
 
 #ifdef __cplusplus
 #include <cstdint>
-namespace lld {
-namespace elf {
+
+namespace llvm {
 namespace adlt {
 
 #else // __cplusplus
@@ -123,8 +123,7 @@ static const adlt_semver_t adltSchemaVersion = {1, 0, 0};
 
 #ifdef __cplusplus
 } // namespace adlt
-} // namespace elf
-} // namespace lld
+} // namespace llvm
 #endif // __cplusplus
 
-#endif // LLD_ELF_ADLT_SECTION_H
+#endif // LLVM_BINARYFORMAT_ADLTSECTION_H

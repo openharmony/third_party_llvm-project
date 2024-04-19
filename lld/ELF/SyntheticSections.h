@@ -22,10 +22,10 @@
 
 #include "Config.h"
 #include "EhFrame.h" // OHOS_LOCAL
-#include "ADLTSection.h" // OHOS_LOCAL
 #include "InputSection.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/MapVector.h"
+#include "llvm/BinaryFormat/ADLTSection.h" // OHOS_LOCAL
 #include "llvm/MC/StringTableBuilder.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/Threading.h"
@@ -1226,6 +1226,8 @@ public:
 
 namespace adlt {
 
+using namespace llvm::adlt;
+
 template <typename ELFT>
 class AdltSection final : public SyntheticSection {
 public:
@@ -1314,7 +1316,6 @@ private:
 };
 
 } // namespace adlt
-
 
 
 InputSection *createInterpSection();
