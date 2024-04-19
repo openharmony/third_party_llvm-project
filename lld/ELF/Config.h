@@ -404,6 +404,12 @@ struct Ctx {
   llvm::DenseMap<const Symbol *,
                  std::pair<const InputFile *, const InputFile *>>
       backwardReferences;
+
+  // ADLT stuff.
+  // From input .rela.dyn, .rela.plt:
+  // Keep input library indexes that are needed for got/plt symbol
+  llvm::DenseMap<const Symbol *, SmallVector<unsigned, 0>>
+      gotPltInfoAdlt; // sym, soFile->ctxIdx array;
 };
 
 // The only instance of Ctx struct.

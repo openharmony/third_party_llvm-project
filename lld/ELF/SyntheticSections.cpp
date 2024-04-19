@@ -4085,7 +4085,7 @@ static_assert(
   "blob array reference occupies 16 bytes in PSOD"
 );
 
-static_assert(sizeof(adltBlobStartMark) == 4, 
+static_assert(sizeof(adltBlobStartMark) == 4,
   "0xad17 consist of 4 bytes"
 );
 
@@ -4110,12 +4110,12 @@ template <typename ELFT>
 void AdltSection<ELFT>::finalizeContents() {
   soInputs.clear();
   soInputs.reserve(ctx->sharedFilesExtended.size());
-  for (InputFile* file : ctx->sharedFilesExtended) { 
+  for (InputFile* file : ctx->sharedFilesExtended) {
     auto* soext = cast<SharedFileExtended<ELFT>>(file);
     soInputs.push_back(makeSoData(soext));
   }
 
-  assert((soInputs.size() < 1<<16) && 
+  assert((soInputs.size() < 1<<16) &&
     "the number of input libs exeeds ELF limit on number of sections");
   const Elf64_Half soNum = soInputs.size();
 
@@ -4332,7 +4332,7 @@ adlt_blob_array_t AdltSection<ELFT>::writeDtNeeded(
     needIndexes.push_back(adlt_dt_needed_index_t{
       need_data.psodIndex.has_value(),  // .hasInternalPSOD
       need_data.psodIndex.value_or(0),  // .PSODindex
-      need_data.str.strtabOff,          // .sonameOffset          
+      need_data.str.strtabOff,          // .sonameOffset
     });
   }
 
@@ -4380,7 +4380,7 @@ void AdltSection<ELFT>::writeTo(uint8_t* buf) {
     size_t blobOff = 0;
     memcpy(blobBuf + blobOff, &adltBlobStartMark, sizeof(adltBlobStartMark));
     blobOff += sizeof(adltBlobStartMark);
-  
+
     // psod-related data
     for(const auto& it : llvm::enumerate(soInputs)) {
       const auto& soData = it.value();
