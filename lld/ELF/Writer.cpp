@@ -116,7 +116,7 @@ static void removeEmptyPTLoad(SmallVector<PhdrEntry *, 0> &phdrs) {
   for (OutputSection *sec : outputSections)
     if (removed.count(sec->ptLoad))
       sec->ptLoad = nullptr;
-  
+
   if (config->adlt) {
     assert(it == phdrs.end() && "adlt: ph-index in .adlt invalid due to shift");
   }
@@ -2376,6 +2376,11 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
       load = addHdr(PT_LOAD, flags);
       load->add(Out::elfHeader);
       load->add(Out::programHeaders);
+      if (config->adlt) // add common header for all libs
+        for (auto *base : ctx->sharedFilesExtended) {
+          auto *soFile = cast<SharedFileExtended<ELFT>>(base);
+          soFile->programHeaderIndexes.insert(getCurrentIndex());
+        }
     }
   }
 
@@ -2461,9 +2466,19 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
       }
 
     // Check outputs
+    auto adltTraceNeeded = false; // debug hint
+    auto trace = [&](auto *file, auto &indexes) {
+      lld::outs() << "ADLT: " << file->soName << ":\n";
+      for (auto &it : indexes)
+          lld::outs() << it << " ";
+      lld::outs() << '\n';
+    };
     for (ELFFileBase *baseFile : ctx->sharedFilesExtended) {
-      __attribute__((unused)) auto *soFile = cast<SharedFileExtended<ELFT>>(baseFile);
-      assert(!soFile->programHeaderIndexes.empty());
+      auto *soFile = cast<SharedFileExtended<ELFT>>(baseFile);
+      auto &indexes = soFile->programHeaderIndexes;
+      assert(!indexes.empty());
+      if (adltTraceNeeded)
+        trace(soFile, indexes);
     }
   }
 
