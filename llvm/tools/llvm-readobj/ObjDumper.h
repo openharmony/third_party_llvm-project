@@ -129,6 +129,7 @@ public:
   virtual void printVersionInfo() {}
   virtual void printGroupSections() {}
   virtual void printHashHistograms() {}
+  virtual void printAdltSection() {}
   virtual void printCGProfile() {}
   virtual void printBBAddrMaps() {}
   virtual void printAddrsig() {}
