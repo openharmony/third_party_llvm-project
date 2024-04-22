@@ -1033,6 +1033,9 @@ void PhdrEntry::add(OutputSection *sec) {
   lastSec = sec;
   if (!firstSec)
     firstSec = sec;
+  bool adltCFI = config->adlt && ctx->adltWithCfi && p_type == PT_LOAD;
+  if (adltCFI) // check cfi.h: LIBRARY_ALIGNMENT and _BITS
+    sec->alignment = 1UL << 18;
   p_align = std::max(p_align, sec->alignment);
   if (p_type == PT_LOAD)
     sec->ptLoad = this;

@@ -407,7 +407,6 @@ public:
   Defined *findSectionSymbol(uint64_t offset) const;
   Defined *findDefinedSymbol(
       uint64_t offset,
-      StringRef fatalTitle = "defined symbol not found! offset:",
       llvm::function_ref<bool(Defined *)> extraCond = [](Defined *) {
         return true;
       }) const;

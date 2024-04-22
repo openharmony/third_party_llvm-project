@@ -532,6 +532,14 @@ static StringRef markItemForAdlt(StringRef input, StringRef filePath) {
   return saver().save(input + mark);
 }
 
+static bool markSymForAdlt(Symbol *s, StringRef filePath) {
+  StringRef newName = markItemForAdlt(s->getName(), filePath);
+  if (s->getName() == newName)
+    return false;
+  s->setName(newName);
+  return true;
+}
+
 template <class ELFT>
 void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
                                        const llvm::object::ELFFile<ELFT> &obj) {
@@ -1054,8 +1062,15 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
 
   // Some entries have been filled by LazyObjFile.
   for (size_t i = firstGlobal, end = eSyms.size(); i != end; ++i)
-    if (!symbols[i])
-      symbols[i] = symtab.insert(CHECK(eSyms[i].getName(stringTable), this));
+    if (!symbols[i]) {
+      StringRef name = CHECK(eSyms[i].getName(stringTable), this);
+      if (config->adlt && name == "__cfi_check") {
+        name = markItemForAdlt(name, archiveName);
+        if (!ctx->adltWithCfi)
+          ctx->adltWithCfi = true;
+      }
+      symbols[i] = symtab.insert(name);
+    }
 
   // Perform symbol resolution on non-local symbols.
   SmallVector<unsigned, 32> undefineds;
@@ -1701,11 +1716,7 @@ StringRef SharedFileExtended<ELFT>::addAdltPostfix(StringRef input) const {
 
 template <typename ELFT>
 bool SharedFileExtended<ELFT>::addAdltPostfix(Symbol *s) {
-  StringRef newName = markItemForAdlt(s->getName(), soName);
-  if (s->getName() == newName)
-    return false;
-  s->setName(newName);
-  return true;
+  return markSymForAdlt(s, this->soName);
 }
 
 // TODO: optimize 2 lookups
@@ -1781,8 +1792,7 @@ bool SharedFileExtended<ELFT>::isDynamicSection(InputSectionBase &sec) const {
 
 template <typename ELFT>
 Defined *SharedFileExtended<ELFT>::findDefinedSymbol(
-    uint64_t offset, StringRef fatalTitle,
-    llvm::function_ref<bool(Defined *)> extraCond) const {
+    uint64_t offset, llvm::function_ref<bool(Defined *)> extraCond) const {
   bool isDebug = false;
   /*if (offset == 0x7738) // debug hint
     isDebug = true;*/
@@ -1810,9 +1820,7 @@ Defined *SharedFileExtended<ELFT>::findDefinedSymbol(
   }
 
   auto *sectionSym = findSectionSymbol(offset);
-  if (!sectionSym)
-    fatal(fatalTitle + " 0x" + utohexstr(offset) + "\n");
-  if (isDebug)
+  if (isDebug && sectionSym)
     traceSymbol(*sectionSym, "found section sym: ");
   return sectionSym;
 }

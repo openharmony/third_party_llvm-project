@@ -1338,8 +1338,6 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
                                        bool fromDynamic) {
   auto file = sec.getSharedFile<ELFT>();
   uint32_t symIndex = rel.getSymbol(config->isMips64EL);
-  std::string title =
-      "processForADLT: symIndex: " + std::to_string(symIndex) + " ";
   bool isDebug = false;
 
   /*if (r->offset == 0x21F) // debug hint
@@ -1349,11 +1347,11 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
     isDebug = true;*/
 
   // parse offset (where)
-  std::string failTitle = title + "symWhere not found! offset: ";
   InputSectionBase *secWhere = cast<InputSectionBase>(
       fromDynamic
-          ? file->findDefinedSymbol(r->offset, failTitle)->section
+          ? file->findDefinedSymbol(r->offset)->section
           : (r->sym->isDefined() ? cast<Defined>(r->sym)->section : &sec));
+  assert(secWhere && "not found!");
 
   // process offset
   r->offset -= fromDynamic ? secWhere->address : sec.address;
@@ -1366,10 +1364,8 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
   switch (r->type) {
   // dyn relocs
   case R_AARCH64_RELATIVE: {
-    failTitle =
-        title + " " + toString(r->type) + ": r->sym not found! addend: ";
-    Defined *d = file->findDefinedSymbol(r->addend, failTitle);
-    assert(d);
+    Defined *d = file->findDefinedSymbol(r->addend);
+    assert(d && "R_AARCH64_RELATIVE: r->sym not found by addend!");
     r->sym = d;
     r->addend -= d->section->address + d->value;
     addRelativeReloc(*secWhere, r->offset, *r->sym, r->addend, r->expr,
