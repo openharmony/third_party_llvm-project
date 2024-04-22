@@ -462,8 +462,8 @@ public:
   // Output information data:
   llvm::SetVector<int> programHeaderIndexes;
   // From input .rela.dyn, .rela.plt:
-  llvm::SetVector<int> dynRelIndexes;
-  llvm::SetVector<int> pltRelIndexes;
+  llvm::SetVector<uint32_t> dynRelIndexes;
+  llvm::SetVector<uint32_t> pltRelIndexes;
 
   // SharedFile compability layer:
   // This is actually a vector of Elf_Verdef pointers.

@@ -1260,8 +1260,8 @@ public:
     llvm::Optional<Elf64_Off> sharedGlobalIndex;
 
     SmallVector<uint16_t> phIndexes;
-    ArrayRef<uint32_t> relaDynIndx; // TODO
-    ArrayRef<uint32_t> relaPltIndx; // TODO
+    ArrayRef<uint32_t> relaDynIndx;
+    ArrayRef<uint32_t> relaPltIndx;
   };
 
   // will be used to form some header data
