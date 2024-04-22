@@ -1311,7 +1311,7 @@ static void trackDynRelocAdlt(SharedFileExtended<ELFT> *soFile) {
 
 template <class ELFT>
 static void trackGotPltAdlt(Symbol *sym, SharedFileExtended<ELFT> *soFile) {
-  ctx->gotPltInfoAdlt[sym].push_back(soFile->ctxIdx);
+  ctx->gotPltInfoAdlt[sym].push_back(soFile->orderIdx);
 }
 
 // ADLT BEGIN

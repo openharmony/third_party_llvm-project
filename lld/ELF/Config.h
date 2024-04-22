@@ -410,7 +410,7 @@ struct Ctx {
   // From input .rela.dyn, .rela.plt:
   // Keep input library indexes that are needed for got/plt symbol
   llvm::DenseMap<const Symbol *, SmallVector<unsigned, 0>>
-      gotPltInfoAdlt; // sym, soFile->ctxIdx array;
+      gotPltInfoAdlt; // sym, soFile->orderIdx array;
 };
 
 // The only instance of Ctx struct.
