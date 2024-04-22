@@ -89,6 +89,7 @@ class BuildConfig():
         self.ARCHIVE_EXTENSION = '.tar.' + self.compression_format
         self.ARCHIVE_OPTION = '-c' + ('j' if self.compression_format == "bz2" else 'z')
         self.LIBXML2_VERSION = None
+        self.LZMA_VERSION = '22.0'
         logging.basicConfig(level=logging.INFO)
 
         self.host_projects = args.host_build_projects
@@ -672,7 +673,7 @@ class LlvmCore(BuildUtils):
                 llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
 
             if self.build_config.enable_lzma_7zip:
-                llvm_defines['LIBLZMA_LIBRARIES'] = self.merge_out_path('lzma', 'lib', self.use_platform(), 'liblzma.dylib')
+                llvm_defines['LIBLZMA_LIBRARIES'] = self.merge_out_path('lzma', 'lib', self.use_platform(), f'liblzma.{self.build_config.LZMA_VERSION}.dylib')
 
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.0.dylib')
@@ -1785,13 +1786,14 @@ class LlvmLibs(BuildUtils):
                 'SRC_PREFIX=%s/' % src_dir,
                 'TARGET_TRIPLE=%s' % target_triple,
                 'INSTALL_DIR=%s' % liblzma_build_path,
+                'LIB_VERSION=%s' % self.build_config.LZMA_VERSION,
                 '-f',
                 'MakeLiblzma']
         os.chdir(self.build_config.LLVM_BUILD_DIR)
         self.check_call(cmd)
 
         if self.host_is_darwin():
-            shlib_ext = '.dylib'
+            shlib_ext = f'.{self.build_config.LZMA_VERSION}.dylib'
         if self.host_is_linux():
             shlib_ext = '.so'
         lzma_file = os.path.join(liblzma_build_path, 'lib', target_triple, 'liblzma' + shlib_ext)
