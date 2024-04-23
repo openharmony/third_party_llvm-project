@@ -1,4 +1,4 @@
-; RUN: llc -mtriple=aarch64-apple-ios %s -o - -aarch64-enable-nonlazybind | FileCheck %s
+; RUN: llc -mtriple=aarch64-apple-ios %s -o - -aarch64-macho-enable-nonlazybind | FileCheck %s
 ; RUN: llc -mtriple=aarch64-apple-ios %s -o - | FileCheck %s --check-prefix=CHECK-NORMAL
 
 define void @local() nonlazybind {
