@@ -26,13 +26,13 @@ static const lldb::pid_t g_remote_platform_pid =
 static uint16_t g_hdc_forward_port_offset = 0;
 
 static Status ForwardPortWithHdc(
-    const uint16_t local_port, const uint16_t remote_port,
-    llvm::StringRef remote_socket_name,
+    const std::string &connect_addr, const uint16_t local_port,
+    const uint16_t remote_port, llvm::StringRef remote_socket_name,
     const llvm::Optional<HdcClient::UnixSocketNamespace> &socket_namespace,
     std::string &device_id) {
   Log *log = GetLog(LLDBLog::Platform);
 
-  HdcClient hdc;
+  HdcClient hdc(connect_addr);
   auto error = HdcClient::CreateByDeviceID(device_id, hdc);
   if (error.Fail())
     return error;
@@ -56,19 +56,22 @@ static Status ForwardPortWithHdc(
                                *socket_namespace);
 }
 
-static Status DeleteForwardPortWithHdc(std::pair<uint16_t, uint16_t> ports,
+static Status DeleteForwardPortWithHdc(const std::string &connect_addr,
+                                       std::pair<uint16_t, uint16_t> ports,
                                        const std::string &device_id) {
   Log *log = GetLog(LLDBLog::Platform);
   LLDB_LOGF(log, "Delete port forwarding %d -> %d, device=%s", ports.first,
             ports.second, device_id.c_str());
 
-  HdcClient hdc(device_id);
+  HdcClient hdc(connect_addr, device_id);
   return hdc.DeletePortForwarding(ports);
 }
 
-static Status DeleteForwardPortWithHdc(std::pair<uint16_t, std::string> remote_socket,
-                                       const llvm::Optional<HdcClient::UnixSocketNamespace> &socket_namespace,
-                                       const std::string &device_id) {
+static Status DeleteForwardPortWithHdc(
+    const std::string &connect_addr,
+    std::pair<uint16_t, std::string> remote_socket,
+    const llvm::Optional<HdcClient::UnixSocketNamespace> &socket_namespace,
+    const std::string &device_id) {
 
   Log *log = GetLog(LLDBLog::Platform);
   uint16_t local_port = remote_socket.first;
@@ -78,7 +81,7 @@ static Status DeleteForwardPortWithHdc(std::pair<uint16_t, std::string> remote_s
   if (!socket_namespace)
     return Status("Invalid socket namespace");
 
-  HdcClient hdc(device_id);
+  HdcClient hdc(connect_addr, device_id);
   return hdc.DeletePortForwarding(local_port, remote_socket_name, *socket_namespace);
 }
 
@@ -102,14 +105,14 @@ static Status FindUnusedPort(uint16_t &port) {
   return error;
 }
 
-PlatformOHOSRemoteGDBServer::PlatformOHOSRemoteGDBServer() {}
+PlatformOHOSRemoteGDBServer::PlatformOHOSRemoteGDBServer() = default;
 
 PlatformOHOSRemoteGDBServer::~PlatformOHOSRemoteGDBServer() {
   for (const auto &it : m_port_forwards) {
-    DeleteForwardPortWithHdc(it.second, m_device_id);
+    DeleteForwardPortWithHdc(m_connect_addr, it.second, m_device_id);
   }
   for (const auto &it_socket : m_remote_socket_name) {
-    DeleteForwardPortWithHdc(it_socket.second, m_socket_namespace, m_device_id);
+    DeleteForwardPortWithHdc(m_connect_addr, it_socket.second, m_socket_namespace, m_device_id);
   }
 }
 
@@ -135,8 +138,14 @@ bool PlatformOHOSRemoteGDBServer::KillSpawnedProcess(lldb::pid_t pid) {
   return m_gdb_client_up->KillSpawnedProcess(pid);
 }
 
+bool PlatformOHOSRemoteGDBServer::IsHostnameDeviceID(llvm::StringRef hostname) {
+  return hostname != "localhost" && !hostname.contains(':') &&
+         !hostname.contains('.');
+}
+
 Status PlatformOHOSRemoteGDBServer::ConnectRemote(Args &args) {
   m_device_id.clear();
+  m_connect_addr = "localhost";
 
   if (args.GetArgumentCount() != 1)
     return Status(
@@ -149,8 +158,16 @@ Status PlatformOHOSRemoteGDBServer::ConnectRemote(Args &args) {
   uri = URI::Parse(url);
   if (!uri)
     return Status("Invalid URL: %s", url);
-  if (uri->hostname != "localhost")
-    m_device_id = static_cast<std::string>(uri->hostname);
+
+  Log *log = GetLog(LLDBLog::Platform);
+  if (IsHostnameDeviceID(uri->hostname)) { // accepts no (empty) hostname too
+    m_device_id = uri->hostname.str();
+    LLDB_LOG(log, "Treating hostname as device id: \"{0}\"", m_device_id);
+  } else {
+    m_connect_addr = uri->hostname.str();
+    LLDB_LOG(log, "Treating hostname as remote HDC server address: \"{0}\"",
+             m_connect_addr);
+  }
 
   m_socket_namespace.reset();
   if (uri->scheme == "unix-connect")
@@ -168,7 +185,6 @@ Status PlatformOHOSRemoteGDBServer::ConnectRemote(Args &args) {
 
   args.ReplaceArgumentAtIndex(0, connect_url);
 
-  Log *log = GetLog(LLDBLog::Platform);
   LLDB_LOGF(log, "Rewritten platform connect URL: %s", connect_url.c_str());
   error = PlatformRemoteGDBServer::ConnectRemote(args);
   if (error.Fail())
@@ -180,6 +196,7 @@ Status PlatformOHOSRemoteGDBServer::ConnectRemote(Args &args) {
 Status PlatformOHOSRemoteGDBServer::DisconnectRemote() {
   DeleteForwardPort(g_remote_platform_pid);
   g_hdc_forward_port_offset = 0;
+  m_connect_addr.clear();
   return PlatformRemoteGDBServer::DisconnectRemote();
 }
 
@@ -189,7 +206,8 @@ void PlatformOHOSRemoteGDBServer::DeleteForwardPort(lldb::pid_t pid) {
   auto it = m_port_forwards.find(pid);
   auto it_socket = m_remote_socket_name.find(pid);
   if (it != m_port_forwards.end() && it->second.second != 0) {
-    const auto error = DeleteForwardPortWithHdc(it->second, m_device_id);
+    const auto error =
+        DeleteForwardPortWithHdc(m_connect_addr, it->second, m_device_id);
     if (error.Fail()) {
       LLDB_LOGF(log, "Failed to delete port forwarding (pid=%" PRIu64
                 ", fwd=(%d -> %d), device=%s): %s",
@@ -200,7 +218,8 @@ void PlatformOHOSRemoteGDBServer::DeleteForwardPort(lldb::pid_t pid) {
   }
   
   if(it_socket != m_remote_socket_name.end()) {
-    const auto error_Socket = DeleteForwardPortWithHdc(it_socket->second, m_socket_namespace, m_device_id);
+    const auto error_Socket = DeleteForwardPortWithHdc(
+        m_connect_addr, it_socket->second, m_socket_namespace, m_device_id);
     if (error_Socket.Fail()) {
       LLDB_LOGF(log, "Failed to delete port forwarding (pid=%" PRIu64
                 ", fwd=(%d->%s)device=%s): %s", pid, it_socket->second.first, it_socket->second.second.c_str(), m_device_id.c_str(),error_Socket.AsCString());
@@ -226,8 +245,9 @@ Status PlatformOHOSRemoteGDBServer::MakeConnectURL(
     if (error.Fail())
       return error;
 
-    error = ForwardPortWithHdc(local_port, remote_port, remote_socket_name,
-                               m_socket_namespace, m_device_id);
+    error =
+        ForwardPortWithHdc(m_connect_addr, local_port, remote_port,
+                           remote_socket_name, m_socket_namespace, m_device_id);
     if (error.Success()) {
       if (remote_port != 0){
         m_port_forwards[pid] = {local_port, remote_port};
@@ -235,8 +255,10 @@ Status PlatformOHOSRemoteGDBServer::MakeConnectURL(
       else{
         m_remote_socket_name[pid] ={local_port, remote_socket_name.str()};
       }
+      // Connect to local_port on a potentially remote machine with running HDC
+      // server
       std::ostringstream url_str;
-      url_str << "connect://localhost:" << local_port;
+      url_str << "connect://" << m_connect_addr << ":" << local_port;
       connect_url = url_str.str();
       break;
     }
@@ -262,6 +284,8 @@ lldb::ProcessSP PlatformOHOSRemoteGDBServer::ConnectProcess(
     return nullptr;
   }
 
+  // If m_connect_addr is remote, this connects to a remote HDC server, assuming
+  // that all of the needed ports are open
   std::string new_connect_url;
   error = MakeConnectURL(s_remote_gdbserver_fake_pid--,
                          (*uri->port) ? (*uri->port) : 0, uri->path,

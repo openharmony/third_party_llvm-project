@@ -21,7 +21,8 @@
 // RUN: %env_ubsan_opts=coverage=1:verbosity=1:coverage_dir='"%t-dir"' %run %t 2>&1 | FileCheck %s --check-prefix=CHECK3 --check-prefix=CHECK_WARN
 
 // Coverage is not yet implemented in TSan.
-// XFAIL: ubsan-tsan
+// OHOS_LOCAL
+// XFAIL: ubsan-tsan && !ohos_family
 // UNSUPPORTED: ubsan-standalone-static
 // No coverage support
 // UNSUPPORTED: openbsd
