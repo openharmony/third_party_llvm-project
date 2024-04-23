@@ -406,6 +406,7 @@ struct Ctx {
       backwardReferences;
 
   // ADLT stuff.
+  bool adltWithCfi = false;
   // From input .rela.dyn, .rela.plt:
   // Keep input library indexes that are needed for got/plt symbol
   llvm::DenseMap<const Symbol *, SmallVector<unsigned, 0>>
