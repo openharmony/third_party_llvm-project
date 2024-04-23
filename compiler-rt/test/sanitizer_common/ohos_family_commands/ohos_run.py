@@ -45,8 +45,8 @@ def build_env():
         if san_opt:
             value += ':abort_on_error=0'
         if key in ['ASAN_ACTIVATION_OPTIONS', 'SCUDO_OPTIONS'] or san_opt or key == 'LD_LIBRARY_PATH':
-            if key == 'TSAN_OPTIONS':
-                # Map TSan suppressions file to device
+            if key in ['TSAN_OPTIONS', 'UBSAN_OPTIONS']:
+                # Map TSan or UBSan suppressions file to device
                 value = map_list(value, ':', r'(?<=suppressions=)(.+)', lambda m: (m.group(1), True))
             elif key == 'LD_LIBRARY_PATH':
                 # Map LD_LIBRARY_PATH to device

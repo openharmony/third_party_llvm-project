@@ -30,6 +30,7 @@ import stat
 from python_builder import MinGWPythonBuilder
 from prebuilts_clang_version import prebuilts_clang_version
 from get_ohos_flags import get_ohos_cflags, get_ohos_ldflags
+from abi_check import AbiCheck
 
 class BuildConfig():
     # Defines public methods and functions and obtains script parameters.
@@ -78,7 +79,7 @@ class BuildConfig():
         self.build_libs_flags = args.build_libs_flags
         self.adlt_debug_build = args.adlt_debug_build
         self.compression_format = args.compression_format
-
+        self.enable_check_abi = args.enable_check_abi
         self.discover_paths()
 
         self.TARGETS = 'AArch64;ARM;BPF;Mips;RISCV;X86'
@@ -96,7 +97,16 @@ class BuildConfig():
         
         self.ARCHIVE_EXTENSION = '.tar.' + self.compression_format
         self.ARCHIVE_OPTION = '-c' + ('j' if self.compression_format == "bz2" else 'z')
+        self.LIBXML2_VERSION = None
         logging.basicConfig(level=logging.INFO)
+
+        self.host_projects = args.host_build_projects
+        if 'clang' not in self.host_projects:
+            # Clang not found in the project list,
+            # but it is mandatory to build other projects/runtimes.
+            # Adding clang to project list.
+            self.host_projects.append('clang')
+        self.host_runtimes = args.host_build_runtimes
 
     def discover_paths(self):
         # Location of llvm-build directory
@@ -266,7 +276,7 @@ class BuildConfig():
             default='bz2',
             help='Choose compression output format (bz2 or gz)'
         )
-	
+
         parser.add_argument(
             '--build-with-debug-info',
             action='store_true',
@@ -278,6 +288,13 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Build adlt with debug flags')
+
+        parser.add_argument(
+            '--enable-check-abi',
+            nargs='?',
+            const=True,
+            default=False,
+            help='check libc++_shared.so abi')
 
     def parse_args(self):
 
@@ -301,24 +318,32 @@ class BuildConfig():
 
         self.parse_add_argument(parser)
 
-        known_platforms = ('windows', 'libs', 'lldb-server', 'linux', 'check-api')
-        known_platforms_str = ', '.join(known_platforms)
-
         class SeparatedListByCommaAction(argparse.Action):
-            def __call__(self, parser, namespace, vals, option_string):
-                for val in vals.split(','):
-                    if val in known_platforms:
-                        continue
-                    else:
-                        error = '\'{}\' invalid.  Choose from {}'.format(val, known_platforms)
-                        raise argparse.ArgumentError(self, error)
-                setattr(namespace, self.dest, vals.split(','))
 
+            def __init__(self, choice_list, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.choice_list = choice_list
+
+            def __call__(self, parser, namespace, vals, option_string):
+                if not vals:
+                    setattr(namespace, self.dest, [])
+                    return
+                vals = vals.split(',')
+                for val in vals:
+                    if val not in self.choice_list:
+                        error = f'"{val}" is invalid.  Choose from: {self.choice_list}'
+                        raise argparse.ArgumentError(self, error)
+                setattr(namespace, self.dest, vals)
+
+        def choice_wrapper(choices):
+            return lambda *args, **kwargs: SeparatedListByCommaAction(choices, *args, **kwargs)
+
+        known_platforms = ('windows', 'libs', 'lldb-server', 'linux', 'check-api')
         parser.add_argument(
             '--no-build',
-            action=SeparatedListByCommaAction,
+            action=choice_wrapper(known_platforms),
             default=list(),
-            help='Don\'t build toolchain for specified platforms.  Choices: ' + known_platforms_str)
+            help=f"Don't build toolchain for specified platforms. Choices: {', '.join(known_platforms)}")
 
         known_libs = ['crts_first_time', 'crts_not_first_time', 'runtimes_libunwind', 'runtimes_libcxx', 'runtimes_libcxx_ndk']
         known_libs_flags = ['OH', 'BOTH', 'LLVM']
@@ -333,7 +358,21 @@ class BuildConfig():
             '--build-libs-flags',
             choices=known_libs_flags,
             default="LLVM",
-            help='which kind of flags for build_crts and build_runtimes, Choices:' + ', '.join(known_libs_flags))
+            help='which kind of flags for build_crts and build_runtimes')
+
+        llvm_projects = ('clang', 'lld', 'clang-tools-extra', 'openmp', 'lldb')
+        parser.add_argument(
+            '--host-build-projects',
+            action=choice_wrapper(llvm_projects),
+            default=llvm_projects,
+            help=f'Projects to build for host. Choices: {", ".join(llvm_projects)}')
+
+        llvm_runtimes = ('libunwind', 'libcxxabi', 'libcxx', 'compiler-rt')
+        parser.add_argument(
+            '--host-build-runtimes',
+            action=choice_wrapper(llvm_runtimes),
+            default=llvm_runtimes,
+            help=f'Runtimes to build for host. Choices: {", ".join(llvm_runtimes)}')
 
         llvm_components = ("lld", "llvm-readelf", "llvm-objdump")
         libs_components = ("musl", "compiler-rt", "libcxx")
@@ -413,7 +452,7 @@ class BuildUtils(object):
                      install=True,
                      build_threads=False):
 
-        ninja_bin_path = os.path.join(self.CMAKE_BIN_DIR, 'ninja')
+        ninja_bin_path = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts/build-tools', self.platform_prefix(), 'bin', 'ninja')
 
         ninja_list = ['-l{}'.format(build_threads)] if build_threads else []
 
@@ -593,23 +632,17 @@ class BuildUtils(object):
         return None
 
     def get_libxml2_version(self):
-        version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'configure.ac')
+        version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'libxml2.spec')
         if os.path.isfile(version_file):
+            pattern = r'Version:\s+(\d+\.\d+\.\d+)'
             with open(version_file, 'r') as file:
                 lines = file.readlines()
-                MAJOR_VERSION = ''
-                MINOR_VERSION = ''
-                MICRO_VERSION = ''
+                VERSION = ''
                 for line in lines:
-                    if "m4_define([MAJOR_VERSION]" in line:
-                        MAJOR_VERSION = re.findall(r'\d+', line)[1]
-                    elif "m4_define([MINOR_VERSION]" in line:
-                        MINOR_VERSION = re.findall(r'\d+', line)[1]
-                    elif "m4_define([MICRO_VERSION]" in line:
-                        MICRO_VERSION = re.findall(r'\d+', line)[1]
-
-                    if  MAJOR_VERSION != '' and MINOR_VERSION != '' and MICRO_VERSION != '' :
-                        return MAJOR_VERSION+'.'+MINOR_VERSION+'.'+MICRO_VERSION
+                    if 'Version: ' in line:
+                        VERSION = re.search(pattern, line).group(1)
+                    if VERSION != '':
+                        return VERSION
                 return None
 
         return None
@@ -710,9 +743,8 @@ class LlvmCore(BuildUtils):
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.0.dylib')
 
-            libxml2_version = self.get_libxml2_version()
-            if self.build_config.build_libxml2 and libxml2_version is not None:
-                llvm_defines['LIBXML2_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.{libxml2_version}.dylib')
+            if self.build_config.build_libxml2:
+                llvm_defines['LIBXML2_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.{self.build_config.LIBXML2_VERSION}.dylib')
 
 
     def llvm_compile_linux_defines(self,
@@ -757,13 +789,12 @@ class LlvmCore(BuildUtils):
             if not build_instrumented and not no_lto and not debug_build:
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
 
-            libxml2_version = self.get_libxml2_version()
-            if self.build_config.build_libxml2 and libxml2_version is not None:
-                llvm_defines['LIBXML2_LIBRARY'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.so.{libxml2_version}')
+            if self.build_config.build_libxml2:
+                llvm_defines['LIBXML2_LIBRARY'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.so.{self.build_config.LIBXML2_VERSION}')
 
     def llvm_compile_llvm_defines(self, llvm_defines, llvm_root, cflags, ldflags):
-        llvm_defines['LLVM_ENABLE_PROJECTS'] = 'clang;lld;clang-tools-extra;openmp;lldb'
-        llvm_defines['LLVM_ENABLE_RUNTIMES'] = 'libunwind;libcxxabi;libcxx;compiler-rt'
+        llvm_defines['LLVM_ENABLE_PROJECTS'] = ';'.join(self.build_config.host_projects)
+        llvm_defines['LLVM_ENABLE_RUNTIMES'] = ';'.join(self.build_config.host_runtimes)
         llvm_defines['LLVM_ENABLE_BINDINGS'] = 'OFF'
         llvm_defines['CMAKE_C_COMPILER'] = os.path.join(llvm_root, 'bin', 'clang')
         llvm_defines['CMAKE_CXX_COMPILER'] = os.path.join(llvm_root, 'bin', 'clang++')
@@ -887,6 +918,12 @@ class LlvmCore(BuildUtils):
                                      cxx,
                                      windows_sysroot):
 
+        win_projects = list(self.build_config.host_projects)
+        if 'openmp' in win_projects:
+            # Currently we have build problems with
+            # windows openmp target (lack of ml.exe)
+            win_projects.remove('openmp')
+
         if self.build_config.enable_assertions:
 
             windows_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON'
@@ -917,7 +954,7 @@ class LlvmCore(BuildUtils):
         windows_defines['LLVM_TOOL_OPENMP_BUILD'] = 'OFF'
         windows_defines['LLVM_INCLUDE_TESTS'] = 'OFF'
         windows_defines['LLVM_ENABLE_LIBCXX'] = 'ON'
-        windows_defines['LLVM_ENABLE_PROJECTS'] = 'clang;clang-tools-extra;lld;lldb'
+        windows_defines['LLVM_ENABLE_PROJECTS'] = ';'.join(win_projects)
         windows_defines['LLVM_BUILD_LLVM_DYLIB'] = 'OFF'
         windows_defines['CLANG_BUILD_EXAMPLES'] = 'OFF'
         windows_defines['CMAKE_SYSROOT'] = windows_sysroot
@@ -1064,7 +1101,7 @@ class SysrootComposer(BuildUtils):
         # but it didn't contain these two lines, so we still need OHOS.cmake.
         ohos_cmake = 'OHOS.cmake'
         dst_dir = self.merge_out_path(
-            '../prebuilts/cmake/%s/share/cmake-3.16/Modules/Platform' % self.platform_prefix())
+            '../prebuilts/cmake/%s/share/cmake-3.28/Modules/Platform' % self.platform_prefix())
         src_file = '%s/%s' % (self.build_config.LLVM_BUILD_DIR, ohos_cmake)
         if os.path.exists(os.path.join(dst_dir, ohos_cmake)):
             os.remove(os.path.join(dst_dir, ohos_cmake))
@@ -1945,7 +1982,7 @@ class LlvmLibs(BuildUtils):
 
         libxml2_defines = self.build_libxml2_defines()
 
-        libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2'))
+        libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'out', ('libxml2-' + self.build_config.LIBXML2_VERSION)))
 
         libxml2_build_path = self.merge_out_path('libxml2')
         libxml2_install_path = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform())
@@ -1999,8 +2036,8 @@ class LlvmLibs(BuildUtils):
         libxml2_defines['CMAKE_RC_FLAGS'] = ' '.join(rcflags)
         libxml2_defines['XML_INCLUDEDIR'] = os.path.join(windows_sysroot, 'include')
 
-        libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2'))
-
+        libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'out', ('libxml2-' + self.build_config.LIBXML2_VERSION)))
+                
         self.invoke_cmake(libxml2_cmake_path,
                           libxml2_build_path,
                           libxml2_defines,
@@ -2015,6 +2052,52 @@ class LlvmLibs(BuildUtils):
             os.makedirs(os.path.join(windows64_install, 'bin'))
         shutil.copyfile(os.path.join(libxml2_build_path, 'libxml2.dll'), os.path.join(windows64_install, 'bin', 'libxml2.dll'))
 
+    def run_abi_checks(self, enable_check_abi, llvm_install, configs):
+        diff_dict = {}
+        for (arch, target) in configs:
+            configs_list, cc, cxx, ar, llvm_config = self.libs_argument(llvm_install)
+            for (_, llvm_triple, _, multilib_suffix) in configs_list:
+                if target != llvm_triple:
+                    continue
+                if multilib_suffix:
+                    baseline_abi_file_path = self.merge_out_path(self.build_config.LLVM_BUILD_DIR,
+                                             "libcxx_abidiff", llvm_triple, multilib_suffix, "libc++_shared.abi")
+                    elf_common_path = self.merge_out_path('lib', 
+                                      f"libunwind-libcxxabi-libcxx-ndk-{str(llvm_triple)}-{multilib_suffix}",
+                                      'lib', llvm_triple, multilib_suffix)
+                else:
+                    baseline_abi_file_path = self.merge_out_path(self.build_config.LLVM_BUILD_DIR,
+                                             "libcxx_abidiff", llvm_triple, "libc++_shared.abi")
+                    elf_common_path = self.merge_out_path('lib', 
+                                      f"libunwind-libcxxabi-libcxx-ndk-{str(llvm_triple)}", 'lib', llvm_triple)
+                elf_file_path = self.merge_out_path(elf_common_path, "libc++_shared.so")
+                abi_file_path = self.merge_out_path(elf_common_path, "libc++_shared.abi")
+                header_dir = self.merge_out_path('lib', 
+                             f"libunwind-libcxxabi-libcxx-ndk-{str(llvm_triple)}", 'include', "c++", "v1")
+                res = self.run_abi_check(elf_file_path, abi_file_path, baseline_abi_file_path, header_dir)
+                if res:
+                    diff_dict[abi_file_path] = baseline_abi_file_path
+        if len(diff_dict) > 0:
+            if enable_check_abi is True:
+                user_check = input("ABI files are different, please confirm if you want to update [Y/n] : \n")
+                if user_check.lower() == "y" or user_check.lower() == "yes":
+                    for key, value in diff_dict.items():
+                        shutil.copy2(key, value)
+                        self.logger().info('update abi file %s ', value)
+                    return True
+            else:
+                raise Exception("ABI files are different, please check it")
+        return False
+
+    def run_abi_check(self, elf_file_path, abi_file_path, baseline_abi_file_path, header_dir):
+        abi_args = argparse.Namespace()
+        abi_args.elf_file = elf_file_path
+        abi_args.abi_file = abi_file_path
+        abi_args.compare_files = [baseline_abi_file_path, abi_file_path]
+        abi_args.headers_dir = header_dir
+        abi_check = AbiCheck(abi_args)
+        abi_check.gen_abi_file()
+        return abi_check.compare_abi_files()
 
 class LlvmPackage(BuildUtils):
 
@@ -2529,7 +2612,6 @@ class LlvmPackage(BuildUtils):
         create_tar = True
         if create_tar:
             self.package_up_resulting(package_name, host, install_host_dir)
-
         return
 
 
@@ -2578,8 +2660,17 @@ def main():
     if build_config.build_libedit:
         llvm_libs.build_libedit(llvm_make, llvm_install)
 
+    build_config.LIBXML2_VERSION = build_utils.get_libxml2_version()
+    if build_config.LIBXML2_VERSION is None:
+        build_config.build_libxml2 = False
+
     if build_config.build_libxml2:
-        build_utils.get_libxml2_version()
+        libxml2_untar_py = os.path.join(
+            build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'install.py')
+        if not os.path.exists(build_config.REPOROOT_DIR + '/out'):
+            os.makedirs(build_config.REPOROOT_DIR + '/out')
+        subprocess.run(['python3', libxml2_untar_py, '--gen-dir', build_config.REPOROOT_DIR + '/out',
+                        '--source-file', build_config.REPOROOT_DIR + '/third_party/libxml2'])
         llvm_libs.build_libxml2(llvm_make, llvm_install)
 
     if build_config.do_build and need_host and (build_config.build_only_llvm or not build_config.build_only):
@@ -2618,6 +2709,11 @@ def main():
             else:
                 for (arch, target) in configs:
                     llvm_libs.build_libs(llvm_install, target)
+    if build_config.enable_check_abi:
+        has_diff = llvm_libs.run_abi_checks(build_config.enable_check_abi, llvm_install, configs)
+        if has_diff:
+            print("Build is interrupted because of libCxx ABI changed")
+            return
 
     if build_config.build_only:
         if "musl" in build_config.build_only_libs:

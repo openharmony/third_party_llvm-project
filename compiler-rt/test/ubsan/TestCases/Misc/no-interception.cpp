@@ -10,6 +10,12 @@
 // RUN: %clangxx %s -lc -o %t %ld_flags_rpath_exe
 // RUN: %run %t 2>&1 | FileCheck %s
 
+// OHOS_LOCAL begin
+// For OHOS the test build commands result in a runtime error with a missing
+// symbol message.
+// UNSUPPORTED: ohos_family
+// OHOS_LOCAL end
+
 #include <limits.h>
 
 int dso_function(int);

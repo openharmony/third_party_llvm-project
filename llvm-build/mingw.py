@@ -57,7 +57,7 @@ class LlvmMingw():
         self.build_config = build_config
 
         self.CMAKE_BIN_PATH = os.path.join(self.cmake_prebuilt_bin_dir(), 'cmake')
-        self.NINJA_BIN_PATH = os.path.join(self.cmake_prebuilt_bin_dir(), 'ninja')
+        self.NINJA_BIN_PATH = os.path.join(self.build_config.repo_root('prebuilts/build-tools', 'linux-x86', 'bin'), 'ninja')
 
         self.LLVM_ROOT = self.build_config.out_root('llvm-install')
         self.LLVM_CONFIG = os.path.join(self.LLVM_ROOT, 'bin', 'llvm-config')

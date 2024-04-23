@@ -38,7 +38,10 @@ public:
                                  lldb_private::Target *target,
                                  lldb_private::Status &error) override;
 
+  static bool IsHostnameDeviceID(llvm::StringRef hostname);
+
 protected:
+  std::string m_connect_addr;
   std::string m_device_id;
   std::map<lldb::pid_t, std::pair<uint16_t, uint16_t>> m_port_forwards;
   std::map<lldb::pid_t, std::pair<uint16_t, std::string>> m_remote_socket_name;

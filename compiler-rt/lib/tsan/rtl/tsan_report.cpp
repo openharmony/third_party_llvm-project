@@ -469,6 +469,7 @@ void PrintReport(const ReportDesc *rep) {
     }
   }
   Printf("==================\n");
+  Report("End Tsan report\n"); // OHOS_LOCAL
 }
 
 #endif
