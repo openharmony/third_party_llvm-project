@@ -1652,15 +1652,7 @@ SharedFileExtended<ELFT>::SharedFileExtended(MemoryBufferRef mb,
 template <typename ELFT> void SharedFileExtended<ELFT>::parseForAdlt() {
   this->parse();
   parseDynamics();
-
   parseElfSymTab();
-  // add additional section symbols
-  for (InputSectionBase *sec : this->sections)
-    for (StringRef prefix : {".got", ".got.plt"})
-      if (sec && sec->name.startswith(prefix)) {
-        auto *d = make<Defined>(this, "", ELF::STB_LOCAL, 0, ELF::STT_SECTION, 0, 0, sec);
-        this->allSymbols.push_back(cast<Symbol>(d));
-      }
 
   bool isDebug = false; // debug hint
   if (!isDebug)
@@ -1779,10 +1771,27 @@ SharedFileExtended<ELFT>::findInputSection(StringRef name) const {
 template <typename ELFT>
 InputSectionBase *
 SharedFileExtended<ELFT>::findInputSection(uint64_t offset) const {
-  for (InputSectionBase *sec : this->sections)
-    if (sec && sec->address == offset)
+  llvm::SmallVector<InputSectionBase *> candidates;
+  for (InputSectionBase *sec : this->sections) {
+    if (!sec)
+      continue;
+    if (sec->address == offset)
       return sec;
-  return nullptr;
+    uint64_t low = sec->address;
+    uint64_t high = low + sec->size;
+    bool isGood = (offset >= low) && (offset < high);
+    if (!isGood)
+      continue;
+    candidates.push_back(sec);
+  }
+  if (candidates.empty()) // no suitable items found
+    return nullptr;
+
+  auto lessAddr = [&](auto *s1, auto *s2) { return s1->address < s2->address; };
+  auto i = candidates.begin();
+  auto e = candidates.end();
+  auto ret = std::min_element(i, e, lessAddr);
+  return *ret;
 }
 
 template <typename ELFT>

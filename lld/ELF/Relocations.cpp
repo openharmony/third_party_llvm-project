@@ -1337,7 +1337,6 @@ template <class ELFT, class RelTy>
 void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
                                        bool fromDynamic) {
   auto file = sec.getSharedFile<ELFT>();
-  uint32_t symIndex = rel.getSymbol(config->isMips64EL);
   bool isDebug = false;
 
   /*if (r->offset == 0x21F) // debug hint
@@ -1347,10 +1346,7 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
     isDebug = true;*/
 
   // parse offset (where)
-  InputSectionBase *secWhere = cast<InputSectionBase>(
-      fromDynamic
-          ? file->findDefinedSymbol(r->offset)->section
-          : (r->sym->isDefined() ? cast<Defined>(r->sym)->section : &sec));
+  InputSectionBase *secWhere = file->findInputSection(r->offset);
   assert(secWhere && "not found!");
 
   // process offset
@@ -1400,8 +1396,6 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
     }
     sec.relocations.push_back(*r);
     return;
-  case R_AARCH64_ADD_ABS_LO12_NC:
-  case R_AARCH64_ADR_PREL_PG_HI21:
   case R_AARCH64_LDST8_ABS_LO12_NC:
   case R_AARCH64_LDST16_ABS_LO12_NC:
   case R_AARCH64_LDST32_ABS_LO12_NC:
@@ -1421,6 +1415,10 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
     sec.relocations.push_back(*r);
     return;
   // got relocs
+  case R_AARCH64_ADD_ABS_LO12_NC:
+  case R_AARCH64_ADR_PREL_PG_HI21:
+    sec.relocations.push_back(*r); // TODO: optimize GOT
+    return;
   case R_AARCH64_ADR_GOT_PAGE:
     if (r->sym->isDefined() && !r->sym->needsGot) {
       if (isDebug)
