@@ -1,4 +1,7 @@
 // RUN: %clangxx_asan %s -o %t && %run %t | FileCheck %s
+//
+// OHOS_LOCAL
+// UNSUPPORTED: ohos_family
 
 #include <stdio.h>
 
