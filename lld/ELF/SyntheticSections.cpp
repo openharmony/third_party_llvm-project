@@ -4219,8 +4219,8 @@ AdltSection<ELFT>::makeSoData(const SharedFileExtended<ELFT>* soext) {
   data.initArrayName = soext->addAdltPostfix(".init_array");
   data.finiArrayName = soext->addAdltPostfix(".fini_array");
 
-  // TODO: fill data.relaDynIndx
-  // TODO: fill data.relaPltIndx
+  data.relaDynIndx = soext->dynRelIndexes.getArrayRef();
+  data.relaPltIndx = soext->pltRelIndexes.getArrayRef();
 
   std::copy(soext->programHeaderIndexes.begin(),
             soext->programHeaderIndexes.end(),
