@@ -402,6 +402,11 @@ StringRef ObjFile<ELFT>::getShtGroupSignature(ArrayRef<Elf_Shdr> sections,
 }
 
 template <class ELFT>
+StringRef ObjFile<ELFT>::getUniqueName(StringRef origName) const {
+  return origName;
+}
+
+template <class ELFT>
 bool ObjFile<ELFT>::shouldMerge(const Elf_Shdr &sec, StringRef name) {
   // On a regular link we don't merge sections if -O0 (default is -O1). This
   // sometimes makes the linker significantly faster, although the output will
@@ -522,24 +527,6 @@ ArrayRef<typename ELFT::Word> ObjFile<ELFT>::getShndxTable() {
   return shndxTable;
 }
 
-static StringRef markItemForAdlt(StringRef input, StringRef filePath) {
-  if (input.empty())
-    return input;
-  StringRef simpleFile = path::stem(filePath);
-  std::string mark = "_" + simpleFile.str();
-  if (input.endswith(mark))
-    return input;
-  return saver().save(input + mark);
-}
-
-static bool markSymForAdlt(Symbol *s, StringRef filePath) {
-  StringRef newName = markItemForAdlt(s->getName(), filePath);
-  if (s->getName() == newName)
-    return false;
-  s->setName(newName);
-  return true;
-}
-
 template <class ELFT>
 void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
                                        const llvm::object::ELFFile<ELFT> &obj) {
@@ -581,7 +568,7 @@ void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
     }
     auto secName = check(obj.getSectionName(sec, shstrtab));
     if (config->adlt && sec.sh_type == SHT_NULL) {
-      auto name = isPatchedSecName ? markItemForAdlt(secName, archiveName) : secName;
+      auto name = getUniqueName(secName);
       this->sections[i] = createInputSection(i, sec, name);
       this->sections[i]->address = sec.sh_addr;
       this->sections[i]->size = sec.sh_size;
@@ -608,9 +595,7 @@ void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
               .second;
       if (keepGroup) {
         if (config->relocatable) {
-          auto name = config->adlt && isPatchedSecName
-                          ? markItemForAdlt(secName, archiveName)
-                          : secName;
+          auto name = config->adlt ? getUniqueName(secName) : secName;
           this->sections[i] = createInputSection(i, sec, name);
           if (config->adlt) {
             this->sections[i]->address = sec.sh_addr;
@@ -643,9 +628,7 @@ void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
       ctx->hasSympart.store(true, std::memory_order_relaxed);
       LLVM_FALLTHROUGH;
     default:
-      auto name = config->adlt && isPatchedSecName
-                      ? markItemForAdlt(secName, archiveName)
-                      : secName;
+      auto name = config->adlt ? getUniqueName(secName) : secName;
       this->sections[i] = createInputSection(i, sec, name);
       if (config->adlt) {
         this->sections[i]->address = sec.sh_addr;
@@ -1065,7 +1048,7 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
     if (!symbols[i]) {
       StringRef name = CHECK(eSyms[i].getName(stringTable), this);
       if (config->adlt && name == "__cfi_check") {
-        name = markItemForAdlt(name, archiveName);
+        name = this->getUniqueName(name);
         if (!ctx->adltWithCfi)
           ctx->adltWithCfi = true;
       }
@@ -1700,15 +1683,25 @@ template <typename ELFT> void SharedFileExtended<ELFT>::postParseForAdlt() {
   resolveDuplicatesForAdlt();
 }
 
-
 template <typename ELFT>
 StringRef SharedFileExtended<ELFT>::addAdltPostfix(StringRef input) const {
-  return markItemForAdlt(input, soName);
+  if (input.empty()) return input;
+  auto suffix = Twine("__") + Twine::utohexstr(this->orderIdx);
+  return saver().save(input + suffix);
 }
 
 template <typename ELFT>
 bool SharedFileExtended<ELFT>::addAdltPostfix(Symbol *s) {
-  return markSymForAdlt(s, this->soName);
+  StringRef newName = addAdltPostfix(s->getName());
+  if (s->getName() == newName)
+    return false;
+  s->setName(newName);
+  return true;
+}
+
+template <class ELFT>
+StringRef SharedFileExtended<ELFT>::getUniqueName(StringRef origName) const {
+  return addAdltPostfix(origName);
 }
 
 // TODO: optimize 2 lookups

@@ -7072,7 +7072,16 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
       const adlt_psod_t& psod = *reinterpret_cast<const adlt_psod_t*>
         (psodsRaw.data() + psodIdx * header->schemaPSODSize);
       
-      DictScope LEntry(W, ("#" + Twine(psodIdx)).str());
+      auto psodName = Twine("psod-#") + Twine(psodIdx);
+      DictScope LEntry(W, psodName.str());
+
+      {
+        DictScope MetaEntry(W, "$-meta");
+        auto psodSuffix = Twine("__") + Twine::utohexstr(psodIdx);
+        W.printNumber("$-order", psodIdx);
+        W.printString("$-symbol-suffix", psodSuffix.str());
+      }
+
       W.printString("soname", this->getAdltDynamicString(psod.soName));
       W.printHex("soname-hash", psod.soNameHash);
       {

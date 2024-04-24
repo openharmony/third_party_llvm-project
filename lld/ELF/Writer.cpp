@@ -2006,7 +2006,6 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
       if (config->adlt)
         for (auto &it : llvm::enumerate(ctx->sharedFilesExtended)) {
           auto *soFile = cast<SharedFileExtended<ELFT>>(it.value());
-          soFile->ctxIdx = it.index();
           auto sections = soFile->getSections();
           // scan .rela.dyn (base: SHT_NULL)
           scanRelocations<ELFT>(*sections[0]);

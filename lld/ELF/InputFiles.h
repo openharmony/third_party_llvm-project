@@ -294,7 +294,8 @@ public:
   void initializeLocalSymbols();
   void postParse();
 
-  bool isPatchedSecName = true; // ADLT
+protected:
+  virtual StringRef getUniqueName(StringRef origName) const;
 
 private:
   void initializeSections(bool ignoreComdats,
@@ -456,8 +457,6 @@ public:
   // .symtab's start of global symbols owned by library
   llvm::Optional<size_t> sharedGlobalSymbolIndex;
 
-  // Index of this file in context (struct Ctx)
-  unsigned ctxIdx = 0;
   // Output information data:
   llvm::SetVector<int> programHeaderIndexes;
   // From input .rela.dyn, .rela.plt:
@@ -480,6 +479,9 @@ public:
   // Non-weak undefined symbols which are not yet resolved when the SO is
   // parsed. Only filled for `--no-allow-shlib-undefined`.
   SmallVector<Symbol *, 0> requiredSymbols;
+
+protected:
+  virtual StringRef getUniqueName(StringRef origName) const override;
 
 private:
   void parseDynamics(); // SharedFile compability
