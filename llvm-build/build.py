@@ -881,7 +881,7 @@ class LlvmCore(BuildUtils):
         windows_defines['CMAKE_C_COMPILER'] = cc
         windows_defines['CMAKE_CXX_COMPILER'] = cxx
         windows_defines['CMAKE_SYSTEM_NAME'] = 'Windows'
-        windows_defines['CMAKE_BUILD_TYPE'] = 'Release'
+        windows_defines['CMAKE_BUILD_TYPE'] = 'Debug' if self.build_config.debug else 'Release'
         windows_defines['LLVM_BUILD_RUNTIME'] = 'OFF'
         windows_defines['LLVM_TOOL_CLANG_TOOLS_EXTRA_BUILD'] = 'ON'
         windows_defines['LLVM_TOOL_OPENMP_BUILD'] = 'OFF'
@@ -928,9 +928,11 @@ class LlvmCore(BuildUtils):
         )
 
         ldflag = ['-fuse-ld=lld',
+                  '-Wl,--gc-sections',
                   '-stdlib=libc++',
                   '--rtlib=compiler-rt',
-                  '-lunwind', '-Wl,--dynamicbase',
+                  '-lunwind', 
+                  '-Wl,--dynamicbase',
                   '-Wl,--nxcompat',
                   '-lucrt',
                   '-lucrtbase',
@@ -941,6 +943,7 @@ class LlvmCore(BuildUtils):
 
         cflag = ['-stdlib=libc++',
                  '--target=x86_64-pc-windows-gnu',
+                 '-fdata-sections',
                  '-D_LARGEFILE_SOURCE',
                  '-D_FILE_OFFSET_BITS=64',
                  '-D_WIN32_WINNT=0x0600',
@@ -1718,7 +1721,7 @@ class LlvmLibs(BuildUtils):
         cmake_defines['CMAKE_ASM_FLAGS'] = ' '.join(cflags)
         cmake_defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
         cmake_defines['CMAKE_CXX_FLAGS'] = ' '.join(cflags)
-        cmake_defines['CMAKE_BUILD_TYPE'] = 'Release'
+        cmake_defines['CMAKE_BUILD_TYPE'] = 'Debug' if self.build_config.target_debug else 'Release'
         cmake_defines['CMAKE_TRY_COMPILE_TARGET_TYPE'] = 'STATIC_LIBRARY'
         cmake_defines['CMAKE_INSTALL_PREFIX'] = install_dir
         cmake_defines['LLVM_CONFIG_PATH'] = os.path.join(toolchain_dir, 'bin', 'llvm-config')
