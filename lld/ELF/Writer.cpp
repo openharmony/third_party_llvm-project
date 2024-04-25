@@ -2542,12 +2542,9 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
   for (OutputSection *sec : outputSections)
     if (sec->partition == partNo && sec->flags & SHF_TLS) {
       //  It making TLS hdr for each TLS section, for adlt.
-      if (config->adlt && tlsHdr->firstSec)
-        tlsHdr = make<PhdrEntry>(PT_TLS, PF_R);
-      tlsHdr->add(sec);
-
       if (config->adlt)
-        ret.push_back(tlsHdr);
+        tlsHdr = addHdr(PT_TLS, PF_R);
+      tlsHdr->add(sec);
     } 
   if (!config->adlt && tlsHdr->firstSec)
     ret.push_back(tlsHdr);
