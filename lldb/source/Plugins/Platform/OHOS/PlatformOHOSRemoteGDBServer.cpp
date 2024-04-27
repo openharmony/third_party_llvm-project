@@ -11,6 +11,7 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Status.h"
 #include "lldb/Utility/UriParser.h"
+#include "llvm/Support/Regex.h"
 
 #include "PlatformOHOSRemoteGDBServer.h"
 
@@ -40,20 +41,20 @@ static Status ForwardPortWithHdc(
   device_id = hdc.GetDeviceID();
   LLDB_LOGF(log, "Connected to OHOS device \"%s\"", device_id.c_str());
 
-  if (remote_port != 0) {
-    LLDB_LOGF(log, "Forwarding remote TCP port %d to local TCP port %d",
-              remote_port, local_port);
-    return hdc.SetPortForwarding(local_port, remote_port);
+  if (socket_namespace) {
+    LLDB_LOGF(log, "Forwarding remote socket \"%s\" to local TCP port %d",
+              remote_socket_name.str().c_str(), local_port);
+    return hdc.SetPortForwarding(local_port, remote_socket_name,
+                                 *socket_namespace);
   }
 
-  LLDB_LOGF(log, "Forwarding remote socket \"%s\" to local TCP port %d",
-            remote_socket_name.str().c_str(), local_port);
+  LLDB_LOGF(log, "Forwarding remote TCP port %d to local TCP port %d",
+            remote_port, local_port);
 
-  if (!socket_namespace)
-    return Status("Invalid socket namespace");
-
-  return hdc.SetPortForwarding(local_port, remote_socket_name,
-                               *socket_namespace);
+  if (remote_port == 0)
+    return Status("Invalid remote_port");
+  
+  return hdc.SetPortForwarding(local_port, remote_port);
 }
 
 static Status DeleteForwardPortWithHdc(const std::string &connect_addr,
@@ -138,9 +139,21 @@ bool PlatformOHOSRemoteGDBServer::KillSpawnedProcess(lldb::pid_t pid) {
   return m_gdb_client_up->KillSpawnedProcess(pid);
 }
 
+bool IsValidIPv4(llvm::StringRef ip) {
+  std::string pattern = "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
+  llvm::Regex regex(pattern);
+  return regex.match(ip);
+}
+
+bool IsValidIPv6(llvm::StringRef ip) {
+  std::string pattern = "^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$";
+  llvm::Regex regex(pattern);
+  return regex.match(ip);
+}
+
 bool PlatformOHOSRemoteGDBServer::IsHostnameDeviceID(llvm::StringRef hostname) {
-  return hostname != "localhost" && !hostname.contains(':') &&
-         !hostname.contains('.');
+  return hostname != "localhost" && !IsValidIPv4(hostname) &&
+         !IsValidIPv6(hostname);
 }
 
 Status PlatformOHOSRemoteGDBServer::ConnectRemote(Args &args) {
@@ -249,7 +262,7 @@ Status PlatformOHOSRemoteGDBServer::MakeConnectURL(
         ForwardPortWithHdc(m_connect_addr, local_port, remote_port,
                            remote_socket_name, m_socket_namespace, m_device_id);
     if (error.Success()) {
-      if (remote_port != 0){
+      if (!m_socket_namespace){
         m_port_forwards[pid] = {local_port, remote_port};
       }
       else{

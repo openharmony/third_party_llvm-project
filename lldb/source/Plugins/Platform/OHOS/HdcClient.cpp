@@ -143,7 +143,7 @@ void HdcClient::SetDeviceID(const std::string &device_id) {
 const std::string &HdcClient::GetDeviceID() const { return m_device_id; }
 
 bool HdcClient::IsServerLocal() {
-  return m_connect_addr == "localhost";
+  return m_connect_addr == "localhost" || m_connect_addr == "127.0.0.1";
 }
 
 namespace {
