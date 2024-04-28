@@ -29,6 +29,9 @@ if config.host_os == 'Darwin':
   default_tsan_opts += ['ignore_noninstrumented_modules=0']
   default_tsan_opts += ['ignore_interceptors_accesses=0']
 
+if config.host_os == 'OHOS':
+  default_tsan_opts += ['ignore_noninstrumented_modules=0']
+
 # Platform-specific default TSAN_OPTIONS for lit tests.
 default_tsan_opts_str = ':'.join(default_tsan_opts)
 if default_tsan_opts_str:
