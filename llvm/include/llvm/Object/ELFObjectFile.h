@@ -1242,6 +1242,10 @@ StringRef ELFObjectFile<ELFT>::getFileFormatName() const {
       return "elf64-ve";
     case ELF::EM_LOONGARCH:
       return "elf64-loongarch";
+    // OHOS_LOCAL begin
+    case ELF::EM_XVM:
+      return "elf64-xvm";
+    // OHOS_LOCAL end
     default:
       return "elf64-unknown";
     }
@@ -1321,6 +1325,11 @@ template <class ELFT> Triple::ArchType ELFObjectFile<ELFT>::getArch() const {
 
   case ELF::EM_BPF:
     return IsLittleEndian ? Triple::bpfel : Triple::bpfeb;
+
+  // OHOS_LOCAL begin
+  case ELF::EM_XVM:
+    return Triple::xvm;
+  // OHOS_LOCAL end
 
   case ELF::EM_VE:
     return Triple::ve;

@@ -14,6 +14,11 @@ if(LLVM_BUILD_LLVM_DYLIB)
   if(MSVC)
     message(FATAL_ERROR "Generating libLLVM is not supported on MSVC")
   endif()
+  # OHOS_LOCAL begin
+  if (LLVM_LINK_LLVM_DYLIB)
+    set(INSTALL_WITH_TOOLCHAIN INSTALL_WITH_TOOLCHAIN)
+  endif()
+  # OHOS_LOCAL end
 
   llvm_map_components_to_libnames(LIB_NAMES ${LLVM_DYLIB_COMPONENTS})
 
@@ -22,15 +27,31 @@ if(LLVM_BUILD_LLVM_DYLIB)
   #  - it pollutes the global options space.
   list(REMOVE_ITEM LIB_NAMES "LLVMTableGen")
 
+  # OHOS_LOCAL begin
+  foreach(target ${LLVM_TARGETS_TO_BUILD})
+    get_property(target_link_components TARGET ${target} PROPERTY LLVM_LINK_COMPONENTS)
+    set(objects "")
+    foreach(component ${target_link_components})
+      list(REMOVE_ITEM LIB_NAMES "LLVM${component}")
+      list(APPEND objects "$<TARGET_OBJECTS:LLVM${component}>")
+    endforeach()
+    add_llvm_library("LLVM${target}Target"
+                     MODULE
+                     DISABLE_LLVM_LINK_LLVM_DYLIB
+                     ${INSTALL_WITH_TOOLCHAIN}
+                     OBJLIBS ${objects})
+
+  endforeach()
+  # OHOS_LOCAL end
+
   if(LLVM_DYLIB_EXPORTED_SYMBOL_FILE)
     set(LLVM_EXPORTED_SYMBOL_FILE ${LLVM_DYLIB_EXPORTED_SYMBOL_FILE})
     add_custom_target(libLLVMExports DEPENDS ${LLVM_EXPORTED_SYMBOL_FILE})
   endif()
 
-  if (LLVM_LINK_LLVM_DYLIB)
-    set(INSTALL_WITH_TOOLCHAIN INSTALL_WITH_TOOLCHAIN)
-  endif()
   add_llvm_library(LLVM SHARED DISABLE_LLVM_LINK_LLVM_DYLIB SONAME ${INSTALL_WITH_TOOLCHAIN} ${SOURCES})
+  # OHOS_LOCAL
+  target_compile_definitions(LLVM PRIVATE "LLVM_BUILD_BACKEND_MODULE")
 
   list(REMOVE_DUPLICATES LIB_NAMES)
   if(("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux") OR (MINGW) OR (HAIKU)
@@ -64,6 +85,11 @@ if(LLVM_BUILD_LLVM_DYLIB)
   endif()
 
   target_link_libraries(LLVM PRIVATE ${LIB_NAMES})
+  # OHOS_LOCAL begin
+  foreach(target ${LLVM_TARGETS_TO_BUILD})
+    add_dependencies(LLVM LLVM${target}Target)
+  endforeach()
+  # OHOS_LOCAL end
 
   if (APPLE)
     set_property(TARGET LLVM APPEND_STRING PROPERTY

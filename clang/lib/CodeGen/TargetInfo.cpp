@@ -5491,6 +5491,108 @@ PPC64TargetCodeGenInfo::initDwarfEHRegSizeTable(CodeGen::CodeGenFunction &CGF,
                                      /*IsAIX*/ false);
 }
 
+// OHOS_LOCAL begin
+//===----------------------------------------------------------------------===//
+// XVM ABI Implementation
+//===----------------------------------------------------------------------===//
+class XVMABIInfo : public DefaultABIInfo {
+public:
+  enum ClassifyType {
+    Return,
+    Argument,
+  };
+
+  XVMABIInfo(CodeGen::CodeGenTypes &CGT) : DefaultABIInfo(CGT) {}
+
+  ABIArgInfo classifyReturnAndArgumentType(QualType RetTy, ClassifyType type) const;
+
+  void computeInfo(CGFunctionInfo &FI) const override {
+    if (!getCXXABI().classifyReturnType(FI))
+      FI.getReturnInfo() = classifyReturnAndArgumentType(FI.getReturnType(), Return);
+    for (auto &I : FI.arguments())
+      I.info = classifyReturnAndArgumentType(I.type, Argument);
+  }
+
+  Address EmitVAArg(CodeGenFunction &CGF, Address VAListAddr,
+                    QualType Ty) const override {
+    return EmitVAArgInstr(CGF, VAListAddr, Ty, classifyReturnAndArgumentType(Ty, Argument));
+  }
+};
+
+class XVMTargetCodeGenInfo : public TargetCodeGenInfo {
+public:
+  XVMTargetCodeGenInfo(CodeGen::CodeGenTypes &CGT)
+      : TargetCodeGenInfo(std::make_unique<XVMABIInfo>(CGT)) {}
+
+  void setTargetAttributes(const Decl *D, llvm::GlobalValue *GV,
+                           CodeGen::CodeGenModule &CGM) const override {
+    TargetCodeGenInfo::setTargetAttributes(D, GV, CGM);
+    if (const auto *FD = dyn_cast_or_null<FunctionDecl>(D)) {
+      if (const auto *Attr = FD->getAttr<XVMExportNameAttr>()) {
+        llvm::Function *Fn = cast<llvm::Function>(GV);
+        llvm::AttrBuilder B(GV->getContext());
+        B.addAttribute("xvm-export-name", Attr->getExportName());
+        Fn->addFnAttrs(B);
+      }
+    }
+  }
+};
+
+ABIArgInfo XVMABIInfo::classifyReturnAndArgumentType(QualType RetTy, ClassifyType type) const {
+  if (RetTy->isVoidType())
+    return ABIArgInfo::getIgnore();
+
+  if (const auto *VT = RetTy->getAs<VectorType>()) {
+    llvm::report_fatal_error("Unsupported: No vector type as return is supported for now");
+  }
+  // Non-Aggregate Type
+  if (!isAggregateTypeForABI(RetTy)) {
+    // Treat an enum type as its underlying type.
+    if (const EnumType *EnumTy = RetTy->getAs<EnumType>())
+      RetTy = EnumTy->getDecl()->getIntegerType();
+
+    if (const auto *EIT = RetTy->getAs<BitIntType>())
+      if (EIT->getNumBits() >
+          getContext().getTypeSize(getContext().getTargetInfo().hasInt128Type()
+                                      ? getContext().Int128Ty
+                                      : getContext().LongLongTy))
+        return getNaturalAlignIndirect(RetTy);
+
+    return (isPromotableIntegerTypeForABI(RetTy) ? ABIArgInfo::getExtend(RetTy)
+                                                : ABIArgInfo::getDirect());
+  }
+  // Aggregate Type
+  uint64_t Size = getContext().getTypeSize(RetTy);
+  if (isEmptyRecord(getContext(), RetTy, true) || Size == 0)
+    return ABIArgInfo::getIgnore();
+
+  const Type *Base = nullptr;
+  uint64_t Members = 0;
+  /*
+  In Aarch64, this isHomogeneousAggregate is only called to check for
+  Homogenous Float Aggregates (HFAs), since XVM doesn't have floats
+  or doubles, do not need to check if it is HA.
+  Side Note: Both isHomogeneousAggregateBaseType and isHomogeneousAggregateSmallEnough
+  are handled with isHomogeneousAggregate
+
+  isHomogeneousAggregateSmallEnough should check whether or not the HA contains at most 4
+  members because the AAPCS defines a homogeneous aggregate (HA)
+  as an aggregate type containing between one and four members
+  */
+  if (isHomogeneousAggregate(RetTy, Base, Members))
+    return ABIArgInfo::getDirect();
+
+  if (Size <= 64 && type == Return) {
+    if (getDataLayout().isLittleEndian()) {
+      return ABIArgInfo::getDirect(
+          llvm::IntegerType::get(getVMContext(), Size));
+    }
+    //FIXME: todo for BE
+  }
+  return getNaturalAlignIndirect(RetTy);
+}
+// OHOS_LOCAL end
+
 //===----------------------------------------------------------------------===//
 // AArch64 ABI Implementation
 //===----------------------------------------------------------------------===//
@@ -11561,6 +11663,11 @@ const TargetCodeGenInfo &CodeGenModule::getTargetCodeGenInfo() {
   switch (Triple.getArch()) {
   default:
     return SetCGInfo(new DefaultTargetCodeGenInfo(Types));
+
+  // OHOS_LOCAL begin
+  case llvm::Triple::xvm:
+    return SetCGInfo(new XVMTargetCodeGenInfo(Types));
+  // OHOS_LOCAL end
 
   case llvm::Triple::le32:
     return SetCGInfo(new PNaClTargetCodeGenInfo(Types));
