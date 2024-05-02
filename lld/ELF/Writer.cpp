@@ -117,10 +117,6 @@ static void removeEmptyPTLoad(SmallVector<PhdrEntry *, 0> &phdrs) {
     if (removed.count(sec->ptLoad))
       sec->ptLoad = nullptr;
 
-  if (config->adlt) {
-    assert(it == phdrs.end() && "adlt: ph-index in .adlt invalid due to shift");
-  }
-
   phdrs.erase(it, phdrs.end());
 }
 
@@ -1029,6 +1025,27 @@ static bool compareSections(const SectionCommand *aCmd,
   return false;
 }
 
+// OHOS_LOCAL begin
+namespace {
+
+InputSection* getInputSection(OutputSection* sec) {
+  if (!sec || !sec->hasInputSections || sec->commands.empty())
+    return nullptr;
+  SectionCommand* cmd = sec->commands.front();
+  InputSectionDescription* isd = cast<InputSectionDescription>(cmd);
+  return isd->sections.front();
+}
+
+template <typename ELFT>
+void addPhdrToSharedFilesExtendedContext(InputFile* file, PhdrEntry* phdr) {
+  if (auto* soFile = dyn_cast<SharedFileExtended<ELFT>>(file)) {
+    soFile->programHeaders.insert(phdr);
+  }
+}
+
+} // namespace
+// OHOS_LOCAL end
+
 void PhdrEntry::add(OutputSection *sec) {
   lastSec = sec;
   if (!firstSec)
@@ -1039,6 +1056,15 @@ void PhdrEntry::add(OutputSection *sec) {
   p_align = std::max(p_align, sec->alignment);
   if (p_type == PT_LOAD)
     sec->ptLoad = this;
+
+  if (config->adlt && (p_type == PT_LOAD || p_type == PT_TLS)) {
+    auto* insec = getInputSection(sec);
+    // skip generated sections.
+    // TODO: fix .rodata_$ADLT_POSTFIX sections.
+    if (insec && insec->file) {
+      invokeELFT(addPhdrToSharedFilesExtendedContext, insec->file, this);
+    }
+  }
 }
 
 // The beginning and the ending of .rel[a].plt section are marked
@@ -2374,19 +2400,6 @@ static uint64_t computeFlags(uint64_t flags) {
   return flags;
 }
 
-static InputSection *getInputSection(OutputSection *sec) {
-  if (!sec || !sec->hasInputSections || sec->commands.empty())
-    return nullptr;
-  SectionCommand *cmd = sec->commands.front();
-  InputSectionDescription *isd = cast<InputSectionDescription>(cmd);
-  return isd->sections.front();
-}
-
-struct LoadInfoForADLT {
-  int phIndex; // input
-  SmallVector<OutputSection *, 0> phSections;
-};
-
 // Decide which program headers to create and which sections to include in each
 // one.
 template <class ELFT>
@@ -2395,10 +2408,6 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
   auto addHdr = [&](unsigned type, unsigned flags) -> PhdrEntry * {
     ret.push_back(make<PhdrEntry>(type, flags));
     return ret.back();
-  };
-
-  auto getCurrentIndex = [&]() -> int {
-    return static_cast<int>(ret.size()) - 1;
   };
 
   unsigned partNo = part.getNumber();
@@ -2433,11 +2442,6 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
       load = addHdr(PT_LOAD, flags);
       load->add(Out::elfHeader);
       load->add(Out::programHeaders);
-      if (config->adlt) // add common header for all libs
-        for (auto *base : ctx->sharedFilesExtended) {
-          auto *soFile = cast<SharedFileExtended<ELFT>>(base);
-          soFile->programHeaderIndexes.insert(getCurrentIndex());
-        }
     }
   }
 
@@ -2463,9 +2467,6 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
       relroEnd = sec;
     }
   }
-
-  // ADLT: Collect load headers info
-  SmallVector<LoadInfoForADLT> adltLoadInfo;
 
   for (OutputSection *sec : outputSections) {
     if (!needsPtLoad(sec))
@@ -2498,45 +2499,9 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
           (sameLMARegion || load->lastSec == Out::programHeaders))) {
       load = addHdr(PT_LOAD, newFlags);
       flags = newFlags;
-      if (config->adlt) {
-        adltLoadInfo.emplace_back();
-        adltLoadInfo.back().phIndex = getCurrentIndex();
-      }
     }
 
     load->add(sec);
-    if (config->adlt && !adltLoadInfo.empty())
-      adltLoadInfo.back().phSections.push_back(sec);
-  }
-
-  // ADLT: Fill load headers info
-  if (config->adlt) {
-    for (LoadInfoForADLT &info : adltLoadInfo)
-      for (OutputSection *sec : info.phSections) {
-        auto *isec = getInputSection(sec);
-        assert(isec);
-        auto *file = isec->file;
-        if (!file)  // skip generated sections.
-          continue; // TODO: fix .rodata_$ADLT_POSTFIX sections.
-        auto *soFile = cast<SharedFileExtended<ELFT>>(file);
-        soFile->programHeaderIndexes.insert(info.phIndex);
-      }
-
-    // Check outputs
-    auto adltTraceNeeded = false; // debug hint
-    auto trace = [&](auto *file, auto &indexes) {
-      lld::outs() << "ADLT: " << file->soName << ":\n";
-      for (auto &it : indexes)
-          lld::outs() << it << " ";
-      lld::outs() << '\n';
-    };
-    for (ELFFileBase *baseFile : ctx->sharedFilesExtended) {
-      auto *soFile = cast<SharedFileExtended<ELFT>>(baseFile);
-      auto &indexes = soFile->programHeaderIndexes;
-      assert(!indexes.empty());
-      if (adltTraceNeeded)
-        trace(soFile, indexes);
-    }
   }
 
   // Add a TLS segment if any.

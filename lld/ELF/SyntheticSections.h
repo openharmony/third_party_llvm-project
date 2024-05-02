@@ -1259,7 +1259,10 @@ public:
     llvm::Optional<Elf64_Off> sharedLocalIndex;
     llvm::Optional<Elf64_Off> sharedGlobalIndex;
 
+    size_t programHeadersAllocated;
+    ArrayRef<const PhdrEntry*> programHeaders;
     SmallVector<uint16_t> phIndexes;
+
     ArrayRef<uint32_t> relaDynIndx;
     ArrayRef<uint32_t> relaPltIndx;
   };
@@ -1285,6 +1288,7 @@ private:
   void linkInternalDtNeeded();
   void extractInitFiniArray();
   size_t estimateOverallMappedSize();
+  void extractProgramHeaderIndexes();
   Elf64_Xword calculateHash(StringRef str) const;
 
   CommonData makeCommonData();
@@ -1315,6 +1319,7 @@ private:
   SmallVector<SoData, 0> soInputs;
 
   llvm::DenseMap<llvm::CachedHashStringRef, size_t> sonameToIndexMap;
+  llvm::DenseMap<const PhdrEntry*, uint16_t> phdrsIndexes;
 };
 
 } // namespace adlt

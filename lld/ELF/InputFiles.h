@@ -38,6 +38,7 @@ namespace elf {
 
 class InputSection;
 class Symbol;
+struct PhdrEntry; // OHOS_LOCAL
 
 // If --reproduce is specified, all input files are written to this tar archive.
 extern std::unique_ptr<llvm::TarWriter> tar;
@@ -458,7 +459,8 @@ public:
   llvm::Optional<size_t> sharedGlobalSymbolIndex;
 
   // Output information data:
-  llvm::SetVector<int> programHeaderIndexes;
+  llvm::SetVector<const PhdrEntry*> programHeaders;
+
   // From input .rela.dyn, .rela.plt:
   llvm::SetVector<uint32_t> dynRelIndexes;
   llvm::SetVector<uint32_t> pltRelIndexes;
