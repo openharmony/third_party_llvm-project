@@ -1068,17 +1068,15 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
   for (size_t i = firstGlobal, end = eSyms.size(); i != end; ++i)
     if (!symbols[i]) {
       StringRef name = CHECK(eSyms[i].getName(stringTable), this);
-      if (config->adlt) {
-        if (name == "__cfi_check") {
-          name = this->getUniqueName(name);
-          if (!ctx->adltWithCfi)
-            ctx->adltWithCfi = true;
-        } else if (eSyms[i].isDefined() && ctx->eSymsFreqMap[name] > 1) {
-          name = this->getUniqueName(name);
-        }
+      if (config->adlt && eSyms[i].isDefined() && ctx->eSymsFreqMap[name] > 1) {
+        if (name == "__cfi_check")
+          ctx->adltWithCfi = true;
+        name = this->getUniqueName(name);
       }
       symbols[i] = symtab.insert(name);
     }
+
+
 
   // Perform symbol resolution on non-local symbols.
   SmallVector<unsigned, 32> undefineds;
