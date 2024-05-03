@@ -131,7 +131,7 @@ config.substitutions.append( ("%clangxx ", build_invocation(target_cxxflags)) )
 config.substitutions.append( ("%clang_asan ", build_invocation(clang_asan_cflags)) )
 config.substitutions.append( ("%clangxx_asan ", build_invocation(clang_asan_cxxflags)) )
 if config.asan_dynamic:
-  if config.host_os in ['Linux', 'FreeBSD', 'NetBSD', 'SunOS']:
+  if config.host_os in ['Linux', 'FreeBSD', 'NetBSD', 'SunOS', 'OHOS']: # OHOS_LOCAL
     shared_libasan_path = os.path.join(config.compiler_rt_libdir, "libclang_rt.asan{}.so".format(config.target_suffix))
   elif config.host_os == 'Darwin':
     shared_libasan_path = os.path.join(config.compiler_rt_libdir, 'libclang_rt.asan_{}_dynamic.dylib'.format(config.apple_platform))

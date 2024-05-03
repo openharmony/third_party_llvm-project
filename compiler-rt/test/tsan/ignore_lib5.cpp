@@ -21,10 +21,6 @@
 // ReadProcMaps() on NetBSD does not handle >=1MB of memory layout information
 // UNSUPPORTED: netbsd
 
-// OHOS_LOCAL
-// dlopen not intercepted on OHOS
-// UNSUPPORTED: ohos_family
-
 #ifndef LIB
 
 #include <dlfcn.h>
