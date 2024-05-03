@@ -161,9 +161,8 @@ static bool isCompatible(InputFile *file) {
 template <class ELFT> static void doFillSymsFreqMap(InputFile *file) {
   if (!isCompatible(file))
     return;
-  if (auto *f = dyn_cast<SharedFileExtended<ELFT>>(file)) {
+  if (auto *f = dyn_cast<SharedFileExtended<ELFT>>(file))
     f->fillSymsFreqMap();
-  }
 }
 
 void elf::fillSymsFreqMap(InputFile *file) {
@@ -1069,15 +1068,14 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
   for (size_t i = firstGlobal, end = eSyms.size(); i != end; ++i)
     if (!symbols[i]) {
       StringRef name = CHECK(eSyms[i].getName(stringTable), this);
-      if (config->adlt && name == "__cfi_check") {
-        name = this->getUniqueName(name);
-        if (!ctx->adltWithCfi)
-          ctx->adltWithCfi = true;
-      }
-      if (config->adlt && eSyms[i].isDefined() &&
-          ctx->eSymsFreqMap[name] > 1) {
-        auto *f = cast<SharedFileExtended<ELFT>>(this);
-        name = f->addAdltPostfix(name);
+      if (config->adlt) {
+        if (name == "__cfi_check") {
+          name = this->getUniqueName(name);
+          if (!ctx->adltWithCfi)
+            ctx->adltWithCfi = true;
+        } else if (eSyms[i].isDefined() && ctx->eSymsFreqMap[name] > 1) {
+          name = this->getUniqueName(name);
+        }
       }
       symbols[i] = symtab.insert(name);
     }
