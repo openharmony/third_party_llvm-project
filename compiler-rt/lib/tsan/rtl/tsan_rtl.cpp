@@ -456,8 +456,6 @@ static bool InitializeMemoryProfiler() {
 }
 
 static void *BackgroundThread(void *arg) {
-  VReport(1, "%s: Started BackgroundThread\n",
-          SanitizerToolName); // OHOS_LOCAL
   // This is a non-initialized non-user thread, nothing to see here.
   // We don't use ScopedIgnoreInterceptors, because we want ignores to be
   // enabled even when the thread function exits (e.g. during pthread thread
@@ -505,7 +503,6 @@ static void *BackgroundThread(void *arg) {
       u64 last = atomic_load(&ctx->last_symbolize_time_ns,
                              memory_order_relaxed);
       if (last != 0 && last + flags()->flush_symbolizer_ms * kMs2Ns < now) {
-        VReport(1, "ThreadSanitizer: flushing symbolizer\n"); // OHOS_LOCAL
         Lock l(&ctx->report_mtx);
         ScopedErrorReportLock l2;
         SymbolizeFlush();
@@ -517,28 +514,14 @@ static void *BackgroundThread(void *arg) {
 }
 
 static void StartBackgroundThread() {
-  // OHOS_LOCAL begin
-  if (!flags()->disable_background_thread) {
-    ctx->background_thread = internal_start_thread(&BackgroundThread, 0);
-  } else {
-    // Appspawn does not allow the use of multi-threading so we don't start this
-    // thread.
-    return;
-  }
-  // OHOS_LOCAL end
+  ctx->background_thread = internal_start_thread(&BackgroundThread, 0);
 }
 
 #ifndef __mips__
 static void StopBackgroundThread() {
-  // OHOS_LOCAL begin
-  if (!flags()->disable_background_thread) {
-    atomic_store(&ctx->stop_background_thread, 1, memory_order_relaxed);
-    internal_join_thread(ctx->background_thread);
-    ctx->background_thread = 0;
-  } else {
-    return;
-  }
-  // OHOS_LOCAL end
+  atomic_store(&ctx->stop_background_thread, 1, memory_order_relaxed);
+  internal_join_thread(ctx->background_thread);
+  ctx->background_thread = 0;
 }
 #endif
 #endif

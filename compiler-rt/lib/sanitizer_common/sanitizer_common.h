@@ -807,13 +807,7 @@ class LoadedModule {
     internal_memset(uuid_, 0, kModuleUUIDSize);
     ranges_.clear();
   }
-#if SANITIZER_OHOS
-// OHOS_LOCAL begin
-  void set(const char *module_name, uptr base_address, bool instrumented = false);
-#else
   void set(const char *module_name, uptr base_address);
-// OHOS_LOCAL end
-#endif  
   void set(const char *module_name, uptr base_address, ModuleArch arch,
            u8 uuid[kModuleUUIDSize], bool instrumented);
   void setUuid(const char *uuid, uptr size);

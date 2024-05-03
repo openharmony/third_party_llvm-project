@@ -38,8 +38,6 @@ public:
                                  lldb_private::Target *target,
                                  lldb_private::Status &error) override;
 
-  // When 'hostname' is not ipv4, ipv6 or localhost, the function will return true. 
-  // such as IsHostnameDeviceID("127.0.0.1:8080") return true.
   static bool IsHostnameDeviceID(llvm::StringRef hostname);
 
 protected:

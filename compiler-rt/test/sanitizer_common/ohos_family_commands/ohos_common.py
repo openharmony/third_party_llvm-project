@@ -14,7 +14,7 @@ def host_to_device_path(path):
 
 def hdc_output(args):
     command = hdc_constants.get_hdc_cmd_prefix() + args
-    return subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=300)
+    return subprocess.check_output(command, stderr=subprocess.STDOUT)
 
 def hdc(args, attempts=1, check_stdout=''):
     if verbose:

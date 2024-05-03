@@ -10,10 +10,6 @@
 //
 // FIXME: Windows doesn't implement mmap_limit_mb.
 // XFAIL: windows-msvc
-//
-// OHOS_LOCAL
-// FIXME: timed out test
-// XFAIL: ohos_family
 
 #include <assert.h>
 #include <stdlib.h>

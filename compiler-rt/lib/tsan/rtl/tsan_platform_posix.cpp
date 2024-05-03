@@ -107,9 +107,6 @@ void CheckAndProtect() {
       break;
     Printf("FATAL: ThreadSanitizer: unexpected memory mapping 0x%zx-0x%zx\n",
            segment.start, segment.end);
-#if SANITIZER_OHOS
-    DumpProcessMap(); // OHOS_LOCAL
-#endif
     Die();
   }
 

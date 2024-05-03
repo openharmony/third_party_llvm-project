@@ -134,22 +134,11 @@ void RemoveANSIEscapeSequencesFromString(char *str) {
   *z = '\0';
 }
 
-#if SANITIZER_OHOS
-// OHOS_LOCAL begin
-void LoadedModule::set(const char *module_name, uptr base_address, bool instrumented) {
-  clear();
-  full_name_ = internal_strdup(module_name);
-  base_address_ = base_address;
-  instrumented_ = instrumented;
-}
-#else 
 void LoadedModule::set(const char *module_name, uptr base_address) {
   clear();
   full_name_ = internal_strdup(module_name);
   base_address_ = base_address;
 }
-// OHOS_LOCAL end
-#endif 
 
 void LoadedModule::set(const char *module_name, uptr base_address,
                        ModuleArch arch, u8 uuid[kModuleUUIDSize],

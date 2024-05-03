@@ -11,17 +11,6 @@ set(TSAN_RTL_DYNAMIC_CFLAGS ${TSAN_RTL_CFLAGS})
 list(REMOVE_ITEM TSAN_RTL_DYNAMIC_CFLAGS -fPIE)
 
 set(TSAN_DYNAMIC_LINK_LIBS ${SANITIZER_CXX_ABI_LIBRARIES} ${SANITIZER_COMMON_LINK_LIBS})
-#OHOS_LOCAL
-set(TSAN_DYNAMIC_LINK_FLAGS ${SANITIZER_COMMON_LINK_FLAGS})
-
-#OHOS_LOCAL begin
-if(OHOS)
-# Put tsan library in the global group so that libraries which don't depend on tsan can also find symbols from tsan.
-  if (COMPILER_RT_HAS_Z_GLOBAL)
-    list(APPEND TSAN_DYNAMIC_LINK_FLAGS -Wl,-z,global)
-  endif()
-endif()
-#OHOS_LOCAL end
 
 append_list_if(COMPILER_RT_HAS_LIBDL dl TSAN_DYNAMIC_LINK_LIBS)
 append_list_if(COMPILER_RT_HAS_LIBM m TSAN_DYNAMIC_LINK_LIBS)
@@ -153,8 +142,7 @@ if(APPLE)
                 RTSanitizerCommonSymbolizer
                 RTUbsan
     CFLAGS ${TSAN_RTL_CFLAGS}
-    #OHOS_LOCAL
-    LINK_FLAGS ${TSAN_DYNAMIC_LINK_FLAGS} ${WEAK_SYMBOL_LINK_FLAGS}
+    LINK_FLAGS ${SANITIZER_COMMON_LINK_FLAGS} ${WEAK_SYMBOL_LINK_FLAGS}
     LINK_LIBS ${TSAN_LINK_LIBS} objc
     PARENT_TARGET tsan)
   add_compiler_rt_object_libraries(RTTsan_dynamic
@@ -276,8 +264,7 @@ else()
       ADDITIONAL_HEADERS ${TSAN_HEADERS}
       CFLAGS ${TSAN_RTL_DYNAMIC_CFLAGS}
       LINK_LIBS ${TSAN_DYNAMIC_LINK_LIBS}
-      #OHOS_LOCAL
-      LINK_FLAGS ${TSAN_DYNAMIC_LINK_FLAGS}
+      LINK_FLAGS ${SANITIZER_COMMON_LINK_FLAGS}
       PARENT_TARGET tsan)
     add_sanitizer_rt_symbols(clang_rt.tsan
       ARCHS ${arch}
