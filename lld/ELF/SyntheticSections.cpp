@@ -4222,9 +4222,8 @@ AdltSection<ELFT>::makeSoData(const SharedFileExtended<ELFT>* soext) {
   data.relaDynIndx = soext->dynRelIndexes.getArrayRef();
   data.relaPltIndx = soext->pltRelIndexes.getArrayRef();
 
-  std::copy(soext->programHeaderIndexes.begin(),
-            soext->programHeaderIndexes.end(),
-            std::back_inserter(data.phIndexes));
+  data.programHeadersAllocated = soext->programHeaders.size();
+  data.programHeaders = soext->programHeaders.getArrayRef();
 
   return data;
 }
@@ -4286,7 +4285,7 @@ size_t AdltSection<ELFT>::estimateBlobSize() const {
 
   for (const auto& soData: soInputs) {
     blobSize += sizeof(adlt_dt_needed_index_t) * soData.dtNeededs.size();
-    blobSize += sizeof(uint16_t) * soData.phIndexes.size();
+    blobSize += sizeof(uint16_t) * soData.programHeadersAllocated;
     blobSize += sizeof(uint32_t) * soData.relaDynIndx.size();
     blobSize += sizeof(uint32_t) * soData.relaPltIndx.size();
   };
@@ -4338,7 +4337,17 @@ adlt_blob_array_t AdltSection<ELFT>::writeDtNeeded(
 }
 
 template <typename ELFT>
+void AdltSection<ELFT>::extractProgramHeaderIndexes() {
+  phdrsIndexes.clear();
+  for (const auto& it : llvm::enumerate(mainPart->phdrs)) {
+    phdrsIndexes[it.value()] = static_cast<uint16_t>(it.index());
+  };
+}
+
+template <typename ELFT>
 void AdltSection<ELFT>::finalizeOnWrite() {
+  // require optimizing Writer::removeEmptyPTLoad been called
+  extractProgramHeaderIndexes();
   // require Writer::setPhdrs previously been called
   header.overallMappedSize = estimateOverallMappedSize();
 
@@ -4358,6 +4367,23 @@ void AdltSection<ELFT>::finalizeOnWrite(size_t idx, SoData& soData) {
   // require SymbolTableBaseSection::sortSymTabSymbolsInAdlt for .symtab called
   soData.sharedLocalIndex = soext->sharedLocalSymbolIndex;
   soData.sharedGlobalIndex = soext->sharedGlobalSymbolIndex;
+
+  // phIndexes may shift if called before Writer::removeEmptyPTLoad
+  soData.phIndexes.clear();
+  for (const PhdrEntry* phentry : soData.programHeaders) {
+    auto it = phdrsIndexes.find(phentry);
+    if (it != phdrsIndexes.end()) {
+      soData.phIndexes.push_back(it->second);
+    }
+  }
+
+  assert(soData.phIndexes.size() <= soData.programHeadersAllocated);
+  if (soData.phIndexes.size() != soData.programHeadersAllocated) {
+    warn(Twine(".adlt section: overallocated ph-indexes for psod-") + Twine(idx)
+      + " allocated=" + Twine(soData.programHeadersAllocated)
+      + " actual=" + Twine(soData.phIndexes.size())
+    );
+  }
 }
 
 template <typename ELFT>
