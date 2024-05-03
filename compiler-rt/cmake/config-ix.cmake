@@ -205,6 +205,12 @@ if(ANDROID)
   check_library_exists(log __android_log_write "" COMPILER_RT_HAS_LIBLOG)
 endif()
 
+#OHOS_LOCAL begin
+if(OHOS)
+  llvm_check_compiler_linker_flag(CXX "-Wl,-z,global" COMPILER_RT_HAS_Z_GLOBAL)
+endif()
+#OHOS_LOCAL end
+
 # Architectures.
 
 # List of all architectures we can target.

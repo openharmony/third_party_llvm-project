@@ -11,6 +11,7 @@
 // sanitizer_libc.h.
 //===----------------------------------------------------------------------===//
 
+#include "sanitizer_interface_internal.h" // OHOS_LOCAL
 #include "sanitizer_platform.h"
 
 #if SANITIZER_FREEBSD || SANITIZER_LINUX || SANITIZER_NETBSD || \
@@ -2290,7 +2291,56 @@ static void GetPcSpBp(void *context, uptr *pc, uptr *sp, uptr *bp) {
 
 void SignalContext::InitPcSpBp() { GetPcSpBp(context, &pc, &sp, &bp); }
 
+#if SANITIZER_OHOS
+// OHOS_LOCAL begin
+static bool ShouldCheckInterceptors() {
+  const char *sanitizer_names[] = {"AddressSanitizer", "ThreadSanitizer"};
+  size_t count = sizeof(sanitizer_names) / sizeof(sanitizer_names[0]);
+  for (size_t i = 0; i < count; i++) {
+    if (internal_strcmp(sanitizer_names[i], SanitizerToolName) == 0)
+      return true;
+  }
+  return false;
+}
+
+// We need to make sure that dlopen_impl interceptors really work.
+// 1. Check sanitizer library has dlopen_impl symbol.
+// 2. Check musl has dlopen_impl symbol.
+// 3. Check first dlopen_impl symbol is located in sanitizer library.
+static void VerifyInterceptorsWorking() {
+  if (!common_flags()->verify_interceptors || !ShouldCheckInterceptors())
+    return;
+
+  Dl_info info_dlopen_impl_default;
+  RAW_CHECK(
+      dladdr(dlsym(RTLD_DEFAULT, "dlopen_impl"), &info_dlopen_impl_default));
+
+  Dl_info info_dlopen_impl_next;
+  RAW_CHECK(dladdr(dlsym(RTLD_NEXT, "dlopen_impl"), &info_dlopen_impl_next));
+
+  Dl_info info_runtime;
+  RAW_CHECK(dladdr((void *)__sanitizer_report_error_summary, &info_runtime));
+
+  if (internal_strcmp(info_dlopen_impl_default.dli_fname,
+                      info_runtime.dli_fname) != 0) {
+    Report(
+        "ERROR: Interceptor dlopen_impl are not working. This may be because "
+        "%s is "
+        "loaded too late (e.g. via dlopen). first dlopen_impl addr:%p file:%s "
+        "second dlopen_impl addr:%p file:%s.\n",
+        info_runtime.dli_fname, info_dlopen_impl_default.dli_saddr,
+        info_dlopen_impl_default.dli_fname, info_dlopen_impl_next.dli_saddr,
+        info_dlopen_impl_next.dli_fname);
+    RAW_CHECK("interceptors not installed" && 0);
+  }
+}
+// OHOS_LOCAL end
+#endif
+
 void InitializePlatformEarly() {
+#if SANITIZER_OHOS && SANITIZER_INTERCEPT_DLOPEN_DLCLOSE
+  VerifyInterceptorsWorking(); // OHOS_LOCAL
+#endif
   // Do nothing.
 }
 

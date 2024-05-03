@@ -16,10 +16,6 @@
 // FIXME: This test regularly fails on powerpc64 LE possibly starting with
 // r279664.  Re-enable the test once the problem(s) have been fixed.
 
-// OHOS_LOCAL
-// dlopen not intercepted on OHOS
-// UNSUPPORTED: ohos_family
-
 #ifndef LIB
 
 #include <dlfcn.h>

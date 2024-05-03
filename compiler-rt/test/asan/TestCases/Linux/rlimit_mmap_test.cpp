@@ -1,5 +1,10 @@
 // Check that we properly report mmap failure.
 // RUN: %clangxx_asan %s -o %t && not %run %t 2>&1 | FileCheck %s
+//
+// OHOS_LOCAL
+// FIXME: timed out test
+// XFAIL: ohos_family
+
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/time.h>

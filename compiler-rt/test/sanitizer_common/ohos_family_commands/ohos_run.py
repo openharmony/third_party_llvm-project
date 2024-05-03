@@ -26,12 +26,15 @@ def build_env():
     sanitizers = (
         'HWASAN', 'ASAN', 'LSAN', 'MEMPROF', 'MSAN', 'TSAN', 'UBSAN', 'SCUDO'
     )
+    set_abort_on_error=True
     for san in sanitizers:
-        # for all sanitizers we need 'abort_on_error=0',
+        # for all sanitizers we need 'abort_on_error=0' if 'abort_on_error=1' is not set,
         # so prepare key for them, to set value later
         opt_str = '%s_OPTIONS' % san
         if opt_str not in os.environ:
             os.environ[opt_str] = ''
+        elif 'abort_on_error=1' in os.environ[opt_str]:
+            set_abort_on_error=False
 
         # All sanitizers need external symbolizers for some tests
         # set them by default to llvm-symbolizer
@@ -42,7 +45,7 @@ def build_env():
     args.append('LD_LIBRARY_PATH=%s' % ( hdc_constants.TMPDIR,))
     for (key, value) in os.environ.items():
         san_opt = key.endswith('SAN_OPTIONS')
-        if san_opt:
+        if san_opt and set_abort_on_error:
             value += ':abort_on_error=0'
         if key in ['ASAN_ACTIVATION_OPTIONS', 'SCUDO_OPTIONS'] or san_opt or key == 'LD_LIBRARY_PATH':
             if key in ['TSAN_OPTIONS', 'UBSAN_OPTIONS']:

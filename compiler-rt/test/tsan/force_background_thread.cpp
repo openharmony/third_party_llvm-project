@@ -1,7 +1,9 @@
 // RUN: %clangxx_tsan -O1 %s -o %t
-// RUN: %deflake %env_tsan_opts=force_background_thread=0:verbosity=1:memory_limit_mb=1000 %run %t 2>&1 | FileCheck %s --implicit-check-not "memory flush check"
-// RUN: %deflake %env_tsan_opts=force_background_thread=1:verbosity=1:memory_limit_mb=1000 %run %t 2>&1 | FileCheck %s --check-prefixes=CHECK,THREAD
-// RUN: %deflake %env_tsan_opts=force_background_thread=0:verbosity=1:memory_limit_mb=1000 %run %t 1 2>&1 | FileCheck %s --check-prefixes=CHECK,THREAD
+// OHOS_LOCAL begin
+// RUN: %deflake %env_tsan_opts=force_background_thread=0:verbosity=1:memory_limit_mb=1000:disable_background_thread=0 %run %t 2>&1 | FileCheck %s --implicit-check-not "memory flush check"
+// RUN: %deflake %env_tsan_opts=force_background_thread=1:verbosity=1:memory_limit_mb=1000:disable_background_thread=0 %run %t 2>&1 | FileCheck %s --check-prefixes=CHECK,THREAD
+// RUN: %deflake %env_tsan_opts=force_background_thread=0:verbosity=1:memory_limit_mb=1000:disable_background_thread=0 %run %t 1 2>&1 | FileCheck %s --check-prefixes=CHECK,THREAD
+// OHOS_LOCAL end
 
 // Fails with: objc[99984]: task_restartable_ranges_register failed (result 0x2e: (os/kern) service not supported)
 // UNSUPPORTED: darwin

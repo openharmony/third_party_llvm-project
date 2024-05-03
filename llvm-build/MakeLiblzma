@@ -17,6 +17,7 @@ TARGET_TRIPLE :=
 CC :=
 SRCS :=  7zAlloc.c 7zArcIn.c 7zBuf2.c 7zBuf.c 7zCrc.c 7zCrcOpt.c 7zDec.c 7zFile.c 7zStream.c Aes.c AesOpt.c Alloc.c Bcj2.c Bra86.c Bra.c BraIA64.c CpuArch.c Delta.c LzFind.c Lzma2Dec.c Lzma2Enc.c Lzma86Dec.c Lzma86Enc.c LzmaDec.c LzmaEnc.c LzmaLib.c Ppmd7.c Ppmd7Dec.c Ppmd7Enc.c Sha256.c Sha256Opt.c Sort.c Xz.c XzCrc64.c XzCrc64Opt.c XzDec.c XzEnc.c XzIn.c
 SRC_PREFIX :=
+LIB_VERSION :=
 
 ifeq ($(TARGET_TRIPLE),linux-x86_64)
 CFLAGS := --target=x86_64-unknown-linux-gnu -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC
@@ -31,9 +32,9 @@ TARGET_A := liblzma.dll.a
 else
 ifeq ($(findstring darwin,$(TARGET_TRIPLE)),darwin)
 SDKROOT := $(shell xcrun --sdk macosx --show-sdk-path)
-CFLAGS := -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC
-LDFLAGS := -dynamiclib -fuse-ld=lld -Wl,-syslibroot,$(SDKROOT) -install_name @rpath/liblzma.dylib
-TARGET := liblzma.dylib
+CFLAGS := -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC -current_version $(LIB_VERSION) -compatibility_version $(LIB_VERSION)
+LDFLAGS := -dynamiclib -fuse-ld=lld -Wl,-syslibroot,$(SDKROOT) -install_name @rpath/liblzma.$(LIB_VERSION).dylib
+TARGET := liblzma.$(LIB_VERSION).dylib
 else
 $(warning *** warning: TARGET_TRIPLE $(TARGET_TRIPLE) has not been set in rights)
 endif
