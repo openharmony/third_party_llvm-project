@@ -158,6 +158,18 @@ static bool isCompatible(InputFile *file) {
   return false;
 }
 
+template <class ELFT> static void doFillSymsFreqMap(InputFile *file) {
+  if (!isCompatible(file))
+    return;
+  if (auto *f = dyn_cast<SharedFileExtended<ELFT>>(file)) {
+    f->fillSymsFreqMap();
+  }
+}
+
+void elf::fillSymsFreqMap(InputFile *file) {
+  invokeELFT(doFillSymsFreqMap, file);
+}
+
 template <class ELFT> static void doParseFile(InputFile *file) {
   if (!isCompatible(file))
     return;
@@ -1034,6 +1046,16 @@ InputSectionBase *ObjFile<ELFT>::createInputSection(uint32_t idx,
   return make<InputSection>(*this, sec, name);
 }
 
+template <class ELFT> void ObjFile<ELFT>::fillSymsFreqMap() {
+  ArrayRef<Elf_Sym> eSyms = this->getELFSyms<ELFT>();
+  for (size_t i = firstGlobal, end = eSyms.size(); i != end; ++i) {
+    if (!eSyms[i].isDefined())
+      continue;
+    StringRef name = CHECK(eSyms[i].getName(stringTable), this);
+    ctx->eSymsFreqMap[name]++;
+  }
+}
+
 // Initialize this->Symbols. this->Symbols is a parallel array as
 // its corresponding ELF symbol table.
 template <class ELFT>
@@ -1051,6 +1073,11 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
         name = this->getUniqueName(name);
         if (!ctx->adltWithCfi)
           ctx->adltWithCfi = true;
+      }
+      if (config->adlt && eSyms[i].isDefined() &&
+          ctx->eSymsFreqMap[name] > 1) {
+        auto *f = cast<SharedFileExtended<ELFT>>(this);
+        name = f->addAdltPostfix(name);
       }
       symbols[i] = symtab.insert(name);
     }

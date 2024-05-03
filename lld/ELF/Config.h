@@ -399,6 +399,8 @@ struct Ctx {
   // A tuple of (reference, extractedFile, sym). Used by --why-extract=.
   SmallVector<std::tuple<std::string, const InputFile *, const Symbol &>, 0>
       whyExtractRecords;
+  // Map of symbols frequency (only defined)
+  llvm::DenseMap<StringRef, uint64_t> eSymsFreqMap;
   // A mapping from a symbol to an InputFile referencing it backward. Used by
   // --warn-backrefs.
   llvm::DenseMap<const Symbol *,

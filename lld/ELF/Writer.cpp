@@ -2110,9 +2110,10 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
 
       if (sym->includeInDynsym()) {
         partitions[sym->partition - 1].dynSymTab->addSymbol(sym);
-        if (auto *file = dyn_cast_or_null<SharedFile>(sym->file))
-          if (file->isNeeded && !sym->isUndefined())
-            addVerneed(sym);
+        if(!config->adlt) // TODO: fix for adlt.
+          if (auto *file = dyn_cast_or_null<SharedFile>(sym->file))
+            if (file->isNeeded && !sym->isUndefined())
+              addVerneed(sym);
       }
     }
 

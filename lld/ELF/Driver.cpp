@@ -2567,6 +2567,11 @@ void LinkerDriver::link(opt::InputArgList &args) {
   for (StringRef name : config->undefined)
     addUnusedUndefined(name)->referenced = true;
 
+  // Fill sym frequensy map for defined syms, This will help to find duplicates.
+  if (config->adlt)
+    for (auto *file : files)
+      fillSymsFreqMap(file);
+
   // Add all files to the symbol table. This will add almost all
   // symbols that we need to the symbol table. This process might
   // add files to the link, via autolinking, these files are always
