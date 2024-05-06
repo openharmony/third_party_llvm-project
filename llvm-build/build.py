@@ -530,6 +530,11 @@ class BuildUtils(object):
 
         subprocess.check_call(cmd, *args, **kwargs)
 
+    def force_symlink(self, src, dst):
+        if os.path.exists(dst):
+            os.remove(dst)
+        os.symlink(src, dst)
+
     def merge_out_path(self, *args):
         return os.path.abspath(os.path.join(self.build_config.OUT_PATH, *args))
 
@@ -719,17 +724,16 @@ class LlvmCore(BuildUtils):
             target_dir = f"{build_dir}/{target_dir}"
             if not os.path.exists(target_dir):
                 continue
-            for (root, dirs, files) in os.walk(target_dir):
-                src_path = root
-                dst_path = root.replace(build_dir, install_dir)
+            for (src_path, dirs, files) in os.walk(target_dir):
+                dst_path = src_path.replace(build_dir, install_dir)
                 for file in files:
                     if file.endswith(".cpp.o") or file == "cmake_install.cmake":
                         continue
-                    os.makedirs(dst_path, exist_ok=True)
-                    shutil.copy2(
-                        os.path.join(src_path, file),
-                        os.path.join(dst_path, file)
-                    )
+                    src = os.path.join(src_path, file)
+                    dst = os.path.join(dst_path, file)
+                    if os.stat(src) != os.stat(dst):
+                        os.makedirs(dst_path, exist_ok=True)
+                        shutil.copy2(src, dst)
 
     def llvm_compile_darwin_defines(self, llvm_defines):
         if self.host_is_darwin():
@@ -1938,7 +1942,7 @@ class LlvmLibs(BuildUtils):
         for f in libs:
             self.check_copy_file(f'{f}.15', sysroot_lib_dir)
             os.chdir(sysroot_lib_dir)
-            os.symlink(f'{f}.15', f)
+            self.force_symlink(f'{f}.15', f)
             os.chdir(build_lib_dir)
 
     def build_gtest_defines(self, llvm_install):
