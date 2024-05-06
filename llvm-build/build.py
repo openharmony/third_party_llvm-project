@@ -727,13 +727,14 @@ class LlvmCore(BuildUtils):
             for (src_path, dirs, files) in os.walk(target_dir):
                 dst_path = src_path.replace(build_dir, install_dir)
                 for file in files:
-                    if file.endswith(".cpp.o") or file == "cmake_install.cmake":
-                        continue
                     src = os.path.join(src_path, file)
                     dst = os.path.join(dst_path, file)
-                    if os.stat(src) != os.stat(dst):
-                        os.makedirs(dst_path, exist_ok=True)
-                        shutil.copy2(src, dst)
+                    if file.endswith(".cpp.o") or file == "cmake_install.cmake":
+                        continue
+                    if os.path.exists(dst) and os.stat(src) == os.stat(dst):
+                        continue
+                    os.makedirs(dst_path, exist_ok=True)
+                    shutil.copy2(src, dst)
 
     def llvm_compile_darwin_defines(self, llvm_defines):
         if self.host_is_darwin():
