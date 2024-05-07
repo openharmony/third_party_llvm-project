@@ -158,15 +158,16 @@ static bool isCompatible(InputFile *file) {
   return false;
 }
 
-template <class ELFT> static void doFillSymsFreqMap(InputFile *file) {
+template <class ELFT>
+static void doBuildSymsHist(InputFile *file, Ctx::eSymsCntMap &eSymsHist) {
   if (!isCompatible(file))
     return;
   if (auto *f = dyn_cast<SharedFileExtended<ELFT>>(file))
-    f->fillSymsFreqMap();
+    f->buildSymsHist(eSymsHist);
 }
 
-void elf::fillSymsFreqMap(InputFile *file) {
-  invokeELFT(doFillSymsFreqMap, file);
+void elf::buildSymsHist(InputFile *file, Ctx::eSymsCntMap &eSymsHist) {
+  invokeELFT(doBuildSymsHist, file, eSymsHist);
 }
 
 template <class ELFT> static void doParseFile(InputFile *file) {
@@ -1045,13 +1046,14 @@ InputSectionBase *ObjFile<ELFT>::createInputSection(uint32_t idx,
   return make<InputSection>(*this, sec, name);
 }
 
-template <class ELFT> void ObjFile<ELFT>::fillSymsFreqMap() {
+template <class ELFT>
+void ObjFile<ELFT>::buildSymsHist(Ctx::eSymsCntMap &eSymsHist) {
   ArrayRef<Elf_Sym> eSyms = this->getELFSyms<ELFT>();
   for (size_t i = firstGlobal, end = eSyms.size(); i != end; ++i) {
     if (!eSyms[i].isDefined())
       continue;
     StringRef name = CHECK(eSyms[i].getName(stringTable), this);
-    ctx->eSymsFreqMap[name]++;
+    eSymsHist[CachedHashStringRef(name)]++;
   }
 }
 
@@ -1068,15 +1070,14 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
   for (size_t i = firstGlobal, end = eSyms.size(); i != end; ++i)
     if (!symbols[i]) {
       StringRef name = CHECK(eSyms[i].getName(stringTable), this);
-      if (config->adlt && eSyms[i].isDefined() && ctx->eSymsFreqMap[name] > 1) {
-        if (name == "__cfi_check")
+      if (config->adlt && eSyms[i].isDefined() &&
+          ctx->eSymsHist.count(CachedHashStringRef(name)) != 0) {
+        if (!ctx->adltWithCfi && name == "__cfi_check")
           ctx->adltWithCfi = true;
         name = this->getUniqueName(name);
       }
       symbols[i] = symtab.insert(name);
     }
-
-
 
   // Perform symbol resolution on non-local symbols.
   SmallVector<unsigned, 32> undefineds;

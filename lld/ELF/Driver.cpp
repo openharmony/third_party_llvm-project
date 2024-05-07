@@ -2567,10 +2567,16 @@ void LinkerDriver::link(opt::InputArgList &args) {
   for (StringRef name : config->undefined)
     addUnusedUndefined(name)->referenced = true;
 
-  // Fill sym frequensy map for defined syms, This will help to find duplicates.
-  if (config->adlt)
+  // Fill eSymsHist for defined syms. This will help to find duplicates.
+  if (config->adlt) {
+    Ctx::eSymsCntMap eSymsHist;
     for (auto *file : files)
-      fillSymsFreqMap(file);
+      buildSymsHist(file, eSymsHist);
+    for (auto eSym : eSymsHist)
+      if (eSym.second > 1)
+        ctx->eSymsHist.insert(eSym.first);
+    eSymsHist.clear();
+  }
 
   // Add all files to the symbol table. This will add almost all
   // symbols that we need to the symbol table. This process might

@@ -47,7 +47,7 @@ extern std::unique_ptr<llvm::TarWriter> tar;
 llvm::Optional<MemoryBufferRef> readFile(StringRef path);
 
 // Add symbols in File to the symbol table.
-void fillSymsFreqMap(InputFile *file);
+void buildSymsHist(InputFile *file, Ctx::eSymsCntMap &eSymsHist);
 void parseFile(InputFile *file);
 
 // The root class of input files.
@@ -293,7 +293,7 @@ public:
   // Get cached DWARF information.
   DWARFCache *getDwarf();
 
-  void fillSymsFreqMap();
+  void buildSymsHist(Ctx::eSymsCntMap &eSymsHist);
   void initializeLocalSymbols();
   void postParse();
 
