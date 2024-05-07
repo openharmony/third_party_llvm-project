@@ -94,6 +94,31 @@ void __ubsan::__ubsan_handle_dynamic_type_cache_miss_abort(
     Die();
 }
 
+static bool StartsWith(const char *Str, const char *Pattern, uptr PatternLen) {
+  return internal_strncmp(Str, Pattern, PatternLen) == 0;
+}
+static bool EndsWith(const char *Str, uptr StrLen, const char *Pattern, uptr PatternLen) {
+  return (StrLen >= PatternLen) &&
+         (internal_strcmp(Str + StrLen - PatternLen, Pattern) == 0);
+}
+
+static const char *UndecorateCfiTypeIdSymbol(char *Str) {
+  const char StartPattern[] = "__typeid_";
+  const char EndPattern[] = "_global_addr";
+  auto StartPatternLen = sizeof(StartPattern) - 1;
+  auto EndPatternLen = sizeof(EndPattern) - 1;
+
+  uptr Len = internal_strlen(Str);
+  if (Len > StartPatternLen + EndPatternLen &&
+      StartsWith(Str, StartPattern, StartPatternLen) &&
+      EndsWith(Str, Len, EndPattern, EndPatternLen)) {
+    Str[Len - EndPatternLen] = 0;
+    Str += StartPatternLen;
+    return common_flags()->demangle ? demangle(Str) : Str;
+  }
+  return nullptr;
+}
+
 namespace __ubsan {
 void __ubsan_handle_cfi_bad_type(CFICheckFailData *Data, ValueHandle Vtable,
                                  bool ValidVtable, ReportOptions Opts) {
@@ -136,11 +161,26 @@ void __ubsan_handle_cfi_bad_type(CFICheckFailData *Data, ValueHandle Vtable,
       << Data->Type << CheckKindStr << (void *)Vtable;
 
   // If possible, say what type it actually points to.
-  if (!DTI.isValid())
-    Diag(Vtable, DL_Note, ET, "invalid vtable");
-  else
+  DataInfo VtableDataInfo;
+  if (DTI.isValid()) {
     Diag(Vtable, DL_Note, ET, "vtable is of type %0")
         << TypeName(DTI.getMostDerivedTypeName());
+  } else if (getSymbolizedData(Vtable, &VtableDataInfo) &&
+             VtableDataInfo.name) {
+    if (ValidVtable) {
+      const char *PrintedName = VtableDataInfo.name;
+      if (auto *Undecorated = UndecorateCfiTypeIdSymbol(VtableDataInfo.name))
+        PrintedName = Undecorated;
+      Diag(Vtable, DL_Note, ET, "vtable CFI typeid is (or aliases) %0`%1")
+          << VtableDataInfo.module << PrintedName;
+    } else {
+      Diag(Vtable, DL_Note, ET, "invalid vtable (address points to %0`%1)")
+          << VtableDataInfo.module << VtableDataInfo.name;
+    }
+  } else {
+    Diag(Vtable, DL_Note, ET, "invalid vtable");
+  }
+  VtableDataInfo.Clear();
 
   // If the failure involved different DSOs for the check location and vtable,
   // report the DSO names.
