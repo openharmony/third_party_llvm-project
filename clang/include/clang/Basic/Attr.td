@@ -390,6 +390,8 @@ def TargetAArch64 : TargetArch<["aarch64"]>;
 def TargetAnyArm : TargetArch<!listconcat(TargetARM.Arches, TargetAArch64.Arches)>;
 def TargetAVR : TargetArch<["avr"]>;
 def TargetBPF : TargetArch<["bpfel", "bpfeb"]>;
+// OHOS_LOCAL
+def TargetXVM : TargetArch<["xvm"]>;
 def TargetMips32 : TargetArch<["mips", "mipsel"]>;
 def TargetAnyMips : TargetArch<["mips", "mipsel", "mips64", "mips64el"]>;
 def TargetMSP430 : TargetArch<["msp430"]>;
@@ -1933,6 +1935,16 @@ def WebAssemblyExportName : InheritableAttr,
   let Documentation = [WebAssemblyExportNameDocs];
   let Subjects = SubjectList<[Function], ErrorDiag>;
 }
+
+// OHOS_LOCAL begin
+def XVMExportName : InheritableAttr,
+                    TargetSpecificAttr<TargetXVM> {
+  let Spellings = [Clang<"xvm_export_name">];
+  let Args = [StringArgument<"ExportName">];
+  let Documentation = [Undocumented];
+  let Subjects = SubjectList<[Function], ErrorDiag>;
+}
+// OHOS_LOCAL end
 
 def WebAssemblyImportModule : InheritableAttr,
                               TargetSpecificAttr<TargetWebAssembly> {

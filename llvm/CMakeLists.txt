@@ -384,6 +384,8 @@ set(LLVM_ALL_TARGETS
   WebAssembly
   X86
   XCore
+  # OHOS_LOCAL
+  XVM
   )
 
 # List of targets with JIT support:

@@ -32,6 +32,8 @@
 #include "ToolChains/Hurd.h"
 #include "ToolChains/Lanai.h"
 #include "ToolChains/Linux.h"
+// OHOS_LOCAL
+#include "ToolChains/XVMToolchain.h"
 #include "ToolChains/MSP430.h"
 #include "ToolChains/MSVC.h"
 #include "ToolChains/MinGW.h"
@@ -6095,6 +6097,11 @@ const ToolChain &Driver::getToolChain(const ArgList &Args,
       case llvm::Triple::wasm64:
         TC = std::make_unique<toolchains::WebAssembly>(*this, Target, Args);
         break;
+      // OHOS_LOCAL begin
+      case llvm::Triple::xvm:
+        TC = std::make_unique<toolchains::XVMToolchain>(*this, Target, Args);
+        break;
+      // OHOS_LOCAL end
       case llvm::Triple::avr:
         TC = std::make_unique<toolchains::AVRToolChain>(*this, Target, Args);
         break;

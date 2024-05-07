@@ -320,6 +320,8 @@ enum {
   EM_VE = 251,            // NEC SX-Aurora VE
   EM_CSKY = 252,          // C-SKY 32-bit processor
   EM_LOONGARCH = 258,     // LoongArch
+  // OHOS_LOCAL
+  EM_XVM = 265,           // OS kernel xvm virtual machine
 };
 
 // Object file classes.
@@ -393,6 +395,13 @@ enum {
 enum {
 #include "ELFRelocs/PowerPC.def"
 };
+
+// OHOS_LOCAL begin
+// ELF Relocation types for XVM
+enum {
+#include "ELFRelocs/XVM.def"
+};
+// OHOS_LOCAL end
 
 // Specific e_flags for PPC64
 enum {
