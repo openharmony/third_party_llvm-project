@@ -1050,21 +1050,33 @@ void PhdrEntry::add(OutputSection *sec) {
   lastSec = sec;
   if (!firstSec)
     firstSec = sec;
-  bool adltCFI = config->adlt && ctx->adltWithCfi && p_type == PT_LOAD;
-  if (adltCFI) // check cfi.h: LIBRARY_ALIGNMENT and _BITS
-    sec->alignment = 1UL << 18;
+
   p_align = std::max(p_align, sec->alignment);
+
   if (p_type == PT_LOAD)
     sec->ptLoad = this;
 
-  if (config->adlt && (p_type == PT_LOAD || p_type == PT_TLS)) {
-    auto* insec = getInputSection(sec);
-    // skip generated sections.
-    // TODO: fix .rodata_$ADLT_POSTFIX sections.
-    if (insec && insec->file) {
-      invokeELFT(addPhdrToSharedFilesExtendedContext, insec->file, this);
+  // OHOS_LOCAL begin
+  if (config->adlt) {
+    if (ctx->adlt.withCfi && p_type == PT_LOAD) {
+      // check cfi.h: LIBRARY_ALIGNMENT and _BITS
+      constexpr uint32_t kCFILibraryAlignment = 1UL << 18;
+      firstSec->alignment = std::max(firstSec->alignment, kCFILibraryAlignment);
+      p_align = std::max(p_align, kCFILibraryAlignment);
+    }
+
+    if (p_type == PT_LOAD || p_type == PT_TLS) {
+      auto* insec = getInputSection(sec);
+      // skip generated sections.
+      // TODO: fix .rodata_$ADLT_POSTFIX sections.
+      if (insec && insec->file) {
+        invokeELFT(addPhdrToSharedFilesExtendedContext, insec->file, this);
+      } else {
+        ctx->adlt.commonProgramHeaders.insert(this);
+      }
     }
   }
+  // OHOS_LOCAL end
 }
 
 // The beginning and the ending of .rel[a].plt section are marked
@@ -2410,12 +2422,22 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
     return ret.back();
   };
 
+  // OHOS_LOCAL begin
+  auto getOwnerFileIdx = [](OutputSection* sec) -> llvm::Optional<size_t> {
+    auto file = getInputSection(sec)->file;
+    if (!file)
+      return llvm::None;
+    return cast<SharedFileExtended<ELFT>>(file)->orderIdx;
+  };
+  // OHOS_LOCAL end
+
   unsigned partNo = part.getNumber();
   bool isMain = partNo == 1;
 
   // Add the first PT_LOAD segment for regular output sections.
   uint64_t flags = computeFlags(PF_R);
   PhdrEntry *load = nullptr;
+  llvm::Optional<size_t> lastOwnerIdx = llvm::None; // OHOS_LOCAL
 
   // nmagic or omagic output does not have PT_PHDR, PT_INTERP, or the readonly
   // PT_LOAD.
@@ -2494,8 +2516,19 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
     uint64_t newFlags = computeFlags(sec->getPhdrFlags());
     bool sameLMARegion =
         load && !sec->lmaExpr && sec->lmaRegion == load->firstSec->lmaRegion;
+
+    // OHOS_LOCAL begin
+    // ALDT image sections have additional addribute: input file owner.
+    // The ownership contiguousity allows to map only related sections
+    // when processing program headers that 
+    bool sameFileOwner = config->adlt && lastOwnerIdx == getOwnerFileIdx(sec);
+    if (config->adlt)
+      lastOwnerIdx = getOwnerFileIdx(sec);
+    // OHOS_LOCAL end
+
     if (!(load && newFlags == flags && sec != relroEnd &&
           sec->memRegion == load->firstSec->memRegion &&
+          (!config->adlt || sameFileOwner) &&
           (sameLMARegion || load->lastSec == Out::programHeaders))) {
       load = addHdr(PT_LOAD, newFlags);
       flags = newFlags;

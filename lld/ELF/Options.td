@@ -377,6 +377,8 @@ def shared: F<"shared">, HelpText<"Build a shared object">;
 
 def adlt: F<"adlt">, HelpText<"Build adlt library">;
 
+def adlt_trace: F<"adlt-trace">, HelpText<"Enable ADLT trace logs">;
+
 defm soname: Eq<"soname", "Set DT_SONAME">;
 
 defm sort_section:

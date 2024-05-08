@@ -4084,7 +4084,7 @@ static_assert(sizeof(adltBlobStartMark) == 4,
   "0xad17 consist of 4 bytes"
 );
 
-static_assert(sizeof(adlt_section_header_t) == 40,
+static_assert(sizeof(adlt_section_header_t) == 56,
   "please update version if header has been changed"
 );
 
@@ -4126,6 +4126,7 @@ void AdltSection<ELFT>::finalizeContents() {
     getBlobStartOffset(),           // .blobStart
     estimateBlobSize(),             // .blobSize
     0,                              // .overallMappedSize, known on writeTo
+    adlt_blob_u16_array_t{},        // .phIndexes, filled in writeTo
   };
 
   buildSonameIndex();
@@ -4198,6 +4199,8 @@ typename AdltSection<ELFT>::CommonData
 AdltSection<ELFT>::makeCommonData() {
   return CommonData {
     UINT32_MAX, // .symtabSecIndex, filled in writeTo
+    ctx->adlt.commonProgramHeaders.size(), // .programHeadersAllocated
+    {}, // .phIndexes filled in writeTo
   };
 }
 
@@ -4283,6 +4286,8 @@ template <typename ELFT>
 size_t AdltSection<ELFT>::estimateBlobSize() const {
   size_t blobSize = sizeof(adltBlobStartMark);
 
+  blobSize += sizeof(uint16_t) * common.programHeadersAllocated;
+
   for (const auto& soData: soInputs) {
     blobSize += sizeof(adlt_dt_needed_index_t) * soData.dtNeededs.size();
     blobSize += sizeof(uint16_t) * soData.programHeadersAllocated;
@@ -4342,6 +4347,21 @@ void AdltSection<ELFT>::extractProgramHeaderIndexes() {
   for (const auto& it : llvm::enumerate(mainPart->phdrs)) {
     phdrsIndexes[it.value()] = static_cast<uint16_t>(it.index());
   };
+
+  for (const PhdrEntry* phentry : ctx->adlt.commonProgramHeaders) {
+    auto it = phdrsIndexes.find(phentry);
+    if (it != phdrsIndexes.end()) {
+      common.phIndexes.push_back(it->second);
+    }
+  }
+
+  assert(common.phIndexes.size() <= common.programHeadersAllocated);
+  if (common.phIndexes.size() != common.programHeadersAllocated) {
+    warn(Twine(".adlt section: overallocated common ph-indexes")
+      + " allocated=" + Twine(common.programHeadersAllocated)
+      + " actual=" + Twine(common.phIndexes.size())
+    );
+  }
 }
 
 template <typename ELFT>
@@ -4404,6 +4424,12 @@ void AdltSection<ELFT>::writeTo(uint8_t* buf) {
     size_t blobOff = 0;
     memcpy(blobBuf + blobOff, &adltBlobStartMark, sizeof(adltBlobStartMark));
     blobOff += sizeof(adltBlobStartMark);
+
+    // common header-related data
+    {
+      header.phIndexes = writeArray(blobBuf, blobOff, common.phIndexes);
+      blobOff += header.phIndexes.size;
+    }
 
     // psod-related data
     for(const auto& it : llvm::enumerate(soInputs)) {

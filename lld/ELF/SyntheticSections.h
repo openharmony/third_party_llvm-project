@@ -1270,6 +1270,8 @@ public:
   // will be used to form some header data
   struct CommonData {
     uint32_t symtabSecIndex = UINT32_MAX;
+    size_t programHeadersAllocated;
+    SmallVector<uint16_t> phIndexes;
   };
 
 public:

@@ -34,6 +34,7 @@ class BinaryFile;
 class BitcodeFile;
 class ELFFileBase;
 class SharedFile;
+struct PhdrEntry; // OHOS_LOCAL
 class InputSectionBase;
 class Symbol;
 
@@ -220,7 +221,10 @@ struct Configuration {
   std::vector<std::pair<llvm::GlobPattern, uint32_t>> shuffleSections;
   bool singleRoRx;
   bool shared;
+  // OHOS_LOCAL begin
   bool adlt = false;
+  bool adltTrace = false;
+  // OHOS_LOCAL end
   bool symbolic;
   bool isStatic = false;
   bool sysvHash = false;
@@ -408,12 +412,16 @@ struct Ctx {
                  std::pair<const InputFile *, const InputFile *>>
       backwardReferences;
 
-  // ADLT stuff.
-  bool adltWithCfi = false;
-  // From input .rela.dyn, .rela.plt:
-  // Keep input library indexes that are needed for got/plt symbol
-  llvm::DenseMap<const Symbol *, SmallVector<unsigned, 0>>
-      gotPltInfoAdlt; // sym, soFile->orderIdx array;
+  // OHOS_LOCAL begin
+  struct AdltCtx {
+    llvm::SetVector<const PhdrEntry*> commonProgramHeaders;
+    bool withCfi = false;
+    // From input .rela.dyn, .rela.plt:
+    // Keep input library indexes that are needed for got/plt symbol
+    llvm::DenseMap<const Symbol *, SmallVector<unsigned, 0>>
+        gotPltInfo; // sym, soFile->orderIdx array;
+  } adlt;
+  // OHOS_LOCAL end
 };
 
 // The only instance of Ctx struct.

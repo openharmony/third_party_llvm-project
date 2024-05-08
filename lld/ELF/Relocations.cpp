@@ -1311,7 +1311,7 @@ static void trackDynRelocAdlt(SharedFileExtended<ELFT> *soFile) {
 
 template <class ELFT>
 static void trackGotPltAdlt(Symbol *sym, SharedFileExtended<ELFT> *soFile) {
-  ctx->gotPltInfoAdlt[sym].push_back(soFile->orderIdx);
+  ctx->adlt.gotPltInfo[sym].push_back(soFile->orderIdx);
 }
 
 // ADLT BEGIN
@@ -1808,7 +1808,7 @@ static bool handleNonPreemptibleIfunc(Symbol &sym) {
 }
 
 template <class ELFT> static void addGotPltIndexAdlt(Symbol *s, bool isPlt) {
-  auto &vec = ctx->gotPltInfoAdlt[s];
+  auto &vec = ctx->adlt.gotPltInfo[s];
   for (auto &it : vec) {
     auto *soFile = cast<SharedFileExtended<ELFT>>(ctx->sharedFilesExtended[it]);
     auto &entries = isPlt ? in.relaPlt->relocs : mainPart->relaDyn->relocs;

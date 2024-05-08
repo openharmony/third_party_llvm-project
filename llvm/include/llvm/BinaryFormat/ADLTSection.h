@@ -107,11 +107,12 @@ typedef struct {
   Elf64_Off     blobStart; // offset of binary blob start relative to .adlt
   Elf64_Xword   blobSize;
   Elf64_Xword   overallMappedSize;  // bytes, required to map the whole ADLT image
+  adlt_blob_u16_array_t phIndexes;  // program header indexes, typeof(e_phnum)
 } adlt_section_header_t;
 
 static const char adltBlobStartMark[4] = { 0xA, 0xD, 0x1, 0x7 };
 
-static const adlt_semver_t adltSchemaVersion = {1, 0, 0};
+static const adlt_semver_t adltSchemaVersion = {1, 1, 0};
 
 #ifdef __cplusplus
 } // namespace adlt

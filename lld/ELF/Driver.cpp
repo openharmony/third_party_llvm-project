@@ -1095,6 +1095,7 @@ static void readConfigs(opt::InputArgList &args) {
       config->bsymbolic = BsymbolicKind::All;
   }
   config->adlt = args.hasArg(OPT_adlt);
+  config->adltTrace = args.hasArg(OPT_adlt_trace);
   config->checkSections =
       args.hasFlag(OPT_check_sections, OPT_no_check_sections, true);
   config->chroot = args.getLastArgValue(OPT_chroot);

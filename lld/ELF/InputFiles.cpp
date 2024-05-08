@@ -1041,8 +1041,10 @@ InputSectionBase *ObjFile<ELFT>::createInputSection(uint32_t idx,
   if (name == ".eh_frame" && !config->relocatable)
     return make<EhInputSection>(*this, sec, name);
 
-  if ((sec.sh_flags & SHF_MERGE) && shouldMerge(sec, name))
+  const bool doNotMerge = config->adlt && name.startswith(".rodata");
+  if ((sec.sh_flags & SHF_MERGE) && !doNotMerge && shouldMerge(sec, name))
     return make<MergeInputSection>(*this, sec, name);
+
   return make<InputSection>(*this, sec, name);
 }
 
@@ -1072,8 +1074,7 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
       StringRef name = CHECK(eSyms[i].getName(stringTable), this);
       if (config->adlt && eSyms[i].isDefined() &&
           ctx->eSymsHist.count(CachedHashStringRef(name)) != 0) {
-        if (!ctx->adltWithCfi && name == "__cfi_check")
-          ctx->adltWithCfi = true;
+        ctx->adlt.withCfi = ctx->adlt.withCfi || name == "__cfi_check";
         name = this->getUniqueName(name);
       }
       symbols[i] = symtab.insert(name);

@@ -7033,6 +7033,16 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
   auto* header = reinterpret_cast<const adlt_section_header_t*>(adltRaw.data());
   const auto& ver = header->schemaVersion;
 
+  ArrayRef<uint8_t> psodsRaw;
+  ArrayRef<uint8_t> blob;
+
+  if (psodsRaw.data() + psodsRaw.size() > blob.data())
+    return this->reportUniqueWarning("invalid .adlt section: "
+      "PSOD and blob entries are overlapped");
+  if (blob.data() + blob.size() > adltRaw.data() + adltRaw.size())
+    return this->reportUniqueWarning("invalid .adlt section: "
+      "blob is out of section range");
+
   DictScope DSec(W, "ADLT");
 
   do {
@@ -7051,19 +7061,35 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
     W.printHex("blob-start", header->blobStart);
     W.printHex("blob-size", header->blobSize);
     W.printHex("overall-mapped-size", header->overallMappedSize);
+
+    psodsRaw = adltRaw.slice(
+      header->schemaHeaderSize,
+      header->sharedObjectsNum * header->schemaPSODSize);
+    blob = adltRaw.slice(header->blobStart, header->blobSize);
+
+    if (psodsRaw.data() + psodsRaw.size() > blob.data())
+      return this->reportUniqueWarning("invalid .adlt section: "
+        "PSOD and blob entries are overlapped");
+    if (blob.data() + blob.size() > adltRaw.data() + adltRaw.size())
+      return this->reportUniqueWarning("invalid .adlt section: "
+        "blob is out of section range");
+
+    if (ver.minor >= 1) {
+      DictScope PHEntry(W, "ph-indexes");
+      const auto& arr = header->phIndexes;
+      W.printHex("size", arr.size);
+      W.printHex("offset", arr.offset);
+
+      const auto chunk = blob.slice(arr.offset, arr.size);
+      if (!chunk.empty()) {
+        W.printBinary("raw", chunk);
+        ArrayRef<uint16_t> phIdxs(
+          reinterpret_cast<const uint16_t*>(chunk.data()),
+          chunk.size() / sizeof(uint16_t));
+        W.printList("values", phIdxs);
+      }
+    }
   } while(0);
-
-  ArrayRef<uint8_t> psodsRaw = adltRaw.slice(
-    header->schemaHeaderSize,
-    header->sharedObjectsNum * header->schemaPSODSize);
-  ArrayRef<uint8_t> blob = adltRaw.slice(header->blobStart, header->blobSize);
-
-  if (psodsRaw.data() + psodsRaw.size() > blob.data())
-    return this->reportUniqueWarning("invalid .adlt section: "
-      "PSOD and blob entries are overlapped");
-  if (blob.data() + blob.size() > adltRaw.data() + adltRaw.size())
-    return this->reportUniqueWarning("invalid .adlt section: "
-      "blob is out of section range");
 
   {
     ListScope LPsods(W, "PSODs");
@@ -7132,7 +7158,7 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
         W.printHex("offset", csref.offset);
       }
       {
-        DictScope PHEntry(W, "ph-index");
+        DictScope PHEntry(W, "ph-indexes");
         const auto& arr = psod.phIndexes;
         W.printHex("size", arr.size);
         W.printHex("offset", arr.offset);
