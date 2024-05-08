@@ -83,6 +83,8 @@ StringRef Triple::getArchTypeName(ArchType Kind) {
   case x86:            return "i386";
   case x86_64:         return "x86_64";
   case xcore:          return "xcore";
+  // OHOS_LOCAL
+  case xvm:            return "xvm";
   }
 
   llvm_unreachable("Invalid ArchType!");
@@ -136,6 +138,9 @@ StringRef Triple::getArchTypePrefix(ArchType Kind) {
   case x86_64:      return "x86";
 
   case xcore:       return "xcore";
+
+  // OHOS_LOCAL
+  case xvm:         return "xvm";
 
   // NVPTX intrinsics are namespaced under nvvm.
   case nvptx:       return "nvvm";
@@ -349,6 +354,8 @@ Triple::ArchType Triple::getArchTypeForLLVMName(StringRef Name) {
     .Case("i386", x86)
     .Case("x86-64", x86_64)
     .Case("xcore", xcore)
+    // OHOS_LOCAL
+    .Case("xvm", xvm)
     .Case("nvptx", nvptx)
     .Case("nvptx64", nvptx64)
     .Case("le32", le32)
@@ -487,6 +494,8 @@ static Triple::ArchType parseArch(StringRef ArchName) {
     .Case("tce", Triple::tce)
     .Case("tcele", Triple::tcele)
     .Case("xcore", Triple::xcore)
+    // OHOS_LOCAL
+    .Case("xvm", Triple::xvm)
     .Case("nvptx", Triple::nvptx)
     .Case("nvptx64", Triple::nvptx64)
     .Case("le32", Triple::le32)
@@ -839,6 +848,8 @@ static Triple::ObjectFormatType getDefaultFormat(const Triple &T) {
   case Triple::thumbeb:
   case Triple::ve:
   case Triple::xcore:
+  // OHOS_LOCAL
+  case Triple::xvm:
     return Triple::ELF;
 
   case Triple::ppc64:
@@ -1440,6 +1451,8 @@ static unsigned getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
   case llvm::Triple::ve:
   case llvm::Triple::wasm64:
   case llvm::Triple::x86_64:
+  // OHOS_LOCAL
+  case llvm::Triple::xvm:
     return 64;
   }
   llvm_unreachable("Invalid architecture value");
@@ -1468,6 +1481,8 @@ Triple Triple::get32BitArchVariant() const {
   case Triple::msp430:
   case Triple::systemz:
   case Triple::ve:
+  // OHOS_LOCAL
+  case Triple::xvm:
     T.setArch(UnknownArch);
     break;
 
@@ -1581,6 +1596,8 @@ Triple Triple::get64BitArchVariant() const {
   case Triple::ve:
   case Triple::wasm64:
   case Triple::x86_64:
+  // OHOS_LOCAL
+  case Triple::xvm:
     // Already 64-bit.
     break;
 
@@ -1764,6 +1781,8 @@ bool Triple::isLittleEndian() const {
   case Triple::x86:
   case Triple::x86_64:
   case Triple::xcore:
+  // OHOS_LOCAL
+  case Triple::xvm:
     return true;
   default:
     return false;

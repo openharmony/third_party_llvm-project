@@ -2851,6 +2851,8 @@ bool Generic_GCC::IsIntegratedAssemblerDefault() const {
   case llvm::Triple::avr:
   case llvm::Triple::bpfel:
   case llvm::Triple::bpfeb:
+  // OHOS_LOCAL
+  case llvm::Triple::xvm:
   case llvm::Triple::csky:
   case llvm::Triple::hexagon:
   case llvm::Triple::lanai:

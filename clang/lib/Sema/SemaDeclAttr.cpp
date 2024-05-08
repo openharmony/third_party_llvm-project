@@ -7315,6 +7315,24 @@ static void handleWebAssemblyExportNameAttr(Sema &S, Decl *D, const ParsedAttr &
   D->addAttr(UsedAttr::CreateImplicit(S.Context));
 }
 
+// OHOS_LOCAL begin
+static void handleXVMExportNameAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
+  if (!isFunctionOrMethod(D)) {
+    S.Diag(D->getLocation(), diag::warn_attribute_wrong_decl_type)
+        << "'xvm_export_name'" << ExpectedFunction;
+    return;
+  }
+
+  StringRef Str;
+  SourceLocation ArgLoc;
+  if (!S.checkStringLiteralArgumentAttr(AL, 0, Str, &ArgLoc))
+    return;
+
+  D->addAttr(::new (S.Context) XVMExportNameAttr(S.Context, AL, Str));
+  D->addAttr(UsedAttr::CreateImplicit(S.Context));
+}
+// OHOS_LOCAL end
+
 WebAssemblyImportModuleAttr *
 Sema::mergeImportModuleAttr(Decl *D, const WebAssemblyImportModuleAttr &AL) {
   auto *FD = cast<FunctionDecl>(D);
@@ -8486,6 +8504,11 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
   case ParsedAttr::AT_WebAssemblyExportName:
     handleWebAssemblyExportNameAttr(S, D, AL);
     break;
+  // OHOS_LOCAL begin
+  case ParsedAttr::AT_XVMExportName:
+    handleXVMExportNameAttr(S, D, AL);
+    break;
+  // OHOS_LOCAL end
   case ParsedAttr::AT_WebAssemblyImportModule:
     handleWebAssemblyImportModuleAttr(S, D, AL);
     break;

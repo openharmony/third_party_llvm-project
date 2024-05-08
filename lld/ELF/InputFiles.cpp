@@ -2180,6 +2180,10 @@ static uint16_t getBitcodeMachineKind(StringRef path, const Triple &t) {
     return t.isOSIAMCU() ? EM_IAMCU : EM_386;
   case Triple::x86_64:
     return EM_X86_64;
+  // OHOS_LOCAL begin
+  case Triple::xvm:
+    return EM_XVM;
+  // OHOS_LOCAL end
   default:
     error(path + ": could not infer e_machine from bitcode target triple " +
           t.str());

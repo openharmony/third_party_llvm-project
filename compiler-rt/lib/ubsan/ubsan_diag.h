@@ -39,6 +39,8 @@ public:
 };
 
 SymbolizedStack *getSymbolizedLocation(uptr PC);
+bool getSymbolizedData(uptr Addr, DataInfo *Info);
+const char *demangle(const char *Name);
 
 inline SymbolizedStack *getCallerLocation(uptr CallerPC) {
   CHECK(CallerPC);

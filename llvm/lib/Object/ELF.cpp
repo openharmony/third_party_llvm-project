@@ -145,6 +145,13 @@ StringRef llvm::object::getELFRelocationTypeName(uint32_t Machine,
       break;
     }
     break;
+  // OHOS_LOCAL begin
+  case ELF::EM_XVM:
+    switch (Type) {
+#include "llvm/BinaryFormat/ELFRelocs/XVM.def"
+    }
+    break;
+  // OHOS_LOCAL end
   case ELF::EM_MSP430:
     switch (Type) {
 #include "llvm/BinaryFormat/ELFRelocs/MSP430.def"
