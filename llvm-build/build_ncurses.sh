@@ -60,31 +60,50 @@ if [ -e ${ncurses_package} ]; then
     fi
     cd ${NCURSES_BUILD_PATH}
     # build ncurses
-    if [ "${host_platform}" == "darwin" ]; then
-        export LDFLAGS="-Wl,-rpath,@loader_path/../lib"
-        SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
-        flags="-Wl,-syslibroot,${SDKROOT}"
-        export CPPFLAGS="$CPPFALGS -I${SDKROOT}/usr/include -I${SDKROOT}/usr/include/i368"
-        export CFLAGS="$CFLAGS -isysroot${SDKROOT} $flags"
+    ohos_suffix='-ohos'
+    if [[ ${7} != *${ohos_suffix} ]]; then
+        if [ "${host_platform}" == "darwin" ]; then
+            export LDFLAGS="-Wl,-rpath,@loader_path/../lib"
+            SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
+            flags="-Wl,-syslibroot,${SDKROOT}"
+            export CPPFLAGS="$CPPFALGS -I${SDKROOT}/usr/include -I${SDKROOT}/usr/include/i368"
+            export CFLAGS="$CFLAGS -isysroot${SDKROOT} $flags"
 
+            ${NCURSES_SRC_DIR}/configure \
+                --with-shared \
+                --with-default-terminfo-dir=/usr/lib/terminfo:/lib/terminfo:/usr/share/terminfo \
+                --disable-mixed-case \
+                --prefix=${NCURSES_INSTALL_PATH} \
+                CC=${CC_PATH} \
+                CXX=${CXX_PATH}
+            make -j$(nproc --all) install | tee build_ncurses.log
+        fi
+        if [ "${host_platform}" == "linux" ]; then
+            export LDFLAGS="-Wl,-rpath,\$$ORIGIN/../lib"
+            ${NCURSES_SRC_DIR}/configure \
+                --with-shared \
+                --with-default-terminfo-dir=/usr/lib/terminfo:/lib/terminfo:/usr/share/terminfo \
+                --prefix=${NCURSES_INSTALL_PATH} \
+                CC=${CC_PATH} \
+                CXX=${CXX_PATH}
+            make -j$(nproc --all) install | tee build_ncurses.log
+        fi
+    else
+        C_FLAGS="--target=$7 -fPIC"
+        if [[ $7 =~ 'arm' ]]; then
+            C_FLAGS="$C_FLAGS -march=armv7-a -mfloat-abi=soft"
+        fi
         ${NCURSES_SRC_DIR}/configure \
+            --host="$7" \
             --with-shared \
-            --with-default-terminfo-dir=/usr/lib/terminfo:/lib/terminfo:/usr/share/terminfo \
-            --disable-mixed-case \
             --prefix=${NCURSES_INSTALL_PATH} \
-            CC=${CC_PATH} \
-            CXX=${CXX_PATH}
-        make -j$(nproc --all) install | tee build_ncurses.log
-    fi
-    if [ "${host_platform}" == "linux" ]; then
-        export LDFLAGS="-Wl,-rpath,\$$ORIGIN/../lib"
-        ${NCURSES_SRC_DIR}/configure \
-            --with-shared \
-            --with-default-terminfo-dir=/usr/lib/terminfo:/lib/terminfo:/usr/share/terminfo \
-            --prefix=${NCURSES_INSTALL_PATH} \
-            CC=${CC_PATH} \
-            CXX=${CXX_PATH}
-        make -j$(nproc --all) install | tee build_ncurses.log
+            --with-termlib \
+            --without-manpages \
+            --with-strip-program="${PREBUILT_PATH}/../out/llvm-install/bin/llvm-strip" \
+            CC=${PREBUILT_PATH}/../out/llvm-install/bin/clang \
+            CXX=${PREBUILT_PATH}/../out/llvm-install/bin/clang++ \
+            CFLAGS="${C_FLAGS}"
+        make -j$(nproc --all) install | tee build_ncurses_$7.log
     fi
 fi
 
