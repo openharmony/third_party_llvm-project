@@ -622,6 +622,20 @@ class BuildUtils(object):
     def merge_libxml2_build_dir(self, platform_triple, *args):
         return self.merge_out_path('third_party', 'libxml2', 'build', platform_triple, *args)
 
+    def get_libedit_version(self):
+        libedit_spec = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libedit', 'libedit.spec')
+        if os.path.exists(libedit_spec):
+            with open(libedit_spec, 'r') as file:
+                lines = file.readlines()
+
+            prog = re.compile(r'Version:\s*(\S+)')
+            for line in lines:
+                version_match = prog.match(line)
+                if version_match:
+                    return version_match.group(1)
+
+        return None
+
     def merge_libedit_install_dir(self, platform_triple, *args):
         return self.merge_out_path('third_party', 'libedit', 'install', platform_triple, *args)
 
@@ -1726,6 +1740,27 @@ class LlvmLibs(BuildUtils):
             lldb_defines['LIBLLDB_BUILD_STATIC'] = 'ON'
             lldb_target.append('lldb')
 
+            if self.build_config.build_ncurses:
+                self.build_ncurses(None, llvm_install, llvm_triple)
+                lldb_defines['LLDB_ENABLE_CURSES'] = 'ON'
+                ncurses_install_path = self.merge_ncurses_install_dir(llvm_triple)
+                lldb_defines['CURSES_INCLUDE_DIRS'] = os.path.join(ncurses_install_path, 'include')
+                lldb_defines['CURSES_HAVE_NCURSES_CURSES_H'] = 'ON'
+                ncurses_lib_path = os.path.join(ncurses_install_path, 'lib')
+                ncurses_libs = []
+                for library in self.get_ncurses_dependence_libs(llvm_triple):
+                    ncurses_libs.append(os.path.join(ncurses_lib_path, f'{library}.a'))
+                ncurses_libs = ';'.join(ncurses_libs)
+                lldb_defines['CURSES_LIBRARIES'] = ncurses_libs
+                lldb_defines['PANEL_LIBRARIES'] = ncurses_libs
+
+            if self.build_config.build_libedit:
+                self.build_libedit(None, llvm_install, llvm_triple)
+                lldb_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
+                libedit_install_path = self.merge_libedit_install_dir(llvm_triple)
+                lldb_defines['LibEdit_INCLUDE_DIRS'] = os.path.join(libedit_install_path, 'include')
+                lldb_defines['LibEdit_LIBRARIES'] = os.path.join(libedit_install_path, 'lib', 'libedit.a')
+
             if self.build_config.build_libxml2:
                 self.build_libxml2(llvm_triple, None, llvm_install, True)
                 lldb_defines['LLDB_ENABLE_LIBXML2'] = 'ON'
@@ -1814,11 +1849,14 @@ class LlvmLibs(BuildUtils):
 
         ncurses_version = self.get_ncurses_version()
         if ncurses_version is not None:
+            libncurses_untar_path = self.merge_out_path('third_party', 'ncurses', 'ncurses-' + ncurses_version)
             args = ['./build_ncurses.sh', libncurses_src_dir, libncurses_build_path, libncurses_install_path,
-                    prebuilts_path, clang_version, ncurses_version, platform_triple]
+                    prebuilts_path, clang_version, ncurses_version, platform_triple, libncurses_untar_path,
+                    self.merge_ncurses_install_dir(self.use_platform())]
             self.check_call(args)
             os.chdir(cur_dir)
 
+        if platform_triple == self.use_platform():
             self.llvm_package.copy_ncurses_to_llvm(platform_triple, llvm_make)
             self.llvm_package.copy_ncurses_to_llvm(platform_triple, llvm_install)
 
@@ -1876,12 +1914,14 @@ class LlvmLibs(BuildUtils):
         cur_dir = os.getcwd()
         os.chdir(self.build_config.LLVM_BUILD_DIR)
         clang_version = self.build_config.CLANG_VERSION
-        args = ['./build_libedit.sh', libedit_src_dir, libedit_build_path , libedit_install_path, libncurses_path, prebuilts_path, clang_version, platform_triple]
+        libedit_untar_path = self.merge_out_path('third_party', 'libedit', 'libedit-' + self.get_libedit_version())
+        args = ['./build_libedit.sh', libedit_src_dir, libedit_build_path , libedit_install_path, libncurses_path, prebuilts_path, clang_version, platform_triple, libedit_untar_path]
         self.check_call(args)
         os.chdir(cur_dir)
 
-        self.llvm_package.copy_libedit_to_llvm(platform_triple, llvm_make)
-        self.llvm_package.copy_libedit_to_llvm(platform_triple, llvm_install)
+        if platform_triple == self.use_platform():
+            self.llvm_package.copy_libedit_to_llvm(platform_triple, llvm_make)
+            self.llvm_package.copy_libedit_to_llvm(platform_triple, llvm_install)
 
     def build_libxml2_defines(self):
         libxml2_defines = {}

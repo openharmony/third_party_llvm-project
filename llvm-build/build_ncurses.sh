@@ -10,6 +10,8 @@ NCURSES_INSTALL_PATH=$3
 PREBUILT_PATH=$4
 CLANG_VERSION=$5
 NCURSES_VERSION=$6
+TARGET=$7
+NCURSES_UNTAR_PATH=$8
 
 SPECFILE="${NCURSES_SRC_DIR}/ncurses.spec"
 
@@ -40,8 +42,11 @@ CXX_PATH=${PREBUILT_PATH}/clang/ohos/${host_platform}-${host_cpu}/clang-${CLANG_
 
 ncurses_package=${NCURSES_SRC_DIR}/ncurses-${NCURSES_VERSION}.tar.gz
 if [ -e ${ncurses_package} ]; then
-    tar -xvzf ${ncurses_package} --strip-components 1 -C ${NCURSES_SRC_DIR}
-    cd ${NCURSES_SRC_DIR}
+    if [ ! -b ${NCURSES_UNTAR_PATH} ]; then
+        mkdir -p ${NCURSES_UNTAR_PATH}
+    fi
+    tar -xvzf ${ncurses_package} --strip-components 1 -C ${NCURSES_UNTAR_PATH}
+    cd ${NCURSES_UNTAR_PATH}
 
     # Get the list of patch files for ncurses.spec
     # The format in the ncurses.spec is as follows:
@@ -52,7 +57,7 @@ if [ -e ${ncurses_package} ]; then
     # Apply patches in order
     for patch in "${patches[@]}"
     do
-        patch -Np1 < $patch
+        patch -Np1 < ${NCURSES_SRC_DIR}/$patch
     done
 
     if [ ! -b ${NCURSES_BUILD_PATH} ]; then
@@ -69,7 +74,7 @@ if [ -e ${ncurses_package} ]; then
             export CPPFLAGS="$CPPFALGS -I${SDKROOT}/usr/include -I${SDKROOT}/usr/include/i368"
             export CFLAGS="$CFLAGS -isysroot${SDKROOT} $flags"
 
-            ${NCURSES_SRC_DIR}/configure \
+            ${NCURSES_UNTAR_PATH}/configure \
                 --with-shared \
                 --with-default-terminfo-dir=/usr/lib/terminfo:/lib/terminfo:/usr/share/terminfo \
                 --disable-mixed-case \
@@ -80,7 +85,7 @@ if [ -e ${ncurses_package} ]; then
         fi
         if [ "${host_platform}" == "linux" ]; then
             export LDFLAGS="-Wl,-rpath,\$$ORIGIN/../lib"
-            ${NCURSES_SRC_DIR}/configure \
+            ${NCURSES_UNTAR_PATH}/configure \
                 --with-shared \
                 --with-default-terminfo-dir=/usr/lib/terminfo:/lib/terminfo:/usr/share/terminfo \
                 --prefix=${NCURSES_INSTALL_PATH} \
@@ -89,21 +94,26 @@ if [ -e ${ncurses_package} ]; then
             make -j$(nproc --all) install | tee build_ncurses.log
         fi
     else
-        C_FLAGS="--target=$7 -fPIC"
-        if [[ $7 =~ 'arm' ]]; then
+        C_FLAGS="--target=${TARGET} -fPIC"
+        if [[ ${TARGET} =~ 'arm' ]]; then
             C_FLAGS="$C_FLAGS -march=armv7-a -mfloat-abi=soft"
         fi
+        NCURSES_HOST_INSTALL_PATH=$9
+        export LD_LIBRARY_PATH="${NCURSES_HOST_INSTALL_PATH}/lib:$LD_LIBRARY_PATH"
         ${NCURSES_SRC_DIR}/configure \
-            --host="$7" \
+            --host="${TARGET}" \
             --with-shared \
             --prefix=${NCURSES_INSTALL_PATH} \
             --with-termlib \
             --without-manpages \
             --with-strip-program="${PREBUILT_PATH}/../out/llvm-install/bin/llvm-strip" \
+            --with-fallbacks=linux,vt100,xterm \
+            --with-tic-path=${NCURSES_HOST_INSTALL_PATH}/bin/tic \
+            --with-infocmp-path=${NCURSES_HOST_INSTALL_PATH}/bin/infocmp \
             CC=${PREBUILT_PATH}/../out/llvm-install/bin/clang \
             CXX=${PREBUILT_PATH}/../out/llvm-install/bin/clang++ \
             CFLAGS="${C_FLAGS}"
-        make -j$(nproc --all) install | tee build_ncurses_$7.log
+        make -j$(nproc --all) install | tee build_ncurses_${TARGET}.log
     fi
 fi
 
