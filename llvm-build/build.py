@@ -716,9 +716,9 @@ class LlvmCore(BuildUtils):
                           target=build_target,
                           install=install)
         if not install:
-            self.llvm_python_install(build_dir, install_dir)
+            self.llvm_install(build_dir, install_dir)
 
-    def llvm_python_install(self, build_dir, install_dir):
+    def llvm_install(self, build_dir, install_dir):
         target_dirs = ["bin", "include", "lib", "libexec", "share"]
         for target_dir in target_dirs:
             target_dir = f"{build_dir}/{target_dir}"
@@ -1112,18 +1112,6 @@ class SysrootComposer(BuildUtils):
 
     def __init__(self, build_config):
         super(SysrootComposer, self).__init__(build_config)
-
-    def replace_cmake_llvm_exports(self, llvm_install):
-
-        # Skip checking of llvm libs for sdk partly build.
-        # Prebuilt clang doesn't have it.
-        llvm_exports_cmake = 'LLVMExports.cmake'
-        src = os.path.join(self.build_config.LLVM_BUILD_DIR, llvm_exports_cmake)
-        dst = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts/clang/ohos', self.use_platform(),
-            'clang-%s' % self.build_config.CLANG_VERSION, "lib/cmake/llvm", llvm_exports_cmake)
-        if os.path.exists(os.path.join(dst, llvm_exports_cmake)):
-            os.remove(os.path.join(dst, llvm_exports_cmake))
-        shutil.copy2(src, dst)
 
     def setup_cmake_platform(self, llvm_install):
 
@@ -2773,7 +2761,11 @@ def main():
 
     if build_config.build_only:
         sysroot_composer.setup_cmake_platform(llvm_install)
-        sysroot_composer.replace_cmake_llvm_exports(llvm_install)
+        # temporary hide cmake checks for sdk-partly
+        lib_cmake = os.path.join(build_config.REPOROOT_DIR, 'prebuilts/clang/ohos', build_utils.use_platform(),
+            'clang-%s' % build_config.CLANG_VERSION, "lib/cmake")
+        lib_cmake_tmp = f"{lib_cmake}_tmp"
+        shutil.move(lib_cmake, lib_cmake_tmp)
 
         if "musl" in build_config.build_only_libs:
             # change compiller path to prebuilds in clang.gni file
@@ -2802,6 +2794,8 @@ def main():
             assert os.path.exists(os.path.join(build_config.REPOROOT_DIR, "out", "sysroot")), "Error! Libcxx require musl!"
             for (_, target) in configs:
                 llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'runtimes', False, False)
+        # return original lib/cmake dir
+        shutil.move(lib_cmake_tmp, lib_cmake)
 
     windows_python_builder = None
 
