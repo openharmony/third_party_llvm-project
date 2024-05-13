@@ -719,7 +719,7 @@ class LlvmCore(BuildUtils):
             self.llvm_python_install(build_dir, install_dir)
 
     def llvm_python_install(self, build_dir, install_dir):
-        target_dirs = ["bin", "include", "lib", "python3", "libexec", "share"]
+        target_dirs = ["bin", "include", "lib", "libexec", "share"]
         for target_dir in target_dirs:
             target_dir = f"{build_dir}/{target_dir}"
             if not os.path.exists(target_dir):
@@ -1112,6 +1112,18 @@ class SysrootComposer(BuildUtils):
 
     def __init__(self, build_config):
         super(SysrootComposer, self).__init__(build_config)
+
+    def replace_cmake_llvm_exports(self, llvm_install):
+
+        # Skip checking of llvm libs for sdk partly build.
+        # Prebuilt clang doesn't have it.
+        llvm_exports_cmake = 'LLVMExports.cmake'
+        src = os.path.join(self.build_config.LLVM_BUILD_DIR, llvm_exports_cmake)
+        dst = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts/clang/ohos', self.use_platform(),
+            'clang-%s' % self.build_config.CLANG_VERSION, "lib/cmake/llvm", llvm_exports_cmake)
+        if os.path.exists(os.path.join(dst, llvm_exports_cmake)):
+            os.remove(os.path.join(dst, llvm_exports_cmake))
+        shutil.copy2(src, dst)
 
     def setup_cmake_platform(self, llvm_install):
 
@@ -2760,6 +2772,9 @@ def main():
             return
 
     if build_config.build_only:
+        sysroot_composer.setup_cmake_platform(llvm_install)
+        sysroot_composer.replace_cmake_llvm_exports(llvm_install)
+
         if "musl" in build_config.build_only_libs:
             # change compiller path to prebuilds in clang.gni file
             clang_gni = os.path.join(build_config.REPOROOT_DIR, "build", "config", "clang", "clang.gni")
