@@ -89,7 +89,7 @@ class BuildConfig():
         self.ARCHIVE_EXTENSION = '.tar.' + self.compression_format
         self.ARCHIVE_OPTION = '-c' + ('j' if self.compression_format == "bz2" else 'z')
         self.LIBXML2_VERSION = None
-        self.LZMA_VERSION = '22.0'
+        self.LZMA_VERSION = None
         logging.basicConfig(level=logging.INFO)
 
         self.host_projects = args.host_build_projects
@@ -574,19 +574,25 @@ class BuildUtils(object):
     def get_mingw_python_dir(self):
         return self._mingw_python_dir
 
-    def get_ncurses_version(self):
-        ncurses_spec = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'ncurses', 'ncurses.spec')
-        if os.path.exists(ncurses_spec):
-            with open(ncurses_spec, 'r') as file:
+    def get_version(self, fileName, prog):
+        if os.path.exists(fileName):
+            with open(fileName, 'r') as file:
                 lines = file.readlines()
-
-            prog = re.compile(r'Version:\s*(\S+)')
             for line in lines:
                 version_match = prog.match(line)
                 if version_match:
                     return version_match.group(1)
-
         return None
+
+    def get_ncurses_version(self):
+        ncurses_spec = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'ncurses', 'ncurses.spec')
+        prog = re.compile(r'Version:\s*(\S+)')
+        return self.get_version(ncurses_spec, prog)
+
+    def get_lzma_version(self):
+        lzma_version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'lzma', 'C', '7zVersion.h')
+        prog = re.compile(r'#define MY_VERSION_NUMBERS "(.*?)"')
+        return self.get_version(lzma_version_file, prog)
 
     def merge_ncurses_install_dir(self, platform_triple, *args):
         return self.merge_out_path('third_party', 'ncurses', 'install', platform_triple, *args)
@@ -2580,6 +2586,9 @@ def main():
     if build_config.build_ncurses:
         llvm_libs.build_ncurses(llvm_make, llvm_install, build_utils.use_platform())
 
+    build_config.LZMA_VERSION = build_utils.get_lzma_version()
+    if build_config.LZMA_VERSION is None:
+        raise Exception('Lzma version information not found, please check if the 7zVersion.h file exists')
     if build_config.enable_lzma_7zip:
         llvm_libs.build_lzma(llvm_make, llvm_install)
 
