@@ -91,6 +91,13 @@ build.py options：
     OH
     LLVM
     BOTH
+--build-only            # build only some targets, skip building windows, lldb-server and package step
+    lld
+    llvm-readelf
+    llvm-objdump
+    musl
+    compiler-rt
+    libcxx
 --enable-check-abi      # Check libc++_shared.so ABI. If the ABI was changed then interrupt a build process and report an error.
 ```
 </br>
