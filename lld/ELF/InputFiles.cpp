@@ -159,14 +159,14 @@ static bool isCompatible(InputFile *file) {
 }
 
 template <class ELFT>
-static void doBuildSymsHist(InputFile *file, Ctx::eSymsCntMap &eSymsHist) {
+static void doBuildSymsHist(InputFile *file, eSymsCntMap &eSymsHist) {
   if (!isCompatible(file))
     return;
   if (auto *f = dyn_cast<SharedFileExtended<ELFT>>(file))
     f->buildSymsHist(eSymsHist);
 }
 
-void elf::buildSymsHist(InputFile *file, Ctx::eSymsCntMap &eSymsHist) {
+void elf::buildSymsHist(InputFile *file, eSymsCntMap &eSymsHist) {
   invokeELFT(doBuildSymsHist, file, eSymsHist);
 }
 
@@ -1049,7 +1049,7 @@ InputSectionBase *ObjFile<ELFT>::createInputSection(uint32_t idx,
 }
 
 template <class ELFT>
-void ObjFile<ELFT>::buildSymsHist(Ctx::eSymsCntMap &eSymsHist) {
+void ObjFile<ELFT>::buildSymsHist(eSymsCntMap &eSymsHist) {
   ArrayRef<Elf_Sym> eSyms = this->getELFSyms<ELFT>();
   for (size_t i = firstGlobal, end = eSyms.size(); i != end; ++i) {
     if (!eSyms[i].isDefined())
@@ -1072,8 +1072,7 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
   for (size_t i = firstGlobal, end = eSyms.size(); i != end; ++i)
     if (!symbols[i]) {
       StringRef name = CHECK(eSyms[i].getName(stringTable), this);
-      if (config->adlt && eSyms[i].isDefined() &&
-          ctx->eSymsHist.count(CachedHashStringRef(name)) != 0) {
+      if (config->adlt && eSyms[i].isDefined() && ctx->adlt.exists(name)) {
         ctx->adlt.withCfi = ctx->adlt.withCfi || name == "__cfi_check";
         name = this->getUniqueName(name);
       }
@@ -2039,8 +2038,7 @@ template <class ELFT> void SharedFileExtended<ELFT>::parseDynamics() {
     // symbol, that's a violation of the spec.
     StringRef name = CHECK(sym.getName(this->stringTable), this);
     // Add postfix for defined duplicates.
-    if (config->adlt && sym.isDefined() &&
-        ctx->eSymsHist.count(CachedHashStringRef(name)) != 0)
+    if (config->adlt && sym.isDefined() && ctx->adlt.exists(name))
       name = this->getUniqueName(name);
 
     if (sym.getBinding() == STB_LOCAL) {

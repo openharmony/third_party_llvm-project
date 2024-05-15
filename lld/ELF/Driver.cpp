@@ -2570,12 +2570,12 @@ void LinkerDriver::link(opt::InputArgList &args) {
 
   // Fill eSymsHist for defined syms. This will help to find duplicates.
   if (config->adlt) {
-    Ctx::eSymsCntMap eSymsHist;
+    eSymsCntMap eSymsHist;
     for (auto *file : files)
       buildSymsHist(file, eSymsHist);
     for (auto eSym : eSymsHist)
       if (eSym.second > 1)
-        ctx->eSymsHist.insert(eSym.first);
+        ctx->adlt.eSymsHist.insert(eSym.first);
     eSymsHist.clear();
   }
 
