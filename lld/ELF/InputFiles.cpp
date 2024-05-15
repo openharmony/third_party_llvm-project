@@ -2038,6 +2038,11 @@ template <class ELFT> void SharedFileExtended<ELFT>::parseDynamics() {
     // is stored to sh_info. If a local symbol appears after some non-local
     // symbol, that's a violation of the spec.
     StringRef name = CHECK(sym.getName(this->stringTable), this);
+    // Add postfix for defined duplicates.
+    if (config->adlt && sym.isDefined() &&
+        ctx->eSymsHist.count(CachedHashStringRef(name)) != 0)
+      name = this->getUniqueName(name);
+
     if (sym.getBinding() == STB_LOCAL) {
       warn("found local symbol '" + name +
            "' in global part of symbol table in file " + toString(this));
