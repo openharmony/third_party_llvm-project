@@ -34,6 +34,7 @@ class BinaryFile;
 class BitcodeFile;
 class ELFFileBase;
 class SharedFile;
+template <typename ELFT> class SharedFileExtended;
 struct PhdrEntry; // OHOS_LOCAL
 class InputSectionBase;
 class Symbol;
@@ -414,7 +415,11 @@ struct Ctx {
 
   // OHOS_LOCAL begin
   struct AdltCtx {
-    llvm::SetVector<const PhdrEntry*> commonProgramHeaders;
+    template <typename ELFT> SharedFileExtended<ELFT> *getSoExt(InputFile *file) {
+      return cast<SharedFileExtended<ELFT>>(file);
+    }
+
+    llvm::SetVector<const PhdrEntry *> commonProgramHeaders;
     bool withCfi = false;
     // From input .rela.dyn, .rela.plt:
     // Keep input library indexes that are needed for got/plt symbol
