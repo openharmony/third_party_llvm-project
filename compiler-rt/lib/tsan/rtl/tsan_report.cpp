@@ -376,6 +376,7 @@ void PrintReport(const ReportDesc *rep) {
     DumpProcessMap();
 
   Printf("==================\n");
+  Printf("End Tsan report\n"); // OHOS_LOCAL
 }
 
 #else  // #if !SANITIZER_GO
