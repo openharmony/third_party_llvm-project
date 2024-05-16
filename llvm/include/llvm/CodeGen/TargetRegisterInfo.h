@@ -23,12 +23,15 @@
 #include "llvm/IR/CallingConv.h"
 #include "llvm/MC/LaneBitmask.h"
 #include "llvm/MC/MCRegisterInfo.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MachineValueType.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/Printable.h"
 #include <cassert>
 #include <cstdint>
+
+extern llvm::cl::opt<unsigned> SpillSlotMinSize; // OHOS_LOCAL
 
 namespace llvm {
 
@@ -287,7 +290,13 @@ public:
   /// Return the minimum required alignment in bytes for a spill slot for
   /// a register of this class.
   Align getSpillAlign(const TargetRegisterClass &RC) const {
-    return Align(getRegClassInfo(RC).SpillAlignment / 8);
+    // OHOS_LOCAL begin
+    auto align = getRegClassInfo(RC).SpillAlignment / 8;
+    if (align < SpillSlotMinSize) {
+        align = SpillSlotMinSize;
+    }
+    return Align(align);
+    // OHOS_LOCAL end
   }
 
   /// Return true if the given TargetRegisterClass has the ValueType T.

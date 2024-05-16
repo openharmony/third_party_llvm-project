@@ -473,6 +473,8 @@ added in the future:
     Ark Itroc calling convention for FastPath handlers with four arguments
 "``arkfast5cc``"
     Ark Itroc calling convention for FastPath handlers with five arguments
+"``arkfast6cc``"
+    Ark Itroc calling convention for FastPath handlers with six arguments
 "``arkmethodcc``"
     Ark AOT method calling convention with frame adaptation
 "``arkresolvercc``"

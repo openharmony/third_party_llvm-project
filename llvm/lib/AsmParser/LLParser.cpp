@@ -1912,6 +1912,7 @@ void LLParser::parseOptionalDLLStorageClass(unsigned &Res) {
 ///   ::= 'arkfast3cc'
 ///   ::= 'arkfast4cc'
 ///   ::= 'arkfast5cc'
+///   ::= 'arkfast6cc'
 ///   ::= 'arkmethodcc'
 ///   ::= 'arkresolvercc'
 ///   ::= 'arkpltcc'
@@ -1976,6 +1977,7 @@ bool LLParser::parseOptionalCallingConv(unsigned &CC) {
   case lltok::kw_arkfast3cc:     CC = CallingConv::ArkFast3; break;
   case lltok::kw_arkfast4cc:     CC = CallingConv::ArkFast4; break;
   case lltok::kw_arkfast5cc:     CC = CallingConv::ArkFast5; break;
+  case lltok::kw_arkfast6cc:     CC = CallingConv::ArkFast6; break;
   case lltok::kw_arkmethodcc:    CC = CallingConv::ArkMethod; break;
   case lltok::kw_arkresolvercc:  CC = CallingConv::ArkResolver; break;
   case lltok::kw_arkpltcc:       CC = CallingConv::ArkPlt; break;

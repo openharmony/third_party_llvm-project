@@ -55,6 +55,7 @@ syn keyword llvmKeyword
       \ arkfast3cc
       \ arkfast4cc
       \ arkfast5cc
+      \ arkfast6cc
       \ arkintccx
       \ arkmethodcc
       \ arkpltcc
