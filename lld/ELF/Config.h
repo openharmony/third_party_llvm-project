@@ -420,7 +420,7 @@ struct Ctx {
     // Store duplicate symbols (only defined).
     llvm::DenseSet<llvm::CachedHashStringRef> eSymsHist;
 
-    bool exists(StringRef name) {
+    bool symExists(StringRef name) {
       return eSymsHist.count(llvm::CachedHashStringRef(name)) != 0;
     }
   } adlt;

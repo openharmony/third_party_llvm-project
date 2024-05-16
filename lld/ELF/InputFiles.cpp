@@ -1072,7 +1072,7 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
   for (size_t i = firstGlobal, end = eSyms.size(); i != end; ++i)
     if (!symbols[i]) {
       StringRef name = CHECK(eSyms[i].getName(stringTable), this);
-      if (config->adlt && eSyms[i].isDefined() && ctx->adlt.exists(name)) {
+      if (config->adlt && eSyms[i].isDefined() && ctx->adlt.symExists(name)) {
         ctx->adlt.withCfi = ctx->adlt.withCfi || name == "__cfi_check";
         name = this->getUniqueName(name);
       }
@@ -2038,7 +2038,7 @@ template <class ELFT> void SharedFileExtended<ELFT>::parseDynamics() {
     // symbol, that's a violation of the spec.
     StringRef name = CHECK(sym.getName(this->stringTable), this);
     // Add postfix for defined duplicates.
-    if (config->adlt && sym.isDefined() && ctx->adlt.exists(name))
+    if (config->adlt && sym.isDefined() && ctx->adlt.symExists(name))
       name = this->getUniqueName(name);
 
     if (sym.getBinding() == STB_LOCAL) {
