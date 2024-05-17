@@ -404,9 +404,6 @@ struct Ctx {
   // A tuple of (reference, extractedFile, sym). Used by --why-extract=.
   SmallVector<std::tuple<std::string, const InputFile *, const Symbol &>, 0>
       whyExtractRecords;
-  // Store duplicate symbols (only defined).
-  typedef llvm::DenseMap<llvm::CachedHashStringRef, uint64_t> eSymsCntMap;
-  llvm::DenseSet<llvm::CachedHashStringRef> eSymsHist;
   // A mapping from a symbol to an InputFile referencing it backward. Used by
   // --warn-backrefs.
   llvm::DenseMap<const Symbol *,
@@ -425,6 +422,8 @@ struct Ctx {
     // Keep input library indexes that are needed for got/plt symbol
     llvm::DenseMap<const Symbol *, SmallVector<unsigned, 0>>
         gotPltInfo; // sym, soFile->orderIdx array;
+    // Store duplicate symbols (only defined).
+    llvm::DenseSet<llvm::CachedHashStringRef> duplicatedSymNames;
   } adlt;
   // OHOS_LOCAL end
 };
