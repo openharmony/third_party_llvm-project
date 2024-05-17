@@ -92,7 +92,11 @@ endif
 endif
 
 ifeq ($(ARCH),aarch64)
+ifeq ($(BUILD_DEBUG),true)
+CFLAGS = -march=armv8 -g -gdwarf-4 -O0 -Wall -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,relro,-z,now,-z,noexecstack
+else
 CFLAGS = -march=armv8 -O2 -Wall -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,relro,-z,now,-z,noexecstack
+endif
 else
 ifeq ($(ARCH),riscv64)
 CFLAGS = -march=rv64gc -O2 -Wall -fstack-protector-strong -D_FORTIFY_SOURCE=2 -Wl,-z,relro,-z,now,-z,noexecstack
@@ -225,7 +229,9 @@ musl_install_for_linux_user: musl_patch_for_linux_user
 		make -sj install
 
 clean:
+		ifeq ($(BUILD_DEBUG),false)
 		$(HIDE) rm -rf musl_copy_for_* linux_header_install_for_*
+		endif
 
 distclean: clean
 		$(HIDE) rm -rf $(SYSROOTDIR)/lib $(SYSROOTDIR)/usr
