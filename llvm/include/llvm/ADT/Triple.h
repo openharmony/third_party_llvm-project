@@ -232,6 +232,9 @@ public:
     GNUABI64,
     GNUEABI,
     GNUEABIHF,
+    GNUF32,
+    GNUF64,
+    GNUSF,
     GNUX32,
     GNUILP32,
     CODE16,
@@ -558,7 +561,9 @@ public:
     EnvironmentType Env = getEnvironment();
     return Env == Triple::GNU || Env == Triple::GNUABIN32 ||
            Env == Triple::GNUABI64 || Env == Triple::GNUEABI ||
-           Env == Triple::GNUEABIHF || Env == Triple::GNUX32;
+           Env == Triple::GNUEABIHF || Env == Triple::GNUF32 ||
+           Env == Triple::GNUF64 || Env == Triple::GNUSF ||
+           Env == Triple::GNUX32;
   }
 
   bool isOSContiki() const {
@@ -837,10 +842,14 @@ public:
                : PointerWidth == 64;
   }
 
+  /// Tests whether the target is 32-bit LoongArch.
+  bool isLoongArch32() const { return getArch() == Triple::loongarch32; }
+
+  /// Tests whether the target is 64-bit LoongArch.
+  bool isLoongArch64() const { return getArch() == Triple::loongarch64; }
+
   /// Tests whether the target is LoongArch (32- and 64-bit).
-  bool isLoongArch() const {
-    return getArch() == Triple::loongarch32 || getArch() == Triple::loongarch64;
-  }
+  bool isLoongArch() const { return isLoongArch32() || isLoongArch64(); }
 
   /// Tests whether the target is MIPS 32-bit (little and big endian).
   bool isMIPS32() const {

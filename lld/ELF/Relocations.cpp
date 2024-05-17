@@ -190,8 +190,8 @@ static bool isAbsoluteValue(const Symbol &sym) {
 
 // Returns true if Expr refers a PLT entry.
 static bool needsPlt(RelExpr expr) {
-  return oneof<R_PLT, R_PLT_PC, R_PLT_GOTPLT, R_PPC32_PLTREL, R_PPC64_CALL_PLT>(
-      expr);
+  return oneof<R_PLT, R_PLT_PC, R_PLT_GOTPLT, R_LOONGARCH_PLT_PAGE_PC,
+               R_PPC32_PLTREL, R_PPC64_CALL_PLT>(expr);
 }
 
 // Returns true if Expr refers a GOT entry. Note that this function
@@ -200,7 +200,8 @@ static bool needsPlt(RelExpr expr) {
 static bool needsGot(RelExpr expr) {
   return oneof<R_GOT, R_GOT_OFF, R_MIPS_GOT_LOCAL_PAGE, R_MIPS_GOT_OFF,
                R_MIPS_GOT_OFF32, R_AARCH64_GOT_PAGE_PC, R_GOT_PC, R_GOTPLT,
-               R_AARCH64_GOT_PAGE>(expr);
+               R_AARCH64_GOT_PAGE, R_LOONGARCH_GOT, R_LOONGARCH_GOT_PAGE_PC>(
+      expr);
 }
 
 // True if this expression is of the form Sym - X, where X is a position in the
@@ -208,12 +209,14 @@ static bool needsGot(RelExpr expr) {
 static bool isRelExpr(RelExpr expr) {
   return oneof<R_PC, R_GOTREL, R_GOTPLTREL, R_MIPS_GOTREL, R_PPC64_CALL,
                R_PPC64_RELAX_TOC, R_AARCH64_PAGE_PC, R_RELAX_GOT_PC,
-               R_RISCV_PC_INDIRECT, R_PPC64_RELAX_GOT_PC>(expr);
+               R_RISCV_PC_INDIRECT, R_PPC64_RELAX_GOT_PC, R_LOONGARCH_PAGE_PC>(
+      expr);
 }
-
 
 static RelExpr toPlt(RelExpr expr) {
   switch (expr) {
+  case R_LOONGARCH_PAGE_PC:
+    return R_LOONGARCH_PLT_PAGE_PC;
   case R_PPC64_CALL:
     return R_PPC64_CALL_PLT;
   case R_PC:
@@ -232,6 +235,8 @@ static RelExpr fromPlt(RelExpr expr) {
   case R_PLT_PC:
   case R_PPC32_PLTREL:
     return R_PC;
+  case R_LOONGARCH_PLT_PAGE_PC:
+    return R_LOONGARCH_PAGE_PC;
   case R_PPC64_CALL_PLT:
     return R_PPC64_CALL;
   case R_PLT:
@@ -962,7 +967,9 @@ bool RelocationScanner::isStaticLinkTimeConstant(RelExpr e, RelType type,
             R_MIPS_GOTREL, R_MIPS_GOT_OFF, R_MIPS_GOT_OFF32, R_MIPS_GOT_GP_PC,
             R_AARCH64_GOT_PAGE_PC, R_GOT_PC, R_GOTONLY_PC, R_GOTPLTONLY_PC,
             R_PLT_PC, R_PLT_GOTPLT, R_PPC32_PLTREL, R_PPC64_CALL_PLT,
-            R_PPC64_RELAX_TOC, R_RISCV_ADD, R_AARCH64_GOT_PAGE>(e))
+            R_PPC64_RELAX_TOC, R_RISCV_ADD, R_AARCH64_GOT_PAGE,
+            R_LOONGARCH_PLT_PAGE_PC, R_LOONGARCH_GOT, R_LOONGARCH_GOT_PAGE_PC>(
+          e))
     return true;
 
   // These never do, except if the entire file is position dependent or if
@@ -1048,7 +1055,8 @@ void RelocationScanner::processAux(RelExpr expr, RelType type, uint64_t offset,
   bool canWrite = (sec.flags & SHF_WRITE) || !config->zText;
   if (canWrite) {
     RelType rel = target.getDynRel(type);
-    if (expr == R_GOT || (rel == target.symbolicRel && !sym.isPreemptible)) {
+    if (oneof<R_GOT, R_LOONGARCH_GOT>(expr) ||
+        (rel == target.symbolicRel && !sym.isPreemptible)) {
       addRelativeReloc(sec, offset, sym, addend, expr, type);
       return;
     } else if (rel != 0) {
@@ -1194,11 +1202,13 @@ static unsigned handleTlsRelocation(RelType type, Symbol &sym,
     return 1;
   }
 
-  // ARM, Hexagon and RISC-V do not support GD/LD to IE/LE relaxation.  For
-  // PPC64, if the file has missing R_PPC64_TLSGD/R_PPC64_TLSLD, disable
+  // ARM, Hexagon, LoongArch and RISC-V do not support GD/LD to IE/LE
+  // relaxation.
+  // For PPC64, if the file has missing R_PPC64_TLSGD/R_PPC64_TLSLD, disable
   // relaxation as well.
   bool toExecRelax = !config->shared && config->emachine != EM_ARM &&
                      config->emachine != EM_HEXAGON &&
+                     config->emachine != EM_LOONGARCH &&
                      config->emachine != EM_RISCV &&
                      !c.file->ppc64DisableTLSRelax;
 
@@ -1215,8 +1225,7 @@ static unsigned handleTlsRelocation(RelType type, Symbol &sym,
   // being suitable for being dynamically loaded via dlopen. GOT[e0] is the
   // module index, with a special value of 0 for the current module. GOT[e1] is
   // unused. There only needs to be one module index entry.
-  if (oneof<R_TLSLD_GOT, R_TLSLD_GOTPLT, R_TLSLD_PC, R_TLSLD_HINT>(
-          expr)) {
+  if (oneof<R_TLSLD_GOT, R_TLSLD_GOTPLT, R_TLSLD_PC, R_TLSLD_HINT>(expr)) {
     // Local-Dynamic relocs can be relaxed to Local-Exec.
     if (toExecRelax) {
       c.relocations.push_back(
@@ -1248,7 +1257,8 @@ static unsigned handleTlsRelocation(RelType type, Symbol &sym,
   }
 
   if (oneof<R_AARCH64_TLSDESC_PAGE, R_TLSDESC, R_TLSDESC_CALL, R_TLSDESC_PC,
-            R_TLSDESC_GOTPLT, R_TLSGD_GOT, R_TLSGD_GOTPLT, R_TLSGD_PC>(expr)) {
+            R_TLSDESC_GOTPLT, R_TLSGD_GOT, R_TLSGD_GOTPLT, R_TLSGD_PC,
+            R_LOONGARCH_TLSGD_PAGE_PC>(expr)) {
     if (!toExecRelax) {
       sym.needsTlsGd = true;
       c.relocations.push_back({expr, type, offset, addend, &sym});
@@ -1270,8 +1280,8 @@ static unsigned handleTlsRelocation(RelType type, Symbol &sym,
     return target->getTlsGdRelaxSkip(type);
   }
 
-  if (oneof<R_GOT, R_GOTPLT, R_GOT_PC, R_AARCH64_GOT_PAGE_PC, R_GOT_OFF,
-            R_TLSIE_HINT>(expr)) {
+  if (oneof<R_GOT, R_GOTPLT, R_GOT_PC, R_AARCH64_GOT_PAGE_PC,
+            R_LOONGARCH_GOT_PAGE_PC, R_GOT_OFF, R_TLSIE_HINT>(expr)) {
     // Initial-Exec relocs can be relaxed to Local-Exec if the symbol is locally
     // defined.
     if (toExecRelax && isLocalInExecutable) {
@@ -1431,7 +1441,9 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
       // for detailed description:
       // ftp://www.linux-mips.org/pub/linux/mips/doc/ABI/mipsabi.pdf
       in.mipsGot->addEntry(*sec.file, sym, addend, expr);
-    } else {
+    } else if (!sym.isTls() || config->emachine != EM_LOONGARCH) {
+      // Many LoongArch TLS relocs reuse the R_LOONGARCH_GOT type, in which
+      // case the `needsGot` flag shouldn't get set.
       sym.needsGot = true;
     }
   } else if (needsPlt(expr)) {

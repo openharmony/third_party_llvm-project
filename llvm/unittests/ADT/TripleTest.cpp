@@ -439,11 +439,71 @@ TEST(TripleTest, ParsedIDs) {
   EXPECT_EQ(Triple::UnknownOS, T.getOS());
   EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
 
+  T = Triple("loongarch32-unknown-linux-gnu");
+  EXPECT_EQ(Triple::loongarch32, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::Linux, T.getOS());
+  EXPECT_EQ(Triple::GNU, T.getEnvironment());
+
+  T = Triple("loongarch32-unknown-linux-gnuf32");
+  EXPECT_EQ(Triple::loongarch32, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::Linux, T.getOS());
+  EXPECT_EQ(Triple::GNUF32, T.getEnvironment());
+
+  T = Triple("loongarch32-unknown-linux-gnuf64");
+  EXPECT_EQ(Triple::loongarch32, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::Linux, T.getOS());
+  EXPECT_EQ(Triple::GNUF64, T.getEnvironment());
+
+  T = Triple("loongarch32-unknown-linux-gnusf");
+  EXPECT_EQ(Triple::loongarch32, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::Linux, T.getOS());
+  EXPECT_EQ(Triple::GNUSF, T.getEnvironment());
+
+  T = Triple("loongarch32-unknown-linux-musl");
+  EXPECT_EQ(Triple::loongarch32, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::Linux, T.getOS());
+  EXPECT_EQ(Triple::Musl, T.getEnvironment());
+
   T = Triple("loongarch64-unknown-linux");
   EXPECT_EQ(Triple::loongarch64, T.getArch());
   EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
   EXPECT_EQ(Triple::Linux, T.getOS());
   EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
+
+  T = Triple("loongarch64-unknown-linux-gnu");
+  EXPECT_EQ(Triple::loongarch64, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::Linux, T.getOS());
+  EXPECT_EQ(Triple::GNU, T.getEnvironment());
+
+  T = Triple("loongarch64-unknown-linux-gnuf32");
+  EXPECT_EQ(Triple::loongarch64, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::Linux, T.getOS());
+  EXPECT_EQ(Triple::GNUF32, T.getEnvironment());
+
+  T = Triple("loongarch64-unknown-linux-gnuf64");
+  EXPECT_EQ(Triple::loongarch64, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::Linux, T.getOS());
+  EXPECT_EQ(Triple::GNUF64, T.getEnvironment());
+
+  T = Triple("loongarch64-unknown-linux-gnusf");
+  EXPECT_EQ(Triple::loongarch64, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::Linux, T.getOS());
+  EXPECT_EQ(Triple::GNUSF, T.getEnvironment());
+
+  T = Triple("loongarch64-unknown-linux-musl");
+  EXPECT_EQ(Triple::loongarch64, T.getArch());
+  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
+  EXPECT_EQ(Triple::Linux, T.getOS());
+  EXPECT_EQ(Triple::Musl, T.getEnvironment());
 
   T = Triple("riscv32-unknown-unknown");
   EXPECT_EQ(Triple::riscv32, T.getArch());
@@ -1139,12 +1199,14 @@ TEST(TripleTest, BitWidthPredicates) {
   EXPECT_TRUE(T.isArch32Bit());
   EXPECT_FALSE(T.isArch64Bit());
   EXPECT_TRUE(T.isLoongArch());
+  EXPECT_TRUE(T.isLoongArch32());
 
   T.setArch(Triple::loongarch64);
   EXPECT_FALSE(T.isArch16Bit());
   EXPECT_FALSE(T.isArch32Bit());
   EXPECT_TRUE(T.isArch64Bit());
   EXPECT_TRUE(T.isLoongArch());
+  EXPECT_TRUE(T.isLoongArch64());
 
   T.setArch(Triple::dxil);
   EXPECT_FALSE(T.isArch16Bit());

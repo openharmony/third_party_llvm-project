@@ -3499,12 +3499,14 @@ def mcmodel_EQ_medany : Flag<["-"], "mcmodel=medany">, Group<m_riscv_Features_Gr
 def menable_experimental_extensions : Flag<["-"], "menable-experimental-extensions">, Group<m_Group>,
   HelpText<"Enable use of experimental RISC-V extensions.">;
 
-def munaligned_access : Flag<["-"], "munaligned-access">, Group<m_arm_Features_Group>,
-  HelpText<"Allow memory accesses to be unaligned (AArch32/AArch64 only)">;
-def mno_unaligned_access : Flag<["-"], "mno-unaligned-access">, Group<m_arm_Features_Group>,
-  HelpText<"Force all memory accesses to be aligned (AArch32/AArch64 only)">;
+def munaligned_access : Flag<["-"], "munaligned-access">, Group<m_Group>,
+  HelpText<"Allow memory accesses to be unaligned (AArch32/AArch64/LoongArch only)">;
+def mno_unaligned_access : Flag<["-"], "mno-unaligned-access">, Group<m_Group>,
+  HelpText<"Force all memory accesses to be aligned (AArch32/AArch64/LoongArch only)">;
 def mstrict_align : Flag<["-"], "mstrict-align">, Alias<mno_unaligned_access>, Flags<[CC1Option,HelpHidden]>,
   HelpText<"Force all memory accesses to be aligned (same as mno-unaligned-access)">;
+def mno_strict_align : Flag<["-"], "mno-strict-align">, Alias<munaligned_access>, Flags<[CC1Option,HelpHidden]>,
+  HelpText<"Allow memory accesses to be unaligned (same as munaligned-access)">;
 def mno_thumb : Flag<["-"], "mno-thumb">, Group<m_arm_Features_Group>;
 def mrestrict_it: Flag<["-"], "mrestrict-it">, Group<m_arm_Features_Group>,
   HelpText<"Disallow generation of complex IT blocks.">;
@@ -3868,8 +3870,8 @@ def mdsp : Flag<["-"], "mdsp">, Group<m_mips_Features_Group>;
 def mno_dsp : Flag<["-"], "mno-dsp">, Group<m_mips_Features_Group>;
 def mdspr2 : Flag<["-"], "mdspr2">, Group<m_mips_Features_Group>;
 def mno_dspr2 : Flag<["-"], "mno-dspr2">, Group<m_mips_Features_Group>;
-def msingle_float : Flag<["-"], "msingle-float">, Group<m_mips_Features_Group>;
-def mdouble_float : Flag<["-"], "mdouble-float">, Group<m_mips_Features_Group>;
+def msingle_float : Flag<["-"], "msingle-float">, Group<m_Group>;
+def mdouble_float : Flag<["-"], "mdouble-float">, Group<m_Group>;
 def mmadd4 : Flag<["-"], "mmadd4">, Group<m_mips_Features_Group>,
   HelpText<"Enable the generation of 4-operand madd.s, madd.d and related instructions.">;
 def mno_madd4 : Flag<["-"], "mno-madd4">, Group<m_mips_Features_Group>,

@@ -11,6 +11,7 @@
 #include "Arch/AArch64.h"
 #include "Arch/ARM.h"
 #include "Arch/CSKY.h"
+#include "Arch/LoongArch.h"
 #include "Arch/M68k.h"
 #include "Arch/Mips.h"
 #include "Arch/PPC.h"
@@ -48,6 +49,7 @@
 #include "llvm/Support/Compression.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
+#include "llvm/Support/LoongArchTargetParser.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Process.h"
 #include "llvm/Support/TargetParser.h"
@@ -371,6 +373,10 @@ static void getTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   case llvm::Triple::csky:
     csky::getCSKYTargetFeatures(D, Triple, Args, CmdArgs, Features);
     break;
+  case llvm::Triple::loongarch32:
+  case llvm::Triple::loongarch64:
+    loongarch::getLoongArchTargetFeatures(D, Triple, Args, Features);
+    break;
   }
 
   for (auto Feature : unifyTargetFeatures(Features)) {
@@ -536,6 +542,8 @@ static bool useFramePointerForTargetByDefault(const ArgList &Args,
   case llvm::Triple::amdgcn:
   case llvm::Triple::r600:
   case llvm::Triple::csky:
+  case llvm::Triple::loongarch32:
+  case llvm::Triple::loongarch64:
     return !areOptimizationsEnabled(Args);
   default:
     break;
@@ -1794,6 +1802,11 @@ void Clang::RenderTargetOptions(const llvm::Triple &EffectiveTriple,
     CmdArgs.push_back("-fallow-half-arguments-and-returns");
     break;
 
+  case llvm::Triple::loongarch32:
+  case llvm::Triple::loongarch64:
+    AddLoongArchTargetArgs(Args, CmdArgs);
+    break;
+
   case llvm::Triple::mips:
   case llvm::Triple::mipsel:
   case llvm::Triple::mips64:
@@ -1931,6 +1944,24 @@ void Clang::AddAArch64TargetArgs(const ArgList &Args,
   }
 
   AddUnalignedAccessWarning(CmdArgs);
+}
+
+void Clang::AddLoongArchTargetArgs(const ArgList &Args,
+                                   ArgStringList &CmdArgs) const {
+  const llvm::Triple &Triple = getToolChain().getTriple();
+
+  CmdArgs.push_back("-target-abi");
+  CmdArgs.push_back(
+      loongarch::getLoongArchABI(getToolChain().getDriver(), Args, Triple)
+          .data());
+
+  // Handle -mtune.
+  if (const Arg *A = Args.getLastArg(options::OPT_mtune_EQ)) {
+    std::string TuneCPU = A->getValue();
+    TuneCPU = loongarch::postProcessTargetCPUString(TuneCPU, Triple);
+    CmdArgs.push_back("-tune-cpu");
+    CmdArgs.push_back(Args.MakeArgString(TuneCPU));
+  }
 }
 
 void Clang::AddMIPSTargetArgs(const ArgList &Args,
@@ -6202,7 +6233,8 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   if (Arg *A = Args.getLastArg(options::OPT_fpatchable_function_entry_EQ)) {
     StringRef S0 = A->getValue(), S = S0;
     unsigned Size, Offset = 0;
-    if (!Triple.isAArch64() && !Triple.isRISCV() && !Triple.isX86())
+    if (!Triple.isAArch64() && !Triple.isLoongArch() && !Triple.isRISCV() &&
+        !Triple.isX86())
       D.Diag(diag::err_drv_unsupported_opt_for_target)
           << A->getAsString(Args) << TripleStr;
     else if (S.consumeInteger(10, Size) ||
@@ -7877,6 +7909,14 @@ void ClangAs::AddX86TargetArgs(const ArgList &Args,
   }
 }
 
+void ClangAs::AddLoongArchTargetArgs(const ArgList &Args,
+                                     ArgStringList &CmdArgs) const {
+  CmdArgs.push_back("-target-abi");
+  CmdArgs.push_back(loongarch::getLoongArchABI(getToolChain().getDriver(), Args,
+                                               getToolChain().getTriple())
+                        .data());
+}
+
 void ClangAs::AddRISCVTargetArgs(const ArgList &Args,
                                ArgStringList &CmdArgs) const {
   const llvm::Triple &Triple = getToolChain().getTriple();
@@ -8076,6 +8116,11 @@ void ClangAs::ConstructJob(Compilation &C, const JobAction &JA,
       CmdArgs.push_back("-mllvm");
       CmdArgs.push_back("-aarch64-mark-bti-property");
     }
+    break;
+
+  case llvm::Triple::loongarch32:
+  case llvm::Triple::loongarch64:
+    AddLoongArchTargetArgs(Args, CmdArgs);
     break;
 
   case llvm::Triple::riscv32:

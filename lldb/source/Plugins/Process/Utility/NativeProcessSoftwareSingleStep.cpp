@@ -165,7 +165,8 @@ Status NativeProcessSoftwareSingleStep::SetupSoftwareSingleStepping(
       // Arm mode
       size_hint = 4;
     }
-  } else if (arch.IsMIPS() || arch.GetTriple().isPPC64())
+  } else if (arch.IsMIPS() || arch.GetTriple().isPPC64() ||
+             arch.GetTriple().isLoongArch())
     size_hint = 4;
   error = process.SetBreakpoint(next_pc, size_hint, /*hardware=*/false);
 

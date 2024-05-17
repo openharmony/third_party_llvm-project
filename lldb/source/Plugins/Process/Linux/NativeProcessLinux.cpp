@@ -889,7 +889,8 @@ bool NativeProcessLinux::MonitorClone(NativeThreadLinux &parent,
 }
 
 bool NativeProcessLinux::SupportHardwareSingleStepping() const {
-  if (m_arch.GetMachine() == llvm::Triple::arm || m_arch.IsMIPS())
+  if (m_arch.GetMachine() == llvm::Triple::arm || m_arch.IsMIPS() ||
+      m_arch.GetTriple().isLoongArch())
     return false;
   return true;
 }
