@@ -418,11 +418,7 @@ struct Ctx {
     llvm::DenseMap<const Symbol *, SmallVector<unsigned, 0>>
         gotPltInfo; // sym, soFile->orderIdx array;
     // Store duplicate symbols (only defined).
-    llvm::DenseSet<llvm::CachedHashStringRef> eSymsHist;
-
-    bool symExists(StringRef name) {
-      return eSymsHist.count(llvm::CachedHashStringRef(name)) != 0;
-    }
+    llvm::DenseSet<llvm::CachedHashStringRef> duplicatedSymNames;
   } adlt;
   // OHOS_LOCAL end
 };

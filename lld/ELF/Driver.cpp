@@ -2568,14 +2568,14 @@ void LinkerDriver::link(opt::InputArgList &args) {
   for (StringRef name : config->undefined)
     addUnusedUndefined(name)->referenced = true;
 
-  // Fill eSymsHist for defined syms. This will help to find duplicates.
+  // Fill duplicatedSymNames for defined syms. This will help to find duplicates.
   if (config->adlt) {
-    eSymsCntMap eSymsHist;
+    ESymsCntMap eSymsHist;
     for (auto *file : files)
       buildSymsHist(file, eSymsHist);
     for (auto eSym : eSymsHist)
       if (eSym.second > 1)
-        ctx->adlt.eSymsHist.insert(eSym.first);
+        ctx->adlt.duplicatedSymNames.insert(eSym.first);
     eSymsHist.clear();
   }
 
