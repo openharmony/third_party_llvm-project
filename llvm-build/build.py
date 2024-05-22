@@ -82,7 +82,7 @@ class BuildConfig():
         self.enable_check_abi = args.enable_check_abi
         self.discover_paths()
 
-        self.TARGETS = 'AArch64;ARM;BPF;Mips;RISCV;X86'
+        self.TARGETS = 'AArch64;ARM;BPF;XVM;Mips;RISCV;X86'
         self.ORIG_ENV = dict(os.environ)
         self.VERSION = None # autodetected
 
