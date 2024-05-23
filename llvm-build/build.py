@@ -2697,7 +2697,7 @@ class LlvmPackage(BuildUtils):
 
         # Scripts that should not be stripped
         script_bins = ['git-clang-format', 'scan-build', 'scan-view']
-        need_x_bins_darwin = ['clang', 'clang++', 'clang-9', 'clang-cl', 'clang-cpp']
+        need_x_bins_darwin = ['clang', 'clang++', 'clang-15', 'clang-cl', 'clang-cpp']
 
         # Bin file in the list should be stripped with -x args when host=darwin
         self.darwin_stripped_xargs(bin_dir, necessary_bin_files, script_bins, need_x_bins_darwin)
