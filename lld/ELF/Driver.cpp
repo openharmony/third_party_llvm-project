@@ -849,7 +849,7 @@ static std::pair<bool, bool> getPackDynRelocs(opt::InputArgList &args) {
 static void readCallGraph(MemoryBufferRef mb) {
   // Build a map from symbol name to section
   DenseMap<StringRef, Symbol *> map;
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (ELFFileBase *file : files)
     for (Symbol *sym : file->getSymbols())
       map[sym->getName()] = sym;
@@ -1828,7 +1828,7 @@ static void excludeLibs(opt::InputArgList &args) {
         sym->versionId = VER_NDX_LOCAL;
   };
 
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (ELFFileBase *file : files)
     visit(file);
 
@@ -2025,7 +2025,7 @@ static void writeDependencyFile() {
 // symbols of type CommonSymbol.
 static void replaceCommonSymbols() {
   llvm::TimeTraceScope timeScope("Replace common symbols");
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (ELFFileBase *file : files) {
     if (!file->hasCommonSyms)
       continue;
@@ -2102,7 +2102,7 @@ static void findKeepUniqueSections(opt::InputArgList &args) {
 
   // Visit the address-significance table in each object file and mark each
   // referenced symbol as address-significant.
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (InputFile *f : files) {
     auto *obj = cast<ObjFile<ELFT>>(f);
     ArrayRef<Symbol *> syms = obj->getSymbols();
@@ -2357,7 +2357,7 @@ static void redirectSymbols(ArrayRef<WrappedSymbol> wrapped) {
     return;
 
   // Update pointers in input files.
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   parallelForEach(files, [&](ELFFileBase *file) {
     for (Symbol *&sym : file->getMutableGlobalSymbols())
       if (Symbol *s = map.lookup(sym))
@@ -2393,7 +2393,7 @@ static uint32_t getAndFeatures() {
     return 0;
 
   uint32_t ret = -1;
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (ELFFileBase *f : files) {
     uint32_t features = f->andFeatures;
 
