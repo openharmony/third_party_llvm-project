@@ -600,6 +600,7 @@ class BuildUtils(object):
                 'lib', 'libpython%s.so' % self.build_config.LLDB_PY_VERSION)
 
         defines['COMPILER_RT_BUILD_XRAY'] = 'OFF'
+        defines['LIBUNWIND_USE_FRAME_HEADER_CACHE'] = 'ON'
         return defines
 
     def get_python_dir(self):
