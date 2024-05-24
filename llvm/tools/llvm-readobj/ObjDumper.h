@@ -129,7 +129,6 @@ public:
   virtual void printVersionInfo() {}
   virtual void printGroupSections() {}
   virtual void printHashHistograms() {}
-  virtual void printAdltSection() {} // OHOS_LOCAL
   virtual void printCGProfile() {}
   virtual void printBBAddrMaps() {}
   virtual void printAddrsig() {}
