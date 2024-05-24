@@ -98,6 +98,8 @@ class BuildConfig():
         self.ARCHIVE_EXTENSION = '.tar.' + self.compression_format
         self.ARCHIVE_OPTION = '-c' + ('j' if self.compression_format == "bz2" else 'z')
         self.LIBXML2_VERSION = None
+        self.NCURSES_VERSION = None
+        self.LIBEDIT_VERSION = None
         self.LZMA_VERSION = None
         logging.basicConfig(level=logging.INFO)
 
@@ -1829,7 +1831,7 @@ class LlvmLibs(BuildUtils):
             lldb_target.append('lldb')
 
             if self.build_config.build_ncurses:
-                self.build_ncurses(None, llvm_install, llvm_triple)
+                self.build_ncurses(None, llvm_install, llvm_triple, True)
                 lldb_defines['LLDB_ENABLE_CURSES'] = 'ON'
                 ncurses_install_path = self.merge_ncurses_install_dir(llvm_triple)
                 lldb_defines['CURSES_INCLUDE_DIRS'] = os.path.join(ncurses_install_path, 'include')
@@ -1843,7 +1845,7 @@ class LlvmLibs(BuildUtils):
                 lldb_defines['PANEL_LIBRARIES'] = ncurses_libs
 
             if self.build_config.build_libedit:
-                self.build_libedit(None, llvm_install, llvm_triple)
+                self.build_libedit(None, llvm_install, llvm_triple, True)
                 lldb_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
                 libedit_install_path = self.merge_libedit_install_dir(llvm_triple)
                 lldb_defines['LibEdit_INCLUDE_DIRS'] = os.path.join(libedit_install_path, 'include')
@@ -1918,7 +1920,7 @@ class LlvmLibs(BuildUtils):
                           env=dict(self.build_config.ORIG_ENV),
                           install=True)
 
-    def build_ncurses(self, llvm_make, llvm_install, platform_triple):
+    def build_ncurses(self, llvm_make, llvm_install, platform_triple, static = False):
         self.logger().info('Building ncurses.')
 
         libncurses_src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'ncurses'))
@@ -1939,12 +1941,14 @@ class LlvmLibs(BuildUtils):
         if ncurses_version is not None:
             libncurses_untar_path = self.merge_out_path('third_party', 'ncurses', 'ncurses-' + ncurses_version)
             args = ['./build_ncurses.sh', libncurses_src_dir, libncurses_build_path, libncurses_install_path,
-                    prebuilts_path, clang_version, ncurses_version, platform_triple, libncurses_untar_path,
-                    self.merge_ncurses_install_dir(self.use_platform())]
+                    prebuilts_path, clang_version, ncurses_version, platform_triple, libncurses_untar_path]
+            if static:
+                args.append('static')
+                args.append(self.merge_ncurses_install_dir(self.use_platform()))
             self.check_call(args)
             os.chdir(cur_dir)
 
-        if platform_triple == self.use_platform():
+        if not static:
             self.llvm_package.copy_ncurses_to_llvm(platform_triple, llvm_make)
             self.llvm_package.copy_ncurses_to_llvm(platform_triple, llvm_install)
 
@@ -1984,7 +1988,7 @@ class LlvmLibs(BuildUtils):
         self.check_create_dir(lib_dst_path)
         self.check_copy_file(lzma_file, lib_dst_path + '/liblzma' + shlib_ext)
 
-    def build_libedit(self, llvm_make, llvm_install, platform_triple):
+    def build_libedit(self, llvm_make, llvm_install, platform_triple, static = False):
         self.logger().info('Building libedit')
 
         libedit_src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libedit'))
@@ -2007,7 +2011,7 @@ class LlvmLibs(BuildUtils):
         self.check_call(args)
         os.chdir(cur_dir)
 
-        if platform_triple == self.use_platform():
+        if not static:
             self.llvm_package.copy_libedit_to_llvm(platform_triple, llvm_make)
             self.llvm_package.copy_libedit_to_llvm(platform_triple, llvm_install)
 
@@ -2767,6 +2771,9 @@ def main():
     if not build_config.no_build_x86_64:
         configs.append(('x86_64', build_utils.open_ohos_triple('x86_64')))
 
+    build_config.NCURSES_VERSION = build_utils.get_ncurses_version()
+    if build_config.NCURSES_VERSION is None:
+        raise Exception('NCURSES version information not found, please check if the ncurses.spec file exists')
     if build_config.build_ncurses:
         llvm_libs.build_ncurses(llvm_make, llvm_install, build_utils.use_platform())
 
@@ -2776,13 +2783,15 @@ def main():
     if build_config.enable_lzma_7zip:
         llvm_libs.build_lzma(llvm_make, llvm_install)
 
+    build_config.LIBEDIT_VERSION = build_utils.get_libedit_version()
+    if build_config.LIBEDIT_VERSION is None:
+        raise Exception('LIBEDIT version information not found, please check if the libedit.spec file exists')
     if build_config.build_libedit:
         llvm_libs.build_libedit(llvm_make, llvm_install, build_utils.use_platform())
 
     build_config.LIBXML2_VERSION = build_utils.get_libxml2_version()
     if build_config.LIBXML2_VERSION is None:
-        build_config.build_libxml2 = False
-
+        raise Exception('LIBXML2 version information not found, please check if the libxml2.spec file exists')
     if build_config.build_libxml2:
         llvm_libs.build_libxml2(build_utils.use_platform(), llvm_make, llvm_install)
 
