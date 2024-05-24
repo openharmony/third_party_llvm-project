@@ -2498,27 +2498,6 @@ static void postParseSharedFileForAdlt(ELFFileBase *file) {
   }
 }
 
-static bool isSectionValidForAdlt(int fileIdx, InputSectionBase *s) {
-  if (!s || s == &InputSection::discarded)
-    return false;
-  uint32_t type = s->type;
-  StringRef name = s->name;
-
-  bool isBaseType = type == SHT_NOBITS || type == SHT_NOTE ||
-                    type == SHT_INIT_ARRAY || type == SHT_FINI_ARRAY;
-  // TODO: fix .debug_info relocation
-  bool isNeededProgBits =
-      type == SHT_PROGBITS &&
-      !(name.startswith(".got.plt") || name.startswith(".plt") || name.startswith(".got") ||
-        name.startswith(".eh_frame_hdr") || name.startswith(".debug_"));
-  bool ret = isBaseType || isNeededProgBits;
-
-  bool isDebug = false;
-  if (ret && isDebug)
-    lld::outs() << "[isSectionValidForAdlt]: " << name << "\n";
-  return ret;
-}
-
 // Do actual linking. Note that when this function is called,
 // all linker scripts have already been parsed.
 void LinkerDriver::link(opt::InputArgList &args) {
@@ -2565,6 +2544,9 @@ void LinkerDriver::link(opt::InputArgList &args) {
   for (auto *arg : args.filtered(OPT_trace_symbol))
     symtab->insert(arg->getValue())->traced = true;
 
+  if (config->adlt) // Init ADLT context
+    elf::adltCtx = std::make_unique<AdltCtx>();
+
   // Handle -u/--undefined before input files. If both a.a and b.so define foo,
   // -u foo a.a b.so will extract a.a.
   for (StringRef name : config->undefined)
@@ -2572,14 +2554,8 @@ void LinkerDriver::link(opt::InputArgList &args) {
 
   // Fill duplicatedSymNames for defined syms. This will help to find duplicates.
   if (config->adlt) {
-    elf::adltCtx = std::make_unique<AdltCtx>();
-    ESymsCntMap eSymsHist;
-    for (auto *file : files)
-      buildSymsHist(file, eSymsHist);
-    for (auto eSym : eSymsHist)
-      if (eSym.second > 1)
-        adltCtx->duplicatedSymNames.insert(CachedHashStringRef(eSym.first));
-    eSymsHist.clear();
+    invokeELFT(adltCtx->buildSymbolsHist, files);
+    adltCtx->checkDuplicatedSymbols();
   }
 
   // Add all files to the symbol table. This will add almost all
@@ -2767,11 +2743,10 @@ void LinkerDriver::link(opt::InputArgList &args) {
     // Beyond this point, no new files are added.
     // Aggregate all input sections into one place.
     if (config->adlt)
-      for (auto it : llvm::enumerate(adltCtx->sharedFilesExtended))
-        for (InputSectionBase *s : it.value()->getSections())
-          if (isSectionValidForAdlt(it.index(), s))
+      for (auto *file : adltCtx->sharedFilesExtended)
+        for (InputSectionBase *s : file->getSections())
+          if (file->isValidSection(s))
             inputSections.push_back(s);
-
 
     for (InputFile *f : ctx->objectFiles)
       for (InputSectionBase *s : f->getSections())

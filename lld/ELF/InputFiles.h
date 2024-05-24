@@ -47,8 +47,6 @@ extern std::unique_ptr<llvm::TarWriter> tar;
 llvm::Optional<MemoryBufferRef> readFile(StringRef path);
 
 // Add symbols in File to the symbol table.
-typedef llvm::DenseMap<llvm::CachedHashStringRef, uint64_t> ESymsCntMap;
-void buildSymsHist(InputFile *file, ESymsCntMap &eSymsHist);
 void parseFile(InputFile *file);
 
 // The root class of input files.
@@ -96,14 +94,6 @@ public:
              fileKind == BitcodeKind);
     return symbols;
   }
-
-  // ADLT beg
-  ArrayRef<Symbol *> getAllSymbols() const { return allSymbols; }
-
-  SmallVector<Symbol *, 0> allSymbols;
-  // ADLT end
-
-
   // Get filename to use for linker script processing.
   StringRef getNameForScript() const;
 
@@ -211,6 +201,11 @@ public:
     return getELFSyms<ELFT>().slice(firstGlobal);
   }
 
+  // OHOS_LOCAL begin
+  virtual void buildSymbolsHist() {}
+  virtual bool isValidSection(InputSectionBase *s) { return true; }
+  // OHOS_LOCAL end
+
 protected:
   // Initializes this class's member variables.
   template <typename ELFT> void init();
@@ -294,7 +289,6 @@ public:
   // Get cached DWARF information.
   DWARFCache *getDwarf();
 
-  void buildSymsHist(ESymsCntMap &eSymsHist);
   void initializeLocalSymbols();
   void postParse();
 
@@ -401,6 +395,9 @@ public:
     return f->kind() == InputFile::SharedKind;
   }
 
+  void buildSymbolsHist() override;
+  bool isValidSection(InputSectionBase *s) override;
+
   void parseForAdlt();
   void postParseForAdlt();
 
@@ -440,12 +437,6 @@ public:
       fatal(toString(this) + ": invalid symbol index");
     return *this->allSymbols[symbolIndex];
   }
-
-  void traceElfSymbol(const Elf_Sym &sym, StringRef strTable) const;
-  void traceElfSection(const Elf_Shdr &sec) const;
-
-  void traceSymbol(const Symbol &sym, StringRef title = "") const;
-  void traceSection(const SectionBase &sec, StringRef title = "") const;
 
 public:
   // the input order of the file as it presented in ADLT image
@@ -489,6 +480,8 @@ protected:
   virtual StringRef getUniqueName(StringRef origName) const override;
 
 private:
+  SmallVector<Symbol *, 0> allSymbols;
+
   void parseDynamics(); // SharedFile compability
   void parseElfSymTab(); // ObjectFile compability
 

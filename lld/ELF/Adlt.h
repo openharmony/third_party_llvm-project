@@ -36,6 +36,8 @@ public:
 
   void checkDuplicatedSymbols();
 
+  template <class ELFT> void buildSymbolsHist(std::vector<InputFile *> &files);
+
   template <class ELFT> SharedFileExtended<ELFT> *getSoExt(InputFile *file);
   template <class ELFT> SharedFileExtended<ELFT> *getSoExt(unsigned orderId);
 

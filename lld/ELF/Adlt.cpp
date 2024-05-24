@@ -30,14 +30,23 @@ SharedFileExtended<ELFT> *AdltCtx::getSoExt(unsigned orderId) {
   return sharedFilesExtended[orderId];
 }
 
+template <class ELFT>
+void AdltCtx::buildSymbolsHist(std::vector<InputFile *> &files) {
+  for (auto *file : files)
+    if (auto *soExt = getSoExt<ELFT>(file))
+      soExt->buildSymbolsHist();
+  assert(!symNamesHist.empty());
+}
+
 void AdltCtx::checkDuplicatedSymbols() {
   assert(!symNamesHist.empty());
   for (auto entry : symNamesHist)
     if (entry.second > 1)
-      duplicatedSymNames.insert(entry.first);
+      duplicatedSymNames.insert(CachedHashStringRef(entry.first));
   symNamesHist.clear();
 }
 
+// TODO: inherit from SharedFile
 template SharedFileExtended<ELF32LE> *
 AdltCtx::getSoExt<ELF32LE>(InputFile *file);
 template SharedFileExtended<ELF32BE> *
@@ -46,5 +55,10 @@ template SharedFileExtended<ELF64LE> *
 AdltCtx::getSoExt<ELF64LE>(InputFile *file);
 template SharedFileExtended<ELF64BE> *
 AdltCtx::getSoExt<ELF64BE>(InputFile *file);
+
+template void AdltCtx::buildSymbolsHist<ELF32LE>(std::vector<InputFile *> &);
+template void AdltCtx::buildSymbolsHist<ELF32BE>(std::vector<InputFile *> &);
+template void AdltCtx::buildSymbolsHist<ELF64LE>(std::vector<InputFile *> &);
+template void AdltCtx::buildSymbolsHist<ELF64BE>(std::vector<InputFile *> &);
 
 // OHOS_LOCAL end

@@ -466,9 +466,6 @@ private:
   // ADLT
   template <class ELFT, class RelTy>
   void processForADLT(const RelTy &rel, Relocation *r, bool fromDynamic);
-
-  template <class RelTy>
-  void tracePushRelocADLT(InputSectionBase &isec, Relocation &r) const;
 };
 } // namespace
 
@@ -1316,24 +1313,6 @@ static void trackGotPltAdlt(Symbol *sym, SharedFileExtended<ELFT> *soFile) {
 }
 
 // ADLT BEGIN
-template <class ELFT>
-void RelocationScanner::tracePushRelocADLT(InputSectionBase &isec,
-                                           Relocation &r) const {
-  auto file = sec.getSoExt<ELFT>();
-  auto fullOffset = isec.address + r.offset;
-  lld::outs() << "[ADLT] Before push: [0x" + utohexstr(fullOffset) +
-                     "] type: " + toString(r.type) +
-                     " expr: " + std::to_string(r.expr) + " offset: 0x" +
-                     utohexstr(r.offset) + " addend: 0x" + utohexstr(r.addend) +
-                     ".\n";
-  lld::outs() << "section where: ";
-  file->traceSection(isec);
-
-  lld::outs() << "r->sym: ";
-  file->traceSymbol(*r.sym);
-  lld::outs() << "\n";
-}
-
 template <class ELFT, class RelTy>
 void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
                                        bool fromDynamic) {
@@ -1353,9 +1332,6 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
   // process offset
   r->offset -= fromDynamic ? secWhere->address : sec.address;
   assert(r->type);
-
-  if (isDebug)
-    tracePushRelocADLT<ELFT>(*secWhere, *r);
 
   // resolve relocs
   switch (r->type) {
