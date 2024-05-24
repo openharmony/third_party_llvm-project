@@ -526,7 +526,7 @@ template <class ELFT> void elf::createSyntheticSections() {
   in.iplt = std::make_unique<IpltSection>();
   add(*in.iplt);
 
-  if (config->andFeatures)
+  if (!config->adlt && config->andFeatures)
     add(*make<GnuPropertySection>());
 
   // .note.GNU-stack is always added when we are creating a re-linkable
@@ -790,7 +790,7 @@ template <class ELFT> static void markUsedLocalSymbols() {
   // See MarkLive<ELFT>::resolveReloc().
   if (config->gcSections)
     return;
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (ELFFileBase *file : files) {
     ObjFile<ELFT> *f = cast<ObjFile<ELFT>>(file);
     for (InputSectionBase *s : f->getSections()) {
@@ -862,7 +862,7 @@ template <class ELFT> void Writer<ELFT>::copyLocalSymbols() {
   llvm::TimeTraceScope timeScope("Add local symbols");
   if (config->copyRelocs && config->discard != DiscardPolicy::None)
     markUsedLocalSymbols<ELFT>();
-  auto files = /*config->adlt ? ctx->sharedFilesExtended :*/ ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (ELFFileBase *file : files) {
     for (Symbol *b : file->getLocalSymbols()) {
       assert(b->isLocal() && "should have been caught in initializeSymbols()");
@@ -1489,7 +1489,7 @@ static DenseMap<const InputSectionBase *, int> buildSectionOrder() {
   for (Symbol *sym : symtab->symbols())
     addSym(*sym);
 
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (ELFFileBase *file : files)
     for (Symbol *sym : file->getLocalSymbols())
       addSym(*sym);
@@ -1906,7 +1906,7 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
 // block sections, input sections can shrink when the jump instructions at
 // the end of the section are relaxed.
 static void fixSymbolsAfterShrinking() {
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (InputFile *File : files) {
     parallelForEach(File->getSymbols(), [&](Symbol *Sym) {
       auto *def = dyn_cast<Defined>(Sym);
@@ -2207,9 +2207,10 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
 
       if (sym->includeInDynsym()) {
         partitions[sym->partition - 1].dynSymTab->addSymbol(sym);
-        if (auto *file = dyn_cast_or_null<SharedFile>(sym->file))
-          if (file->isNeeded && !sym->isUndefined())
-            addVerneed(sym);
+        if (!config->adlt) // ADLT support ver syms
+          if (auto *file = dyn_cast_or_null<SharedFile>(sym->file))
+            if (file->isNeeded && !sym->isUndefined())
+              addVerneed(sym);
       }
     }
 

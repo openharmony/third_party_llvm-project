@@ -963,9 +963,8 @@ static void relocateNonAllocForRelocatable(InputSection *sec, uint8_t *buf) {
 
 template <class ELFT>
 void InputSectionBase::relocate(uint8_t *buf, uint8_t *bufEnd) {
-  if (flags & SHF_EXECINSTR &&
-      (config->adlt ? LLVM_UNLIKELY(getSharedFile<ELFT>()->splitStack)
-                    : LLVM_UNLIKELY(getFile<ELFT>()->splitStack)))
+  if (!config->adlt && flags & SHF_EXECINSTR &&
+      LLVM_UNLIKELY(getFile<ELFT>()->splitStack))
     adjustSplitStackFunctionPrologues<ELFT>(buf, bufEnd);
 
   if (flags & SHF_ALLOC) {

@@ -2508,7 +2508,7 @@ static bool isSectionValidForAdlt(int fileIdx, InputSectionBase *s) {
   bool isNeededProgBits =
       type == SHT_PROGBITS &&
       !(name.startswith(".got.plt") || name.startswith(".plt") || name.startswith(".got") ||
-        name.startswith(".eh_frame_hdr"));// || name.startswith(".debug_"));
+        name.startswith(".eh_frame_hdr") || name.startswith(".debug_"));
   bool ret = isBaseType || isNeededProgBits;
 
   bool isDebug = false;
@@ -2724,7 +2724,6 @@ void LinkerDriver::link(opt::InputArgList &args) {
   // With this the symbol table should be complete. After this, no new names
   // except a few linker-synthesized ones will be added to the symbol table.
   const size_t numObjsBeforeLTO = ctx->objectFiles.size();
-  const size_t numSoBeforeLTO = ctx->sharedFilesExtended.size();
   invokeELFT(compileBitcodeFiles, skipLinkedOutput);
 
   // Symbol resolution finished. Report backward reference problems,
@@ -2741,11 +2740,6 @@ void LinkerDriver::link(opt::InputArgList &args) {
 
   // compileBitcodeFiles may have produced lto.tmp object files. After this, no
   // more file will be added.
-  if (config->adlt) {
-    auto newSharedFiles =
-        makeArrayRef(ctx->sharedFilesExtended).slice(numSoBeforeLTO);
-    parallelForEach(newSharedFiles, postParseSharedFileForAdlt);
-  }
   auto newObjectFiles = makeArrayRef(ctx->objectFiles).slice(numObjsBeforeLTO);
   parallelForEach(newObjectFiles, initializeLocalSymbols);
   parallelForEach(newObjectFiles, postParseObjectFile);

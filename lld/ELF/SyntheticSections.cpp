@@ -1531,7 +1531,8 @@ DynamicSection<ELFT>::computeContents() {
   }
 
   if (config->emachine == EM_AARCH64) {
-    if (config->andFeatures & GNU_PROPERTY_AARCH64_FEATURE_1_BTI)
+    if (!config->adlt &&
+        config->andFeatures & GNU_PROPERTY_AARCH64_FEATURE_1_BTI)
       addInt(DT_AARCH64_BTI_PLT, 0);
     if (config->zPacPlt)
       addInt(DT_AARCH64_PAC_PLT, 0);
@@ -2293,7 +2294,7 @@ void SymbolTableBaseSection::sortSymTabSymbolsInAdlt(size_t numLocals) {
     [makeKey](const SymbolTableEntry& lhs, const SymbolTableEntry& rhs) {
       return makeKey(lhs) <= makeKey(rhs);
     });
-  
+
   // extract file boundaries for local symbols
   for (auto iter = symbols.begin(); iter != localEnd; ++iter)
     if (auto* soext = dyn_cast_or_null<SharedFileExtended<ELFT>>(iter->sym->file))
@@ -3495,7 +3496,7 @@ template <class ELFT> void elf::splitSections() {
   llvm::TimeTraceScope timeScope("Split sections");
   // splitIntoPieces needs to be called on each MergeInputSection
   // before calling finalizeContents().
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   parallelForEach(files, [](ELFFileBase *file) {
     for (InputSectionBase *sec : file->getSections()) {
       if (!sec)
