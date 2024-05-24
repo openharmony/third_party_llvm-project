@@ -1734,7 +1734,11 @@ Status NativeProcessLinux::GetLoadedModuleFileSpec(const char *module_path,
 
   file_spec.Clear();
   for (const auto &it : m_mem_region_cache) {
-    if (it.second.GetFilename() == module_file_spec.GetFilename()) {
+    // OHOS_LOCAL
+    const bool dir_check = (!m_arch.GetTriple().isOHOSFamily() ||
+                            it.second.GetDirectory() == module_file_spec.GetDirectory());
+    // OHOS_LOCAL
+    if (it.second.GetFilename() == module_file_spec.GetFilename() && dir_check) {
       file_spec = it.second;
       return Status();
     }

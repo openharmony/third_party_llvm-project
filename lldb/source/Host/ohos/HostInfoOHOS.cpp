@@ -20,10 +20,10 @@ void HostInfoOHOS::ComputeHostArchitectureSupport(ArchSpec &arch_32,
   HostInfoLinux::ComputeHostArchitectureSupport(arch_32, arch_64);
 
   if (arch_32.IsValid()) {
-    arch_32.GetTriple().setEnvironment(llvm::Triple::UnknownEnvironment);
+    arch_32.GetTriple().setEnvironment(llvm::Triple::OpenHOS);
   }
   if (arch_64.IsValid()) {
-    arch_64.GetTriple().setEnvironment(llvm::Triple::UnknownEnvironment);
+    arch_64.GetTriple().setEnvironment(llvm::Triple::OpenHOS);
   }
 }
 
