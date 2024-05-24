@@ -1560,9 +1560,9 @@ DynamicSection<ELFT>::computeContents() {
         return (OutputSection *)nullptr;
       };
       for (InputFile *file : adltCtx->sharedFilesExtended) {
-        auto *f = cast<SharedFileExtended<ELFT>>(file);
-        auto initArray = findSection(f->addAdltPostfix(".init_array"));
-        auto finiArray = findSection(f->addAdltPostfix(".fini_array"));
+        auto *f = adltCtx->getSoExt<ELFT>(file);
+        auto initArray = findSection(f->getUniqueName(".init_array"));
+        auto finiArray = findSection(f->getUniqueName(".fini_array"));
         if (initArray) {
           addInt(DT_INIT_ARRAY, initArray->addr);
           addInt(DT_INIT_ARRAYSZ, initArray->size);
@@ -4221,8 +4221,8 @@ AdltSection<ELFT>::makeSoData(const SharedFileExtended<ELFT>* soext) {
     });
   }
 
-  data.initArrayName = soext->addAdltPostfix(".init_array");
-  data.finiArrayName = soext->addAdltPostfix(".fini_array");
+  data.initArrayName = soext->getUniqueName(".init_array");
+  data.finiArrayName = soext->getUniqueName(".fini_array");
 
   data.relaDynIndx = soext->dynRelIndexes.getArrayRef();
   data.relaPltIndx = soext->pltRelIndexes.getArrayRef();

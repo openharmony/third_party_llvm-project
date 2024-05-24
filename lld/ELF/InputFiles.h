@@ -238,13 +238,13 @@ public:
   }
   virtual ~ObjFile() {}
 
-  void parse(bool ignoreComdats = false);
+  virtual void parse(bool ignoreComdats = false);
   void parseLazy();
 
   StringRef getShtGroupSignature(ArrayRef<Elf_Shdr> sections,
                                  const Elf_Shdr &sec);
 
-  virtual Symbol &getSymbol(uint32_t symbolIndex) const {
+  Symbol &getSymbol(uint32_t symbolIndex) const {
     if (symbolIndex >= this->symbols.size())
       fatal(toString(this) + ": invalid symbol index");
     return *this->symbols[symbolIndex];
@@ -290,10 +290,15 @@ public:
   DWARFCache *getDwarf();
 
   void initializeLocalSymbols();
-  void postParse();
+  virtual void postParse();
+
+  // OHOS_LOCAL
+  virtual StringRef getUniqueName(StringRef origName) const;
 
 protected:
-  virtual StringRef getUniqueName(StringRef origName) const;
+  // OHOS_LOCAL
+  llvm::DenseMap<unsigned, unsigned> sectionsMap;       // offset, orderIdx
+  llvm::DenseMap<unsigned, unsigned> definedSymbolsMap; // abs offset, orderIdx
 
 private:
   void initializeSections(bool ignoreComdats,
@@ -394,49 +399,28 @@ public:
   static bool classof(const InputFile *f) {
     return f->kind() == InputFile::SharedKind;
   }
-
   void buildSymbolsHist() override;
   bool isValidSection(InputSectionBase *s) override;
+  bool isDynamicSection(InputSectionBase *s) const;
 
-  void parseForAdlt();
-  void postParseForAdlt();
+  void parse(bool ignoreComdats = false) override;
+  void postParse() override;
 
-  StringRef addAdltPostfix(StringRef input) const;
-  bool addAdltPostfix(Symbol *s);
+  Defined &getDefinedLocalSym(unsigned offset);
 
-  bool saveSymbol(const Defined& d) const;
+  InputSectionBase &getSection(unsigned offset);
+  InputSectionBase &getSectionByOrder(unsigned idx);
+  InputSectionBase *findSection(unsigned offset);
 
-  Defined *findSectionSymbol(uint64_t offset) const;
-  Defined *findDefinedSymbol(
-      uint64_t offset,
-      llvm::function_ref<bool(Defined *)> extraCond = [](Defined *) {
-        return true;
-      }) const;
-
-  InputSectionBase *findInputSection(StringRef name) const;
-  InputSectionBase *findInputSection(uint64_t offset) const;
-  bool isDynamicSection(InputSectionBase &sec) const;
-
-  template <typename RelT>
-  Symbol &getRelocTargetSymADLT(const RelT &rel, InputSectionBase &sec) const {
+  template <typename RelT> Symbol &getRelocTargetSym(const RelT &rel) {
     uint32_t symIndex = rel.getSymbol(config->isMips64EL);
-    return getSymbolADLT(symIndex, isDynamicSection(sec));
-  }
-
-  ArrayRef<Symbol *> getLocalSymbols() override {
-    if (this->allSymbols.empty())
-      return {};
-    return llvm::makeArrayRef(this->allSymbols).slice(1, eFirstGlobal - 1);
+    return getSymbol(symIndex, false);
   }
 
   Symbol &getDynamicSymbol(uint32_t symbolIndex) const;
-  Symbol &getSymbolADLT(uint32_t symbolIndex, bool fromDynamic) const;
+  Symbol &getLocalSymbol(uint32_t symbolIndex) const;
+  Symbol &getSymbol(uint32_t symbolIndex, bool fromDynamic);
 
-  Symbol &getSymbolFromElfSymTab(uint32_t symbolIndex) const {
-    if (symbolIndex >= this->allSymbols.size())
-      fatal(toString(this) + ": invalid symbol index");
-    return *this->allSymbols[symbolIndex];
-  }
 
 public:
   // the input order of the file as it presented in ADLT image
@@ -444,7 +428,7 @@ public:
   int dynSymSecIdx = 0;
   int symTabSecIdx = 0;
   int symTabShndxSecIdx = 0;
-  int eFirstGlobal = 0;
+  int symTabFirstGlobal = 0;
   int gotPltSecIdx = 0;
 
   // .symtab's start of local symbols owned by library
@@ -476,18 +460,13 @@ public:
   // parsed. Only filled for `--no-allow-shlib-undefined`.
   SmallVector<Symbol *, 0> requiredSymbols;
 
-protected:
-  virtual StringRef getUniqueName(StringRef origName) const override;
+  StringRef getUniqueName(StringRef origName) const override;
 
 private:
-  SmallVector<Symbol *, 0> allSymbols;
+  SmallVector<Symbol *, 0> localSymbols;
 
   void parseDynamics(); // SharedFile compability
   void parseElfSymTab(); // ObjectFile compability
-
-  void resolveDuplicatesForAdlt();
-
-  StringRef getShStrTab(ArrayRef<typename ELFT::Shdr> elfSections);
 
   std::vector<uint32_t> parseVerneed(const llvm::object::ELFFile<ELFT> &obj,
                                      const typename ELFT::Shdr *sec);

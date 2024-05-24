@@ -1326,22 +1326,22 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
     isDebug = true;*/
 
   // parse offset (where)
-  InputSectionBase *secWhere = file->findInputSection(r->offset);
-  assert(secWhere && "not found!");
+  InputSectionBase &secWhere =
+      (sec.type != SHT_NULL) ? sec : file->getSection(r->offset);
 
   // process offset
-  r->offset -= fromDynamic ? secWhere->address : sec.address;
+  r->offset -= fromDynamic ? secWhere.address : sec.address;
   assert(r->type);
 
   // resolve relocs
   switch (r->type) {
   // dyn relocs
   case R_AARCH64_RELATIVE: {
-    Defined *d = file->findDefinedSymbol(r->addend);
+    Defined *d = &file->getDefinedLocalSym(r->addend);
     assert(d && "R_AARCH64_RELATIVE: r->sym not found by addend!");
     r->sym = d;
     r->addend -= d->section->address + d->value;
-    addRelativeReloc(*secWhere, r->offset, *r->sym, r->addend, r->expr,
+    addRelativeReloc(secWhere, r->offset, *r->sym, r->addend, r->expr,
                      r->type);
     trackDynRelocAdlt(file);
     return;
@@ -1365,7 +1365,7 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
   case R_AARCH64_ABS64:
     if (fromDynamic) {
       assert(r->sym->exportDynamic);
-      sec.getPartition().relaDyn->addSymbolReloc(target.symbolicRel, *secWhere,
+      sec.getPartition().relaDyn->addSymbolReloc(target.symbolicRel, secWhere,
                                                  r->offset, *r->sym, r->addend,
                                                  r->type);
       trackDynRelocAdlt(file);
@@ -1441,9 +1441,9 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
   uint32_t symIndex = rel.getSymbol(config->isMips64EL);
   bool fromDynamic = false;
   if (config->adlt)
-    fromDynamic = sec.getSoExt<ELFT>()->isDynamicSection(sec);
+    fromDynamic = sec.getSoExt<ELFT>()->isDynamicSection(&sec);
   Symbol &sym = config->adlt
-                    ? sec.getSoExt<ELFT>()->getSymbolADLT(symIndex, fromDynamic)
+                    ? sec.getSoExt<ELFT>()->getSymbol(symIndex, fromDynamic)
                     : sec.getFile<ELFT>()->getSymbol(symIndex);
   RelType type;
 

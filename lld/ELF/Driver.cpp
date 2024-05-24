@@ -2479,19 +2479,19 @@ static void postParseObjectFile(ELFFileBase *file) {
   }
 }
 
-static void postParseSharedFileForAdlt(ELFFileBase *file) {
+static void postParseSharedFile(ELFFileBase *file) {
   switch (config->ekind) {
   case ELF32LEKind:
-    cast<SharedFileExtended<ELF32LE>>(file)->postParseForAdlt();
+    adltCtx->getSoExt<ELF32LE>(file)->postParse();
     break;
   case ELF32BEKind:
-    cast<SharedFileExtended<ELF32BE>>(file)->postParseForAdlt();
+    adltCtx->getSoExt<ELF32BE>(file)->postParse();
     break;
   case ELF64LEKind:
-    cast<SharedFileExtended<ELF64LE>>(file)->postParseForAdlt();
+    adltCtx->getSoExt<ELF64LE>(file)->postParse();
     break;
   case ELF64BEKind:
-    cast<SharedFileExtended<ELF64BE>>(file)->postParseForAdlt();
+    adltCtx->getSoExt<ELF64BE>(file)->postParse();
     break;
   default:
     llvm_unreachable("");
@@ -2634,7 +2634,7 @@ void LinkerDriver::link(opt::InputArgList &args) {
   // No more lazy bitcode can be extracted at this point. Do post parse work
   // like checking duplicate symbols.
   if (config->adlt)
-    parallelForEach(adltCtx->sharedFilesExtended, postParseSharedFileForAdlt);
+    parallelForEach(adltCtx->sharedFilesExtended, postParseSharedFile);
 
   parallelForEach(ctx->objectFiles, initializeLocalSymbols);
   parallelForEach(ctx->objectFiles, postParseObjectFile);
