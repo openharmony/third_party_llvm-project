@@ -15,6 +15,7 @@
 
 #include "SyntheticSections.h"
 #include "Config.h"
+#include "Adlt.h"
 #include "DWARF.h"
 #include "EhFrame.h"
 #include "InputFiles.h"
@@ -1398,11 +1399,11 @@ DynamicSection<ELFT>::computeContents() {
            part.dynStrTab->addString(config->rpath));
 
   if (config->adlt) {
-    for (InputFile *file : ctx->sharedFilesExtended) {
-      auto *f = cast<SharedFileExtended<ELFT>>(file);
-      for (size_t i = 0; i < f->dtNeeded.size(); i++) {
+    for (InputFile *file : adltCtx->sharedFilesExtended) {
+      auto *soExt = adltCtx->getSoExt<ELFT>(file);
+      for (size_t i = 0; i < soExt->dtNeeded.size(); i++) {
         auto tag = DT_NEEDED;
-        auto val = part.dynStrTab->addString(f->dtNeeded[i]);
+        auto val = part.dynStrTab->addString(soExt->dtNeeded[i]);
         if (llvm::find(entries, std::pair<int32_t, uint64_t>{tag, val}) ==
             entries.end())
           addInt(tag, val);
@@ -1558,7 +1559,7 @@ DynamicSection<ELFT>::computeContents() {
               return &osd->osec;
         return (OutputSection *)nullptr;
       };
-      for (InputFile *file : ctx->sharedFilesExtended) {
+      for (InputFile *file : adltCtx->sharedFilesExtended) {
         auto *f = cast<SharedFileExtended<ELFT>>(file);
         auto initArray = findSection(f->addAdltPostfix(".init_array"));
         auto finiArray = findSection(f->addAdltPostfix(".fini_array"));
@@ -2277,7 +2278,7 @@ void SymbolTableBaseSection::sortSymTabSymbolsInAdlt(size_t numLocals) {
     return {-1, file};
   };
 
-  for (InputFile* file : ctx->sharedFilesExtended) {
+  for (InputFile* file : adltCtx->sharedFilesExtended) {
     auto* soext = cast<SharedFileExtended<ELFT>>(file);
     soext->sharedLocalSymbolIndex = llvm::None;
     soext->sharedGlobalSymbolIndex = llvm::None;
@@ -4105,8 +4106,8 @@ AdltSection<ELFT>::AdltSection(StringTableSection& strTabSec)
 template <typename ELFT>
 void AdltSection<ELFT>::finalizeContents() {
   soInputs.clear();
-  soInputs.reserve(ctx->sharedFilesExtended.size());
-  for (InputFile* file : ctx->sharedFilesExtended) {
+  soInputs.reserve(adltCtx->sharedFilesExtended.size());
+  for (InputFile* file : adltCtx->sharedFilesExtended) {
     auto* soext = cast<SharedFileExtended<ELFT>>(file);
     soInputs.push_back(makeSoData(soext));
   }
@@ -4200,7 +4201,7 @@ typename AdltSection<ELFT>::CommonData
 AdltSection<ELFT>::makeCommonData() {
   return CommonData {
     UINT32_MAX, // .symtabSecIndex, filled in writeTo
-    ctx->adlt.commonProgramHeaders.size(), // .programHeadersAllocated
+    adltCtx->commonProgramHeaders.size(), // .programHeadersAllocated
     {}, // .phIndexes filled in writeTo
   };
 }
@@ -4349,7 +4350,7 @@ void AdltSection<ELFT>::extractProgramHeaderIndexes() {
     phdrsIndexes[it.value()] = static_cast<uint16_t>(it.index());
   };
 
-  for (const PhdrEntry* phentry : ctx->adlt.commonProgramHeaders) {
+  for (const PhdrEntry* phentry : adltCtx->commonProgramHeaders) {
     auto it = phdrsIndexes.find(phentry);
     if (it != phdrsIndexes.end()) {
       common.phIndexes.push_back(it->second);
@@ -4383,7 +4384,7 @@ void AdltSection<ELFT>::finalizeOnWrite() {
 
 template <typename ELFT>
 void AdltSection<ELFT>::finalizeOnWrite(size_t idx, SoData& soData) {
-  auto* soext = cast<SharedFileExtended<ELFT>>(ctx->sharedFilesExtended[idx]);
+  auto* soext = cast<SharedFileExtended<ELFT>>(adltCtx->sharedFilesExtended[idx]);
 
   // require SymbolTableBaseSection::sortSymTabSymbolsInAdlt for .symtab called
   soData.sharedLocalIndex = soext->sharedLocalSymbolIndex;

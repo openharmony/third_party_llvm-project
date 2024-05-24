@@ -8,6 +8,7 @@
 
 #include "InputFiles.h"
 #include "Config.h"
+#include "Adlt.h"
 #include "DWARF.h"
 #include "Driver.h"
 #include "InputSection.h"
@@ -198,8 +199,8 @@ template <class ELFT> static void doParseFile(InputFile *file) {
   // .so file
   if (config->adlt)
     if (auto *f = dyn_cast<SharedFileExtended<ELFT>>(file)) {
-      f->orderIdx = ctx->sharedFilesExtended.size();
-      ctx->sharedFilesExtended.push_back(cast<ELFFileBase>(file));
+      f->orderIdx = adltCtx->sharedFilesExtended.size();
+      adltCtx->sharedFilesExtended.push_back(cast<ELFFileBase>(file));
       f->parseForAdlt();
       return;
     }
@@ -1073,8 +1074,8 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
     if (!symbols[i]) {
       StringRef name = CHECK(eSyms[i].getName(stringTable), this);
       if (config->adlt && eSyms[i].isDefined() &&
-          ctx->adlt.duplicatedSymNames.count(CachedHashStringRef(name)) != 0) {
-        ctx->adlt.withCfi = ctx->adlt.withCfi || name == "__cfi_check";
+          adltCtx->duplicatedSymNames.count(CachedHashStringRef(name)) != 0) {
+        adltCtx->withCfi = adltCtx->withCfi || name == "__cfi_check";
         name = this->getUniqueName(name);
       }
       symbols[i] = symtab.insert(name);
@@ -2040,7 +2041,7 @@ template <class ELFT> void SharedFileExtended<ELFT>::parseDynamics() {
     StringRef name = CHECK(sym.getName(this->stringTable), this);
     // Add postfix for defined duplicates.
     if (config->adlt && sym.isDefined() &&
-        ctx->adlt.duplicatedSymNames.count(CachedHashStringRef(name)) != 0)
+        adltCtx->duplicatedSymNames.count(CachedHashStringRef(name)) != 0)
       name = this->getUniqueName(name);
 
     if (sym.getBinding() == STB_LOCAL) {

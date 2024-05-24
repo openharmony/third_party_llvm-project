@@ -11,6 +11,7 @@
 #include "ARMErrataFix.h"
 #include "CallGraphSort.h"
 #include "Config.h"
+#include "Adlt.h"
 #include "InputFiles.h"
 #include "LinkerScript.h"
 #include "MapFile.h"
@@ -570,8 +571,8 @@ InputSection *AdltWriter::getInputSection(OutputSection *sec) {
 }
 
 template <typename ELFT> void AdltWriter::checkPhdrs() {
-  for (auto *file : ctx->sharedFilesExtended)
-    if (auto *soFile = ctx->adlt.getSoExt<ELFT>(file))
+  for (auto *file : adltCtx->sharedFilesExtended)
+    if (auto *soFile = adltCtx->getSoExt<ELFT>(file))
       assert(!soFile->programHeaders.empty() &&
              "ADLT: PHdr indexes can't be empty!");
 }
@@ -580,8 +581,8 @@ template <typename ELFT> void AdltWriter::checkRelocs() {
   assert(!mainPart->relaDyn->relocs.empty() && "ADLT: relaDyn can't be empty!");
   assert(!in.relaPlt->relocs.empty() && "ADLT: relaPlt can't be empty!");
 
-  for (auto *file : ctx->sharedFilesExtended)
-    if (auto *soFile = ctx->adlt.getSoExt<ELFT>(file)) {
+  for (auto *file : adltCtx->sharedFilesExtended)
+    if (auto *soFile = adltCtx->getSoExt<ELFT>(file)) {
       assert(!soFile->dynRelIndexes.empty() &&
              "ADLT: relaDyn indexes can't be empty!");
       assert(!soFile->pltRelIndexes.empty() &&
@@ -592,12 +593,11 @@ template <typename ELFT> void AdltWriter::checkRelocs() {
 template <typename ELFT>
 void AdltWriter::trackPhdr(OutputSection *sec, PhdrEntry *phdr) {
   auto *isec = getInputSection(sec);
-  if (isec && isec->file)
-    if (auto *soFile = ctx->adlt.getSoExt<ELFT>(isec->file)) {
-      soFile->programHeaders.insert(phdr);
-      return;
-    }
-  ctx->adlt.commonProgramHeaders.insert(phdr);
+  if (isec && isec->file) {
+    isec->getSoExt<ELFT>()->programHeaders.insert(phdr);
+    return;
+  }
+  adltCtx->commonProgramHeaders.insert(phdr);
 }
 
 template <typename ELFT> void AdltWriter::traceRelocs() {
@@ -612,17 +612,25 @@ template <typename ELFT> void AdltWriter::traceRelocs() {
     lld::outs() << "\n";
   };
 
+  auto printSym = [&](Symbol *sym) {
+    if (sym->getName().empty() && sym->isSection()) {
+      Defined *d = cast<Defined>(sym);
+      return d->section->name;
+    }
+    return sym->getName();
+  };
+
   auto printRelocTable = [&](auto *relSec, auto &outIndexes) {
     for (auto &it : outIndexes) // print relocs
       if (DynamicReloc *rel = &relSec->relocs[it])
         lld::outs() << it << ":\t" << rel->inputSec->name << " + 0x"
                     << utohexstr(rel->offsetInSec) << "\t"
-                    << toString(rel->type) << "\t" << rel->sym->getName()
+                    << toString(rel->type) << "\t" << printSym(rel->sym)
                     << " + 0x" << utohexstr(rel->addend) << '\n';
   };
 
-  for (auto *file : ctx->sharedFilesExtended)
-    if (auto *soFile = ctx->adlt.getSoExt<ELFT>(file)) {
+  for (auto *file : adltCtx->sharedFilesExtended)
+    if (auto *soFile = adltCtx->getSoExt<ELFT>(file)) {
       lld::outs() << soFile->soName << ":\n";
       lld::outs() << "Dyn relocs (" << soFile->dynRelIndexes.size() << ")";
       printIndexes(soFile->dynRelIndexes);
@@ -659,13 +667,13 @@ template <typename ELFT> void AdltWriter::tracePhdrs() {
                   << "\t" << p->firstSec->name << '\n';
   };
 
-  auto &common = ctx->adlt.commonProgramHeaders;
+  auto &common = adltCtx->commonProgramHeaders;
   lld::outs() << "Common Program Headers (" << common.size() << ")";
   printIndexes(common);
   printPhTable(common);
 
-  for (auto *file : ctx->sharedFilesExtended)
-    if (auto *soFile = ctx->adlt.getSoExt<ELFT>(file)) {
+  for (auto *file : adltCtx->sharedFilesExtended)
+    if (auto *soFile = adltCtx->getSoExt<ELFT>(file)) {
       auto &headers = soFile->programHeaders;
       lld::outs() << soFile->soName << "\n";
       lld::outs() << "Program headers (" << headers.size() << ")";
@@ -1189,7 +1197,7 @@ void PhdrEntry::add(OutputSection *sec) {
 
   // OHOS_LOCAL begin
   if (config->adlt) {
-    if (ctx->adlt.withCfi && p_type == PT_LOAD) {
+    if (adltCtx->withCfi && p_type == PT_LOAD) {
       // check cfi.h: LIBRARY_ALIGNMENT and _BITS
       constexpr uint32_t kCFILibraryAlignment = 1UL << 18;
       firstSec->alignment = kCFILibraryAlignment;
@@ -2127,7 +2135,7 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
       // copy relocations, etc. Note that relocations for non-alloc sections are
       // directly processed by InputSection::relocateNonAlloc.
       if (config->adlt)
-        for (auto &it : llvm::enumerate(ctx->sharedFilesExtended)) {
+        for (auto &it : llvm::enumerate(adltCtx->sharedFilesExtended)) {
           auto *soFile = cast<SharedFileExtended<ELFT>>(it.value());
           auto sections = soFile->getSections();
           // scan .rela.dyn (base: SHT_NULL)
@@ -2521,7 +2529,7 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
     auto file = adltWriter.getInputSection(sec)->file;
     if (!file)
       return llvm::None;
-    return cast<SharedFileExtended<ELFT>>(file)->orderIdx;
+    return adltCtx->getSoExt<ELFT>(file)->orderIdx;
   };
   // OHOS_LOCAL end
 

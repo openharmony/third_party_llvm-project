@@ -24,6 +24,7 @@
 
 #include "Driver.h"
 #include "Config.h"
+#include "Adlt.h"
 #include "ICF.h"
 #include "InputFiles.h"
 #include "InputSection.h"
@@ -76,6 +77,7 @@ using namespace lld::elf;
 
 std::unique_ptr<Configuration> elf::config;
 std::unique_ptr<Ctx> elf::ctx;
+std::unique_ptr<AdltCtx> elf::adltCtx; // OHOS_LOCAL
 std::unique_ptr<LinkerDriver> elf::driver;
 
 static void setConfigs(opt::InputArgList &args);
@@ -2570,12 +2572,13 @@ void LinkerDriver::link(opt::InputArgList &args) {
 
   // Fill duplicatedSymNames for defined syms. This will help to find duplicates.
   if (config->adlt) {
+    elf::adltCtx = std::make_unique<AdltCtx>();
     ESymsCntMap eSymsHist;
     for (auto *file : files)
       buildSymsHist(file, eSymsHist);
     for (auto eSym : eSymsHist)
       if (eSym.second > 1)
-        ctx->adlt.duplicatedSymNames.insert(eSym.first);
+        adltCtx->duplicatedSymNames.insert(CachedHashStringRef(eSym.first));
     eSymsHist.clear();
   }
 
@@ -2597,7 +2600,7 @@ void LinkerDriver::link(opt::InputArgList &args) {
   // producing a shared library.
   // We also need one if any shared libraries are used and for pie executables
   // (probably because the dynamic linker needs it).
-  config->hasDynSymTab = (config->adlt ? !ctx->sharedFilesExtended.empty()
+  config->hasDynSymTab = (config->adlt ? !adltCtx->sharedFilesExtended.empty()
                                        : !ctx->sharedFiles.empty()) ||
                          config->isPic || config->exportDynamic;
 
@@ -2655,7 +2658,7 @@ void LinkerDriver::link(opt::InputArgList &args) {
   // No more lazy bitcode can be extracted at this point. Do post parse work
   // like checking duplicate symbols.
   if (config->adlt)
-    parallelForEach(ctx->sharedFilesExtended, postParseSharedFileForAdlt);
+    parallelForEach(adltCtx->sharedFilesExtended, postParseSharedFileForAdlt);
 
   parallelForEach(ctx->objectFiles, initializeLocalSymbols);
   parallelForEach(ctx->objectFiles, postParseObjectFile);
@@ -2764,7 +2767,7 @@ void LinkerDriver::link(opt::InputArgList &args) {
     // Beyond this point, no new files are added.
     // Aggregate all input sections into one place.
     if (config->adlt)
-      for (auto it : llvm::enumerate(ctx->sharedFilesExtended))
+      for (auto it : llvm::enumerate(adltCtx->sharedFilesExtended))
         for (InputSectionBase *s : it.value()->getSections())
           if (isSectionValidForAdlt(it.index(), s))
             inputSections.push_back(s);

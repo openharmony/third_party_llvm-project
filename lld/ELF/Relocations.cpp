@@ -42,6 +42,7 @@
 
 #include "Relocations.h"
 #include "Config.h"
+#include "Adlt.h"
 #include "InputFiles.h"
 #include "LinkerScript.h"
 #include "OutputSections.h"
@@ -1311,14 +1312,14 @@ static void trackDynRelocAdlt(SharedFileExtended<ELFT> *soFile) {
 
 template <class ELFT>
 static void trackGotPltAdlt(Symbol *sym, SharedFileExtended<ELFT> *soFile) {
-  ctx->adlt.gotPltInfo[sym].push_back(soFile->orderIdx);
+  adltCtx->gotPltInfo[sym].push_back(soFile->orderIdx);
 }
 
 // ADLT BEGIN
 template <class ELFT>
 void RelocationScanner::tracePushRelocADLT(InputSectionBase &isec,
                                            Relocation &r) const {
-  auto file = sec.getSharedFile<ELFT>();
+  auto file = sec.getSoExt<ELFT>();
   auto fullOffset = isec.address + r.offset;
   lld::outs() << "[ADLT] Before push: [0x" + utohexstr(fullOffset) +
                      "] type: " + toString(r.type) +
@@ -1336,7 +1337,7 @@ void RelocationScanner::tracePushRelocADLT(InputSectionBase &isec,
 template <class ELFT, class RelTy>
 void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
                                        bool fromDynamic) {
-  auto file = sec.getSharedFile<ELFT>();
+  auto file = sec.getSoExt<ELFT>();
   bool isDebug = false;
 
   /*if (r->offset == 0x21F) // debug hint
@@ -1464,11 +1465,10 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
   uint32_t symIndex = rel.getSymbol(config->isMips64EL);
   bool fromDynamic = false;
   if (config->adlt)
-    fromDynamic = sec.getSharedFile<ELFT>()->isDynamicSection(sec);
-  Symbol &sym =
-      config->adlt
-          ? sec.getSharedFile<ELFT>()->getSymbolADLT(symIndex, fromDynamic)
-          : sec.getFile<ELFT>()->getSymbol(symIndex);
+    fromDynamic = sec.getSoExt<ELFT>()->isDynamicSection(sec);
+  Symbol &sym = config->adlt
+                    ? sec.getSoExt<ELFT>()->getSymbolADLT(symIndex, fromDynamic)
+                    : sec.getFile<ELFT>()->getSymbol(symIndex);
   RelType type;
 
   // Deal with MIPS oddity.
@@ -1808,9 +1808,9 @@ static bool handleNonPreemptibleIfunc(Symbol &sym) {
 }
 
 template <class ELFT> static void addGotPltIndexAdlt(Symbol *s, bool isPlt) {
-  auto &vec = ctx->adlt.gotPltInfo[s];
+  auto &vec = adltCtx->gotPltInfo[s];
   for (auto &it : vec) {
-    auto *soFile = cast<SharedFileExtended<ELFT>>(ctx->sharedFilesExtended[it]);
+    auto *soFile = cast<SharedFileExtended<ELFT>>(adltCtx->sharedFilesExtended[it]);
     auto &entries = isPlt ? in.relaPlt->relocs : mainPart->relaDyn->relocs;
     auto &output = isPlt ? soFile->pltRelIndexes : soFile->dynRelIndexes;
     output.insert(entries.size() - 1);
@@ -1923,7 +1923,7 @@ void elf::postScanRelocations() {
 
   // Local symbols may need the aforementioned non-preemptible ifunc and GOT
   // handling. They don't need regular PLT.
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = config->adlt ? adltCtx->sharedFilesExtended : ctx->objectFiles;
   for (ELFFileBase *file : files)
     for (Symbol *sym : file->getLocalSymbols())
       fn(*sym);

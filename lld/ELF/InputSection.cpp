@@ -348,9 +348,9 @@ void InputSection::copyRelocations(uint8_t *buf, ArrayRef<RelTy> rels) {
   for (const RelTy &rel : rels) {
     RelType type = rel.getType(config->isMips64EL);
     const ObjFile<ELFT> *file =
-        config->adlt ? getSharedFile<ELFT>() : getFile<ELFT>();
+        config->adlt ? getSoExt<ELFT>() : getFile<ELFT>();
     Symbol &sym = config->adlt
-                      ? getSharedFile<ELFT>()->getRelocTargetSymADLT(rel, *sec)
+                      ? getSoExt<ELFT>()->getRelocTargetSymADLT(rel, *sec)
                       : file->getRelocTargetSym(rel);
 
     auto *p = reinterpret_cast<typename ELFT::Rela *>(buf);
@@ -847,7 +847,7 @@ void InputSection::relocateNonAlloc(uint8_t *buf, ArrayRef<RelTy> rels) {
     if (!RelTy::IsRela)
       addend += target.getImplicitAddend(bufLoc, type);
 
-    Symbol &sym = config->adlt ? getSharedFile<ELFT>()->getSymbolFromElfSymTab(
+    Symbol &sym = config->adlt ? getSoExt<ELFT>()->getSymbolFromElfSymTab(
                                      rel.getSymbol(config->isMips64EL))
                                : getFile<ELFT>()->getRelocTargetSym(rel);
     if (config->adlt) { // TODO improve

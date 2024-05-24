@@ -45,6 +45,7 @@ add_lld_library(lldELF
   Target.cpp
   Thunks.cpp
   Writer.cpp
+  Adlt.cpp
 
   LINK_COMPONENTS
   ${LLVM_TARGETS_TO_BUILD}
