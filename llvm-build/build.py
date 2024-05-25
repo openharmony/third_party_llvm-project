@@ -974,7 +974,8 @@ class LlvmCore(BuildUtils):
         linker_path = os.path.join(llvm_clang_install, 'bin', 'ld.lld')
         llvm_defines['CMAKE_LINKER'] = linker_path
 
-        self.build_llvm(targets=self.build_config.TARGETS,
+        # OHOS_LOCAL
+        self.build_llvm(targets=self.build_config.TARGETS + ";XVM",
                         build_dir=llvm_path,
                         install_dir=out_dir,
                         build_name=build_name,
