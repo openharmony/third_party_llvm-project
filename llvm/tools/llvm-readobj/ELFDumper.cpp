@@ -7109,7 +7109,7 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
   {
     ListScope LPsods(W, "PSODs");
 
-    for (size_t psodIdx = 0; psodIdx < header->sharedObjectsNum; ++psodIdx) {
+    for (Elf64_Half psodIdx = 0; psodIdx < header->sharedObjectsNum; ++psodIdx) {
       const adlt_psod_t &psod = *reinterpret_cast<const adlt_psod_t *>(
           psodsRaw.data() + psodIdx * header->schemaPSODSize);
 
