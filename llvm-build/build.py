@@ -761,9 +761,9 @@ class LlvmCore(BuildUtils):
                           target=build_target,
                           install=install)
         if not install:
-            self.llvm_install(build_dir, install_dir)
+            self.llvm_manual_install(build_dir, install_dir)
 
-    def llvm_install(self, build_dir, install_dir):
+    def llvm_manual_install(self, build_dir, install_dir):
         target_dirs = ["bin", "include", "lib", "libexec", "share"]
         for target_dir in target_dirs:
             target_dir = f"{build_dir}/{target_dir}"
