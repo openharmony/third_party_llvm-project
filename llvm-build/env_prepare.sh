@@ -75,14 +75,18 @@ prebuilts/build-tools/${host_platform}-x86/bin,ninja-${linux_platform}
 
 copy_config_darwin_x86_64="""
 prebuilts/cmake,cmake-${darwin_platform}
-prebuilts/clang/ohos/${host_platform}-${host_cpu},darwin/clang_${darwin_platform}
+prebuilts/clang/ohos/${host_platform}-${host_cpu},darwin_x86_64/clang_${darwin_platform}
 prebuilts/python3,python-${darwin_platform}
 prebuilts/build-tools/${host_platform}-x86/bin,gn-${darwin_platform}
 prebuilts/build-tools/${host_platform}-x86/bin,ninja-${darwin_platform}
 """
 
 copy_config_darwin_arm64="""
+prebuilts/cmake,cmake-${darwin_platform}
+prebuilts/clang/ohos/${host_platform}-${host_cpu},darwin_arm64/clang_darwin-arm64
 prebuilts/python3,python-${darwin_platform}
+prebuilts/build-tools/${host_platform}-${host_cpu}/bin,gn-${darwin_platform}
+prebuilts/build-tools/${host_platform}-${host_cpu}/bin,ninja-darwin-arm
 """
 
 if [[ "${host_platform}" == "linux" ]]; then
@@ -117,6 +121,7 @@ do
     full_url="${download_url}${url_part}"
   else
     echo "URL not found"
+    exit 1
   fi
   download_and_archive "${unzip_dir}" "${full_url}"
 
@@ -125,8 +130,11 @@ done
 linux_filename=$(cat ./build/prebuilts_download_config.json | sort | uniq | grep "clang_linux-x86" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
 CLANG_LINUX_BUILD=$(basename "$linux_filename" .tar.bz2)
 
-darwin_filename=$(cat ./build/prebuilts_download_config.json | sort | uniq | grep "clang_darwin-x86" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
-CLANG_DARWIN_BUILD=$(basename "$darwin_filename" .tar.bz2)
+darwin_x86_filename=$(cat ./build/prebuilts_download_config.json | sort | uniq | grep "clang_darwin-x86_64" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
+CLANG_DARWIN_X86_BUILD=$(basename "$darwin_x86_filename" .tar.bz2)
+
+darwin_arm_filename=$(cat ./build/prebuilts_download_config.json | sort | uniq | grep "clang_darwin-arm64" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
+CLANG_DARWIN_ARM_BUILD=$(basename "$darwin_arm_filename" .tar.bz2)
 
 if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/${CLANG_LINUX_BUILD}" ]; then
     SET_CLANG_VERSION='15.0.4'
@@ -134,14 +142,21 @@ if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/${CLANG_LINUX_BUILD}" ]; 
     ln -s "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-${SET_CLANG_VERSION}" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/llvm"
 fi
 
-if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/${CLANG_DARWIN_BUILD}" ]; then
+if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/${CLANG_DARWIN_X86_BUILD}" ]; then
     SET_CLANG_VERSION='15.0.4'
-    mv "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/${CLANG_DARWIN_BUILD}" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-${SET_CLANG_VERSION}"
+    mv "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/${CLANG_DARWIN_X86_BUILD}" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-${SET_CLANG_VERSION}"
     ln -s "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-${SET_CLANG_VERSION}" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/llvm"
 fi
 
+if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-arm64/${CLANG_DARWIN_ARM_BUILD}" ]; then
+    SET_CLANG_VERSION='15.0.4'
+    mv "${code_dir}/prebuilts/clang/ohos/darwin-arm64/${CLANG_DARWIN_ARM_BUILD}" "${code_dir}/prebuilts/clang/ohos/darwin-arm64/clang-${SET_CLANG_VERSION}"
+    mv "${code_dir}/prebuilts/cmake/darwin-x86" "${code_dir}/prebuilts/cmake/darwin-arm64"
+    ln -s "${code_dir}/prebuilts/clang/ohos/darwin-arm64/clang-${SET_CLANG_VERSION}" "${code_dir}/prebuilts/clang/ohos/darwin-arm64/llvm"
+fi
+
 # try to detect version ...
-BASE_CLANG_DIR="${code_dir}/prebuilts/clang/ohos/${host_platform}-x86_64"
+BASE_CLANG_DIR="${code_dir}/prebuilts/clang/ohos/${host_platform}-${host_cpu}"
 CLANG_FOUND_VERSION=$(cd ${BASE_CLANG_DIR}; basename $(ls -d clang*/ | head -1) | sed s/clang-//)
 
 # check that pipe above didn't fail and that we have (any) clang version
@@ -152,3 +167,4 @@ fi
 # ... and compare it with one in python file
 echo "prebuilts_clang_version='${CLANG_FOUND_VERSION}'" | diff -q - $(dirname $0)/prebuilts_clang_version.py || ( echo Clang versions mismatch ; exit 1 )
 exit 0
+
