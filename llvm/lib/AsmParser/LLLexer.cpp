@@ -637,6 +637,7 @@ lltok::Kind LLLexer::LexIdentifier() {
   KEYWORD(arkfast3cc);
   KEYWORD(arkfast4cc);
   KEYWORD(arkfast5cc);
+  KEYWORD(arkfast6cc);
   KEYWORD(arkmethodcc);
   KEYWORD(arkresolvercc);
   KEYWORD(arkpltcc);

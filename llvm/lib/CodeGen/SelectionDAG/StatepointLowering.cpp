@@ -78,14 +78,6 @@ cl::opt<unsigned> MaxRegistersForGCPointers(
     "max-registers-for-gc-values", cl::Hidden, cl::init(0),
     cl::desc("Max number of VRegs allowed to pass GC pointer meta args in"));
 
-// OHOS_LOCAL begin
-// Useful when gc managed references are 32-bit wide but runtime supports only
-// 64-bit slots
-cl::opt<unsigned> SpillSlotMinSize("spill-slot-min-size-bytes", cl::Hidden,
-                                   cl::init(1),
-                                   cl::desc("Minimum size of a spill slot"));
-// OHOS_LOCAL end
-
 typedef FunctionLoweringInfo::StatepointRelocationRecord RecordType;
 
 static void pushStackMapConstant(SmallVectorImpl<SDValue>& Ops,
@@ -719,6 +711,11 @@ lowerStatepointMetaArgs(SmallVectorImpl<SDValue> &Ops,
     return !willLowerDirectly(SD);
   };
 
+  // OHOS_LOCAL begin
+  auto StatepointInst = dyn_cast_or_null<GCStatepointInst>(SI.StatepointInstr);
+  auto AssignedArkSlots = tryAssignStackSlots(Builder, StatepointInst);
+  // OHOS_LOCAL end
+
   auto processGCPtr = [&](const Value *V) {
     SDValue PtrSD = Builder.getValue(V);
     if (!LoweredGCPtrs.insert(PtrSD))
@@ -726,6 +723,10 @@ lowerStatepointMetaArgs(SmallVectorImpl<SDValue> &Ops,
     GCNodeToGCValue[PtrSD] = V; // OHOS_LOCAL
     GCPtrIndexMap[PtrSD] = LoweredGCPtrs.size() - 1;
 
+    // OHOS_LOCAL begin
+    if (AssignedArkSlots.count(V))
+      return; // we need to assign these to stack
+    // OHOS_LOCAL end
     assert(!LowerAsVReg.count(PtrSD) && "must not have been seen");
     if (LowerAsVReg.size() == MaxVRegPtrs)
       return;
@@ -755,11 +756,6 @@ lowerStatepointMetaArgs(SmallVectorImpl<SDValue> &Ops,
       return !LowerAsVReg.count(Builder.getValue(V));
     return !(LiveInDeopt || UseRegistersForDeoptValues);
   };
-
-  // OHOS_LOCAL begin
-  auto StatepointInst = dyn_cast_or_null<GCStatepointInst>(SI.StatepointInstr);
-  auto AssignedArkSlots = tryAssignStackSlots(Builder, StatepointInst);
-  // OHOS_LOCAL end
 
   // Before we actually start lowering (and allocating spill slots for values),
   // reserve any stack slots which we judge to be profitable to reuse for a

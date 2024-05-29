@@ -18,28 +18,22 @@ import shutil
 import subprocess
 from typing import List, Mapping
 
-class MinGWPythonBuilder:
-    target_platform = "x86_64-w64-mingw32"
+class PythonBuilder:
+    target_platform = ""
+    patches = []
 
     def __init__(self, build_config) -> None:
-        repo_root = Path(build_config.REPOROOT_DIR).resolve()
+        self.repo_root = Path(build_config.REPOROOT_DIR).resolve()
         self._out_dir = Path(build_config.OUT_PATH).resolve()
         self._clang_toolchain_dir = self._out_dir / 'llvm-install'
-        self._mingw_install_dir = self._out_dir / 'mingw' / build_config.MINGW_TRIPLE
-        self._source_dir = repo_root / 'third_party' / 'python'
-        self._build_dir = self._out_dir / 'python-windows-build'
-        self._install_dir = self._out_dir / 'python-windows-install'
         self._version = build_config.LLDB_PY_DETAILED_VERSION
         version_parts = self._version.split('.')
         self._major_version = version_parts[0] + '.' + version_parts[1]
-        # This file is used to detect whether patches are applied
-        self._mingw_ignore_file = self._source_dir / 'mingw_ignorefile.txt'
+        self._source_dir = self.repo_root / 'third_party' / 'python'
         self._patch_dir = self._source_dir / 'patches'
+        self._install_dir = ""
 
-        for directory in (self._clang_toolchain_dir, self._mingw_install_dir,
-                          self._source_dir):
-            if not directory.is_dir():
-                raise ValueError(f'No such directory "{directory}"')
+        self._clean_patches()
 
     @property
     def _logger(self) -> logging.Logger:
@@ -50,6 +44,14 @@ class MinGWPythonBuilder:
         return self._clang_toolchain_dir/ 'bin' / 'clang'
 
     @property
+    def _cflags(self) -> List[str]:
+        return []
+
+    @property
+    def _ldflags(self) -> List[str]:
+        return []
+
+    @property
     def _cxx(self) -> Path:
         return self._clang_toolchain_dir / 'bin' / 'clang++'
 
@@ -58,32 +60,12 @@ class MinGWPythonBuilder:
         return self._clang_toolchain_dir / 'bin' / 'llvm-strip'
 
     @property
-    def _cflags(self) -> List[str]:
-        cflags = [
-            f'-target {self.target_platform}',
-            f'--sysroot={self._mingw_install_dir}',
-        ]
-        return cflags
-
-    @property
     def _cxxflags(self) -> List[str]:
         return self._cflags.copy()
 
     @property
-    def _ldflags(self) -> List[str]:
-        ldflags = [
-            f'--sysroot={self._mingw_install_dir}',
-            f'-rtlib=compiler-rt',
-            f'-target {self.target_platform}',
-            f'-lucrt',
-            f'-lucrtbase',
-            f'-fuse-ld=lld',
-        ]
-        return ldflags
-
-    @property
     def _rcflags(self) -> List[str]:
-        return [ f'-I{self._mingw_install_dir}/include' ]
+        return []
 
     @property
     def _env(self) -> Mapping[str, str]:
@@ -104,26 +86,19 @@ class MinGWPythonBuilder:
             'CXXFLAGS': ' '.join(self._cxxflags),
             'LDFLAGS': ' '.join(self._ldflags),
             'RCFLAGS': ' '.join(self._rcflags),
+            'CPPFLAGS': ' '.join(self._cflags),
         })
         return env
 
     def _configure(self) -> None:
-        subprocess.check_call(['autoreconf', '-vfi'], cwd=self._source_dir)
-        build_platform = subprocess.check_output(
-            ['./config.guess'], cwd=self._source_dir).decode().strip()
-        config_flags = [
-            f'--prefix={self._install_dir}',
-            f'--build={build_platform}',
-            f'--host={self.target_platform}',
-            '--enable-shared',
-            '--without-ensurepip',
-            '--enable-loadable-sqlite-extensions',
-        ]
-        cmd = [str(self._source_dir / 'configure')] + config_flags
-        subprocess.check_call(cmd, env=self._env, cwd=self._build_dir)
+        return
+
+    def _clean_patches(self) -> None:
+        subprocess.check_call(['git', 'reset', '--hard', 'HEAD'], cwd=self._source_dir)
+        subprocess.check_call(['git', 'clean', '-df'], cwd=self._source_dir)
 
     def _pre_build(self) -> None:
-        if self._mingw_ignore_file.is_file():
+        if self._patch_ignore_file.is_file():
             self._logger.warning('Patches for Python have being applied, skip patching')
             return
 
@@ -132,7 +107,7 @@ class MinGWPythonBuilder:
             return
 
         for patch in self._patch_dir.iterdir():
-            if patch.is_file():
+            if patch.is_file() and patch.name in self.patches:
                 cmd = [ 'git', 'apply', str(patch) ]
                 subprocess.check_call(cmd, cwd=self._source_dir)
 
@@ -142,8 +117,8 @@ class MinGWPythonBuilder:
             shutil.rmtree(self._build_dir)
         if self._install_dir.exists():
             shutil.rmtree(self._install_dir)
-        self._build_dir.mkdir()
-        self._install_dir.mkdir()
+        self._build_dir.mkdir(parents=True)
+        self._install_dir.mkdir(parents=True)
         self._configure()
         self._install()
 
@@ -194,6 +169,70 @@ class MinGWPythonBuilder:
         for cache_dir in pycaches:
             shutil.rmtree(cache_dir)
 
+    @property
+    def install_dir(self) -> str:
+        return str(self._install_dir)
+
+
+class MinGWPythonBuilder(PythonBuilder):
+    def __init__(self, build_config) -> None:
+        super().__init__(build_config)
+
+        self.target_platform = "x86_64-w64-mingw32"
+        self.patches = ["cpython_mingw_v3.10.2.patch"]
+
+        self._mingw_install_dir = self._out_dir / 'mingw' / build_config.MINGW_TRIPLE
+        self._build_dir = self._out_dir / 'python-windows-build'
+        self._install_dir = self._out_dir / 'python-windows-install'
+
+        # This file is used to detect whether patches are applied
+        self._patch_ignore_file = self._source_dir / 'mingw_ignorefile.txt'
+
+
+        for directory in (self._clang_toolchain_dir, self._mingw_install_dir,
+                          self._source_dir):
+            if not directory.is_dir():
+                raise ValueError(f'No such directory "{directory}"')
+
+    @property
+    def _cflags(self) -> List[str]:
+        cflags = [
+            f'-target {self.target_platform}',
+            f'--sysroot={self._mingw_install_dir}',
+        ]
+        return cflags
+
+    @property
+    def _ldflags(self) -> List[str]:
+        ldflags = [
+            f'--sysroot={self._mingw_install_dir}',
+            f'-rtlib=compiler-rt',
+            f'-target {self.target_platform}',
+            f'-lucrt',
+            f'-lucrtbase',
+            f'-fuse-ld=lld',
+        ]
+        return ldflags
+
+    @property
+    def _rcflags(self) -> List[str]:
+        return [ f'-I{self._mingw_install_dir}/include' ]
+
+    def _configure(self) -> None:
+        subprocess.check_call(['autoreconf', '-vfi'], cwd=self._source_dir)
+        build_platform = subprocess.check_output(
+            ['./config.guess'], cwd=self._source_dir).decode().strip()
+        config_flags = [
+            f'--prefix={self._install_dir}',
+            f'--build={build_platform}',
+            f'--host={self.target_platform}',
+            '--enable-shared',
+            '--without-ensurepip',
+            '--enable-loadable-sqlite-extensions',
+        ]
+        cmd = [str(self._source_dir / 'configure')] + config_flags
+        subprocess.check_call(cmd, env=self._env, cwd=self._build_dir)
+
     def prepare_for_package(self) -> None:
         self._clean_bin_dir()
         self._clean_share_dir()
@@ -215,6 +254,71 @@ class MinGWPythonBuilder:
         ] + [ f.name for f in self._install_dir.iterdir() ]
         subprocess.check_call(cmd, cwd=self._install_dir)
 
+
+class OHOSPythonBuilder(PythonBuilder):
+    def __init__(self, build_utils, target_platform) -> None:
+        super().__init__(build_utils.build_config)
+
+        self.target_platform = target_platform
+        self.patches = ["cross_compile_support_ohos.patch"]
+
+        self._build_dir = Path(build_utils.merge_python_build_dir(target_platform))
+        self._install_dir = Path(build_utils.merge_python_install_dir(target_platform))
+
+        # This file is used to detect whether patches are applied
+        self._patch_ignore_file = self._source_dir / 'support_ohos_ignorefile.txt'
+
+        self.build_utils = build_utils
+        return
+
     @property
-    def install_dir(self) -> str:
-        return str(self._install_dir)
+    def _cflags(self) -> List[str]:
+        cflags = [
+            f'--target={self.target_platform}',
+            '-nostdinc',
+            '-I%s' % str(self._out_dir / 'sysroot' / self.target_platform / 'usr' / 'include'),
+        ]
+        if str(self.target_platform).find("arm") > 0:
+            cflags.append('-march=armv7-a -mfloat-abi=soft')
+        return cflags
+
+    @property
+    def _ldflags(self) -> List[str]:
+        ldflags = [
+            f'-rtlib=compiler-rt',
+            f'--target={self.target_platform}',
+            f'-fuse-ld=lld',
+            '-L%s' % str(self._out_dir / 'sysroot' / self.target_platform / 'usr' / 'lib'),
+            '-lc',
+            '-Wl,-rpath,\\$$ORIGIN/../lib',
+        ]
+        return ldflags
+
+    def _configure(self) -> None:
+        subprocess.check_call(['autoreconf', '-vfi'], cwd=self._source_dir)
+        build_platform = subprocess.check_output(
+            ['./config.guess'], cwd=self._source_dir).decode().strip()
+        config_flags = [
+            f'--prefix={self._install_dir}',
+            f'--build={build_platform}',
+            f'--host={self.target_platform}',
+            '--enable-shared',
+            '--without-ensurepip',
+            '--enable-loadable-sqlite-extensions',
+            '--disable-ipv6',
+            'ac_cv_file__dev_ptmx=no',
+            'ac_cv_file__dev_ptc=no',
+            '--without-system-ffi',
+            '--enable-optimizations',
+            '--without-pydebug',
+            '--without-doc-strings',
+            '--without-dtrace',
+        ]
+        cmd = [str(self._source_dir / 'configure')] + config_flags
+        subprocess.check_call(cmd, env=self._env, cwd=self._build_dir)
+
+    def copy_python_to_host(self, install_dir):
+        libpython = f'libpython{self.build_utils.build_config.LLDB_PY_VERSION}.so.1.0'
+
+        shutil.copyfile(os.path.join(self._install_dir, "lib", libpython), os.path.join(install_dir, 'lib', libpython))
+        self.build_utils.check_copy_tree(self._install_dir, os.path.join(install_dir, self.build_utils.build_config.LLDB_PYTHON))

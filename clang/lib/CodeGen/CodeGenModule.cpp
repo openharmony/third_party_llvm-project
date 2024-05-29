@@ -741,7 +741,19 @@ void CodeGenModule::Release() {
 
   if (CodeGenOpts.SanitizeCfiCrossDso) {
     // Indicate that we want cross-DSO control flow integrity checks.
-    getModule().addModuleFlag(llvm::Module::Override, "Cross-DSO CFI", 1);
+    if (CodeGenOpts.SanitizeCfiCrossDsoReq) {
+      getModule().addModuleFlag(llvm::Module::Min, "Cross-DSO CFI", 1);
+
+      llvm::Metadata *Ops[2] = {
+                llvm::MDString::get(VMContext, "Cross-DSO CFI"),
+                llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(VMContext), 1))};
+      getModule().addModuleFlag(llvm::Module::Require,
+                                "Cross-DSO CFI Requirement",
+                                llvm::MDNode::get(VMContext, Ops));
+    } else {
+      getModule().addModuleFlag(llvm::Module::Override, "Cross-DSO CFI", 1);
+    }
   }
 
   if (CodeGenOpts.WholeProgramVTables) {

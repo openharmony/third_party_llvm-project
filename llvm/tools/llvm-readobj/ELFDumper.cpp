@@ -29,6 +29,7 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
+// OHOS_LOCAL
 #include "llvm/BinaryFormat/ADLTSection.h"
 #include "llvm/BinaryFormat/AMDGPUMetadataVerifier.h"
 #include "llvm/BinaryFormat/ELF.h"
@@ -354,7 +355,7 @@ protected:
   void loadDynamicTable();
   void parseDynamicTable();
 
-  Expected<ArrayRef<uint8_t>> findAdlt();
+  Expected<ArrayRef<uint8_t>> findAdlt(); // OHOS_LOCAL
 
   Expected<StringRef> getSymbolVersion(const Elf_Sym &Sym,
                                        bool &IsDefault) const;
@@ -368,14 +369,16 @@ protected:
   DynRegionInfo DynSymTabShndxRegion;
   DynRegionInfo DynamicTable;
   StringRef DynamicStringTable;
-  StringRef AdltStringTable;
+  StringRef AdltStringTable; // OHOS_LOCAL
   const Elf_Hash *HashTable = nullptr;
   const Elf_GnuHash *GnuHashTable = nullptr;
   const Elf_Shdr *DotSymtabSec = nullptr;
   const Elf_Shdr *DotDynsymSec = nullptr;
   const Elf_Shdr *DotAddrsigSec = nullptr;
+  // OHOS_LOCAL begin
   const Elf_Shdr *DotAdlt = nullptr;
   const Elf_Shdr *DotAdltStrtab = nullptr;
+  // OHOS_LOCAL end
   DenseMap<const Elf_Shdr *, ArrayRef<Elf_Word>> ShndxTables;
   Optional<uint64_t> SONameOffset;
   Optional<DenseMap<uint64_t, std::vector<uint32_t>>> AddressToIndexMap;
@@ -394,8 +397,10 @@ protected:
   Expected<StringRef> getSymbolSectionName(const Elf_Sym &Symbol,
                                            unsigned SectionIndex) const;
   std::string getStaticSymbolName(uint32_t Index) const;
+  // OHOS_LOCAL
   StringRef getDynamicString(uint64_t Value, StringRef StringTable) const;
   StringRef getDynamicString(uint64_t Value) const;
+  // OHOS_LOCAL
   StringRef getAdltDynamicString(uint64_t Value) const;
 
   void printSymbolsHelper(bool IsDynamic) const;
@@ -580,7 +585,7 @@ public:
   void printVersionDefinitionSection(const Elf_Shdr *Sec) override;
   void printVersionDependencySection(const Elf_Shdr *Sec) override;
   void printHashHistograms() override;
-  void printAdltSection() override;
+  void printAdltSection() override; // OHOS_LOCAL
   void printCGProfile() override;
   void printBBAddrMaps() override;
   void printAddrsig() override;
@@ -685,7 +690,7 @@ public:
   void printVersionDefinitionSection(const Elf_Shdr *Sec) override;
   void printVersionDependencySection(const Elf_Shdr *Sec) override;
   void printHashHistograms() override;
-  void printAdltSection() override;
+  void printAdltSection() override; // OHOS_LOCAL
   void printCGProfile() override;
   void printBBAddrMaps() override;
   void printAddrsig() override;
@@ -1426,7 +1431,7 @@ static StringRef segmentTypeToString(unsigned Arch, unsigned Type) {
     LLVM_READOBJ_ENUM_CASE(ELF, PT_OPENBSD_BOOTDATA);
 
     LLVM_READOBJ_ENUM_CASE(ELF, PT_OHOS_RANDOMDATA); // OHOS_LOCAL
-    LLVM_READOBJ_ENUM_CASE(ELF, PT_ADLT); // ADLT info
+    LLVM_READOBJ_ENUM_CASE(ELF, PT_ADLT);            // OHOS_LOCAL ADLT info
   default:
     return "";
   }
@@ -1716,11 +1721,12 @@ static const char *getElfMipsOptionsOdkType(unsigned Odk) {
   }
 }
 
+// OHOS_LOCAL begin
 const EnumEntry<unsigned> AdltHashTypes[] = {
-  {"None",      "NONE",       llvm::adlt::ADLT_HASH_TYPE_NONE},
-  {"GnuHash",   "GNU_HASH",   llvm::adlt::ADLT_HASH_TYPE_GNU_HASH},
-  {"SysvHash",  "SYSV_HASH",  llvm::adlt::ADLT_HASH_TYPE_SYSV_HASH},
-  {"Debug",     "DEBUG",      llvm::adlt::ADLT_HASH_TYPE_DEBUG_CONST},
+    {"None", "NONE", llvm::adlt::ADLT_HASH_TYPE_NONE},
+    {"GnuHash", "GNU_HASH", llvm::adlt::ADLT_HASH_TYPE_GNU_HASH},
+    {"SysvHash", "SYSV_HASH", llvm::adlt::ADLT_HASH_TYPE_SYSV_HASH},
+    {"Debug", "DEBUG", llvm::adlt::ADLT_HASH_TYPE_DEBUG_CONST},
 };
 
 template <typename ELFT>
@@ -1728,7 +1734,8 @@ Expected<ArrayRef<uint8_t>> ELFDumper<ELFT>::findAdlt() {
   // Try to locate .adlt section in the sections table
   typename ELFT::ShdrRange Sections = cantFail(Obj.sections());
   for (const Elf_Shdr &Sec : Sections) {
-    if (DotAdlt && DotAdltStrtab) break;
+    if (DotAdlt && DotAdltStrtab)
+      break;
 
     switch (Sec.sh_type) {
     case ELF::SHT_STRTAB:
@@ -1754,6 +1761,7 @@ Expected<ArrayRef<uint8_t>> ELFDumper<ELFT>::findAdlt() {
 
   return Obj.getSectionContents(*DotAdlt);
 }
+// OHOS_LOCAL end
 
 template <typename ELFT>
 std::pair<const typename ELFT::Phdr *, const typename ELFT::Shdr *>
@@ -2448,18 +2456,21 @@ std::string ELFDumper<ELFT>::getDynamicEntry(uint64_t Type,
 }
 
 template <class ELFT>
-StringRef ELFDumper<ELFT>::getDynamicString(uint64_t Value)  const {
+StringRef ELFDumper<ELFT>::getDynamicString(uint64_t Value) const {
+  // OHOS_LOCAL
   return this->getDynamicString(Value, DynamicStringTable);
 }
 
+// OHOS_LOCAL begin
 template <class ELFT>
-StringRef ELFDumper<ELFT>::getAdltDynamicString(uint64_t Value)  const {
+StringRef ELFDumper<ELFT>::getAdltDynamicString(uint64_t Value) const {
   return this->getDynamicString(Value, AdltStringTable);
 }
 
 template <class ELFT>
-StringRef ELFDumper<ELFT>::getDynamicString(
-  uint64_t Value, StringRef DynamicStringTable) const {
+StringRef
+ELFDumper<ELFT>::getDynamicString(uint64_t Value,
+                                  StringRef DynamicStringTable) const {
   if (DynamicStringTable.empty() && !DynamicStringTable.data()) {
     reportUniqueWarning("string table was not found");
     return "<?>";
@@ -2496,6 +2507,7 @@ StringRef ELFDumper<ELFT>::getDynamicString(
 
   return DynamicStringTable.data() + Value;
 }
+// OHOS_LOCAL end
 
 template <class ELFT> void ELFDumper<ELFT>::printUnwindInfo() {
   DwarfCFIEH::PrinterContext<ELFT> Ctx(W, ObjF);
@@ -4883,9 +4895,11 @@ template <class ELFT> void GNUELFDumper<ELFT>::printHashHistograms() {
   }
 }
 
+// OHOS_LOCAL begin
 template <class ELFT> void GNUELFDumper<ELFT>::printAdltSection() {
   OS << "GNUStyle::printAdltSection not implemented\n";
 }
+// OHOS_LOCAL end
 
 template <class ELFT> void GNUELFDumper<ELFT>::printCGProfile() {
   OS << "GNUStyle::printCGProfile not implemented\n";
@@ -7019,7 +7033,7 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printHashHistograms() {
   W.startLine() << "Hash Histogram not implemented!\n";
 }
 
-
+// OHOS_LOCAL begin
 template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
   using namespace llvm::adlt;
   constexpr size_t kBinDumpLimit = sizeof(Elf64_Xword) * 0x80;
@@ -7030,53 +7044,54 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
   }
 
   ArrayRef<uint8_t> adltRaw = ContentsOrErr.get();
-  auto* header = reinterpret_cast<const adlt_section_header_t*>(adltRaw.data());
-  const auto& ver = header->schemaVersion;
+  auto *header =
+      reinterpret_cast<const adlt_section_header_t *>(adltRaw.data());
+  const auto &ver = header->schemaVersion;
 
   ArrayRef<uint8_t> psodsRaw;
   ArrayRef<uint8_t> blob;
 
   if (psodsRaw.data() + psodsRaw.size() > blob.data())
     return this->reportUniqueWarning("invalid .adlt section: "
-      "PSOD and blob entries are overlapped");
+                                     "PSOD and blob entries are overlapped");
   if (blob.data() + blob.size() > adltRaw.data() + adltRaw.size())
     return this->reportUniqueWarning("invalid .adlt section: "
-      "blob is out of section range");
+                                     "blob is out of section range");
 
   DictScope DSec(W, "ADLT");
 
   do {
-    DictScope DHeader(W, "Header");    
+    DictScope DHeader(W, "Header");
     W.printVersion("schema-version", ver.major, ver.minor, ver.patch);
 
     if (ver.major > 1) {
-      this->reportUniqueWarning(Twine("schema version not supported yet") );
+      this->reportUniqueWarning(Twine("schema version not supported yet"));
       return;
     }
 
     W.printHex("schema-header-size", header->schemaHeaderSize);
     W.printHex("schema-psod-size", header->schemaPSODSize);
     W.printNumber("shared-objects-num", header->sharedObjectsNum);
-    W.printEnum("string-hash-type", header->stringHashType, makeArrayRef(AdltHashTypes));
+    W.printEnum("string-hash-type", header->stringHashType,
+                makeArrayRef(AdltHashTypes));
     W.printHex("blob-start", header->blobStart);
     W.printHex("blob-size", header->blobSize);
     W.printHex("overall-mapped-size", header->overallMappedSize);
 
-    psodsRaw = adltRaw.slice(
-      header->schemaHeaderSize,
-      header->sharedObjectsNum * header->schemaPSODSize);
+    psodsRaw = adltRaw.slice(header->schemaHeaderSize,
+                             header->sharedObjectsNum * header->schemaPSODSize);
     blob = adltRaw.slice(header->blobStart, header->blobSize);
 
     if (psodsRaw.data() + psodsRaw.size() > blob.data())
       return this->reportUniqueWarning("invalid .adlt section: "
-        "PSOD and blob entries are overlapped");
+                                       "PSOD and blob entries are overlapped");
     if (blob.data() + blob.size() > adltRaw.data() + adltRaw.size())
       return this->reportUniqueWarning("invalid .adlt section: "
-        "blob is out of section range");
+                                       "blob is out of section range");
 
     if (ver.minor >= 1) {
       DictScope PHEntry(W, "ph-indexes");
-      const auto& arr = header->phIndexes;
+      const auto &arr = header->phIndexes;
       W.printHex("size", arr.size);
       W.printHex("offset", arr.offset);
 
@@ -7084,20 +7099,20 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
       if (!chunk.empty()) {
         W.printBinary("raw", chunk);
         ArrayRef<uint16_t> phIdxs(
-          reinterpret_cast<const uint16_t*>(chunk.data()),
-          chunk.size() / sizeof(uint16_t));
+            reinterpret_cast<const uint16_t *>(chunk.data()),
+            chunk.size() / sizeof(uint16_t));
         W.printList("values", phIdxs);
       }
     }
-  } while(0);
+  } while (0);
 
   {
     ListScope LPsods(W, "PSODs");
 
-    for (size_t psodIdx = 0; psodIdx < header->sharedObjectsNum; ++psodIdx) {
-      const adlt_psod_t& psod = *reinterpret_cast<const adlt_psod_t*>
-        (psodsRaw.data() + psodIdx * header->schemaPSODSize);
-      
+    for (Elf64_Half psodIdx = 0; psodIdx < header->sharedObjectsNum; ++psodIdx) {
+      const adlt_psod_t &psod = *reinterpret_cast<const adlt_psod_t *>(
+          psodsRaw.data() + psodIdx * header->schemaPSODSize);
+
       auto psodName = Twine("psod-#") + Twine(psodIdx);
       DictScope LEntry(W, psodName.str());
 
@@ -7124,7 +7139,7 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
       }
       {
         DictScope DNEntry(W, "dt-needed");
-        const auto& arr = psod.dtNeeded;
+        const auto &arr = psod.dtNeeded;
         W.printHex("size", arr.size);
         W.printHex("offset", arr.offset);
 
@@ -7133,12 +7148,13 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
           W.printBinary("raw", chunk);
 
           ArrayRef<adlt_dt_needed_index_t> deps(
-            reinterpret_cast<const adlt_dt_needed_index_t*>(chunk.data()),
-            chunk.size() / sizeof(adlt_dt_needed_index_t));
+              reinterpret_cast<const adlt_dt_needed_index_t *>(chunk.data()),
+              chunk.size() / sizeof(adlt_dt_needed_index_t));
 
           ListScope NeedList(W, "needed-libs");
-          for (const auto& need : deps) {
-            DictScope DepEntry(W, this->getAdltDynamicString(need.sonameOffset));
+          for (const auto &need : deps) {
+            DictScope DepEntry(W,
+                               this->getAdltDynamicString(need.sonameOffset));
             W.printBoolean("is-internal", need.hasInternalPSOD);
             if (need.hasInternalPSOD)
               W.printNumber("psod-id", need.PSODindex);
@@ -7147,19 +7163,19 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
       }
       {
         DictScope SLEntry(W, "shared-local-symbol");
-        const auto& csref = psod.sharedLocalSymbolIndex;
+        const auto &csref = psod.sharedLocalSymbolIndex;
         W.printNumber("sec-index", csref.secIndex);
         W.printHex("offset", csref.offset);
       }
       {
         DictScope SGEntry(W, "shared-global-symbol");
-        const auto& csref = psod.sharedGlobalSymbolIndex;
+        const auto &csref = psod.sharedGlobalSymbolIndex;
         W.printNumber("sec-index", csref.secIndex);
         W.printHex("offset", csref.offset);
       }
       {
         DictScope PHEntry(W, "ph-indexes");
-        const auto& arr = psod.phIndexes;
+        const auto &arr = psod.phIndexes;
         W.printHex("size", arr.size);
         W.printHex("offset", arr.offset);
 
@@ -7167,14 +7183,14 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
         if (!chunk.empty()) {
           W.printBinary("raw", chunk);
           ArrayRef<uint16_t> phIdxs(
-            reinterpret_cast<const uint16_t*>(chunk.data()),
-            chunk.size() / sizeof(uint16_t));
+              reinterpret_cast<const uint16_t *>(chunk.data()),
+              chunk.size() / sizeof(uint16_t));
           W.printList("values", phIdxs);
         }
       }
       {
         DictScope RDEntry(W, "rela-dyn-idxs");
-        const auto& arr = psod.relaDynIndx;
+        const auto &arr = psod.relaDynIndx;
         W.printHex("size", arr.size);
         W.printHex("offset", arr.offset);
 
@@ -7188,7 +7204,7 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
       }
       {
         DictScope RPEntry(W, "rela-plt-idsx");
-        const auto& arr = psod.relaPltIndx;
+        const auto &arr = psod.relaPltIndx;
         W.printHex("size", arr.size);
         W.printHex("offset", arr.offset);
 
@@ -7214,6 +7230,7 @@ template <class ELFT> void LLVMELFDumper<ELFT>::printAdltSection() {
       W.printBinaryBlock("raw", blob);
   }
 }
+// OHOS_LOCAL end
 
 // Returns true if rel/rela section exists, and populates SymbolIndices.
 // Otherwise returns false.
