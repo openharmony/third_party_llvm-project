@@ -105,12 +105,14 @@ void LibIgnore::OnLibraryLoaded(const char *name) {
         lib->idx = idx; // OHOS_LOCAL
 #endif
         CHECK_LT(idx, ARRAY_SIZE(ignored_code_ranges_));
+#if SANITIZER_OHOS
         // OHOS_LOCAL
         VReport(1,
                 "[Ignore] Adding ignore code range 0x%zx-0x%zx from library "
                 "'%s' idx:0x%zx\n",
                 ignored_code_ranges_[idx].begin, ignored_code_ranges_[idx].end,
                 lib->name, lib->idx);
+#endif
         ignored_code_ranges_[idx].begin = range.beg;
         ignored_code_ranges_[idx].end = range.end;
         atomic_store(&ignored_ranges_count_, idx + 1, memory_order_release);

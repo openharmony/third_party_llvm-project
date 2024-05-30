@@ -96,6 +96,8 @@ struct ThreadSignalContext;
 struct JmpBuf {
   uptr sp;
   int int_signal_send;
+  // Todo: We need a suitable way to restore all relevant variables after longjmp to the state before setjmp.
+  int ignore_reads_and_writes; // OHOS_LOCAL
   bool in_blocking_func;
   uptr in_signal_handler;
   uptr *shadow_stack_pos;
