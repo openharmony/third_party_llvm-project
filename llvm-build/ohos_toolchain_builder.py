@@ -64,6 +64,7 @@ class OHOSToolchainBuilder:
             "-Wl,-z,relro,-z,now",
             "-pie",
             "-lunwind",
+            "-Wl,-rpath,'$ORIGIN/../lib'",
         ]
         return ldflags
 
@@ -197,11 +198,11 @@ class OHOSToolchainBuilder:
 
     def _build_and_install(self, build_target):
         if self._build_config.build_ncurses:
-            self._llvm_libs.build_ncurses("", self._llvm_install, self._llvm_triple)
+            self._llvm_libs.build_ncurses(self._llvm_path, self._llvm_install, self._llvm_triple)
         if self._build_config.build_libxml2:
-            self._llvm_libs.build_libxml2(self._llvm_triple, "", self._llvm_install)
+            self._llvm_libs.build_libxml2(self._llvm_triple, self._llvm_path, self._llvm_install)
         if self._build_config.build_libedit:
-            self._llvm_libs.build_libedit("", self._llvm_install, self._llvm_triple)
+            self._llvm_libs.build_libedit(self._llvm_path, self._llvm_install, self._llvm_triple)
         if self._build_config.build_python:
             self._python_builder.build()
 
