@@ -75,7 +75,7 @@ build.py options：
 --build-instrumented	# enable instrument pgo when build toolchain
 --xunit-xml-output 		# specify LLVM unit test XML report path
 --build-lldb-static     # build statically lldb tool for ARM and AARCH64
---build-python          # build python (not using prebuilt one, currently effective for Windows)
+--build-python          # build python (not using prebuilt one, currently effective for Windows and OHOS)
 --build-ncurses         # build ncurses tool for linux, Mac x86-64 or M1
 --build-libedit         # build libedit tool for linux, Mac x86-64 or M1
 --build-libxml2         # build libxml2 tool for linux, windows, Mac x86_64 or M1
@@ -152,10 +152,41 @@ build-ohos-aarch64.py options：
 --enable-assertions             # enable assertion when compiling
 --debug                         # build debug version llvm toolchain
 --strip                         # strip llvm toolchain binaries
+--build-python                  # build python and enable script in debugger
+--build-ncurses                 # build ncurses and enable ncurses in debugger
+--build-libedit                 # build libedit and enable libedit in debugger
+--build-libxml2                 # build libxml2 and enable libxml in debugger
 ```
 </br>
 
 When build successfully completed, artifacts will be available in `out/ohos-aarch64-install` directory, including clang, lld, runtimes, LLVM tools and libLLVM.so for aarch64.
+
+<a name="function_introduction"></a>
+## Function Introduction
+</br>
+
+### Build process of Arm debugger
+
+First build toolchain on Linux.
+Here is an example of starting build process on Linux:
+```
+# build
+python3 ./toolchain/llvm-project/llvm-build/build-ohos-arm.py
+```
+
+</br>
+
+build-ohos-arm.py options：
+
+```
+--build-python                  # build python and enable script in debugger
+--build-ncurses                 # build ncurses and enable ncurses in debugger
+--build-libedit                 # build libedit and enable libedit in debugger
+--build-libxml2                 # build libxml2 and enable libxml in debugger
+```
+</br>
+
+When build successfully completed, artifacts will be available in `out/ohos-arm-install` directory, including lldb for arm.
 
 <a name="function_introduction"></a>
 ## Function Introduction

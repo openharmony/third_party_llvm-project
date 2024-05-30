@@ -1525,7 +1525,8 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
                 MF.getFunction().getCallingConv() == CallingConv::ArkFast2 ||
                 MF.getFunction().getCallingConv() == CallingConv::ArkFast3 ||
                 MF.getFunction().getCallingConv() == CallingConv::ArkFast4 ||
-                MF.getFunction().getCallingConv() == CallingConv::ArkFast5)) {
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast5 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast6)) {
     report_fatal_error(
         "Implicit use of FP is forbidden for ArkFast conventions!");
   }

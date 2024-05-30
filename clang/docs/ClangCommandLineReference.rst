@@ -999,6 +999,10 @@ Make the jump table addresses canonical in the symbol table
 
 Enable control flow integrity (CFI) checks for cross-DSO calls.
 
+.. option:: -fsanitize-cfi-cross-dso-req, -fno-sanitize-cfi-cross-dso-req
+
+Enable the requirement for cross-DSO control flow integrity (CFI) checks for all LTO modules.
+
 .. option:: -fsanitize-cfi-icall-generalize-pointers
 
 Generalize pointers in CFI indirect call type signature checks

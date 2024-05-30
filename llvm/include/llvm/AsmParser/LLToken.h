@@ -179,6 +179,7 @@ enum Kind {
   kw_arkfast3cc,
   kw_arkfast4cc,
   kw_arkfast5cc,
+  kw_arkfast6cc,
   kw_arkmethodcc,
   kw_arkresolvercc,
   kw_arkpltcc,
