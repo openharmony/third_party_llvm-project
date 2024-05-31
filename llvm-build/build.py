@@ -62,6 +62,7 @@ class BuildConfig():
         self.build_only_llvm = args.build_only["llvm"] if self.build_only else []
         self.build_only_libs = args.build_only["libs"] if self.build_only else []
 
+        self.build_xvm = (not args.skip_build) and args.build_xvm
         self.no_build_arm = args.skip_build or args.no_build_arm
         self.no_build_aarch64 = args.skip_build or args.no_build_aarch64
         self.no_build_riscv64 = args.skip_build or args.no_build_riscv64
@@ -167,6 +168,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Strip final LLVM binaries.')
+
+        parser.add_argument(
+            '--build-xvm',
+            action='store_true',
+            default=False,
+            help='Add building XVM target.')
 
         parser.add_argument(
             '--no-build-arm',
@@ -921,7 +928,8 @@ class LlvmCore(BuildUtils):
                      no_lto=False,
                      build_instrumented=False,
                      build_target=None,
-                     xunit_xml_output=None):
+                     xunit_xml_output=None,
+                     build_xvm=False):
 
         llvm_clang_install = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR,
                                                           'prebuilts/clang/ohos', self.use_platform(),
@@ -974,7 +982,11 @@ class LlvmCore(BuildUtils):
         linker_path = os.path.join(llvm_clang_install, 'bin', 'ld.lld')
         llvm_defines['CMAKE_LINKER'] = linker_path
 
-        self.build_llvm(targets=self.build_config.TARGETS,
+        if build_xvm:
+            target_list = self.build_config.TARGETS + ";XVM"
+        else:
+            target_list = self.build_config.TARGETS
+        self.build_llvm(targets=target_list,
                         build_dir=llvm_path,
                         install_dir=out_dir,
                         build_name=build_name,
@@ -2794,7 +2806,8 @@ def main():
             build_config.no_lto,
             build_config.build_instrumented,
             build_config.build_only_llvm,
-            build_config.xunit_xml_output)
+            build_config.xunit_xml_output,
+            build_config.build_xvm)
         llvm_package.copy_python_to_host(llvm_make)
         llvm_package.copy_python_to_host(llvm_install)
 

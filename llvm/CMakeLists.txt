@@ -704,6 +704,8 @@ else()
     set(LLVM_BUILD_LLVM_DYLIB_default ON)
   endif()
   option(LLVM_BUILD_LLVM_DYLIB "Build libllvm dynamic library" ${LLVM_BUILD_LLVM_DYLIB_default})
+  # OHOS_LOCAL
+  option(LLVM_SPLIT_LLVM_DYLIB_TARGETS "Build dynamic target libraries" OFF)
 endif()
 
 if (LLVM_LINK_LLVM_DYLIB AND BUILD_SHARED_LIBS)
