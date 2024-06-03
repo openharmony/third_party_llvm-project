@@ -1,3 +1,4 @@
+# UNSUPPORTED: loongarch
 # RUN: rm -rf %t && mkdir -p %t
 # RUN: llvm-mc -triple=x86_64-apple-macos10.9 -filetype=obj \
 # RUN:     -o %t/helper.o %S/Inputs/MachO_GOTAndStubsOptimizationHelper.s

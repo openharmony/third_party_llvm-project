@@ -9,6 +9,7 @@
 #include "Gnu.h"
 #include "Arch/ARM.h"
 #include "Arch/CSKY.h"
+#include "Arch/LoongArch.h"
 #include "Arch/Mips.h"
 #include "Arch/PPC.h"
 #include "Arch/RISCV.h"
@@ -278,6 +279,10 @@ static const char *getLDMOption(const llvm::Triple &T, const ArgList &Args) {
     return "elf32_sparc";
   case llvm::Triple::sparcv9:
     return "elf64_sparc";
+  case llvm::Triple::loongarch32:
+    return "elf32loongarch";
+  case llvm::Triple::loongarch64:
+    return "elf64loongarch";
   case llvm::Triple::mips:
     return "elf32btsmip";
   case llvm::Triple::mipsel:
@@ -856,6 +861,13 @@ void tools::gnutools::Assembler::ConstructJob(Compilation &C,
     Args.AddLastArg(CmdArgs, options::OPT_march_EQ);
     normalizeCPUNamesForAssembler(Args, CmdArgs);
 
+    break;
+  }
+  // TODO: handle loongarch32.
+  case llvm::Triple::loongarch64: {
+    StringRef ABIName =
+        loongarch::getLoongArchABI(D, Args, getToolChain().getTriple());
+    CmdArgs.push_back(Args.MakeArgString("-mabi=" + ABIName));
     break;
   }
   case llvm::Triple::mips:
@@ -2221,6 +2233,11 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
       "i586-suse-linux",     "i686-montavista-linux", "i686-gnu",
   };
 
+  static const char *const LoongArch64LibDirs[] = {"/lib64", "/lib"};
+  static const char *const LoongArch64Triples[] = {
+      "loongarch64-linux-gnu", "loongarch64-unknown-linux-gnu",
+	  "loongarch64-linux-ohos"};
+
   static const char *const M68kLibDirs[] = {"/lib"};
   static const char *const M68kTriples[] = {
       "m68k-linux-gnu", "m68k-unknown-linux-gnu", "m68k-suse-linux"};
@@ -2468,6 +2485,11 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
       BiarchLibDirs.append(begin(X32LibDirs), end(X32LibDirs));
       BiarchTripleAliases.append(begin(X32Triples), end(X32Triples));
     }
+    break;
+  // TODO: Handle loongarch32.
+  case llvm::Triple::loongarch64:
+    LibDirs.append(begin(LoongArch64LibDirs), end(LoongArch64LibDirs));
+    TripleAliases.append(begin(LoongArch64Triples), end(LoongArch64Triples));
     break;
   case llvm::Triple::m68k:
     LibDirs.append(begin(M68kLibDirs), end(M68kLibDirs));
@@ -2856,6 +2878,8 @@ bool Generic_GCC::IsIntegratedAssemblerDefault() const {
   case llvm::Triple::csky:
   case llvm::Triple::hexagon:
   case llvm::Triple::lanai:
+  case llvm::Triple::loongarch32:
+  case llvm::Triple::loongarch64:
   case llvm::Triple::m68k:
   case llvm::Triple::mips:
   case llvm::Triple::mipsel:

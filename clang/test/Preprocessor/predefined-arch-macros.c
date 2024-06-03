@@ -3750,3 +3750,20 @@
 // RUN:   | FileCheck -match-full-lines %s -check-prefix=CHECK_R600_FP64
 // CHECK_R600_FP64-DAG: #define __R600__ 1
 // CHECK_R600_FP64-DAG: #define __HAS_FMAF__ 1
+
+// Begin LoongArch tests ----------------
+
+// RUN: %clang -E -dM %s -o - 2>&1 \
+// RUN:     -target loongarch32-unknown-linux-gnu \
+// RUN:   | FileCheck -match-full-lines %s -check-prefix=CHECK_LA32_ATOMICS
+// CHECK_LA32_ATOMICS: #define __GCC_HAVE_SYNC_COMPARE_AND_SWAP_1 1
+// CHECK_LA32_ATOMICS: #define __GCC_HAVE_SYNC_COMPARE_AND_SWAP_2 1
+// CHECK_LA32_ATOMICS: #define __GCC_HAVE_SYNC_COMPARE_AND_SWAP_4 1
+
+// RUN: %clang -E -dM %s -o - 2>&1 \
+// RUN:     -target loongarch64-unknown-linux-gnu \
+// RUN:   | FileCheck -match-full-lines %s -check-prefix=CHECK_LA64_ATOMICS
+// CHECK_LA64_ATOMICS: #define __GCC_HAVE_SYNC_COMPARE_AND_SWAP_1 1
+// CHECK_LA64_ATOMICS: #define __GCC_HAVE_SYNC_COMPARE_AND_SWAP_2 1
+// CHECK_LA64_ATOMICS: #define __GCC_HAVE_SYNC_COMPARE_AND_SWAP_4 1
+// CHECK_LA64_ATOMICS: #define __GCC_HAVE_SYNC_COMPARE_AND_SWAP_8 1
