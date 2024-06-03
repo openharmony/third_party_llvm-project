@@ -1903,14 +1903,14 @@ hdc.exe shell
 ```
 ## 6.3 LLDB Standalone调试
 
-通常情况下，通过Attach到运行中的进程或者直接通过LLDB启动目标程序来开始调试。当成功Attach到目标进程或者通过LLDB启动目标程序后，就可以结合调试目的，使用[3. LLDB命令](#3-lldb命令)中相应的LLDB调试命令来调试目标程序。
+通常情况下，通过attach到运行中的进程或者直接通过LLDB启动目标程序来开始调试。当成功attach到目标进程或者通过LLDB启动目标程序后，就可以结合调试目的，使用[3. LLDB命令](#3-lldb命令)中相应的LLDB调试命令来调试目标程序。
 
 > **提示：**
 >
-> - 命令print、call、expr命令尚不支持调用函数
+> - 命令print、call、expr尚不支持调用函数
 > - 如遇删除键（Backspace）功能无法正常删除时，使用Ctrl+Backspace删除
 
-### 6.3.1 Attach 到运行的进程
+### 6.3.1 attach 到运行的进程
 #### 6.3.1.1 启动LLDB
 
 ```
@@ -1953,3 +1953,54 @@ hdc.exe shell
 (lldb) b main
 (lldb) r
 ```
+# 7. OpenHarmony LLDB调试器
+
+该调试器是可以直接在OpenHarmony设备运行的LLDB，无需进行远程连接。
+
+## 7.1 工具获取
+
+该工具需要通过编译LLVM工程获取。
+
+工具编译参考：[ohos-toolchain-build](https://gitee.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md#build-process-of-aarch64-toolchain)。
+
+编译完成后，可通过如下路径获取到OpenHarmony调试器工具压缩包：llvm-project/packages/clang-dev-ohos-aarch64tar.bz2。
+
+## 7.2 调试准备
+
+1）受设备环境限制，你可能需要将压缩包重新打包为：clang-dev-ohos-aarch64.tar
+
+```
+bunzip2 -c clang-dev-ohos-aarch64.tar.bz2 > clang-dev-ohos-aarch64.tar
+```
+
+2）使用hdc工具将压缩包推送到工作路径，以/data/local/tmp为例
+
+```
+hdc file send clang-dev-ohos-aarch64.tar /data/local/tmp
+```
+
+3）进入命令行交互模式
+
+```
+hdc shell
+```
+
+4）解压工具包
+
+```
+# cd /data/local/tmp/
+# tar -xf clang-dev-ohos-aarch64.tar
+```
+
+## 7.3 调试
+
+通常情况下，通过attach到运行中的进程或者直接通过LLDB启动目标程序来开始调试。当成功attach到目标进程或者通过LLDB启动目标程序后，就可以结合调试目的，使用[3. LLDB命令](#3-lldb命令)中相应的LLDB调试命令来调试目标程序。
+
+> **提示：**
+>
+> - 如果编译时未启用libedit扩展库功能，可能删除键（Backspace）功能无法正常删除，使用Ctrl+Backspace删除
+
+LLDB执行程序的位置：`/data/local/tmp/ohos-aarch64-install/bin/`
+
+具体的调试方法参考[6.3 LLDB Standalone调试](#63-LLDB-Standalone调试)
+
