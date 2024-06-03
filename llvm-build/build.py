@@ -36,6 +36,7 @@ class BuildConfig():
     # Defines public methods and functions and obtains script parameters.
 
     def __init__(self):
+        self.discover_paths()
         args = self.parse_args()
 
         assert not(args.no_build and args.build_only), "Error! --no-build and --build-only flags aren't compatible."
@@ -57,6 +58,7 @@ class BuildConfig():
         self.need_lldb_server = self.do_build and 'lldb-server' not in args.no_build and not args.build_only
         self.build_python = args.build_python
         self.build_with_debug_info = args.build_with_debug_info
+        self.buildtools_path = os.path.join(self.REPOROOT_DIR , 'prebuilts')
 
         self.build_only = True if args.build_only else False
         self.build_only_llvm = args.build_only["llvm"] if self.build_only else []
@@ -81,7 +83,6 @@ class BuildConfig():
         self.adlt_debug_build = args.adlt_debug_build
         self.compression_format = args.compression_format
         self.enable_check_abi = args.enable_check_abi
-        self.discover_paths()
 
         self.TARGETS = 'AArch64;ARM;BPF;Mips;RISCV;X86'
         self.ORIG_ENV = dict(os.environ)
@@ -439,9 +440,10 @@ class BuildUtils(object):
 
     def __init__(self, build_config):
         self.build_config = build_config
+        self.buildtools_path = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts')
 
         self.CMAKE_BIN_DIR = os.path.abspath(
-            os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts/cmake', self.platform_prefix(), 'bin'))
+            os.path.join(self.buildtools_path, 'cmake', self.platform_prefix(), 'bin'))
         self._mingw_python_dir = None
 
     def open_ohos_triple(self, arch):
@@ -460,7 +462,7 @@ class BuildUtils(object):
                      install=True,
                      build_threads=False):
 
-        ninja_bin_path = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts/build-tools', self.platform_prefix(), 'bin', 'ninja')
+        ninja_bin_path = os.path.join(self.buildtools_path, 'build-tools', self.platform_prefix(), 'bin', 'ninja')
 
         ninja_list = ['-l{}'.format(build_threads)] if build_threads else []
 
@@ -614,12 +616,12 @@ class BuildUtils(object):
         platform_path = self.platform_prefix()
         if (self.host_is_darwin()):
             platform_path = "darwin-x86"
-        python_dir = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts', self.build_config.LLDB_PYTHON,
+        python_dir = os.path.join(self.buildtools_path, self.build_config.LLDB_PYTHON,
             platform_path, self.build_config.LLDB_PY_DETAILED_VERSION)
         return python_dir
 
     def get_prebuilts_dir(self, name):
-        prebuilts_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts', name))
+        prebuilts_dir = os.path.abspath(os.path.join(self.buildtools_path, name))
         return prebuilts_dir
 
     def rm_build_output(self):
@@ -931,8 +933,7 @@ class LlvmCore(BuildUtils):
                      xunit_xml_output=None,
                      build_xvm=False):
 
-        llvm_clang_install = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR,
-                                                          'prebuilts/clang/ohos', self.use_platform(),
+        llvm_clang_install = os.path.abspath(os.path.join(self.buildtools_path, 'clang/ohos', self.use_platform(),
                                                           'clang-%s' % self.build_config.CLANG_VERSION))
         llvm_path = self.merge_out_path('llvm_make')
         llvm_profdata = os.path.join(llvm_clang_install, 'bin', 'llvm-profdata')
@@ -1107,7 +1108,7 @@ class LlvmCore(BuildUtils):
                                    ldflags,
                                    windows_defines):
 
-        zlib_path = self.merge_out_path('../', 'prebuilts', 'clang', 'host', 'windows-x86', 'toolchain-prebuilts',
+        zlib_path = self.merge_out_path(self.buildtools_path, 'clang', 'host', 'windows-x86', 'toolchain-prebuilts',
                                         'zlib')
         zlib_inc = os.path.join(zlib_path, 'include')
         zlib_lib = os.path.join(zlib_path, 'lib')
@@ -1184,7 +1185,7 @@ class SysrootComposer(BuildUtils):
         # but it didn't contain these two lines, so we still need OHOS.cmake.
         ohos_cmake = 'OHOS.cmake'
         dst_dir = self.merge_out_path(
-            '../prebuilts/cmake/%s/share/cmake-3.28/Modules/Platform' % self.platform_prefix())
+            self.buildtools_path, 'cmake/%s/share/cmake-3.28/Modules/Platform' % self.platform_prefix())
         src_file = '%s/%s' % (self.build_config.LLVM_BUILD_DIR, ohos_cmake)
         if os.path.exists(os.path.join(dst_dir, ohos_cmake)):
             os.remove(os.path.join(dst_dir, ohos_cmake))
@@ -1936,7 +1937,7 @@ class LlvmLibs(BuildUtils):
         libncurses_src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'ncurses'))
         libncurses_install_path = self.merge_ncurses_install_dir(platform_triple)
         libncurses_build_path = self.merge_ncurses_build_dir(platform_triple)
-        prebuilts_path = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts')
+        prebuilts_path = os.path.join(self.buildtools_path)
 
         self.check_rm_tree(libncurses_build_path)
         self.rm_cmake_cache(libncurses_build_path)
@@ -1964,8 +1965,7 @@ class LlvmLibs(BuildUtils):
         self.logger().info('Building lzma')
         target_triple = self.use_platform()
         liblzma_build_path = self.merge_out_path('lzma')
-        llvm_clang_prebuilts = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR,
-                                                          'prebuilts', 'clang', 'ohos', self.use_platform(),
+        llvm_clang_prebuilts = os.path.abspath(os.path.join(self.buildtools_path, 'clang', 'ohos', self.use_platform(),
                                                           'clang-%s' % self.build_config.CLANG_VERSION, 'bin', 'clang'))
         src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'lzma', 'C'))
         cmd = [ 'make',
@@ -2002,7 +2002,7 @@ class LlvmLibs(BuildUtils):
         libedit_src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libedit'))
         libedit_build_path = self.merge_libedit_build_dir(platform_triple)
         libedit_install_path = self.merge_libedit_install_dir(platform_triple)
-        prebuilts_path = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts')
+        prebuilts_path = os.path.join(self.buildtools_path)
 
         self.check_rm_tree(libedit_build_path)
         self.rm_cmake_cache(libedit_build_path)
@@ -2760,7 +2760,7 @@ def main():
     llvm_make = build_utils.merge_out_path('llvm_make')
     windows64_install = build_utils.merge_out_path('windows-x86_64-install')
     llvm_path = llvm_install if not build_config.build_only else \
-        os.path.join(build_config.REPOROOT_DIR, 'prebuilts', 'clang', 'ohos', 'linux-x86_64', f'clang-{build_config.CLANG_VERSION}')
+        os.path.join(buildtools_path, 'clang', 'ohos', 'linux-x86_64', f'clang-{build_config.CLANG_VERSION}')
 
     configs = []
     if not build_config.no_build_arm:
@@ -2844,7 +2844,7 @@ def main():
     if build_config.build_only:
         sysroot_composer.setup_cmake_platform(llvm_install)
         # temporary hide cmake checks for sdk-partly
-        lib_cmake = os.path.join(build_config.REPOROOT_DIR, 'prebuilts/clang/ohos', build_utils.use_platform(),
+        lib_cmake = os.path.join(buildtools_path, 'clang/ohos', build_utils.use_platform(),
             'clang-%s' % build_config.CLANG_VERSION, "lib/cmake")
         lib_cmake_tmp = f"{lib_cmake}_tmp"
         shutil.move(lib_cmake, lib_cmake_tmp)
@@ -2882,7 +2882,7 @@ def main():
     windows_python_builder = None
 
     if build_config.do_build and need_windows:
-        mingw.main(build_config.VERSION)
+        mingw.main(build_config.VERSION, build_config.buildtools_path)
         llvm_libs.build_runtimes_for_windows(build_config.enable_assertions)
 
         if build_config.build_libxml2:

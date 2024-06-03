@@ -24,7 +24,8 @@ import sys
 
 class BuildConfig():
 
-    def __init__(self, clang_version):
+    def __init__(self, clang_version, buildtools_path):
+        self.buildtools_path = buildtools_path
         self.LLVM_BUILD_DIR = os.path.realpath(os.path.dirname(__file__))
 
         parent_of_llvm_build = os.path.basename(os.path.dirname(self.LLVM_BUILD_DIR))
@@ -57,7 +58,7 @@ class LlvmMingw():
         self.build_config = build_config
 
         self.CMAKE_BIN_PATH = os.path.join(self.cmake_prebuilt_bin_dir(), 'cmake')
-        self.NINJA_BIN_PATH = os.path.join(self.build_config.repo_root('prebuilts/build-tools', 'linux-x86', 'bin'), 'ninja')
+        self.NINJA_BIN_PATH = os.path.join(self.build_config.repo_root(self.build_config.buildtools_path, 'build-tools', 'linux-x86', 'bin'), 'ninja')
 
         self.LLVM_ROOT = self.build_config.out_root('llvm-install')
         self.LLVM_CONFIG = os.path.join(self.LLVM_ROOT, 'bin', 'llvm-config')
@@ -83,7 +84,7 @@ class LlvmMingw():
         }
 
     def cmake_prebuilt_bin_dir(self):
-        return self.build_config.repo_root('prebuilts/cmake', 'linux-x86', 'bin')
+        return self.build_config.repo_root(self.build_config.buildtools_path, 'cmake', 'linux-x86', 'bin')
 
     def base_cmake_defines(self):
         self.cmake_defines = {}
@@ -222,8 +223,8 @@ class LlvmMingw():
         self.check_call(['make', 'install'], env=self.env)
 
 
-def main(clang_version):
-    build_config = BuildConfig(clang_version)
+def main(clang_version, buildtools_path):
+    build_config = BuildConfig(clang_version, buildtools_path)
     llvm_mingw = LlvmMingw(build_config)
 
     llvm_mingw.build_mingw64_headers()
