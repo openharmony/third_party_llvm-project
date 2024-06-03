@@ -29,12 +29,6 @@ class ArmToolchainBuilder(OHOSToolchainBuilder):
             ]
         )
 
-        self._ldflags.extend(
-            [
-                "-Wl,-rpath,'$ORIGIN/../lib'",
-            ]
-        )
-
         self._llvm_defines.update(
             {
                 "CMAKE_CXX_FLAGS": " ".join(self._cflags),
