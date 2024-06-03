@@ -12,6 +12,7 @@ CLANG_VERSION=$5
 NCURSES_VERSION=$6
 TARGET=$7
 NCURSES_UNTAR_PATH=$8
+IS_STATIC=$9
 
 SPECFILE="${NCURSES_SRC_DIR}/ncurses.spec"
 
@@ -98,18 +99,22 @@ if [ -e ${ncurses_package} ]; then
         if [[ ${TARGET} =~ 'arm' ]]; then
             C_FLAGS="$C_FLAGS -march=armv7-a -mfloat-abi=soft"
         fi
-        NCURSES_HOST_INSTALL_PATH=$9
-        export LD_LIBRARY_PATH="${NCURSES_HOST_INSTALL_PATH}/lib:$LD_LIBRARY_PATH"
-        ${NCURSES_SRC_DIR}/configure \
+        EXTRA_ARGS=""
+        if [[ ${IS_STATIC} == "static" ]]; then
+            NCURSES_HOST_INSTALL_PATH=${10}
+            export LD_LIBRARY_PATH="${NCURSES_HOST_INSTALL_PATH}/lib:$LD_LIBRARY_PATH"
+            EXTRA_ARGS="--with-fallbacks=linux,vt100,xterm \
+                        --with-tic-path=${NCURSES_HOST_INSTALL_PATH}/bin/tic \
+                        --with-infocmp-path=${NCURSES_HOST_INSTALL_PATH}/bin/infocmp"
+        fi
+        ${NCURSES_UNTAR_PATH}/configure \
             --host="${TARGET}" \
             --with-shared \
             --prefix=${NCURSES_INSTALL_PATH} \
             --with-termlib \
             --without-manpages \
             --with-strip-program="${PREBUILT_PATH}/../out/llvm-install/bin/llvm-strip" \
-            --with-fallbacks=linux,vt100,xterm \
-            --with-tic-path=${NCURSES_HOST_INSTALL_PATH}/bin/tic \
-            --with-infocmp-path=${NCURSES_HOST_INSTALL_PATH}/bin/infocmp \
+            ${EXTRA_ARGS} \
             CC=${PREBUILT_PATH}/../out/llvm-install/bin/clang \
             CXX=${PREBUILT_PATH}/../out/llvm-install/bin/clang++ \
             CFLAGS="${C_FLAGS}"
