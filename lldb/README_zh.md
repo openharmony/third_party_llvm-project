@@ -3,7 +3,7 @@
 # 1. LLDB工具介绍
 
 
-LLDB（Low Lever Debugger）是新一代高性能调试器。当前Openharmony主干分支的LLDB工具是在[llvm15.0.4](https://github.com/llvm/llvm-project/releases/tag/llvmorg-15.0.4)基础上适配演进出来的工具。支持在桌面和Openharmony设备或模拟器上调试。
+LLDB（Low Level Debugger）是新一代高性能调试器。当前OpenHarmony主干分支的LLDB工具是在[llvm15.0.4](https://github.com/llvm/llvm-project/releases/tag/llvmorg-15.0.4)基础上适配演进出来的工具。支持在桌面和Openharmony设备或模拟器上调试。
 
 > **说明**
 >
@@ -19,12 +19,6 @@ LLDB工具在SDK中的路径：**\ohos-sdk\\\[system]\native\llvm。
 **使用举例：**
 
 下面以windows平台使用方式举例
-
-- 方法一
-
-  获取windows的SDK，将\**\ohos-sdk\windows\native\llvm\bin目录下的lldb.exe、liblldb.dll和libpython3.10.dll放在磁盘某个位置，运行lldb.exe即可。
-
-- 方法二
 
   解压sdk，直接在LLDB工具所在路径\**\ohos-sdk\windows\native\llvm\bin运行lldb.exe即可。
 
@@ -47,6 +41,7 @@ LLDB工具在SDK中的路径：**\ohos-sdk\\\[system]\native\llvm。
 > | windows        | 适用于windows平台的工具 |
 > | linux          | 适用于linux平台的工具   |
 > | darwin         | 适用于Mac平台的工具     |
+> | ohos           | 适用于ohos平台的工具|
 >
 > Mac平台的工具有arm64架构和x86_64架构区分。可根据”组件形态“进行区分，其中mac-sdk-full和mac-sdk-public的适用于x86_64架构。mac-sdk-m1-full和mac-sdk-m1-public的适用于arm64架构。
 >
@@ -1576,7 +1571,7 @@ WorkingDir: /data/local/tmp
 >
 > debug版本so的调试参考hap包调试即可。
 
-## 4.3 Openharmony服务启动调试
+## 4.3 OpenHarmony服务启动调试
 
 > **注意**
 >
