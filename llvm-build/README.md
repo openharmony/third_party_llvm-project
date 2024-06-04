@@ -210,3 +210,17 @@ Despite all the components provided by LLVM community, we included several tripl
 
 For detailed definition of Small System and Standard System, please refer to [System Types](https://gitee.com/openharmony/docs/blob/master/en/device-dev/Readme-EN.md).
 
+### Testing musl libc
+
+Toolchain build process includes musl libc build. libc.so is available in sysroot.
+Sometimes it's needed to build libc tests.
+
+Here is an example of starting build process on Linux:
+```
+# build
+python3 ./toolchain/llvm-project/llvm-build/build-libc-test.py
+```
+
+When build successfully completed, artifacts will be available in `out/llvm_build/musl` directory, including test libraries, libc tests and musl_unittest.
+Scripts to execute libc tests could be found in `third_party/musl/scripts` directory.
+For detailed information about musl, please refer to [third_party_musl](https://gitee.com/openharmony/third_party_musl).
