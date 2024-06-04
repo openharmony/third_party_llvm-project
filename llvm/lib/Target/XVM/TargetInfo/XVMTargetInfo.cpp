@@ -6,9 +6,29 @@
 //
 //===----------------------------------------------------------------------===//
 #ifdef XVM_DYLIB_MODE
-// Insert the XVM backend code here
-#include "llvm/Support/Compiler.h"
+
+#include "TargetInfo/XVMTargetInfo.h"
+#include "llvm/MC/TargetRegistry.h"
+
+using namespace llvm;
+
+Target &llvm::getTheXVMTarget() {
+  static Target TheXVMTarget;
+  return TheXVMTarget;
+}
+
+Target &llvm::getTheXVMleTarget() {
+  static Target TheXVMleTarget;
+  return TheXVMleTarget;
+}
+
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeXVMTargetInfo() {
+  RegisterTarget<Triple::xvm> X(
+      getTheXVMleTarget(), "xvm", "XVM (little endian)", "XVM");
+}
+
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeXVMTargetInfoCalledInDylib() {
+  LLVMInitializeXVMTargetInfo();
 }
 
 #else

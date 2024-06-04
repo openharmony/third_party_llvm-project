@@ -10,6 +10,22 @@
 //
 //===----------------------------------------------------------------------===//
 #ifdef XVM_DYLIB_MODE
-// Insert the XVM backend code here
+
+#include "XVMTargetStreamer.h"
+
+using namespace llvm;
+
+//
+// XVMTargetStreamer Implemenation
+//
+XVMTargetStreamer::XVMTargetStreamer(MCStreamer &S) : MCTargetStreamer(S) {}
+
+XVMTargetStreamer::~XVMTargetStreamer() = default;
+
+void XVMTargetStreamer::changeSection(const MCSection *CurSection,
+                                      MCSection *Section,
+                                      const MCExpr *SubSection,
+                                      raw_ostream &OS) {
+}
 
 #endif
