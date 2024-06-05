@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "sanitizer_interface_internal.h" // OHOS_LOCAL
+#include "sanitizer_platform_interceptors.h" // OHOS_LOCAL
 #include "sanitizer_platform.h"
 
 #if defined(__loongarch__)
