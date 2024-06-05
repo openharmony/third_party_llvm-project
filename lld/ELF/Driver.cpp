@@ -2555,7 +2555,7 @@ void LinkerDriver::link(opt::InputArgList &args) {
   // Fill duplicatedSymNames for defined syms. This will help to find duplicates.
   if (config->adlt) {
     invokeELFT(adltCtx->buildSymbolsHist, files);
-    adltCtx->checkDuplicatedSymbols();
+    adltCtx->scanDuplicatedSymbols();
   }
 
   // Add all files to the symbol table. This will add almost all

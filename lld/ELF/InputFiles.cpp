@@ -327,8 +327,6 @@ ELFFileBase::ELFFileBase(Kind k, MemoryBufferRef mb) : InputFile(k, mb) {
   }
 }
 
-// namespace
-// {
 template <typename Elf_Shdr>
 static const Elf_Shdr *findSection(ArrayRef<Elf_Shdr> sections, uint32_t type) {
   for (const Elf_Shdr &sec : sections)
@@ -336,9 +334,11 @@ static const Elf_Shdr *findSection(ArrayRef<Elf_Shdr> sections, uint32_t type) {
       return &sec;
   return nullptr;
 }
-// } // namespace
 
-
+// OHOS_LOCAL begin
+void ELFFileBase::buildSymbolsHist() {}
+bool ELFFileBase::isValidSection(InputSectionBase *s) const { return true; }
+// OHOS_LOCAL end
 
 template <class ELFT> void ELFFileBase::init() {
   using Elf_Shdr = typename ELFT::Shdr;
@@ -574,6 +574,7 @@ void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
     }
     auto secName = check(obj.getSectionName(sec, shstrtab));
     if (config->adlt && sec.sh_type == SHT_NULL) {
+      // TODO: add unique for output only
       auto name = getUniqueName(secName);
       this->sections[i] = createInputSection(i, sec, name);
       this->sections[i]->address = sec.sh_addr;
@@ -602,6 +603,7 @@ void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
               .second;
       if (keepGroup) {
         if (config->relocatable) {
+          // TODO: add unique for output only
           auto name = config->adlt ? getUniqueName(secName) : secName;
           this->sections[i] = createInputSection(i, sec, name);
           if (config->adlt) {
@@ -635,6 +637,7 @@ void ObjFile<ELFT>::initializeSections(bool ignoreComdats,
       ctx->hasSympart.store(true, std::memory_order_relaxed);
       LLVM_FALLTHROUGH;
     default:
+      // TODO: add unique for output only
       auto name = config->adlt ? getUniqueName(secName) : secName;
       this->sections[i] = createInputSection(i, sec, name);
       if (config->adlt) {
@@ -1057,7 +1060,12 @@ void ObjFile<ELFT>::initializeSymbols(const object::ELFFile<ELFT> &obj) {
       StringRef name = CHECK(eSyms[i].getName(stringTable), this);
       if (config->adlt && eSyms[i].isDefined() &&
           adltCtx->duplicatedSymNames.count(CachedHashStringRef(name)) != 0) {
-        adltCtx->withCfi = adltCtx->withCfi || name == "__cfi_check";
+        if (name == "__cfi_check" && !adltCtx->withCfi) {
+          adltCtx->withCfi = true;
+          if (config->adltTrace)
+            lld::outs() << "[ADLT] Cfi mode is ON\n";
+        }
+        // TODO: add unique for output only
         name = this->getUniqueName(name);
       }
       symbols[i] = symtab.insert(name);
@@ -1599,9 +1607,7 @@ template <class ELFT> void SharedFile::parse() {
 template <typename ELFT>
 SharedFileExtended<ELFT>::SharedFileExtended(MemoryBufferRef mb,
                                              StringRef soName)
-    : ObjFile<ELFT>(mb, soName), soName(soName) {
-  const_cast<InputFile::Kind &>(this->fileKind) = InputFile::SharedKind;
-}
+    : ObjFile<ELFT>(InputFile::SharedKind, mb, soName), soName(soName) {}
 
 template <typename ELFT> void SharedFileExtended<ELFT>::buildSymbolsHist() {
   ArrayRef<Elf_Sym> eSyms = this->template getELFSyms<ELFT>();
@@ -1614,7 +1620,7 @@ template <typename ELFT> void SharedFileExtended<ELFT>::buildSymbolsHist() {
 }
 
 template <typename ELFT>
-bool SharedFileExtended<ELFT>::isValidSection(InputSectionBase *s) {
+bool SharedFileExtended<ELFT>::isValidSection(InputSectionBase *s) const {
   if (!s || s == &InputSection::discarded)
     return false;
   uint32_t type = s->type;
@@ -1623,17 +1629,18 @@ bool SharedFileExtended<ELFT>::isValidSection(InputSectionBase *s) {
   bool isBaseType = type == SHT_NOBITS || type == SHT_NOTE ||
                     type == SHT_INIT_ARRAY || type == SHT_FINI_ARRAY;
   // TODO: fix .debug-* sections relocation
+  // TODO: rename sections at outputStage.
   bool isNeededProgBits =
       type == SHT_PROGBITS &&
-      !(name.startswith(".got.plt") || name.startswith(".plt") ||
-        name.startswith(".got") || name.startswith(".eh_frame_hdr") ||
-        name.startswith(".debug_"));
+      !(name.startswith(".got") || name.startswith(".plt") ||
+        name.startswith(".eh_frame_hdr") || name.startswith(".debug_"));
   bool ret = isBaseType || isNeededProgBits;
   return ret;
 }
 
 template <typename ELFT>
 bool SharedFileExtended<ELFT>::isDynamicSection(InputSectionBase *s) const {
+  // TODO: rename sections at outputStage.
   return s->type == llvm::ELF::SHT_NULL || s->name.startswith(".got.plt");
 }
 
@@ -1656,7 +1663,7 @@ StringRef SharedFileExtended<ELFT>::getUniqueName(StringRef input) const {
 }
 
 template <typename ELFT>
-Defined &SharedFileExtended<ELFT>::getDefinedLocalSym(unsigned offset) {
+Defined &SharedFileExtended<ELFT>::getDefinedLocalSym(uint64_t offset) {
   auto getSym = [&](unsigned offs) {
     return localSymbols[this->definedSymbolsMap[offs]];
   };
@@ -1670,7 +1677,7 @@ Defined &SharedFileExtended<ELFT>::getDefinedLocalSym(unsigned offset) {
 }
 
 template <typename ELFT>
-InputSectionBase &SharedFileExtended<ELFT>::getSection(unsigned offset) {
+InputSectionBase &SharedFileExtended<ELFT>::getSection(uint64_t offset) {
   auto *sec = this->sections[this->sectionsMap[offset]];
   if (offset && sec->type == SHT_NULL)
     sec = findSection(offset);
@@ -1678,7 +1685,7 @@ InputSectionBase &SharedFileExtended<ELFT>::getSection(unsigned offset) {
 }
 
 template <typename ELFT>
-InputSectionBase &SharedFileExtended<ELFT>::getSectionByOrder(unsigned idx) {
+InputSectionBase &SharedFileExtended<ELFT>::getSectionByOrder(size_t idx) {
   auto *sec = this->sections[idx];
   if (!sec)
     sec = &InputSection::discarded;
@@ -1686,35 +1693,35 @@ InputSectionBase &SharedFileExtended<ELFT>::getSectionByOrder(unsigned idx) {
 }
 
 template <typename ELFT>
-InputSectionBase *SharedFileExtended<ELFT>::findSection(unsigned offset) {
+InputSectionBase *SharedFileExtended<ELFT>::findSection(uint64_t offset) {
   llvm::SmallVector<InputSectionBase *> candidates;
   for (InputSectionBase *sec : this->sections) {
     if (!sec)
       continue;
-    auto low = sec->address, high = low + sec->size;
+    auto low = sec->address;
+    auto high = low + sec->size;
     if (offset >= low && offset < high)
       candidates.push_back(sec);
   }
   if (candidates.empty()) // no suitable items found
     return nullptr;
-  llvm::sort(candidates, [offset](InputSectionBase *a, InputSectionBase *b) {
-    return (offset - a->address < offset - b->address);
-  });
+  llvm::sort(candidates,
+             [](auto *a, auto *b) { return a->address < b->address; });
   return *candidates.begin();
 }
 
 template <class ELFT>
-Symbol &SharedFileExtended<ELFT>::getDynamicSymbol(uint32_t symbolIndex) const {
+Symbol &SharedFileExtended<ELFT>::getDynamicSymbol(size_t symbolIndex) const {
   return *this->symbols[symbolIndex];
 }
 template <class ELFT>
-Symbol &SharedFileExtended<ELFT>::getLocalSymbol(uint32_t symbolIndex) const{
+Symbol &SharedFileExtended<ELFT>::getLocalSymbol(size_t symbolIndex) const{
   assert(symbolIndex && (symbolIndex < localSymbols.size()));
   return *localSymbols[symbolIndex];
 }
 
 template <class ELFT>
-Symbol &SharedFileExtended<ELFT>::getSymbol(uint32_t symbolIndex,
+Symbol &SharedFileExtended<ELFT>::getSymbol(size_t symbolIndex,
                                             bool fromDynamic) {
   if (!symbolIndex)
     return *localSymbols[0];
@@ -1743,6 +1750,12 @@ Symbol &SharedFileExtended<ELFT>::getSymbol(uint32_t symbolIndex,
   if (found == in.symTab->getSymbols().end())
     in.symTab->addSymbol(&sym);
   return sym;
+}
+
+template <class ELFT>
+ArrayRef<Symbol *> SharedFileExtended<ELFT>::getLocalSymbols() {
+  assert(!localSymbols.empty());
+  return llvm::makeArrayRef(localSymbols).slice(0, symTabFirstGlobal);
 }
 
 template <class ELFT> void SharedFileExtended<ELFT>::parseDynamics() {
@@ -1843,7 +1856,7 @@ template <class ELFT> void SharedFileExtended<ELFT>::parseDynamics() {
     // Add postfix for defined duplicates.
     if (config->adlt && sym.isDefined() &&
         adltCtx->duplicatedSymNames.count(CachedHashStringRef(name)) != 0)
-      name = this->getUniqueName(name);
+      name = getUniqueName(name); // TODO: add unique for output only
 
     if (sym.getBinding() == STB_LOCAL) {
       warn("found local symbol '" + name +
@@ -1959,7 +1972,7 @@ template <class ELFT> void SharedFileExtended<ELFT>::parseElfSymTab() {
       });
       bool isInDynSym = dynSym != this->symbols.end();
       if (!isInDynSym)
-        name = getUniqueName(name);
+        name = getUniqueName(name); // TODO: add unique for output only
       /*if (name == "TLS_data1") // debug hint
         lld::outs() << name << '\n'; */
       this->localSymbols[i] =

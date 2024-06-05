@@ -1551,40 +1551,17 @@ DynamicSection<ELFT>::computeContents() {
     addInSec(DT_HASH, *part.hashTab);
 
   if (isMain) {
-    if (config->adlt) {
-      auto findSection = [](StringRef name, unsigned partition = 1) {
-        for (SectionCommand *cmd : script->sectionCommands)
-          if (auto *osd = dyn_cast<OutputDesc>(cmd))
-            if (osd->osec.name == name && osd->osec.partition == partition)
-              return &osd->osec;
-        return (OutputSection *)nullptr;
-      };
-      for (InputFile *file : adltCtx->sharedFilesExtended) {
-        auto *f = adltCtx->getSoExt<ELFT>(file);
-        auto initArray = findSection(f->getUniqueName(".init_array"));
-        auto finiArray = findSection(f->getUniqueName(".fini_array"));
-        if (initArray) {
-          addInt(DT_INIT_ARRAY, initArray->addr);
-          addInt(DT_INIT_ARRAYSZ, initArray->size);
-        }
-        if (finiArray) {
-          addInt(DT_FINI_ARRAY, finiArray->addr);
-          addInt(DT_FINI_ARRAYSZ, finiArray->size);
-        }
-      }
-    } else {
-      if (Out::preinitArray) {
-        addInt(DT_PREINIT_ARRAY, Out::preinitArray->addr);
-        addInt(DT_PREINIT_ARRAYSZ, Out::preinitArray->size);
-      }
-      if (Out::initArray) {
-        addInt(DT_INIT_ARRAY, Out::initArray->addr);
-        addInt(DT_INIT_ARRAYSZ, Out::initArray->size);
-      }
-      if (Out::finiArray) {
-        addInt(DT_FINI_ARRAY, Out::finiArray->addr);
-        addInt(DT_FINI_ARRAYSZ, Out::finiArray->size);
-      }
+    if (Out::preinitArray) {
+      addInt(DT_PREINIT_ARRAY, Out::preinitArray->addr);
+      addInt(DT_PREINIT_ARRAYSZ, Out::preinitArray->size);
+    }
+    if (Out::initArray) {
+      addInt(DT_INIT_ARRAY, Out::initArray->addr);
+      addInt(DT_INIT_ARRAYSZ, Out::initArray->size);
+    }
+    if (Out::finiArray) {
+      addInt(DT_FINI_ARRAY, Out::finiArray->addr);
+      addInt(DT_FINI_ARRAYSZ, Out::finiArray->size);
     }
 
     if (Symbol *b = symtab->find(config->init))
@@ -4224,8 +4201,8 @@ AdltSection<ELFT>::makeSoData(const SharedFileExtended<ELFT>* soext) {
   data.initArrayName = soext->getUniqueName(".init_array");
   data.finiArrayName = soext->getUniqueName(".fini_array");
 
-  data.relaDynIndx = soext->dynRelIndexes.getArrayRef();
-  data.relaPltIndx = soext->pltRelIndexes.getArrayRef();
+  data.relaDynIndx = soext->relaDynIndexes.getArrayRef();
+  data.relaPltIndx = soext->relaPltIndexes.getArrayRef();
 
   data.programHeadersAllocated = soext->programHeaders.size();
   data.programHeaders = soext->programHeaders.getArrayRef();

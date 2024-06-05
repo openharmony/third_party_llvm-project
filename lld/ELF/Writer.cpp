@@ -315,6 +315,7 @@ template <class ELFT> void elf::createSyntheticSections() {
   }
 
   if (config->adlt) {
+    assert(adltCtx && "ADLT: ctx not initialized!");
     in.adltStrTab = std::make_unique<StringTableSection>(".adlt.strtab", false);
     in.adltData = std::make_unique<adlt::AdltSection<ELFT>>(*in.adltStrTab);
     add(*in.adltStrTab);
@@ -571,6 +572,8 @@ InputSection *AdltWriter::getInputSection(OutputSection *sec) {
 }
 
 template <typename ELFT> void AdltWriter::checkPhdrs() {
+  assert(!adltCtx->commonProgramHeaders.empty() &&
+         "Common headers can't be empty!");
   for (auto *file : adltCtx->sharedFilesExtended)
     if (auto *soFile = adltCtx->getSoExt<ELFT>(file))
       assert(!soFile->programHeaders.empty() &&
@@ -583,9 +586,9 @@ template <typename ELFT> void AdltWriter::checkRelocs() {
 
   for (auto *file : adltCtx->sharedFilesExtended)
     if (auto *soFile = adltCtx->getSoExt<ELFT>(file)) {
-      assert(!soFile->dynRelIndexes.empty() &&
+      assert(!soFile->relaDynIndexes.empty() &&
              "ADLT: relaDyn indexes can't be empty!");
-      assert(!soFile->pltRelIndexes.empty() &&
+      assert(!soFile->relaPltIndexes.empty() &&
              "ADLT: relaPlt indexes can't be empty!");
     }
 }
@@ -602,7 +605,8 @@ void AdltWriter::trackPhdr(OutputSection *sec, PhdrEntry *phdr) {
 
 template <typename ELFT> void AdltWriter::traceRelocs() {
   lld::outs() << "[ADLT]\n";
-  lld::outs() << "Dyn relocs (" << mainPart->relaDyn->relocs.size() << ")\n";
+  auto dynRelsSize = mainPart->relaDyn->relocs.size();
+  lld::outs() << "Dyn relocs (" << dynRelsSize << ")\n";
   lld::outs() << "Plt relocs (" << in.relaPlt->relocs.size() << ")\n";
 
   auto printIndexes = [&](auto &vec) {
@@ -620,7 +624,7 @@ template <typename ELFT> void AdltWriter::traceRelocs() {
     return sym->getName();
   };
 
-  auto printRelocTable = [&](auto *relSec, auto &outIndexes) {
+  auto printRelaTable = [&](auto *relSec, auto &outIndexes) {
     for (auto &it : outIndexes) // print relocs
       if (DynamicReloc *rel = &relSec->relocs[it])
         lld::outs() << it << ":\t" << rel->inputSec->name << " + 0x"
@@ -632,13 +636,13 @@ template <typename ELFT> void AdltWriter::traceRelocs() {
   for (auto *file : adltCtx->sharedFilesExtended)
     if (auto *soFile = adltCtx->getSoExt<ELFT>(file)) {
       lld::outs() << soFile->soName << ":\n";
-      lld::outs() << "Dyn relocs (" << soFile->dynRelIndexes.size() << ")";
-      printIndexes(soFile->dynRelIndexes);
-      printRelocTable(mainPart->relaDyn.get(), soFile->dynRelIndexes);
+      lld::outs() << ".rela.dyn relocs (" << soFile->relaDynIndexes.size() << ")";
+      printIndexes(soFile->relaDynIndexes);
+      printRelaTable(mainPart->relaDyn.get(), soFile->relaDynIndexes);
 
-      lld::outs() << "Plt relocs (" << soFile->pltRelIndexes.size() << ")";
-      printIndexes(soFile->pltRelIndexes);
-      printRelocTable(in.relaPlt.get(), soFile->pltRelIndexes);
+      lld::outs() << ".rela.plt relocs (" << soFile->relaPltIndexes.size() << ")";
+      printIndexes(soFile->relaPltIndexes);
+      printRelaTable(in.relaPlt.get(), soFile->relaPltIndexes);
     }
 }
 

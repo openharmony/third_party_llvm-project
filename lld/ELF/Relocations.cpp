@@ -444,21 +444,19 @@ public:
 
   SharedFileExtended<ELFT> *getSoExt() { return file; }
 
-  Symbol &getSymbol(uint32_t idx) { return file->getSymbol(idx, fromDynamic); }
+  Symbol &getSymbol(unsigned idx) { return file->getSymbol(idx, fromDynamic); }
 
   void process(Relocation *r);
   void trackGotPlt(Symbol *sym);
-  void trackDynReloc();
+  void trackRelatives();
+  void trackDynamics();
 
-  unsigned getDynamicRelocsCount();
-  bool isRelr() { return config->adlt && relSecType == SHT_RELR; }
   bool toProcessAux = false;
 
 private:
   SharedFileExtended<ELFT> *file = nullptr;
   bool fromDynamic = false;
   InputSectionBase &sec;
-  uint32_t relSecType = SHT_NULL;
 };
 
 template <class ELFT>
@@ -466,16 +464,14 @@ void AdltRelocationScanner<ELFT>::trackGotPlt(Symbol *sym) {
   adltCtx->gotPltInfo[sym].push_back(file->orderIdx);
 }
 
-template <class ELFT>
-void AdltRelocationScanner<ELFT>::trackDynReloc() {
-  file->dynRelIndexes.insert(getDynamicRelocsCount() - 1);
+template <class ELFT> void AdltRelocationScanner<ELFT>::trackRelatives() {
+  auto count = mainPart->relaDyn->relocs.size();
+  file->relaDynIndexes.insert(count - 1);
 }
 
-template <class ELFT>
-unsigned AdltRelocationScanner<ELFT>::getDynamicRelocsCount() {
-  auto currentSize = isRelr() ? mainPart->relrDyn->relocs.size()
-                              : mainPart->relaDyn->relocs.size();
-  return currentSize;
+template <class ELFT> void AdltRelocationScanner<ELFT>::trackDynamics() {
+  auto count = mainPart->relaDyn->relocs.size();
+  file->relaDynIndexes.insert(count - 1);
 }
 // OHOS_LOCAL end
 
@@ -508,10 +504,6 @@ private:
   void processAux(RelExpr expr, RelType type, uint64_t offset, Symbol &sym,
                   int64_t addend) const;
   template <class ELFT, class RelTy> void scanOne(RelTy *&i);
-
-  // ADLT
-  template <class ELFT, class RelTy>
-  void processForADLT(const RelTy &rel, Relocation *r, bool fromDynamic);
 };
 } // namespace
 
@@ -1379,9 +1371,8 @@ void AdltRelocationScanner<ELFT>::process(Relocation *r) {
     r->sym = d;
     r->addend -= d->section->address + d->value;
     addRelativeReloc(secWhere, r->offset, *r->sym, r->addend, r->expr,
-                     r->type);
-    assert(getDynamicRelocsCount());
-    trackDynReloc();
+                      r->type);
+    trackRelatives();
     return;
   }
   case R_AARCH64_GLOB_DAT:
@@ -1406,7 +1397,7 @@ void AdltRelocationScanner<ELFT>::process(Relocation *r) {
       sec.getPartition().relaDyn->addSymbolReloc(r->type, secWhere,
                                                  r->offset, *r->sym, r->addend,
                                                  r->type);
-      trackDynReloc();
+      trackDynamics();
       return;
     }
     sec.relocations.push_back(*r);
@@ -1473,10 +1464,10 @@ void AdltRelocationScanner<ELFT>::process(Relocation *r) {
 
 template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
   const RelTy &rel = *i;
-  uint32_t symIndex = rel.getSymbol(config->isMips64EL);
   std::unique_ptr<AdltRelocationScanner<ELFT>> adltScanner = nullptr;
   if (config->adlt)
     adltScanner = std::make_unique<AdltRelocationScanner<ELFT>>(sec);
+  uint32_t symIndex = rel.getSymbol(config->isMips64EL);
   Symbol &sym = config->adlt
                     ? adltScanner->getSymbol(symIndex)
                     : sec.getFile<ELFT>()->getSymbol(symIndex);
@@ -1729,11 +1720,6 @@ void RelocationScanner::scan(ArrayRef<RelTy> rels) {
 
 template <class ELFT> void elf::scanRelocations(InputSectionBase &s) {
   RelocationScanner scanner(s);
-  if (config->adlt) {
-    bool isDebug = false;
-    if (isDebug)
-      lld::outs() << s.file->getName().str() + ": " + s.name.str() + '\n';
-  }
   const RelsOrRelas<ELFT> rels = s.template relsOrRelas<ELFT>();
   if (rels.areRelocsRel())
     scanner.template scan<ELFT>(rels.rels);
@@ -1829,8 +1815,9 @@ template <class ELFT> static void addGotPltIndex(Symbol *s, bool isPlt) {
   for (auto &orderId : vec) {
     auto *soFile = adltCtx->getSoExt<ELFT>(orderId);
     auto &entries = isPlt ? in.relaPlt->relocs : mainPart->relaDyn->relocs;
-    auto &output = isPlt ? soFile->pltRelIndexes : soFile->dynRelIndexes;
-    output.insert(entries.size() - 1);
+    auto &output = isPlt ? soFile->relaPltIndexes : soFile->relaDynIndexes;
+    auto index = entries.size() - 1;
+    output.insert(index);
   }
 }
 } // namespace adlt
@@ -1891,7 +1878,8 @@ void elf::postScanRelocations() {
       mainPart->relaDyn->addAddendOnlyRelocIfNonPreemptible(
           target->tlsDescRel, *in.got, in.got->getTlsDescOffset(sym), sym,
           target->tlsDescRel);
-      invokeELFT(adlt::addGotPltIndex, &sym, false);
+      if (config->adlt)
+        invokeELFT(adlt::addGotPltIndex, &sym, false);
     }
     if (sym.needsTlsGd) {
       in.got->addDynTlsEntry(sym);

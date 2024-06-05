@@ -24,31 +24,29 @@ class InputFile;
 class Symbol;
 struct PhdrEntry;
 
-// class SharedFileExtended; // TODO: inherit from SharedFile
 template <typename ELFT> class SharedFileExtended;
 struct PhdrEntry;
 
 class AdltCtx {
 public:
-  // TODO: inherit from SharedFile
-  // llvm::SmallVector<SharedFileExtended *, 0> sharedFilesExtended;
-  llvm::SmallVector<ELFFileBase *, 0> sharedFilesExtended;
+  llvm::SmallVector<ELFFileBase *> sharedFilesExtended;
 
-  void checkDuplicatedSymbols();
+  void scanDuplicatedSymbols();
 
   template <class ELFT> void buildSymbolsHist(std::vector<InputFile *> &files);
 
   template <class ELFT> SharedFileExtended<ELFT> *getSoExt(InputFile *file);
-  template <class ELFT> SharedFileExtended<ELFT> *getSoExt(unsigned orderId);
+  template <class ELFT> SharedFileExtended<ELFT> *getSoExt(size_t orderId);
 
   llvm::SetVector<const PhdrEntry *> commonProgramHeaders;
+
   bool withCfi = false;
+
   // From input .rela.dyn, .rela.plt:
   // Keep input library indexes that are needed for got/plt symbol
   llvm::DenseMap<const Symbol *, llvm::SmallVector<unsigned, 0>>
       gotPltInfo; // sym, soFile->orderIdx array;
 
-  // Store duplicate symbols (only defined).
   llvm::DenseMap<llvm::CachedHashStringRef, unsigned>
       symNamesHist; // hash, count usages
   llvm::DenseSet<llvm::CachedHashStringRef> duplicatedSymNames;

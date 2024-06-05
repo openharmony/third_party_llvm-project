@@ -386,7 +386,7 @@ struct DuplicateSymbol {
 
 struct Ctx {
   SmallVector<std::unique_ptr<MemoryBuffer>> memoryBuffers;
-  SmallVector<ELFFileBase *, 0> objectFiles;
+  SmallVector<ELFFileBase *> objectFiles;
   SmallVector<SharedFile *, 0> sharedFiles;
   SmallVector<BinaryFile *, 0> binaryFiles;
   SmallVector<BitcodeFile *, 0> bitcodeFiles;

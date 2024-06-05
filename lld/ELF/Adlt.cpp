@@ -25,7 +25,7 @@ SharedFileExtended<ELFT> *AdltCtx::getSoExt(InputFile *file) {
 }
 
 template <class ELFT>
-SharedFileExtended<ELFT> *AdltCtx::getSoExt(unsigned orderId) {
+SharedFileExtended<ELFT> *AdltCtx::getSoExt(size_t orderId) {
   assert(orderId < sharedFilesExtended.size());
   return cast<SharedFileExtended<ELFT>>(sharedFilesExtended[orderId]);
 }
@@ -38,7 +38,7 @@ void AdltCtx::buildSymbolsHist(std::vector<InputFile *> &files) {
   assert(!symNamesHist.empty());
 }
 
-void AdltCtx::checkDuplicatedSymbols() {
+void AdltCtx::scanDuplicatedSymbols() {
   assert(!symNamesHist.empty());
   for (auto entry : symNamesHist)
     if (entry.second > 1)
@@ -52,10 +52,10 @@ template SharedFileExtended<ELF32BE> *AdltCtx::getSoExt<ELF32BE>(InputFile *);
 template SharedFileExtended<ELF64LE> *AdltCtx::getSoExt<ELF64LE>(InputFile *);
 template SharedFileExtended<ELF64BE> *AdltCtx::getSoExt<ELF64BE>(InputFile *);
 
-template SharedFileExtended<ELF32LE> *AdltCtx::getSoExt<ELF32LE>(unsigned);
-template SharedFileExtended<ELF32BE> *AdltCtx::getSoExt<ELF32BE>(unsigned);
-template SharedFileExtended<ELF64LE> *AdltCtx::getSoExt<ELF64LE>(unsigned);
-template SharedFileExtended<ELF64BE> *AdltCtx::getSoExt<ELF64BE>(unsigned);
+template SharedFileExtended<ELF32LE> *AdltCtx::getSoExt<ELF32LE>(size_t);
+template SharedFileExtended<ELF32BE> *AdltCtx::getSoExt<ELF32BE>(size_t);
+template SharedFileExtended<ELF64LE> *AdltCtx::getSoExt<ELF64LE>(size_t);
+template SharedFileExtended<ELF64BE> *AdltCtx::getSoExt<ELF64BE>(size_t);
 
 template void AdltCtx::buildSymbolsHist<ELF32LE>(std::vector<InputFile *> &);
 template void AdltCtx::buildSymbolsHist<ELF32BE>(std::vector<InputFile *> &);

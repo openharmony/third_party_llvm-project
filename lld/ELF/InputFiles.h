@@ -202,8 +202,8 @@ public:
   }
 
   // OHOS_LOCAL begin
-  virtual void buildSymbolsHist() {}
-  virtual bool isValidSection(InputSectionBase *s) { return true; }
+  virtual void buildSymbolsHist();
+  virtual bool isValidSection(InputSectionBase *s) const;
   // OHOS_LOCAL end
 
 protected:
@@ -234,6 +234,10 @@ public:
   }
 
   ObjFile(MemoryBufferRef m, StringRef archiveName) : ELFFileBase(ObjKind, m) {
+    this->archiveName = archiveName;
+  }
+  ObjFile(Kind k, MemoryBufferRef m, StringRef archiveName) // OHOS_LOCAL
+      : ELFFileBase(k, m) {
     this->archiveName = archiveName;
   }
   virtual ~ObjFile() {}
@@ -292,13 +296,15 @@ public:
   void initializeLocalSymbols();
   virtual void postParse();
 
-  // OHOS_LOCAL
+  // OHOS_LOCAL begin
+  // TODO: move to SharedFileExtended
   virtual StringRef getUniqueName(StringRef origName) const;
 
 protected:
-  // OHOS_LOCAL
-  llvm::DenseMap<unsigned, unsigned> sectionsMap;       // offset, orderIdx
-  llvm::DenseMap<unsigned, unsigned> definedSymbolsMap; // abs offset, orderIdx
+  // TODO: move to SharedFileExtended
+  llvm::DenseMap<uint32_t, size_t> sectionsMap;       // offset, orderIdx
+  llvm::DenseMap<uint32_t, size_t> definedSymbolsMap; // abs offset, orderIdx
+  // OHOS_LOCAL end
 
 private:
   void initializeSections(bool ignoreComdats,
@@ -400,31 +406,33 @@ public:
     return f->kind() == InputFile::SharedKind;
   }
   void buildSymbolsHist() override;
-  bool isValidSection(InputSectionBase *s) override;
+  bool isValidSection(InputSectionBase *s) const override;
   bool isDynamicSection(InputSectionBase *s) const;
 
   void parse(bool ignoreComdats = false) override;
   void postParse() override;
 
-  Defined &getDefinedLocalSym(unsigned offset);
+  Defined &getDefinedLocalSym(uint64_t offset);
 
-  InputSectionBase &getSection(unsigned offset);
-  InputSectionBase &getSectionByOrder(unsigned idx);
-  InputSectionBase *findSection(unsigned offset);
+  InputSectionBase &getSection(uint64_t offset);
+  InputSectionBase &getSectionByOrder(size_t idx);
+  InputSectionBase *findSection(uint64_t offset);
 
   template <typename RelT> Symbol &getRelocTargetSym(const RelT &rel) {
     uint32_t symIndex = rel.getSymbol(config->isMips64EL);
     return getSymbol(symIndex, false);
   }
 
-  Symbol &getDynamicSymbol(uint32_t symbolIndex) const;
-  Symbol &getLocalSymbol(uint32_t symbolIndex) const;
-  Symbol &getSymbol(uint32_t symbolIndex, bool fromDynamic);
+  Symbol &getDynamicSymbol(size_t symbolIndex) const;
+  Symbol &getLocalSymbol(size_t symbolIndex) const;
+  Symbol &getSymbol(size_t symbolIndex, bool fromDynamic);
+
+  ArrayRef<Symbol *> getLocalSymbols() override;
 
 
 public:
   // the input order of the file as it presented in ADLT image
-  size_t orderIdx;
+  size_t orderIdx = 0;
   int dynSymSecIdx = 0;
   int symTabSecIdx = 0;
   int symTabShndxSecIdx = 0;
@@ -440,8 +448,10 @@ public:
   llvm::SetVector<const PhdrEntry*> programHeaders;
 
   // From input .rela.dyn, .rela.plt:
-  llvm::SetVector<uint32_t> dynRelIndexes;
-  llvm::SetVector<uint32_t> pltRelIndexes;
+  llvm::SetVector<uint32_t>
+      relaDynIndexes; // If not .relr.dyn exists, contains only Got/Abs/Tls
+                      // relocs. Otherwise contains relative relocs also.
+  llvm::SetVector<uint32_t> relaPltIndexes; // .got.plt relocs
 
   // SharedFile compability layer:
   // This is actually a vector of Elf_Verdef pointers.
@@ -460,6 +470,7 @@ public:
   // parsed. Only filled for `--no-allow-shlib-undefined`.
   SmallVector<Symbol *, 0> requiredSymbols;
 
+  // TODO: add unique for output only
   StringRef getUniqueName(StringRef origName) const override;
 
 private:
