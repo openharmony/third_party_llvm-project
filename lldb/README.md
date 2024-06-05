@@ -3,7 +3,7 @@
 # 1. Introduction to LLDB
 
 
-Low Lever Debugger (LLDB) is a next-generation high-performance debugger. It is developed based on [LLVM15.0.4](https://github.com/llvm/llvm-project/releases/tag/llvmorg-15.0.4) and supports debugging on the home screen and OpenHarmony devices or emulators.
+Low Level Debugger (LLDB) is a next-generation high-performance debugger. It is developed based on [LLVM15.0.4](https://github.com/llvm/llvm-project/releases/tag/llvmorg-15.0.4) and supports debugging on the home screen and OpenHarmony devices or emulators.
 
 > **NOTE**
 >
@@ -19,12 +19,6 @@ LLDB is in the following path of the SDK: **\ohos-sdk\\\[system]\native\llvm.
 **Usage example:**
 
 The following uses the Windows platform as an example:
-
-- Method 1
-
-  Obtain the SDK for Windows, place `lldb.exe`, `liblldb.dll`, and `libpython3.10.dll` in the `**\ohos-sdk\windows\native\llvm\bin` directory on a disk, and run `lldb.exe`.
-
-- Method 2
 
   Decompress the SDK and run `lldb.exe` in the `**\ohos-sdk\windows\native\llvm\bin` directory.
 
@@ -47,6 +41,7 @@ During remote debugging, `lldb-server` and `lldb` must be used together.
 > | windows | Tools for the Windows platform. |
 > | linux | Tools for the Linux platform. |
 > | darwin | Tools for the macOS platform. |
+> | ohos | Tools for the OHOS platform. |
 >
 > The tools for the macOS platform is further classified into the x86_64 tools and ARM64 tools. `mac-sdk-full` and `mac-sdk-public` apply to the x86_64 architecture. `mac-sdk-m1-full` and `mac-sdk-m1-public` apply to the ARM64 architecture.
 >
