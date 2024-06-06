@@ -2852,12 +2852,6 @@ def main():
 
     if build_config.build_only:
         sysroot_composer.setup_cmake_platform(llvm_install)
-        # temporary hide cmake checks for sdk-partly
-        lib_cmake = os.path.join(buildtools_path, 'clang/ohos', build_utils.use_platform(),
-            'clang-%s' % build_config.CLANG_VERSION, "lib/cmake")
-        lib_cmake_tmp = f"{lib_cmake}_tmp"
-        shutil.move(lib_cmake, lib_cmake_tmp)
-
         if "musl" in build_config.build_only_libs:
             # change compiller path to prebuilds in clang.gni file
             clang_gni = os.path.join(build_config.REPOROOT_DIR, "build", "config", "clang", "clang.gni")
@@ -2876,17 +2870,25 @@ def main():
             shutil.move(clang_gni_tmp, clang_gni)
 
         if "compiler-rt" in build_config.build_only_libs:
+            # temporary hide cmake checks
+            lib_cmake = os.path.join(build_config.REPOROOT_DIR, 'prebuilts/clang/ohos', build_utils.use_platform(),
+                'clang-%s' % build_config.CLANG_VERSION, "lib/cmake")
+            lib_cmake_tmp = f"{lib_cmake}_tmp"
+            if os.path.exists(lib_cmake):
+                shutil.move(lib_cmake, lib_cmake_tmp)
+            # build compiler-rt
             assert os.path.exists(os.path.join(build_config.REPOROOT_DIR, "out", "sysroot")), "Error! Compiler-rt require musl!"
             for (_, target) in configs:
                 llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'crts', True, False)
                 llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'crts', False, False)
+            # return original lib/cmake dir
+            if os.path.exists(lib_cmake_tmp):
+                shutil.move(lib_cmake_tmp, lib_cmake)
 
         if "libcxx" in build_config.build_only_libs:
             assert os.path.exists(os.path.join(build_config.REPOROOT_DIR, "out", "sysroot")), "Error! Libcxx require musl!"
             for (_, target) in configs:
                 llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'runtimes', False, False)
-        # return original lib/cmake dir
-        shutil.move(lib_cmake_tmp, lib_cmake)
 
     windows_python_builder = None
 
