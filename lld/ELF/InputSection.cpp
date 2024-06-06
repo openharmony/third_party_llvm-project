@@ -347,10 +347,9 @@ void InputSection::copyRelocations(uint8_t *buf, ArrayRef<RelTy> rels) {
 
   for (const RelTy &rel : rels) {
     RelType type = rel.getType(config->isMips64EL);
-    const ObjFile<ELFT> *file =
-        config->adlt ? getSharedFile<ELFT>() : getFile<ELFT>();
+    const ObjFile<ELFT> *file = getFile<ELFT>();
     Symbol &sym = config->adlt
-                      ? getSharedFile<ELFT>()->getRelocTargetSymADLT(rel, *sec)
+                      ? getSoExt<ELFT>()->getRelocTargetSym(rel)
                       : file->getRelocTargetSym(rel);
 
     auto *p = reinterpret_cast<typename ELFT::Rela *>(buf);
@@ -847,8 +846,7 @@ void InputSection::relocateNonAlloc(uint8_t *buf, ArrayRef<RelTy> rels) {
     if (!RelTy::IsRela)
       addend += target.getImplicitAddend(bufLoc, type);
 
-    Symbol &sym = config->adlt ? getSharedFile<ELFT>()->getSymbolFromElfSymTab(
-                                     rel.getSymbol(config->isMips64EL))
+    Symbol &sym = config->adlt ? getSoExt<ELFT>()->getRelocTargetSym(rel)
                                : getFile<ELFT>()->getRelocTargetSym(rel);
     if (config->adlt) { // TODO improve
       switch (type) {
@@ -963,9 +961,8 @@ static void relocateNonAllocForRelocatable(InputSection *sec, uint8_t *buf) {
 
 template <class ELFT>
 void InputSectionBase::relocate(uint8_t *buf, uint8_t *bufEnd) {
-  if (flags & SHF_EXECINSTR &&
-      (config->adlt ? LLVM_UNLIKELY(getSharedFile<ELFT>()->splitStack)
-                    : LLVM_UNLIKELY(getFile<ELFT>()->splitStack)))
+  if (!config->adlt && flags & SHF_EXECINSTR &&
+      LLVM_UNLIKELY(getFile<ELFT>()->splitStack))
     adjustSplitStackFunctionPrologues<ELFT>(buf, bufEnd);
 
   if (flags & SHF_ALLOC) {

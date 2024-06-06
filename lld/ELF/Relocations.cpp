@@ -42,6 +42,7 @@
 
 #include "Relocations.h"
 #include "Config.h"
+#include "Adlt.h"
 #include "InputFiles.h"
 #include "LinkerScript.h"
 #include "OutputSections.h"
@@ -433,6 +434,47 @@ private:
   size_t i = 0;
 };
 
+
+// OHOS_LOCAL begin
+template <class ELFT> class AdltRelocationScanner {
+public:
+  AdltRelocationScanner(InputSectionBase &isec)
+      : file(adltCtx->getSoExt<ELFT>(isec.file)),
+        fromDynamic(file->isDynamicSection(&isec)), sec(isec) {}
+
+  SharedFileExtended<ELFT> *getSoExt() { return file; }
+
+  Symbol &getSymbol(unsigned idx) { return file->getSymbol(idx, fromDynamic); }
+
+  void process(Relocation *r);
+  void trackGotPlt(Symbol *sym);
+  void trackRelatives();
+  void trackDynamics();
+
+  bool toProcessAux = false;
+
+private:
+  SharedFileExtended<ELFT> *file = nullptr;
+  bool fromDynamic = false;
+  InputSectionBase &sec;
+};
+
+template <class ELFT>
+void AdltRelocationScanner<ELFT>::trackGotPlt(Symbol *sym) {
+  adltCtx->gotPltInfo[sym].push_back(file->orderIdx);
+}
+
+template <class ELFT> void AdltRelocationScanner<ELFT>::trackRelatives() {
+  auto count = mainPart->relaDyn->relocs.size();
+  file->relaDynIndexes.insert(count - 1);
+}
+
+template <class ELFT> void AdltRelocationScanner<ELFT>::trackDynamics() {
+  auto count = mainPart->relaDyn->relocs.size();
+  file->relaDynIndexes.insert(count - 1);
+}
+// OHOS_LOCAL end
+
 // This class encapsulates states needed to scan relocations for one
 // InputSectionBase.
 class RelocationScanner {
@@ -458,16 +500,10 @@ private:
   int64_t computeAddend(const RelTy &rel, RelExpr expr, bool isLocal) const;
   bool isStaticLinkTimeConstant(RelExpr e, RelType type, const Symbol &sym,
                                 uint64_t relOff) const;
+  void processAux(Relocation &r); // OHOS_LOCAL
   void processAux(RelExpr expr, RelType type, uint64_t offset, Symbol &sym,
                   int64_t addend) const;
   template <class ELFT, class RelTy> void scanOne(RelTy *&i);
-
-  // ADLT
-  template <class ELFT, class RelTy>
-  void processForADLT(const RelTy &rel, Relocation *r, bool fromDynamic);
-
-  template <class RelTy>
-  void tracePushRelocADLT(InputSectionBase &isec, Relocation &r) const;
 };
 } // namespace
 
@@ -1036,6 +1072,11 @@ bool RelocationScanner::isStaticLinkTimeConstant(RelExpr e, RelType type,
 // sections. Given that it is ro, we will need an extra PT_LOAD. This
 // complicates things for the dynamic linker and means we would have to reserve
 // space for the extra PT_LOAD even if we end up not using it.
+
+void RelocationScanner::processAux(Relocation &r) { // OHOS_LOCAL
+  processAux(r.expr, r.type, r.offset, *r.sym, r.addend);
+}
+
 void RelocationScanner::processAux(RelExpr expr, RelType type, uint64_t offset,
                                    Symbol &sym, int64_t addend) const {
   // If the relocation is known to be a link-time constant, we know no dynamic
@@ -1304,41 +1345,9 @@ static unsigned handleTlsRelocation(RelType type, Symbol &sym,
   return 0;
 }
 
+// OHOS_LOCAL begin
 template <class ELFT>
-static void trackDynRelocAdlt(SharedFileExtended<ELFT> *soFile) {
-  soFile->dynRelIndexes.insert(mainPart->relaDyn->relocs.size() - 1);
-}
-
-template <class ELFT>
-static void trackGotPltAdlt(Symbol *sym, SharedFileExtended<ELFT> *soFile) {
-  ctx->adlt.gotPltInfo[sym].push_back(soFile->orderIdx);
-}
-
-// ADLT BEGIN
-template <class ELFT>
-void RelocationScanner::tracePushRelocADLT(InputSectionBase &isec,
-                                           Relocation &r) const {
-  auto file = sec.getSharedFile<ELFT>();
-  auto fullOffset = isec.address + r.offset;
-  lld::outs() << "[ADLT] Before push: [0x" + utohexstr(fullOffset) +
-                     "] type: " + toString(r.type) +
-                     " expr: " + std::to_string(r.expr) + " offset: 0x" +
-                     utohexstr(r.offset) + " addend: 0x" + utohexstr(r.addend) +
-                     ".\n";
-  lld::outs() << "section where: ";
-  file->traceSection(isec);
-
-  lld::outs() << "r->sym: ";
-  file->traceSymbol(*r.sym);
-  lld::outs() << "\n";
-}
-
-template <class ELFT, class RelTy>
-void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
-                                       bool fromDynamic) {
-  auto file = sec.getSharedFile<ELFT>();
-  bool isDebug = false;
-
+void AdltRelocationScanner<ELFT>::process(Relocation *r) {
   /*if (r->offset == 0x21F) // debug hint
     isDebug = true;
   /*if (r->type == R_AARCH64_ABS64 &&
@@ -1346,40 +1355,37 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
     isDebug = true;*/
 
   // parse offset (where)
-  InputSectionBase *secWhere = file->findInputSection(r->offset);
-  assert(secWhere && "not found!");
+  InputSectionBase &secWhere =
+      (sec.type != SHT_NULL) ? sec : file->getSection(r->offset);
 
   // process offset
-  r->offset -= fromDynamic ? secWhere->address : sec.address;
+  r->offset -= secWhere.address;
   assert(r->type);
-
-  if (isDebug)
-    tracePushRelocADLT<ELFT>(*secWhere, *r);
 
   // resolve relocs
   switch (r->type) {
   // dyn relocs
   case R_AARCH64_RELATIVE: {
-    Defined *d = file->findDefinedSymbol(r->addend);
+    Defined *d = &file->getDefinedLocalSym(r->addend);
     assert(d && "R_AARCH64_RELATIVE: r->sym not found by addend!");
     r->sym = d;
     r->addend -= d->section->address + d->value;
-    addRelativeReloc(*secWhere, r->offset, *r->sym, r->addend, r->expr,
-                     r->type);
-    trackDynRelocAdlt(file);
+    addRelativeReloc(secWhere, r->offset, *r->sym, r->addend, r->expr,
+                      r->type);
+    trackRelatives();
     return;
   }
   case R_AARCH64_GLOB_DAT:
     assert(r->sym->exportDynamic);
     if (!r->sym->needsGot)
       r->sym->needsGot = 1;
-    trackGotPltAdlt(r->sym, file);
+    trackGotPlt(r->sym);
     return;
   case R_AARCH64_JUMP_SLOT:
     assert(r->sym->exportDynamic);
     if (r->sym->isUndefined() && !r->sym->needsPlt)
       r->sym->needsPlt = 1;
-    trackGotPltAdlt(r->sym, file);
+    trackGotPlt(r->sym);
     return;
   // abs relocs
   case R_AARCH64_ABS32:
@@ -1388,10 +1394,10 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
   case R_AARCH64_ABS64:
     if (fromDynamic) {
       assert(r->sym->exportDynamic);
-      sec.getPartition().relaDyn->addSymbolReloc(target.symbolicRel, *secWhere,
+      sec.getPartition().relaDyn->addSymbolReloc(r->type, secWhere,
                                                  r->offset, *r->sym, r->addend,
                                                  r->type);
-      trackDynRelocAdlt(file);
+      trackDynamics();
       return;
     }
     sec.relocations.push_back(*r);
@@ -1403,7 +1409,7 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
   case R_AARCH64_LDST128_ABS_LO12_NC:
   case R_AARCH64_PREL32:
   case R_AARCH64_PREL64:
-    processAux(r->expr, r->type, r->offset, *r->sym, r->addend);
+    toProcessAux = true;
     return;
   // plt relocs
   case R_AARCH64_CALL26:
@@ -1421,24 +1427,21 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
     return;
   case R_AARCH64_ADR_GOT_PAGE:
     if (r->sym->isDefined() && !r->sym->needsGot) {
-      if (isDebug)
-        lld::outs() << "[ADLT] R_AARCH64_ADR_GOT_PAGE: sym not in GOT! ";
-      r->expr = R_PC; // prev: R_AARCH64_GOT_PAGE_PC || R_AARCH64_GOT_PAGE ||
-                      // R_GOT || R_GOT_PC
-      // TODO: replace reloc R_AARCH64_ADR_GOT_PAGE
+      // prev: R_AARCH64_GOT_PAGE_PC || R_AARCH64_GOT_PAGE || R_GOT || R_GOT_PC
+      r->expr = R_PC;
       sec.relocations.push_back(*r);
       return;
     }
     LLVM_FALLTHROUGH;
   case R_AARCH64_LD64_GOT_LO12_NC:
   case R_AARCH64_LD64_GOTPAGE_LO15:
-    processAux(r->expr, r->type, r->offset, *r->sym, r->addend);
+    toProcessAux = true;
     return;
   // tls relocs
   case R_AARCH64_TLSDESC:
     if (fromDynamic && !r->sym->needsTlsDesc)
       r->sym->needsTlsDesc = 1;
-    trackDynRelocAdlt(file);
+    trackGotPlt(r->sym);
     return;
   case R_AARCH64_TLSDESC_CALL:
   case R_AARCH64_TLS_TPREL64:
@@ -1461,14 +1464,13 @@ void RelocationScanner::processForADLT(const RelTy &rel, Relocation *r,
 
 template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
   const RelTy &rel = *i;
-  uint32_t symIndex = rel.getSymbol(config->isMips64EL);
-  bool fromDynamic = false;
+  std::unique_ptr<AdltRelocationScanner<ELFT>> adltScanner = nullptr;
   if (config->adlt)
-    fromDynamic = sec.getSharedFile<ELFT>()->isDynamicSection(sec);
-  Symbol &sym =
-      config->adlt
-          ? sec.getSharedFile<ELFT>()->getSymbolADLT(symIndex, fromDynamic)
-          : sec.getFile<ELFT>()->getSymbol(symIndex);
+    adltScanner = std::make_unique<AdltRelocationScanner<ELFT>>(sec);
+  uint32_t symIndex = rel.getSymbol(config->isMips64EL);
+  Symbol &sym = config->adlt
+                    ? adltScanner->getSymbol(symIndex)
+                    : sec.getFile<ELFT>()->getSymbol(symIndex);
   RelType type;
 
   // Deal with MIPS oddity.
@@ -1502,7 +1504,9 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
 
   if (config->adlt) {
     Relocation r = {expr, type, offset, addend, &sym};
-    processForADLT<ELFT>(rel, &r, fromDynamic);
+    adltScanner->process(&r);
+    if (adltScanner->toProcessAux)
+      processAux(r);
     return;
   }
 
@@ -1716,11 +1720,6 @@ void RelocationScanner::scan(ArrayRef<RelTy> rels) {
 
 template <class ELFT> void elf::scanRelocations(InputSectionBase &s) {
   RelocationScanner scanner(s);
-  if (config->adlt) {
-    bool isDebug = false;
-    if (isDebug)
-      lld::outs() << s.file->getName().str() + ": " + s.name.str() + '\n';
-  }
   const RelsOrRelas<ELFT> rels = s.template relsOrRelas<ELFT>();
   if (rels.areRelocsRel())
     scanner.template scan<ELFT>(rels.rels);
@@ -1807,15 +1806,25 @@ static bool handleNonPreemptibleIfunc(Symbol &sym) {
   return true;
 }
 
-template <class ELFT> static void addGotPltIndexAdlt(Symbol *s, bool isPlt) {
-  auto &vec = ctx->adlt.gotPltInfo[s];
-  for (auto &it : vec) {
-    auto *soFile = cast<SharedFileExtended<ELFT>>(ctx->sharedFilesExtended[it]);
+// OHOS_LOCAL begin
+namespace lld {
+namespace elf {
+namespace adlt {
+template <class ELFT> static void addGotPltIndex(Symbol *s, bool isPlt) {
+  auto &vec = adltCtx->gotPltInfo[s];
+  for (auto &orderId : vec) {
+    auto *soFile = adltCtx->getSoExt<ELFT>(orderId);
     auto &entries = isPlt ? in.relaPlt->relocs : mainPart->relaDyn->relocs;
-    auto &output = isPlt ? soFile->pltRelIndexes : soFile->dynRelIndexes;
-    output.insert(entries.size() - 1);
+    auto &output = isPlt ? soFile->relaPltIndexes : soFile->relaDynIndexes;
+    auto index = entries.size() - 1;
+    output.insert(index);
   }
 }
+} // namespace adlt
+} // namespace elf
+} // namespace lld
+
+// OHOS_LOCAL end
 
 void elf::postScanRelocations() {
   auto fn = [](Symbol &sym) {
@@ -1829,12 +1838,12 @@ void elf::postScanRelocations() {
     if (sym.needsGot) {
       addGotEntry(sym);
       if (config->adlt)
-        invokeELFT(addGotPltIndexAdlt, &sym, false);
+        invokeELFT(adlt::addGotPltIndex, &sym, false);
     }
     if (sym.needsPlt) {
       addPltEntry(*in.plt, *in.gotPlt, *in.relaPlt, target->pltRel, sym);
       if (config->adlt)
-        invokeELFT(addGotPltIndexAdlt, &sym, true);
+        invokeELFT(adlt::addGotPltIndex, &sym, true);
     }
     if (sym.needsCopy) {
       if (sym.isObject()) {
@@ -1869,7 +1878,8 @@ void elf::postScanRelocations() {
       mainPart->relaDyn->addAddendOnlyRelocIfNonPreemptible(
           target->tlsDescRel, *in.got, in.got->getTlsDescOffset(sym), sym,
           target->tlsDescRel);
-      invokeELFT(addGotPltIndexAdlt, &sym, false);
+      if (config->adlt)
+        invokeELFT(adlt::addGotPltIndex, &sym, false);
     }
     if (sym.needsTlsGd) {
       in.got->addDynTlsEntry(sym);
@@ -1923,7 +1933,7 @@ void elf::postScanRelocations() {
 
   // Local symbols may need the aforementioned non-preemptible ifunc and GOT
   // handling. They don't need regular PLT.
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = config->adlt ? adltCtx->sharedFilesExtended : ctx->objectFiles;
   for (ELFFileBase *file : files)
     for (Symbol *sym : file->getLocalSymbols())
       fn(*sym);

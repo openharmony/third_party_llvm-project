@@ -34,8 +34,6 @@ class BinaryFile;
 class BitcodeFile;
 class ELFFileBase;
 class SharedFile;
-template <typename ELFT> class SharedFileExtended;
-struct PhdrEntry; // OHOS_LOCAL
 class InputSectionBase;
 class Symbol;
 
@@ -388,9 +386,8 @@ struct DuplicateSymbol {
 
 struct Ctx {
   SmallVector<std::unique_ptr<MemoryBuffer>> memoryBuffers;
-  SmallVector<ELFFileBase *, 0> objectFiles;
+  SmallVector<ELFFileBase *> objectFiles;
   SmallVector<SharedFile *, 0> sharedFiles;
-  SmallVector<ELFFileBase *, 0> sharedFilesExtended;
   SmallVector<BinaryFile *, 0> binaryFiles;
   SmallVector<BitcodeFile *, 0> bitcodeFiles;
   SmallVector<BitcodeFile *, 0> lazyBitcodeFiles;
@@ -409,23 +406,6 @@ struct Ctx {
   llvm::DenseMap<const Symbol *,
                  std::pair<const InputFile *, const InputFile *>>
       backwardReferences;
-
-  // OHOS_LOCAL begin
-  struct AdltCtx {
-    template <typename ELFT> SharedFileExtended<ELFT> *getSoExt(InputFile *file) {
-      return cast<SharedFileExtended<ELFT>>(file);
-    }
-
-    llvm::SetVector<const PhdrEntry *> commonProgramHeaders;
-    bool withCfi = false;
-    // From input .rela.dyn, .rela.plt:
-    // Keep input library indexes that are needed for got/plt symbol
-    llvm::DenseMap<const Symbol *, SmallVector<unsigned, 0>>
-        gotPltInfo; // sym, soFile->orderIdx array;
-    // Store duplicate symbols (only defined).
-    llvm::DenseSet<llvm::CachedHashStringRef> duplicatedSymNames;
-  } adlt;
-  // OHOS_LOCAL end
 };
 
 // The only instance of Ctx struct.

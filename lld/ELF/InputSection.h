@@ -17,6 +17,7 @@
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/TinyPtrVector.h"
 #include "llvm/Object/ELF.h"
+#include "Adlt.h"
 
 namespace lld {
 namespace elf {
@@ -138,8 +139,8 @@ public:
   }
 
   template <class ELFT>
-  SharedFileExtended<ELFT> *getSharedFile() const {
-    return cast_or_null<SharedFileExtended<ELFT>>(file);
+  SharedFileExtended<ELFT> *getSoExt() const {
+    return adltCtx->getSoExt<ELFT>(file);
   }
 
   // Used by --optimize-bb-jumps and RISC-V linker relaxation temporarily to

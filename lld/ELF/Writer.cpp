@@ -11,6 +11,7 @@
 #include "ARMErrataFix.h"
 #include "CallGraphSort.h"
 #include "Config.h"
+#include "Adlt.h"
 #include "InputFiles.h"
 #include "LinkerScript.h"
 #include "MapFile.h"
@@ -314,6 +315,7 @@ template <class ELFT> void elf::createSyntheticSections() {
   }
 
   if (config->adlt) {
+    assert(adltCtx && "ADLT: ctx not initialized!");
     in.adltStrTab = std::make_unique<StringTableSection>(".adlt.strtab", false);
     in.adltData = std::make_unique<adlt::AdltSection<ELFT>>(*in.adltStrTab);
     add(*in.adltStrTab);
@@ -526,7 +528,7 @@ template <class ELFT> void elf::createSyntheticSections() {
   in.iplt = std::make_unique<IpltSection>();
   add(*in.iplt);
 
-  if (config->andFeatures)
+  if (!config->adlt && config->andFeatures)
     add(*make<GnuPropertySection>());
 
   // .note.GNU-stack is always added when we are creating a re-linkable
@@ -570,8 +572,10 @@ InputSection *AdltWriter::getInputSection(OutputSection *sec) {
 }
 
 template <typename ELFT> void AdltWriter::checkPhdrs() {
-  for (auto *file : ctx->sharedFilesExtended)
-    if (auto *soFile = ctx->adlt.getSoExt<ELFT>(file))
+  assert(!adltCtx->commonProgramHeaders.empty() &&
+         "Common headers can't be empty!");
+  for (auto *file : adltCtx->sharedFilesExtended)
+    if (auto *soFile = adltCtx->getSoExt<ELFT>(file))
       assert(!soFile->programHeaders.empty() &&
              "ADLT: PHdr indexes can't be empty!");
 }
@@ -580,11 +584,11 @@ template <typename ELFT> void AdltWriter::checkRelocs() {
   assert(!mainPart->relaDyn->relocs.empty() && "ADLT: relaDyn can't be empty!");
   assert(!in.relaPlt->relocs.empty() && "ADLT: relaPlt can't be empty!");
 
-  for (auto *file : ctx->sharedFilesExtended)
-    if (auto *soFile = ctx->adlt.getSoExt<ELFT>(file)) {
-      assert(!soFile->dynRelIndexes.empty() &&
+  for (auto *file : adltCtx->sharedFilesExtended)
+    if (auto *soFile = adltCtx->getSoExt<ELFT>(file)) {
+      assert(!soFile->relaDynIndexes.empty() &&
              "ADLT: relaDyn indexes can't be empty!");
-      assert(!soFile->pltRelIndexes.empty() &&
+      assert(!soFile->relaPltIndexes.empty() &&
              "ADLT: relaPlt indexes can't be empty!");
     }
 }
@@ -592,17 +596,17 @@ template <typename ELFT> void AdltWriter::checkRelocs() {
 template <typename ELFT>
 void AdltWriter::trackPhdr(OutputSection *sec, PhdrEntry *phdr) {
   auto *isec = getInputSection(sec);
-  if (isec && isec->file)
-    if (auto *soFile = ctx->adlt.getSoExt<ELFT>(isec->file)) {
-      soFile->programHeaders.insert(phdr);
-      return;
-    }
-  ctx->adlt.commonProgramHeaders.insert(phdr);
+  if (isec && isec->file) {
+    isec->getSoExt<ELFT>()->programHeaders.insert(phdr);
+    return;
+  }
+  adltCtx->commonProgramHeaders.insert(phdr);
 }
 
 template <typename ELFT> void AdltWriter::traceRelocs() {
   lld::outs() << "[ADLT]\n";
-  lld::outs() << "Dyn relocs (" << mainPart->relaDyn->relocs.size() << ")\n";
+  auto dynRelsSize = mainPart->relaDyn->relocs.size();
+  lld::outs() << "Dyn relocs (" << dynRelsSize << ")\n";
   lld::outs() << "Plt relocs (" << in.relaPlt->relocs.size() << ")\n";
 
   auto printIndexes = [&](auto &vec) {
@@ -612,25 +616,33 @@ template <typename ELFT> void AdltWriter::traceRelocs() {
     lld::outs() << "\n";
   };
 
-  auto printRelocTable = [&](auto *relSec, auto &outIndexes) {
+  auto printSym = [&](Symbol *sym) {
+    if (sym->getName().empty() && sym->isSection()) {
+      Defined *d = cast<Defined>(sym);
+      return d->section->name;
+    }
+    return sym->getName();
+  };
+
+  auto printRelaTable = [&](auto *relSec, auto &outIndexes) {
     for (auto &it : outIndexes) // print relocs
       if (DynamicReloc *rel = &relSec->relocs[it])
         lld::outs() << it << ":\t" << rel->inputSec->name << " + 0x"
                     << utohexstr(rel->offsetInSec) << "\t"
-                    << toString(rel->type) << "\t" << rel->sym->getName()
+                    << toString(rel->type) << "\t" << printSym(rel->sym)
                     << " + 0x" << utohexstr(rel->addend) << '\n';
   };
 
-  for (auto *file : ctx->sharedFilesExtended)
-    if (auto *soFile = ctx->adlt.getSoExt<ELFT>(file)) {
+  for (auto *file : adltCtx->sharedFilesExtended)
+    if (auto *soFile = adltCtx->getSoExt<ELFT>(file)) {
       lld::outs() << soFile->soName << ":\n";
-      lld::outs() << "Dyn relocs (" << soFile->dynRelIndexes.size() << ")";
-      printIndexes(soFile->dynRelIndexes);
-      printRelocTable(mainPart->relaDyn.get(), soFile->dynRelIndexes);
+      lld::outs() << ".rela.dyn relocs (" << soFile->relaDynIndexes.size() << ")";
+      printIndexes(soFile->relaDynIndexes);
+      printRelaTable(mainPart->relaDyn.get(), soFile->relaDynIndexes);
 
-      lld::outs() << "Plt relocs (" << soFile->pltRelIndexes.size() << ")";
-      printIndexes(soFile->pltRelIndexes);
-      printRelocTable(in.relaPlt.get(), soFile->pltRelIndexes);
+      lld::outs() << ".rela.plt relocs (" << soFile->relaPltIndexes.size() << ")";
+      printIndexes(soFile->relaPltIndexes);
+      printRelaTable(in.relaPlt.get(), soFile->relaPltIndexes);
     }
 }
 
@@ -659,13 +671,13 @@ template <typename ELFT> void AdltWriter::tracePhdrs() {
                   << "\t" << p->firstSec->name << '\n';
   };
 
-  auto &common = ctx->adlt.commonProgramHeaders;
+  auto &common = adltCtx->commonProgramHeaders;
   lld::outs() << "Common Program Headers (" << common.size() << ")";
   printIndexes(common);
   printPhTable(common);
 
-  for (auto *file : ctx->sharedFilesExtended)
-    if (auto *soFile = ctx->adlt.getSoExt<ELFT>(file)) {
+  for (auto *file : adltCtx->sharedFilesExtended)
+    if (auto *soFile = adltCtx->getSoExt<ELFT>(file)) {
       auto &headers = soFile->programHeaders;
       lld::outs() << soFile->soName << "\n";
       lld::outs() << "Program headers (" << headers.size() << ")";
@@ -790,7 +802,7 @@ template <class ELFT> static void markUsedLocalSymbols() {
   // See MarkLive<ELFT>::resolveReloc().
   if (config->gcSections)
     return;
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (ELFFileBase *file : files) {
     ObjFile<ELFT> *f = cast<ObjFile<ELFT>>(file);
     for (InputSectionBase *s : f->getSections()) {
@@ -862,7 +874,7 @@ template <class ELFT> void Writer<ELFT>::copyLocalSymbols() {
   llvm::TimeTraceScope timeScope("Add local symbols");
   if (config->copyRelocs && config->discard != DiscardPolicy::None)
     markUsedLocalSymbols<ELFT>();
-  auto files = /*config->adlt ? ctx->sharedFilesExtended :*/ ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (ELFFileBase *file : files) {
     for (Symbol *b : file->getLocalSymbols()) {
       assert(b->isLocal() && "should have been caught in initializeSymbols()");
@@ -1189,7 +1201,7 @@ void PhdrEntry::add(OutputSection *sec) {
 
   // OHOS_LOCAL begin
   if (config->adlt) {
-    if (ctx->adlt.withCfi && p_type == PT_LOAD) {
+    if (adltCtx->withCfi && p_type == PT_LOAD) {
       // check cfi.h: LIBRARY_ALIGNMENT and _BITS
       constexpr uint32_t kCFILibraryAlignment = 1UL << 18;
       firstSec->alignment = kCFILibraryAlignment;
@@ -1489,7 +1501,7 @@ static DenseMap<const InputSectionBase *, int> buildSectionOrder() {
   for (Symbol *sym : symtab->symbols())
     addSym(*sym);
 
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (ELFFileBase *file : files)
     for (Symbol *sym : file->getLocalSymbols())
       addSym(*sym);
@@ -1906,7 +1918,7 @@ template <class ELFT> void Writer<ELFT>::finalizeAddressDependentContent() {
 // block sections, input sections can shrink when the jump instructions at
 // the end of the section are relaxed.
 static void fixSymbolsAfterShrinking() {
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
+  auto files = ctx->objectFiles;
   for (InputFile *File : files) {
     parallelForEach(File->getSymbols(), [&](Symbol *Sym) {
       auto *def = dyn_cast<Defined>(Sym);
@@ -2127,7 +2139,7 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
       // copy relocations, etc. Note that relocations for non-alloc sections are
       // directly processed by InputSection::relocateNonAlloc.
       if (config->adlt)
-        for (auto &it : llvm::enumerate(ctx->sharedFilesExtended)) {
+        for (auto &it : llvm::enumerate(adltCtx->sharedFilesExtended)) {
           auto *soFile = cast<SharedFileExtended<ELFT>>(it.value());
           auto sections = soFile->getSections();
           // scan .rela.dyn (base: SHT_NULL)
@@ -2207,9 +2219,10 @@ template <class ELFT> void Writer<ELFT>::finalizeSections() {
 
       if (sym->includeInDynsym()) {
         partitions[sym->partition - 1].dynSymTab->addSymbol(sym);
-        if (auto *file = dyn_cast_or_null<SharedFile>(sym->file))
-          if (file->isNeeded && !sym->isUndefined())
-            addVerneed(sym);
+        if (!config->adlt) // ADLT support ver syms
+          if (auto *file = dyn_cast_or_null<SharedFile>(sym->file))
+            if (file->isNeeded && !sym->isUndefined())
+              addVerneed(sym);
       }
     }
 
@@ -2520,7 +2533,7 @@ SmallVector<PhdrEntry *, 0> Writer<ELFT>::createPhdrs(Partition &part) {
     auto file = adltWriter.getInputSection(sec)->file;
     if (!file)
       return llvm::None;
-    return cast<SharedFileExtended<ELFT>>(file)->orderIdx;
+    return adltCtx->getSoExt<ELFT>(file)->orderIdx;
   };
   // OHOS_LOCAL end
 

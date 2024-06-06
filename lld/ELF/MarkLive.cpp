@@ -345,13 +345,14 @@ template <class ELFT> void MarkLive<ELFT>::mark() {
 // to from __start_/__stop_ symbols because there will only be one set of
 // symbols for the whole program.
 template <class ELFT> void MarkLive<ELFT>::moveToMain() {
-  auto files = config->adlt ? ctx->sharedFilesExtended : ctx->objectFiles;
-  for (ELFFileBase *file : files)
-    for (Symbol *s : file->getSymbols())
-      if (auto *d = dyn_cast<Defined>(s))
-        if ((d->type == STT_GNU_IFUNC || d->type == STT_TLS) && d->section &&
-            d->section->isLive())
-          markSymbol(s);
+  auto files = ctx->objectFiles;
+  if (!config->adlt)
+    for (ELFFileBase *file : files)
+      for (Symbol *s : file->getSymbols())
+        if (auto *d = dyn_cast<Defined>(s))
+          if ((d->type == STT_GNU_IFUNC || d->type == STT_TLS) && d->section &&
+              d->section->isLive())
+            markSymbol(s);
 
   for (InputSectionBase *sec : inputSections) {
     if (!sec->isLive() || !isValidCIdentifier(sec->name))

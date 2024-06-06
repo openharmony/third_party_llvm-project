@@ -47,8 +47,6 @@ extern std::unique_ptr<llvm::TarWriter> tar;
 llvm::Optional<MemoryBufferRef> readFile(StringRef path);
 
 // Add symbols in File to the symbol table.
-typedef llvm::DenseMap<llvm::CachedHashStringRef, uint64_t> ESymsCntMap;
-void buildSymsHist(InputFile *file, ESymsCntMap &eSymsHist);
 void parseFile(InputFile *file);
 
 // The root class of input files.
@@ -96,14 +94,6 @@ public:
              fileKind == BitcodeKind);
     return symbols;
   }
-
-  // ADLT beg
-  ArrayRef<Symbol *> getAllSymbols() const { return allSymbols; }
-
-  SmallVector<Symbol *, 0> allSymbols;
-  // ADLT end
-
-
   // Get filename to use for linker script processing.
   StringRef getNameForScript() const;
 
@@ -211,6 +201,11 @@ public:
     return getELFSyms<ELFT>().slice(firstGlobal);
   }
 
+  // OHOS_LOCAL begin
+  virtual void buildSymbolsHist();
+  virtual bool isValidSection(InputSectionBase *s) const;
+  // OHOS_LOCAL end
+
 protected:
   // Initializes this class's member variables.
   template <typename ELFT> void init();
@@ -241,15 +236,19 @@ public:
   ObjFile(MemoryBufferRef m, StringRef archiveName) : ELFFileBase(ObjKind, m) {
     this->archiveName = archiveName;
   }
+  ObjFile(Kind k, MemoryBufferRef m, StringRef archiveName) // OHOS_LOCAL
+      : ELFFileBase(k, m) {
+    this->archiveName = archiveName;
+  }
   virtual ~ObjFile() {}
 
-  void parse(bool ignoreComdats = false);
+  virtual void parse(bool ignoreComdats = false);
   void parseLazy();
 
   StringRef getShtGroupSignature(ArrayRef<Elf_Shdr> sections,
                                  const Elf_Shdr &sec);
 
-  virtual Symbol &getSymbol(uint32_t symbolIndex) const {
+  Symbol &getSymbol(uint32_t symbolIndex) const {
     if (symbolIndex >= this->symbols.size())
       fatal(toString(this) + ": invalid symbol index");
     return *this->symbols[symbolIndex];
@@ -294,12 +293,18 @@ public:
   // Get cached DWARF information.
   DWARFCache *getDwarf();
 
-  void buildSymsHist(ESymsCntMap &eSymsHist);
   void initializeLocalSymbols();
-  void postParse();
+  virtual void postParse();
+
+  // OHOS_LOCAL begin
+  // TODO: move to SharedFileExtended
+  virtual StringRef getUniqueName(StringRef origName) const;
 
 protected:
-  virtual StringRef getUniqueName(StringRef origName) const;
+  // TODO: move to SharedFileExtended
+  llvm::DenseMap<uint32_t, size_t> sectionsMap;       // offset, orderIdx
+  llvm::DenseMap<uint32_t, size_t> definedSymbolsMap; // abs offset, orderIdx
+  // OHOS_LOCAL end
 
 private:
   void initializeSections(bool ignoreComdats,
@@ -400,60 +405,38 @@ public:
   static bool classof(const InputFile *f) {
     return f->kind() == InputFile::SharedKind;
   }
+  void buildSymbolsHist() override;
+  bool isValidSection(InputSectionBase *s) const override;
+  bool isDynamicSection(InputSectionBase *s) const;
 
-  void parseForAdlt();
-  void postParseForAdlt();
+  void parse(bool ignoreComdats = false) override;
+  void postParse() override;
 
-  StringRef addAdltPostfix(StringRef input) const;
-  bool addAdltPostfix(Symbol *s);
+  Defined &getDefinedLocalSym(uint64_t offset);
 
-  bool saveSymbol(const Defined& d) const;
+  InputSectionBase &getSection(uint64_t offset);
+  InputSectionBase &getSectionByOrder(size_t idx);
+  InputSectionBase *findSection(uint64_t offset);
 
-  Defined *findSectionSymbol(uint64_t offset) const;
-  Defined *findDefinedSymbol(
-      uint64_t offset,
-      llvm::function_ref<bool(Defined *)> extraCond = [](Defined *) {
-        return true;
-      }) const;
-
-  InputSectionBase *findInputSection(StringRef name) const;
-  InputSectionBase *findInputSection(uint64_t offset) const;
-  bool isDynamicSection(InputSectionBase &sec) const;
-
-  template <typename RelT>
-  Symbol &getRelocTargetSymADLT(const RelT &rel, InputSectionBase &sec) const {
+  template <typename RelT> Symbol &getRelocTargetSym(const RelT &rel) {
     uint32_t symIndex = rel.getSymbol(config->isMips64EL);
-    return getSymbolADLT(symIndex, isDynamicSection(sec));
+    return getSymbol(symIndex, false);
   }
 
-  ArrayRef<Symbol *> getLocalSymbols() override {
-    if (this->allSymbols.empty())
-      return {};
-    return llvm::makeArrayRef(this->allSymbols).slice(1, eFirstGlobal - 1);
-  }
+  Symbol &getDynamicSymbol(size_t symbolIndex) const;
+  Symbol &getLocalSymbol(size_t symbolIndex) const;
+  Symbol &getSymbol(size_t symbolIndex, bool fromDynamic);
 
-  Symbol &getDynamicSymbol(uint32_t symbolIndex) const;
-  Symbol &getSymbolADLT(uint32_t symbolIndex, bool fromDynamic) const;
+  ArrayRef<Symbol *> getLocalSymbols() override;
 
-  Symbol &getSymbolFromElfSymTab(uint32_t symbolIndex) const {
-    if (symbolIndex >= this->allSymbols.size())
-      fatal(toString(this) + ": invalid symbol index");
-    return *this->allSymbols[symbolIndex];
-  }
-
-  void traceElfSymbol(const Elf_Sym &sym, StringRef strTable) const;
-  void traceElfSection(const Elf_Shdr &sec) const;
-
-  void traceSymbol(const Symbol &sym, StringRef title = "") const;
-  void traceSection(const SectionBase &sec, StringRef title = "") const;
 
 public:
   // the input order of the file as it presented in ADLT image
-  size_t orderIdx;
+  size_t orderIdx = 0;
   int dynSymSecIdx = 0;
   int symTabSecIdx = 0;
   int symTabShndxSecIdx = 0;
-  int eFirstGlobal = 0;
+  int symTabFirstGlobal = 0;
   int gotPltSecIdx = 0;
 
   // .symtab's start of local symbols owned by library
@@ -465,8 +448,10 @@ public:
   llvm::SetVector<const PhdrEntry*> programHeaders;
 
   // From input .rela.dyn, .rela.plt:
-  llvm::SetVector<uint32_t> dynRelIndexes;
-  llvm::SetVector<uint32_t> pltRelIndexes;
+  llvm::SetVector<uint32_t>
+      relaDynIndexes; // If not .relr.dyn exists, contains only Got/Abs/Tls
+                      // relocs. Otherwise contains relative relocs also.
+  llvm::SetVector<uint32_t> relaPltIndexes; // .got.plt relocs
 
   // SharedFile compability layer:
   // This is actually a vector of Elf_Verdef pointers.
@@ -485,16 +470,14 @@ public:
   // parsed. Only filled for `--no-allow-shlib-undefined`.
   SmallVector<Symbol *, 0> requiredSymbols;
 
-protected:
-  virtual StringRef getUniqueName(StringRef origName) const override;
+  // TODO: add unique for output only
+  StringRef getUniqueName(StringRef origName) const override;
 
 private:
+  SmallVector<Symbol *, 0> localSymbols;
+
   void parseDynamics(); // SharedFile compability
   void parseElfSymTab(); // ObjectFile compability
-
-  void resolveDuplicatesForAdlt();
-
-  StringRef getShStrTab(ArrayRef<typename ELFT::Shdr> elfSections);
 
   std::vector<uint32_t> parseVerneed(const llvm::object::ELFFile<ELFT> &obj,
                                      const typename ELFT::Shdr *sec);
