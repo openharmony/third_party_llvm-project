@@ -1063,6 +1063,7 @@ static bool ShouldLogAfterPrintf() {
 }
 
 extern "C" SANITIZER_WEAK_ATTRIBUTE int musl_log(const char *fmt, ...);
+extern "C" SANITIZER_WEAK_ATTRIBUTE int ohos_dfx_log(const char *s);
 void WriteOneLineToSyslog(const char *s) {
   if (&musl_log) {
     musl_log(s);
@@ -1085,6 +1086,12 @@ void SetAbortMessage(const char *str) {}
 #endif  // SANITIZER_ANDROID
 
 void LogMessageOnPrintf(const char *str) {
+#if SANITIZER_OHOS
+  // We need to call it before "WriteToSyslog" because "WriteToSyslog" will remove "\n".
+  if (&ohos_dfx_log) {
+    ohos_dfx_log(str);
+  }
+#endif
   if (common_flags()->log_to_syslog && ShouldLogAfterPrintf())
     WriteToSyslog(str);
 }
