@@ -104,13 +104,13 @@ void XVMCFGStructure::placeLoopMarker(MachineBasicBlock &MBB) {
   getBeginInsertPos(*LoopTop, LoopInsertPos);
   getEndInsertPos(*LoopBottom, LoopEndInsertPos);
 
-  MachineInstr *Begin = BuildMI(*LoopTop, LoopInsertPos,
-                        LoopTop->findDebugLoc(LoopInsertPos),
-                        TII->get(XVM::LOOP));
-  //FIXME: the debug location might be problematic
-  MachineInstr *End = BuildMI(*LoopBottom, LoopEndInsertPos,
-                      LoopBottom->findDebugLoc(LoopEndInsertPos),
-                      TII->get(XVM::END_LOOP));
+  BuildMI(*LoopTop, LoopInsertPos,
+          LoopTop->findDebugLoc(LoopInsertPos),
+          TII->get(XVM::LOOP));
+  //Note: the debug location might be problematic
+  BuildMI(*LoopBottom, LoopEndInsertPos,
+          LoopBottom->findDebugLoc(LoopEndInsertPos),
+          TII->get(XVM::END_LOOP));
 }
 
 static bool isContinueBlock(MachineBasicBlock &MBB) {
@@ -129,7 +129,7 @@ void XVMCFGStructure::placeIfMarker(MachineBasicBlock &MBB) {
   // We need to negate the conditions in each branch
   MachineFunction *MF = MBB.getParent();
   const auto &TII = MF->getSubtarget<XVMSubtarget>().getInstrInfo();
-  auto &MDT = getAnalysis<MachineDominatorTree>();
+  getAnalysis<MachineDominatorTree>();
   auto &MPDT = getAnalysis<MachinePostDominatorTree>();
 
   if (!MBB.canFallThrough() || MBB.empty())
@@ -176,13 +176,15 @@ void XVMCFGStructure::placeIfMarker(MachineBasicBlock &MBB) {
     BuildMI(*ElseEndBlock, ElseEndInsertPos,
             ElseEndBlock->findDebugLoc(ElseEndInsertPos),
             TII->get(XVM::END_ELSE));
-    BuildMI(*ElseEndBlock, ++ElseEndInsertPos,
+    ++ElseEndInsertPos;
+    BuildMI(*ElseEndBlock, ElseEndInsertPos,
             ElseEndBlock->findDebugLoc(ElseEndInsertPos),
             TII->get(XVM::END_IF));
   } else {
-    BuildMI(*ThenEndBlock, ++ThenEndInsertPos,
-             ThenEndBlock->findDebugLoc(ThenEndInsertPos),
-             TII->get(XVM::END_IF));
+    ++ThenEndInsertPos;
+    BuildMI(*ThenEndBlock, ThenEndInsertPos,
+            ThenEndBlock->findDebugLoc(ThenEndInsertPos),
+            TII->get(XVM::END_IF));
   }
 }
 
@@ -230,16 +232,15 @@ void XVMCFGStructure::fixLoops(MachineBasicBlock &MBB) {
                                    Pred->getFallThrough() :
                                    ContinueBlock;
 
-       //FIXME: Does adding the new block destroy the loop structure?
+       //Note: Does adding the new block destroy the loop structure?
       MachineFunction::iterator MBBI = ++Pred->getIterator();
       MF->insert(MBBI, ContinueBlock);
 
       MachineBasicBlock *Old = &MBB;
-      if (Old != NewSucc){
-        // FIXME: do we need to do anything for else case??
+      if (Old != NewSucc) {
+        // Note: do we need to do anything for else case??
         Pred->ReplaceUsesOfBlockWith(&MBB, NewSucc);
-      }
-      else{
+      } else {
         report_fatal_error("old MBB == new succ, need to handle this case");
       }
 
@@ -249,7 +250,7 @@ void XVMCFGStructure::fixLoops(MachineBasicBlock &MBB) {
         Pred->addSuccessorWithoutProb(ContinueBlock);
         MPDT.getBase().applyUpdates({{DomTreeT::Insert, &*Pred, ContinueBlock}});
       }
-      ContinueBlock->addSuccessor(&MBB, BranchProbability :: getOne());
+      ContinueBlock->addSuccessor(&MBB, BranchProbability::getOne());
       MPDT.getBase().applyUpdates({{DomTreeT::Insert, ContinueBlock, &MBB}});
       // we jump to the fall through and the continue block became new fall through
       Loop->addBasicBlockToLoop(ContinueBlock, MLI.getBase());
@@ -266,10 +267,10 @@ void XVMCFGStructure::fixLoops(MachineBasicBlock &MBB) {
     MachineBasicBlock *BreakBlock = MF->CreateMachineBasicBlock();
     auto BreakInsertPos = BreakBlock->begin();
     BuildMI(*BreakBlock, BreakInsertPos,
-           BreakBlock->findDebugLoc(BreakInsertPos),
-           TII->get(XVM::BREAK));
+            BreakBlock->findDebugLoc(BreakInsertPos),
+            TII->get(XVM::BREAK));
 
-    // TODO: insert blocks for multiple exits
+    // Note: to insert blocks for multiple exits
     MachineBasicBlock *FallThrough = LoopExiting->getFallThrough();
     MachineFunction::iterator MBBI2 = FallThrough->getIterator();
     MF->insert(MBBI2, BreakBlock);
@@ -277,7 +278,7 @@ void XVMCFGStructure::fixLoops(MachineBasicBlock &MBB) {
 
     // puts the break block in place
     MachineBasicBlock *JumpTarget = LoopExiting->back().getOperand(0).getMBB();
-    if (JumpTarget != FallThrough){
+    if (JumpTarget != FallThrough) {
       // when the last instruction in the block is conditional branch
       LoopExiting->ReplaceUsesOfBlockWith(JumpTarget, FallThrough);
       LoopExiting->addSuccessorWithoutProb(BreakBlock);
@@ -288,7 +289,7 @@ void XVMCFGStructure::fixLoops(MachineBasicBlock &MBB) {
            It != E; ++It) {
         MachineInstr *MI = &*It;
         if (MI) {
-          if (TII->isCondBranch(MI)){
+          if (TII->isCondBranch(MI)) {
             JumpTarget = MI->getOperand(0).getMBB();
             LoopExiting->ReplaceUsesOfBlockWith(JumpTarget, BreakBlock);
             break;
@@ -300,7 +301,7 @@ void XVMCFGStructure::fixLoops(MachineBasicBlock &MBB) {
                                  {DomTreeT::Insert, LoopExiting, FallThrough}});
     // The condition need to be negated
     MPDT.getBase().applyUpdates({{DomTreeT::Insert, LoopExiting, BreakBlock}});
-    BreakBlock->addSuccessor(JumpTarget, BranchProbability :: getOne());
+    BreakBlock->addSuccessor(JumpTarget, BranchProbability::getOne());
     MPDT.getBase().applyUpdates({{DomTreeT::Insert, BreakBlock, JumpTarget}});
   }
 }

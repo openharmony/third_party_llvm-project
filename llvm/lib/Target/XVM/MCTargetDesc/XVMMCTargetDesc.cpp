@@ -83,7 +83,6 @@ class XVMMCInstrAnalysis : public MCInstrAnalysis {
 public:
   explicit XVMMCInstrAnalysis(const MCInstrInfo *Info)
       : MCInstrAnalysis(Info) {}
-
 };
 
 } // end anonymous namespace

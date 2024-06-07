@@ -55,18 +55,6 @@ static bool is_valid_immediate_size(int32_t imm)
   return imm <= 0x3FFF && imm >= 0;
 }
 
-static void fail(const SDLoc &DL, SelectionDAG &DAG, const char *Msg,
-                 SDValue Val) {
-  MachineFunction &MF = DAG.getMachineFunction();
-  std::string Str;
-  raw_string_ostream OS(Str);
-  OS << Msg;
-  Val->print(OS);
-  OS.flush();
-  DAG.getContext()->diagnose(
-      DiagnosticInfoUnsupported(MF.getFunction(), Str, DL.getDebugLoc()));
-}
-
 static bool hasFP(const MachineFunction &MF) {
   return false;
 }
@@ -116,7 +104,6 @@ static unsigned getBranchOpcodeFromSelectCC(MachineInstr &MI) {
 XVMTargetLowering::XVMTargetLowering(const TargetMachine &TM,
                                      const XVMSubtarget &STI)
     : TargetLowering(TM), Subtarget(&STI) {
-
   // Set up the register classes.
   addRegisterClass(MVT::i64, &XVM::XVMGPRRegClass);
 
@@ -248,9 +235,10 @@ XVMTargetLowering::getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
   return TargetLowering::getRegForInlineAsmConstraint(TRI, Constraint, VT);
 }
 
-void XVMTargetLowering::ReplaceNodeResults(
-  SDNode *N, SmallVectorImpl<SDValue> &Results, SelectionDAG &DAG) const {
-  const char *err_msg;
+void XVMTargetLowering::ReplaceNodeResults(SDNode *N, 
+                                           SmallVectorImpl<SDValue> &Results,
+                                           SelectionDAG &DAG) const {
+  const char *err_msg = nullptr;
   uint32_t Opcode = N->getOpcode();
   switch (Opcode) {
   default:
@@ -359,7 +347,7 @@ SDValue XVMTargetLowering::LowerFormalArguments(
         if (doesNeedSP) {
           const MCPhysReg *CSRegs = MF.getRegInfo().getCalleeSavedRegs();
           unsigned CSRcounter = 0;
-          for ( ; CSRegs[CSRcounter]; ++CSRcounter);
+          for (; CSRegs[CSRcounter]; ++CSRcounter);
           FI = MFI.CreateFixedObject(ValVT.getSizeInBits()/8,
                                      VA.getLocMemOffset() + CSRcounter*8, true);
         } else {
@@ -399,9 +387,9 @@ SDValue XVMTargetLowering::LowerFormalArguments(
     }
 
     XFI->SetVarArgsFrameIndex(
-      MFI.CreateFixedObject(8, // size
-                            VaArgOffset, // SPOffset
-                            true)); // IsImmutable
+        MFI.CreateFixedObject(8, // size
+                              VaArgOffset, // SPOffset
+                              true)); // IsImmutable
     // Copy the registers that have not been used for var argument passing
     // assume per size is always 8
     for (unsigned I = FirstRegIdx; I < ArgRegs.size(); I++, VaArgOffset += 8) {
@@ -499,7 +487,7 @@ SDValue XVMTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
     // Push arguments into RegsToPass vector
     if (VA.isRegLoc())
       RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));
-    else{
+    else {
       assert(VA.isMemLoc());
 
       int32_t Offset = VA.getLocMemOffset();
@@ -681,7 +669,7 @@ SDValue XVMTargetLowering::LowerBRCOND(SDValue Op, SelectionDAG &DAG) const {
     return DAG.getNode(XVMISD::BR_CC, DL, Op.getValueType(),
                        Op.getOperand(0), LHS, RHS, TargetCC, Op.getOperand(2));
   }
-  //FIXME: complete the lowering for other cases
+  //Note: complete the lowering for other cases later
   return Op;
 }
 
@@ -707,10 +695,9 @@ SDValue XVMTargetLowering::LowerVASTART(SDValue Op, SelectionDAG &DAG) const {
   int VarArgsFrameIndex = MF.getInfo<XVMMachineFunctionInfo>()->GetVarArgsFrameIndex();
   SDValue FrameIndex = DAG.getFrameIndex(VarArgsFrameIndex, getPointerTy(MF.getDataLayout()));
 
-  const Value *SV = cast<SrcValueSDNode>(Op.getOperand(2))->getValue();
   SDValue RetSDValue = DAG.getStore(Op.getOperand(0), SDLoc(Op), FrameIndex, Op.getOperand(1),
-                      MachinePointerInfo() // unsigned AddressSpace = 0, int64_t offset = 0
-                     );
+                                    MachinePointerInfo()); // unsigned AddressSpace = 0, int64_t offset = 0
+
   return RetSDValue;
 }
 
@@ -745,8 +732,9 @@ const char *XVMTargetLowering::getTargetNodeName(unsigned Opcode) const {
     return "XVMISD::Wrapper";
   case XVMISD::MEMCPY:
     return "XVMISD::MEMCPY";
+  default:
+    return nullptr;
   }
-  return nullptr;
 }
 
 SDValue XVMTargetLowering::LowerGlobalAddress(SDValue Op,
@@ -769,7 +757,7 @@ XVMTargetLowering::EmitSubregExt(MachineInstr &MI, MachineBasicBlock *BB,
 
 MachineBasicBlock *
 XVMTargetLowering::EmitInstrWithCustomInserterSelectCC(MachineInstr &MI,
-                                               MachineBasicBlock *BB) const {
+                                                       MachineBasicBlock *BB) const {
   const TargetInstrInfo &TII = *BB->getParent()->getSubtarget().getInstrInfo();
   DebugLoc DL = MI.getDebugLoc();
   unsigned Opc = MI.getOpcode();
@@ -832,8 +820,7 @@ XVMTargetLowering::EmitInstrWithCustomInserterSelectCC(MachineInstr &MI,
         uint64_t LeastSignificantBits = ShiftAndGet16Bits(imm32, 0);
 
         Register VRegForMov = MRI.createVirtualRegister(&XVM::XVMGPRRegClass);
-        MachineInstr * MovMI = BuildMI(BB, DL, TII.get(XVM::MOV_ri), VRegForMov)
-                            .addImm(0);
+        BuildMI(BB, DL, TII.get(XVM::MOV_ri), VRegForMov).addImm(0);
         Register PrevReg = VRegForMov;
         if (LeastSignificantBits) {
           Register VRegForMovk1 = MRI.createVirtualRegister(&XVM::XVMGPRRegClass);
@@ -887,15 +874,15 @@ XVMTargetLowering::EmitInstrWithCustomInserterSelectCC(MachineInstr &MI,
 MachineBasicBlock *
 XVMTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
                                                MachineBasicBlock *BB) const {
-  const TargetInstrInfo &TII = *BB->getParent()->getSubtarget().getInstrInfo();
   DebugLoc DL = MI.getDebugLoc();
   unsigned Opc = MI.getOpcode();
-  switch(Opc) {
+  switch (Opc) {
     case XVM::PseudoSelectCC_rr:
     case XVM::PseudoSelectCC_ri:
       return EmitInstrWithCustomInserterSelectCC(MI, BB);
+    default:
+      return BB;
   }
-  return BB;
 }
 
 EVT XVMTargetLowering::getSetCCResultType(const DataLayout &, LLVMContext &,

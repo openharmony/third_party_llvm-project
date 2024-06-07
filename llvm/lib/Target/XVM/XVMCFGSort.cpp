@@ -123,7 +123,7 @@ struct Entry {
 
 /// Sort the blocks, taking special care to make sure that regions are not
 /// interrupted by blocks not dominated by their header.
-/// TODO: There are many opportunities for improving the heuristics here.
+/// Note: There are many opportunities for improving the heuristics here.
 /// Explore them.
 static void sortBlocks(MachineFunction &MF, const MachineLoopInfo &MLI,
                        const MachineDominatorTree &MDT) {
@@ -276,7 +276,6 @@ static void sortBlocks(MachineFunction &MF, const MachineLoopInfo &MLI,
       }
       assert(OnStack.insert(Region) &&
              "Regions should be declared at most once.");
-
     } else {
       // Not a region header. All predecessors should be sorted above.
       for (auto Pred : MBB.predecessors())

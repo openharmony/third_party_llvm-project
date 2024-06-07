@@ -16,13 +16,14 @@
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/Host.h"
 
-using namespace llvm;
 
 #define DEBUG_TYPE "xvm-subtarget"
 
 #define GET_SUBTARGETINFO_TARGET_DESC
 #define GET_SUBTARGETINFO_CTOR
 #include "XVMGenSubtargetInfo.inc"
+
+using namespace llvm;
 
 void XVMSubtarget::anchor() {}
 

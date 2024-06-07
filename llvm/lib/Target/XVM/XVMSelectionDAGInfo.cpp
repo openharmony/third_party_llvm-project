@@ -36,11 +36,11 @@ SDValue XVMSelectionDAGInfo::EmitTargetCodeForMemcpy(
 }
 
 SDValue XVMSelectionDAGInfo::EmitTargetCodeForMemmove(
-            SelectionDAG &DAG, const SDLoc &dl, SDValue Chain,
-              SDValue Op1, SDValue Op2, SDValue Op3,
-              Align Alignment, bool isVolatile,
-              MachinePointerInfo DstPtrInfo,
-              MachinePointerInfo SrcPtrInfo) const {
+    SelectionDAG &DAG, const SDLoc &dl, SDValue Chain,
+    SDValue Op1, SDValue Op2, SDValue Op3,
+    Align Alignment, bool isVolatile,
+    MachinePointerInfo DstPtrInfo,
+    MachinePointerInfo SrcPtrInfo) const {
   SDVTList VTs = DAG.getVTList(MVT::Other, MVT::Glue);
   ConstantSDNode *ConstantSize = dyn_cast<ConstantSDNode>(Op3);
   if (ConstantSize) {
@@ -55,15 +55,14 @@ SDValue XVMSelectionDAGInfo::EmitTargetCodeForMemmove(
 }
 
 SDValue XVMSelectionDAGInfo::EmitTargetCodeForMemset(
-                                SelectionDAG &DAG, const SDLoc &DL,
-                                SDValue Chain, SDValue Op1, SDValue Op2,
-                                SDValue Op3, Align Alignment, bool IsVolatile,
-                                bool AlwaysInline,
-                                MachinePointerInfo DstPtrInfo) const {
+    SelectionDAG &DAG, const SDLoc &DL,
+    SDValue Chain, SDValue Op1, SDValue Op2,
+    SDValue Op3, Align Alignment, bool IsVolatile,
+    bool AlwaysInline,
+    MachinePointerInfo DstPtrInfo) const {
   SDVTList VTs = DAG.getVTList(MVT::Other, MVT::Glue);
   ConstantSDNode *ConstantSize = dyn_cast<ConstantSDNode>(Op3);
   if (ConstantSize) {
-    uint64_t CopyLen = ConstantSize->getZExtValue();
     Op1 = DAG.getNode(XVMISD::MEMSET, DL, VTs, Chain, Op1, DAG.getAnyExtOrTrunc(Op2, DL, MVT::i64),
                       DAG.getZExtOrTrunc(Op3, DL, MVT::i64));
   } else {

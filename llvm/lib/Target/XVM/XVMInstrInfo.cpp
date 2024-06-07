@@ -104,15 +104,14 @@ void XVMInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                MachineBasicBlock::iterator I,
                                const DebugLoc &DL, MCRegister DestReg,
                                MCRegister SrcReg, bool KillSrc) const {
-  if (XVM::XVMGPRRegClass.contains(DestReg, SrcReg) || 
-      (XVM::XVMRRRegClass.contains(SrcReg)) && XVM::XVMGPRRegClass.contains(DestReg))
+  if (XVM::XVMGPRRegClass.contains(DestReg, SrcReg) ||
+      ((XVM::XVMRRRegClass.contains(SrcReg)) && XVM::XVMGPRRegClass.contains(DestReg)))
     BuildMI(MBB, I, DL, get(XVM::MOV_rr), DestReg)
         .addReg(SrcReg, getKillRegState(KillSrc));
   else
     llvm_unreachable("To-be-extended: reg-to-reg copy");
 
     return;
-
 }
 
 static int ShiftAndGet16Bits(uint64_t num, int n) {
@@ -120,8 +119,8 @@ static int ShiftAndGet16Bits(uint64_t num, int n) {
 }
 
 static inline void replace_imm_with_movk(MachineBasicBlock *BB,
-				  MachineBasicBlock::iterator MI,
-				  DebugLoc dl)
+				                                 MachineBasicBlock::iterator MI,
+				                                 DebugLoc dl)
 {
     const TargetInstrInfo &TII = *BB->getParent()->getSubtarget().getInstrInfo();
     uint64_t imm = MI->getOperand(2).getImm();
@@ -145,7 +144,6 @@ static inline void replace_imm_with_movk(MachineBasicBlock *BB,
       BuildMI(*BB, MI, dl, TII.get(XVM::MOVK_ri))
         .addReg(XVM::R2, RegState::Define).addImm(0).addImm(most_significant_bits).addImm(3);
     }
-
 }
 
 void XVMInstrInfo::expandMEMCPY(MachineBasicBlock::iterator MI) const {
@@ -279,7 +277,7 @@ bool XVMInstrInfo::analyzeBranch(MachineBasicBlock &MBB,
                                  MachineBasicBlock *&FBB,
                                  SmallVectorImpl<MachineOperand> &Cond,
                                  bool AllowModify) const {
-  //TODO: consider the case when the CFG is stackified.
+  //Note: consider the case when the CFG is stackified later.
   // Maybe need to implement removeBranch and insertBranch
 
   bool HaveCond = false;
@@ -349,9 +347,9 @@ unsigned XVMInstrInfo::insertBranch(MachineBasicBlock &MBB,
 
   assert(Cond.size() == 3 && "Expected 2 operands and an operation!");
 
-  BuildMI(&MBB, DL, get(getBranchOpcFromCond(Cond))).addMBB(TBB)  \
-	                                            .add(Cond[1]) \
-						    .add(Cond[2]);
+  BuildMI(&MBB, DL, get(getBranchOpcFromCond(Cond))).addMBB(TBB)
+                                                    .add(Cond[1])
+                                                    .add(Cond[2]);
   if (!FBB)
     return 1;
   BuildMI(&MBB, DL, get(XVM::BR)).addMBB(FBB);

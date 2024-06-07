@@ -15,9 +15,7 @@
 
 using namespace llvm;
 
-//
 // XVMTargetStreamer Implemenation
-//
 XVMTargetStreamer::XVMTargetStreamer(MCStreamer &S) : MCTargetStreamer(S) {}
 
 XVMTargetStreamer::~XVMTargetStreamer() = default;
