@@ -235,6 +235,16 @@ function(llvm_distribution_add_targets)
     endif()
   endif()
 
+  # OHOS_LOCAL begin
+  if (LLVM_SPLIT_LLVM_DYLIB_TARGETS)
+    foreach(target ${LLVM_TARGETS_CALLED_VIA_DYLIB})
+      if (target IN_LIST LLVM_TARGETS_TO_BUILD)
+        list(APPEND LLVM_DISTRIBUTION_COMPONENTS "LLVM${target}Target")
+      endif()
+    endforeach()
+  endif()
+  # OHOS_LOCAL end
+
   set(distributions "${LLVM_DISTRIBUTIONS}")
   if(NOT distributions)
     # CMake seemingly doesn't distinguish between an empty list and a list
