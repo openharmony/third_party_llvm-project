@@ -2323,7 +2323,7 @@ class LlvmPackage(BuildUtils):
             self.install_mingw_python(install_dir)
 
 
-    def darwin_stripped_xargs(self, bin_dir, necessary_bin_files, script_bins, need_x_bins_darwin):
+    def darwin_stripped_xargs(self, bin_dir, necessary_bin_files, script_bins):
         for bin_filename in os.listdir(bin_dir):
             binary = os.path.join(bin_dir, bin_filename)
             if not os.path.isfile(binary):
@@ -2331,7 +2331,7 @@ class LlvmPackage(BuildUtils):
             if bin_filename not in necessary_bin_files:
                 os.remove(binary)
             elif bin_filename not in script_bins and self.build_config.strip:
-                if bin_filename not in need_x_bins_darwin and self.host_is_darwin():
+                if self.host_is_darwin():
                     self.check_call(['strip', '-x', binary])
                 else:
                     self.check_call(['strip', binary])
@@ -2713,10 +2713,9 @@ class LlvmPackage(BuildUtils):
 
         # Scripts that should not be stripped
         script_bins = ['git-clang-format', 'scan-build', 'scan-view']
-        need_x_bins_darwin = ['clang', 'clang++', 'clang-9', 'clang-cl', 'clang-cpp']
 
-        # Bin file in the list should be stripped with -x args when host=darwin
-        self.darwin_stripped_xargs(bin_dir, necessary_bin_files, script_bins, need_x_bins_darwin)
+        # Bin files should be stripped with -x args when host=darwin
+        self.darwin_stripped_xargs(bin_dir, necessary_bin_files, script_bins)
 
         # Strip lldb-server
         self.strip_lldb_server(host, install_dir)
