@@ -26,6 +26,8 @@ import shutil
 import argparse
 import mingw
 import stat
+import json
+import sys
 
 from python_builder import MinGWPythonBuilder
 from prebuilts_clang_version import prebuilts_clang_version
@@ -2354,6 +2356,66 @@ class LlvmPackage(BuildUtils):
                 if os.path.isfile(binary):
                     self.check_call([llvm_strip, binary])
 
+    def generate_notice_file(self, readme_file):
+        nf_src = ''
+        nf_dict = {
+            "software": '',
+            "license_name": '',
+            "license_content": ''
+        }
+        notice_file = ''
+        nf_src, nf_dict["license_name"], nf_dict["software"] = self.gen_license_file(readme_file)
+        if os.path.exists(nf_src):
+            notice_file = self.gen_license(nf_dict, nf_src)
+        return notice_file
+
+    def gen_license(self, nf_dict, nf_src):
+        nf_path = os.path.dirname(nf_src)
+        third_party_path = os.path.join(*nf_path.split(os.path.sep)[-2:])
+        # Retrieve NOTICE information from README.OpenSource and write it into NOTICE
+        with open(nf_src, 'rt', encoding='utf-8') as f:
+            nf_dict["license_content"] = f.read()
+        notice_file = self.merge_out_path(third_party_path, 'NOTICE')
+        with open(notice_file, 'wt', encoding='utf-8') as f:
+            f.write("Notices for software(s):\n")
+            f.write("Software: {}\n".format(nf_dict["software"]))
+            f.write("License: {}\n".format(nf_dict["license_name"]))
+            f.write("Path: {}\n".format(third_party_path))
+            f.write('-' * 60)
+            f.write("\n{}\n".format(nf_dict["license_content"]))
+        return notice_file
+
+    def gen_license_file(self, readme_file):
+        if not os.path.exists(readme_file) or os.path.isdir(readme_file):
+            return '', '', '', ''
+
+        license_file = ''
+        license_name = None
+        software_name = None
+        opensource_configdata = None
+        with open(readme_file, 'rb') as input_f:
+            opensource_config = json.load(input_f)
+        if opensource_config is None:
+            return '', '', '', ''
+        for info in opensource_config:
+            license_file = info.get('License File')
+            license_name = info.get('License')
+            software_name = '{} {}'.format(info.get('Name'),
+                                           info.get('Version Number'))
+
+        license_file_path = os.path.join(os.path.dirname(readme_file),
+                                         license_file.strip())
+        if not os.path.exists(license_file_path):
+            return '', '', '', ''
+        return license_file_path, license_name, software_name
+
+    def append_notice(self, build_flag, host, lib_name, notices):
+        if build_flag and not host.startswith('windows'):
+            lib_readme_file = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR,
+                                                            'third_party', lib_name, 'README.OpenSource'))
+            lib_notice = self.generate_notice_file(lib_readme_file)
+            with open(lib_notice) as notice_file:
+                notices.append(notice_file.read())
 
     def notice_prebuilts_file(self, host, projects, install_dir):
 
@@ -2376,9 +2438,11 @@ class LlvmPackage(BuildUtils):
             with open(mingw_license_file) as notice_file:
                 notices.append(notice_file.read())
 
+        self.append_notice(self.build_config.build_ncurses, host, 'ncurses', notices)
+        self.append_notice(self.build_config.build_ncurses, host, 'libedit', notices)
+
         with open(os.path.join(install_dir, 'NOTICE'), 'w') as notice_file:
             notice_file.write('\n'.join(notices))
-
 
     def package_clang_bin_file(self, necessary_bin_files, ext):
         necessary_bin_file = [
