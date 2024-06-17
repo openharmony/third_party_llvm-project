@@ -2550,7 +2550,7 @@ class LlvmPackage(BuildUtils):
             # Redefining necessary bin files for Windows.
             windows_forbidden_list_bin_files = ['clang-%s%s' % (vers_major, ext), 'scan-build%s' % ext,
                                            'scan-view%s' % ext]
-            windows_additional_bin_files = ['liblldb%s' % shlib_ext, 'libpython3.10%s' % shlib_ext]
+            windows_additional_bin_files = ['liblldb%s' % shlib_ext, 'libpython3.10%s' % shlib_ext, 'libclang%s' % shlib_ext]
             if self.build_config.build_libxml2:
                 windows_additional_bin_files += ['libxml2%s' % shlib_ext]
 
