@@ -223,7 +223,6 @@ Status PlatformOHOS::DisconnectRemote() {
   Status error = PlatformLinux::DisconnectRemote();
   if (error.Success()) {
     m_device_id.clear();
-    m_connect_addr.clear();
     m_sdk_version = 0;
     m_remote_platform_sp.reset();
   }
