@@ -925,6 +925,41 @@ class LlvmCore(BuildUtils):
         if self.build_config.enable_monitoring:
             llvm_defines['LLDB_ENABLE_PERFORMANCE'] = 'ON'
 
+    def llvm_build_install_xvm_dylib_so(self, build_name,
+                                        out_dir,
+                                        build_target,
+                                        llvm_extra_env,
+                                        debug_build):
+        llvm_path = self.merge_out_path('llvm_make')
+        llvm_path_dylib_so = self.merge_out_path('llvm_make_dylib_so')
+        install_dir_dylib_so = self.merge_out_path('llvm-install-dylib-so')
+        llvm_defines_dylib_so = {}
+        llvm_defines_dylib_so['LLVM_SPLIT_LLVM_DYLIB_TARGETS'] = 'ON'
+        if debug_build:
+            llvm_defines_dylib_so['CMAKE_BUILD_TYPE'] = 'Debug'
+        self.build_llvm(targets='XVM',
+                        build_dir=llvm_path_dylib_so,
+                        install_dir=install_dir_dylib_so,
+                        build_name=build_name,
+                        build_target=build_target,
+                        extra_defines=llvm_defines_dylib_so,
+                        extra_env=llvm_extra_env)
+        build_lib_xvm_dylib_so = os.path.join(llvm_path_dylib_so, 'lib', 'LLVMXVMTarget.so')
+        build_lib_folder = os.path.join(llvm_path, 'lib')
+        if os.path.exists(build_lib_xvm_dylib_so) and os.path.exists(build_lib_folder):
+            self.check_copy_file(build_lib_xvm_dylib_so, build_lib_folder)
+        else:
+            self.logger().error('Failed to copy ' + build_lib_xvm_dylib_so + ' to ' + build_lib_folder)
+
+        build_lib_install_folder = os.path.join(out_dir, 'lib')
+        if os.path.exists(build_lib_xvm_dylib_so) and os.path.exists(build_lib_install_folder):
+            self.check_copy_file(build_lib_xvm_dylib_so, build_lib_install_folder)
+        else:
+            self.logger().error('Failed to copy ' + build_lib_xvm_dylib_so + ' to ' + build_lib_install_folder)
+        if not debug_build:
+            self.check_rm_tree(llvm_path_dylib_so)
+            self.check_rm_tree(install_dir_dylib_so)
+
     def llvm_compile(self,
                      build_name,
                      out_dir,
@@ -996,6 +1031,12 @@ class LlvmCore(BuildUtils):
                         build_target=build_target,
                         extra_defines=llvm_defines,
                         extra_env=llvm_extra_env)
+        if build_xvm:
+            self.llvm_build_install_xvm_dylib_so(build_name,
+                                                out_dir,
+                                                build_target,
+                                                llvm_extra_env,
+                                                debug_build)
 
     def llvm_compile_windows_defines(self,
                                      windows_defines,
