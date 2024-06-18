@@ -17,6 +17,10 @@
 #include <unistd.h>
 #endif
 
+#if defined(__OHOS_FAMILY__)
+#include <sys/syscall.h>
+#endif
+
 #include "LLDBServerUtilities.h"
 #include "Plugins/Process/gdb-remote/GDBRemoteCommunicationServerLLGS.h"
 #include "Plugins/Process/gdb-remote/ProcessGDBRemoteLog.h"
@@ -319,7 +323,49 @@ DESCRIPTION
 };
 } // namespace
 
+#if defined(__OHOS_FAMILY__)
+#ifndef SCHED_FLAG_UTIL_CLAMP_MIN
+#define SCHED_FLAG_UTIL_CLAMP_MIN 0x20
+#endif
+struct sched_attr {
+  __u32 size;
+  __u32 sched_policy;
+  __u64 sched_flags;
+  __s32 sched_nice;
+  __u32 sched_priority;
+  __u64 sched_runtime;
+  __u64 sched_deadline;
+  __u64 sched_period;
+  __u32 sched_util_min;
+  __u32 sched_util_max;
+};
+
+static int
+sched_setattr(lldb::pid_t pid, const struct sched_attr *attr, unsigned int flags) {
+  return syscall(__NR_sched_setattr, pid, attr, flags);
+}
+
+static int
+sched_getattr(lldb::pid_t pid, const struct sched_attr *attr, unsigned int size, unsigned int flags) {
+  return syscall(__NR_sched_getattr, pid, attr, size, flags);
+}
+#endif
+
 int main_gdbserver(int argc, char *argv[]) {
+#if defined(__OHOS_FAMILY__)
+  struct sched_attr attr;
+  int schret = sched_getattr(0, &attr, sizeof(sched_attr), 0);
+  if (schret != 0) {
+    llvm::errs() << llvm::format("lldb-server get sched failed: {0}\n", errno);
+  } else {
+    attr.sched_flags = SCHED_FLAG_UTIL_CLAMP_MIN;
+    attr.sched_util_min = 512; // [0, 1024]. The higher, the more cpu supply.
+    schret = sched_setattr(0, &attr, 0);
+    if (schret != 0) {
+      llvm::errs() << llvm::format("lldb-server set sched failed: {0}\n", errno);
+    }
+  }
+#endif
   Status error;
   MainLoop mainloop;
 #ifndef _WIN32
