@@ -209,7 +209,6 @@ Status PlatformOHOSRemoteGDBServer::ConnectRemote(Args &args) {
 Status PlatformOHOSRemoteGDBServer::DisconnectRemote() {
   DeleteForwardPort(g_remote_platform_pid);
   g_hdc_forward_port_offset = 0;
-  m_connect_addr.clear();
   return PlatformRemoteGDBServer::DisconnectRemote();
 }
 
