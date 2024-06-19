@@ -2827,7 +2827,7 @@ def main():
     llvm_make = build_utils.merge_out_path('llvm_make')
     windows64_install = build_utils.merge_out_path('windows-x86_64-install')
     llvm_path = llvm_install if not build_config.build_only else \
-        os.path.join(buildtools_path, 'clang', 'ohos', 'linux-x86_64', f'clang-{build_config.CLANG_VERSION}')
+        os.path.join(build_config.buildtools_path, 'clang', 'ohos', 'linux-x86_64', f'clang-{build_config.CLANG_VERSION}')
 
     configs = []
     if not build_config.no_build_arm:
