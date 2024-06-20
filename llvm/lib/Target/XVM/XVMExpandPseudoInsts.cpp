@@ -39,7 +39,7 @@ bool XVMExpandPseudo::runOnMachineFunction(MachineFunction &MF) {
 bool XVMExpandPseudo::expandMBB(MachineBasicBlock &MBB) {
   bool Modified = false;
 
-  MachineBasicBlock::iterator MBBI = MBB.begin(), E = MBB.end();
+  MachineBasicBlock::iterator MBBI = MBB.begin();
   int InstNumber = std::distance(MBB.begin(), MBB.end());
   for (int i = 0; i < InstNumber; i++) {
     MachineBasicBlock::iterator NMBBI = std::next(MBBI);
@@ -98,7 +98,6 @@ bool XVMExpandPseudo::expandSelectCC(MachineBasicBlock &MBB,
   MachineInstr &MI = *MBBI;
   const TargetInstrInfo *TII = MBB.getParent()->getSubtarget().getInstrInfo();
   DebugLoc DL = MI.getDebugLoc();
-  unsigned Opc = MI.getOpcode();
   MachineFunction *MF = MBB.getParent();
   MachineRegisterInfo &MRI = MF->getRegInfo();
 
@@ -173,7 +172,6 @@ INITIALIZE_PASS(XVMExpandPseudo, "xvm-expand-pseudo",
 namespace llvm {
 
 FunctionPass *createXVMExpandPseudoPass() { return new XVMExpandPseudo(); }
-
 }
 
 #endif

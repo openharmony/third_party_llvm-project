@@ -36,7 +36,6 @@ XVMMCInstLower::GetExternalSymbolSymbol(const MachineOperand &MO) const {
 
 MCOperand XVMMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
                                              MCSymbol *Sym) const {
-
   const MCExpr *Expr = MCSymbolRefExpr::create(Sym, Ctx);
 
   if (!MO.isJTI() && MO.getOffset())

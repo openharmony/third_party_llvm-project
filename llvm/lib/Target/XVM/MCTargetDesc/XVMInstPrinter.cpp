@@ -20,13 +20,13 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FormattedStream.h"
-using namespace llvm;
-using namespace std;
 #define DEBUG_TYPE "asm-printer"
 #define GET_INSTRINFO_CTOR_DTOR
 
 // Include the auto-generated portion of the assembly writer.
 #include "XVMGenAsmWriter.inc"
+using namespace llvm;
+using namespace std;
 
 void XVMInstPrinter::printInst(const MCInst *MI, uint64_t Address,
                                StringRef Annot, const MCSubtargetInfo &STI,
@@ -39,7 +39,7 @@ void XVMInstPrinter::printInst(const MCInst *MI, uint64_t Address,
       O << "\t";
     }
   }
-  switch(MCInstFlag) {
+  switch (MCInstFlag) {
     default:
       printInstruction(MI, Address, O);
       break;
@@ -70,11 +70,11 @@ void XVMInstPrinter::printCallInstructionImm(const MCInst *MI, raw_ostream &O) {
 }
 
 void XVMInstPrinter::printMovWithFuncID(const MCInst *MI, raw_ostream &O) {
-  const MCOperand & Op0 = MI->getOperand(0);
+  const MCOperand &Op0 = MI->getOperand(0);
   assert(Op0.isReg());
-  const MCOperand & Op1 = MI->getOperand(1);
+  const MCOperand &Op1 = MI->getOperand(1);
   assert(Op1.isExpr());
-  const MCOperand & Op2 = MI->getOperand(2);
+  const MCOperand &Op2 = MI->getOperand(2);
   assert(Op2.isImm());
   O << "\t";
   O << "mov " << getRegisterName(Op0.getReg()) << ", #" << Op2.getImm();
@@ -82,11 +82,11 @@ void XVMInstPrinter::printMovWithFuncID(const MCInst *MI, raw_ostream &O) {
 
 void XVMInstPrinter::printDataRefWithGlobalID(const MCInst *MI, raw_ostream &O) {
   assert(MI->getNumOperands() >= 3);
-  const MCOperand & Op0 = MI->getOperand(0);
+  const MCOperand &Op0 = MI->getOperand(0);
   assert(Op0.isReg());
-  const MCOperand & Op1 = MI->getOperand(1);
+  const MCOperand &Op1 = MI->getOperand(1);
   assert(Op1.isExpr());
-  const MCOperand & Op2 = MI->getOperand(2);
+  const MCOperand &Op2 = MI->getOperand(2);
   assert(Op2.isImm());
   O << "\t";
   O << "dataref " << getRegisterName(Op0.getReg()) << ", #" << Op2.getImm();
@@ -166,7 +166,7 @@ void XVMInstPrinter::printImm64Operand(const MCInst *MI, unsigned OpNo,
 }
 
 void XVMInstPrinter::printBrTargetOperand(const MCInst *MI, unsigned OpNo,
-                                       raw_ostream &O) {
+                                          raw_ostream &O) {
   const MCOperand &Op = MI->getOperand(OpNo);
   if (Op.isImm()) {
     int16_t Imm = Op.getImm();

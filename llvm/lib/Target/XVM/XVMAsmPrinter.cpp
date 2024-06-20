@@ -67,12 +67,11 @@ public:
   void emitEndOfAsmFile(Module &M) override;
   void emitBasicBlockStart(const MachineBasicBlock &MBB) override {};
   void emitGlobalVariable(const GlobalVariable *GV) override;
-  bool runOnMachineFunction(MachineFunction & MF) override;
+  bool runOnMachineFunction(MachineFunction &MF) override;
 
 private:
-  const Function *F;
   void emitDecls(const Module &M);
-  void setFunctionCallInfo(MCInst * Inst);
+  void setFunctionCallInfo(MCInst *Inst);
   void setGlobalSymbolInfo(const MachineInstr *MI, MCInst* Inst);
   DenseMap<const MachineInstr *, unsigned> MIIndentMap;
 
@@ -112,12 +111,12 @@ static std::map<std::string, SecSubSecIndices> DataSectionNameIndexMap;
 static std::map<int, XVMSectionInfo> DataSectionIndexInfoMap;
 
 template <typename T>
-inline std::string UnsignedIntTypeToHex(T V, size_t W=sizeof(T)*2)
+inline std::string UnsignedIntTypeToHex(T V, size_t W = sizeof(T)*2)
 {
     std::stringstream SS;
     std::string RS;
     SS << std::setfill('0') << std::setw(W) << std::hex << (V|0);
-    for(unsigned Index=0; Index<SS.str().length(); Index=Index+2) {
+    for (unsigned Index=0; Index<SS.str().length(); Index=Index+2) {
         RS += "\\x" + SS.str().substr(Index, 2);
     }
     return RS;
@@ -152,8 +151,8 @@ static uint64_t CreateRefContent(int ToDataSecID, uint64_t ToOffset) {
   return ReTRefData;
 }
 
-static int GetDataIndex(const char * _name, const unsigned char SecOrSubSection) {
-  std::map<std::string, SecSubSecIndices>::iterator I = DataSectionNameIndexMap.find(_name);
+static int GetDataIndex(const char *name, const unsigned char SecOrSubSection) {
+  std::map<std::string, SecSubSecIndices>::iterator I = DataSectionNameIndexMap.find(name);
   if (I == DataSectionNameIndexMap.end()) {
     return -1;
   } else {
@@ -164,8 +163,8 @@ static int GetDataIndex(const char * _name, const unsigned char SecOrSubSection)
   }
 }
 
-int GetFuncIndex(const char * _name) {
-  std::map<std::string, int>::iterator I = FunctionNameAndIndex.find(_name);
+int GetFuncIndex(const char *name) {
+  std::map<std::string, int>::iterator I = FunctionNameAndIndex.find(name);
   if (I == FunctionNameAndIndex.end()) {
     return -1;
   } else {
@@ -173,8 +172,8 @@ int GetFuncIndex(const char * _name) {
   }
 }
 
-static int GetDefFuncIndex(const char * _name) {
-  std::map<std::string, int>::iterator I = FunctionDefinitionMap.find(_name);
+static int GetDefFuncIndex(const char *name) {
+  std::map<std::string, int>::iterator I = FunctionDefinitionMap.find(name);
   if (I == FunctionDefinitionMap.end())
     return -1;
   return I->second;
@@ -222,8 +221,8 @@ static bool IsConstructorDestructor(const char *FuncName, const Module *M) {
          IsGlobalVariableType(FuncName, M, "llvm.global_ctors");
 }
 
-unsigned int GetPtrRegisterLevelBasedOnName(const char * _name) {
-  int DataIndex = GetDataIndex(_name, DATA_SUB_SECTION);
+unsigned int GetPtrRegisterLevelBasedOnName(const char *name) {
+  int DataIndex = GetDataIndex(name, DATA_SUB_SECTION);
   if (DataIndex != -1) {
     std::map<int, XVMSectionInfo>::iterator I = DataSectionIndexInfoMap.find(DataIndex);
     if (I == DataSectionIndexInfoMap.end()) {
@@ -237,8 +236,8 @@ unsigned int GetPtrRegisterLevelBasedOnName(const char * _name) {
   return 0;
 }
 
-uint64_t GetSubSecOffsetForGlobal(const char * _name) {
-  std::map<std::string, SecSubSecIndices>::iterator I = DataSectionNameIndexMap.find(_name);
+uint64_t GetSubSecOffsetForGlobal(const char *name) {
+  std::map<std::string, SecSubSecIndices>::iterator I = DataSectionNameIndexMap.find(name);
   if (I == DataSectionNameIndexMap.end()) {
     return -1;
   } else {
@@ -249,8 +248,8 @@ uint64_t GetSubSecOffsetForGlobal(const char * _name) {
   }
 }
 
-static int GetOffsetInDataSection(const char * _name) {
-  int DataIndex = GetDataIndex(_name, DATA_SUB_SECTION);
+static int GetOffsetInDataSection(const char *name) {
+  int DataIndex = GetDataIndex(name, DATA_SUB_SECTION);
   if (DataIndex != -1) {
     std::map<int, XVMSectionInfo>::iterator I = DataSectionIndexInfoMap.find(DataIndex);
     if (I == DataSectionIndexInfoMap.end()) {
@@ -261,10 +260,10 @@ static int GetOffsetInDataSection(const char * _name) {
   return -1;
 }
 
-static int GetMergedSectionIndex(const std::string &_SymName) {
+static int GetMergedSectionIndex(const std::string &SymName) {
   for (auto& I : DataSectionIndexInfoMap) {
-    XVMSectionInfo & SInfo = I.second;
-    if (SInfo.SymName.compare(_SymName) == 0) {
+    XVMSectionInfo &SInfo = I.second;
+    if (SInfo.SymName.compare(SymName) == 0) {
       return SInfo.MergedSecIndex;
     }
   }
@@ -274,24 +273,24 @@ static int GetMergedSectionIndex(const std::string &_SymName) {
 static inline void PatchSectionInfo(void) {
   int MergedSectionIndex = 0;
   // Assign the merged section index to each section
-  std::map<std::string, int> _SectionNameIndex;
+  std::map<std::string, int> SectionNameIndexMap;
   for (auto& I : DataSectionIndexInfoMap) {
-    XVMSectionInfo & SInfo = I.second;
-    std::map<std::string, int>::iterator It = _SectionNameIndex.find(SInfo.SecName);
-    if (It == _SectionNameIndex.end()) {
-      _SectionNameIndex[SInfo.SecName] = MergedSectionIndex++;
+    XVMSectionInfo &SInfo = I.second;
+    std::map<std::string, int>::iterator It = SectionNameIndexMap.find(SInfo.SecName);
+    if (It == SectionNameIndexMap.end()) {
+      SectionNameIndexMap[SInfo.SecName] = MergedSectionIndex++;
     }
   }
   // patch merged section index
   for (auto& I : DataSectionIndexInfoMap) {
-    XVMSectionInfo & SInfo = I.second;
-    SInfo.MergedSecIndex = _SectionNameIndex[SInfo.SecName];
+    XVMSectionInfo &SInfo = I.second;
+    SInfo.MergedSecIndex = SectionNameIndexMap[SInfo.SecName];
   }
 
   // patch offset
   std::map<unsigned int, uint64_t> SectionSizes;
   for (auto& I : DataSectionIndexInfoMap) {
-    XVMSectionInfo & SInfo = I.second;
+    XVMSectionInfo &SInfo = I.second;
     if (SectionSizes.find(SInfo.MergedSecIndex) == SectionSizes.end()) {
       SInfo.SubSecOffset = 0;
       SectionSizes[SInfo.MergedSecIndex] = SInfo.SecSize;
@@ -302,35 +301,34 @@ static inline void PatchSectionInfo(void) {
   }
 
   // patch the merged section index
-  for (auto & E: DataSectionNameIndexMap) {
-    int _MergedSectionIndex = GetMergedSectionIndex(E.first);
-    if (_MergedSectionIndex != -1) {
-      E.second.SecNameIndex = _MergedSectionIndex;
+  for (auto &E: DataSectionNameIndexMap) {
+    int MergedSectionIndex = GetMergedSectionIndex(E.first);
+    if (MergedSectionIndex != -1) {
+      E.second.SecNameIndex = MergedSectionIndex;
     }
   }
 
   for (auto& I : DataSectionIndexInfoMap) {
-    XVMSectionInfo & SInfo = I.second;
-    for(auto & EachPatch : SInfo.PatchListInfo) {
+    XVMSectionInfo &SInfo = I.second;
+    for (auto &EachPatch : SInfo.PatchListInfo) {
       uint64_t DataSectionOffset = GetOffsetInDataSection(EachPatch.SymName.data());
       DataSectionOffset += EachPatch.AddEnd;
       SInfo.PtrSecIndex = GetDataIndex(EachPatch.SymName.data(), DATA_SUB_SECTION);
       int DataSectionIndex = GetDataIndex(EachPatch.SymName.data(), DATA_SECTION);
       LLVM_DEBUG(dbgs() << "Add to Buf: "
                         << UnsignedIntTypeToHex(ReverseBytes(
-                                                  CreateRefContent(DataSectionIndex, DataSectionOffset),
-                                                  8),
-                                                8*2).c_str()
+                            CreateRefContent(DataSectionIndex, DataSectionOffset),
+                            8),8*2).c_str()
                         << " size=" << 8 << "\n");
       SInfo.SecBuf += UnsignedIntTypeToHex(
-               ReverseBytes(CreateRefContent(DataSectionIndex, DataSectionOffset), 8), 16);
+          ReverseBytes(CreateRefContent(DataSectionIndex, DataSectionOffset), 8), 16);
     }
   }
 }
 
 static inline std::string GetDataSectionPerm(XVMSectionInfo* SInfo) {
   assert(SInfo->Permission != XVM_SECTION_PERM_UNKNOWN && "Permission Unset");
-  switch(SInfo->Permission) {
+  switch (SInfo->Permission) {
     case XVM_SECTION_PERM_RO:
       return "ro";
       break;
@@ -357,40 +355,40 @@ static inline std::string GetDataSectionPerm(XVMSectionInfo* SInfo) {
   }
 }
 
-void XVMAsmPrinter::emitDataSectionInfo(raw_svector_ostream & O) {
+void XVMAsmPrinter::emitDataSectionInfo(raw_svector_ostream &O) {
   O << ";; \"data\" index name perm bytes init_data\n";
   // Merged section sizes
-  int _MaxMergedIndex = 0;
+  int MaxMergedIndex = 0;
   std::map<unsigned int, uint64_t> SectionSizes;
   for (auto& I : DataSectionIndexInfoMap) {
-    XVMSectionInfo & SInfo = I.second;
+    XVMSectionInfo &SInfo = I.second;
     if (SectionSizes.find(SInfo.MergedSecIndex) == SectionSizes.end()) {
       SectionSizes[SInfo.MergedSecIndex] = SInfo.SecSize;
     } else {
       SectionSizes[SInfo.MergedSecIndex] += SInfo.SecSize;
     }
-    if (SInfo.MergedSecIndex > _MaxMergedIndex)
-      _MaxMergedIndex = SInfo.MergedSecIndex;
+    if (SInfo.MergedSecIndex > MaxMergedIndex)
+      MaxMergedIndex = SInfo.MergedSecIndex;
   }
 
   if (DataSectionIndexInfoMap.size()>0) {
-    for (int _MergedSecIndex = 0; _MergedSecIndex <= _MaxMergedIndex; _MergedSecIndex++)
+    for (int MergedSecIndex = 0; MergedSecIndex <= MaxMergedIndex; MergedSecIndex++)
     {
       // Merged section info
       std::string MergedSecBuf = "";
-      std::string _SecName = "";
-      std::string _SecPermit = "";
+      std::string SecName = "";
+      std::string SecPermit = "";
       for (auto& I : DataSectionIndexInfoMap) {
-        XVMSectionInfo & SInfo = I.second;
-        if (SInfo.MergedSecIndex == _MergedSecIndex) {
+        XVMSectionInfo &SInfo = I.second;
+        if (SInfo.MergedSecIndex == MergedSecIndex) {
           MergedSecBuf += SInfo.SecBuf;
-          _SecName = SInfo.SecName;
-          _SecPermit = GetDataSectionPerm(&SInfo);
+          SecName = SInfo.SecName;
+          SecPermit = GetDataSectionPerm(&SInfo);
         }
       }
       // The section data
-      O << "(data " << _MergedSecIndex << " $" << _SecName << " " << _SecPermit;
-      O << " " << SectionSizes[_MergedSecIndex];
+      O << "(data " << MergedSecIndex << " $" << SecName << " " << SecPermit;
+      O << " " << SectionSizes[MergedSecIndex];
       if (!MergedSecBuf.empty()) {
         O << " \"" << MergedSecBuf << "\"";
       }
@@ -400,7 +398,7 @@ void XVMAsmPrinter::emitDataSectionInfo(raw_svector_ostream & O) {
 }
 
 void XVMAsmPrinter::InitGlobalConstantDataSequential(
-  const DataLayout &DL, const ConstantDataSequential *CDS, XVMSectionInfo* SInfo) {
+    const DataLayout &DL, const ConstantDataSequential *CDS, XVMSectionInfo* SInfo) {
   LLVM_DEBUG(dbgs() << "\n--------------------InitGlobalConstantDataSequential-------------------\n");
 
   unsigned ElementByteSize = CDS->getElementByteSize();
@@ -408,9 +406,8 @@ void XVMAsmPrinter::InitGlobalConstantDataSequential(
     for (unsigned I = 0, E = CDS->getNumElements(); I != E; ++I) {
       LLVM_DEBUG(dbgs() << "Add to Buf: "
                         << UnsignedIntTypeToHex(ReverseBytes(
-                                                  CDS->getElementAsInteger(I),
-                                                  ElementByteSize),
-                                                ElementByteSize*2).c_str()
+                            CDS->getElementAsInteger(I),
+                            ElementByteSize), ElementByteSize*2).c_str()
                         << " size=" << ElementByteSize << "\n");
 			SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(CDS->getElementAsInteger(I), ElementByteSize), ElementByteSize*2);
     }
@@ -430,11 +427,9 @@ void XVMAsmPrinter::InitGlobalConstantDataSequential(
   }
 }
 
-
-void XVMAsmPrinter::InitGlobalConstantArray(const DataLayout &DL,
-                                    const ConstantArray *CA,
-                                    const Constant *BaseCV, uint64_t Offset,
-                                    XVMSectionInfo* SInfo) {
+void XVMAsmPrinter::InitGlobalConstantArray(const DataLayout &DL, const ConstantArray *CA,
+                                            const Constant *BaseCV, uint64_t Offset,
+                                            XVMSectionInfo* SInfo) {
   LLVM_DEBUG(dbgs() << "\n--------------------InitGlobalConstantArray-------------------\n");
   for (unsigned I = 0, E = CA->getNumOperands(); I != E; ++I) {
     InitGlobalConstantImpl(DL, CA->getOperand(I), BaseCV, Offset, SInfo);
@@ -442,11 +437,9 @@ void XVMAsmPrinter::InitGlobalConstantArray(const DataLayout &DL,
   }
 }
 
-
-void XVMAsmPrinter::InitGlobalConstantStruct(const DataLayout &DL,
-                                     const ConstantStruct *CS,
-                                     const Constant *BaseCV, uint64_t Offset,
-                                     XVMSectionInfo* SInfo) {
+void XVMAsmPrinter::InitGlobalConstantStruct(const DataLayout &DL, const ConstantStruct *CS,
+                                             const Constant *BaseCV, uint64_t Offset,
+                                             XVMSectionInfo* SInfo) {
   LLVM_DEBUG(dbgs() << "\n--------------------InitGlobalConstantStruct-------------------\n");
   unsigned Size = DL.getTypeAllocSize(CS->getType());
   const StructLayout *Layout = DL.getStructLayout(CS->getType());
@@ -462,11 +455,10 @@ void XVMAsmPrinter::InitGlobalConstantStruct(const DataLayout &DL,
     uint64_t PadSize = ((I == E - 1 ? Size : Layout->getElementOffset(I + 1)) -
                         Layout->getElementOffset(I)) -
                        FieldSize;
-
     // Insert padding - this may include padding to increase the size of the
     // current field up to the ABI size (if the struct is not packed) as well
     // as padding to ensure that the next field starts at the right offset.
-    if(PadSize > 0) {
+    if (PadSize > 0) {
       LLVM_DEBUG(dbgs() << "\n------------Struct PADSIZE-----------" << PadSize << "\n");
       LLVM_DEBUG(dbgs() << "Add to Buf: "
                         << UnsignedIntTypeToHex(ReverseBytes(0, PadSize), PadSize*2).c_str()
@@ -481,9 +473,8 @@ void XVMAsmPrinter::InitGlobalConstantStruct(const DataLayout &DL,
 }
 
 void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant *CV,
-                                   const Constant *BaseCV,
-                                   uint64_t Offset,
-                                   XVMSectionInfo* SInfo) {
+                                           const Constant *BaseCV, uint64_t Offset,
+                                           XVMSectionInfo* SInfo) {
   LLVM_DEBUG(dbgs() << "\n--------------------InitGlobalConstantImpl "
                     << CV->getName().str().c_str()
                     << "-------------------\n");
@@ -526,7 +517,6 @@ void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant 
       SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(CI->getZExtValue(), StoreSize), StoreSize*2);
     } else {
       llvm_unreachable("Should not have large int global value!");
-      // InitGlobalConstantLargeInt(DL, CI, SInfo);
     }
     return;
   }
@@ -590,7 +580,6 @@ void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant 
   }
 
   int DataSectionIndex = GetDataIndex(CV->getName().data(), DATA_SECTION);
-  int DataSectionOffset = 0;
   XVMGVPathInfo PatchInfo;
   if (DataSectionIndex != -1) {
     SInfo->BufType = XVM_SECTION_DATA_TYPE_POINTER;
@@ -610,7 +599,6 @@ void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant 
   llvm::raw_string_ostream rso(StrME);
   if (ME != NULL) {
     DataSectionIndex = 0;
-    DataSectionOffset = 0;
     if (ME->getKind() == llvm::MCExpr::Binary) {
       const MCSymbolRefExpr *SRE;
       if (const MCBinaryExpr *BE = dyn_cast<MCBinaryExpr>(ME)) {
@@ -700,7 +688,7 @@ void XVMAsmPrinter::InitDataSectionGlobalConstant(Module *M) {
         SInfo.SecName = "rodata";
       } else {
         SInfo.Permission = XVM_SECTION_PERM_RW;
-        if ( (SInfo.BufType & XVM_SECTION_DATA_TYPE_BSS) != XVM_SECTION_DATA_TYPE_UNKNOWN) {
+        if ((SInfo.BufType & XVM_SECTION_DATA_TYPE_BSS) != XVM_SECTION_DATA_TYPE_UNKNOWN) {
           SInfo.SecName = "bss";
         } else {
           SInfo.SecName = "data";
@@ -711,7 +699,7 @@ void XVMAsmPrinter::InitDataSectionGlobalConstant(Module *M) {
       DataSectionNameIndexMap.insert(std::pair<std::string, SecSubSecIndices>(GV.getName().data(), SecIndices));
       DataSectionIndexInfoMap.insert(std::pair<int, XVMSectionInfo>(SectionIndex++, SInfo));
     }
-    // TODO: extern case
+    // Notes: extern case we may need to consider later
   }
   PatchSectionInfo();
 }
@@ -723,7 +711,7 @@ void XVMAsmPrinter::InitModuleMapFuncnameIndex(Module *M) {
   /* F1 can't be const because if the function is a constructor
    * or destructor, we need to add the export attribute to it */
   for (Function &F1 : M->getFunctionList()) {
-    if(F1.getInstructionCount() != 0) {
+    if (F1.getInstructionCount() != 0) {
       FunctionDefinitionMap.insert(std::make_pair(F1.getName().data(), Index));
       FunctionNameAndIndex.insert(std::make_pair(F1.getName().data(), Index));
       if (IsConstructorDestructor(F1.getName().data(), M)) {
@@ -731,7 +719,7 @@ void XVMAsmPrinter::InitModuleMapFuncnameIndex(Module *M) {
       }
       Index ++;
     }
-    else if(!F1.isIntrinsic()) {
+    else if (!F1.isIntrinsic()) {
       FuncDecl.push_back(F1.getName().data());
     }
   }
@@ -815,29 +803,29 @@ bool XVMAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI,
   return false;
 }
 
-void XVMAsmPrinter::setFunctionCallInfo(MCInst * Inst) {
-  const char * func_name = NULL;
-  const MCExpr * TmpExpr;
-  int64_t func_index = -1;
+void XVMAsmPrinter::setFunctionCallInfo(MCInst *Inst) {
+  const char *FuncName = NULL;
+  const MCExpr *TmpExpr;
+  int64_t FuncIndex = -1;
   if (Inst == NULL)
     return;
 
   assert(Inst->getNumOperands()>0);
-  MCOperand & FirstMO = Inst->getOperand(0);
+  MCOperand &FirstMO = Inst->getOperand(0);
   if (FirstMO.isExpr()) {
     Inst->setFlags(FUNC_CALL_FLAG_MC_INST_IMM);
     TmpExpr = Inst->getOperand(0).getExpr();
-    func_name = cast<MCSymbolRefExpr>(*TmpExpr).getSymbol().getName().data();
-    assert(func_name != NULL);
+    FuncName = cast<MCSymbolRefExpr>(*TmpExpr).getSymbol().getName().data();
+    assert(FuncName != NULL);
     assert(Inst->getNumOperands() == 1);
-    func_index = GetFuncIndex(func_name);
-    if (func_index == -1) {
+    FuncIndex = GetFuncIndex(FuncName);
+    if (FuncIndex == -1) {
       std::string ErrorMesg("Error: function name ");
-      ErrorMesg += func_name;
+      ErrorMesg += FuncName;
       ErrorMesg += " is called; but could not be found\n";
       report_fatal_error(ErrorMesg.data());
     }
-    MCOperand MCOp = MCOperand::createImm(func_index);
+    MCOperand MCOp = MCOperand::createImm(FuncIndex);
     Inst->addOperand(MCOp);
   }
   if (FirstMO.isReg()) {
@@ -851,7 +839,7 @@ void XVMAsmPrinter::setFunctionCallInfo(MCInst * Inst) {
 void XVMAsmPrinter::setGlobalSymbolInfo(const MachineInstr *MI, MCInst* Inst) {
   unsigned int numOps = MI->getNumOperands();
   bool hasGlobalSymbol = false;
-  for(unsigned int i=0; i<numOps; i++)
+  for (unsigned int i=0; i<numOps; i++)
   {
     const MachineOperand& tmp = MI->getOperand(i);
     if (tmp.isGlobal()) {
@@ -885,7 +873,7 @@ void XVMAsmPrinter::setGlobalSymbolInfo(const MachineInstr *MI, MCInst* Inst) {
         SymIndex = GetDataIndex(SymName.c_str(), DATA_SECTION);
         if (SymIndex == -1)  {
           report_fatal_error(
-              "TODO: Add the support of non-func-global-var scenarios\n");
+              "Note: Add the support of non-func-global-var scenarios\n");
         } else {
           Inst->setFlags(GLOBAL_DATAREF_FLAG_MC_INST);
           MCOperand MCOp = MCOperand::createImm(SymIndex);
@@ -914,8 +902,6 @@ void XVMAsmPrinter::emitInstruction(const MachineInstr *MI) {
 
 void XVMAsmPrinter::emitFunctionHeader() {
   const Function &F = MF->getFunction();
-  //OutStreamer->switchSection(MF->getSection());
-
   SmallString<128> Str;
   raw_svector_ostream O(Str);
   int Index = GetDefFuncIndex(F.getName().data());
@@ -1003,25 +989,24 @@ void XVMAsmPrinter::emitStartOfAsmFile(Module &M) {
   OutStreamer->emitRawText(O.str());
 }
 
-static void output_constructor_destructor_metadata(
-		raw_svector_ostream &O,
-		std::map<uint16_t, std::vector<const char *>> priority_map,
-		char *MetadataName) {
+static void output_constructor_destructor_metadata(raw_svector_ostream &O,
+                                                   std::map<uint16_t, std::vector<const char *>> priority_map,
+                                                   const char *MetadataName) {
   O << "(metadata " << MetadataName << " \"";
   if (strcmp(MetadataName, "$init_array") == 0) {
     for (auto i = priority_map.begin(); i != priority_map.end(); i++) {
-      for (int j = 0; j < (i->second).size(); j++) {
-        int func_index = GetFuncIndex((i->second)[j]);
-        std::string func_id_data = UnsignedIntTypeToHex(ReverseBytes(func_index, 4), 8);
+      for (unsigned j = 0; j < (i->second).size(); j++) {
+        int FuncIndex = GetFuncIndex((i->second)[j]);
+        std::string func_id_data = UnsignedIntTypeToHex(ReverseBytes(FuncIndex, 4), 8);
         O << func_id_data.data();
       }
     }
   } else {
     /* Destructors are ran from largest number to smallest */
     for (auto i = priority_map.rbegin(); i != priority_map.rend(); i++) {
-      for (int j = 0; j < (i->second).size(); j++) {
-        int func_index = GetFuncIndex((i->second)[j]);
-        std::string func_id_data = UnsignedIntTypeToHex(ReverseBytes(func_index, 4), 8);
+      for (unsigned j = 0; j < (i->second).size(); j++) {
+        int FuncIndex = GetFuncIndex((i->second)[j]);
+        std::string func_id_data = UnsignedIntTypeToHex(ReverseBytes(FuncIndex, 4), 8);
         O << func_id_data.data();
       }
     }
@@ -1029,12 +1014,12 @@ static void output_constructor_destructor_metadata(
   O << "\")\n";
 }
 
-static void emitConstructorsDestructors(raw_svector_ostream &O, Module &M, char *GVName, char *MetadataName) {
+static void emitConstructorsDestructors(raw_svector_ostream &O, Module &M,
+                                        const char *GVName, const char *MetadataName) {
   GlobalVariable *GV;
   std::map<uint16_t, std::vector<const char *>> priority_map;
 
   GV = M.getGlobalVariable(GVName);
-
   if (!GV) {
     return;
   }
@@ -1060,8 +1045,8 @@ static void emitConstructorsDestructors(raw_svector_ostream &O, Module &M, char 
       continue;
     }
     uint16_t PriorityValue = Priority->getLimitedValue(UINT16_MAX);
-    const char *func_name = CS->getOperand(1)->getName().data();
-    priority_map[PriorityValue].push_back(func_name);
+    const char *FuncName = CS->getOperand(1)->getName().data();
+    priority_map[PriorityValue].push_back(FuncName);
   }
 
   output_constructor_destructor_metadata(O, priority_map, MetadataName);

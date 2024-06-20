@@ -25,7 +25,6 @@
 #include "llvm/CodeGen/SelectionDAGISel.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/IntrinsicInst.h"
-//#include "llvm/IR/IntrinsicsXVM.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -40,7 +39,6 @@ using namespace llvm;
 namespace {
 
 class XVMDAGToDAGISel : public SelectionDAGISel {
-
   /// Subtarget - Keep a pointer to the XVMSubtarget around so that we can
   /// make the right decision when generating code for different subtargets.
   const XVMSubtarget *Subtarget;
@@ -188,7 +186,6 @@ void XVMDAGToDAGISel::Select(SDNode *Node) {
 }
 
 void XVMDAGToDAGISel::PreprocessISelDAG() {
-
 }
 
 FunctionPass *llvm::createXVMISelDag(XVMTargetMachine &TM) {

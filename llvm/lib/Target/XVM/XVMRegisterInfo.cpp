@@ -25,8 +25,9 @@
 
 #define GET_REGINFO_TARGET_DESC
 #include "XVMGenRegisterInfo.inc"
-using namespace llvm;
 #include <sstream>
+
+using namespace llvm;
 #define XVM_STACK_SIZE_LIMIT 1024
 
 XVMRegisterInfo::XVMRegisterInfo()
@@ -64,7 +65,6 @@ void XVMRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   MachineBasicBlock &MBB = *MI.getParent();
   MachineFunction &MF = *MBB.getParent();
   DebugLoc DL = MI.getDebugLoc();
-
   if (!DL)
     /* try harder to get some debug loc */
     for (auto &I : MBB)
@@ -100,7 +100,7 @@ void XVMRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     WarnSize(Offset, MF, DL);
     Register reg = MI.getOperand(i - 1).getReg();
     BuildMI(MBB, ++II, DL, TII.get(XVM::MOV_rr), reg).addReg(XVM::SP);
-    if(StackSize + Offset) {
+    if (StackSize + Offset) {
       BuildMI(MBB, II, DL, TII.get(XVM::AddRef_ri), reg).addReg(reg).addImm(StackSize + Offset);
     }
     MI.eraseFromParent();
@@ -109,14 +109,13 @@ void XVMRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 
   int Offset = MF.getFrameInfo().getObjectOffset(FrameIndex) +
                MI.getOperand(i + 1).getImm();
-
   if (!isInt<32>(Offset))
     llvm_unreachable("bug in frame offset");
 
   WarnSize(Offset, MF, DL);
 
   if (MI.getOpcode() == XVM::FI_ri) {
-    // TODO: to be tested and modified
+    // Note: to be tested and modified later
     // architecture does not really support FI_ri, replace it with
     //    MOV_rr <target_reg>, frame_reg
     //    ADD_ri <target_reg>, imm

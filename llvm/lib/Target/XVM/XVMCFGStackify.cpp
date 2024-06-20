@@ -24,7 +24,6 @@
 
 
 #include "XVM.h"
-//#include "XVMMachineFunctionInfo.h"
 #include "XVMSortRegion.h"
 #include "XVMSubtarget.h"
 #include "llvm/ADT/Statistic.h"
@@ -246,7 +245,7 @@ void XVMCFGStackify::fixBackEdgesOfLoops(MachineFunction &MF) {
     MachineBasicBlock *LoopHeader = Loop->getHeader();
     for (auto &MI : MBB.terminators()) {
       /* skip the added opcode such as THEN ... */
-      if (MI.getNumOperands() <=0 ) {
+      if (MI.getNumOperands() <=0) {
         continue;
       }
       if (TII->isUnCondBranch(&MI) && MI.getOperand(0).getMBB() == LoopHeader) {
@@ -258,7 +257,7 @@ void XVMCFGStackify::fixBackEdgesOfLoops(MachineFunction &MF) {
       } else if (TII->isCondBranch(&MI) && MI.getOperand(0).getMBB() == LoopHeader) {
           uint32_t action_opcode = XVM::CONTINUE;
           /* Fix Loop Exiting Fallthrough */
-          if(&MBB == Loop->getBottomBlock() && &MI == &*(--MBB.end()) && MLI.getLoopFor(MBB.getFallThrough()) != Loop){
+          if (&MBB == Loop->getBottomBlock() && &MI == &*(--MBB.end()) && MLI.getLoopFor(MBB.getFallThrough()) != Loop) {
             TII->negateCondBranch(&MI);
             action_opcode = XVM::BREAK;
           }
@@ -277,7 +276,7 @@ void XVMCFGStackify::fixBackEdgesOfLoops(MachineFunction &MF) {
 }
 
 void XVMCFGStackify::registerScope(MachineInstr *Begin,
-                                           MachineInstr *End) {
+                                   MachineInstr *End) {
   BeginToEnd[Begin] = End;
   EndToBegin[End] = Begin;
 }
@@ -304,7 +303,7 @@ static bool isChild(const MachineInstr &MI) {
  *  are in the beginning of the BB, the break_imm needs to increase one.
  *  This is the case where there are multiple conditions ||ed or &&ed in a
  *  loop condition such as for or while loops.
- *  FIXME: we may find other approach for fixing this.
+ *  Note: we may find other approach for fixing this.
 */
 unsigned XVMCFGStackify::getBranchDepth(
     const SmallVectorImpl<EndMarkerInfo> &Stack,
@@ -322,14 +321,6 @@ unsigned XVMCFGStackify::getBranchDepth(
   }
   assert(Depth < Stack.size() && "Branch destination should be in scope");
   return Depth;
-}
-
-static bool isContinueBlock(MachineBasicBlock &MBB) {
-  for (auto &MI : MBB) {
-    if (MI.getOpcode() == XVM::CONTINUE)
-      return true;
-  }
-  return false;
 }
 
 static inline MachineBasicBlock *getNextBlock(MachineBasicBlock &MBB) {
@@ -351,8 +342,6 @@ static inline MachineInstr *getNextInstruction(MachineInstr &MI) {
 void XVMCFGStackify::insertWithBreak(MachineBasicBlock &MBB,
                                      MachineBasicBlock::iterator MBBI) {
   DebugLoc DL;
-  MachineInstr &Inst = *MBBI;
-
   MachineBasicBlock *EndBlock = &MBB.getParent()->back();
   const auto &TII = MBB.getParent()->getSubtarget<XVMSubtarget>().getInstrInfo();
   MBB.addSuccessor(EndBlock);
@@ -432,7 +421,6 @@ void XVMCFGStackify::placeMarkers(MachineFunction &MF) {
   for (auto &MBB : MF)
     placeLoopMarker(MBB);
 
-  const MCAsmInfo *MCAI = MF.getTarget().getMCAsmInfo();
   for (auto &MBB : MF) {
     // Place the BLOCK for MBB if MBB is branched to from above.
     placeBlockMarker(MBB);
@@ -442,7 +430,7 @@ void XVMCFGStackify::placeMarkers(MachineFunction &MF) {
 }
 
 /// Insert a BLOCK marker for branches to MBB (if needed).
-// TODO Consider a more generalized way of handling block (and also loop and
+// Note: Consider a more generalized way of handling block (and also loop and
 // try) signatures when we implement the multi-value proposal later.
 void XVMCFGStackify::placeBlockMarker(MachineBasicBlock &MBB) {
   assert(!MBB.isEHPad());
@@ -548,8 +536,7 @@ void XVMCFGStackify::placeBlockMarker(MachineBasicBlock &MBB) {
   MachineInstr *Begin =
       BuildMI(*Header, InsertPos, Header->findDebugLoc(InsertPos),
               TII.get(XVM::BLOCK));
-//FIXME: Check if we need it
-//          .addImm(int64_t(ReturnType));
+//Note: Check if we need it later
 
   // Decide where in Header to put the END_BLOCK.
   BeforeSet.clear();
@@ -622,10 +609,9 @@ void XVMCFGStackify::placeLoopMarker(MachineBasicBlock &MBB) {
 
   // Mark the beginning of the loop.
   auto InsertPos = getEarliestInsertPos(&MBB, BeforeSet, AfterSet);
-  //FIXME: modify the form of the LOOP instruction
+  //Note: modify the form of the LOOP instruction
   MachineInstr *Begin = BuildMI(MBB, InsertPos, MBB.findDebugLoc(InsertPos),
                                 TII.get(XVM::LOOP));
-//                            .addImm(int64_t(XVM::BlockType::Void));
 
   // Decide where in Header to put the END_LOOP.
   BeforeSet.clear();
@@ -654,7 +640,7 @@ void XVMCFGStackify::placeLoopMarker(MachineBasicBlock &MBB) {
 }
 
 void XVMCFGStackify::extendCondStmt(std::map<MachineInstr *, unsigned int> CondBranchsWithDepth,
-                   MachineFunction &MF) {
+                                    MachineFunction &MF) {
   for (auto& I : CondBranchsWithDepth) {
     MachineInstr *MI = I.first;
     unsigned int depth = I.second;
@@ -713,7 +699,7 @@ void XVMCFGStackify::rewriteDepthImmediates(MachineFunction &MF) {
 
       case XVM::END_LOOP: {
         Stack.push_back(std::make_pair(EndToBegin[&MI]->getParent(), &MI));
-        MachineInstr * PrevMI = MI.getPrevNode();
+        MachineInstr *PrevMI = MI.getPrevNode();
         if (PrevMI != NULL && PrevMI == MBB.begin()) {
           if (PrevMI->getOpcode() == XVM::END_BLOCK) {
             SetEndBlockLoop.insert(&MBB);
@@ -767,7 +753,6 @@ bool XVMCFGStackify::runOnMachineFunction(MachineFunction &MF) {
   LLVM_DEBUG(dbgs() << "********** CFG Stackifying **********\n"
                        "********** Function: "
                     << MF.getName() << '\n');
-  const MCAsmInfo *MCAI = MF.getTarget().getMCAsmInfo();
 
   releaseMemory();
 
@@ -781,12 +766,10 @@ bool XVMCFGStackify::runOnMachineFunction(MachineFunction &MF) {
   rewriteDepthImmediates(MF);
 
   // Add an end instruction at the end of the function body.
-  const auto &TII = *MF.getSubtarget<XVMSubtarget>().getInstrInfo();
   if (!MF.getSubtarget<XVMSubtarget>()
            .getTargetTriple()
            .isOSBinFormatELF())
-//FIXME: See if we need it
-//    appendEndToFunction(MF, TII);
+// Note: See if we need it later appendEndToFunction(MF, TII);
 
   cleanupFunctionData(MF);
 

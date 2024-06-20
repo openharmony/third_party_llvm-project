@@ -62,7 +62,6 @@ void XVMFrameLowering::emitPrologue(MachineFunction &MF,
   uint64_t StackSize = MFI.getStackSize();
   auto &ST = MF.getSubtarget<XVMSubtarget>();
   const auto *TII = ST.getInstrInfo();
-  auto &MRI = MF.getRegInfo();
   auto InsertPt = MBB.begin();
   DebugLoc DL;
 
@@ -83,7 +82,6 @@ void XVMFrameLowering::emitEpilogue(MachineFunction &MF,
   }
   auto &ST = MF.getSubtarget<XVMSubtarget>();
   const auto *TII = ST.getInstrInfo();
-  auto &MRI = MF.getRegInfo();
   auto InsertPt = MBB.getFirstTerminator();
   DebugLoc DL;
 

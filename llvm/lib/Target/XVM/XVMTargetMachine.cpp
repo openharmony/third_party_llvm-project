@@ -76,8 +76,6 @@ XVMTargetMachine::XVMTargetMachine(const Target &T, const Triple &TT,
   initAsmInfo();
   this->Options.EmitAddrsig = false;
 
-  XVMMCAsmInfo *MAI =
-      static_cast<XVMMCAsmInfo *>(const_cast<MCAsmInfo *>(AsmInfo.get()));
   setRequiresStructuredCFG(true);
 }
 
@@ -111,7 +109,6 @@ TargetPassConfig *XVMTargetMachine::createPassConfig(PassManagerBase &PM) {
 }
 
 void XVMPassConfig::addIRPasses() {
-//  addPass(createXVMCheckAndAdjustIR());
   TargetPassConfig::addIRPasses();
 }
 
@@ -129,7 +126,6 @@ bool XVMPassConfig::addInstSelector() {
 }
 
 void XVMPassConfig::addPreRegAlloc() {
-  // addPass(createXVMExpandPseudoPass());
   addPass(createXVMUpdateRefInstrForMIPass());
 }
 
@@ -140,7 +136,6 @@ void XVMPassConfig::addPreEmitPass() {
   // Currently, the algorithm is from WebAssembly.
   addPass(createXVMCFGSort());
   addPass(createXVMCFGStackify());
-  // addPass(createXVMCFGStructure());
 }
 
 #else
