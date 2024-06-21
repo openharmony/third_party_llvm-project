@@ -274,10 +274,14 @@ elif is_ohos_family_mobile():
   # FIXME: some tests for hos also need this now,
   # probably this shouldn't be added for ohos
   config.available_features.add('android')
-  compile_wrapper = os.path.join(config.compiler_rt_src_root, "test", "sanitizer_common", "ohos_family_commands", "ohos_compile.py") + " "
-  config.compile_wrapper = compile_wrapper
   config.substitutions.append( ('%run', "") )
   config.substitutions.append( ('%env ', "env ") )
+  if config.ohos_host:
+      compile_wrapper_name = "ohos_host_compile.py"
+  else:
+      compile_wrapper_name = "ohos_compile.py"
+  compile_wrapper = os.path.join(config.compiler_rt_src_root, "test", "sanitizer_common", "ohos_family_commands", compile_wrapper_name) + " "
+  config.compile_wrapper = compile_wrapper
   tool_wrapper = os.path.join(config.compiler_rt_src_root, "test", "sanitizer_common", "ohos_family_commands", "ohos_tool.py") + " "
   tools.append(ToolSubst('llvm-objdump', command=WrapTool('llvm-objdump', tool_wrapper), unresolved='fatal'))
 # OHOS_LOCAL end
@@ -542,14 +546,19 @@ elif config.host_os == 'OHOS':
   sys.path.append(hdc_imp)
   import hdc_constants
   env = os.environ.copy()
-  config.substitutions.append( ('%device_rundir/', hdc_constants.TMPDIR) )
-  prefix = hdc_constants.get_hdc_cmd_prefix()
-  prefix_str = ' '.join(prefix)
-  config.substitutions.append(('%push_to_device', "%s file send " % prefix_str) )
-  config.substitutions.append(('%adb_shell ', "%s shell " % prefix_str) )
-  config.substitutions.append(('%device_rm', "%s shell 'rm ' " % prefix_str) )
-  subprocess.check_call(prefix + ['tconn'], env=env)
-  subprocess.check_call(prefix + ['shell', 'mkdir', '-p', hdc_constants.TMPDIR], env=env)
+  if config.ohos_host:
+    config.substitutions.append( ('%device_rundir/', "./") )
+    config.substitutions.append( ('%push_to_device', "echo ") )
+    config.substitutions.append( ('%adb_shell', "") )
+  else:
+    config.substitutions.append( ('%device_rundir/', hdc_constants.TMPDIR) )
+    prefix = hdc_constants.get_hdc_cmd_prefix()
+    prefix_str = ' '.join(prefix)
+    config.substitutions.append(('%push_to_device', "%s file send " % prefix_str) )
+    config.substitutions.append(('%adb_shell ', "%s shell " % prefix_str) )
+    config.substitutions.append(('%device_rm', "%s shell 'rm ' " % prefix_str) )
+    subprocess.check_call(prefix + ['tconn'], env=env)
+    subprocess.check_call(prefix + ['shell', 'mkdir', '-p', hdc_constants.TMPDIR], env=env)
 
 # OHOS_LOCAL end
 else:

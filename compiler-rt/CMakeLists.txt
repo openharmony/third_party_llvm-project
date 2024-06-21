@@ -124,6 +124,7 @@ endif()
 
 pythonize_bool(ANDROID)
 pythonize_bool(OHOS_FAMILY)
+pythonize_bool(OHOS_HOST)
 
 set(COMPILER_RT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(COMPILER_RT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
