@@ -116,7 +116,7 @@ StringRef loongarch::getLoongArchABI(const Driver &D, const ArgList &Args,
     // shall remain valid or not, so we are going to continue recognizing it
     // for some time, until it is clear that everyone else has migrated away
     // from it.
-    [[fallthrough]];
+    LLVM_FALLTHROUGH;
   case llvm::Triple::GNU:
   default:
     return IsLA32 ? "ilp32d" : "lp64d";

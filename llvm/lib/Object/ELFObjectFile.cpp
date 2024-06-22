@@ -350,7 +350,7 @@ SubtargetFeatures ELFObjectFileBase::getLoongArchFeatures() const {
   case ELF::EF_LOONGARCH_ABI_DOUBLE_FLOAT:
     Features.AddFeature("d");
     // D implies F according to LoongArch ISA spec.
-    [[fallthrough]];
+    LLVM_FALLTHROUGH;
   case ELF::EF_LOONGARCH_ABI_SINGLE_FLOAT:
     Features.AddFeature("f");
     break;
