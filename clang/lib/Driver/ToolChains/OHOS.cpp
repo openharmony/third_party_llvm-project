@@ -122,6 +122,10 @@ std::string OHOS::getMultiarchTriple(const llvm::Triple &T) const {
     return "x86_64-linux-ohos";
   case llvm::Triple::aarch64:
     return "aarch64-linux-ohos";
+  // OHOS_LOCAL begin
+  case llvm::Triple::loongarch64:
+    return "loongarch64-linux-ohos";
+  // OHOS_LOCAL end
   }
   return T.str();
 }
@@ -389,7 +393,14 @@ void OHOS::addExtraOpts(llvm::opt::ArgStringList &CmdArgs) const {
   CmdArgs.push_back("-z");
   CmdArgs.push_back("relro");
   CmdArgs.push_back("-z");
-  CmdArgs.push_back("max-page-size=4096");
+  // OHOS_LOCAL begin
+  //LoongArch need page size 16K
+  if (getArch() == llvm::Triple::loongarch64) {
+    CmdArgs.push_back("max-page-size=16384");
+  } else {
+    CmdArgs.push_back("max-page-size=4096");
+  }
+  // OHOS_LOCAL end
   // .gnu.hash section is not compatible with the MIPS target
   if (getArch() != llvm::Triple::mipsel) {
     CmdArgs.push_back("--hash-style=gnu");
@@ -405,6 +416,8 @@ void OHOS::addExtraOpts(llvm::opt::ArgStringList &CmdArgs) const {
 SanitizerMask OHOS::getSupportedSanitizers() const {
   const bool IsX86_64 = getTriple().getArch() == llvm::Triple::x86_64;
   const bool IsAArch64 = getTriple().getArch() == llvm::Triple::aarch64;
+  // OHOS_LOCAL
+  const bool IsLoongArch64 = getTriple().getArch() == llvm::Triple::loongarch64;
   SanitizerMask Res = ToolChain::getSupportedSanitizers();
   Res |= SanitizerKind::Address;
   Res |= SanitizerKind::PointerCompare;
@@ -420,7 +433,8 @@ SanitizerMask OHOS::getSupportedSanitizers() const {
   // OHOS_LOCAL
   Res |= SanitizerKind::HWAddress;
   // TODO: Support TSAN and HWASAN and update mask.
-  if (IsAArch64 || IsX86_64)
+  // OHOS_LOCAL
+  if (IsAArch64 || IsX86_64 || IsLoongArch64)
     Res |= SanitizerKind::Thread;
   return Res;
 }

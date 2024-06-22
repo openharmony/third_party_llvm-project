@@ -69,8 +69,10 @@
 #include <sys/ptrace.h>
 #endif
 #include <sys/resource.h>
-#include <sys/stat.h>
+//OHOS_LOCAL Begin
 #include <sys/syscall.h>
+#include <sys/stat.h>
+//OHOS_LOCAL end
 #include <sys/time.h>
 #include <sys/types.h>
 #include <ucontext.h>

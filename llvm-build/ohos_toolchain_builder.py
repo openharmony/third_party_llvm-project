@@ -229,6 +229,7 @@ class OHOSToolchainBuilder:
             self._build_utils.open_ohos_triple("arm"),
             self._build_utils.open_ohos_triple("aarch64"),
             self._build_utils.open_ohos_triple("riscv64"),
+            self._build_utils.open_ohos_triple("loongarch64"),
             self._build_utils.open_ohos_triple("mipsel"),
             self._build_utils.open_ohos_triple("x86_64"),
         ]

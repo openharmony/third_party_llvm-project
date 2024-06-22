@@ -1,6 +1,7 @@
-; LoongArch does not support emulated tls.
-; UNSUPPORTED: loongarch
-
+;; OHOS_LOCAL begin
+;; LoongArch does not support emulated tls.
+;; UNSUPPORTED: loongarch
+;; OHOS_LOCAL end
 ; RUN: not lli -no-process-syms -emulated-tls -jit-kind=orc-lazy %s 2>&1 \
 ; RUN:   | FileCheck %s
 ;
