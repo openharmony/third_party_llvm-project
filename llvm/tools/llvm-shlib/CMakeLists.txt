@@ -29,18 +29,20 @@ if(LLVM_BUILD_LLVM_DYLIB)
 
   # OHOS_LOCAL begin
   if (LLVM_SPLIT_LLVM_DYLIB_TARGETS)
-    foreach(target ${LLVM_TARGETS_TO_BUILD})
-      get_property(target_link_components TARGET ${target} PROPERTY LLVM_LINK_COMPONENTS)
-      set(objects "")
-      foreach(component ${target_link_components})
-        list(REMOVE_ITEM LIB_NAMES "LLVM${component}")
-        list(APPEND objects "$<TARGET_OBJECTS:LLVM${component}>")
-      endforeach()
-      add_llvm_library("LLVM${target}Target"
-                      MODULE
-                      DISABLE_LLVM_LINK_LLVM_DYLIB
-                      ${INSTALL_WITH_TOOLCHAIN}
-                      OBJLIBS ${objects})
+    foreach(target ${LLVM_TARGETS_CALLED_VIA_DYLIB})
+      if (target IN_LIST LLVM_TARGETS_TO_BUILD)
+        get_property(target_link_components TARGET ${target} PROPERTY LLVM_LINK_COMPONENTS)
+        set(objects "")
+        foreach(component ${target_link_components})
+          list(REMOVE_ITEM LIB_NAMES "LLVM${component}")
+          list(APPEND objects "$<TARGET_OBJECTS:LLVM${component}>")
+        endforeach()
+        add_llvm_library("LLVM${target}Target"
+                        MODULE
+                        DISABLE_LLVM_LINK_LLVM_DYLIB
+                        ${INSTALL_WITH_TOOLCHAIN}
+                        OBJLIBS ${objects})
+      endif()
     endforeach()
   endif()
   # OHOS_LOCAL end
@@ -51,11 +53,6 @@ if(LLVM_BUILD_LLVM_DYLIB)
   endif()
 
   add_llvm_library(LLVM SHARED DISABLE_LLVM_LINK_LLVM_DYLIB SONAME ${INSTALL_WITH_TOOLCHAIN} ${SOURCES})
-  # OHOS_LOCAL begin
-  if (LLVM_SPLIT_LLVM_DYLIB_TARGETS)
-    target_compile_definitions(LLVM PRIVATE "LLVM_BUILD_BACKEND_MODULE")
-  endif()
-  # OHOS_LOCAL end
 
   list(REMOVE_DUPLICATES LIB_NAMES)
   if(("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux") OR (MINGW) OR (HAIKU)
@@ -89,13 +86,6 @@ if(LLVM_BUILD_LLVM_DYLIB)
   endif()
 
   target_link_libraries(LLVM PRIVATE ${LIB_NAMES})
-  # OHOS_LOCAL begin
-  if (LLVM_SPLIT_LLVM_DYLIB_TARGETS)
-    foreach(target ${LLVM_TARGETS_TO_BUILD})
-      add_dependencies(LLVM LLVM${target}Target)
-    endforeach()
-  endif()
-  # OHOS_LOCAL end
 
   if (APPLE)
     set_property(TARGET LLVM APPEND_STRING PROPERTY

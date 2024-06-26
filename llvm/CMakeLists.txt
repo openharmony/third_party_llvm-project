@@ -389,6 +389,11 @@ set(LLVM_ALL_TARGETS
   XVM
   )
 
+# OHOS_LOCAL begin
+# List of all targets called via dynamic libraries:
+set(LLVM_TARGETS_CALLED_VIA_DYLIB XVM)
+# OHOS_LOCAL end
+
 # List of targets with JIT support:
 set(LLVM_TARGETS_WITH_JIT X86 PowerPC AArch64 ARM Mips SystemZ)
 
