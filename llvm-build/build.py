@@ -1057,7 +1057,14 @@ class LlvmCore(BuildUtils):
             windows_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON'
 
         mingw_python_dir = self.get_mingw_python_dir()
-        py_dir = mingw_python_dir if mingw_python_dir else windows_sysroot
+        if mingw_python_dir:
+            py_dir = mingw_python_dir
+            py_lib_dir = os.path.join(py_dir, 'lib')
+            py_inc_dir = os.path.join(py_dir, 'include')
+        else:
+            py_dir = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'mingw-w64')
+            py_lib_dir = os.path.join(py_dir, 'mingw-w64-crt', 'lib64')
+            py_inc_dir = os.path.join(py_dir, 'mingw-w64-headers', 'include')
         windows_defines['LLDB_RELOCATABLE_PYTHON'] = 'OFF'
         windows_defines['LLDB_ENABLE_PYTHON'] = 'ON'
         windows_defines['LLDB_PYTHON_HOME'] = 'python'
@@ -1065,9 +1072,9 @@ class LlvmCore(BuildUtils):
             'bin/python/lib/python%s' % (self.build_config.LLDB_PY_VERSION)
         windows_defines['LLDB_PYTHON_EXE_RELATIVE_PATH'] = 'bin/python'
         windows_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.pys'
-        windows_defines['Python3_INCLUDE_DIRS'] = os.path.join(py_dir, 'include',
+        windows_defines['Python3_INCLUDE_DIRS'] = os.path.join(py_inc_dir,
             'python%s' % self.build_config.LLDB_PY_VERSION)
-        windows_defines['Python3_LIBRARIES'] = os.path.join(py_dir, 'lib', 'libpython%s.dll.a'
+        windows_defines['Python3_LIBRARIES'] = os.path.join(py_lib_dir, 'libpython%s.dll.a'
             % self.build_config.LLDB_PY_VERSION)
         windows_defines['Python3_EXECUTABLE'] = os.path.join(self.get_python_dir(), 'bin',
             self.build_config.LLDB_PYTHON)
