@@ -87,6 +87,7 @@
 #endif
 
 #if SANITIZER_LINUX && defined(__loongarch__)
+#  include <linux/stat.h> // OHOS_LOCAL
 #  include <sys/sysmacros.h>
 #endif
 
