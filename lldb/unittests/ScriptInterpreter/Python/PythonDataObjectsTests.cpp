@@ -799,11 +799,13 @@ def main():
 )";
 
   PythonScript lol(script2);
-
+  // OHOS_LOCAL begin
+  // Adapt to Python3.11.4
   EXPECT_THAT_EXPECTED(lol(),
                        llvm::Failed<PythonException>(testing::Property(
                            &PythonException::ReadBacktrace,
-                           testing::ContainsRegex("unprintable MyError"))));
+                           testing::ContainsRegex("exception str\\(\\) failed"))));
+  // OHOS_LOCAL end
 }
 
 TEST_F(PythonDataObjectsTest, TestRun) {
