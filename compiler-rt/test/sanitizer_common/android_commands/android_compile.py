@@ -24,7 +24,12 @@ if output == None:
     print("No output file name!")
     sys.exit(1)
 
-ret = subprocess.call(sys.argv[1:])
+# OHOS_LOCAL begin
+append_args = []
+if DYN_LINKER:
+    append_args.append('-Wl,--dynamic-linker=' + DYN_LINKER)
+ret = subprocess.call(sys.argv[1:] + append_args)
+# OHOS_LOCAL end
 if ret != 0:
     sys.exit(ret)
 
