@@ -416,8 +416,7 @@ void OHOS::addExtraOpts(llvm::opt::ArgStringList &CmdArgs) const {
 SanitizerMask OHOS::getSupportedSanitizers() const {
   const bool IsX86_64 = getTriple().getArch() == llvm::Triple::x86_64;
   const bool IsAArch64 = getTriple().getArch() == llvm::Triple::aarch64;
-  // OHOS_LOCAL
-  const bool IsLoongArch64 = getTriple().getArch() == llvm::Triple::loongarch64;
+  const bool IsLoongArch64 = getTriple().getArch() == llvm::Triple::loongarch64; // OHOS_LOCAL
   SanitizerMask Res = ToolChain::getSupportedSanitizers();
   Res |= SanitizerKind::Address;
   Res |= SanitizerKind::PointerCompare;
