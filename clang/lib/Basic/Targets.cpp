@@ -704,28 +704,28 @@ TargetInfo *AllocateTarget(const llvm::Triple &Triple,
   case llvm::Triple::loongarch32:
     switch (os) {
     case llvm::Triple::Linux:
-    // OHOS_LOCAL begin
+// OHOS_LOCAL begin
       switch (Triple.getEnvironment()) {
       default:
         return new LinuxTargetInfo<LoongArch32TargetInfo>(Triple, Opts);
       case llvm::Triple::OpenHOS:
         return new OHOSTargetInfo<LoongArch32TargetInfo>(Triple, Opts);
       }
-    // OHOS_LOCAL end
+// OHOS_LOCAL end
     default:
       return new LoongArch32TargetInfo(Triple, Opts);
     }
   case llvm::Triple::loongarch64:
     switch (os) {
     case llvm::Triple::Linux:
-    // OHOS_LOCAL begin
+// OHOS_LOCAL begin
       switch (Triple.getEnvironment()) {
       default:
         return new LinuxTargetInfo<LoongArch64TargetInfo>(Triple, Opts);
       case llvm::Triple::OpenHOS:
         return new OHOSTargetInfo<LoongArch64TargetInfo>(Triple, Opts);
       }
-    // OHOS_LOCAL end
+// OHOS_LOCAL end
     default:
       return new LoongArch64TargetInfo(Triple, Opts);
     }
