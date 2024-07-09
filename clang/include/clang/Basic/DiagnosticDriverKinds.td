@@ -697,4 +697,6 @@ def err_drv_loongarch_wrong_fpu_width_for_lasx : Error<
   "wrong fpu width; LASX depends on 64-bit FPU.">;
 def err_drv_loongarch_invalid_simd_option_combination : Error<
   "invalid option combination; LASX depends on LSX.">;
+def err_drv_loongarch_invalid_msimd_EQ : Error<
+  "invalid argument '%0' to -msimd=; must be one of: none, lsx, lasx">;
 }
