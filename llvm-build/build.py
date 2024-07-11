@@ -92,9 +92,9 @@ class BuildConfig():
 
         self.OPENHOS_SFX = '-linux-ohos'
         self.LITEOS_SFX = '-liteos-ohos'
-        self.LLDB_PY_VERSION = '3.10'
+        self.LLDB_PY_VERSION = '3.11'
         self.LLDB_PYTHON = 'python3'
-        self.LLDB_PY_DETAILED_VERSION = self.LLDB_PY_VERSION + '.2'
+        self.LLDB_PY_DETAILED_VERSION = self.LLDB_PY_VERSION + '.4'
         self.CLANG_VERSION = prebuilts_clang_version
         self.MINGW_TRIPLE = 'x86_64-windows-gnu'
         self.build_libs_with_hb = self.build_libs_flags == 'OH' or self.build_libs_flags == 'BOTH'
@@ -618,8 +618,6 @@ class BuildUtils(object):
 
     def get_python_dir(self):
         platform_path = self.platform_prefix()
-        if (self.host_is_darwin()):
-            platform_path = "darwin-x86"
         python_dir = os.path.join(self.buildtools_path, self.build_config.LLDB_PYTHON,
             platform_path, self.build_config.LLDB_PY_DETAILED_VERSION)
         return python_dir
@@ -2598,7 +2596,8 @@ class LlvmPackage(BuildUtils):
             # Redefining necessary bin files for Windows.
             windows_forbidden_list_bin_files = ['clang-%s%s' % (vers_major, ext), 'scan-build%s' % ext,
                                            'scan-view%s' % ext]
-            windows_additional_bin_files = ['liblldb%s' % shlib_ext, 'libpython3.10%s' % shlib_ext, 'libclang%s' % shlib_ext]
+            windows_additional_bin_files = ['liblldb%s' % shlib_ext, 'libpython%s%s' % (self.build_config.LLDB_PY_VERSION, shlib_ext),
+                                            'libclang%s' % shlib_ext]
             if self.build_config.build_libxml2:
                 windows_additional_bin_files += ['libxml2%s' % shlib_ext]
 

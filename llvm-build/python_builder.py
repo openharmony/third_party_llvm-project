@@ -26,11 +26,14 @@ class PythonBuilder:
         self.repo_root = Path(build_config.REPOROOT_DIR).resolve()
         self._out_dir = Path(build_config.OUT_PATH).resolve()
         self._clang_toolchain_dir = self._out_dir / 'llvm-install'
+        self._lldb_py_version = build_config.LLDB_PY_VERSION
         self._version = build_config.LLDB_PY_DETAILED_VERSION
         version_parts = self._version.split('.')
         self._major_version = version_parts[0] + '.' + version_parts[1]
         self._source_dir = self.repo_root / 'third_party' / 'python'
         self._patch_dir = self._source_dir / 'patches'
+        self._prebuilts_path = os.path.join(self.repo_root, 'prebuilts', 'python3', 'linux-x86', self._version)
+        self._prebuilts_python_path = os.path.join(self._prebuilts_path, 'bin', 'python%s' % self._lldb_py_version)
         self._install_dir = ""
 
         self._clean_patches()
@@ -179,7 +182,7 @@ class MinGWPythonBuilder(PythonBuilder):
         super().__init__(build_config)
 
         self.target_platform = "x86_64-w64-mingw32"
-        self.patches = ["cpython_mingw_v3.10.2.patch"]
+        self.patches = [ f'cpython_mingw_v{self._version}.patch' ]
 
         self._mingw_install_dir = self._out_dir / 'mingw' / build_config.MINGW_TRIPLE
         self._build_dir = self._out_dir / 'python-windows-build'
@@ -226,6 +229,7 @@ class MinGWPythonBuilder(PythonBuilder):
             f'--prefix={self._install_dir}',
             f'--build={build_platform}',
             f'--host={self.target_platform}',
+            f'--with-build-python={self._prebuilts_python_path}',
             '--enable-shared',
             '--without-ensurepip',
             '--enable-loadable-sqlite-extensions',
@@ -302,6 +306,7 @@ class OHOSPythonBuilder(PythonBuilder):
             f'--prefix={self._install_dir}',
             f'--build={build_platform}',
             f'--host={self.target_platform}',
+            f'--with-build-python={self._prebuilts_python_path}',
             '--enable-shared',
             '--without-ensurepip',
             '--enable-loadable-sqlite-extensions',
