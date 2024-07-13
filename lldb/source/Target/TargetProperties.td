@@ -43,6 +43,9 @@ let Definition = "target" in {
   def DebugFileSearchPaths: Property<"debug-file-search-paths", "FileSpecList">,
     DefaultStringValue<"">,
     Desc<"List of directories to be searched when locating debug symbol files. See also symbols.enable-external-lookup.">;
+  def ModulesSearchPaths: Property<"modules-search-paths", "PathMap">,
+    DefaultStringValue<"">,
+    Desc<"Module path remappings apply substitutions to the paths of modules, typically needed to debug remotely. The modules-search-paths property can be seen as a pre configuration instead of command `target modules search-paths add`. This property consists of an array of pairs, the first element is a path prefix, and the second is its replacement.  The syntax is `prefix1 replacement1 prefix2 replacement2...`.  The pairs are checked in order, the first prefix that matches is used, and that prefix is substituted with the replacement.">;
   def ClangModuleSearchPaths: Property<"clang-module-search-paths", "FileSpecList">,
     DefaultStringValue<"">,
     Desc<"List of directories to be searched when locating modules for Clang.">;
