@@ -164,6 +164,10 @@ public:
 
   FileSpecList GetDebugFileSearchPaths();
 
+#ifdef OHOS_LLVM
+  PathMappingList &GetModulesSearchPaths() const;
+#endif /* OHOS_LLVM */
+
   FileSpecList GetClangModuleSearchPaths();
 
   bool GetEnableAutoImportClangModules() const;

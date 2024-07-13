@@ -202,6 +202,11 @@ Target::Target(Debugger &debugger, const ArchSpec &target_arch,
   }
 
   UpdateLaunchInfoFromProperties();
+
+#ifdef OHOS_LLVM
+  // Init modules searching paths by property "target.modules-search-paths".
+  m_image_search_paths.Append(GetModulesSearchPaths(), false);
+#endif /* OHOS_LLVM */
 }
 
 Target::~Target() {
@@ -4753,6 +4758,16 @@ FileSpecList TargetProperties::GetDebugFileSearchPaths() {
   const uint32_t idx = ePropertyDebugFileSearchPaths;
   return GetPropertyAtIndexAs<FileSpecList>(idx, {});
 }
+
+#ifdef OHOS_LLVM
+PathMappingList &TargetProperties::GetModulesSearchPaths() const {
+  const uint32_t idx = ePropertyModulesSearchPaths;
+  OptionValuePathMappings *option_value =
+      m_collection_sp->GetPropertyAtIndexAsOptionValuePathMappings(idx);
+  assert(option_value);
+  return option_value->GetCurrentValue();
+}
+#endif /* OHOS_LLVM */
 
 FileSpecList TargetProperties::GetClangModuleSearchPaths() {
   const uint32_t idx = ePropertyClangModuleSearchPaths;
