@@ -314,7 +314,6 @@ class OHOSPythonBuilder(PythonBuilder):
             'ac_cv_file__dev_ptmx=no',
             'ac_cv_file__dev_ptc=no',
             '--without-system-ffi',
-            '--enable-optimizations',
             '--without-pydebug',
             '--without-doc-strings',
             '--without-dtrace',
