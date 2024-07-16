@@ -249,7 +249,7 @@ class BuildConfig():
         parser.add_argument(
             '--build-python',
             action='store_true',
-            default=False,
+            default=True,
             help='Build Python (not using prebuilt one, currently effective for Windows and OHOS)')
 
         parser.add_argument(
@@ -1067,9 +1067,7 @@ class LlvmCore(BuildUtils):
             py_lib_dir = os.path.join(py_dir, 'lib')
             py_inc_dir = os.path.join(py_dir, 'include')
         else:
-            py_dir = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'mingw-w64')
-            py_lib_dir = os.path.join(py_dir, 'mingw-w64-crt', 'lib64')
-            py_inc_dir = os.path.join(py_dir, 'mingw-w64-headers', 'include')
+            raise Exception('Invalid Python information, please check if the Python tool is valid')
         windows_defines['LLDB_RELOCATABLE_PYTHON'] = 'OFF'
         windows_defines['LLDB_ENABLE_PYTHON'] = 'ON'
         windows_defines['LLDB_PYTHON_HOME'] = 'python'
