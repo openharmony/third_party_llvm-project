@@ -120,6 +120,11 @@ Target::Target(Debugger &debugger, const ArchSpec &target_arch,
   }
 
   UpdateLaunchInfoFromProperties();
+
+  // OHOS_LOCAL begin
+  // Init modules searching paths by property "target.modules-search-paths".
+  m_image_search_paths.Append(GetModulesSearchPaths(), false);
+  // OHOS_LOCAL end
 }
 
 Target::~Target() {
@@ -4300,6 +4305,15 @@ FileSpecList TargetProperties::GetDebugFileSearchPaths() {
   const uint32_t idx = ePropertyDebugFileSearchPaths;
   const OptionValueFileSpecList *option_value =
       m_collection_sp->GetPropertyAtIndexAsOptionValueFileSpecList(nullptr,
+                                                                   false, idx);
+  assert(option_value);
+  return option_value->GetCurrentValue();
+}
+
+PathMappingList &TargetProperties::GetModulesSearchPaths() const {
+  const uint32_t idx = ePropertyModulesSearchPaths;
+  OptionValuePathMappings *option_value =
+      m_collection_sp->GetPropertyAtIndexAsOptionValuePathMappings(nullptr,
                                                                    false, idx);
   assert(option_value);
   return option_value->GetCurrentValue();
