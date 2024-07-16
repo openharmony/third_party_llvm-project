@@ -72,6 +72,7 @@ class BuildConfig():
         self.no_build_riscv64 = args.skip_build or args.no_build_riscv64
         self.no_build_mipsel = args.skip_build or args.no_build_mipsel
         self.no_build_x86_64 = args.skip_build or args.no_build_x86_64
+        self.no_build_loongarch64 = args.skip_build or args.no_build_loongarch64
         self.build_ncurses = args.build_ncurses
         self.build_libedit = args.build_libedit
         self.build_lldb_static = args.build_lldb_static
@@ -86,7 +87,7 @@ class BuildConfig():
         self.compression_format = args.compression_format
         self.enable_check_abi = args.enable_check_abi
 
-        self.TARGETS = 'AArch64;ARM;BPF;Mips;RISCV;X86'
+        self.TARGETS = 'AArch64;ARM;BPF;Mips;RISCV;X86;LoongArch'
         self.ORIG_ENV = dict(os.environ)
         self.VERSION = None # autodetected
 
@@ -209,6 +210,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Omit build os target: x86_64.')
+
+        parser.add_argument(
+            '--no-build-loongarch64',
+            action='store_true',
+            default=False,
+            help='Omit build os target: loongarch64.')
 
         parser.add_argument(
             '--no-lto',
@@ -1364,6 +1371,8 @@ class SysrootComposer(BuildUtils):
             dir_suffix = 'x86'
         elif arch == 'mipsel':
             dir_suffix = 'mips'
+        elif arch == 'loongarch64':
+            dir_suffix = 'loongarch'
         linux_kernel_dir = os.path.join('kernel', 'linux', 'patches', 'linux-5.10')
         linux_kernel_path = os.path.join(self.build_config.OUT_PATH, '..', linux_kernel_dir)
         ohosmusl_sysroot_dst = self.merge_out_path('sysroot', target, 'usr')
@@ -1487,7 +1496,8 @@ class LlvmLibs(BuildUtils):
             ('riscv64', self.open_ohos_triple('riscv64'), '', ''),
             ('mipsel', self.open_ohos_triple('mipsel'), '', ''),
             ('mipsel', self.open_ohos_triple('mipsel'), '-mnan=legacy', 'nanlegacy'),
-            ('x86_64', self.open_ohos_triple('x86_64'), '', ''),]
+            ('x86_64', self.open_ohos_triple('x86_64'), '', ''),
+            ('loongarch64', self.open_ohos_triple('loongarch64'), '', '')]
 
         cc = os.path.join(llvm_install, 'bin', 'clang')
         cxx = os.path.join(llvm_install, 'bin', 'clang++')
@@ -1523,7 +1533,8 @@ class LlvmLibs(BuildUtils):
             llvm_path = self.merge_out_path('llvm_make')
             arch_list = [self.liteos_triple('arm'), self.open_ohos_triple('arm'),
                          self.open_ohos_triple('aarch64'), self.open_ohos_triple('riscv64'),
-                         self.open_ohos_triple('mipsel'), self.open_ohos_triple('x86_64')]
+                         self.open_ohos_triple('mipsel'), self.open_ohos_triple('x86_64'),
+                         self.open_ohos_triple('loongarch64')]
             libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
             self.check_create_dir(libcxx_ndk_install)
 
@@ -2892,6 +2903,9 @@ def main():
 
     if not build_config.no_build_x86_64:
         configs.append(('x86_64', build_utils.open_ohos_triple('x86_64')))
+
+    if not build_config.no_build_loongarch64:
+        configs.append(('loongarch64', build_utils.open_ohos_triple('loongarch64')))
 
     build_config.NCURSES_VERSION = build_utils.get_ncurses_version()
     if build_config.NCURSES_VERSION is None:

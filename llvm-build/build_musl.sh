@@ -87,6 +87,9 @@ elif [ $TARGET_TRIPLE == "riscv64-linux-ohos" ]; then
 elif [ $TARGET_TRIPLE == "x86_64-linux-ohos" ]; then
     TARGET_USER="linux_user"
     TARGETS_PREFIX="x86_64"
+elif [ $TARGET_TRIPLE == "loongarch64-linux-ohos" ]; then
+    TARGET_USER="linux_user"
+    TARGETS_PREFIX="loongarch64"
 else
     TARGET_USER="linux_user"
     TARGETS_PREFIX="aarch64"
@@ -109,7 +112,7 @@ make musl_header_install_for_${TARGET_USER} CLANG="${CLANG_BIN_ROOT}/clang" TOPD
 # build musl_libs
 if ((make_libs == 1)); then
     if [ $TARGET_TRIPLE == "aarch64-linux-ohos" ] || [ $TARGET_TRIPLE == "riscv64-linux-ohos" ] || \
-       [ $TARGET_TRIPLE == "x86_64-linux-ohos" ]; then
+       [ $TARGET_TRIPLE == "x86_64-linux-ohos" ] || [ $TARGET_TRIPLE == "loongarch64-linux-ohos" ]; then
         make CLANG="${CLANG_BIN_ROOT}/clang" TOPDIR=${TOPDIR} SYSROOTDIR=${OUT}/sysroot MUSLCOPYDIR=${OUT}/musl_build \
             TARGETS=${TARGET_USER} TARGET=${TARGET_TRIPLE} ARCH=${TARGETS_PREFIX} -f Makefile
     else

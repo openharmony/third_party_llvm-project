@@ -556,7 +556,11 @@ LoongArchTargetLowering::lowerGlobalTLSAddress(SDValue Op,
 
   GlobalAddressSDNode *N = cast<GlobalAddressSDNode>(Op);
   assert(N->getOffset() == 0 && "unexpected offset in global node");
-
+  // OHOS_LOCAL begin
+  // Enable Loongarch support emulated-tls
+  if (DAG.getTarget().useEmulatedTLS())
+    return LowerToTLSEmulatedModel(N, DAG);
+  // OHOS_LOCAL end
   SDValue Addr;
   switch (getTargetMachine().getTLSModel(N->getGlobal())) {
   case TLSModel::GeneralDynamic:
