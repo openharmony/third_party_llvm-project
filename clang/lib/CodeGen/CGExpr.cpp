@@ -3592,6 +3592,18 @@ void CodeGenFunction::EmitTrapCheck(llvm::Value *Checked,
                                     SanitizerHandler CheckHandlerID) {
   llvm::BasicBlock *Cont = createBasicBlock("cont");
 
+  // OHOS_LOCAL begin
+  std::string TrapFuncName = CGM.getCodeGenOpts().TrapFuncName;
+  switch (CheckHandlerID) {
+    case SanitizerHandler::CFICheckFail:
+      if (!CGM.getCodeGenOpts().CfiTrapFuncName.empty())
+        TrapFuncName = CGM.getCodeGenOpts().CfiTrapFuncName;
+      break;
+    default:
+      break;
+  }
+  // OHOS_LOCAL end
+
   // If we're optimizing, collapse all calls to trap down to just one per
   // check-type per function to save on code size.
   if (TrapBBs.size() <= CheckHandlerID)
@@ -3606,12 +3618,13 @@ void CodeGenFunction::EmitTrapCheck(llvm::Value *Checked,
     llvm::CallInst *TrapCall =
         Builder.CreateCall(CGM.getIntrinsic(llvm::Intrinsic::ubsantrap),
                            llvm::ConstantInt::get(CGM.Int8Ty, CheckHandlerID));
-
-    if (!CGM.getCodeGenOpts().TrapFuncName.empty()) {
+    // OHOS_LOCAL begin
+    if (!TrapFuncName.empty()) {
       auto A = llvm::Attribute::get(getLLVMContext(), "trap-func-name",
-                                    CGM.getCodeGenOpts().TrapFuncName);
+                                    TrapFuncName);
       TrapCall->addFnAttr(A);
     }
+    // OHOS_LOCAL end
     TrapCall->setDoesNotReturn();
     TrapCall->setDoesNotThrow();
     Builder.CreateUnreachable();

@@ -2909,6 +2909,11 @@ def ftrapv_handler : Separate<["-"], "ftrapv-handler">, Group<f_Group>, Flags<[C
 def ftrap_function_EQ : Joined<["-"], "ftrap-function=">, Group<f_Group>, Flags<[CC1Option]>,
   HelpText<"Issue call to specified function rather than a trap instruction">,
   MarshallingInfoString<CodeGenOpts<"TrapFuncName">>;
+// OHOS_LOCAL begin
+def fcfi_trap_function_EQ : Joined<["-"], "fcfi-trap-function=">, Group<f_Group>, Flags<[CC1Option]>,
+  HelpText<"Issue call to specified function rather than a trap instruction for failed cfi checks">,
+  MarshallingInfoString<CodeGenOpts<"CfiTrapFuncName">>;
+// OHOS_LOCAL end
 def funroll_loops : Flag<["-"], "funroll-loops">, Group<f_Group>,
   HelpText<"Turn on loop unroller">, Flags<[CC1Option]>;
 def fno_unroll_loops : Flag<["-"], "fno-unroll-loops">, Group<f_Group>,
