@@ -775,7 +775,7 @@ class LlvmCore(BuildUtils):
                           env=env)
 
         # First of all build compiler-rt because it's needed to be built before libunwind and etc.
-        if not self.build_config.build_only:
+        if not self.build_config.build_only and not self.use_platform().startswith('windows'):
             self.invoke_ninja(out_path=build_dir,
                               env=env,
                               target=["compiler-rt"],
