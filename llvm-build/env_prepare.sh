@@ -84,7 +84,7 @@ prebuilts/build-tools/${host_platform}-x86/bin,ninja-${darwin_platform}
 copy_config_darwin_arm64="""
 prebuilts/cmake,cmake-${darwin_platform}
 prebuilts/clang/ohos/${host_platform}-${host_cpu},darwin_arm64/clang_darwin-arm64
-prebuilts/python3,python-${darwin_platform}
+prebuilts/python3,python-${host_platform}-${host_cpu}
 prebuilts/build-tools/${host_platform}-${host_cpu}/bin,gn-${darwin_platform}
 prebuilts/build-tools/${host_platform}-${host_cpu}/bin,ninja-darwin-arm
 """
