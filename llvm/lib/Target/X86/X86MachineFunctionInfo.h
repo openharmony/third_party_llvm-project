@@ -125,6 +125,10 @@ class X86MachineFunctionInfo : public MachineFunctionInfo {
   SmallVector<size_t, 0> PreallocatedStackSizes;
   SmallVector<SmallVector<size_t, 4>, 0> PreallocatedArgOffsets;
 
+#ifdef ARK_GC_SUPPORT
+  SmallVector<ArkArgInfo,4> ArkArgInfos; // OHOS_LOCAL
+#endif
+
 private:
   /// ForwardedMustTailRegParms - A list of virtual and physical registers
   /// that must be forwarded to every musttail call.
@@ -253,6 +257,18 @@ public:
     assert(!PreallocatedArgOffsets[Id].empty() && "arg offsets not set");
     return PreallocatedArgOffsets[Id];
   }
+
+#ifdef ARK_GC_SUPPORT
+  // OHOS_LOCAL begin
+  void addArkArgInfo(int64_t MemOffset, Register Reg, int32_t OriginIndex) {
+    ArkArgInfos.emplace_back(MemOffset, Reg, OriginIndex);
+  }
+  SmallVector<ArkArgInfo, 4> getArkArgInfos() const {
+    return ArkArgInfos;
+  }
+  // OHOS_LOCAL end
+#endif
+
 };
 
 } // End llvm namespace

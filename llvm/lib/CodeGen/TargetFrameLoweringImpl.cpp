@@ -181,6 +181,7 @@ TargetFrameLowering::getDwarfFrameBase(const MachineFunction &MF) const {
 }
 
 #ifdef ARK_GC_SUPPORT
+// OHOS_LOCAL begin
 int TargetFrameLowering::GetFrameReserveSize(MachineFunction &MF) const
 {
     int slotSize = sizeof(uint64_t);
@@ -192,4 +193,11 @@ int TargetFrameLowering::GetFrameReserveSize(MachineFunction &MF) const
       .getAsInteger(10, marker);
     return marker;
 }
+
+const std::string TargetFrameLowering::TypeKey = "ark-frame-type";
+const std::string TargetFrameLowering::JSFuncIdxKey = "ark-jsfunc-arg-idx";
+const std::string TargetFrameLowering::TypeOffsetKey = TypeKey + "-offset";
+const std::string TargetFrameLowering::JSFuncIdxOffsetKey =
+    JSFuncIdxKey + "-offset";
+// OHOS_LOCAL end
 #endif

@@ -280,6 +280,12 @@ private:
 
   // OHOS_LOCAL begin
   int getOffsetOfLocalArea(CallingConv::ID CC = CallingConv::C) const override;
+
+#ifdef ARK_GC_SUPPORT
+  void adjustForArkFrame(MachineFunction &MF,
+                         MachineBasicBlock &PrologueMBB) const override;
+#endif
+
   // OHOS_LOCAL end
 };
 

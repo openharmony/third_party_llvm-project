@@ -189,6 +189,11 @@ class AArch64FunctionInfo final : public MachineFunctionInfo {
   /// Temporary symbol used by PARTS to generate a runtime dependent modifier based on
   /// the position of function. Epilogue emission relys on this value beging set.
   MCSymbol *PartsSym = nullptr; // OHOS_LOCAL
+
+#ifdef ARK_GC_SUPPORT
+  SmallVector<ArkArgInfo,4> ArkArgInfos; // OHOS_LOCAL
+#endif
+
 public:
   explicit AArch64FunctionInfo(MachineFunction &MF);
 
@@ -438,6 +443,16 @@ public:
   // OHOS_LOCAL begin
   void setPartsSym(MCSymbol *Sym) { PartsSym = Sym; }
   MCSymbol *getPartsSym() const { return PartsSym; }
+
+#ifdef ARK_GC_SUPPORT
+  void addArkArgInfo(int64_t MemOffset, Register Reg, int32_t OriginIndex) {
+    ArkArgInfos.emplace_back(MemOffset, Reg, OriginIndex);
+  }
+  SmallVector<ArkArgInfo, 4> getArkArgInfos() const {
+    return ArkArgInfos;
+  }
+#endif
+
   // OHOS_LOCAL end
 private:
   // Hold the lists of LOHs.

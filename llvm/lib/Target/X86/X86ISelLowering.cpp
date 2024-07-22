@@ -4157,10 +4157,22 @@ SDValue X86TargetLowering::LowerFormalArguments(
         } else
           ArgValue = DAG.getNode(ISD::TRUNCATE, dl, VA.getValVT(), ArgValue);
       }
+#ifdef ARK_GC_SUPPORT
+      // OHOS_LOCAL
+      // Record the register and index of every argument which in register.
+      FuncInfo->addArkArgInfo(0, VA.getLocReg(), Ins[InsIndex].getOrigArgIndex());
+#endif
     } else {
       assert(VA.isMemLoc());
       ArgValue =
           LowerMemArgument(Chain, CallConv, Ins, dl, DAG, VA, MFI, InsIndex);
+#ifdef ARK_GC_SUPPORT
+      // OHOS_LOCAL
+      // Record the offset (relative to SP) and index of every argument which on
+      // stack.
+      FuncInfo->addArkArgInfo(VA.getLocMemOffset(), MCRegister::NoRegister,
+                              Ins[InsIndex].getOrigArgIndex());
+#endif
     }
 
     // If value is passed via pointer - do a load.

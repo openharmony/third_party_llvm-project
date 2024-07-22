@@ -1656,6 +1656,18 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
       assert(Prolog->getOpcode() == AArch64::HOM_Prolog);
       Prolog->addOperand(MachineOperand::CreateImm(FPOffset));
     } else {
+#ifdef ARK_GC_SUPPORT
+      if (!CombineSPBump) {
+        auto ReserveSize = alignTo(GetFrameReserveSize(MF), getStackAlign());
+        emitFrameOffset(MBB, MBBI, DL, AArch64::SP, AArch64::SP,
+                        StackOffset::getFixed(-ReserveSize), TII,
+                        MachineInstr::FrameSetup, false, NeedsWinCFI,
+                        &HasWinCFI, EmitCFI,
+                        StackOffset::getFixed(PrologueSaveSize));
+        NumBytes -= ReserveSize;
+        FPOffset += ReserveSize;
+      }
+#endif
       // Issue    sub fp, sp, FPOffset or
       //          mov fp,sp          when FPOffset is zero.
       // Note: All stores of callee-saved registers are marked as "FrameSetup".
@@ -4029,3 +4041,192 @@ void AArch64FrameLowering::orderFrameObjects(
     dbgs() << "\n";
   });
 }
+
+#ifdef ARK_GC_SUPPORT
+// OHOS_LOCAL begin
+namespace {
+int64_t getStringAttrToInt(const Function &F, const StringRef Key) {
+  int64_t Value = 0;
+  bool Res = F.getFnAttribute(Key).getValueAsString().getAsInteger(10,Value);
+  assert(!Res && "Can get attribute to int");
+  return Value;
+}
+} // namespace
+
+static bool useTempBaseRegisterIfNeed(
+    MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
+    const DebugLoc &DL, const TargetInstrInfo *TII, unsigned Opcode,
+    int32_t MaxNeedOffset, int32_t &NewBaseOffset, Register &BaseReg) {
+  TypeSize Scale = TypeSize::Fixed(1);
+  unsigned Width;
+  int64_t MinOffset;
+  int64_t MaxOffset;
+  bool Res = AArch64InstrInfo::getMemOpInfo(Opcode, Scale, Width, MinOffset,
+                                            MaxOffset);
+  assert(Res && "Unsupported opcode");
+  if (MaxNeedOffset > Scale * MaxOffset) {
+    auto NewBaseRegister = AArch64::X16;
+    emitFrameOffset(MBB, MBBI, DL, NewBaseRegister, BaseReg,
+                    StackOffset::getFixed(NewBaseOffset), TII);
+    BaseReg = NewBaseRegister;
+    NewBaseOffset = 0;
+    return true;
+  }
+  return false;
+}
+
+void AArch64FrameLowering::adjustForArkFrame(
+    MachineFunction &MF, MachineBasicBlock &PrologueMBB) const {
+  const auto &F = MF.getFunction();
+  AArch64FunctionInfo *AFI = MF.getInfo<AArch64FunctionInfo>();
+  const MachineFrameInfo &MFI = MF.getFrameInfo();
+  const AArch64InstrInfo *TII =
+      MF.getSubtarget<AArch64Subtarget>().getInstrInfo();
+  const TargetRegisterInfo *RegInfo = MF.getSubtarget().getRegisterInfo();
+  assert(F.hasFnAttribute("fpToCallerSpDelta") && "missing fpToCallerSpDelta");
+  const StringRef FPToCallerSPDeltaStr =
+      F.getFnAttribute("fpToCallerSpDelta").getValueAsString();
+  const int64_t FPToCallerSPDelta = std::stoi(FPToCallerSPDeltaStr.str());
+
+  MachineBasicBlock::iterator InsertPos;
+  // if CombineSPBump, the sp is updated once at the entry of the function.
+  // the frametype and jsfunc should be saved after sp is updated.
+  // if CombineSPBump is false, the sp is updated at least twice, the frametype
+  // and jsfunc should be saved before fp is updated.
+  bool CombineSPBump = shouldCombineCSRLocalStackBump(MF, MFI.getStackSize());
+  Register DefineReg = CombineSPBump ? AArch64::SP : AArch64::FP;
+  for (auto &Iter : PrologueMBB) {
+    if (Iter.definesRegister(DefineReg, RegInfo)) {
+      InsertPos = Iter;
+      break;
+    }
+  }
+  if (CombineSPBump) {
+    // the InsertPos should be the position after sp update.
+    InsertPos = InsertPos->getNextNode();
+    if (InsertPos->isCFIInstruction()) {
+      InsertPos = InsertPos->getNextNode();
+    }
+  }
+  uint64_t ReserveSize = alignTo(GetFrameReserveSize(MF), getStackAlign());
+  uint64_t SPOffset =
+      CombineSPBump ? MFI.getStackSize() : ReserveSize + FPToCallerSPDelta;
+
+  assert(InsertPos.isValid() && InsertPos->isCFIInstruction() &&
+         "Can't find the instruction to update fp");
+
+  DebugLoc DL = InsertPos->getDebugLoc();
+
+  struct SaveInfo {
+    bool NeedSave;
+    Register Reg;
+    int32_t Offset;
+    uint32_t RegState;
+    bool operator<(const SaveInfo &Other) const {
+      return this->Offset < Other.Offset;
+    }
+  };
+
+  SaveInfo FrameTypeInfo = SaveInfo{false, MCRegister::NoRegister, 0, 0};
+  SaveInfo JSFuncArgInfo = SaveInfo{false, MCRegister::NoRegister, 0, 0};
+
+  if (F.hasFnAttribute(TypeKey)) {
+    assert(F.hasFnAttribute(TypeOffsetKey) && "missing ark-frame-type-offset");
+    const int64_t ArkFrameType = getStringAttrToInt(F, TypeKey);
+    const int32_t FrameTypeOffset = getStringAttrToInt(F, TypeOffsetKey);
+    Register ScratchFrameTypeReg;
+    uint32_t Flags = 0;
+    if (ArkFrameType == 0) {
+      // ScratchFrameTypeReg is zxr
+      ScratchFrameTypeReg = AArch64::XZR;
+    } else {
+      // mov x8, #ArkFrameType
+      ScratchFrameTypeReg = AArch64::X8;
+      BuildMI(PrologueMBB, InsertPos, DL, TII->get(AArch64::MOVi64imm),
+              ScratchFrameTypeReg)
+          .addImm(ArkFrameType);
+      Flags = RegState::Kill;
+      // after store. x8 will not be used. So mark it kill.
+    }
+    FrameTypeInfo = SaveInfo{true, ScratchFrameTypeReg, FrameTypeOffset, Flags};
+  }
+
+  if (F.hasFnAttribute(JSFuncIdxKey)) {
+    assert(F.hasFnAttribute(JSFuncIdxOffsetKey) &&
+           "missing ark-jsfunc-arg-idx-offset");
+    const int64_t JSFuncIdx = getStringAttrToInt(F, JSFuncIdxKey);
+    const int32_t JSFuncOffset = getStringAttrToInt(F, JSFuncIdxOffsetKey);
+    using ArkArgInfo = MachineFunctionInfo::ArkArgInfo;
+    const ArkArgInfo *JSFuncArg =
+        llvm::find_if(AFI->getArkArgInfos(), [JSFuncIdx](const ArkArgInfo Arg) {
+          return Arg.OriginIndex == JSFuncIdx;
+        });
+
+    Register ScratchJSFuncReg;
+    unsigned Flags = 0;
+    if (JSFuncArg->Reg != MCRegister::NoRegister) {
+      // ScratchJSFuncReg is the JSFuncIdx arg register.
+      ScratchJSFuncReg = JSFuncArg->Reg;
+    } else {
+      Register TempSP = AArch64::SP;
+      int32_t ArgToTempSP = SPOffset + JSFuncArg->MemOffset;
+      useTempBaseRegisterIfNeed(PrologueMBB, InsertPos, DL, TII,
+                                AArch64::LDRXui, ArgToTempSP, ArgToTempSP,
+                                TempSP);
+      // ldr x9, [TempSP, #SPOffset+JSFuncArg->MemOffset]
+      ScratchJSFuncReg = AArch64::X9;
+      BuildMI(PrologueMBB, InsertPos, DL, TII->get(AArch64::LDRXui))
+          .addDef(ScratchJSFuncReg)
+          .addUse(TempSP)
+          .addImm(ArgToTempSP / 8);
+      Flags = RegState::Kill;
+      // after store. x9 will not be used. So mark it kill.
+    }
+    JSFuncArgInfo = SaveInfo{true, ScratchJSFuncReg, JSFuncOffset, Flags};
+  }
+
+  const bool CanUseSTP =
+      (FrameTypeInfo.NeedSave && JSFuncArgInfo.NeedSave &&
+       std::abs(FrameTypeInfo.Offset - JSFuncArgInfo.Offset) == 8);
+  // 8 bytes distance store can be combined to stp
+
+  const int32_t MaxSaveOffset =
+      std::max(FrameTypeInfo.Offset, JSFuncArgInfo.Offset);
+  Register TempSP = AArch64::SP;
+  int32_t ArkSlotToTempSP = SPOffset - FPToCallerSPDelta - MaxSaveOffset;
+  int32_t MaxSaveSlotToTempSP = ArkSlotToTempSP + MaxSaveOffset;
+
+  useTempBaseRegisterIfNeed(PrologueMBB, InsertPos, DL, TII,
+                            CanUseSTP ? AArch64::STPXi : AArch64::STRXui,
+                            CanUseSTP ? ArkSlotToTempSP : MaxSaveSlotToTempSP,
+                            ArkSlotToTempSP, TempSP);
+
+  if (CanUseSTP) {
+    auto Max = std::max(FrameTypeInfo, JSFuncArgInfo);
+    auto Min = std::min(FrameTypeInfo, JSFuncArgInfo);
+    // stp  RegArg, x8, [TempSP, #ArkSlotToTempSP]
+    BuildMI(PrologueMBB, InsertPos, DL, TII->get(AArch64::STPXi))
+        .addUse(Max.Reg, Max.RegState)
+        .addUse(Min.Reg, Min.RegState)
+        .addReg(TempSP)
+        .addImm(ArkSlotToTempSP / 8);
+    return;
+  }
+
+  if (FrameTypeInfo.NeedSave) {
+    // stur x8, [TempSP, #(ArkSlotToTempSP+MaxSaveOffset-FrameTypeInfo.Offset)]
+    BuildMI(PrologueMBB, InsertPos, DL, TII->get(AArch64::STRXui))
+        .addUse(FrameTypeInfo.Reg, FrameTypeInfo.RegState)
+        .addReg(TempSP)
+        .addImm((ArkSlotToTempSP + (MaxSaveOffset - FrameTypeInfo.Offset)) / 8);
+  }
+  if (JSFuncArgInfo.NeedSave) {
+    // stur x9, [TempSP, #(ArkSlotToTempSP+MaxSaveOffset-JSFuncArgInfo.Offset)]
+    BuildMI(PrologueMBB, InsertPos, DL, TII->get(AArch64::STRXui))
+        .addUse(JSFuncArgInfo.Reg, JSFuncArgInfo.RegState)
+        .addReg(TempSP)
+        .addImm((ArkSlotToTempSP + (MaxSaveOffset - JSFuncArgInfo.Offset)) / 8);
+  }
+}
+// OHOS_LOCAL end
+#endif

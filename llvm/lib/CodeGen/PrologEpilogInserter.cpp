@@ -1405,6 +1405,16 @@ void PEI::insertPrologEpilogCode(MachineFunction &MF) {
     for (MachineBasicBlock *SaveBlock : SaveBlocks)
       TFI.adjustForSegmentedStacks(MF, *SaveBlock);
   }
+  // OHOS_LOCAL begin
+#ifdef ARK_GC_SUPPORT
+  // Insert the prologue to save ark-frame-type
+  if (MF.getFunction().hasFnAttribute(TargetFrameLowering::TypeKey) ||
+      MF.getFunction().hasFnAttribute(TargetFrameLowering::JSFuncIdxKey)) {
+    for (MachineBasicBlock *SaveBlock : SaveBlocks)
+      TFI.adjustForArkFrame(MF, *SaveBlock);
+  }
+#endif
+  // OHOS_LOCAL end
 
   // Emit additional code that is required to explicitly handle the stack in
   // HiPE native code (if needed) when loaded in the Erlang/OTP runtime. The

@@ -5916,6 +5916,11 @@ SDValue AArch64TargetLowering::LowerFormalArguments(
         ArgValue = DAG.getZExtOrTrunc(ArgValue, DL, VA.getValVT());
         break;
       }
+#ifdef ARK_GC_SUPPORT
+      // OHOS_LOCAL
+      // Record the register and index of every argument which in register.
+      FuncInfo->addArkArgInfo(0, VA.getLocReg(), Ins[i].getOrigArgIndex());
+#endif
     } else { // VA.isRegLoc()
       assert(VA.isMemLoc() && "CCValAssign is neither reg nor mem");
       unsigned ArgOffset = VA.getLocMemOffset();
@@ -5963,6 +5968,13 @@ SDValue AArch64TargetLowering::LowerFormalArguments(
       ArgValue =
           DAG.getExtLoad(ExtType, DL, VA.getLocVT(), Chain, FIN,
                          MachinePointerInfo::getFixedStack(MF, FI), MemVT);
+#ifdef ARK_GC_SUPPORT
+      // OHOS_LOCAL
+      // Record the offset (relative to SP) and index of every argument which on
+      // stack.
+      FuncInfo->addArkArgInfo(VA.getLocMemOffset(), MCRegister::NoRegister,
+                              Ins[i].getOrigArgIndex());
+#endif
     }
 
     if (VA.getLocInfo() == CCValAssign::Indirect) {
