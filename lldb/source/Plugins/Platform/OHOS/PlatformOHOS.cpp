@@ -323,7 +323,7 @@ MmapArgList PlatformOHOS::GetMmapArgumentList(const ArchSpec &arch,
                                                unsigned prot, unsigned flags,
                                                addr_t fd, addr_t offset) {
   uint64_t flags_platform = 0;
-  uint64_t map_anon = arch.IsMIPS() ? MAP_ANON_MIPS : MAP_ANON;
+  const uint64_t map_anon = arch.IsMIPS() ? MAP_ANON_MIPS : MAP_ANON;
 
   if (flags & eMmapFlagsPrivate)
     flags_platform |= MAP_PRIVATE;
