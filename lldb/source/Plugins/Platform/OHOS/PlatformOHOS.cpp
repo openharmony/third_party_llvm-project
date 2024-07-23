@@ -21,7 +21,7 @@
 #include "PlatformOHOSRemoteGDBServer.h"
 #include "lldb/Target/Target.h"
 
-#if LLDB_ENABLE_POSIX
+#if defined(__OHOS__)
 #include <sys/mman.h>
 #else 
 // Define these constants from OHOS mman.h for use when targeting remote OHOS
