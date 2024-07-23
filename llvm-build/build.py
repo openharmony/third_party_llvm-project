@@ -1362,7 +1362,7 @@ class SysrootComposer(BuildUtils):
                                      sysroot_multi_lib_dir, ld_musl_lib, gn_args)
 
         if target_cpu == 'mipsel':
-            gn_args += ' is_legacy=true musl_target_multilib=nanlegacy'
+            gn_args += ' musl_is_legacy=true musl_target_multilib=nanlegacy'
             multi_lib_dir = os.path.join(ohos_lib_dir, 'nanlegacy')
             sysroot_multi_lib_dir = os.path.join(sysroot_lib_dir, 'nanlegacy')
             ld_musl_lib = os.path.join(sysroot_multi_lib_dir, 'ld-musl-{}.so.1'.format(ld_arch))
