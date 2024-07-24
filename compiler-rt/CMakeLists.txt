@@ -117,8 +117,9 @@ if ("${COMPILER_RT_DEFAULT_TARGET_TRIPLE}" MATCHES ".*android.*")
   set(ANDROID_API_LEVEL ${CMAKE_MATCH_2})
 endif()
 
-# We define OHOS for ohos targets for now
-if (OHOS)
+# We define OHOS for ohos targets for now. By default we use devices with hdc connection to test OHOS
+# targets. It's also possible to use devices with adb connection which is enabled via ANDROID.
+if (OHOS AND NOT ANDROID)
   set(OHOS_FAMILY 1)
 endif()
 

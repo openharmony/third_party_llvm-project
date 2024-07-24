@@ -523,6 +523,8 @@ if config.android:
     # FIXME: Replace with appropriate version when availible.
     if android_api_level > 30 or (android_api_level == 30 and android_api_codename == 'S'):
       config.available_features.add('android-thread-properties-api')
+  else:
+    config.environment['OHOS_REMOTE_DYN_LINKER'] = os.environ.get('OHOS_REMOTE_DYN_LINKER')
 
   # Prepare the device.
   android_tmpdir = '/data/local/tmp/Output'

@@ -3,6 +3,7 @@ import time
 
 ANDROID_TMPDIR = '/data/local/tmp/Output'
 ADB = os.environ.get('ADB', 'adb')
+DYN_LINKER = os.environ.get('OHOS_REMOTE_DYN_LINKER') # OHOS_LOCAL
 
 verbose = False
 if os.environ.get('ANDROID_RUN_VERBOSE') == '1':
