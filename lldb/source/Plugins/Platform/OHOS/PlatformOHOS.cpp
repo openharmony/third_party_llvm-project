@@ -317,7 +317,9 @@ ConstString PlatformOHOS::GetMmapSymbolName(const ArchSpec &arch) {
              ? ConstString("__lldb_mmap")
              : PlatformLinux::GetMmapSymbolName(arch);
 }
-
+//Customize mmap adaptation for OHOS platform. 
+//OHOS platform allows anonymous memory allocation with exec permission 
+//only when MAP_JIT parameter is specified.
 MmapArgList PlatformOHOS::GetMmapArgumentList(const ArchSpec &arch,
                                                addr_t addr, addr_t length,
                                                unsigned prot, unsigned flags,
