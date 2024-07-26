@@ -56,6 +56,11 @@ public:
 
   ConstString GetMmapSymbolName(const ArchSpec &arch) override;
 
+  MmapArgList GetMmapArgumentList(const ArchSpec &arch, lldb::addr_t addr,
+                                  lldb::addr_t length, unsigned prot,
+                                  unsigned flags, lldb::addr_t fd,
+                                  lldb::addr_t offset) override;
+
 protected:
   const char *GetCacheHostname() override;
 

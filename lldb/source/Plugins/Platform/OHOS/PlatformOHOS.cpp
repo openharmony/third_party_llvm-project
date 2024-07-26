@@ -21,6 +21,23 @@
 #include "PlatformOHOSRemoteGDBServer.h"
 #include "lldb/Target/Target.h"
 
+#if defined(__OHOS__)
+#include <sys/mman.h>
+#else 
+// Define these constants from OHOS mman.h for use when targeting remote OHOS
+// systems even when host has different values.
+#define PROT_NONE 0
+#define PROT_READ 1
+#define PROT_WRITE 2
+#define PROT_EXEC 4
+#define MAP_PRIVATE 2
+#define MAP_ANON 0x20
+#endif
+
+#define MAP_ANON_MIPS 0x800
+// MAP_JIT allows to allocate anonymous memory with executable permissions.
+#define MAP_JIT 0x1000
+
 using namespace lldb;
 using namespace lldb_private;
 using namespace lldb_private::platform_ohos;
@@ -299,4 +316,24 @@ ConstString PlatformOHOS::GetMmapSymbolName(const ArchSpec &arch) {
   return arch.GetTriple().isArch32Bit()
              ? ConstString("__lldb_mmap")
              : PlatformLinux::GetMmapSymbolName(arch);
+}
+//Customize mmap adaptation for OHOS platform. 
+//OHOS platform allows anonymous memory allocation with exec permission 
+//only when MAP_JIT parameter is specified.
+MmapArgList PlatformOHOS::GetMmapArgumentList(const ArchSpec &arch,
+                                               addr_t addr, addr_t length,
+                                               unsigned prot, unsigned flags,
+                                               addr_t fd, addr_t offset) {
+  uint64_t flags_platform = 0;
+  const uint64_t map_anon = arch.IsMIPS() ? MAP_ANON_MIPS : MAP_ANON;
+
+  if (flags & eMmapFlagsPrivate)
+    flags_platform |= MAP_PRIVATE;
+  if (flags & eMmapFlagsAnon)
+    flags_platform |= map_anon;
+  if (flags & eMmapFlagsAnon && prot & PROT_EXEC)
+    flags_platform |= MAP_JIT;
+
+  MmapArgList args({addr, length, prot, flags_platform, fd, offset});
+  return args;
 }
