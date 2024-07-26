@@ -493,6 +493,9 @@ class BuildUtils(object):
         flags = ['-G', 'Ninja']
         flags += ['-DCMAKE_PREFIX_PATH=%s' % self.CMAKE_BIN_DIR]
 
+        ninja_bin_path = os.path.join(self.buildtools_path, 'build-tools', self.platform_prefix(), 'bin', 'ninja')
+        flags += ['-DCMAKE_MAKE_PROGRAM=%s' % ninja_bin_path]
+
         for key in invoke_defines:
             newdef = ''.join(['-D', key, '=', invoke_defines[key]])
             flags += [newdef]
