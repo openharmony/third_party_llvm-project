@@ -205,6 +205,7 @@ class OHOSToolchainBuilder:
             self._llvm_libs.build_libedit(self._llvm_path, self._llvm_install, self._llvm_triple)
         if self._build_config.build_python:
             self._python_builder.build()
+            self._python_builder.prepare_for_package()
 
         self._build_utils.invoke_cmake(
             self._llvm_project_path,
