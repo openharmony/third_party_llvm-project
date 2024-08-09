@@ -162,15 +162,28 @@ class PythonBuilder:
         pkgconfig_dir = python_lib_dir / 'pkgconfig'
         self._remove_dir(pkgconfig_dir)
 
-    def _remove_pycache(self) -> None:
-        pycaches = []
-        for dir_path, dirnames, _ in os.walk(self._install_dir / 'lib'):
-            for dirname in dirnames:
-                if dirname == '__pycache__':
-                    pycaches.append(os.path.join(dir_path, dirname))
+    def _remove_exclude(self) -> None:
+        exclude_dirs_tuple = (
+            'config-' + self._lldb_py_version,
+            '__pycache__',                        # EXCLUDE_FROM_LIB
+            'idlelib',                            # IDLE_DIRS_ONLY
+            'tkinter', 'turtledemo',              # TCLTK_DIRS_ONLY
+            'test', 'tests'                       # TEST_DIRS_ONLY
+        )
+        exclude_files_tuple = (
+            'bdist_wininst.py',                   # BDIST_WININST_FILES_ONLY
+            'turtle.py',                          # TCLTK_FILES_ONLY
+            '.whl',
+            '.pyc', '.pickle'                   # EXCLUDE_FROM_LIB
+        )
 
-        for cache_dir in pycaches:
-            shutil.rmtree(cache_dir)
+        for root, dirs, files in os.walk(self._install_dir / 'lib'):
+            for item in dirs:
+                if item.startswith(exclude_dirs_tuple):
+                    shutil.rmtree(os.path.join(root, item))
+            for item in files:
+                if item.endswith(exclude_files_tuple):
+                    os.remove(os.path.join(root, item))
 
     @property
     def install_dir(self) -> str:
@@ -241,7 +254,7 @@ class MinGWPythonBuilder(PythonBuilder):
         self._clean_bin_dir()
         self._clean_share_dir()
         self._clean_lib_dir()
-        self._remove_pycache()
+        self._remove_exclude()
 
     def package(self) -> None:
         archive = self._out_dir / f'cpython-mingw-clang-{self._version}.tar.gz'
@@ -326,3 +339,6 @@ class OHOSPythonBuilder(PythonBuilder):
 
         shutil.copyfile(os.path.join(self._install_dir, "lib", libpython), os.path.join(install_dir, 'lib', libpython))
         self.build_utils.check_copy_tree(self._install_dir, os.path.join(install_dir, self.build_utils.build_config.LLDB_PYTHON))
+
+    def prepare_for_package(self) -> None:
+        self._remove_exclude()
