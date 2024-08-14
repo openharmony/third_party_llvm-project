@@ -98,6 +98,19 @@ LoongArchRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   if (TFI->hasBP(MF))
     markSuperRegs(Reserved, LoongArchABI::getBPReg()); // bp
 
+// OHOS_LOCAL begin
+#ifdef ARK_GC_SUPPORT
+  if (MF.getFunction().getCallingConv() == CallingConv::GHC) {
+    markSuperRegs(Reserved, LoongArch::R22);
+    markSuperRegs(Reserved, LoongArch::R1);
+  }
+  if ((MF.getFunction().getCallingConv() == CallingConv::WebKit_JS) ||
+      (MF.getFunction().getCallingConv() == CallingConv::C)) {
+    markSuperRegs(Reserved, LoongArch::R1);
+  }
+#endif
+  // OHOS_LOCAL end
+
   // FIXME: To avoid generating COPY instructions between CFRs, only use $fcc0.
   // This is required to work around the fact that COPY instruction between CFRs
   // is not provided in LoongArch.

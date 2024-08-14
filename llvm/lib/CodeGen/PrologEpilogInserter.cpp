@@ -671,12 +671,16 @@ void PEI::RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, const std::vect
   const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
   Triple::ArchType archType = TFI->GetArkSupportTarget();
 
-  if ((archType != Triple::aarch64 && archType != Triple::x86_64) || !(TFI->hasFP(MF))) {
+  if ((archType != Triple::aarch64 && archType != Triple::loongarch64 &&
+       archType != Triple::x86_64) ||
+      !(TFI->hasFP(MF))) {
     return;
   }
   unsigned FpRegDwarfNum = 0;
   if (archType == Triple::aarch64) {
     FpRegDwarfNum = 29; // x29
+  } else if (archType == Triple::loongarch64) {
+    FpRegDwarfNum = 22; // r22(fp)
   } else {
     FpRegDwarfNum = 6; //rbp
   }
@@ -702,6 +706,7 @@ void PEI::RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, const std::vect
   }
 
   const unsigned LinkRegDwarfNum = 30;
+  const unsigned LoongArchLinkRegDwarfNum = 1;
   for (std::vector<CalleeSavedInfo>::const_iterator
     I = CSI.begin(), E = CSI.end(); I != E; ++I) {
     int64_t Offset = MFI.getObjectOffset(I->getFrameIdx());
@@ -709,6 +714,11 @@ void PEI::RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, const std::vect
     unsigned DwarfRegNum = MRI->getDwarfRegNum(Reg, true);
     if ((DwarfRegNum == LinkRegDwarfNum || DwarfRegNum == FpRegDwarfNum)
       && (archType == Triple::aarch64)) {
+      continue;
+    }
+    if ((DwarfRegNum == LoongArchLinkRegDwarfNum ||
+         DwarfRegNum == FpRegDwarfNum) &&
+        (archType == Triple::loongarch64)) {
       continue;
     }
     Offset = Offset - deleta;
@@ -1015,7 +1025,8 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
 #ifdef ARK_GC_SUPPORT
   int CalleeSavedFrameSize = 0;
   Triple::ArchType archType = TFI.GetArkSupportTarget();
-  if (archType == Triple::aarch64 && TFI.hasFP(MF)) {
+  if ((archType == Triple::aarch64 || archType == Triple::loongarch64) &&
+      TFI.hasFP(MF)) {
     int fpPosition = TFI.GetFixedFpPosition();
     int slotSize = sizeof(uint64_t);
     int fpToCallerSpDelta = 0;
@@ -1039,6 +1050,20 @@ void PEI::calculateFrameObjectOffsets(MachineFunction &MF) {
     //   |          R12             |
     //   +--------------------------+
     //   |          RBX             |
+    //   +--------------------------+
+    //   for loongarch64
+    //   +--------------------------+
+    //   |       caller Frame       |
+    //   +--------------------------+---
+    //   |  callee save registers   |  ^
+    //   |      (exclude Fp)        |  |
+    //   |                          |  callee save registers size(fpToCallerSpDelta)
+    //   +--------------------------+  |
+    //   |          Fp              |  V  fpPosition = -1
+    //   +--------------------------+--- FixedCSEnd
+    //   |         type             |
+    //   +--------------------------+
+    //   |       ReServeSize        |
     //   +--------------------------+
     //   for ARM64
     //   +--------------------------+

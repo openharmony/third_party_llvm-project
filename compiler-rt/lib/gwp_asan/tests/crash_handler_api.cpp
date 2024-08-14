@@ -42,6 +42,7 @@ protected:
     State.GuardedPagePool = 0x2000;
     State.GuardedPagePoolEnd = 0xb000;
     State.MaxSimultaneousAllocations = 4; // 0x3000, 0x5000, 0x7000, 0x9000.
+    // FIXME: loongarch is 16k.
     State.PageSize = 0x1000;
   }
 
