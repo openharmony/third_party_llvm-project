@@ -65,11 +65,17 @@ TEST_F(DefaultGuardedPoolAllocator, NonPowerOfTwoAlignment) {
 
 // Added multi-page slots? You'll need to expand this test.
 TEST_F(DefaultGuardedPoolAllocator, TooBigForSinglePageSlots) {
-  EXPECT_EQ(nullptr, GPA.allocate(0x1001, 0));
-  EXPECT_EQ(nullptr, GPA.allocate(0x1001, 1));
-  EXPECT_EQ(nullptr, GPA.allocate(0x1001, 0x1000));
-  EXPECT_EQ(nullptr, GPA.allocate(1, 0x2000));
-  EXPECT_EQ(nullptr, GPA.allocate(0, 0x2000));
+  // OHOS_LOCAL begin
+  size_t PageSize = 0x1000;
+#if defined(__loongarch__)
+  PageSize = 0x4000;
+#endif
+  EXPECT_EQ(nullptr, GPA.allocate(PageSize + 0x1, 0));
+  EXPECT_EQ(nullptr, GPA.allocate(PageSize + 0x1, 1));
+  EXPECT_EQ(nullptr, GPA.allocate(PageSize + 0x1, PageSize));
+  EXPECT_EQ(nullptr, GPA.allocate(1, PageSize + 0x1000));
+  EXPECT_EQ(nullptr, GPA.allocate(0, PageSize + 0x1000));
+  // OHOS_LOCAL end
 }
 
 TEST_F(CustomGuardedPoolAllocator, AllocAllSlots) {

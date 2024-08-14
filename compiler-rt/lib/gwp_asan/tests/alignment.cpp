@@ -24,6 +24,7 @@ public:
   }
 };
 
+// FIXME: loongarch is 16k.
 // Global assumptions for these tests:
 //   1. Page size is 0x1000.
 //   2. All tests assume a slot is multipage, between 0x4000 - 0x8000. While we
