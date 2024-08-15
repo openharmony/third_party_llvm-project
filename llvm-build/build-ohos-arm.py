@@ -14,10 +14,10 @@
 # limitations under the License.
 
 import os
-from ohos_toolchain_builder import OHOSToolchainBuilder
+from cross_toolchain_builder import CrossToolchainBuilder
 
 
-class ArmToolchainBuilder(OHOSToolchainBuilder):
+class OHOSArmToolchainBuilder(CrossToolchainBuilder):
     def __init__(self) -> None:
         super().__init__("arm-linux-ohos")
         self._llvm_prebuilt_path = self._build_utils.merge_out_path("llvm_make")
@@ -67,7 +67,7 @@ class ArmToolchainBuilder(OHOSToolchainBuilder):
 
 def main():
     print("Start building LLDB tools for OHOS ARM host")
-    ArmToolchainBuilder().build(build_target=["lldb", "lldb-server"])
+    OHOSArmToolchainBuilder().build(build_target=["lldb", "lldb-server"])
 
 
 if __name__ == "__main__":
