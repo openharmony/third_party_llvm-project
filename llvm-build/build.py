@@ -583,6 +583,9 @@ class BuildUtils(object):
     def host_is_darwin(self):
         return self.use_platform().startswith('darwin-')
 
+    def host_is_linux_aarch64(self):
+        return self.use_platform() == 'linux-aarch64'
+
     def rm_cmake_cache(self, cache_dir):
         for dirpath, dirs, files in os.walk(cache_dir):
             if 'CMakeCache.txt' in files:
@@ -878,7 +881,7 @@ class LlvmCore(BuildUtils):
                 llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
 
             if self.build_config.enable_lzma_7zip:
-                llvm_defines['LIBLZMA_LIBRARIES'] = self.merge_out_path('lzma', 'lib', 'linux-x86_64', 'liblzma.so')
+                llvm_defines['LIBLZMA_LIBRARIES'] = self.merge_out_path('lzma', 'lib', self.use_platform(), 'liblzma.so')
 
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = \
@@ -909,7 +912,7 @@ class LlvmCore(BuildUtils):
         llvm_defines['COMPILER_RT_BUILD_MEMPROF'] = 'OFF'
         llvm_defines['CMAKE_ASM_FLAGS'] = cflags
         llvm_defines['CMAKE_C_FLAGS'] = cflags
-        llvm_defines['CMAKE_CXX_FLAGS'] = '%s -stdlib=libc++' % cflags
+        llvm_defines['CMAKE_CXX_FLAGS'] = cflags if self.host_is_linux_aarch64() else '%s -stdlib=libc++' % cflags
         llvm_defines['CMAKE_EXE_LINKER_FLAGS'] = ldflags
         llvm_defines['CMAKE_SHARED_LINKER_FLAGS'] = ldflags
         llvm_defines['CMAKE_MODULE_LINKER_FLAGS'] = ldflags
@@ -1013,7 +1016,9 @@ class LlvmCore(BuildUtils):
         self.llvm_compile_linux_defines(llvm_defines, debug_build, no_lto, build_instrumented)
 
         if self.host_is_linux():
-            ldflags += ' -l:libunwind.a -l:libc++abi.a --rtlib=compiler-rt -stdlib=libc++ -static-libstdc++'
+            if not self.host_is_linux_aarch64():
+                ldflags += ' -l:libunwind.a -l:libc++abi.a --rtlib=compiler-rt -stdlib=libc++'
+            ldflags += ' -static-libstdc++'
 
         if xunit_xml_output:
             llvm_defines['LLVM_LIT_ARGS'] = "--xunit-xml-output={} -sv".format(xunit_xml_output)
@@ -2330,7 +2335,7 @@ class LlvmPackage(BuildUtils):
     def package_libcxx(self):
         libcxx_ndk_install=self.merge_out_path('libcxx-ndk')
         libcxx_ndk_install_include=self.merge_out_path(libcxx_ndk_install, 'include', 'libcxx-ohos', 'include', 'c++', 'v1')
-        hosts_list=['linux-x86_64', 'darwin-x86_64', 'windows-x86_64', 'darwin-arm64']
+        hosts_list=['linux-x86_64', 'darwin-x86_64', 'windows-x86_64', 'darwin-arm64', 'linux-aarch64']
 
         if os.path.exists(libcxx_ndk_install):
             for headerfile in os.listdir(libcxx_ndk_install_include):
@@ -2899,8 +2904,8 @@ def main():
 
     args = build_config.parse_args()
     need_host = build_utils.host_is_darwin() or ('linux' not in args.no_build)
-    need_windows = build_utils.host_is_linux() and not build_config.build_only and \
-                   ('windows' not in args.no_build)
+    need_windows = build_utils.host_is_linux() and not build_utils.host_is_linux_aarch64() and \
+                   not build_config.build_only and ('windows' not in args.no_build)
 
     llvm_install = build_utils.merge_out_path('llvm-install')
     llvm_make = build_utils.merge_out_path('llvm_make')
