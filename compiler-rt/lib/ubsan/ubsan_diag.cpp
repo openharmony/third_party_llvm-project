@@ -402,6 +402,11 @@ ScopedReport::~ScopedReport() {
 
   if (flags()->halt_on_error)
     Die();
+
+  // OHOS_LOCAL
+  // a mark for DFX to identify ubsan log and synchronize the log file to faultlog folder
+  if (!Opts.FromUnrecoverableHandler)
+    Report("End Ubsan report\n");
 }
 
 ALIGNED(64) static char suppression_placeholder[sizeof(SuppressionContext)];

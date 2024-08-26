@@ -902,7 +902,6 @@ void __ubsan::__ubsan_handle_cfi_check_fail(CFICheckFailData *Data,
     handleCFIBadIcall(Data, Value, Opts);
   else
     __ubsan_handle_cfi_bad_type(Data, Value, ValidVtable, Opts);
-  Report("End CFI report\n"); // OHOS_LOCAL
 }
 
 void __ubsan::__ubsan_handle_cfi_check_fail_abort(CFICheckFailData *Data,
