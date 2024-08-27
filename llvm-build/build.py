@@ -922,6 +922,11 @@ class LlvmCore(BuildUtils):
         llvm_defines['SWIG_EXECUTABLE'] = self.find_program('swig')
         llvm_defines['LLDB_ENABLE_CURSES'] = 'OFF'
 
+        #Crontrol the security compile flags which used by LLVM_ENABLE_RUNTIMES
+        if not self.host_is_darwin():
+            llvm_defines['SECURITY_LINKER_FLAGS_FOR_RUNTIMES'] = ' -Wl,-z,relro,-z,now -Wl,-z,noexecstack'
+        llvm_defines['SECURITY_COMPILE_FLAGS_FOR_RUNTIMES'] = '-Wall -Wextra -fno-common -fstack-protector-strong'
+
         if self.build_config.build_ncurses and self.get_ncurses_version() is not None:
             llvm_defines['LLDB_ENABLE_CURSES'] = 'ON'
             llvm_defines['CURSES_INCLUDE_DIRS'] = self.merge_ncurses_install_dir(self.use_platform(), 'include')
@@ -1026,9 +1031,9 @@ class LlvmCore(BuildUtils):
                                         'lib', 'x86_64-unknown-linux-gnu', 'libclang_rt.profile.a')
             ldflags += ' %s' % resource_dir
 
-        cflags = '-fstack-protector-strong'
+        cflags = '-fstack-protector-strong -Wall -Wextra -fno-common -fPIE'
         if not self.host_is_darwin():
-            ldflags += ' -Wl,-z,relro,-z,now -pie'
+            ldflags += ' -Wl,-z,relro,-z,now -pie -Wl,-z,noexecstack'
             if self.build_config.strip:
                 ldflags += ' -s'
 
@@ -1156,7 +1161,8 @@ class LlvmCore(BuildUtils):
                   '-Wl,--high-entropy-va']
         ldflags.extend(ldflag)
 
-        cflag = ['-stdlib=libc++',
+        cflag = ['-fstack-protector-strong',
+                 '-stdlib=libc++',
                  '--target=x86_64-pc-windows-gnu',
                  '-fdata-sections',
                  '-D_LARGEFILE_SOURCE',
@@ -2183,6 +2189,8 @@ class LlvmLibs(BuildUtils):
         defines['CMAKE_INSTALL_PREFIX'] = install_path
         if static:
             defines['BUILD_SHARED_LIBS'] = 'OFF'
+        else:
+            defines['CMAKE_SHARED_LINKER_FLAGS'] = ' -Wl,-z,now'
 
         if triple in ['arm-linux-ohos', 'aarch64-linux-ohos']:
             defines['CMAKE_C_COMPILER'] = self.merge_out_path('llvm-install','bin','clang')

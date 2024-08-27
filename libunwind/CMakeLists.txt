@@ -326,6 +326,11 @@ if (C_SUPPORTS_COMMENT_LIB_PRAGMA)
   endif()
 endif()
 
+if(SECURITY_LINKER_FLAGS_FOR_RUNTIMES OR SECURITY_COMPILE_FLAGS_FOR_RUNTIMES)
+  list(APPEND LIBUNWIND_LINK_FLAGS ${SECURITY_LINKER_FLAGS_FOR_RUNTIMES})
+  list(APPEND LIBUNWIND_COMPILE_FLAGS ${SECURITY_COMPILE_FLAGS_FOR_RUNTIMES})
+endif()
+
 #===============================================================================
 # Setup Source Code
 #===============================================================================

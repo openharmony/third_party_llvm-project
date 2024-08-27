@@ -242,6 +242,8 @@ function(runtime_default_target)
                                       -DCMAKE_C_COMPILER_WORKS=ON
                                       -DCMAKE_CXX_COMPILER_WORKS=ON
                                       -DCMAKE_ASM_COMPILER_WORKS=ON
+				      -DSECURITY_LINKER_FLAGS_FOR_RUNTIMES=${SECURITY_LINKER_FLAGS_FOR_RUNTIMES}
+				      -DSRCURITY_COMPILE_FLAGS_FOR_RUNTIMES=${SRCURITY_COMPILE_FLAGS_FOR_RUNTIMS}
                                       ${COMMON_CMAKE_ARGS}
                                       ${RUNTIMES_CMAKE_ARGS}
                            PASSTHROUGH_PREFIXES LLVM_ENABLE_RUNTIMES
