@@ -93,6 +93,19 @@ template <> struct ilist_callback_traits<MachineBasicBlock> {
 /// of type are accessed/created with MF::getInfo and destroyed when the
 /// MachineFunction is destroyed.
 struct MachineFunctionInfo {
+
+#ifdef ARK_GC_SUPPORT
+  // OHOS_LOCAL begin
+  struct ArkArgInfo {
+    int64_t MemOffset;
+    Register Reg;
+    int32_t OriginIndex;
+    ArkArgInfo(int64_t MemOffset, Register Reg, int32_t OriginIndex)
+        : MemOffset(MemOffset), Reg(Reg), OriginIndex(OriginIndex) {}
+  };
+  // OHOS_LOCAL end
+#endif
+
   virtual ~MachineFunctionInfo();
 
   /// Factory function: default behavior is to call new using the

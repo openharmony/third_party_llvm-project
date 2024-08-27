@@ -83,6 +83,11 @@ public:
   }
 
   int getArkFrameAdaptationOffset(const MachineFunction &MF) const override;
+
+#ifdef ARK_GC_SUPPORT
+  void adjustForArkFrame(MachineFunction &MF,
+                         MachineBasicBlock &PrologueMBB) const override;
+#endif
   // OHOS_LOCAL end
 
   bool hasFP(const MachineFunction &MF) const override;

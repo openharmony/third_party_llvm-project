@@ -24,6 +24,7 @@ llvm_canonicalize_cmake_booleans(
   LLVM_ENABLE_EXPENSIVE_CHECKS
   LLVM_INCLUDE_DXIL_TESTS
   LLVM_TOOL_LLVM_DRIVER_BUILD
+  BUILD_ARK_GC_SUPPORT
   )
 
 configure_lit_site_cfg(

@@ -354,6 +354,9 @@ if config.target_triple:
 if config.have_llvm_driver:
   config.available_features.add('llvm-driver')
 
+if config.ark_gc_support:
+  config.available_features.add('ark_gc_support')
+
 import subprocess
 
 

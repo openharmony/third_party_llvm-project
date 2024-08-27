@@ -306,6 +306,15 @@ public:
   virtual int getArkFrameAdaptationOffset(const MachineFunction &MF) const {
     return 0;
   }
+
+#ifdef ARK_GC_SUPPORT
+  virtual void adjustForArkFrame(MachineFunction &MF,
+                                 MachineBasicBlock &PrologueMBB) const {}
+  static const std::string TypeKey;
+  static const std::string JSFuncIdxKey;
+  static const std::string TypeOffsetKey;
+  static const std::string JSFuncIdxOffsetKey;
+#endif
   // OHOS_LOCAL end
 
   /// restoreCalleeSavedRegisters - Issues instruction(s) to restore all callee
