@@ -17,7 +17,7 @@ from pathlib import Path
 import shutil
 import subprocess
 from typing import List, Mapping
-from elftools.elf.elffile import ELFFile
+import binascii
 
 class PythonBuilder:
     target_platform = ""
@@ -186,13 +186,14 @@ class PythonBuilder:
                 if item.endswith(exclude_files_tuple):
                     os.remove(os.path.join(root, item))
 
-    def _is_elf_file(self, file_path: Path) -> None:
-        with open(file_path, 'rb') as f:
-            try:
-                elffile = ELFFile(f)
-                return True
-            except:
-                return False
+    def _is_elf_file(self, file_path:Path) -> None:
+	with open(file_path, 'rb') as f:
+	    magic_numbers = f.read(4)
+	    hex_magic_number = binascii.hexlify(magic_number).decode('utf-8')
+	    if hex_magic_number == '7f454c46':
+	        return True
+	    else:
+	        return False
 
     @property
     def install_dir(self) -> str:
