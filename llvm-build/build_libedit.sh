@@ -97,7 +97,7 @@ if [ -e ${libedit_package} ]; then
             C_FLAGS="$C_FLAGS -march=armv7-a -mfloat-abi=soft"
         fi
         C_FLAGS="$C_FLAGS $stack_flags"
-        LDFLAGS="$LDFLAGS $got_ldflags"
+        export LDFLAGS="$LDFLAGS $got_ldflags"
         ${LIBEDIT_UNTAR_PATH}/configure \
             --prefix=${LIBEDIT_INSTALL_PATH} \
             --host="${TARGET}" \
