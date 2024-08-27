@@ -2187,17 +2187,20 @@ class LlvmLibs(BuildUtils):
 
         defines = self.build_libxml2_defines()
         defines['CMAKE_INSTALL_PREFIX'] = install_path
+        ldflags = ['-Wl,-z,relro,-z,now']
+        cflags = ['-fstack-protector-strong']
         if static:
             defines['BUILD_SHARED_LIBS'] = 'OFF'
         else:
-            defines['CMAKE_SHARED_LINKER_FLAGS'] = ' -Wl,-z,now'
+            defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
 
         if triple in ['arm-linux-ohos', 'aarch64-linux-ohos']:
             defines['CMAKE_C_COMPILER'] = self.merge_out_path('llvm-install','bin','clang')
-            cflags = [f"--target={triple}"]
+            cflags.append(f'--target={triple}')
             if triple == 'arm-linux-ohos':
                 cflags.append('-march=armv7-a -mfloat-abi=soft')
-            defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
+
+        defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
 
         self.rm_cmake_cache(build_path)
 
@@ -2224,6 +2227,7 @@ class LlvmLibs(BuildUtils):
 
         cflags = ['--target=x86_64-pc-windows-gnu']
         cflags.extend(('-I', os.path.join(windows_sysroot, 'include')))
+        cflags.append('-fstack-protector-strong')
 
         ldflags = ['-fuse-ld=lld',
                   '--rtlib=compiler-rt']

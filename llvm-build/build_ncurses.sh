@@ -67,13 +67,16 @@ if [ -e ${ncurses_package} ]; then
     cd ${NCURSES_BUILD_PATH}
     # build ncurses
     ohos_suffix='-ohos'
+    stack_flags="-fstack-protector-strong"
+    got_ldflags="-Wl,-z,relro,-z,now"
     if [[ ${7} != *${ohos_suffix} ]]; then
         if [ "${host_platform}" == "darwin" ]; then
             export LDFLAGS="-Wl,-rpath,@loader_path/../lib"
             SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
             flags="-Wl,-syslibroot,${SDKROOT}"
             export CPPFLAGS="$CPPFALGS -I${SDKROOT}/usr/include -I${SDKROOT}/usr/include/i368"
-            export CFLAGS="$CFLAGS -isysroot${SDKROOT} $flags"
+            export CFLAGS="$CFLAGS -isysroot${SDKROOT} $flags $stack_flags"
+            export LDFLAGS="$LDFLAGS $got_ldflags"
 
             ${NCURSES_UNTAR_PATH}/configure \
                 --with-shared \
@@ -85,7 +88,8 @@ if [ -e ${ncurses_package} ]; then
             make -j$(nproc --all) install | tee build_ncurses.log
         fi
         if [ "${host_platform}" == "linux" ]; then
-            export LDFLAGS="-Wl,-rpath,\$$ORIGIN/../lib"
+            export LDFLAGS="-Wl,-rpath,\$$ORIGIN/../lib $got_ldflags"
+            export CFLAGS="$CFLAGS $stack_flags"
             ${NCURSES_UNTAR_PATH}/configure \
                 --with-shared \
                 --with-default-terminfo-dir=/usr/lib/terminfo:/lib/terminfo:/usr/share/terminfo \
@@ -100,6 +104,8 @@ if [ -e ${ncurses_package} ]; then
             C_FLAGS="$C_FLAGS -march=armv7-a -mfloat-abi=soft"
         fi
         EXTRA_ARGS=""
+        C_FLAGS="$C_FLAGS $stack_flags"
+        export LDFLAGS="$LDFLAGS $got_ldflags"
         if [[ ${IS_STATIC} == "static" ]]; then
             NCURSES_HOST_INSTALL_PATH=${10}
             export LD_LIBRARY_PATH="${NCURSES_HOST_INSTALL_PATH}/lib:$LD_LIBRARY_PATH"
