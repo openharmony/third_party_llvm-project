@@ -922,6 +922,11 @@ class LlvmCore(BuildUtils):
         llvm_defines['SWIG_EXECUTABLE'] = self.find_program('swig')
         llvm_defines['LLDB_ENABLE_CURSES'] = 'OFF'
 
+        #Control the security compile flags which used by LLVM_ENABLE_RUNTIMES
+        if not self.host_is_darwin():
+            llvm_defines['SECURITY_LINKER_FLAGS_FOR_RUNTIMES'] = ' -Wl,-z,relro,-z,now -Wl,-z,noexecstack'
+        llvm_defines['SECURITY_COMPILE_FLAGS_FOR_RUNTIMES'] = '-fstack-protector-strong'
+
         if self.build_config.build_ncurses and self.get_ncurses_version() is not None:
             llvm_defines['LLDB_ENABLE_CURSES'] = 'ON'
             llvm_defines['CURSES_INCLUDE_DIRS'] = self.merge_ncurses_install_dir(self.use_platform(), 'include')
@@ -1028,7 +1033,7 @@ class LlvmCore(BuildUtils):
 
         cflags = '-fstack-protector-strong'
         if not self.host_is_darwin():
-            ldflags += ' -Wl,-z,relro,-z,now -pie'
+            ldflags += ' -Wl,-z,relro,-z,now -pie -Wl,-z,noexecstack'
             if self.build_config.strip:
                 ldflags += ' -s'
 
@@ -1156,7 +1161,8 @@ class LlvmCore(BuildUtils):
                   '-Wl,--high-entropy-va']
         ldflags.extend(ldflag)
 
-        cflag = ['-stdlib=libc++',
+        cflag = ['-fstack-protector-strong',
+                 '-stdlib=libc++',
                  '--target=x86_64-pc-windows-gnu',
                  '-fdata-sections',
                  '-D_LARGEFILE_SOURCE',
@@ -2181,15 +2187,20 @@ class LlvmLibs(BuildUtils):
 
         defines = self.build_libxml2_defines()
         defines['CMAKE_INSTALL_PREFIX'] = install_path
+        ldflags = ['-Wl,-z,relro,-z,now -Wl,-z,noexecstack']
+        cflags = ['-fstack-protector-strong']
         if static:
             defines['BUILD_SHARED_LIBS'] = 'OFF'
+        else:
+            defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
 
         if triple in ['arm-linux-ohos', 'aarch64-linux-ohos']:
             defines['CMAKE_C_COMPILER'] = self.merge_out_path('llvm-install','bin','clang')
-            cflags = [f"--target={triple}"]
+            cflags.append(f'--target={triple}')
             if triple == 'arm-linux-ohos':
                 cflags.append('-march=armv7-a -mfloat-abi=soft')
-            defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
+
+        defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
 
         self.rm_cmake_cache(build_path)
 
@@ -2216,6 +2227,7 @@ class LlvmLibs(BuildUtils):
 
         cflags = ['--target=x86_64-pc-windows-gnu']
         cflags.extend(('-I', os.path.join(windows_sysroot, 'include')))
+        cflags.append('-fstack-protector-strong')
 
         ldflags = ['-fuse-ld=lld',
                   '--rtlib=compiler-rt']
