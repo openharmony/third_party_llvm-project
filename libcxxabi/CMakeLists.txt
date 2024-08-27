@@ -472,13 +472,6 @@ if (UNIX AND ${CMAKE_SYSTEM_NAME} MATCHES "AIX")
   add_definitions("-D_XOPEN_SOURCE=700")
 endif()
 
-#OHOS_LOCAL begin
-if(SECURITY_LINKER_FLAGS_FOR_RUNTIMES OR SECURITY_COMPILE_FLAGS_FOR_RUNTIMES)
-  list(APPEND LIBCXXABI_LINK_FLAGS ${SECURITY_LINKER_FLAGS_FOR_RUNTIMES})
-  list(APPEND LIBCXXABI_COMPILE_FLAGS ${SECURITY_COMPILE_FLAGS_FOR_RUNTIMES})
-endif()
-#OHOS_LOCAL end
-
 #===============================================================================
 # Setup Source Code
 #===============================================================================
