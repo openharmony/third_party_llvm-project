@@ -20,19 +20,19 @@ SRC_PREFIX :=
 LIB_VERSION :=
 
 ifeq ($(TARGET_TRIPLE),linux-x86_64)
-CFLAGS := --target=x86_64-unknown-linux-gnu -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC
-LDFLAGS := -shared -fuse-ld=lld
+CFLAGS := --target=x86_64-unknown-linux-gnu -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC -fstack-protector-strong
+LDFLAGS := -shared -fuse-ld=lld -Wl,-z,relro,-z,now -Wl,-z,noexecstack
 TARGET := liblzma.so
 else
 ifeq ($(TARGET_TRIPLE),windows-x86_64)
-CFLAGS := --target=x86_64-pc-windows-gnu --sysroot=$(SYSROOT) -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC
+CFLAGS := --target=x86_64-pc-windows-gnu --sysroot=$(SYSROOT) -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC -fstack-protector-strong
 LDFLAGS := -shared -fuse-ld=lld --rtlib=compiler-rt -Wl,--out-implib=liblzma.dll.a
 TARGET := liblzma.dll
 TARGET_A := liblzma.dll.a
 else
 ifeq ($(findstring darwin,$(TARGET_TRIPLE)),darwin)
 SDKROOT := $(shell xcrun --sdk macosx --show-sdk-path)
-CFLAGS := -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC -current_version $(LIB_VERSION) -compatibility_version $(LIB_VERSION)
+CFLAGS := -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC -current_version $(LIB_VERSION) -compatibility_version $(LIB_VERSION) -fstack-protector-strong
 LDFLAGS := -dynamiclib -fuse-ld=lld -Wl,-syslibroot,$(SDKROOT) -install_name @rpath/liblzma.$(LIB_VERSION).dylib
 TARGET := liblzma.$(LIB_VERSION).dylib
 else
