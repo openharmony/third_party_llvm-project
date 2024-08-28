@@ -189,7 +189,7 @@ class PythonBuilder:
     def _is_elf_file(self, file_path: Path) -> None:
         with open(file_path, 'rb') as f:
             magic_numbers = f.read(4)
-            hex_magic_number = binascii.hexlify(magic_number).decode('utf-8')
+            hex_magic_number = binascii.hexlify(magic_numbers).decode('utf-8')
             if hex_magic_number == '7f454c46':
                 return True
             else:
