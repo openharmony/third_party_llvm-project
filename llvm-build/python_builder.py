@@ -17,6 +17,7 @@ from pathlib import Path
 import shutil
 import subprocess
 from typing import List, Mapping
+import binascii
 
 class PythonBuilder:
     target_platform = ""
@@ -185,6 +186,15 @@ class PythonBuilder:
                 if item.endswith(exclude_files_tuple):
                     os.remove(os.path.join(root, item))
 
+    def _is_elf_file(self, file_path: Path) -> None:
+        with open(file_path, 'rb') as f:
+            magic_numbers = f.read(4)
+            hex_magic_number = binascii.hexlify(magic_number).decode('utf-8')
+            if hex_magic_number == '7f454c46':
+                return True
+            else:
+                return False
+
     @property
     def install_dir(self) -> str:
         return str(self._install_dir)
@@ -215,6 +225,7 @@ class MinGWPythonBuilder(PythonBuilder):
         cflags = [
             f'-target {self.target_platform}',
             f'--sysroot={self._mingw_install_dir}',
+            f'-fstack-protector-strong',
         ]
         return cflags
 
@@ -292,6 +303,7 @@ class OHOSPythonBuilder(PythonBuilder):
     def _cflags(self) -> List[str]:
         cflags = [
             f'--target={self.target_platform}',
+            f'-fstack-protector-strong',
             '-nostdinc',
             '-I%s' % str(self._out_dir / 'sysroot' / self.target_platform / 'usr' / 'include'),
         ]
@@ -305,6 +317,8 @@ class OHOSPythonBuilder(PythonBuilder):
             f'-rtlib=compiler-rt',
             f'--target={self.target_platform}',
             f'-fuse-ld=lld',
+            f'-Wl,-z,relro,-z,now -Wl,-z,noexecstack',
+	    '-fstack-protector-strong',
             '-L%s' % str(self._out_dir / 'sysroot' / self.target_platform / 'usr' / 'lib'),
             '-lc',
             '-Wl,-rpath,\\$$ORIGIN/../lib',
@@ -342,3 +356,21 @@ class OHOSPythonBuilder(PythonBuilder):
 
     def prepare_for_package(self) -> None:
         self._remove_exclude()
+        if self.build_utils.build_config.strip:
+            python_bin_dir = self._install_dir / 'bin'
+            if not python_bin_dir.is_dir():
+                return
+
+            for f in python_bin_dir.iterdir():
+                if f.is_symlink():
+                    continue
+                if self._is_elf_file(f):
+                    self._strip_in_place(f)
+
+            for root, dirs, files in os.walk(self._install_dir / 'lib'):
+                for item in files:
+                    f = os.path.join(root, item)
+                    if os.path.islink(f):
+                        continue
+                    if self._is_elf_file(f):
+                        self._strip_in_place(f)
