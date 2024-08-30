@@ -37,7 +37,10 @@ static void CommonInit() {
 static void UbsanDie() {
   if (common_flags()->print_module_map >= 1)
     DumpProcessMap();
-  Report("End CFI report (UbsanDie)\n"); // OHOS_LOCAL
+
+  // OHOS_LOCAL
+  // a mark for DFX to identify ubsan log and synchronize the log file to faultlog folder
+  Report("End Ubsan report (UbsanDie)\n");
 }
 
 static void CommonStandaloneInit() {
