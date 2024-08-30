@@ -553,7 +553,8 @@ class BuildUtils(object):
 
         subprocess.check_call(cmd, *args, **kwargs)
 
-    def force_symlink(self, src, dst):
+    @staticmethod
+    def force_symlink(src, dst):
         if os.path.exists(dst):
             os.remove(dst)
         os.symlink(src, dst)
