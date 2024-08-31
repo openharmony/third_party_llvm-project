@@ -1161,8 +1161,7 @@ class LlvmCore(BuildUtils):
                   '-Wl,--high-entropy-va']
         ldflags.extend(ldflag)
 
-        cflag = ['-fstack-protector-strong',
-                 '-stdlib=libc++',
+        cflag = ['-stdlib=libc++',
                  '--target=x86_64-pc-windows-gnu',
                  '-fdata-sections',
                  '-D_LARGEFILE_SOURCE',
@@ -2227,7 +2226,6 @@ class LlvmLibs(BuildUtils):
 
         cflags = ['--target=x86_64-pc-windows-gnu']
         cflags.extend(('-I', os.path.join(windows_sysroot, 'include')))
-        cflags.append('-fstack-protector-strong')
 
         ldflags = ['-fuse-ld=lld',
                   '--rtlib=compiler-rt']
