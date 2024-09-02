@@ -20,7 +20,7 @@ import os
 import shutil
 import subprocess
 import sys
-
+from build import BuildUtils
 
 class BuildConfig():
 
@@ -221,6 +221,12 @@ class LlvmMingw():
         self.check_call(cmd, env=self.env)
         self.check_call(['make', '-j4'], env=self.env)
         self.check_call(['make', 'install'], env=self.env)
+        # Fix for stack protection library, see:
+        # https://sourceforge.net/p/mingw-w64/mingw-w64/ci/10394c9a966f8e93e9e2f09677dab273a0f6c00c/
+        mingw_lib_dir = os.path.join(self.prefix, 'lib')
+        libmingwex = os.path.join(mingw_lib_dir, 'libmingwex.a')
+        BuildUtils.force_symlink(libmingwex, os.path.join(mingw_lib_dir, 'libssp.a'))
+        BuildUtils.force_symlink(libmingwex, os.path.join(mingw_lib_dir, 'libssp_nonshared.a'))
 
 
 def main(clang_version, buildtools_path):

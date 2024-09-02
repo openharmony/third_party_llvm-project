@@ -225,6 +225,7 @@ class MinGWPythonBuilder(PythonBuilder):
         cflags = [
             f'-target {self.target_platform}',
             f'--sysroot={self._mingw_install_dir}',
+            f'-fstack-protector-strong',
         ]
         return cflags
 

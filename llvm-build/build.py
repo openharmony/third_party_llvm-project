@@ -553,7 +553,8 @@ class BuildUtils(object):
 
         subprocess.check_call(cmd, *args, **kwargs)
 
-    def force_symlink(self, src, dst):
+    @staticmethod
+    def force_symlink(src, dst):
         if os.path.exists(dst):
             os.remove(dst)
         os.symlink(src, dst)
@@ -1161,7 +1162,8 @@ class LlvmCore(BuildUtils):
                   '-Wl,--high-entropy-va']
         ldflags.extend(ldflag)
 
-        cflag = ['-stdlib=libc++',
+        cflag = ['-fstack-protector-strong',
+                 '-stdlib=libc++',
                  '--target=x86_64-pc-windows-gnu',
                  '-fdata-sections',
                  '-D_LARGEFILE_SOURCE',
@@ -2226,6 +2228,7 @@ class LlvmLibs(BuildUtils):
 
         cflags = ['--target=x86_64-pc-windows-gnu']
         cflags.extend(('-I', os.path.join(windows_sysroot, 'include')))
+        cflags.append('-fstack-protector-strong')
 
         ldflags = ['-fuse-ld=lld',
                   '--rtlib=compiler-rt']
