@@ -902,7 +902,7 @@ class LlvmCore(BuildUtils):
         llvm_defines['LLVM_ENABLE_LIBCXX'] = 'ON'
         llvm_defines['SANITIZER_ALLOW_CXXABI'] = 'OFF'
         llvm_defines['LIBOMP_ENABLE_SHARED'] = 'FALSE'
-        llvm_defines['OPENMP_TEST_FLAGS'] = '-Wl,-ldl'
+        llvm_defines['OPENMP_TEST_FLAGS'] = '-Wl,-ldl -fuse-ld=lld'
         llvm_defines['CLANG_BUILD_EXAMPLES'] = 'OFF'
         llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'OFF'
         llvm_defines['COMPILER_RT_BUILD_SANITIZERS'] = 'OFF'
