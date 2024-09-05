@@ -20,7 +20,11 @@ import os
 import shutil
 import subprocess
 import sys
-from build import BuildUtils
+
+def force_symlink(src, dst):
+    if os.path.exists(dst):
+        os.remove(dst)
+    os.symlink(src, dst)
 
 class BuildConfig():
 
@@ -225,8 +229,8 @@ class LlvmMingw():
         # https://sourceforge.net/p/mingw-w64/mingw-w64/ci/10394c9a966f8e93e9e2f09677dab273a0f6c00c/
         mingw_lib_dir = os.path.join(self.prefix, 'lib')
         libmingwex = os.path.join(mingw_lib_dir, 'libmingwex.a')
-        BuildUtils.force_symlink(libmingwex, os.path.join(mingw_lib_dir, 'libssp.a'))
-        BuildUtils.force_symlink(libmingwex, os.path.join(mingw_lib_dir, 'libssp_nonshared.a'))
+        force_symlink(libmingwex, os.path.join(mingw_lib_dir, 'libssp.a'))
+        force_symlink(libmingwex, os.path.join(mingw_lib_dir, 'libssp_nonshared.a'))
 
 
 def main(clang_version, buildtools_path):
