@@ -192,6 +192,36 @@ When build successfully completed, artifacts will be available in `out/ohos-arm-
 ## Function Introduction
 </br>
 
+### Build process of AArch64 toolchain for Ubuntu (aarch64-linux-gnu triple)
+
+First build toolchain on Linux.
+Install additional package libstdc++-11-dev-arm64-cross.
+
+Here is an example of starting build process on Linux:
+```
+# build
+python3 ./toolchain/llvm-project/llvm-build/build-linux-aarch64.py
+```
+
+</br>
+
+build-linux-aarch64.py options：
+
+```
+--enable-assertions             # enable assertion when compiling
+--debug                         # build debug version llvm toolchain
+--strip                         # strip llvm toolchain binaries
+--build-python                  # build python and enable script in debugger
+--build-ncurses                 # build ncurses and enable ncurses in debugger
+--build-libedit                 # build libedit and enable libedit in debugger
+--build-libxml2                 # build libxml2 and enable libxml in debugger
+```
+</br>
+
+When build successfully completed, artifacts will be available in `out/linux-aarch64-install` directory, including clang, lld, runtimes, LLVM tools and libLLVM.so for aarch64.
+
+</br>
+
 ### Functionality
 
 The LLVM toolchain is built based on LLVM 15.0.4. It is used to provide capability of building ohos image. For detailed information about LLVM 15.0.4, please refer to [LLVM 15.0.4](https://discourse.llvm.org/t/llvm-15-0-4-released/66337).

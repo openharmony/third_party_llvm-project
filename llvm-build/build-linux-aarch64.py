@@ -17,17 +17,15 @@ import os
 from cross_toolchain_builder import CrossToolchainBuilder
 
 
-class OHOSAarch64ToolchainBuilder(CrossToolchainBuilder):
+class UbuntuAarch64ToolchainBuilder(CrossToolchainBuilder):
     def __init__(self) -> None:
-        super().__init__("aarch64-linux-ohos")
+        super().__init__("aarch64-linux-gnu")
 
     def _update_build_args(self):
         self._cflags.extend(
             [
                 "-v",
                 "-funwind-tables",
-                "-no-canonical-prefixes",
-                "-D__MUSL__",
             ]
         )
 
@@ -36,15 +34,14 @@ class OHOSAarch64ToolchainBuilder(CrossToolchainBuilder):
 
         self._ldflags.extend(["-static-libstdc++"])
 
-        llvm_extra_env = {}
-        llvm_extra_env["LD_LIBRARY_PATH"] = os.path.join(self._llvm_root, "lib")
-        env = dict(self._build_config.ORIG_ENV)
-        if llvm_extra_env is not None:
-            env.update(llvm_extra_env)
+        env = {**self._build_config.ORIG_ENV, 'LD_LIBRARY_PATH': os.path.join(self._llvm_root, "lib")}
 
         # We do not build runtimes, since they will be copied from main toolchain build
         self._llvm_defines.update(
             {
+                "CMAKE_SYSTEM_NAME": "Linux",
+                "CMAKE_SYSROOT": "",
+                "OHOS": "0",
                 "CMAKE_C_FLAGS_DEBUG": cflags_debug,
                 "CMAKE_CXX_FLAGS_DEBUG": cflags_debug,
                 "CMAKE_ASM_FLAGS_DEBUG": cflags_debug,
@@ -63,9 +60,6 @@ class OHOSAarch64ToolchainBuilder(CrossToolchainBuilder):
                 "LLVM_INSTALL_UTILS": "ON",
                 "LLVM_ENABLE_ZLIB": "OFF",
                 "LLVM_ENABLE_PROJECTS": ";".join(self._build_config.host_projects),
-                "CMAKE_C_COMPILER_EXTERNAL_TOOLCHAIN": self._llvm_root,
-                "CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN": self._llvm_root,
-                "CMAKE_ASM_COMPILER_EXTERNAL_TOOLCHAIN": self._llvm_root,
                 "CMAKE_NM": os.path.join(self._llvm_root, "bin", "llvm-nm"),
                 "CMAKE_RANLIB": os.path.join(self._llvm_root, "bin", "llvm-ranlib"),
                 "CMAKE_OBJCOPY": os.path.join(self._llvm_root, "bin", "llvm-objcopy"),
@@ -74,7 +68,7 @@ class OHOSAarch64ToolchainBuilder(CrossToolchainBuilder):
                 "CMAKE_STRIP": os.path.join(self._llvm_root, "bin", "llvm-strip"),
                 "CMAKE_LINKER": os.path.join(self._llvm_root, "bin", "ld.lld"),
                 "CMAKE_POSITION_INDEPENDENT_CODE": "True",
-                "CMAKE_CXX_FLAGS": " ".join(self._cflags) + " -stdlib=libc++",
+                "CMAKE_CXX_FLAGS": " ".join(self._cflags),
                 "CMAKE_ASM_FLAGS": " ".join(self._cflags),
                 "CMAKE_C_FLAGS": " ".join(self._cflags),
                 "CMAKE_SHARED_LINKER_FLAGS": " ".join(self._ldflags),
@@ -87,10 +81,16 @@ class OHOSAarch64ToolchainBuilder(CrossToolchainBuilder):
         if self._build_config.enable_assertions:
             self._llvm_defines["LLVM_ENABLE_ASSERTIONS"] = "ON"
 
+        if not self._build_config.build_libxml2:
+            self._llvm_defines["LLDB_ENABLE_LIBXML2"] = "OFF"
+
+        self._build_config.build_python = False
+        self._install_python_from_prebuilts = True
+
 
 def main():
-    print("Start cross-compiling LLVM toolchain for OHOS AArch64 host on linux")
-    OHOSAarch64ToolchainBuilder().build()
+    print("Start cross-compiling LLVM toolchain for Ubuntu AArch64 host on linux")
+    UbuntuAarch64ToolchainBuilder().build()
 
 
 if __name__ == "__main__":

@@ -2195,7 +2195,7 @@ class LlvmLibs(BuildUtils):
             ldflags = ['-Wl,-z,relro,-z,now -Wl,-z,noexecstack']
             defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
 
-        if triple in ['arm-linux-ohos', 'aarch64-linux-ohos']:
+        if triple in ['arm-linux-ohos', 'aarch64-linux-ohos', 'aarch64-linux-gnu']:
             defines['CMAKE_C_COMPILER'] = self.merge_out_path('llvm-install','bin','clang')
             cflags.append(f'--target={triple}')
             if triple == 'arm-linux-ohos':

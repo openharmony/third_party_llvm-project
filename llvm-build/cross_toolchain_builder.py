@@ -14,15 +14,17 @@
 # limitations under the License.
 
 import os
+import shutil
 from typing import List
 from build import BuildConfig, BuildUtils, LlvmLibs, SysrootComposer, LlvmPackage
 from python_builder import OHOSPythonBuilder
 
 
-class OHOSToolchainBuilder:
+class CrossToolchainBuilder:
     def __init__(self, llvm_triple) -> None:
         self._llvm_triple = llvm_triple
         self._platform = llvm_triple.split("-")[0]
+        self._system_name = "ohos" if "ohos" in llvm_triple else "linux"
         self._build_config = BuildConfig()
         self._build_utils = BuildUtils(self._build_config)
         self._sysroot_composer = SysrootComposer(self._build_config)
@@ -30,13 +32,14 @@ class OHOSToolchainBuilder:
         self._llvm_libs = LlvmLibs(
             self._build_config, self._sysroot_composer, self._llvm_package
         )
-        self._python_builder = OHOSPythonBuilder(self._build_utils, self._llvm_triple)
+        self._python_builder = OHOSPythonBuilder(self._build_utils, self._llvm_triple) \
+                if "ohos" in llvm_triple else None
         self._llvm_project_path = os.path.abspath(
             os.path.join(self._build_config.LLVM_PROJECT_DIR, "llvm")
         )
-        self._llvm_path = self._build_utils.merge_out_path(f"ohos-{self._platform}")
+        self._llvm_path = self._build_utils.merge_out_path(f"{self._system_name}-{self._platform}")
         self._llvm_install = self._build_utils.merge_out_path(
-            f"ohos-{self._platform}-install"
+            f"{self._system_name}-{self._platform}-install"
         )
         self._llvm_root = self._build_utils.merge_out_path("llvm-install")
         self._sysroot = self._build_utils.merge_out_path("sysroot")
@@ -44,6 +47,8 @@ class OHOSToolchainBuilder:
         self._cflags = self._init_cflags()
         self._ldflags = self._init_ldflags()
         self._llvm_defines = self._init_llvm_defines()
+        # Currently not supported for ohos
+        self._install_python_from_prebuilts = False
 
     def _init_cflags(self) -> List[str]:
         cflags = [
@@ -59,13 +64,15 @@ class OHOSToolchainBuilder:
             "-fuse-ld=lld",
             "-Wl,--gc-sections",
             "-Wl,--build-id=sha1",
-            "--rtlib=compiler-rt",
-            "-stdlib=libc++",
             "-Wl,-z,relro,-z,now",
             "-pie",
-            "-lunwind",
-            "-Wl,-rpath,'$ORIGIN/../lib'",
         ]
+        if self._system_name == "ohos":
+            ldflags.extend([
+                "--rtlib=compiler-rt",
+                "-lunwind",
+                "-Wl,-rpath,'$ORIGIN/../lib'",
+            ])
         return ldflags
 
     def _init_llvm_defines(self):
@@ -167,7 +174,7 @@ class OHOSToolchainBuilder:
                 )
             )
 
-        if self._build_config.build_python:
+        if self._build_config.build_python or self._install_python_from_prebuilts:
             lldb_defines["LLDB_ENABLE_PYTHON"] = "ON"
             lldb_defines["LLDB_EMBED_PYTHON_HOME"] = "ON"
             lldb_defines["LLDB_PYTHON_HOME"] = f"../{self._build_config.LLDB_PYTHON}"
@@ -224,6 +231,16 @@ class OHOSToolchainBuilder:
         if self._build_config.build_python:
             self._python_builder.copy_python_to_host(self._llvm_install)
 
+        if self._install_python_from_prebuilts:
+            libpython = f'libpython{self._build_config.LLDB_PY_VERSION}.so.1.0'
+            python_dir = os.path.join(self._build_config.REPOROOT_DIR, 'prebuilts',
+                    self._build_config.LLDB_PYTHON, 'linux-arm64',
+                    self._build_config.LLDB_PY_DETAILED_VERSION)
+            shutil.copyfile(os.path.join(python_dir, "lib", libpython),
+                    os.path.join(self._llvm_install, 'lib', libpython))
+            self._build_utils.check_copy_tree(python_dir,
+                    os.path.join(self._llvm_install, self._build_config.LLDB_PYTHON))
+
         # Copy required arm-linux-ohos libs from main toolchain build.
         arch_list = [
             self._build_utils.liteos_triple("arm"),
@@ -257,7 +274,7 @@ class OHOSToolchainBuilder:
     def _package_if_need(self):
         if self._build_config.do_package:
             tarball_name = (
-                f"clang-{self._build_config.build_name}-ohos-{self._platform}"
+                f"clang-{self._build_config.build_name}-{self._system_name}-{self._platform}"
             )
             package_path = "%s%s" % (
                 self._build_utils.merge_packages_path(tarball_name),
@@ -272,7 +289,7 @@ class OHOSToolchainBuilder:
                 self._build_config.OUT_PATH,
                 "-f",
                 package_path,
-                f"ohos-{self._platform}-install",
+                f"{self._system_name}-{self._platform}-install",
             ]
             self._build_utils.check_create_dir(self._build_config.PACKAGES_PATH)
             self._build_utils.check_call(args)
