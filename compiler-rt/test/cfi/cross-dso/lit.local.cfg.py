@@ -5,7 +5,7 @@ def getRoot(config):
 
 root = getRoot(config)
 
-if root.host_os not in ['Linux', 'FreeBSD', 'NetBSD']:
+if root.host_os not in ['Linux', 'FreeBSD', 'NetBSD', 'OHOS']: # OHOS_LOCAL
   config.unsupported = True
 
 # Android O (API level 26) has support for cross-dso cfi in libdl.so.

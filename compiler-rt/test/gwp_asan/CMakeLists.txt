@@ -14,7 +14,7 @@ set(GWP_ASAN_TEST_DEPS
 # exported libc++ from the Android NDK is x86-64, even though it's part of the
 # ARM[64] toolchain... See similar measures for ASan and sanitizer-common that
 # disable unit tests for Android.
-if (COMPILER_RT_INCLUDE_TESTS AND COMPILER_RT_HAS_GWP_ASAN AND NOT ANDROID)
+if (COMPILER_RT_INCLUDE_TESTS AND COMPILER_RT_HAS_GWP_ASAN AND NOT ANDROID AND NOT OHOS) # OHOS_LOCAL
   list(APPEND GWP_ASAN_TEST_DEPS GwpAsanUnitTests)
   configure_lit_site_cfg(
     ${CMAKE_CURRENT_SOURCE_DIR}/unit/lit.site.cfg.py.in
