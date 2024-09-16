@@ -75,7 +75,7 @@ prebuilts/build-tools/${host_platform}-x86/bin,ninja-${linux_platform}
 """
 
 copy_config_darwin_x86_64="""
-prebuilts/cmake,cmake-${darwin_platform}
+prebuilts/cmake,cmake-darwin-universal
 prebuilts/clang/ohos/${host_platform}-${host_cpu},darwin_x86_64/clang_${darwin_platform}
 prebuilts/python3,python-${darwin_platform}
 prebuilts/build-tools/${host_platform}-x86/bin,gn-${darwin_platform}
@@ -83,7 +83,7 @@ prebuilts/build-tools/${host_platform}-x86/bin,ninja-${darwin_platform}
 """
 
 copy_config_darwin_arm64="""
-prebuilts/cmake,cmake-${darwin_platform}
+prebuilts/cmake,cmake-darwin-universal
 prebuilts/clang/ohos/${host_platform}-${host_cpu},darwin_arm64/clang_darwin-arm64
 prebuilts/python3,python-${host_platform}-${host_cpu}
 prebuilts/build-tools/${host_platform}-${host_cpu}/bin,gn-${darwin_platform}

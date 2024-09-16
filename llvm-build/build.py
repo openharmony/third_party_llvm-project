@@ -453,8 +453,14 @@ class BuildUtils(object):
         self.build_config = build_config
         self.buildtools_path = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts')
 
-        self.CMAKE_BIN_DIR = os.path.abspath(
-            os.path.join(self.buildtools_path, 'cmake', self.platform_prefix(), 'bin'))
+        if self.host_is_linux():
+            self.CMAKE_BIN_DIR = os.path.abspath(
+                os.path.join(self.buildtools_path, 'cmake', self.platform_prefix(), 'bin')
+            )
+        elif self.host_is_darwin():
+            self.CMAKE_BIN_DIR = os.path.abspath(
+                os.path.join(self.buildtools_path, 'cmake', 'darwin-universal', 'bin')
+            )
         self._mingw_python_dir = None
 
     def open_ohos_triple(self, arch):
