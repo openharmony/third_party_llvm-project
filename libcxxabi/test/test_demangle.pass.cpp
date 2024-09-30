@@ -9,9 +9,8 @@
 // This test is too big for most embedded devices.
 // XFAIL: LIBCXX-PICOLIBC-FIXME
 
-// https://llvm.org/PR51407 was not fixed in some previously-released
-// demanglers, which causes them to run into the infinite loop.
-// UNSUPPORTED: using-built-library-before-llvm-14
+// This test exercises support for char array initializer lists added in dd8b266ef.
+// UNSUPPORTED: using-built-library-before-llvm-20
 
 // Android's long double on x86[-64] is (64/128)-bits instead of Linux's usual
 // 80-bit format, and this demangling test is failing on it.
