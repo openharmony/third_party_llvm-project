@@ -19,7 +19,7 @@ from cross_toolchain_builder import CrossToolchainBuilder
 
 class UbuntuAarch64ToolchainBuilder(CrossToolchainBuilder):
     def __init__(self) -> None:
-        super().__init__("aarch64-linux-gnu")
+        super().__init__("aarch64-linux-gnu", True)
 
     def _update_build_args(self):
         self._cflags.extend(
@@ -85,7 +85,6 @@ class UbuntuAarch64ToolchainBuilder(CrossToolchainBuilder):
             self._llvm_defines["LLDB_ENABLE_LIBXML2"] = "OFF"
 
         self._build_config.build_python = False
-        self._install_python_from_prebuilts = True
 
 
 def main():

@@ -21,8 +21,10 @@ from python_builder import OHOSPythonBuilder
 
 
 class CrossToolchainBuilder:
-    def __init__(self, llvm_triple) -> None:
+    def __init__(self, llvm_triple, install_python_from_prebuilts=False) -> None:
         self._llvm_triple = llvm_triple
+        # Currently not supported for ohos
+        self._install_python_from_prebuilts = install_python_from_prebuilts
         self._platform = llvm_triple.split("-")[0]
         self._system_name = "ohos" if "ohos" in llvm_triple else "linux"
         self._build_config = BuildConfig()
@@ -32,8 +34,12 @@ class CrossToolchainBuilder:
         self._llvm_libs = LlvmLibs(
             self._build_config, self._sysroot_composer, self._llvm_package
         )
-        self._python_builder = OHOSPythonBuilder(self._build_utils, self._llvm_triple) \
-                if "ohos" in llvm_triple else None
+        self._python_builder = None if install_python_from_prebuilts else \
+                OHOSPythonBuilder(self._build_utils, self._llvm_triple)
+        self._python_install_dir = os.path.join(self._build_config.REPOROOT_DIR, 'prebuilts',
+                self._build_config.LLDB_PYTHON, 'linux-arm64', self._build_config.LLDB_PY_DETAILED_VERSION) \
+                        if install_python_from_prebuilts else \
+                        self._build_utils.merge_python_install_dir(self._llvm_triple)
         self._llvm_project_path = os.path.abspath(
             os.path.join(self._build_config.LLVM_PROJECT_DIR, "llvm")
         )
@@ -47,8 +53,6 @@ class CrossToolchainBuilder:
         self._cflags = self._init_cflags()
         self._ldflags = self._init_ldflags()
         self._llvm_defines = self._init_llvm_defines()
-        # Currently not supported for ohos
-        self._install_python_from_prebuilts = False
 
     def _init_cflags(self) -> List[str]:
         cflags = [
@@ -183,15 +187,14 @@ class CrossToolchainBuilder:
             )
             lldb_defines["LLDB_PYTHON_EXE_RELATIVE_PATH"] = "bin/python"
             lldb_defines["LLDB_PYTHON_EXT_SUFFIX"] = ".so"
-            lldb_defines["Python3_INCLUDE_DIRS"] = (
-                self._build_utils.merge_python_install_dir(
-                    self._llvm_triple,
-                    "include",
-                    f"python{self._build_config.LLDB_PY_VERSION}",
-                )
+
+            lldb_defines["Python3_INCLUDE_DIRS"] = os.path.join(
+                self._python_install_dir,
+                "include",
+                f"python{self._build_config.LLDB_PY_VERSION}"
             )
-            lldb_defines["Python3_LIBRARIES"] = self._build_utils.merge_python_install_dir(
-                self._llvm_triple,
+            lldb_defines["Python3_LIBRARIES"] = os.path.join(
+                self._python_install_dir,
                 "lib",
                 "libpython%s.so" % self._build_config.LLDB_PY_VERSION,
             )
@@ -233,12 +236,9 @@ class CrossToolchainBuilder:
 
         if self._install_python_from_prebuilts:
             libpython = f'libpython{self._build_config.LLDB_PY_VERSION}.so.1.0'
-            python_dir = os.path.join(self._build_config.REPOROOT_DIR, 'prebuilts',
-                    self._build_config.LLDB_PYTHON, 'linux-arm64',
-                    self._build_config.LLDB_PY_DETAILED_VERSION)
-            shutil.copyfile(os.path.join(python_dir, "lib", libpython),
+            shutil.copyfile(os.path.join(self._python_install_dir, "lib", libpython),
                     os.path.join(self._llvm_install, 'lib', libpython))
-            self._build_utils.check_copy_tree(python_dir,
+            self._build_utils.check_copy_tree(self._python_install_dir,
                     os.path.join(self._llvm_install, self._build_config.LLDB_PYTHON))
 
         # Copy required arm-linux-ohos libs from main toolchain build.
