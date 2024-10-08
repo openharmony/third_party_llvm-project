@@ -14,16 +14,12 @@ set(TSAN_DYNAMIC_LINK_LIBS ${SANITIZER_CXX_ABI_LIBRARIES} ${SANITIZER_COMMON_LIN
 #OHOS_LOCAL
 set(TSAN_DYNAMIC_LINK_FLAGS ${SANITIZER_COMMON_LINK_FLAGS})
 
-#OHOS_LOCAL
-set(TSAN_STATIC_FLAGS "")
-
 #OHOS_LOCAL begin
 if(OHOS)
 # Put tsan library in the global group so that libraries which don't depend on tsan can also find symbols from tsan.
   if (COMPILER_RT_HAS_Z_GLOBAL)
     list(APPEND TSAN_DYNAMIC_LINK_FLAGS -Wl,-z,global)
   endif()
-  list(APPEND TSAN_STATIC_FLAGS "-DTSAN_STATIC")
 endif()
 #OHOS_LOCAL end
 
@@ -259,8 +255,7 @@ else()
               $<TARGET_OBJECTS:RTSanitizerCommonSymbolizer.${arch}>
               $<TARGET_OBJECTS:RTUbsan.${arch}>
       ADDITIONAL_HEADERS ${TSAN_HEADERS}
-      #OHOS_LOCAL
-      CFLAGS ${TSAN_RTL_CFLAGS} ${TSAN_STATIC_FLAGS}
+      CFLAGS ${TSAN_RTL_CFLAGS}
       PARENT_TARGET tsan)
     add_compiler_rt_runtime(clang_rt.tsan_cxx
       STATIC
@@ -268,8 +263,7 @@ else()
       SOURCES ${TSAN_CXX_SOURCES}
               $<TARGET_OBJECTS:RTUbsan_cxx.${arch}>
       ADDITIONAL_HEADERS ${TSAN_HEADERS}
-      #OHOS_LOCAL
-      CFLAGS ${TSAN_RTL_CFLAGS} ${TSAN_STATIC_FLAGS}
+      CFLAGS ${TSAN_RTL_CFLAGS}
       PARENT_TARGET tsan)
     list(APPEND TSAN_RUNTIME_LIBRARIES clang_rt.tsan-${arch}
                                        clang_rt.tsan_cxx-${arch})

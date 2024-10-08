@@ -25,9 +25,6 @@
 #include "interception/interception.h"
 #include "tsan_interceptors.h"
 #include "tsan_interface.h"
-#if SANITIZER_OHOS
-#include "tsan_interface_ann.h"
-#endif
 #include "tsan_platform.h"
 #include "tsan_suppressions.h"
 #include "tsan_rtl.h"
@@ -1972,42 +1969,6 @@ TSAN_INTERCEPTOR(int, pthread_sigmask, int how, const __sanitizer_sigset_t *set,
   return REAL(pthread_sigmask)(how, set, oldset);
 }
 
-#if SANITIZER_OHOS && !TSAN_STATIC
-// OHOS_LOCAL begin
-struct call_once_callback_args {
-  void (*orig_func)(void *arg);
-  void *orig_arg;
-  void *flag;
-};
-
-void call_once_callback_wrapper(void *arg) {
-  call_once_callback_args *new_args = (call_once_callback_args *)arg;
-  new_args->orig_func(new_args->orig_arg);
-  __tsan_release(new_args->flag);
-}
-
-// This adds a libc++ interceptor for:
-//     void __call_once(volatile unsigned long&, void*, void(*)(void*));
-// Tsan can't see the atomic operation in this interface. To avoid false
-// positives, we intercept it and do an explicit Release after the user code.
-TSAN_INTERCEPTOR(void, _ZNSt3__h11__call_onceERVmPvPFvS2_E, void *flag,
-                 void *arg, void (*func)(void *arg)) {
-  call_once_callback_args new_args = {func, arg, flag};
-  REAL(_ZNSt3__h11__call_onceERVmPvPFvS2_E)(flag, &new_args,
-                                            call_once_callback_wrapper);
-};
-
-// For __call_once in libc++_shared.so.
-TSAN_INTERCEPTOR(void, _ZNSt4__n111__call_onceERVmPvPFvS2_E, void *flag,
-                 void *arg, void (*func)(void *arg)) {
-  call_once_callback_args new_args = {func, arg, flag};
-  REAL(_ZNSt4__n111__call_onceERVmPvPFvS2_E)(flag, &new_args,
-                                             call_once_callback_wrapper);
-};
-
-// OHOS_LOCAL end
-#endif
-
 namespace __tsan {
 
 static void ReportErrnoSpoiling(ThreadState *thr, uptr pc, int sig) {
@@ -2999,11 +2960,6 @@ void InitializeInterceptors() {
   TSAN_INTERCEPT(__tls_get_addr_internal);
   TSAN_INTERCEPT(__tls_get_offset);
 #endif
-#endif
-
-#if SANITIZER_OHOS && !TSAN_STATIC
-  TSAN_INTERCEPT(_ZNSt3__h11__call_onceERVmPvPFvS2_E);
-  TSAN_INTERCEPT(_ZNSt4__n111__call_onceERVmPvPFvS2_E);
 #endif
 
   TSAN_MAYBE_INTERCEPT__LWP_EXIT;
