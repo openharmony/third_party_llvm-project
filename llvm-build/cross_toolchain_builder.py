@@ -75,7 +75,6 @@ class CrossToolchainBuilder:
             ldflags.extend([
                 "--rtlib=compiler-rt",
                 "-lunwind",
-                "-Wl,-rpath,'$ORIGIN/../lib'",
             ])
         return ldflags
 
@@ -185,7 +184,7 @@ class CrossToolchainBuilder:
             lldb_defines["LLDB_PYTHON_RELATIVE_PATH"] = "bin/python/lib/python%s" % (
                 self._build_config.LLDB_PY_VERSION
             )
-            lldb_defines["LLDB_PYTHON_EXE_RELATIVE_PATH"] = "bin/python"
+            lldb_defines["LLDB_PYTHON_EXE_RELATIVE_PATH"] = "bin/python3"
             lldb_defines["LLDB_PYTHON_EXT_SUFFIX"] = ".so"
 
             lldb_defines["Python3_INCLUDE_DIRS"] = os.path.join(
@@ -198,6 +197,7 @@ class CrossToolchainBuilder:
                 "lib",
                 "libpython%s.so" % self._build_config.LLDB_PY_VERSION,
             )
+            lldb_defines['Python3_RPATH'] = os.path.join('$ORIGIN', '..', 'python3', 'lib')
 
         lldb_defines["LLDB_ENABLE_LZMA"] = "OFF"
         # Debug & Tuning
@@ -232,7 +232,8 @@ class CrossToolchainBuilder:
         )
 
         if self._build_config.build_python:
-            self._python_builder.copy_python_to_host(self._llvm_install)
+            self._llvm_package.copy_python_to_host(self._python_builder._install_dir, self._llvm_path)
+            self._llvm_package.copy_python_to_host(self._python_builder._install_dir, self._llvm_install)
 
         if self._install_python_from_prebuilts:
             libpython = f'libpython{self._build_config.LLDB_PY_VERSION}.so.1.0'

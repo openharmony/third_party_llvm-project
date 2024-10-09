@@ -133,6 +133,11 @@ endif()
 if(Python3_RPATH)
   set_property(TARGET liblldb APPEND PROPERTY INSTALL_RPATH "${Python3_RPATH}")
   set_property(TARGET liblldb APPEND PROPERTY BUILD_RPATH   "${Python3_RPATH}")
+  # OHOS_LOCAL begin
+  if(OHOS)
+    set_property(TARGET liblldb APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-rpath,\'${Python3_RPATH}\'")
+  endif()
+  # OHOS_LOCAL end
 endif()
 
 

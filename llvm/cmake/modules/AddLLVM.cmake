@@ -2290,7 +2290,7 @@ function(llvm_setup_rpath name)
                    LINK_FLAGS " -Wl,-rpath-link,${LLVM_LIBRARY_OUTPUT_INTDIR} ")
     endif()
     # OHOS_LOCAL begin
-    if(${CMAKE_SYSTEM_NAME} MATCHES "OHOS")
+    if(${CMAKE_SYSTEM_NAME} MATCHES "OHOS" OR OHOS)
       # Target property INSTALL_RPATH is not supported on OHOS.
       set_property(TARGET ${name} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-rpath,\'${_install_rpath}\' ")
     endif()

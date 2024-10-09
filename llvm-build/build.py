@@ -628,9 +628,11 @@ class BuildUtils(object):
             defines['LIBCXX_INCLUDE_TESTS'] = 'OFF'
             defines['Python3_LIBRARIES'] = os.path.join(self.get_python_dir(),
                 'lib', 'libpython%s.dylib' % self.build_config.LLDB_PY_VERSION)
+            defines['Python3_RPATH'] = os.path.join('@loader_path', '..', 'python3', 'lib')
         else:
             defines['Python3_LIBRARIES'] = os.path.join(self.get_python_dir(),
                 'lib', 'libpython%s.so' % self.build_config.LLDB_PY_VERSION)
+            defines['Python3_RPATH'] = os.path.join('$ORIGIN', '..', 'python3', 'lib')
 
         defines['COMPILER_RT_BUILD_XRAY'] = 'OFF'
         defines['LIBUNWIND_USE_FRAME_HEADER_CACHE'] = 'ON'
@@ -1097,10 +1099,10 @@ class LlvmCore(BuildUtils):
             raise Exception('Invalid Python information, please check if the Python tool is valid')
         windows_defines['LLDB_RELOCATABLE_PYTHON'] = 'OFF'
         windows_defines['LLDB_ENABLE_PYTHON'] = 'ON'
-        windows_defines['LLDB_PYTHON_HOME'] = 'python'
+        windows_defines['LLDB_PYTHON_HOME'] = os.path.join('..', self.build_config.LLDB_PYTHON)
         windows_defines['LLDB_PYTHON_RELATIVE_PATH'] = \
             'bin/python/lib/python%s' % (self.build_config.LLDB_PY_VERSION)
-        windows_defines['LLDB_PYTHON_EXE_RELATIVE_PATH'] = 'bin/python'
+        windows_defines['LLDB_PYTHON_EXE_RELATIVE_PATH'] = os.path.join('bin', self.build_config.LLDB_PYTHON)
         windows_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.pys'
         windows_defines['Python3_INCLUDE_DIRS'] = os.path.join(py_inc_dir,
             'python%s' % self.build_config.LLDB_PY_VERSION)
@@ -2390,13 +2392,8 @@ class LlvmPackage(BuildUtils):
         self.merge_tree(py_lib_path,
                         os.path.join(bin_root, 'python', 'lib', py_version))
 
-    def copy_python_to_host(self, install_dir):
-        if(self.host_is_linux()):
-            need_file = 'libpython' + self.build_config.LLDB_PY_VERSION + '.so.1.0'
-        if(self.host_is_darwin()):
-            need_file = 'libpython' + self.build_config.LLDB_PY_VERSION + '.dylib'
-        shutil.copyfile(os.path.join(self.get_python_dir(), "lib", need_file), os.path.join(install_dir, 'lib', need_file))
-        self.check_copy_tree(self.get_python_dir(), os.path.join(install_dir, self.build_config.LLDB_PYTHON))
+    def copy_python_to_host(self, python_dir, install_dir):
+        self.check_copy_tree(python_dir, os.path.join(install_dir, self.build_config.LLDB_PYTHON))
 
     def windows_lib_files_operation(self, lib_files, lib_dir, install_dir):
 
@@ -2973,8 +2970,9 @@ def main():
             build_config.build_only_llvm,
             build_config.xunit_xml_output,
             build_config.build_xvm)
-        llvm_package.copy_python_to_host(llvm_make)
-        llvm_package.copy_python_to_host(llvm_install)
+        python_dir = llvm_core.get_python_dir()
+        llvm_package.copy_python_to_host(python_dir, llvm_make)
+        llvm_package.copy_python_to_host(python_dir, llvm_install)
 
     llvm_core.set_clang_version(llvm_path)
 
@@ -3061,6 +3059,9 @@ def main():
             windows_python_builder.build()
             windows_python_builder.prepare_for_package()
             llvm_core.set_mingw_python_dir(windows_python_builder.install_dir)
+            mingw_python_dir = llvm_core.get_mingw_python_dir()
+            llvm_package.copy_python_to_host(mingw_python_dir, build_utils.merge_out_path('windows-x86_64'))
+            llvm_package.copy_python_to_host(mingw_python_dir, windows64_install)
 
         if build_config.enable_lzma_7zip:
             build_utils.logger().info('build windows lzma')
