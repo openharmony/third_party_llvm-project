@@ -348,12 +348,6 @@ class OHOSPythonBuilder(PythonBuilder):
         cmd = [str(self._source_dir / 'configure')] + config_flags
         subprocess.check_call(cmd, env=self._env, cwd=self._build_dir)
 
-    def copy_python_to_host(self, install_dir):
-        libpython = f'libpython{self.build_utils.build_config.LLDB_PY_VERSION}.so.1.0'
-
-        shutil.copyfile(os.path.join(self._install_dir, "lib", libpython), os.path.join(install_dir, 'lib', libpython))
-        self.build_utils.check_copy_tree(self._install_dir, os.path.join(install_dir, self.build_utils.build_config.LLDB_PYTHON))
-
     def prepare_for_package(self) -> None:
         self._remove_exclude()
         if self.build_utils.build_config.strip:
