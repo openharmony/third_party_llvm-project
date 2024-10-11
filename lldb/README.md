@@ -1,9 +1,7 @@
-
-
 # 1. Introduction to LLDB
 
 
-Low Level Debugger (LLDB) is a next-generation high-performance debugger. It is developed based on [LLVM15.0.4](https://github.com/llvm/llvm-project/releases/tag/llvmorg-15.0.4) and supports debugging on the home screen and OpenHarmony devices or emulators.
+Low Level Debugger (LLDB) is a next-generation, high-performance debugger. It is developed based on [LLVM15.0.4](https://github.com/llvm/llvm-project/releases/tag/llvmorg-15.0.4) and supports debugging on the home screen and OpenHarmony devices or emulators.
 
 > **NOTE**
 >
@@ -56,21 +54,21 @@ During remote debugging, `lldb-server` and `lldb` must be used together.
 # 3. LLDB Commands
 >  **NOTE**
 >
-> For details on original commands, see [GDB to LLDB command map](https://lldb.llvm.org/use/map.html).
+>  For details on original commands, see [GDB to LLDB command map](https://lldb.llvm.org/use/map.html).
 >
-> To obtain more commands, run the `help` command in the LLDB CLI.
+>  To obtain more commands, run the `help` command in the LLDB CLI.
 >
-> ```
-> (lldb) help
-> Debugger commands:
->   apropos           -- List debugger commands related to a word or subject.
->   breakpoint        -- Commands for operating on breakpoints (see 'help b' for shorthand.)
->   command           -- Commands for managing custom LLDB commands.
->   disassemble       -- Disassemble specified instructions in the current target.  Defaults to the current function for the current thread and stack frame.
->   expression        -- Evaluate an expression on the current thread.  Displays any returned value with LLDB's default formatting.
->   frame             -- Commands for selecting and examing the current thread's stack frames.
-> ...
-> ```
+>  ```
+>  (lldb) help
+>  Debugger commands:
+>  apropos           -- List debugger commands related to a word or subject.
+>  breakpoint        -- Commands for operating on breakpoints (see 'help b' for shorthand.)
+>  command           -- Commands for managing custom LLDB commands.
+>  disassemble       -- Disassemble specified instructions in the current target.  Defaults to the current function for the current thread and stack frame.
+>  expression        -- Evaluate an expression on the current thread.  Displays any returned value with LLDB's default formatting.
+>  frame             -- Commands for selecting and examing the current thread's stack frames.
+>  ...
+>  ```
 >
 
 ## 3.1 Option-related Commands
@@ -1168,11 +1166,9 @@ To manage the policy that LLDB uses to process the operating system signals of t
   ```
   > **NOTE**
   >
-  > `-n <boolean> (--notify <boolean>)`: specifies whether the debugger should notify the user if a signal is received. The value `true` means that the debugger should notify the user, and `false` means the opposite.
-  >
-  > `-p <boolean> (--pass <boolean>)`: specifies whether the signal should be passed to the process. The value `true` means that the value should be passed to the process, and `false` means the opposite.
-  >
-  > `-s <boolean> (--stop <boolean>)`: specifies whether the debugger should stop processing if a signal is received. The value `true` means that the debugger should stop processing, and `false` means the opposite.
+  >  - `-n <boolean> (--notify <boolean>)`: specifies whether the debugger should notify the user if a signal is received. The value `true` means that the debugger should notify the user, and `false` means the opposite.
+  >  - `-p <boolean> (--pass <boolean>)`: specifies whether the signal should be passed to the process. The value `true` means that the value should be passed to the process, and `false` means the opposite.
+  >  - `-s <boolean> (--stop <boolean>)`: specifies whether the debugger should stop processing if a signal is received. The value `true` means that the debugger should stop processing, and `false` means the opposite.
 
 ## 3.15 Core Dump
 
@@ -1214,6 +1210,7 @@ To search for debugger commands by keyword, run the `apropos <search-word>` comm
 LLDB supports creation of aliases for common commands. To create a command alias, run the `command alias <cmd-options> -- <alias-name> <cmd-name> [<options-for-aliased-command>]` command.
 
 - Alias of the command for creating a breakpoint
+
   Original command
   ```
   (lldb) breakpoint set --file hello.cpp --line 12
@@ -1318,7 +1315,7 @@ In LLDB, you can enter the start character or characters of a command and press 
 > **NOTE**
 >
 > - The automcomplete feature is available only when the `--build-libedit` option is added during the build of the LLVM project. You are advised to use this feature together with `--build-ncurses`.
-> - The autocomplete features applies to Linux, macOS x86_64, and M1.
+> - The autocomplete feature applies to Linux, macOS x86_64, and M1.
 
 - Enter `pl` and press `Tab` to show all possible choices. (There are multiple commands starting with `pl` in LLDB.)
 
@@ -1371,30 +1368,30 @@ Run `lldb-server`.
 
 LLDB client
 
-1)Run `lldb.exe`.
+1. Run `lldb.exe`.
 
-2)Debug the connection in the LLDB CLI.
+2. Debug the connection in the LLDB CLI.
 
-```
-(lldb) platform select remote-ohos
-Platform: remote-ohos
-Connected: no
-Container: no
-(lldb) platform connect connect://localhost:8080
-Platform: remote-ohos
-  Triple: arm-unknown-linux-unknown
-Hostname: localhost
-Connected: yes
-Container: no
-...
-(lldb) target create <cmd-options> <filename>                
-...
-(lldb) breakpoint set --name main
-...
-(lldb) platform disconnect                                            
-Disconnected from "localhost"
-(lldb) quit   
-```
+   ```
+   (lldb) platform select remote-ohos
+     Platform: remote-ohos
+    Connected: no
+    Container: no
+   (lldb) platform connect connect://localhost:8080
+     Platform: remote-ohos
+       Triple: arm-unknown-linux-unknown
+     Hostname: localhost
+    Connected: yes
+    Container: no
+   ...
+   (lldb) target create <cmd-options> <filename>                
+   ...
+   (lldb) breakpoint set --name main
+   ...
+   (lldb) platform disconnect                                            
+     Disconnected from "localhost"
+   (lldb) quit   
+   ```
 
 **Scenario 2**: Customize source code. Debug the executable file (built by the SDK) in attach mode.
 
@@ -1402,47 +1399,48 @@ Disconnected from "localhost"
 
 Device side
 
-1)Run the executable file and run the `ps` command to view the PID of the process.
+1. Run the executable file and run the `ps` command to view the PID of the process.
 
-```
-./process-name
-```
+   ```
+   ./process-name
+   ```
 
-2)Run `lldb-server`.
+2. Run `lldb-server`.
 
-```
-./lldb-server p --server --listen unix-abstract:///com.example.myapplication/platform-1648104534646.sock
-```
+   ```
+   ./lldb-server p --server --listen unix-abstract:///com.example.myapplication/platform-1648104534646.sock
+   ```
 
 LLDB client
 
-1)Run `lldb.exe`.
+1. Run `lldb.exe`.
 
-2)Debug the connection in the LLDB CLI.
+2. Debug the connection in the LLDB CLI.
 
-```
-(lldb) platform select remote-ohos
-  Platform: remote-ohos
- Connected: no
- Container: no
-(lldb) platform connect unix-abstract-connect:///com.example.myapplication/platform-1648104534646.sock
-  Platform: remote-ohos
-    Triple: arm-unknown-linux-unknown
-  Hostname: localhost
- Connected: yes
- Container: no
-WorkingDir: /data/local/tmp
-    Kernel: #1 SMP Fri Mar 31 20:52:12 CST 2023
-(lldb) breakpoint set --file <filename> --line <linenum>
-...
-(lldb) process attach --name process-name         // Or 'attach <pid> | <process-name>'
-...
-(lldb) process detach                             // Or 'detach'
-Process ... detached
-(lldb) platform disconnect                                            
-  Disconnected from "localhost"
-(lldb) quit                                        // Or 'q'
-```
+   ```
+   (lldb) platform select remote-ohos
+     Platform: remote-ohos
+    Connected: no
+    Container: no
+   (lldb) platform connect unix-abstract-connect:///com.example.myapplication/platform-1648104534646.sock
+     Platform: remote-ohos
+       Triple: arm-unknown-linux-unknown
+     Hostname: localhost
+    Connected: yes
+    Container: no
+   WorkingDir: /data/local/tmp
+       Kernel: #1 SMP Fri Mar 31 20:52:12 CST 2023
+   (lldb) breakpoint set --file <filename> --line <linenum>
+   ...
+   (lldb) process attach --name process-name         // Or 'attach <pid> | <process-name>'
+   ...
+   (lldb) process detach                             // Or 'detach'
+   Process ... detached
+   (lldb) platform disconnect                                            
+     Disconnected from "localhost"
+   (lldb) quit                                        // Or 'q'
+   ```
+
 > **NOTE**
 >
 > For details on how to use the SDK to build the source code, see [HOW TO USE NDK (windows)](https://gitee.com/openharmony/third_party_musl/wikis/HOW%20TO%20USE%20NDK%20(windows)) or [HOW TO USE NDK (linux)](https://gitee.com/openharmony/third_party_musl/wikis/HOW%20TO%20USE%20NDK%20(linux)). You can also use the Clang or Clang++ compiler in the SDK to build the source code.
@@ -1453,12 +1451,12 @@ Process ... detached
 >
 > In the preceding command, `/buildbot/path` is the build path of the source code, and `/my/path` is the path where the source code is stored currently.
 >
-> It is assumed that the source codes are stored in D:\demo\hello_world.cpp during the build. To debug the program on another Windows host where the source code is stored in `F:\Test\hello_world.cpp`, run the `settings set target.source-map "D:\demo" "F:\Test"` command.
+> For example, to debug the program on another Windows host where the source code is stored in `F:\Test\hello_world.cpp`, run the `settings set target.source-map "D:\demo" "F:\Test"` command.
 >
 > If the option `OHOS_STL=c++_shared` is used and the debugging device uses the 32-bit ARM architecture, upload `libc++_shared.so` to the `/system/lib` directory. If the device uses the AArch64 architecture, upload `libc++_shared.so` to the `/system/lib64` directory. If the option `OHOS_STL=c++_static` is used, you do not need to upload `libc++_shared.so`.
-> 
+>
 > `libc++_shared.so` is in the `native` directory of the SDK.
-> 
+>
 > If the message "[Fail]Error opening file: read-only file system..." is displayed when you upload `libc++_shared.so`, run the `hdc.exe shell mount -o rw,remount /` command.
 
 ## 4.2 Debugging HAPs
@@ -1469,50 +1467,50 @@ Process ... detached
 
 Device side
 
-1)Install and run the HAP, and run the `ps` command to view the PID of the application.
+1. Install and run the HAP, and run the `ps` command to view the PID of the application.
 
-```
-hdc shell bm install -p <file-path>
-hdc shell aa start  -a <ability-name> -b <bundle-name> && hdc shell pidof <bundle-name>
-```
+   ```
+   hdc shell bm install -p <file-path>
+   hdc shell aa start  -a <ability-name> -b <bundle-name> && hdc shell pidof <bundle-name>
+   ```
 
-2)Run `lldb-server`.
+2. Run `lldb-server`.
 
-```
-./lldb-server platform --server --listen "*:8080"
-```
+   ```
+   ./lldb-server platform --server --listen "*:8080"
+   ```
 
 LLDB client
 
-1)Run `lldb.exe`.
+1. Run `lldb.exe`.
 
-2)Debug the connection in the LLDB CLI.
+2. Debug the connection in the LLDB CLI.
 
-```
-(lldb) platform select remote-ohos
-  Platform: remote-ohos
- Connected: no
- Container: no
-(lldb) platform connect connect://localhost:8080
-  Platform: remote-ohos
-    Triple: arm-unknown-linux-unknown
-  Hostname: localhost
- Connected: yes
- Container: no
-WorkingDir: /data/local/tmp
-    Kernel: #1 SMP Fri Mar 31 20:52:12 CST 2023
-(lldb) settings append target.exec-search-paths <value>
-(lldb) breakpoint set --file <filename> --line <linenum>
-...
-(lldb) process attach --pid <pid>                // Or 'attach <pid> | <process-name>'
-...
-(lldb) continue
-...
-(lldb) process detach                           // Or 'detach'
-(lldb) platform disconnect                                            
-  Disconnected from "localhost"
-(lldb) quit                                     // Or 'q'
-```
+   ```
+   (lldb) platform select remote-ohos
+     Platform: remote-ohos
+    Connected: no
+    Container: no
+   (lldb) platform connect connect://localhost:8080
+     Platform: remote-ohos
+       Triple: arm-unknown-linux-unknown
+     Hostname: localhost
+    Connected: yes
+    Container: no
+   WorkingDir: /data/local/tmp
+       Kernel: #1 SMP Fri Mar 31 20:52:12 CST 2023
+   (lldb) settings append target.exec-search-paths <value>
+   (lldb) breakpoint set --file <filename> --line <linenum>
+   ...
+   (lldb) process attach --pid <pid>                // Or 'attach <pid> | <process-name>'
+   ...
+   (lldb) continue
+   ...
+   (lldb) process detach                           // Or 'detach'
+   (lldb) platform disconnect                                            
+     Disconnected from "localhost"
+   (lldb) quit                                     // Or 'q'
+   ```
 
 **Scenario 2**: Start application debugging.
 
@@ -1520,12 +1518,12 @@ WorkingDir: /data/local/tmp
 
 Device side
 
-1)Install and run the Debug HAP, and check the PID of the application.
+1. Install and run the Debug HAP, and check the PID of the application.
 
-```
-hdc shell bm install -p <file-path>
-hdc shell aa start -a <ability-name> -b <bundle-name> -N && hdc shell pidof <bundle-name>
-```
+   ```
+   hdc shell bm install -p <file-path>
+   hdc shell aa start -a <ability-name> -b <bundle-name> -N && hdc shell pidof <bundle-name>
+   ```
 
 > **NOTE**
 >
@@ -1533,42 +1531,42 @@ hdc shell aa start -a <ability-name> -b <bundle-name> -N && hdc shell pidof <bun
 >
 > For details about how to use the ability assistant, see [Ability Assistant](https://gitee.com/openharmony/docs/blob/master/en/application-dev/tools/aa-tool.md).
 
-2)Run `lldb-server`.
+2. Run `lldb-server`.
 
-```
-./lldb-server platform --server --listen "*:8080"
-```
+   ```
+   ./lldb-server platform --server --listen "*:8080"
+   ```
 
 LLDB client
 
-1)Run `lldb.exe`.
+1. Run `lldb.exe`.
 
-2)Debug the connection in the LLDB CLI.
+2. Debug the connection in the LLDB CLI.
 
-```
-(lldb) platform select remote-ohos
-  Platform: remote-ohos
- Connected: no
- Container: no
-(lldb) platform connect connect://localhost:8080
-  Platform: remote-ohos
-    Triple: arm-unknown-linux-unknown
-  Hostname: localhost
- Connected: yes
- Container: no
-WorkingDir: /data/local/tmp
-    Kernel: #1 SMP Fri Mar 31 20:52:12 CST 2023
-(lldb) breakpoint set --file <filename> --line <linenum>
-...
-(lldb) process attach --pid <pid>                // Or 'attach <pid> | <process-name>'
-...
-(lldb) continue
-...
-(lldb) process detach                           // Or 'detach'
-(lldb) platform disconnect                                            
-  Disconnected from "localhost"
-(lldb) quit                                     // Or 'q'
-```
+   ```
+   (lldb) platform select remote-ohos
+     Platform: remote-ohos
+    Connected: no
+    Container: no
+   (lldb) platform connect connect://localhost:8080
+     Platform: remote-ohos
+       Triple: arm-unknown-linux-unknown
+     Hostname: localhost
+    Connected: yes
+    Container: no
+   WorkingDir: /data/local/tmp
+       Kernel: #1 SMP Fri Mar 31 20:52:12 CST 2023
+   (lldb) breakpoint set --file <filename> --line <linenum>
+   ...
+   (lldb) process attach --pid <pid>                // Or 'attach <pid> | <process-name>'
+   ...
+   (lldb) continue
+   ...
+   (lldb) process detach                           // Or 'detach'
+   (lldb) platform disconnect                                            
+     Disconnected from "localhost"
+   (lldb) quit                                     // Or 'q'
+   ```
 
 > **NOTE**
 >
@@ -1590,7 +1588,7 @@ WorkingDir: /data/local/tmp
 
 Device side
 
-1)Set the service to debug and obtain its PID.
+1. Set the service to debug and obtain its PID.
 
 - Enter the interactive command environment.
 
@@ -1628,42 +1626,42 @@ Device side
 
   Process 1 is the init process, and process 1720 is the one to be debugged.
 
-2)Run `lldb-server`.
+2. Run `lldb-server`.
 
-```
-./lldb-server platform --server --listen "*:8080"
-```
+   ```
+   ./lldb-server platform --server --listen "*:8080"
+   ```
 
 LLDB client
 
-1)Run `lldb.exe`.
+1. Run `lldb.exe`.
 
-2)Debug the connection in the LLDB CLI.
+2. Debug the connection in the LLDB CLI.
 
-```
-(lldb) platform select remote-ohos
-  Platform: remote-ohos
- Connected: no
- Container: no
-(lldb) platform connect connect://localhost:8080
-  Platform: remote-ohos
-    Triple: arm-unknown-linux-unknown
-  Hostname: localhost
- Connected: yes
- Container: no
-WorkingDir: /data/local/tmp
-    Kernel: #1 SMP Fri Mar 31 20:52:12 CST 2023
-(lldb) breakpoint set --file <filename> --line <linenum>
-...
-(lldb) process attach --pid <pid>                // Or 'attach <pid>'
-...
-(lldb) continue
-...
-(lldb) process detach                           // Or 'detach'
-(lldb) platform disconnect                                            
-  Disconnected from "localhost"
-(lldb) quit                                     // Or 'q'
-```
+   ```
+   (lldb) platform select remote-ohos
+     Platform: remote-ohos
+    Connected: no
+    Container: no
+   (lldb) platform connect connect://localhost:8080
+     Platform: remote-ohos
+       Triple: arm-unknown-linux-unknown
+     Hostname: localhost
+    Connected: yes
+    Container: no
+   WorkingDir: /data/local/tmp
+       Kernel: #1 SMP Fri Mar 31 20:52:12 CST 2023
+   (lldb) breakpoint set --file <filename> --line <linenum>
+   ...
+   (lldb) process attach --pid <pid>                // Or 'attach <pid>'
+   ...
+   (lldb) continue
+   ...
+   (lldb) process detach                           // Or 'detach'
+   (lldb) platform disconnect                                            
+     Disconnected from "localhost"
+   (lldb) quit                                     // Or 'q'
+   ```
 
 **Scenario 2**: Debug multiple system abilities.
 
@@ -1671,7 +1669,7 @@ WorkingDir: /data/local/tmp
 
 Device side
 
-1)Set the services to debug and obtain their PID.
+1. Set the services to debug and obtain their PIDs.
 
 - Enter the interactive command environment.
 
@@ -1704,42 +1702,42 @@ Device side
   ps -elf | grep init
   ```
 
-2)Run `lldb-server`.
+2. Run `lldb-server`.
 
-```
-./lldb-server platform --server --listen "*:8080"
-```
+   ```
+   ./lldb-server platform --server --listen "*:8080"
+   ```
 
 LLDB client 1
 
-1)Run `lldb.exe`.
+1. Run `lldb.exe`.
 
-2)Debug the connection in the LLDB CLI.
+2. Debug the connection in the LLDB CLI.
 
-```
-(lldb) platform select remote-ohos
-  Platform: remote-ohos
- Connected: no
- Container: no
-(lldb) platform connect connect://localhost:8080
-  Platform: remote-ohos
-    Triple: arm-unknown-linux-unknown
-  Hostname: localhost
- Connected: yes
- Container: no
-WorkingDir: /data/local/tmp
-    Kernel: #1 SMP Fri Mar 31 20:52:12 CST 2023
-(lldb) breakpoint set --file <filename> --line <linenum>
-...
-(lldb) process attach --pid <pid1>                // Or 'attach <pid1>'
-...
-(lldb) continue
-...
-(lldb) process detach                           // Or 'detach'
-(lldb) platform disconnect                                            
-  Disconnected from "localhost"
-(lldb) quit                                     // Or 'q'
-```
+   ```
+   (lldb) platform select remote-ohos
+     Platform: remote-ohos
+    Connected: no
+    Container: no
+   (lldb) platform connect connect://localhost:8080
+     Platform: remote-ohos
+       Triple: arm-unknown-linux-unknown
+     Hostname: localhost
+    Connected: yes
+    Container: no
+   WorkingDir: /data/local/tmp
+       Kernel: #1 SMP Fri Mar 31 20:52:12 CST 2023
+   (lldb) breakpoint set --file <filename> --line <linenum>
+   ...
+   (lldb) process attach --pid <pid1>                // Or 'attach <pid1>'
+   ...
+   (lldb) continue
+   ...
+   (lldb) process detach                           // Or 'detach'
+   (lldb) platform disconnect                                            
+     Disconnected from "localhost"
+   (lldb) quit                                     // Or 'q'
+   ```
 
 Device side
 
@@ -1763,34 +1761,34 @@ ps -elf | grep init
 
 LLDB client 2
 
-1)Run `lldb.exe`.
+1. Run `lldb.exe`.
 
-2)Debug the connection in the LLDB CLI.
+2. Debug the connection in the LLDB CLI.
 
-```
-(lldb) platform select remote-ohos
-  Platform: remote-ohos
- Connected: no
- Container: no
-(lldb) platform connect connect://localhost:8080
-  Platform: remote-ohos
-    Triple: arm-unknown-linux-unknown
-  Hostname: localhost
- Connected: yes
- Container: no
-WorkingDir: /data/local/tmp
-    Kernel: #1 SMP Fri Mar 31 20:52:12 CST 2023
-(lldb) breakpoint set --file <filename> --line <linenum>
-...
-(lldb) process attach --pid <pid2>                // Or 'attach <pid2>'
-...
-(lldb) continue
-...
-(lldb) process detach                           // Or 'detach'
-(lldb) platform disconnect                                            
-  Disconnected from "localhost"
-(lldb) quit                                     // Or 'q'
-```
+   ```
+   (lldb) platform select remote-ohos
+     Platform: remote-ohos
+    Connected: no
+    Container: no
+   (lldb) platform connect connect://localhost:8080
+     Platform: remote-ohos
+       Triple: arm-unknown-linux-unknown
+     Hostname: localhost
+    Connected: yes
+    Container: no
+   WorkingDir: /data/local/tmp
+       Kernel: #1 SMP Fri Mar 31 20:52:12 CST 2023
+   (lldb) breakpoint set --file <filename> --line <linenum>
+   ...
+   (lldb) process attach --pid <pid2>                // Or 'attach <pid2>'
+   ...
+   (lldb) continue
+   ...
+   (lldb) process detach                           // Or 'detach'
+   (lldb) platform disconnect                                            
+     Disconnected from "localhost"
+   (lldb) quit                                     // Or 'q'
+   ```
 
 The procedure for debugging multiple services is the same as that for debugging two services. You only need to open multiple LLDB CLIs.
 
@@ -1802,17 +1800,17 @@ LLDB supports the running of Python code. Currently, this feature is supported b
 
 1. Run a single line of Python code.
 
-```
-script print("Hello OpenHarmony!")
-```
+   ```
+   script print("Hello OpenHarmony!")
+   ```
 
 2. Run the `script` command to enter the Python shell and execute the Python code.
 
-```python
-import os
-env_path_value = os.environ.get("PATH", "")
-print(f"PATH='{env_path_value}'")
-```
+   ```python
+   import os
+   env_path_value = os.environ.get("PATH", "")
+   print(f"PATH='{env_path_value}'")
+   ```
 
 ## 5.2 Using the Auxiliary Script to Connect to and Start `lldb-server`
 
@@ -1851,12 +1849,12 @@ script lldb_python.set_server_config("tcp-listen-port", 8080)
 
 The following parameters are supported:
 
-| Name| Default Value| Description|
-| --- | --- | --- |
-| `arch` | `unknown` | The value can be `arm`, `aarch64`, or `x86_64`. `arm` indicates the ARM 32-bit architecture, `aarch64` indicates the ARM 64-bit architecture, and `x86_64` indicates the x86 64-bit architecture. Select `lldb-server` based on the hardware architecture. If this parameter is set to `unknown`, the system attempts to determine the device architecture. If an error occurs during automatic architecture determination, you can manually set this parameter to another value.|
-| `install-path` | `/data/local/tmp/lldb/lldb-server` | Installation path of `lldb-server` on the OpenHarmony device.|
-| `tcp-listen-port` | `1234` | TCP port number listened by `lldb-server`.|
-| `platform` | `remote-ohos` | Platform where `lldb-server` is located.|
+| Name           | Default Value                            | Description                                                        |
+| ----------------- | ---------------------------------- | ------------------------------------------------------------ |
+| `arch`            | `unknown`                          | The value can be `arm`, `aarch64`, or `x86_64`. `arm` indicates the ARM 32-bit architecture, `aarch64` indicates the ARM 64-bit architecture, and `x86_64` indicates the x86 64-bit architecture. Select `lldb-server` based on the hardware architecture. If this parameter is set to `unknown`, the system attempts to determine the device architecture. If an error occurs during automatic architecture determination, you can manually set this parameter to another value.|
+| `install-path`    | `/data/local/tmp/lldb/lldb-server` | Installation path of `lldb-server` on the OpenHarmony device.             |
+| `tcp-listen-port` | `1234`                             | TCP port number listened by `lldb-server`.                             |
+| `platform`        | `remote-ohos`                      | Platform where `lldb-server` is located.                                |
 
 
 # 6. Standalone Debugging
@@ -1871,38 +1869,39 @@ For details about how to build the LLVM project, see [LLVM Build](https://gitee.
 
 After the build is complete, you can obtain LLDB Standalone tools from the following path:
 
-1)Generation path: llvm-project/out/lib/lldb-server-[platform]-linux-ohos/bin
+1. Generation path: llvm-project/out/lib/lldb-server-[platform]-linux-ohos/bin
 
-2)Installation path: llvm-project/out/llvm-install/lib/clang/15.0.4/bin/[platform]-linux-ohos
+2. Installation path: llvm-project/out/llvm-install/lib/clang/15.0.4/bin/[platform]-linux-ohos
 
-3)Package: clang-dev/lib/clang/15.0.4/bin/[platform]-linux-ohos in llvm-project/out/clang-dev-linux-x86_64.tar.bz2
+3. Package: clang-dev/lib/clang/15.0.4/bin/[platform]-linux-ohos in llvm-project/out/clang-dev-linux-x86_64.tar.bz2
 
-​	The value of `[platform]` depends on the architecture of the debugging device. The value can be `arm` or `aarch64`.
+	The value of `[platform]` depends on the architecture of the debugging device. The value can be `arm` or `aarch64`.
 
 ## 6.2 Preparing for Standalone Debugging
 
-1)Use hdc to transfer the `lldb` and `lldb-server` files obtained to the working path of the device, for example, `/data/local/tmp`.
+1. Use hdc to transfer the `lldb` and `lldb-server` files obtained to the working path of the device, for example, `/data/local/tmp`.
 
-```
-hdc.exe file send lldb /data/local/tmp
-hdc.exe file send lldb-server /data/local/tmp
-```
+   ```
+   hdc.exe file send lldb /data/local/tmp
+   hdc.exe file send lldb-server /data/local/tmp
+   ```
 
-2)Enter the interactive command mode.
+2. Enter the interactive command mode.
 
-```
-hdc.exe shell
-```
+   ```
+   hdc.exe shell
+   ```
 
-3)Grant the execute permission on LLDB.
+3. Grant the execute permission on LLDB.
 
-```
-# chmod +x /data/local/tmp/lldb
-# chmod +x /data/local/tmp/lldb-server
-```
+   ```
+   # chmod +x /data/local/tmp/lldb
+   # chmod +x /data/local/tmp/lldb-server
+   ```
+
 ## 6.3 Performing Standalone Debugging
 
-Generally, you can start debugging by attaching to a running process or directly starting a program through LLDB. Then you can use [LLDB Commands](#lldb-commands) to debug the target program.
+Generally, you can start debugging by attaching to a running process or directly starting a program through LLDB. Then you can use [LLDB Commands](#3-lldb-commands) to debug the target program.
 
 > **NOTE**
 >
@@ -1952,3 +1951,53 @@ Run the `ps` or `top` command to obtain the PID or process name of the target pr
 (lldb) b main
 (lldb) r
 ```
+# 7. OpenHarmony LLDB
+
+This debugger can directly run on OpenHarmony devices without remote connection.
+
+## 7.1 How to Obtain
+
+To obtain this tool, build an LLVM project.
+
+For details about the build operation, see [ohos-toolchain-build](https://gitee.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md#build-process-of-aarch64-toolchain).
+
+After the build is complete, you can obtain the OpenHarmony LLDB package `clang-dev-ohos-aarch64tar.bz2` from `llvm-project/packages`.
+
+## 7.2 Debugging Preparation
+
+1. Restricted by the device environment, you may need to repack the package as `clang-dev-ohos-aarch64.tar`.
+
+   ```
+   bunzip2 -c clang-dev-ohos-aarch64.tar.bz2 > clang-dev-ohos-aarch64.tar
+   ```
+
+2. Use hdc to transfer the package to the working path, for example, `/data/local/tmp`.
+
+   ```
+   hdc file send clang-dev-ohos-aarch64.tar /data/local/tmp
+   ```
+
+3. Enter the interactive command mode.
+
+   ```
+   hdc shell
+   ```
+
+4. Decompress the tool package.
+
+   ```
+   # cd /data/local/tmp/
+   # tar -xf clang-dev-ohos-aarch64.tar
+   ```
+
+## 7.3 Debugging
+
+Generally, you can start debugging by attaching to a running process or directly starting a program through LLDB. Then you can use [LLDB Commands](#3-lldb-commands) to debug the target program.
+
+> **NOTE**
+>
+> - If the libedit library is not enabled during build, the Backspace button may not function. If this is the case, use `Ctrl+Backspace` instead.
+
+Location of the LLDB execution program: `/data/local/tmp/ohos-aarch64-install/bin/`
+
+For details about the debugging methods, see [6.3 Performing Standalone Debugging](#63-performing-standalone-debugging).
