@@ -21,6 +21,8 @@
 #include "sanitizer_file.h"
 #  include "sanitizer_interface_internal.h"
 
+extern "C" SANITIZER_WEAK_ATTRIBUTE int musl_log(const char *fmt, ...);
+
 namespace __sanitizer {
 
 void CatastrophicErrorWrite(const char *buffer, uptr length) {
@@ -71,7 +73,14 @@ void ReportFile::ReopenIfNecessary() {
     char errmsg[100];
     internal_snprintf(errmsg, sizeof(errmsg), " (reason: %d)", err);
     WriteToFile(kStderrFd, errmsg, internal_strlen(errmsg));
+#if SANITIZER_OHOS // OHOS_LOCAL
+    if (&musl_log) {
+      musl_log("%s %s %s\n", ErrorMsgPrefix, full_path, errmsg);
+    }
+    internal__exit(common_flags()->exitcode);
+#else
     Die();
+#endif
   }
   fd_pid = pid;
 }
