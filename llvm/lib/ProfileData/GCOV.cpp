@@ -111,6 +111,7 @@ bool GCOVFile::readGCNO(GCOVBuffer &buf) {
     buf.getWord(); // hasUnexecutedBlocks
 
   uint32_t tag, length;
+  bool skip = false; // OHOS_LOCAL
   GCOVFunction *fn = nullptr;
   while ((tag = buf.getWord())) {
     if (!buf.readInt(length))
@@ -144,6 +145,11 @@ bool GCOVFile::readGCNO(GCOVBuffer &buf) {
         filenames.emplace_back(filename);
       fn->srcIdx = r.first->second;
       identToFunction[fn->ident] = fn;
+      // OHOS_LOCAL
+      // Compiler generated cxx global variable initial functions is counted into coverage,
+      // and it is not user code, so we skip it.
+      // This is fixed in llvm-17, should be revert after that.
+      skip = (fn->Name.startswith("__cxx_global_var_init") && fn->startLine == 0);
     } else if (tag == GCOV_TAG_BLOCKS && fn) {
       if (version < GCOV::V800) {
         for (uint32_t i = 0; i != length; ++i) {
@@ -186,8 +192,10 @@ bool GCOVFile::readGCNO(GCOVBuffer &buf) {
       GCOVBlock &Block = *fn->blocks[srcNo];
       for (;;) {
         uint32_t line = buf.getWord();
-        if (line)
-          Block.addLine(line);
+	// OHOS_LOCAL
+        if (line) {
+          if (!skip) Block.addLine(line);
+	}
         else {
           StringRef filename;
           buf.readString(filename);
