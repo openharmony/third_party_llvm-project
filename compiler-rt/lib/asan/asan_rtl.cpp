@@ -541,29 +541,9 @@ void UnpoisonStack(uptr bottom, uptr top, const char *type) {
   PoisonShadow(bottom, RoundUpTo(top - bottom, ASAN_SHADOW_GRANULARITY), 0);
 }
 
-#if SANITIZER_OHOS
-// This interface is used to identify the stack area of the ohos coroutine.
-extern "C" SANITIZER_WEAK_ATTRIBUTE bool ffrt_get_current_coroutine_stack(void **, uptr *);
-#endif
-
 static void UnpoisonDefaultStack() {
   uptr bottom, top;
-#if SANITIZER_OHOS
-  // OHOS_LOCAL begin
-  if (&ffrt_get_current_coroutine_stack) {
-    uptr coroutine_stack_size = 0;
-    void *stack_low_addr = nullptr;
-    // If we are currently on coroutine stack, we should clean up the coroutine stack.
-    bool is_coroutine = ffrt_get_current_coroutine_stack(&stack_low_addr, &coroutine_stack_size);
-    if (is_coroutine) {
-      bottom = (uptr)stack_low_addr;
-      top = bottom + coroutine_stack_size;
-      UnpoisonStack(bottom, top, "coroutine");
-      return;
-    }
-  }
-  // OHOS_LOCAL end
-#endif
+
   if (AsanThread *curr_thread = GetCurrentThread()) {
     int local_stack;
     const uptr page_size = GetPageSizeCached();
