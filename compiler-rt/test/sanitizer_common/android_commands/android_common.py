@@ -4,15 +4,22 @@ import time
 ANDROID_TMPDIR = '/data/local/tmp/Output'
 ADB = os.environ.get('ADB', 'adb')
 DYN_LINKER = os.environ.get('OHOS_REMOTE_DYN_LINKER') # OHOS_LOCAL
+ANDROID_SERIAL = os.environ.get('ANDROID_SERIAL') # OHOS_LOCAL
 
 verbose = False
 if os.environ.get('ANDROID_RUN_VERBOSE') == '1':
     verbose = True
 
-def host_to_device_path(path):
+# OHOS_LOCAL begin
+def get_adb_cmd_prefix():
+    device = ['-s', ANDROID_SERIAL] if ANDROID_SERIAL else []
+    return [ADB, *device]
+
+def host_to_device_path(path, device_tmpdir=ANDROID_TMPDIR):
     rel = os.path.relpath(path, "/")
-    dev = os.path.join(ANDROID_TMPDIR, rel)
+    dev = os.path.join(device_tmpdir, rel)
     return dev
+# OHOS_LOCAL end
 
 def adb(args, attempts = 1, timeout_sec = 600):
     if verbose:
@@ -22,7 +29,11 @@ def adb(args, attempts = 1, timeout_sec = 600):
     ret = 255
     while attempts > 0 and ret != 0:
       attempts -= 1
-      ret = subprocess.call(['timeout', str(timeout_sec), ADB] + args, stdout=out, stderr=subprocess.STDOUT)
+      # OHOS_LOCAL begin
+      ret = subprocess.call(
+            ['timeout', str(timeout_sec)] + get_adb_cmd_prefix() + args,
+            stdout=out, stderr=subprocess.STDOUT)
+      # OHOS_LOCAL end
     if ret != 0:
       print("adb command failed", args)
       print(tmpname)
@@ -40,6 +51,8 @@ def pull_from_device(path):
     os.unlink(tmp)
     return text
 
-def push_to_device(path):
-    dst_path = host_to_device_path(path)
+# OHOS_LOCAL begin
+def push_to_device(path, device_tmpdir=ANDROID_TMPDIR):
+    dst_path = host_to_device_path(path, device_tmpdir)
     adb(['push', path, dst_path], 5, 60)
+# OHOS_LOCAL end

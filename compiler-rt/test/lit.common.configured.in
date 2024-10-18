@@ -44,6 +44,7 @@ set_default("use_lto", config.use_thinlto)
 set_default("android", @ANDROID_PYBOOL@)
 set_default("ohos_family", @OHOS_FAMILY_PYBOOL@)
 set_default("ohos_host", @OHOS_HOST_PYBOOL@)
+set_default("remote_interface", "@REMOTE_DEVICE_INTERFACE@") # OHOS_LOCAL
 set_default("android_api_level", "@ANDROID_API_LEVEL@")
 set_default("android_serial", "@ANDROID_SERIAL_FOR_TESTING@")
 set_default("android_files_to_push", [])
@@ -56,6 +57,22 @@ set_default("test_standalone_build_libs", @COMPILER_RT_TEST_STANDALONE_BUILD_LIB
 # library paths differ.
 set_default("test_suite_supports_overriding_runtime_lib_path", False)
 config.available_features.add('target-is-%s' % config.target_arch)
+
+# OHOS_LOCAL begin
+module_paths = (f'{config.compiler_rt_src_root}/test/sanitizer_common',
+                f'{config.compiler_rt_obj_root}/test/sanitizer_common/ohos_family_commands')
+# we need to update both `sys.path` and `config.environment`, because first will be used during
+# lit configure stage, and the second will be used during the run.
+config.environment['PYTHONPATH'] = f'{config.environment.get("PYTHONPATH", "")}:{":".join(module_paths)}'
+import sys
+sys.path.extend(module_paths)
+
+# empty interface means local run
+supported_interfaces = ('hdc', 'adb', '')
+if config.remote_interface not in supported_interfaces:
+  raise RuntimeError(f'{config.remote_interface} is not supported, '
+                     f'must be one of {supported_interfaces}')
+# OHOS_LOCAL end
 
 if config.enable_per_target_runtime_dir:
   set_default("target_suffix", "")
