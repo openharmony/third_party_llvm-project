@@ -75,7 +75,7 @@ void ReportFile::ReopenIfNecessary() {
     WriteToFile(kStderrFd, errmsg, internal_strlen(errmsg));
 #if SANITIZER_OHOS // OHOS_LOCAL
     if (&musl_log) {
-      musl_log("%s %s %s\n", ErrorMsgPrefix, full_path, errmsg);
+      musl_log("%{public}s %{public}s %{public}s\n", ErrorMsgPrefix, full_path, errmsg);
     }
     internal__exit(common_flags()->exitcode);
 #else
