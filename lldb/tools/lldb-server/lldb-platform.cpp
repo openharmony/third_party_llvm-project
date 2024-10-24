@@ -54,6 +54,7 @@ static struct option g_long_options[] = {
     {"debug", no_argument, &g_debug, 1},
     {"verbose", no_argument, &g_verbose, 1},
     {"log-file", required_argument, nullptr, 'l'},
+    {"gdbserver-log-file", required_argument, nullptr, 'g'}, // OHOS_LOCAL
     {"log-channels", required_argument, nullptr, 'c'},
     {"listen", required_argument, nullptr, 'L'},
     {"port-offset", required_argument, nullptr, 'p'},
@@ -100,7 +101,8 @@ static void signal_handler(int signo) {
 #endif
 
 static void display_usage(const char *progname, const char *subcommand) {
-  fprintf(stderr, "Usage:\n  %s %s [--log-file log-file-name] [--log-channels "
+  fprintf(stderr, "Usage:\n  %s %s [--log-file log-file-name] "
+                  "[--gdbserver-log-file log-file-name] [--log-channels "      // OHOS_LOCAL
                   "log-channel-list] [--port-file port-file-path] --server "
                   "--listen port\n",
           progname, subcommand);
@@ -169,7 +171,7 @@ int main_platform(int argc, char *argv[]) {
   std::string listen_host_port;
   int ch;
 
-  std::string log_file;
+  std::string log_file, gdbserver_log_file; // OHOS_LOCAL
   StringRef
       log_channels; // e.g. "lldb process threads:gdb-remote default:linux all"
 
@@ -206,6 +208,13 @@ int main_platform(int argc, char *argv[]) {
       if (optarg && optarg[0])
         log_file.assign(optarg);
       break;
+
+    // OHOS_LOCAL begin
+    case 'g': // Set gdbserver Log File
+      if (optarg && optarg[0])
+        gdbserver_log_file.assign(optarg);
+      break;
+    // OHOS_LOCAL end
 
     case 'c': // Log Channels
       if (optarg && optarg[0])
@@ -266,6 +275,20 @@ int main_platform(int argc, char *argv[]) {
 
   if (!LLDBServerUtilities::SetupLogging(log_file, log_channels, 0))
     return -1;
+
+  // OHOS_LOCAL begin
+  // The environment variable LLDB_DEBUGSERVER_LOG_FILE is not set
+  // but --gdbserver-log-file is option when starting the lldb-server platform
+  if (!getenv("LLDB_DEBUGSERVER_LOG_FILE") && !gdbserver_log_file.empty()) {
+      setenv("LLDB_DEBUGSERVER_LOG_FILE", gdbserver_log_file.c_str(), true);
+  }
+
+  // The environment variable LLDB_SERVER_LOG_CHANNELS is not set
+  // but --log-channels is option when starting the lldb-server platform
+  if (!getenv("LLDB_SERVER_LOG_CHANNELS") && !log_channels.empty()) {
+    setenv("LLDB_SERVER_LOG_CHANNELS", log_channels.str().c_str(), true);
+  }
+  // OHOS_LOCAL end
 
   // Make a port map for a port range that was specified.
   if (min_gdbserver_port && min_gdbserver_port < max_gdbserver_port) {
