@@ -34,6 +34,7 @@ public:
     VK_TPREL    = 0x007,
     VK_TLSDESC  = 0x008,
     VK_SECREL   = 0x009,
+    VK_GOT_AUTH = 0x00c,
     VK_SymLocBits = 0x00f,
 
     // Variants specifying which part of the final address calculation is
@@ -84,6 +85,8 @@ public:
     VK_GOT_LO12          = VK_GOT      | VK_PAGEOFF | VK_NC,
     VK_GOT_PAGE          = VK_GOT      | VK_PAGE,
     VK_GOT_PAGE_LO15     = VK_GOT      | VK_LO15    | VK_NC,
+    VK_GOT_AUTH_LO12     = VK_GOT_AUTH | VK_PAGEOFF | VK_NC,
+    VK_GOT_AUTH_PAGE     = VK_GOT_AUTH | VK_PAGE,
     VK_DTPREL_G2         = VK_DTPREL   | VK_G2,
     VK_DTPREL_G1         = VK_DTPREL   | VK_G1,
     VK_DTPREL_G1_NC      = VK_DTPREL   | VK_G1      | VK_NC,

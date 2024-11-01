@@ -158,6 +158,10 @@ public:
     // We didn't modify anything.
     return false;
   }
+  // Emit the sequence for LOADgotAUTH (load signed pointer from signed ELF GOT
+  // and authenticate it with, if FPAC bit is not set, check+trap sequence after
+  // authenticating)
+  void LowerLOADgotAUTH(const MachineInstr &MI);
 
 private:
   void printOperand(const MachineInstr *MI, unsigned OpNum, raw_ostream &O);
@@ -579,7 +583,23 @@ void AArch64AsmPrinter::emitEndOfAsmFile(Module &M) {
     // generates code that does this, it is always safe to set.
     OutStreamer->emitAssemblerFlag(MCAF_SubsectionsViaSymbols);
   }
-
+  if (TT.isOSBinFormatELF()) {
+    // With signed ELF GOT enabled, the linker looks at the symbol type to
+    // choose between keys IA (for STT_FUNC) and DA (for other types). Symbols
+    // for functions not defined in the module have STT_NOTYPE type by default.
+    // This makes linker to emit signing schema with DA key (instead of IA) for
+    // corresponding R_AARCH64_AUTH_GLOB_DAT dynamic reloc. To avoid that, force
+    // all function symbols used in the module to have STT_FUNC type. See
+    // https://github.com/ARM-software/abi-aa/blob/main/pauthabielf64/pauthabielf64.rst#default-signing-schema
+    const auto *PtrAuthELFGOTFlag = mdconst::extract_or_null<ConstantInt>(
+        M.getModuleFlag("ptrauth-elf-got"));
+    if (PtrAuthELFGOTFlag && PtrAuthELFGOTFlag->getZExtValue() == 1)
+      for (const GlobalValue &GV : M.global_values())
+        if (!GV.use_empty() && isa<Function>(GV) &&
+            !GV.getName().startswith("llvm."))
+          OutStreamer->emitSymbolAttribute(getSymbol(&GV),
+                                           MCSA_ELF_TypeFunction);
+  }
   // Emit stack and fault map information.
   emitStackMaps(SM);
   FM.serializeToFaultMapSection();
@@ -1168,6 +1188,58 @@ void AArch64AsmPrinter::emitFMov0(const MachineInstr &MI) {
   }
 }
 
+void AArch64AsmPrinter::LowerLOADgotAUTH(const MachineInstr &MI) {
+  Register DstReg = MI.getOperand(0).getReg();
+  Register AuthResultReg = DstReg;
+  const MachineOperand &GAMO = MI.getOperand(1);
+  assert(GAMO.getOffset() == 0);
+
+  MachineOperand GAHiOp(GAMO);
+  MachineOperand GALoOp(GAMO);
+  GAHiOp.addTargetFlag(AArch64II::MO_PAGE);
+  GALoOp.addTargetFlag(AArch64II::MO_PAGEOFF | AArch64II::MO_NC);
+
+  MCOperand GAMCHi, GAMCLo;
+  MCInstLowering.lowerOperand(GAHiOp, GAMCHi);
+  MCInstLowering.lowerOperand(GALoOp, GAMCLo);
+
+  EmitToStreamer(
+      MCInstBuilder(AArch64::ADRP).addReg(AArch64::X17).addOperand(GAMCHi));
+
+  EmitToStreamer(MCInstBuilder(AArch64::ADDXri)
+                     .addReg(AArch64::X17)
+                     .addReg(AArch64::X17)
+                     .addOperand(GAMCLo)
+                     .addImm(0));
+
+  EmitToStreamer(MCInstBuilder(AArch64::LDRXui)
+                     .addReg(AuthResultReg)
+                     .addReg(AArch64::X17)
+                     .addImm(0));
+
+  assert(GAMO.isGlobal());
+  MCSymbol *UndefWeakSym;
+  if (GAMO.getGlobal()->hasExternalWeakLinkage()) {
+    UndefWeakSym = createTempSymbol("undef_weak");
+    EmitToStreamer(*OutStreamer,
+        MCInstBuilder(AArch64::CBZX)
+            .addReg(AuthResultReg)
+            .addExpr(MCSymbolRefExpr::create(UndefWeakSym, OutContext)));
+  }
+
+  assert(GAMO.getGlobal()->getValueType() != nullptr);
+  unsigned AuthOpcode = GAMO.getGlobal()->getValueType()->isFunctionTy()
+                            ? AArch64::AUTIA
+                            : AArch64::AUTDA;
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AuthOpcode)
+                     .addReg(AuthResultReg)
+                     .addReg(AuthResultReg)
+                     .addReg(AArch64::X17));
+
+  if (GAMO.getGlobal()->hasExternalWeakLinkage())
+    OutStreamer->emitLabel(UndefWeakSym);
+}
+
 // Simple pseudo-instructions have their lowering (with expansion to real
 // instructions) auto-generated.
 #include "AArch64GenMCPseudoLowering.inc"
@@ -1297,6 +1369,9 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
       OutStreamer->emitCFIMTETaggedFrame();
     return;
   }
+  case AArch64::LOADgotAUTH:
+    LowerLOADgotAUTH(*MI);
+    return;
 
   // Tail calls use pseudo instructions so they have the proper code-gen
   // attributes (isCall, isReturn, etc.). We lower them to the real

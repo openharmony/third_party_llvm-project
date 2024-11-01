@@ -448,7 +448,9 @@ unsigned AArch64FastISel::materializeGV(const GlobalValue *GV) {
   // movz/movk sequences, which FastISel doesn't handle yet.
   if (!Subtarget->useSmallAddressing() && !Subtarget->isTargetMachO())
     return 0;
-
+  if (FuncInfo.MF->getInfo<AArch64FunctionInfo>()->hasELFSignedGOT())
+    return 0;
+  
   unsigned OpFlags = Subtarget->ClassifyGlobalReference(GV, TM);
 
   EVT DestEVT = TLI.getValueType(DL, GV->getType(), true);

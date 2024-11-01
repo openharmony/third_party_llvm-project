@@ -193,6 +193,10 @@ class AArch64FunctionInfo final : public MachineFunctionInfo {
 #ifdef ARK_GC_SUPPORT
   SmallVector<ArkArgInfo,4> ArkArgInfos; // OHOS_LOCAL
 #endif
+  /// HasELFSignedGOT is true if the target binary format is ELF and the IR
+  /// module containing the corresponding function has "ptrauth-elf-got" flag
+  /// set to 1.
+  bool HasELFSignedGOT = false;
 
 public:
   explicit AArch64FunctionInfo(MachineFunction &MF);
@@ -453,7 +457,8 @@ public:
   }
 #endif
 
-  // OHOS_LOCAL end
+  // OHOS_LOCAL end  
+  bool hasELFSignedGOT() const { return HasELFSignedGOT; }
 private:
   // Hold the lists of LOHs.
   MILOHContainer LOHContainerSet;

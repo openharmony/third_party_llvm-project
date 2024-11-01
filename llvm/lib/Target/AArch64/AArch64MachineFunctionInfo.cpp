@@ -80,6 +80,18 @@ static bool ShouldSignWithBKey(const Function &F) {
   return Key.equals_insensitive("b_key");
 }
 
+static bool hasELFSignedGOTHelper(const Function &F,
+                                  const AArch64Subtarget &STI) {
+  if (!Triple(STI.getTargetTriple()).isOSBinFormatELF())
+    return false;
+  const Module *M = F.getParent();
+  const auto *Flag = mdconst::extract_or_null<ConstantInt>(
+      M->getModuleFlag("ptrauth-elf-got"));
+  if (Flag && Flag->getZExtValue() == 1)
+    return true;
+  return false;
+}
+
 AArch64FunctionInfo::AArch64FunctionInfo(MachineFunction &MF_) : MF(&MF_) {
   // If we already know that the function doesn't have a redzone, set
   // HasRedZone here.
@@ -89,6 +101,7 @@ AArch64FunctionInfo::AArch64FunctionInfo(MachineFunction &MF_) : MF(&MF_) {
   const Function &F = MF->getFunction();
   std::tie(SignReturnAddress, SignReturnAddressAll) = GetSignReturnAddress(F);
   SignWithBKey = ShouldSignWithBKey(F);
+  HasELFSignedGOT = hasELFSignedGOTHelper(F, MF->getSubtarget<AArch64Subtarget>());
   // TODO: skip functions that have no instrumented allocas for optimization
   IsMTETagged = F.hasFnAttribute(Attribute::SanitizeMemTag);
 
