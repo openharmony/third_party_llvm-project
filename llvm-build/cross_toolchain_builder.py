@@ -274,26 +274,7 @@ class CrossToolchainBuilder:
 
     def _package_if_need(self):
         if self._build_config.do_package:
-            tarball_name = (
-                f"clang-{self._build_config.build_name}-{self._system_name}-{self._platform}"
-            )
-            package_path = "%s%s" % (
-                self._build_utils.merge_packages_path(tarball_name),
-                self._build_config.ARCHIVE_EXTENSION,
-            )
-            self._build_utils.logger().info("Packaging %s", package_path)
-            args = [
-                "tar",
-                self._build_config.ARCHIVE_OPTION,
-                "-h",
-                "-C",
-                self._build_config.OUT_PATH,
-                "-f",
-                package_path,
-                f"{self._system_name}-{self._platform}-install",
-            ]
-            self._build_utils.check_create_dir(self._build_config.PACKAGES_PATH)
-            self._build_utils.check_call(args)
+            self._llvm_package.package_operation(self._llvm_install, f"{self._system_name}-{self._platform}")
 
     # virtual function
     def _update_build_args(self):
