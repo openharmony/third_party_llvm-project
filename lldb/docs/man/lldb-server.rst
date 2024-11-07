@@ -145,8 +145,9 @@ GENERAL OPTIONS
 .. OHOS_LOCAL begin
 .. option:: --gdbserver-log-file <file>
 
- Destination file to gdbserver log to. If it is empty and the environment
- variable LLDB_DEBUGSERVER_LOG_FILE is also empty, log to stderr.
+ Only enabled on the OHOS. Destination file to gdbserver log to.
+ If it is empty and the environment variable LLDB_DEBUGSERVER_LOG_FILE
+ is also empty, log to stderr.
 .. OHOS_LOCAL end
 
 GDB-SERVER CONNECTIONS

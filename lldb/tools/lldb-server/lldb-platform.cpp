@@ -102,8 +102,12 @@ static void signal_handler(int signo) {
 
 static void display_usage(const char *progname, const char *subcommand) {
   fprintf(stderr, "Usage:\n  %s %s [--log-file log-file-name] "
-                  "[--gdbserver-log-file log-file-name] [--log-channels "      // OHOS_LOCAL
-                  "log-channel-list] [--port-file port-file-path] --server "
+                  // OHOS_LOCAL begin
+#if defined(__OHOS_FAMILY__)
+                  "[--gdbserver-log-file log-file-name] "
+#endif
+                  "[--log-channels log-channel-list] [--port-file port-file-path] --server "
+                  // OHOS_LOCAL end
                   "--listen port\n",
           progname, subcommand);
   exit(0);
@@ -279,6 +283,7 @@ int main_platform(int argc, char *argv[]) {
   // OHOS_LOCAL begin
   // The environment variable LLDB_DEBUGSERVER_LOG_FILE is not set
   // but --gdbserver-log-file is option when starting the lldb-server platform
+#if defined(__OHOS_FAMILY__)
   if (!getenv("LLDB_DEBUGSERVER_LOG_FILE") && !gdbserver_log_file.empty()) {
       setenv("LLDB_DEBUGSERVER_LOG_FILE", gdbserver_log_file.c_str(), true);
   }
@@ -288,6 +293,7 @@ int main_platform(int argc, char *argv[]) {
   if (!getenv("LLDB_SERVER_LOG_CHANNELS") && !log_channels.empty()) {
     setenv("LLDB_SERVER_LOG_CHANNELS", log_channels.str().c_str(), true);
   }
+#endif
   // OHOS_LOCAL end
 
   // Make a port map for a port range that was specified.
