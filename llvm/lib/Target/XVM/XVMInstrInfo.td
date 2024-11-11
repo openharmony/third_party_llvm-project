@@ -189,7 +189,7 @@ let isBranch = 1, hasCtrlDep = 1 in {
   def BREAK_IMM : ControFlowNoArgs<0b00001000, (outs), (ins uimm6:$imm), "break #$imm", []>;
   def CONTINUE : ControFlowNoArgs<0b00000000, (outs), (ins), "continue", []>;
   def THEN : ControFlowNoArgs<0b00000000, (outs), (ins), "(then", []>;
-  def END_THEN : ControFlowNoArgs<0b00000000, (outs), (ins), ")", []>;
+  def END_THEN : ControFlowNoArgs<0b00000000, (outs), (ins), ") ;; end_then", []>;
   def ELSE : ControFlowNoArgs<0b00000000, (outs), (ins), "(else", []>;
   def END_ELSE : ControFlowNoArgs<0b00000000, (outs), (ins), ")", []>;
   def END_IF : ControFlowNoArgs<0b00000000, (outs), (ins), ")", []>;
@@ -288,7 +288,7 @@ def : Pat < (sub 0, i64:$src2), (NEG_r i64:$src2)>;
 
 // mov combinations
 def GetMovImm : SDNodeXForm<imm, [{
-  return CurDAG->getTargetConstant( (N->getSExtValue() & 0xffff), SDLoc(N), MVT::i64);
+  return CurDAG->getTargetConstant( (N->getSExtValue() & 0x7fff), SDLoc(N), MVT::i64);
 }]>;
 def GetMovk0Imm : SDNodeXForm<imm, [{
   return CurDAG->getTargetConstant( (N->getSExtValue() & 0xffff), SDLoc(N), MVT::i64);
@@ -321,19 +321,19 @@ def IsOver48Bits : ImmLeaf<i64, [{
 
 def : Pat<
   (i64 IsLess16Bits:$src1),
-  (MOVK_ri (MOV_ri 0), IsLess16Bits:$src1, 0)
+  (MOVK_ri (MOV_ri IsLess15Bits:$src1), IsLess16Bits:$src1, 0)
 >;
 def : Pat<
   (i64 IsOver16Bits:$src1),
-  (MOVK_ri (MOVK_ri (MOV_ri 0), IsLess16Bits:$src1, 0), IsOver16Bits:$src1, 1)
+  (MOVK_ri (MOVK_ri (MOV_ri IsLess15Bits:$src1), IsLess16Bits:$src1, 0), IsOver16Bits:$src1, 1)
 >;
 def : Pat<
   (i64 IsOver32Bits:$src1),
-  (MOVK_ri (MOVK_ri (MOVK_ri (MOV_ri 0), IsLess16Bits:$src1, 0), IsOver16Bits:$src1, 1), IsOver32Bits:$src1, 2)
+  (MOVK_ri (MOVK_ri (MOVK_ri (MOV_ri IsLess15Bits:$src1), IsLess16Bits:$src1, 0), IsOver16Bits:$src1, 1), IsOver32Bits:$src1, 2)
 >;
 def : Pat<
   (i64 IsOver48Bits:$src1),
-  (MOVK_ri (MOVK_ri (MOVK_ri (MOVK_ri (MOV_ri 0), IsLess16Bits:$src1, 0), IsOver16Bits:$src1, 1), IsOver32Bits:$src1, 2), IsOver48Bits:$src1, 3)
+  (MOVK_ri (MOVK_ri (MOVK_ri (MOVK_ri (MOV_ri IsLess15Bits:$src1), IsLess16Bits:$src1, 0), IsOver16Bits:$src1, 1), IsOver32Bits:$src1, 2), IsOver48Bits:$src1, 3)
 >;
 
 

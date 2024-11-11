@@ -22,7 +22,6 @@
 //===----------------------------------------------------------------------===//
 #ifdef XVM_DYLIB_MODE
 
-
 #include "XVM.h"
 #include "XVMSortRegion.h"
 #include "XVMSubtarget.h"
@@ -37,9 +36,8 @@ using namespace llvm;
 using XVM::SortRegionInfo;
 
 #define DEBUG_TYPE "xvm-cfg-stackify"
-
-STATISTIC(NumCallUnwindMismatches, "Number of call unwind mismatches found");
-STATISTIC(NumCatchUnwindMismatches, "Number of catch unwind mismatches found");
+#define INIT_SMALL_VECTOR_SCOPESS_SIZE 8
+#define INIT_SMALL_VECTOR_MO_SIZE 4
 
 namespace {
 class XVMCFGStackify final : public MachineFunctionPass {
@@ -57,17 +55,17 @@ class XVMCFGStackify final : public MachineFunctionPass {
   // For each block whose label represents the end of a scope, record the block
   // which holds the beginning of the scope. This will allow us to quickly skip
   // over scoped regions when walking blocks.
-  SmallVector<MachineBasicBlock *, 8> ScopeTops;
-  void updateScopeTops(MachineBasicBlock *Begin, MachineBasicBlock *End) {
-    int EndNo = End->getNumber();
-    if (!ScopeTops[EndNo] || ScopeTops[EndNo]->getNumber() > Begin->getNumber())
-      ScopeTops[EndNo] = Begin;
+  SmallVector<MachineBasicBlock *, INIT_SMALL_VECTOR_SCOPESS_SIZE> ScopeTops;
+  void updateScopeTops(MachineBasicBlock *Start, MachineBasicBlock *Finish) {
+    int FinishNo = Finish->getNumber();
+    if (!ScopeTops[FinishNo] || ScopeTops[FinishNo]->getNumber() > Start->getNumber())
+      ScopeTops[FinishNo] = Start;
   }
 
   // Placing markers.
-  void placeMarkers(MachineFunction &MF);
-  void placeBlockMarker(MachineBasicBlock &MBB);
-  void placeLoopMarker(MachineBasicBlock &MBB);
+  void placeMarkers(MachineFunction &MFunction);
+  void placeBlockMarker(MachineBasicBlock &MBBlock);
+  void placeLoopMarker(MachineBasicBlock &MBBlock);
   const XVMInstrInfo *TII = nullptr;
   void extendCondStmt(std::map<MachineInstr *, unsigned int> CondBranchsWithDepth,
                       MachineFunction &MF);
@@ -83,52 +81,49 @@ class XVMCFGStackify final : public MachineFunctionPass {
                           const MachineBasicBlock *MBB);
   void rewriteDepthImmediates(MachineFunction &MF);
   void fixBackEdgesOfLoops(MachineFunction &MF);
-  void fixEndsAtEndOfFunction(MachineFunction &MF);
-  void cleanupFunctionData(MachineFunction &MF);
+  void fixEndsAtEndOfFunction(MachineFunction &MFunction);
+  void cleanupFunctionData(MachineFunction &MFunction);
 
-  // For each BLOCK|LOOP|TRY, the corresponding END_(BLOCK|LOOP|TRY) or DELEGATE
-  // (in case of TRY).
-  DenseMap<const MachineInstr *, MachineInstr *> BeginToEnd;
-  // For each END_(BLOCK|LOOP|TRY) or DELEGATE, the corresponding
-  // BLOCK|LOOP|TRY.
+  // The correspinding BLOCK|LOOP|TRY for each END_(BLOCK|LOOP|TRY)
   DenseMap<const MachineInstr *, MachineInstr *> EndToBegin;
+  // The corresponding END_(BLOCK|LOOP|TRY) or DELEGATE for each BLOCK|LOOP|TRY
+  // (in the TRY case).
+  DenseMap<const MachineInstr *, MachineInstr *> BeginToEnd;
 
   // We need an appendix block to place 'end_loop' or 'end_try' marker when the
   // loop / exception bottom block is the last block in a function
-  MachineBasicBlock *AppendixBB = nullptr;
-  MachineBasicBlock *getAppendixBlock(MachineFunction &MF) {
-    AppendixBB = nullptr;
-    if (!AppendixBB) {
-      AppendixBB = MF.CreateMachineBasicBlock();
-      // Give it a fake predecessor so that AsmPrinter prints its label.
-      AppendixBB->addSuccessor(AppendixBB);
-      MF.push_back(AppendixBB);
+  MachineBasicBlock *AppendixBBlock = nullptr;
+  MachineBasicBlock *getAppendixBlock(MachineFunction &MFunction){
+    AppendixBBlock = nullptr;
+    if (!AppendixBBlock) {
+      AppendixBBlock = MFunction.CreateMachineBasicBlock();
+      //  For AsmPrinter to prints its label, we give it a fake predecessor
+      AppendixBBlock->addSuccessor(AppendixBBlock);
+      MFunction.push_back(AppendixBBlock);
     }
-    return AppendixBB;
+    return AppendixBBlock;
   }
 
-  // Before running rewriteDepthImmediates function, 'delegate' has a BB as its
-  // destination operand. getFakeCallerBlock() returns a fake BB that will be
-  // used for the operand when 'delegate' needs to rethrow to the caller. This
-  // will be rewritten as an immediate value that is the number of block depths
-  // + 1 in rewriteDepthImmediates, and this fake BB will be removed at the end
-  // of the pass.
-  MachineBasicBlock *FakeCallerBB = nullptr;
-  MachineBasicBlock *getFakeCallerBlock(MachineFunction &MF) {
-    if (!FakeCallerBB)
-      FakeCallerBB = MF.CreateMachineBasicBlock();
-    return FakeCallerBB;
+  // "delegate" has a BB as its destincation operand, before running
+  // rewriteDEpthImmediated. Use a fake BB for the operand when "delegate"
+  // needs to rethrow to the caller, returned by getFakeCallerBlock. The
+  // number of block depths + 1 will be rewritten as an immediate value in
+  // rewriteDepthImmediates, and this fake BB will be removed at the end
+  MachineBasicBlock *FakeBBlockCaller = nullptr;
+  MachineBasicBlock *getFakeCallerBlock(MachineFunction &MFunction) {
+    if (!FakeBBlockCaller)
+      FakeBBlockCaller = MFunction.CreateMachineBasicBlock();
+    return FakeBBlockCaller;
   }
 
-  // Helper functions to register / unregister scope information created by
-  // marker instructions.
-  void registerScope(MachineInstr *Begin, MachineInstr *End);
-  void registerTryScope(MachineInstr *Begin, MachineInstr *End,
-                        MachineBasicBlock *EHPad);
-  void unregisterScope(MachineInstr *Begin);
+  //marker instructions created function to register/unregister scope info
+  void registerScope(MachineInstr *Start, MachineInstr *Finish);
+  void registerTryScope(MachineInstr *Start,
+                MachineInstr *Finish, MachineBasicBlock *EHPad);
+  void unregisterScope(MachineInstr *Start);
 
 public:
-  static char ID; // Pass identification, replacement for typeid
+  static char ID; // typeid replacement, for identification
   XVMCFGStackify() : MachineFunctionPass(ID) {}
   ~XVMCFGStackify() override { releaseMemory(); }
   void releaseMemory() override;
@@ -144,66 +139,64 @@ FunctionPass *llvm::createXVMCFGStackify() {
   return new XVMCFGStackify();
 }
 
-/// Test whether Pred has any terminators explicitly branching to MBB, as
-/// opposed to falling through. Note that it's possible (eg. in unoptimized
-/// code) for a branch instruction to both branch to a block and fallthrough
-/// to it, so we check the actual branch operands to see if there are any
-/// explicit mentions.
-static bool explicitlyBranchesTo(MachineBasicBlock *Pred,
-                                 MachineBasicBlock *MBB) {
-  for (MachineInstr &MI : Pred->terminators())
-    for (MachineOperand &MO : MI.explicit_operands())
-      if (MO.isMBB() && MO.getMBB() == MBB)
-        return true;
-  return false;
+
+// As opposed to falling through, test whether Pre has any terminators
+// explicitly branching to MBB. Note: We check to see if therey are any explicit
+// mentions of a branch instruction both branching to and falling through
+// to a block through the actual branch operands (e.g. unoptimzed code)
+static bool explicitlyBranchesTo(MachineBasicBlock *Pre, MachineBasicBlock *MBBlock) {
+  bool ret = false;
+  for (MachineInstr &MInst : Pre->terminators())
+    for (MachineOperand &MOp : MInst.explicit_operands())
+      if (MOp.isMBB() && MOp.getMBB() == MBBlock)
+        ret = true;
+  return ret;
 }
 
-// Returns an iterator to the earliest position possible within the MBB,
-// satisfying the restrictions given by BeforeSet and AfterSet. BeforeSet
-// contains instructions that should go before the marker, and AfterSet contains
-// ones that should go after the marker. In this function, AfterSet is only
-// used for validation checking.
+// Satisfying the restriction set by Before and After; returns
+// an iterator to the earliet position possible withtin the MBBlock
+// Before and After hold the instructions that should go
+// before and after the set respectivley. In this case After is
+// only used for validation checking
 template <typename Container>
-static MachineBasicBlock::iterator
-getEarliestInsertPos(MachineBasicBlock *MBB, const Container &BeforeSet,
-                     const Container &AfterSet) {
-  auto InsertPos = MBB->end();
-  while (InsertPos != MBB->begin()) {
-    if (BeforeSet.count(&*std::prev(InsertPos))) {
-#ifndef NDEBUG
-      // Validation check
-      for (auto Pos = InsertPos, E = MBB->begin(); Pos != E; --Pos)
-        assert(!AfterSet.count(&*std::prev(Pos)));
+static MachineBasicBlock::iterator getEarliestInsertPos(MachineBasicBlock *MBBlock,
+                                                        const Container &Before,
+                                                        const Container &After) {
+  auto InsertPosition = MBBlock->end();
+  while (InsertPosition != MBBlock->begin()) {
+    if (Before.count(&*std::prev(InsertPosition))) {
+#ifndef NDEBUG  // Validation check
+      for (auto Position = InsertPosition, E = MBBlock->begin(); Position != E; --Position)
+        assert(!After.count(&*std::prev(Position)));
 #endif
       break;
     }
-    --InsertPos;
+    --InsertPosition;
   }
-  return InsertPos;
+  return InsertPosition;
 }
 
-// Returns an iterator to the latest position possible within the MBB,
-// satisfying the restrictions given by BeforeSet and AfterSet. BeforeSet
-// contains instructions that should go before the marker, and AfterSet contains
-// ones that should go after the marker. In this function, BeforeSet is only
-// used for validation checking.
+// Satisfying the restriction set by Before and After; returns
+// an iterator to the earliet position possible withtin the MBBlock
+// Before and After hold the instructions that should go
+// before and after the set respectivley. In this case Before is
+// only used for validation checking
 template <typename Container>
-static MachineBasicBlock::iterator
-getLatestInsertPos(MachineBasicBlock *MBB, const Container &BeforeSet,
-                   const Container &AfterSet) {
-  auto InsertPos = MBB->begin();
-  while (InsertPos != MBB->end()) {
-    if (AfterSet.count(&*InsertPos)) {
-#ifndef NDEBUG
-      // Validation check
-      for (auto Pos = InsertPos, E = MBB->end(); Pos != E; ++Pos)
-        assert(!BeforeSet.count(&*Pos));
+static MachineBasicBlock::iterator  getLatestInsertPos(MachineBasicBlock *MBBlock,
+                                                       const Container &Before,
+                                                       const Container &After) {
+  auto InsertPosition = MBBlock->begin();
+  while (InsertPosition != MBBlock->end()) {
+    if (After.count(&*InsertPosition)) {
+#ifndef NDEBUG  // Validation check
+      for (auto Position = InsertPosition, E = MBBlock->end(); Position != E; ++Position)
+        assert(!Before.count(&*Position));
 #endif
       break;
     }
-    ++InsertPos;
+    ++InsertPosition;
   }
-  return InsertPos;
+  return InsertPosition;
 }
 
 void ChangeBranchCondOpc(MachineInstr &MI, const XVMInstrInfo *TII) {
@@ -255,21 +248,70 @@ void XVMCFGStackify::fixBackEdgesOfLoops(MachineFunction &MF) {
         MI.eraseFromParent();
         break;
       } else if (TII->isCondBranch(&MI) && MI.getOperand(0).getMBB() == LoopHeader) {
-          uint32_t action_opcode = XVM::CONTINUE;
-          /* Fix Loop Exiting Fallthrough */
-          if (&MBB == Loop->getBottomBlock() && &MI == &*(--MBB.end()) && MLI.getLoopFor(MBB.getFallThrough()) != Loop) {
-            TII->negateCondBranch(&MI);
-            action_opcode = XVM::BREAK;
+        uint32_t action_opcode = XVM::CONTINUE;
+        /* Fix Loop Exiting Fallthrough */
+        if (&MBB == Loop->getBottomBlock() &&
+            &MI == &*(--MBB.end()) &&
+            MLI.getLoopFor(MBB.getFallThrough()) != Loop) {
+          TII->negateCondBranch(&MI);
+          action_opcode = XVM::BREAK;
+        }
+        // Check if we need to add a break statement at the end of loop
+        int LevelBreakAfterLoop = -1;
+        if (action_opcode == XVM::CONTINUE) {
+          // 1. if the last stmt of the BB is a conditional branch statement and
+          // 2. if the next BB is one of its successor and
+          // 3. if the first statements of the next BB are END_BLOCK/END_LOOP
+          //  insert a break if the above conditions are true
+          MachineBasicBlock::reverse_iterator MBBI = MBB.rbegin();
+          MachineInstr &MITmp = *MBBI;
+          if (MITmp.isTerminator() && TII->isCondBranch(&MITmp)) {
+            MachineBasicBlock *NextBB = MBB.getNextNode();
+            bool NextBBIsSucc = false;
+            for (auto *Succ : MBB.successors()) {
+              if (Succ == NextBB) {
+                NextBBIsSucc = true;
+                break;
+              }
+            }
+            if (NextBBIsSucc) {
+              MachineBasicBlock::const_iterator MBBINext = NextBB->begin(), ENext = NextBB->end();
+              while (MBBINext != ENext) {
+                  MachineBasicBlock::const_iterator NMBBINext = std::next(MBBINext);
+                  const MachineInstr &MINext = *MBBINext;
+                  if (MINext.getOpcode() == XVM::END_BLOCK || MINext.getOpcode() == XVM::END_LOOP) {
+                    LevelBreakAfterLoop ++;
+                  } else {
+                    break;
+                  }
+                  MBBINext = NMBBINext;
+              }
+            }
           }
-          MachineInstr *MIThen = MBB.getParent()->CreateMachineInstr(TII->get(XVM::THEN), DebugLoc());
-          MBB.insertAfter(MI.getIterator(), MIThen);
-          MachineInstr *MIAction = MBB.getParent()->CreateMachineInstr(TII->get(action_opcode), DebugLoc());
-          MBB.insertAfter(MIThen->getIterator(), MIAction);
-          MachineInstr *MIEndThen = MBB.getParent()->CreateMachineInstr(TII->get(XVM::END_THEN), DebugLoc());
-          MBB.insertAfter(MIAction->getIterator(), MIEndThen);
+        }
+        MachineInstr *MIThen = MBB.getParent()->CreateMachineInstr(TII->get(XVM::THEN), DebugLoc());
+        MBB.insertAfter(MI.getIterator(), MIThen);
+        MachineInstr *MIAction = MBB.getParent()->CreateMachineInstr(TII->get(action_opcode), DebugLoc());
+        MBB.insertAfter(MIThen->getIterator(), MIAction);
+        MachineInstr *MIEndThen = MBB.getParent()->CreateMachineInstr(TII->get(XVM::END_THEN), DebugLoc());
+        MBB.insertAfter(MIAction->getIterator(), MIEndThen);
+        if (LevelBreakAfterLoop >= 0) {
+          MachineInstr *MIElse = MBB.getParent()->CreateMachineInstr(TII->get(XVM::ELSE), DebugLoc());
+          MBB.insertAfter(MIEndThen->getIterator(), MIElse);
+          MachineInstr *MI_BREAK_IMM = MBB.getParent()->CreateMachineInstr(TII->get(XVM::BREAK_IMM), DebugLoc());
+          MBB.insertAfter(MIElse->getIterator(), MI_BREAK_IMM);
+          MachineInstrBuilder MIB(MF, MI_BREAK_IMM);
+          MIB.addImm(LevelBreakAfterLoop);
+          MachineInstr *MIEndElse = MBB.getParent()->CreateMachineInstr(TII->get(XVM::END_ELSE), DebugLoc());
+          MBB.insertAfter(MI_BREAK_IMM->getIterator(), MIEndElse);
+          MachineInstr *MIEndIf = MBB.getParent()->CreateMachineInstr(TII->get(XVM::END_IF), DebugLoc());
+          MBB.insertAfter(MIEndElse->getIterator(), MIEndIf);
+          ChangeBranchCondOpc(MI, TII);
+        } else {
           MachineInstr *MIEndIf = MBB.getParent()->CreateMachineInstr(TII->get(XVM::END_IF), DebugLoc());
           MBB.insertAfter(MIEndThen->getIterator(), MIEndIf);
           ChangeBranchCondOpc(MI, TII);
+        }
       }
     }
   }
@@ -413,230 +455,224 @@ void XVMCFGStackify::removeInFunctionRet(MachineFunction &MF) {
 }
 
 /// Insert LOOP/BLOCK markers at appropriate places.
-void XVMCFGStackify::placeMarkers(MachineFunction &MF) {
-  // We allocate one more than the number of blocks in the function to
-  // accommodate for the possible fake block we may insert at the end.
-  ScopeTops.resize(MF.getNumBlockIDs() + 1);
-  // Place the LOOP for MBB if MBB is the header of a loop.
-  for (auto &MBB : MF)
-    placeLoopMarker(MBB);
+void XVMCFGStackify::placeMarkers(MachineFunction &MFunction) {
+  // To accommodate for the possible fake block we may insert at the end
+  // we allocate one more than the number of blocks in the func
+  ScopeTops.resize(MFunction.getNumBlockIDs() + 1);
+  // If MBB is the header of a loop, place the LOOP for MBB.
+  for (auto &MBBlock : MFunction)
+    placeLoopMarker(MBBlock);
 
-  for (auto &MBB : MF) {
+  for (auto &MBBlock : MFunction) {
     // Place the BLOCK for MBB if MBB is branched to from above.
-    placeBlockMarker(MBB);
+    placeBlockMarker(MBBlock);
   }
 
-  removeInFunctionRet(MF);
+  removeInFunctionRet(MFunction);
 }
 
 /// Insert a BLOCK marker for branches to MBB (if needed).
 // Note: Consider a more generalized way of handling block (and also loop and
 // try) signatures when we implement the multi-value proposal later.
-void XVMCFGStackify::placeBlockMarker(MachineBasicBlock &MBB) {
-  assert(!MBB.isEHPad());
-  MachineFunction &MF = *MBB.getParent();
+void XVMCFGStackify::placeBlockMarker(MachineBasicBlock &MBBlock) {
+  assert(!MBBlock.isEHPad());
+  MachineFunction &MFunction = *MBBlock.getParent();
   auto &MDT = getAnalysis<MachineDominatorTree>();
-  const auto &TII = *MF.getSubtarget<XVMSubtarget>().getInstrInfo();
+  const auto &TII = *MFunction.getSubtarget<XVMSubtarget>().getInstrInfo();
 
-  // First compute the nearest common dominator of all forward non-fallthrough
-  // predecessors so that we minimize the time that the BLOCK is on the stack,
-  // which reduces overall stack height.
-  MachineBasicBlock *Header = nullptr;
-  bool IsBranchedTo = false;
-  int MBBNumber = MBB.getNumber();
-  for (MachineBasicBlock *Pred : MBB.predecessors()) {
-    if (Pred->getNumber() < MBBNumber) {
-      Header = Header ? MDT.findNearestCommonDominator(Header, Pred) : Pred;
-      if (explicitlyBranchesTo(Pred, &MBB))
-        IsBranchedTo = true;
+  // For all forward non-fallthrough predecessors, compute the nearest commomn
+  // dominator, reduceing stack height, by minimizing the time the block is on the stack
+  MachineBasicBlock *Head = nullptr;
+  bool BranchedTo = false;
+  int MBBlockNumber = MBBlock.getNumber();
+  for (MachineBasicBlock *Predecessor : MBBlock.predecessors()) {
+    if (Predecessor->getNumber() < MBBlockNumber) {
+      Head = Head ? MDT.findNearestCommonDominator(Head, Predecessor) : Predecessor;
+      if (explicitlyBranchesTo(Predecessor, &MBBlock))
+        BranchedTo = true;
     }
   }
-  if (!Header)
-    return;
-  if (!IsBranchedTo)
+  if (!(Head && BranchedTo))
     return;
 
-  assert(&MBB != &MF.front() && "Header blocks shouldn't have predecessors");
-  MachineBasicBlock *LayoutPred = MBB.getPrevNode();
+  assert(&MBBlock != &MFunction.front() && "Header blocks shouldn't have predecessors");
+  MachineBasicBlock *LayoutPredecessors = MBBlock.getPrevNode();
 
-  // If the nearest common dominator is inside a more deeply nested context,
-  // walk out to the nearest scope which isn't more deeply nested.
-  for (MachineFunction::iterator I(LayoutPred), E(Header); I != E; --I) {
-    if (MachineBasicBlock *ScopeTop = ScopeTops[I->getNumber()]) {
-      if (ScopeTop->getNumber() > Header->getNumber()) {
-        // Skip over an intervening scope.
-        I = std::next(ScopeTop->getIterator());
+  // walk out to the nearest scope which isnt more deeply nester, if the nearest
+  // common cominator is inside a more deeply nested context
+  for (MachineFunction::iterator Iter(LayoutPredecessors), E(Head); Iter != E; --Iter) {
+    if (MachineBasicBlock *ST = ScopeTops[Iter->getNumber()]) {
+      if (ST->getNumber() > Head->getNumber()) {
+        // Intervening scope, skip
+        Iter = std::next(ST->getIterator());
       } else {
-        // We found a scope level at an appropriate depth.
-        Header = ScopeTop;
+        // scope level at an appropriate depth. end
+        Head = ST;
         break;
       }
     }
   }
 
-  // Decide where in Header to put the BLOCK.
-
-  // Instructions that should go before the BLOCK.
-  SmallPtrSet<const MachineInstr *, 4> BeforeSet;
-  // Instructions that should go after the BLOCK.
-  SmallPtrSet<const MachineInstr *, 4> AfterSet;
-  for (const auto &MI : *Header) {
-    // If there is a previously placed LOOP marker and the bottom block of the
-    // loop is above MBB, it should be after the BLOCK, because the loop is
-    // nested in this BLOCK. Otherwise it should be before the BLOCK.
-    if (MI.getOpcode() == XVM::LOOP) {
-      auto *LoopBottom = BeginToEnd[&MI]->getParent()->getPrevNode();
-      if (MBB.getNumber() > LoopBottom->getNumber())
-        AfterSet.insert(&MI);
+  // Where in Head should we put the block
+  // pre block instruction set
+  SmallPtrSet<const MachineInstr *, 4> Before;
+  // post block instruction set
+  SmallPtrSet<const MachineInstr *, 4> After;
+  for (const auto &MInst : *Head) {
+    // If the bottom block of the loop is above MBB and there is a previosly placed
+    // LOOP marker, it should be after the BLOCK, because the loop is nested inside it
+    // Otherwise it should be before the BLOCK
+    if (MInst.getOpcode() == XVM::LOOP) {
+      auto *LoopBot = BeginToEnd[&MInst]->getParent()->getPrevNode();
+      if (MBBlock.getNumber() > LoopBot->getNumber())
+        After.insert(&MInst);
 #ifndef NDEBUG
       else
-        BeforeSet.insert(&MI);
+        Before.insert(&MInst);
 #endif
     }
 
-    // If there is a previously placed BLOCK/TRY marker and its corresponding
-    // END marker is before the current BLOCK's END marker, that should be
-    // placed after this BLOCK. Otherwise it should be placed before this BLOCK
-    // marker.
-    if (MI.getOpcode() == XVM::BLOCK) {
-      if (BeginToEnd[&MI]->getParent()->getNumber() <= MBB.getNumber())
-        AfterSet.insert(&MI);
+    // If an END marker is before the current BLOCK's END marker, and its
+    // corresponding BLOCK/TRY has been previously places, that should be palced
+    // after this BLOCK, otherwise is hould before.
+    if (MInst.getOpcode() == XVM::BLOCK) {
+      if (BeginToEnd[&MInst]->getParent()->getNumber() <= MBBlock.getNumber())
+        After.insert(&MInst);
 #ifndef NDEBUG
       else
-        BeforeSet.insert(&MI);
+        Before.insert(&MInst);
 #endif
     }
 
-#ifndef NDEBUG
-    // All END_(BLOCK|LOOP|TRY) markers should be before the BLOCK.
-    if (MI.getOpcode() == XVM::END_BLOCK ||
-        MI.getOpcode() == XVM::END_LOOP)
-      BeforeSet.insert(&MI);
+#ifndef NDEBUG  // END_(BLOCK|LOOP|TRY) markers should all be before the BLOCK.
+    if (MInst.getOpcode() == XVM::END_BLOCK ||
+        MInst.getOpcode() == XVM::END_LOOP)
+      Before.insert(&MInst);
 #endif
 
-    // Terminators should go after the BLOCK.
-    if (MI.isTerminator())
-      AfterSet.insert(&MI);
+    if (MInst.isTerminator()) // Terminators should go after the BLOCK.
+      After.insert(&MInst);
   }
 
-  // Local expression tree should go after the BLOCK.
-  for (auto I = Header->getFirstTerminator(), E = Header->begin(); I != E;
-       --I) {
-    if (std::prev(I)->isDebugInstr() || std::prev(I)->isPosition())
+  // Local expression tree are placed after the BLOCK.
+  for (auto Iter = Head->getFirstTerminator(), E = Head->begin(); Iter != E; --Iter) {
+    if (std::prev(Iter)->isDebugInstr() || std::prev(Iter)->isPosition())
       continue;
-    if (isChild(*std::prev(I)))
-      AfterSet.insert(&*std::prev(I));
+    if (isChild(*std::prev(Iter)))
+      After.insert(&*std::prev(Iter));
     else
       break;
   }
 
   // Add the BLOCK.
 //  XVM::BlockType ReturnType = XVM::BlockType::Void;
-  auto InsertPos = getLatestInsertPos(Header, BeforeSet, AfterSet);
+  auto InsertPosition = getLatestInsertPos(Head, Before, After);
   MachineInstr *Begin =
-      BuildMI(*Header, InsertPos, Header->findDebugLoc(InsertPos),
+      BuildMI(*Head, InsertPosition, Head->findDebugLoc(InsertPosition),
               TII.get(XVM::BLOCK));
 //Note: Check if we need it later
 
-  // Decide where in Header to put the END_BLOCK.
-  BeforeSet.clear();
-  AfterSet.clear();
-  for (auto &MI : MBB) {
+  // Decide where in Head to put the END_BLOCK.
+  Before.clear();
+  After.clear();
+  for (auto &MInst : MBBlock) {
 #ifndef NDEBUG
     // END_BLOCK should precede existing LOOP and TRY markers.
-    if (MI.getOpcode() == XVM::LOOP)
-      AfterSet.insert(&MI);
+    if (MInst.getOpcode() == XVM::LOOP)
+      After.insert(&MInst);
 #endif
 
-    // If there is a previously placed END_LOOP marker and the header of the
-    // loop is above this block's header, the END_LOOP should be placed after
-    // the BLOCK, because the loop contains this block. Otherwise the END_LOOP
-    // should be placed before the BLOCK. The same for END_TRY.
-    if (MI.getOpcode() == XVM::END_LOOP) {
-      if (EndToBegin[&MI]->getParent()->getNumber() >= Header->getNumber())
-        BeforeSet.insert(&MI);
+    // If the head of the loop is above this block's head, and there is a
+    // previously places END_LOOP marker, the END_LOOp should be inserted
+    // after the BLOCK, since the loop contains this block, otherwise, it
+    // should be places before. the for END_TRY
+    if (MInst.getOpcode() == XVM::END_LOOP) {
+      if (EndToBegin[&MInst]->getParent()->getNumber() >= Head->getNumber())
+        Before.insert(&MInst);
 #ifndef NDEBUG
       else
-        AfterSet.insert(&MI);
+        After.insert(&MInst);
 #endif
     }
   }
 
-  // Mark the end of the block.
-  InsertPos = getEarliestInsertPos(&MBB, BeforeSet, AfterSet);
-  MachineInstr *End = BuildMI(MBB, InsertPos, MBB.findPrevDebugLoc(InsertPos),
+  // End of the block marker.
+  InsertPosition = getEarliestInsertPos(&MBBlock, Before, After);
+  MachineInstr *End = BuildMI(MBBlock, InsertPosition, MBBlock.findPrevDebugLoc(InsertPosition),
                               TII.get(XVM::END_BLOCK));
   registerScope(Begin, End);
 
   // Track the farthest-spanning scope that ends at this point.
-  updateScopeTops(Header, &MBB);
+  updateScopeTops(Head, &MBBlock);
 }
 
 /// Insert a LOOP marker for a loop starting at MBB (if it's a loop header).
-void XVMCFGStackify::placeLoopMarker(MachineBasicBlock &MBB) {
-  MachineFunction &MF = *MBB.getParent();
-  const auto &MLI = getAnalysis<MachineLoopInfo>();
-  SortRegionInfo SRI(MLI);
-  const auto &TII = *MF.getSubtarget<XVMSubtarget>().getInstrInfo();
+void XVMCFGStackify::placeLoopMarker(MachineBasicBlock &MBBlock) {
+  MachineFunction &MFunction = *MBBlock.getParent();
+  const auto &MLInfo = getAnalysis<MachineLoopInfo>();
+  SortRegionInfo SRI(MLInfo);
+  const auto &TII = *MFunction.getSubtarget<XVMSubtarget>().getInstrInfo();
 
-  MachineLoop *Loop = MLI.getLoopFor(&MBB);
-  if (!Loop || Loop->getHeader() != &MBB)
+  MachineLoop *MLoop = MLInfo.getLoopFor(&MBBlock);
+  if (!MLoop || MLoop->getHeader() != &MBBlock) {
     return;
+  }
 
   // The operand of a LOOP is the first block after the loop. If the loop is the
   // bottom of the function, insert a dummy block at the end.
-  MachineBasicBlock *Bottom = SRI.getBottom(Loop);
-  auto Iter = std::next(Bottom->getIterator());
-  if (Iter == MF.end()) {
-    getAppendixBlock(MF);
-    Iter = std::next(Bottom->getIterator());
+  MachineBasicBlock *Bot = SRI.getBottom(MLoop);
+  auto I = std::next(Bot->getIterator());
+  if (I == MFunction.end()) {
+    getAppendixBlock(MFunction);
+    I = std::next(Bot->getIterator());
   }
-  MachineBasicBlock *AfterLoop = &*Iter;
+  MachineBasicBlock *AfterLoop = &*I;
 
-  // Decide where in Header to put the LOOP.
-  SmallPtrSet<const MachineInstr *, 4> BeforeSet;
-  SmallPtrSet<const MachineInstr *, 4> AfterSet;
-  for (const auto &MI : MBB) {
-    // LOOP marker should be after any existing loop that ends here. Otherwise
-    // we assume the instruction belongs to the loop.
-    if (MI.getOpcode() == XVM::END_LOOP)
-      BeforeSet.insert(&MI);
+  // Find where in Header to put the MLOOP.
+  SmallPtrSet<const MachineInstr *, 4> Before;
+  SmallPtrSet<const MachineInstr *, 4> After;
+  for (const auto &MInst : MBBlock) {
+    // Add a loop tag here, after any existing loop.
+    // Otherwise, we assume that the instruction is a loop.
+    if (MInst.getOpcode() == XVM::END_LOOP)
+      Before.insert(&MInst);
 #ifndef NDEBUG
     else
-      AfterSet.insert(&MI);
+      After.insert(&MInst);
 #endif
   }
 
-  // Mark the beginning of the loop.
-  auto InsertPos = getEarliestInsertPos(&MBB, BeforeSet, AfterSet);
+  // tag the start of the loop.
+  auto InsertPosition = getEarliestInsertPos(&MBBlock, Before, After);
   //Note: modify the form of the LOOP instruction
-  MachineInstr *Begin = BuildMI(MBB, InsertPos, MBB.findDebugLoc(InsertPos),
+  MachineInstr *Begin = BuildMI(MBBlock, InsertPosition, MBBlock.findDebugLoc(InsertPosition),
                                 TII.get(XVM::LOOP));
 
   // Decide where in Header to put the END_LOOP.
-  BeforeSet.clear();
-  AfterSet.clear();
+  Before.clear();
+  After.clear();
 #ifndef NDEBUG
-  for (const auto &MI : MBB)
-    // Existing END_LOOP markers belong to parent loops of this loop
-    if (MI.getOpcode() == XVM::END_LOOP)
-      AfterSet.insert(&MI);
+  for (const auto &MInst : MBBlock)
+    // The current loop is not associated with the existing END_LOOP markers,
+    // which belong to the parent loops.
+    if (MInst.getOpcode() == XVM::END_LOOP)
+      After.insert(&MInst);
 #endif
 
   // Mark the end of the loop (using arbitrary debug location that branched to
   // the loop end as its location).
-  InsertPos = getEarliestInsertPos(AfterLoop, BeforeSet, AfterSet);
+  InsertPosition = getEarliestInsertPos(AfterLoop, Before, After);
   DebugLoc EndDL = AfterLoop->pred_empty()
-                       ? DebugLoc()
-                       : (*AfterLoop->pred_rbegin())->findBranchDebugLoc();
-  MachineInstr *End =
-      BuildMI(*AfterLoop, InsertPos, EndDL, TII.get(XVM::END_LOOP));
+                      ? DebugLoc()
+                      : (*AfterLoop->pred_rbegin())->findBranchDebugLoc();
+  
+  MachineInstr *End = BuildMI(*AfterLoop, InsertPosition, EndDL, TII.get(XVM::END_LOOP));
   registerScope(Begin, End);
 
   assert((!ScopeTops[AfterLoop->getNumber()] ||
-          ScopeTops[AfterLoop->getNumber()]->getNumber() < MBB.getNumber()) &&
-         "With block sorting the outermost loop for a block should be first.");
-  updateScopeTops(&MBB, AfterLoop);
+          ScopeTops[AfterLoop->getNumber()]->getNumber() < MBBlock.getNumber()) &&
+          "With block sorting the outermost loop for a block should be first.");
+  updateScopeTops(&MBBlock, AfterLoop);
 }
 
 void XVMCFGStackify::extendCondStmt(std::map<MachineInstr *, unsigned int> CondBranchsWithDepth,
@@ -675,7 +711,7 @@ void XVMCFGStackify::rewriteDepthImmediates(MachineFunction &MF) {
   // Now rewrite references to basic blocks to be depth immediates.
   std::map<MachineInstr *, unsigned int> CondBranchsWithDepth;
   TII = MF.getSubtarget<XVMSubtarget>().getInstrInfo();
-  SmallVector<EndMarkerInfo, 8> Stack;
+  SmallVector<EndMarkerInfo, INIT_SMALL_VECTOR_SCOPESS_SIZE> Stack;
   std::set<const MachineBasicBlock*> SetEndBlockLoop;
   SmallVector<const MachineBasicBlock *, 8> EHPadStack;
   for (auto &MBB : reverse(MF)) {
@@ -700,8 +736,8 @@ void XVMCFGStackify::rewriteDepthImmediates(MachineFunction &MF) {
       case XVM::END_LOOP: {
         Stack.push_back(std::make_pair(EndToBegin[&MI]->getParent(), &MI));
         MachineInstr *PrevMI = MI.getPrevNode();
-        if (PrevMI != NULL && PrevMI == MBB.begin()) {
-          if (PrevMI->getOpcode() == XVM::END_BLOCK) {
+        if (PrevMI != NULL) {
+          if (PrevMI->getOpcode() == XVM::END_BLOCK || PrevMI->getOpcode() == XVM::END_LOOP) {
             SetEndBlockLoop.insert(&MBB);
           }
         }
@@ -710,7 +746,7 @@ void XVMCFGStackify::rewriteDepthImmediates(MachineFunction &MF) {
       default:
         if (MI.isTerminator()) {
           // Rewrite MBB operands to be depth immediates.
-          SmallVector<MachineOperand, 4> Ops(MI.operands());
+          SmallVector<MachineOperand, INIT_SMALL_VECTOR_MO_SIZE> Ops(MI.operands());
           unsigned int Opcode = MI.getOpcode();
           unsigned int depth = 0;
           while (MI.getNumOperands() > 0)
@@ -738,9 +774,9 @@ void XVMCFGStackify::rewriteDepthImmediates(MachineFunction &MF) {
 }
 
 void XVMCFGStackify::cleanupFunctionData(MachineFunction &MF) {
-  if (FakeCallerBB)
-    MF.deleteMachineBasicBlock(FakeCallerBB);
-  AppendixBB = FakeCallerBB = nullptr;
+  if (FakeBBlockCaller)
+    MF.deleteMachineBasicBlock(FakeBBlockCaller);
+  AppendixBBlock = FakeBBlockCaller = nullptr;
 }
 
 void XVMCFGStackify::releaseMemory() {
@@ -753,7 +789,6 @@ bool XVMCFGStackify::runOnMachineFunction(MachineFunction &MF) {
   LLVM_DEBUG(dbgs() << "********** CFG Stackifying **********\n"
                        "********** Function: "
                     << MF.getName() << '\n');
-
   releaseMemory();
 
   // Place the BLOCK/LOOP/TRY markers to indicate the beginnings of scopes.

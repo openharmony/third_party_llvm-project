@@ -20,7 +20,7 @@
 #include "XVMGenInstrInfo.inc"
 
 namespace llvm {
-
+namespace XVM {
 enum CondCode {
   COND_EQ,
   COND_NE,
@@ -34,6 +34,7 @@ enum CondCode {
   COND_ULT,
   COND_INVALID
 };
+}
 
 class XVMInstrInfo : public XVMGenInstrInfo {
   const XVMRegisterInfo RI;

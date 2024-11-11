@@ -16,7 +16,6 @@
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/Host.h"
 
-
 #define DEBUG_TYPE "xvm-subtarget"
 
 #define GET_SUBTARGETINFO_TARGET_DESC
