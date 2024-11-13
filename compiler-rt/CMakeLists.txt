@@ -117,18 +117,36 @@ if ("${COMPILER_RT_DEFAULT_TARGET_TRIPLE}" MATCHES ".*android.*")
   set(ANDROID_API_LEVEL ${CMAKE_MATCH_2})
 endif()
 
+set(COMPILER_RT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(COMPILER_RT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
+# OHOS_LOCAL begin
 # We define OHOS for ohos targets for now. By default we use devices with hdc connection to test OHOS
-# targets. It's also possible to use devices with adb connection which is enabled via ANDROID.
+# targets. It's also possible to use devices with adb connection which is enabled via REMOTE_DEVICE_INTERFACE.
 if (OHOS AND NOT ANDROID)
   set(OHOS_FAMILY 1)
+endif()
+
+if (OHOS AND NOT REMOTE_DEVICE_INTERFACE)
+  set(REMOTE_DEVICE_INTERFACE "hdc")
+endif()
+
+if (ANDROID AND NOT REMOTE_DEVICE_INTERFACE)
+  set(REMOTE_DEVICE_INTERFACE "adb")
+endif()
+
+if(OHOS)
+  set(commands_path
+      "test/sanitizer_common/ohos_family_commands")
+  configure_file("${COMPILER_RT_SOURCE_DIR}/${commands_path}/ohos_common.py.in"
+                 "${COMPILER_RT_BINARY_DIR}/${commands_path}/ohos_common.py"
+                 @ONLY)
 endif()
 
 pythonize_bool(ANDROID)
 pythonize_bool(OHOS_FAMILY)
 pythonize_bool(OHOS_HOST)
-
-set(COMPILER_RT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(COMPILER_RT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+# OHOS_LOCAL end
 
 pythonize_bool(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR)
 

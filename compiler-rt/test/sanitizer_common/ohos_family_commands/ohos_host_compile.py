@@ -13,8 +13,8 @@ if output == None:
     sys.exit(1)
 
 append_args = []
-if hdc_constants.DYN_LINKER:
-    append_args.append('-Wl,--dynamic-linker=' + hdc_constants.DYN_LINKER)
+if DYN_LINKER:
+    append_args.append('-Wl,--dynamic-linker=' + DYN_LINKER)
 
 # TODO: Fix adding compiler-rt include
 sanitizer_include = os.path.abspath(os.path.join(here, "../../../include/"))
