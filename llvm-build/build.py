@@ -86,6 +86,7 @@ class BuildConfig():
         self.adlt_debug_build = args.adlt_debug_build
         self.compression_format = args.compression_format
         self.enable_check_abi = args.enable_check_abi
+        self.separate_libs = args.separate_libs
 
         self.TARGETS = 'AArch64;ARM;BPF;Mips;RISCV;X86;LoongArch'
         self.ORIG_ENV = dict(os.environ)
@@ -315,6 +316,12 @@ class BuildConfig():
             const=True,
             default=False,
             help='check libc++_shared.so abi')
+
+        parser.add_argument(
+            '--separate-libs',
+            action='store_true',
+            default=False,
+            help='Separate compiler-rt and libcxx in Linux')
 
     def parse_args(self):
 
@@ -2882,6 +2889,27 @@ class LlvmPackage(BuildUtils):
 
         self.check_copy_file(lldb_script_python_path, os.path.join(install_dir, 'script'))
 
+        # Separate compiler-rt and libcxx in Linux
+        if host.startswith('linux') and self.build_config.separate_libs:
+            arch_list = [self.liteos_triple('arm'), self.open_ohos_triple('arm'),
+                         self.open_ohos_triple('aarch64'), self.open_ohos_triple('riscv64'),
+                         self.open_ohos_triple('mipsel'), self.open_ohos_triple('x86_64'),
+                         self.open_ohos_triple('loongarch64'),]
+            compiler_rt_package_name = 'compiler-rt-%s' % self.build_config.build_name
+            libcxx_package_name = 'libcxx-%s' % self.build_config.build_name
+            compiler_rt_install_dir = self.merge_out_path('install', compiler_rt_package_name, 'clang')
+            libcxx_install_dir = self.merge_out_path('install', libcxx_package_name)
+            compiler_rt_dir = os.path.join(lib_dir, 'clang')
+            self.check_copy_tree(compiler_rt_dir, compiler_rt_install_dir)
+            self.check_rm_tree(compiler_rt_dir)
+            for dir_name in arch_list:
+                dir_path = os.path.join(lib_dir, dir_name)
+                crt_install_path = os.path.join(libcxx_install_dir, dir_name)
+                self.check_copy_tree(dir_path, crt_install_path)
+                self.check_rm_tree(dir_path)
+
+            self.package_up_resulting(libcxx_package_name, host, self.merge_out_path('install'))
+            self.package_up_resulting(compiler_rt_package_name, host, self.merge_out_path('install'))
         for necessary_bin_file in necessary_bin_files:
             if not os.path.isfile(os.path.join(bin_dir, necessary_bin_file)):
                 print('Did not find %s in %s' % (necessary_bin_file, bin_dir))
