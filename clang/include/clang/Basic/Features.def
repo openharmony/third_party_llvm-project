@@ -105,6 +105,7 @@ FEATURE(gwp_asan, LangOpts.Sanitize.hasOneOf(SanitizerKind::GWPAsan))
 FEATURE(swiftasynccc,
   PP.getTargetInfo().checkCallingConvention(CC_SwiftAsync) ==
   clang::TargetInfo::CCCR_OK)
+FEATURE(ptrauth_elf_got, LangOpts.PointerAuthELFGOT)  
 // Objective-C features
 FEATURE(objc_arr, LangOpts.ObjCAutoRefCount) // FIXME: REMOVE?
 FEATURE(objc_arc, LangOpts.ObjCAutoRefCount)

@@ -1975,6 +1975,9 @@ void Clang::AddAArch64TargetArgs(const ArgList &Args,
       CmdArgs.push_back(A->getValue());
   }
 
+  if (Args.hasArg(options::OPT_fptrauth_elf_got))
+    CmdArgs.push_back("-fptrauth-elf-got");
+ 
   AddUnalignedAccessWarning(CmdArgs);
 }
 
