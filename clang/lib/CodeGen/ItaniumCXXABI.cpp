@@ -842,23 +842,24 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
   CalleePtr->addIncoming(NonVirtualFn, FnNonVirtual);
 
   CGPointerAuthInfo PointerAuth;
-
-  if (const auto &Schema =
-          CGM.getCodeGenOpts().PointerAuth.CXXMemberFunctionPointers) {
-    llvm::PHINode *DiscriminatorPHI = Builder.CreatePHI(CGF.IntPtrTy, 2);
-    DiscriminatorPHI->addIncoming(llvm::ConstantInt::get(CGF.IntPtrTy, 0),
-                                  FnVirtual);
-    const auto &AuthInfo =
-        CGM.getMemberFunctionPointerAuthInfo(QualType(MPT, 0));
-    assert(Schema.getKey() == AuthInfo.getKey() &&
-           "Keys for virtual and non-virtual member functions must match");
-    auto *NonVirtualDiscriminator = AuthInfo.getDiscriminator();
-    DiscriminatorPHI->addIncoming(NonVirtualDiscriminator, FnNonVirtual);
-    PointerAuth = CGPointerAuthInfo(
-        Schema.getKey(), Schema.getAuthenticationMode(), Schema.isIsaPointer(),
-        Schema.authenticatesNullValues(), DiscriminatorPHI);
+  bool NoPac = MPT->getClass()->getAsCXXRecordDecl()->hasAttr<NopacAttr>();
+  if (!NoPac) {
+    if (const auto &Schema =
+            CGM.getCodeGenOpts().PointerAuth.CXXMemberFunctionPointers) {
+      llvm::PHINode *DiscriminatorPHI = Builder.CreatePHI(CGF.IntPtrTy, 2);
+      DiscriminatorPHI->addIncoming(llvm::ConstantInt::get(CGF.IntPtrTy, 0),
+                                    FnVirtual);
+      const auto &AuthInfo =
+          CGM.getMemberFunctionPointerAuthInfo(QualType(MPT, 0));
+      assert(Schema.getKey() == AuthInfo.getKey() &&
+             "Keys for virtual and non-virtual member functions must match");
+      auto *NonVirtualDiscriminator = AuthInfo.getDiscriminator();
+      DiscriminatorPHI->addIncoming(NonVirtualDiscriminator, FnNonVirtual);
+      PointerAuth = CGPointerAuthInfo(
+          Schema.getKey(), Schema.getAuthenticationMode(), Schema.isIsaPointer(),
+          Schema.authenticatesNullValues(), DiscriminatorPHI);
+    }
   }
-
   CGCallee Callee(FPT, CalleePtr, PointerAuth);
   return Callee;
 }
@@ -1172,7 +1173,9 @@ llvm::Constant *ItaniumCXXABI::BuildMemberPointer(const CXXMethodDecl *MD,
       // be valid.
       const auto &Schema =
           CGM.getCodeGenOpts().PointerAuth.CXXMemberFunctionPointers;
-      if (Schema)
+      auto *RD = MD->getParent();
+      bool NoPac = RD->hasAttr<NopacAttr>();
+      if (Schema && !NoPac)
         MemPtr[0] = llvm::ConstantExpr::getPtrToInt(
             getSignedVirtualMemberFunctionPointer(MD), CGM.PtrDiffTy);
       else
@@ -2195,7 +2198,11 @@ CGCallee ItaniumCXXABI::getVirtualFunctionPointer(CodeGenFunction &CGF,
   uint64_t VTableIndex = CGM.getItaniumVTableContext().getMethodVTableIndex(GD);
   llvm::Value *VFunc, *VTableSlotPtr = nullptr;
   auto &Schema = CGM.getCodeGenOpts().PointerAuth.CXXVirtualFunctionPointers;
-  if (!Schema && CGF.ShouldEmitVTableTypeCheckedLoad(MethodDecl->getParent())) {
+  auto *RD = MethodDecl->getParent();
+
+  bool nopac = RD->hasAttr<NopacAttr>();
+
+  if ((!Schema || nopac) && CGF.ShouldEmitVTableTypeCheckedLoad(MethodDecl->getParent())) {
     VFunc = CGF.EmitVTableTypeCheckedLoad(
         MethodDecl->getParent(), VTable, PtrTy,
         VTableIndex *
@@ -2235,7 +2242,7 @@ CGCallee ItaniumCXXABI::getVirtualFunctionPointer(CodeGenFunction &CGF,
   }
 
   CGPointerAuthInfo PointerAuth;
-  if (Schema) {
+  if (Schema && !nopac) {
     assert(VTableSlotPtr && "virtual function pointer not set");
     GD = CGM.getItaniumVTableContext().findOriginalMethod(GD.getCanonicalDecl());
     PointerAuth = CGF.EmitPointerAuthInfo(Schema, VTableSlotPtr, GD, QualType());
