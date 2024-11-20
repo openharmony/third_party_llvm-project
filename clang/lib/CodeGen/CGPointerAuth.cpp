@@ -485,6 +485,10 @@ std::optional<CGPointerAuthInfo>
 CodeGenModule::getVTablePointerAuthInfo(CodeGenFunction *CGF,
                                         const CXXRecordDecl *Record,
                                         llvm::Value *StorageAddress) {
+  bool NoPac = Record->hasAttr<NopacAttr>();
+  if (NoPac)
+    return std::nullopt;
+
   auto Authentication = getVTablePointerAuthentication(Record);
   if (!Authentication)
     return std::nullopt;
