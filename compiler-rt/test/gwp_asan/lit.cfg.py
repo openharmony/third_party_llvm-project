@@ -44,7 +44,7 @@ config.substitutions.append((
 
 # Platform-specific default GWP_ASAN for lit tests. Ensure that GWP-ASan is
 # enabled and that it samples every allocation.
-default_gwp_asan_options = 'GWP_ASAN_Enabled=1:GWP_ASAN_SampleRate=1'
+default_gwp_asan_options = 'GWP_ASAN_Enabled=1:GWP_ASAN_SampleRate=1:GWP_ASAN_MaxSimultaneousAllocations=500'
 
 config.environment['SCUDO_OPTIONS'] = default_gwp_asan_options
 default_gwp_asan_options += ':'

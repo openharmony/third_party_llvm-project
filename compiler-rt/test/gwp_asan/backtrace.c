@@ -28,10 +28,8 @@ __attribute__((noinline)) void touch_mem(void *ptr) {
 // CHECK: allocate_mem
 
 int main() {
-  for (unsigned i = 0; i < 0x10000; ++i) {
-    void *ptr = allocate_mem();
-    free_mem(ptr);
-    touch_mem(ptr);
-  }
+  void *ptr = allocate_mem();
+  free_mem(ptr);
+  touch_mem(ptr);
   return 0;
 }
