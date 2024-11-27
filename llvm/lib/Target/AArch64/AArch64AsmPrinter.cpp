@@ -151,8 +151,27 @@ public:
   // Emit the sequence for AUT or AUTPAC.
   void emitPtrauthAuthResign(const MachineInstr *MI);
 
-  // Emit the sequence to compute a discriminator into x17, or reuse AddrDisc.
-  unsigned emitPtrauthDiscriminator(uint16_t Disc, unsigned AddrDisc         );
+  // Emit the sequence to compute the discriminator.
+  //
+  // ScratchReg should be x16/x17.
+  //
+  // The returned register is either unmodified AddrDisc or x16/x17.
+  //
+  // If the expanded pseudo is allowed to clobber AddrDisc register, setting
+  // MayUseAddrAsScratch may save one MOV instruction, provided the address
+  // is already in x16/x17 (i.e. return x16/x17 which is the *modified* AddrDisc
+  // register at the same time):
+  //
+  //   mov   x17, x16
+  //   movk  x17, #1234, lsl #48
+  //   ; x16 is not used anymore
+  //
+  // can be replaced by
+  //
+  //   movk  x16, #1234, lsl #48
+  Register emitPtrauthDiscriminator(uint16_t Disc, Register AddrDisc,
+                                    Register ScratchReg,
+                                    bool MayUseAddrAsScratch = false);
 
   // Emit the sequence for LOADauthptrstatic
   void LowerLOADauthptrstatic(const MachineInstr &MI);
@@ -235,6 +254,10 @@ private:
 
   /// Emit the LOHs contained in AArch64FI.
   void emitLOHs();
+  
+  void emitMovXReg(Register Dest, Register Src);
+  void emitMOVZ(Register Dest, uint64_t Imm, unsigned Shift);
+  void emitMOVK(Register Dest, uint64_t Imm, unsigned Shift);
 
   /// Emit instruction to set float register to zero.
   void emitFMov0(const MachineInstr &MI);
@@ -1691,6 +1714,33 @@ void AArch64AsmPrinter::LowerFAULTING_OP(const MachineInstr &FaultingMI) {
   OutStreamer->emitInstruction(MI, getSubtargetInfo());
 }
 
+void AArch64AsmPrinter::emitMovXReg(Register Dest, Register Src) {
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::ORRXrs)
+                                   .addReg(Dest)
+                                   .addReg(AArch64::XZR)
+                                   .addReg(Src)
+                                   .addImm(0));
+}
+
+void AArch64AsmPrinter::emitMOVZ(Register Dest, uint64_t Imm, unsigned Shift) {
+  bool Is64Bit = AArch64::GPR64RegClass.contains(Dest);
+  EmitToStreamer(*OutStreamer,
+                 MCInstBuilder(Is64Bit ? AArch64::MOVZXi : AArch64::MOVZWi)
+                     .addReg(Dest)
+                     .addImm(Imm)
+                     .addImm(Shift));
+}
+
+void AArch64AsmPrinter::emitMOVK(Register Dest, uint64_t Imm, unsigned Shift) {
+  bool Is64Bit = AArch64::GPR64RegClass.contains(Dest);
+  EmitToStreamer(*OutStreamer,
+                 MCInstBuilder(Is64Bit ? AArch64::MOVKXi : AArch64::MOVKWi)
+                     .addReg(Dest)
+                     .addReg(Dest)
+                     .addImm(Imm)
+                     .addImm(Shift));
+}
+
 void AArch64AsmPrinter::emitFMov0(const MachineInstr &MI) {
   Register DestReg = MI.getOperand(0).getReg();
   if (STI->hasZeroCycleZeroingFP() && !STI->hasZeroCycleZeroingFPWorkaround() &&
@@ -1734,8 +1784,12 @@ void AArch64AsmPrinter::emitFMov0(const MachineInstr &MI) {
   }
 }
 
-unsigned AArch64AsmPrinter::emitPtrauthDiscriminator(uint16_t Disc,
-                                                     unsigned AddrDisc) {
+Register AArch64AsmPrinter::emitPtrauthDiscriminator(uint16_t Disc,
+                                                     Register AddrDisc,
+                                                     Register ScratchReg,
+                                                     bool MayUseAddrAsScratch) {
+  assert(ScratchReg == AArch64::X16 || ScratchReg == AArch64::X17);
+
   // So far we've used NoRegister in pseudos.  Now we need real encodings.
   if (AddrDisc == AArch64::NoRegister)
     AddrDisc = AArch64::XZR;
@@ -1745,27 +1799,24 @@ unsigned AArch64AsmPrinter::emitPtrauthDiscriminator(uint16_t Disc,
   if (!Disc)
     return AddrDisc;
 
-  // If there's only a constant discriminator, MOV it into x17.
+  // If there's only a constant discriminator, MOV it into the scratch register.
   if (AddrDisc == AArch64::XZR) {
-    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MOVZXi)
-                                     .addReg(AArch64::X17)
-                                     .addImm(Disc)
-                                     .addImm(/*shift=*/0));
-    return AArch64::X17;
+    emitMOVZ(ScratchReg, Disc, 0);
+    return ScratchReg;
   }
 
-  // If there are both, emit a blend into x17.
-  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::ORRXrs)
-                                   .addReg(AArch64::X17)
-                                   .addReg(AArch64::XZR)
-                                   .addReg(AddrDisc)
-                                   .addImm(0));
-  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MOVKXi)
-                                   .addReg(AArch64::X17)
-                                   .addReg(AArch64::X17)
-                                   .addImm(Disc)
-                                   .addImm(/*shift=*/48));
-  return AArch64::X17;
+  // If there are both, emit a blend into the scratch register.
+  
+  // Check if we can save one MOV instruction.
+  assert(MayUseAddrAsScratch || ScratchReg != AddrDisc);
+  bool AddrDiscIsSafe = AddrDisc == AArch64::X16 || AddrDisc == AArch64::X17;
+  if (MayUseAddrAsScratch && AddrDiscIsSafe)
+    ScratchReg = AddrDisc;
+  else
+    emitMovXReg(ScratchReg, AddrDisc);
+  
+  emitMOVK(ScratchReg, Disc, 48);
+  return ScratchReg;
 }
 
 void AArch64AsmPrinter::emitPtrauthAuthResign(const MachineInstr *MI) {
@@ -1853,8 +1904,9 @@ void AArch64AsmPrinter::emitPtrauthAuthResign(const MachineInstr *MI) {
 
   // Compute aut discriminator into x17
   assert(isUInt<16>(AUTDisc));
-  unsigned AUTDiscReg =
-      emitPtrauthDiscriminator(AUTDisc, AUTAddrDisc);
+  Register AUTDiscReg =
+    emitPtrauthDiscriminator(AUTDisc, AUTAddrDisc, AArch64::X17);
+
   bool AUTZero = AUTDiscReg == AArch64::XZR;
   unsigned AUTOpc = getAUTOpcodeForKey(AUTKey, AUTZero);
 
@@ -1951,8 +2003,9 @@ void AArch64AsmPrinter::emitPtrauthAuthResign(const MachineInstr *MI) {
 
   // Compute pac discriminator into x17
   assert(isUInt<16>(PACDisc));
-  unsigned PACDiscReg =
-      emitPtrauthDiscriminator(PACDisc, PACAddrDisc);
+  Register PACDiscReg =
+        emitPtrauthDiscriminator(PACDisc, PACAddrDisc, AArch64::X17);
+
   bool PACZero = PACDiscReg == AArch64::XZR;
   unsigned PACOpc = getPACOpcodeForKey(PACKey, PACZero);
 
@@ -1984,8 +2037,21 @@ void AArch64AsmPrinter::emitPtrauthBranch(const MachineInstr *MI) {
 
   unsigned AddrDisc = MI->getOperand(3).getReg();
 
-  // Compute discriminator into x17
-  unsigned DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc);
+  // Make sure AddrDisc is solely used to compute the discriminator.
+  // While hardly meaningful, it is still possible to describe an authentication
+  // of a pointer against its own value (instead of storage address) with
+  // intrinsics, so use report_fatal_error instead of assert.
+  if (BrTarget == AddrDisc)
+    report_fatal_error("Branch target is signed with its own value");
+  
+  // If we are printing BLRA pseudo instruction, then x16 and x17 are
+  // implicit-def'ed by the MI and AddrDisc is not used as any other input, so
+  // try to save one MOV by setting MayUseAddrAsScratch.
+  // Unlike BLRA, BRA pseudo is used to perform computed goto, and thus not
+  // declared as clobbering x16/x17.
+  Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, AArch64::X17,
+                                              /*MayUseAddrAsScratch=*/IsCall);
+
   bool IsZeroDisc = DiscReg == AArch64::XZR;
 
   unsigned Opc;
@@ -2235,27 +2301,7 @@ void AArch64AsmPrinter::LowerMOVaddrPAC(const MachineInstr &MI) {
     }
   }
 
-  unsigned DiscReg = AddrDisc;
-  if (Disc != 0) {
-    if (AddrDisc != AArch64::XZR) {
-      EmitToStreamer(MCInstBuilder(AArch64::ORRXrs)
-                           .addReg(AArch64::X17)
-                           .addReg(AArch64::XZR)
-                           .addReg(AddrDisc)
-                           .addImm(0));
-      EmitToStreamer(MCInstBuilder(AArch64::MOVKXi)
-                           .addReg(AArch64::X17)
-                           .addReg(AArch64::X17)
-                           .addImm(Disc)
-                           .addImm(/*shift=*/48));
-    } else {
-      EmitToStreamer(MCInstBuilder(AArch64::MOVZXi)
-                           .addReg(AArch64::X17)
-                           .addImm(Disc)
-                           .addImm(/*shift=*/0));
-    }
-    DiscReg = AArch64::X17;
-  }
+  Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, AArch64::X17);
 
   auto MIB = MCInstBuilder(getPACOpcodeForKey(Key, DiscReg == AArch64::XZR))
                  .addReg(AArch64::X16)
@@ -2450,6 +2496,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
   // instruction here.
   case AArch64::AUTH_TCRETURN:
   case AArch64::AUTH_TCRETURN_BTI: {
+    Register Callee = MI->getOperand(0).getReg();
     const uint64_t Key = MI->getOperand(2).getImm();
     assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
            "Invalid auth key for tail-call return");
@@ -2459,40 +2506,21 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
 
     Register AddrDisc = MI->getOperand(4).getReg();
 
-    Register ScratchReg = MI->getOperand(0).getReg() == AArch64::X16
-                              ? AArch64::X17
-                              : AArch64::X16;
+    Register ScratchReg = Callee == AArch64::X16 ? AArch64::X17 : AArch64::X16;
 
-    unsigned DiscReg = AddrDisc;
-    if (Disc) {
-      if (AddrDisc != AArch64::NoRegister) {
-        if (ScratchReg != AddrDisc)
-          EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::ORRXrs)
-                                           .addReg(ScratchReg)
-                                           .addReg(AArch64::XZR)
-                                           .addReg(AddrDisc)
-                                           .addImm(0));
-        EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MOVKXi)
-                                         .addReg(ScratchReg)
-                                         .addReg(ScratchReg)
-                                         .addImm(Disc)
-                                         .addImm(/*shift=*/48));
-      } else {
-        EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MOVZXi)
-                                         .addReg(ScratchReg)
-                                         .addImm(Disc)
-                                         .addImm(/*shift=*/0));
-      }
-      DiscReg = ScratchReg;
-    }
+    // See the comments in emitPtrauthBranch.
+    if (Callee == AddrDisc)
+      report_fatal_error("Call target is signed with its own value");
+    Register DiscReg = emitPtrauthDiscriminator(Disc, AddrDisc, ScratchReg,
+                                            /*MayUseAddrAsScratch=*/true);
 
-    const bool IsZero = DiscReg == AArch64::NoRegister;
+    const bool IsZero = DiscReg == AArch64::XZR;
     const unsigned Opcodes[2][2] = {{AArch64::BRAA, AArch64::BRAAZ},
                                     {AArch64::BRAB, AArch64::BRABZ}};
 
     MCInst TmpInst;
     TmpInst.setOpcode(Opcodes[Key][IsZero]);
-    TmpInst.addOperand(MCOperand::createReg(MI->getOperand(0).getReg()));
+    TmpInst.addOperand(MCOperand::createReg(Callee));
     if (!IsZero)
       TmpInst.addOperand(MCOperand::createReg(DiscReg));
     EmitToStreamer(*OutStreamer, TmpInst);
