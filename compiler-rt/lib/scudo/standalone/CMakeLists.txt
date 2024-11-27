@@ -44,7 +44,10 @@ list(APPEND SCUDO_LINK_FLAGS -ffunction-sections -fdata-sections -Wl,--gc-sectio
 append_list_if(COMPILER_RT_HAS_NOSTDLIBXX_FLAG -nostdlib++ SCUDO_LINK_FLAGS)
 append_list_if(CXX_SUPPORTS_UNWINDLIB_NONE_FLAG --unwindlib=none SCUDO_LINK_FLAGS)
 
-if(ANDROID)
+# OHOS_LOCAL begin
+if(ANDROID OR OHOS)
+  # OHOS currently uses TSD_EXCLUSIVE with TLS storage in scudo, so disable EmuTLS
+# OHOS_LOCAL end
   list(APPEND SCUDO_CFLAGS -fno-emulated-tls)
 
 # Put the shared library in the global group. For more details, see

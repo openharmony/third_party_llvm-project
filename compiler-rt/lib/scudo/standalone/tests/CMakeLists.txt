@@ -22,7 +22,10 @@ if(COMPILER_RT_DEBUG)
   list(APPEND SCUDO_UNITTEST_CFLAGS -DSCUDO_DEBUG=1)
 endif()
 
-if(ANDROID)
+# OHOS_LOCAL begin
+if(ANDROID OR OHOS)
+  # OHOS currently uses TSD_EXCLUSIVE with TLS storage in scudo, so disable EmuTLS
+# OHOS_LOCAL end
   list(APPEND SCUDO_UNITTEST_CFLAGS -fno-emulated-tls)
 endif()
 

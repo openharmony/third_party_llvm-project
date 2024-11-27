@@ -20,15 +20,28 @@
 #define __GLIBC_PREREQ(x, y) 0
 #endif
 
+// OHOS_LOCAL begin
 extern "C" {
 void malloc_enable(void);
 void malloc_disable(void);
-int malloc_iterate(uintptr_t base, size_t size,
-                   void (*callback)(uintptr_t base, size_t size, void *arg),
-                   void *arg);
 void *valloc(size_t size);
 void *pvalloc(size_t size);
 }
+
+using MallocIterateBaseT =
+#ifdef __OHOS__
+    // OHOS has a different function signature
+    void *
+#else
+    uintptr_t
+#endif
+    ;
+
+extern "C" int malloc_iterate(MallocIterateBaseT base, size_t size,
+                              void (*callback)(MallocIterateBaseT base,
+                                               size_t size, void *arg),
+                              void *arg);
+// OHOS_LOCAL end
 
 // Note that every C allocation function in the test binary will be fulfilled
 // by Scudo (this includes the gtest APIs, etc.), which is a test by itself.
@@ -301,14 +314,16 @@ TEST(ScudoWrappersCTest, MallInfo2) {
 static uintptr_t BoundaryP;
 static size_t Count;
 
-static void callback(uintptr_t Base, size_t Size, void *Arg) {
+// OHOS_LOCAL begin
+static void callback(MallocIterateBaseT Base, size_t Size, void *Arg) {
   if (scudo::archSupportsMemoryTagging()) {
-    Base = scudo::untagPointer(Base);
+    Base = (MallocIterateBaseT)scudo::untagPointer((uintptr_t)Base);
     BoundaryP = scudo::untagPointer(BoundaryP);
   }
-  if (Base == BoundaryP)
+  if ((uintptr_t)Base == BoundaryP)
     Count++;
 }
+// OHOS_LOCAL end
 
 // Verify that a block located on an iteration boundary is not mis-accounted.
 // To achieve this, we allocate a chunk for which the backing block will be
@@ -343,8 +358,11 @@ TEST(ScudoWrappersCTest, MallocIterateBoundary) {
 
   Count = 0U;
   malloc_disable();
-  malloc_iterate(Block - PageSize, PageSize, callback, nullptr);
-  malloc_iterate(Block, PageSize, callback, nullptr);
+  // OHOS_LOCAL begin
+  malloc_iterate((MallocIterateBaseT)(Block - PageSize), PageSize, callback,
+                 nullptr);
+  malloc_iterate((MallocIterateBaseT)Block, PageSize, callback, nullptr);
+  // OHOS_LOCAL end
   malloc_enable();
   EXPECT_EQ(Count, 1U);
 

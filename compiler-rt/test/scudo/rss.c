@@ -22,6 +22,12 @@
 #include <string.h>
 #include <unistd.h>
 
+// OHOS_LOCAL begin
+#ifdef __OHOS__
+#  include <sanitizer/scudo_interface.h>
+#endif
+// OHOS_LOCAL end
+
 static const size_t kNumAllocs = 64;
 static const size_t kAllocSize = 1 << 20; // 1MB.
 
@@ -41,10 +47,16 @@ int main(int argc, char *argv[]) {
   }
   for (int i = 0; i < kNumAllocs; i++)
     free(allocs[i]);
+  // OHOS_LOCAL begin
+#ifdef __OHOS__
+  // remove the RSS limit, in case RSS check is not caught up and EmuTLS is in libc internals
+  __scudo_set_rss_limit(0, 0);
+#endif
   if (returned_null == 0)
-    printf("All malloc calls succeeded\n");
+    fprintf(stderr, "All malloc calls succeeded\n");
   else
-    printf("%d malloc calls returned NULL\n", returned_null);
+    fprintf(stderr, "%d malloc calls returned NULL\n", returned_null);
+  // OHOS_LOCAL end
   return 0;
 }
 
