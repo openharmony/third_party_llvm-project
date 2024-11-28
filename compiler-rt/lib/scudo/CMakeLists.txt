@@ -30,6 +30,13 @@ if(ANDROID)
   endif()
 endif()
 
+# OHOS_LOCAL begin
+if(OHOS)
+  # OHOS currently uses TSD_EXCLUSIVE with TLS storage in scudo, so disable EmuTLS
+  list(APPEND SCUDO_CFLAGS -fno-emulated-tls)
+endif()
+# OHOS_LOCAL end
+
 # The minimal Scudo runtime does not include the UBSan runtime.
 set(SCUDO_MINIMAL_OBJECT_LIBS
   RTSanitizerCommonNoTermination

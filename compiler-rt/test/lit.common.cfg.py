@@ -626,7 +626,7 @@ def is_windows_lto_supported():
 if config.host_os == 'Darwin' and is_darwin_lto_supported():
   config.lto_supported = True
   config.lto_flags = [ '-Wl,-lto_library,' + liblto_path() ]
-elif config.host_os in ['Linux', 'FreeBSD', 'NetBSD']:
+elif config.host_os in ['Linux', 'FreeBSD', 'NetBSD', 'OHOS']: # OHOS_LOCAL
   config.lto_supported = False
   if config.use_lld:
     config.lto_supported = True
