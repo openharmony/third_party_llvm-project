@@ -20,7 +20,7 @@ MacOS X >= 10.15.4
 
 ubuntu 
 ```
-sudo apt-get install build-essential swig python3-dev libedit-dev libncurses5-dev binutils-dev gcc-multilib abigail-tools elfutils
+sudo apt-get install build-essential swig python3-dev libedit-dev libncurses5-dev binutils-dev gcc-multilib abigail-tools elfutils pkg-config autoconf autoconf-archive
 ```
 mac 
 ```
