@@ -44,7 +44,12 @@ config.substitutions.append((
 
 # Platform-specific default GWP_ASAN for lit tests. Ensure that GWP-ASan is
 # enabled and that it samples every allocation.
-default_gwp_asan_options = 'GWP_ASAN_Enabled=1:GWP_ASAN_SampleRate=1:GWP_ASAN_MaxSimultaneousAllocations=500'
+if config.host_os == 'OHOS': # OHOS_LOCAL
+    # The default value for GWP_ASAN_MaxSimulataneousAllocations is 16, which is not sufficient for gwp-asan testing
+    # in OHOS, resulting in many test cases being unable to trigger gwp-asan detection.
+    default_gwp_asan_options = 'GWP_ASAN_Enabled=1:GWP_ASAN_SampleRate=1:GWP_ASAN_MaxSimultaneousAllocations=500'
+else:
+    default_gwp_asan_options = 'GWP_ASAN_Enabled=1:GWP_ASAN_SampleRate=1'
 
 config.environment['SCUDO_OPTIONS'] = default_gwp_asan_options
 default_gwp_asan_options += ':'
