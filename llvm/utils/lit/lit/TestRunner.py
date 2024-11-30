@@ -1722,7 +1722,7 @@ def _runShTest(test, litConfig, useExternalSh, script, tmpBase):
 
 def executeShTest(test, litConfig, useExternalSh,
                   extra_substitutions=[],
-                  preamble_commands=[]):
+                  preamble_commands=[]):    
     if test.config.unsupported:
         return lit.Test.Result(Test.UNSUPPORTED, 'Test is unsupported')
 
@@ -1734,6 +1734,9 @@ def executeShTest(test, litConfig, useExternalSh,
 
     if litConfig.noExecute:
         return lit.Test.Result(Test.PASS)
+    # Setting environment variables on a remote device, this command is used only for OpenMP test.
+    if test.config.operating_system == 'OHOS':
+        script = replaceEnvrunForScript(script)
 
     tmpDir, tmpBase = getTempPaths(test)
     substitutions = list(extra_substitutions)
@@ -1742,5 +1745,18 @@ def executeShTest(test, litConfig, useExternalSh,
     conditions = { feature: True for feature in test.config.available_features }
     script = applySubstitutions(script, substitutions, conditions,
                                 recursion_limit=test.config.recursiveExpansionLimit)
-
     return _runShTest(test, litConfig, useExternalSh, script, tmpBase)
+
+def replaceEnvrunForScript(script): 
+    """ 
+    Replace `env xxxx %libomp-run` in the script with `%libomp-env-run env xxxx %root-path%t`.  
+    """ 
+    newScript = []
+    pattern = re.compile(r"(env\s+.*?)(\s+%libomp-run)") 
+    replacement = r'%libomp-env-run \1 %root-path%t' 
+    for ln in script:
+        if pattern.search(ln):
+            newScript.append(pattern.sub(replacement, ln))
+        else:
+            newScript.append(ln)
+    return newScript
