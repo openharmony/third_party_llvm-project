@@ -1735,7 +1735,7 @@ def executeShTest(test, litConfig, useExternalSh,
     if litConfig.noExecute:
         return lit.Test.Result(Test.PASS)
     # Setting environment variables on a remote device, this command is used only for OpenMP test.
-    if test.config.operating_system == 'OHOS':
+    if (test.config.name == 'libomp' or test.config.name == 'OMPT multiplex') and test.config.operating_system == 'OHOS':
         script = replaceEnvrunForScript(script)
 
     tmpDir, tmpBase = getTempPaths(test)
