@@ -2128,6 +2128,12 @@ llvm::Value *ItaniumCXXABI::getVTableAddressPointInStructorWithVTT(
       CGF.Builder.CreateAlignedLoad(CGF.GlobalsVoidPtrTy, VTT,
                                     CGF.getPointerAlign());
 
+  bool NoPac = VTableClass->hasAttr<NopacAttr>();
+  // Sanity check: Base classes should also be NoPac if the derived class is.
+  // NoPac |= Base.getBase()->hasAttr<NopacAttr>();
+  if (NoPac)
+   return AP;
+
   if (auto &Schema = CGF.CGM.getCodeGenOpts().PointerAuth.CXXVTTVTablePointers) {
     CGPointerAuthInfo PointerAuth = CGF.EmitPointerAuthInfo(Schema, VTT,
                                                             GlobalDecl(),
