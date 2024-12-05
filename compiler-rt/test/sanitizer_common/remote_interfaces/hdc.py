@@ -61,7 +61,7 @@ def pull_from_device(path):
 
     tmp = tempfile.mktemp()
     hdc(['file', 'recv', path, tmp], attempts=5, check_stdout='FileTransfer finish')
-    text = open(tmp, 'r').read()
+    text = open(tmp, 'r', errors='replace').read()
     os.unlink(tmp)
     return text
 
