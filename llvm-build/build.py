@@ -643,6 +643,8 @@ class BuildUtils(object):
 
         defines['COMPILER_RT_BUILD_XRAY'] = 'OFF'
         defines['LIBUNWIND_USE_FRAME_HEADER_CACHE'] = 'ON'
+        defines['OPENMP_ENABLE_LIBOMPTARGET'] = 'OFF'
+        defines['LIBOMP_INSTALL_ALIASES'] = 'False'
         return defines
 
     def get_python_dir(self):
@@ -1570,6 +1572,7 @@ class LlvmLibs(BuildUtils):
                          self.open_ohos_triple('aarch64'), self.open_ohos_triple('riscv64'),
                          self.open_ohos_triple('mipsel'), self.open_ohos_triple('x86_64'),
                          self.open_ohos_triple('loongarch64')]
+            omp_list = [self.open_ohos_triple("aarch64"), self.open_ohos_triple("arm"), self.open_ohos_triple('x86_64')]
             libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
             self.check_create_dir(libcxx_ndk_install)
 
@@ -1591,9 +1594,11 @@ class LlvmLibs(BuildUtils):
                     self.build_lldb_tools(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags,
                                                    defines)
                     seen_arch_list.append(llvm_triple)
+                if llvm_triple in omp_list:
+                    self.build_libomp(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines, 'TRUE')
+                    self.build_libomp(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines, 'FALSE')
                 continue
 
-            self.build_libomp(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
             self.build_libz(arch, llvm_triple, cflags, ldflags, defines)
             if self.build_config.need_lldb_tools and has_lldb_tools and llvm_triple not in seen_arch_list:
                 self.build_lldb_tools(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags, defines)
@@ -1791,8 +1796,8 @@ class LlvmLibs(BuildUtils):
                      cflags,
                      ldflags,
                      multilib_suffix,
-                     defines):
-
+                     defines,
+                     enable_shared):
         self.logger().info('Building libomp for %s', arch)
 
         libomp_path = self.merge_out_path('lib', 'libomp-%s' % llvm_triple)
@@ -1813,7 +1818,7 @@ class LlvmLibs(BuildUtils):
         libomp_defines['OPENMP_ENABLE_LIBOMPTARGET'] = 'FALSE'
 
         libomp_defines['OPENMP_LIBDIR_SUFFIX'] = os.path.join(os.sep, llvm_triple, multilib_suffix)
-        libomp_defines['LIBOMP_ENABLE_SHARED'] = 'FALSE'
+        libomp_defines['LIBOMP_ENABLE_SHARED'] = enable_shared
         libomp_defines['CMAKE_POLICY_DEFAULT_CMP0056'] = 'NEW'
         libomp_defines['CMAKE_INSTALL_PREFIX'] = llvm_install
         libomp_defines['COMPILER_RT_USE_BUILTINS_LIBRARY'] = 'ON'
@@ -1823,13 +1828,17 @@ class LlvmLibs(BuildUtils):
         libomp_defines['CMAKE_TRY_COMPILE_TARGET_TYPE'] = 'STATIC_LIBRARY'
 
         libomp_cmake_path = os.path.join(self.build_config.LLVM_PROJECT_DIR, 'openmp')
-        self.rm_cmake_cache(libomp_path)
+        
+        if enable_shared == "TRUE":
+            libomp_path = os.path.join(libomp_path, "shared")
+        else:
+            libomp_path = os.path.join(libomp_path, "static")
 
+        self.rm_cmake_cache(libomp_path)
         self.invoke_cmake(libomp_cmake_path,
                           libomp_path,
                           libomp_defines,
                           env=dict(self.build_config.ORIG_ENV))
-
         self.invoke_ninja(out_path=libomp_path,
                           env=dict(self.build_config.ORIG_ENV),
                           target=None,
