@@ -208,6 +208,8 @@
                 <filteritem type="filepath" name="third-party/benchmark/CONTRIBUTORS" desc="贡献者名单 不包含License"/>
                 <filteritem type="filepath" name="bolt/LICENSE.TXT" desc="LLVM Exceptions to the Apache 2.0 License 误报为GPL2.0"/>
                 <filteritem type="filepath" name="cross-project-tests/debuginfo-tests/dexter/LICENSE.txt" desc="LLVM Exceptions to the Apache 2.0 License 误报为GPL2.0"/>
+                <filteritem type="filepath" name="llvm-build/checksec/templates/bootstrap.bundle.min.js" desc="InvalidLicense 误报"/>
+                <filteritem type="filepath" name="llvm-build/checksec/templates/jquery.min.js" desc="InvalidLicense 误报"/>
             </filefilter>
             <filefilter name="copyrightPolicyFilter" desc="Filters for copyright header policies">
             </filefilter>
