@@ -330,3 +330,16 @@ trickQuestion:
 // CHECK: ldr d22, :got:sym
 // CHECK-OBJ-LP64: R_AARCH64_GOT_LD_PREL19 sym
 // CHECK-OBJ-LP64: R_AARCH64_GOT_LD_PREL19 sym
+
+   adr x24, #:got_auth:sym
+   adr x24, :got_auth:sym
+   ldr x24, #:got_auth:sym
+   ldr x24, :got_auth:sym
+// CHECK: adr x24, :got_auth:sym
+// CHECK: adr x24, :got_auth:sym
+// CHECK: ldr x24, :got_auth:sym
+// CHECK: ldr x24, :got_auth:sym
+// CHECK-OBJ-LP64: R_AARCH64_AUTH_GOT_ADR_PREL_LO21 sym
+// CHECK-OBJ-LP64: R_AARCH64_AUTH_GOT_ADR_PREL_LO21 sym
+// CHECK-OBJ-LP64: R_AARCH64_AUTH_GOT_LD_PREL19 sym
+// CHECK-OBJ-LP64: R_AARCH64_AUTH_GOT_LD_PREL19 sym
