@@ -19,6 +19,12 @@
 // Default value must be a compile-time constant.
 // Description must be a string literal.
 
+// OHOS_LOCAL begin
+COMMON_FLAG(
+    bool, check_log_path_on_init, true,
+    "If set, log_path will be checked during initialization.")
+// OHOS_LOCAL end
+
 COMMON_FLAG(
     bool, symbolize, true,
     "If set, use the online symbolizer from common sanitizer runtime to turn "
