@@ -17,9 +17,12 @@ extern "C" char **backtrace_symbols(void *const *trace, size_t len);
 
 #include "print_backtrace_linux_libc.inc"
 
+// Consistent with musl
 extern "C" GWP_ASAN_WEAK size_t
-libc_gwp_asan_unwind_fast(size_t *frame_buf, size_t max_record_stack,
-                          __attribute__((unused)) void *signal_context);
+libc_gwp_asan_unwind_fast(size_t *frame_buf, size_t max_record_stack);
+
+extern "C" GWP_ASAN_WEAK size_t
+libc_gwp_asan_unwind_segv(size_t *frame_buf, size_t max_record_stack, void *signal_context);
 
 namespace gwp_asan {
 namespace backtrace {
@@ -30,14 +33,14 @@ options::Backtrace_t getBacktraceFunction() {
   assert(&libc_gwp_asan_unwind_fast &&
          "libc_gwp_asan_unwind_fast wasn't provided from musl.");
   return [](size_t *frame_buf, size_t max_record_stack) {
-    return libc_gwp_asan_unwind_fast(frame_buf, max_record_stack, nullptr);
+    return libc_gwp_asan_unwind_fast(frame_buf, max_record_stack);
   };
 }
 PrintBacktrace_t getPrintBacktraceFunction() { return PrintBacktrace; }
 SegvBacktrace_t getSegvBacktraceFunction() {
-  assert(&libc_gwp_asan_unwind_fast &&
-         "libc_gwp_asan_unwind_fast wasn't provided from musl.");
-  return libc_gwp_asan_unwind_fast;
+  assert(&libc_gwp_asan_unwind_segv &&
+         "libc_gwp_asan_unwind_segv wasn't provided from musl.");
+  return libc_gwp_asan_unwind_segv;
 }
 
 } // namespace backtrace
