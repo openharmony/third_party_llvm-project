@@ -145,11 +145,16 @@ RelExpr AArch64::getRelExpr(RelType type, const Symbol &s,
   case R_AARCH64_LD64_GOT_LO12_NC:
   case R_AARCH64_TLSIE_LD64_GOTTPREL_LO12_NC:
     return R_GOT;
+  case R_AARCH64_AUTH_LD64_GOT_LO12_NC:
+  case R_AARCH64_AUTH_GOT_ADD_LO12_NC:
+    return RE_AARCH64_AUTH_GOT;
   case R_AARCH64_LD64_GOTPAGE_LO15:
     return R_AARCH64_GOT_PAGE;
   case R_AARCH64_ADR_GOT_PAGE:
   case R_AARCH64_TLSIE_ADR_GOTTPREL_PAGE21:
     return R_AARCH64_GOT_PAGE_PC;
+  case R_AARCH64_AUTH_ADR_GOT_PAGE:
+    return RE_AARCH64_AUTH_GOT_PAGE_PC;
   case R_AARCH64_NONE:
     return R_NONE;
   default:
@@ -197,6 +202,7 @@ int64_t AArch64::getImplicitAddend(const uint8_t *buf, RelType type) const {
   case R_AARCH64_TLSDESC:
     return read64(buf + 8);
   case R_AARCH64_NONE:
+  case R_AARCH64_AUTH_GLOB_DAT:
     return 0;
   case R_AARCH64_PREL32:
     return SignExtend64<32>(read32(buf));
@@ -357,9 +363,11 @@ void AArch64::relocate(uint8_t *loc, const Relocation &rel,
     write64(loc, val);
     break;
   case R_AARCH64_ADD_ABS_LO12_NC:
+  case R_AARCH64_AUTH_GOT_ADD_LO12_NC:
     or32AArch64Imm(loc, val);
     break;
   case R_AARCH64_ADR_GOT_PAGE:
+  case R_AARCH64_AUTH_ADR_GOT_PAGE:
   case R_AARCH64_ADR_PREL_PG_HI21:
   case R_AARCH64_TLSIE_ADR_GOTTPREL_PAGE21:
   case R_AARCH64_TLSDESC_ADR_PAGE21:
@@ -408,6 +416,7 @@ void AArch64::relocate(uint8_t *loc, const Relocation &rel,
     break;
   case R_AARCH64_LDST64_ABS_LO12_NC:
   case R_AARCH64_LD64_GOT_LO12_NC:
+  case R_AARCH64_AUTH_LD64_GOT_LO12_NC:
   case R_AARCH64_TLSIE_LD64_GOTTPREL_LO12_NC:
   case R_AARCH64_TLSLE_LDST64_TPREL_LO12_NC:
   case R_AARCH64_TLSDESC_LD64_LO12:

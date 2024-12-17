@@ -128,6 +128,7 @@ public:
   void writeTo(uint8_t *buf) override;
 
   void addEntry(Symbol &sym);
+  void addAuthEntry(const Symbol &sym);
   bool addTlsDescEntry(Symbol &sym);
   bool addDynTlsEntry(Symbol &sym);
   bool addTlsIndex();
@@ -147,6 +148,11 @@ protected:
   size_t numEntries = 0;
   uint32_t tlsIndexOff = -1;
   uint64_t size = 0;
+  struct AuthEntryInfo {
+    size_t offset;
+    bool isSymbolFunc;
+  };
+  SmallVector<AuthEntryInfo, 0> authEntries;
 };
 
 // .note.GNU-stack section.
