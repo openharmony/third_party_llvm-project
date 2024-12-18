@@ -148,6 +148,9 @@ RelExpr AArch64::getRelExpr(RelType type, const Symbol &s,
   case R_AARCH64_AUTH_LD64_GOT_LO12_NC:
   case R_AARCH64_AUTH_GOT_ADD_LO12_NC:
     return RE_AARCH64_AUTH_GOT;
+  case R_AARCH64_AUTH_GOT_LD_PREL19:
+  case R_AARCH64_AUTH_GOT_ADR_PREL_LO21:
+    return RE_AARCH64_AUTH_GOT_PC;
   case R_AARCH64_LD64_GOTPAGE_LO15:
     return R_AARCH64_GOT_PAGE;
   case R_AARCH64_ADR_GOT_PAGE:
@@ -321,6 +324,14 @@ static void or32AArch64Imm(uint8_t *l, uint64_t imm) {
   or32le(l, (imm & 0xFFF) << 10);
 }
 
+static void writeMaskedBits32le(uint8_t *p, int32_t v, uint32_t mask) {
+  write32le(p, (read32le(p) & ~mask) | v);
+}
+
+static void write32Imm12(uint8_t *l, uint64_t imm) {
+  writeMaskedBits32le(l, (imm & 0xFFF) << 10, 0XFFF << 10);
+}
+
 // Update the immediate field in an AArch64 movk, movn or movz instruction
 // for a signed relocation, and update the opcode of a movn or movz instruction
 // to match the sign of the operand.
@@ -363,8 +374,10 @@ void AArch64::relocate(uint8_t *loc, const Relocation &rel,
     write64(loc, val);
     break;
   case R_AARCH64_ADD_ABS_LO12_NC:
-  case R_AARCH64_AUTH_GOT_ADD_LO12_NC:
     or32AArch64Imm(loc, val);
+    break;
+  case R_AARCH64_AUTH_GOT_ADD_LO12_NC:
+    write32Imm12(loc, val);
     break;
   case R_AARCH64_ADR_GOT_PAGE:
   case R_AARCH64_AUTH_ADR_GOT_PAGE:
@@ -377,6 +390,7 @@ void AArch64::relocate(uint8_t *loc, const Relocation &rel,
     write32AArch64Addr(loc, val >> 12);
     break;
   case R_AARCH64_ADR_PREL_LO21:
+  case R_AARCH64_AUTH_GOT_ADR_PREL_LO21:
     checkInt(loc, val, 21, rel);
     write32AArch64Addr(loc, val);
     break;
@@ -400,6 +414,11 @@ void AArch64::relocate(uint8_t *loc, const Relocation &rel,
     checkInt(loc, val, 21, rel);
     or32le(loc, (val & 0x1FFFFC) << 3);
     break;
+  case R_AARCH64_AUTH_GOT_LD_PREL19:
+    checkAlignment(loc, val, 4, rel);
+    checkInt(loc, val, 21, rel);
+    writeMaskedBits32le(loc, (val & 0x1FFFFC) << 3, 0x1FFFFC << 3);
+    break;
   case R_AARCH64_LDST8_ABS_LO12_NC:
   case R_AARCH64_TLSLE_LDST8_TPREL_LO12_NC:
     or32AArch64Imm(loc, getBits(val, 0, 11));
@@ -416,13 +435,16 @@ void AArch64::relocate(uint8_t *loc, const Relocation &rel,
     break;
   case R_AARCH64_LDST64_ABS_LO12_NC:
   case R_AARCH64_LD64_GOT_LO12_NC:
-  case R_AARCH64_AUTH_LD64_GOT_LO12_NC:
   case R_AARCH64_TLSIE_LD64_GOTTPREL_LO12_NC:
   case R_AARCH64_TLSLE_LDST64_TPREL_LO12_NC:
   case R_AARCH64_TLSDESC_LD64_LO12:
     checkAlignment(loc, val, 8, rel);
     or32AArch64Imm(loc, getBits(val, 3, 11));
     break;
+  case R_AARCH64_AUTH_LD64_GOT_LO12_NC:
+    checkAlignment(loc, val, 8, rel);
+    write32Imm12(loc, getBits(val, 3, 11));
+    break; 
   case R_AARCH64_LDST128_ABS_LO12_NC:
   case R_AARCH64_TLSLE_LDST128_TPREL_LO12_NC:
     checkAlignment(loc, val, 16, rel);

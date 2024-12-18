@@ -198,9 +198,10 @@ static bool needsPlt(RelExpr expr) {
 // returns false for TLS variables even though they need GOT, because
 // TLS variables uses GOT differently than the regular variables.
 static bool needsGot(RelExpr expr) {
-  return oneof<R_GOT, RE_AARCH64_AUTH_GOT, R_GOT_OFF, R_MIPS_GOT_LOCAL_PAGE,
-               R_MIPS_GOT_OFF, R_MIPS_GOT_OFF32, R_AARCH64_GOT_PAGE_PC,
-               RE_AARCH64_AUTH_GOT_PAGE_PC, R_GOT_PC, R_GOTPLT,
+  return oneof<R_GOT, RE_AARCH64_AUTH_GOT, RE_AARCH64_AUTH_GOT_PC, R_GOT_OFF, 
+               R_MIPS_GOT_LOCAL_PAGE, R_MIPS_GOT_OFF, R_MIPS_GOT_OFF32,
+               R_AARCH64_GOT_PAGE_PC, RE_AARCH64_AUTH_GOT_PAGE_PC,
+               R_GOT_PC, R_GOTPLT,
                R_AARCH64_GOT_PAGE, R_LOONGARCH_GOT, R_LOONGARCH_GOT_PAGE_PC>(
       expr);
 }
@@ -988,6 +989,7 @@ bool RelocationScanner::isStaticLinkTimeConstant(RelExpr e, RelType type,
             R_AARCH64_GOT_PAGE_PC, RE_AARCH64_AUTH_GOT_PAGE_PC, R_GOT_PC, R_GOTONLY_PC,
             R_GOTPLTONLY_PC, R_PLT_PC, R_PLT_GOTPLT, R_PPC32_PLTREL, R_PPC64_CALL_PLT,
             R_PPC64_RELAX_TOC, R_RISCV_ADD, R_AARCH64_GOT_PAGE, RE_AARCH64_AUTH_GOT,
+            RE_AARCH64_AUTH_GOT_PC,
             R_LOONGARCH_PLT_PAGE_PC, R_LOONGARCH_GOT, R_LOONGARCH_GOT_PAGE_PC>(
           e))
     return true;
@@ -1465,7 +1467,8 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
       // Many LoongArch TLS relocs reuse the R_LOONGARCH_GOT type, in which
       // case the `needsGot` flag shouldn't get set.
       sym.needsGot = true;
-      if (expr == RE_AARCH64_AUTH_GOT || expr == RE_AARCH64_AUTH_GOT_PAGE_PC)
+      if (expr == RE_AARCH64_AUTH_GOT || expr == RE_AARCH64_AUTH_GOT_PAGE_PC ||
+          expr == RE_AARCH64_AUTH_GOT_PC)
         sym.needsGotAuth = true;
     }
   } else if (needsPlt(expr)) {
