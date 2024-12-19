@@ -48,6 +48,7 @@
 %include "./interface/SBListener.i"
 %include "./interface/SBMemoryRegionInfo.i"
 %include "./interface/SBMemoryRegionInfoList.i"
+%include "./interface/SBMixedArkTSDebugger.i" /* OHOS_LOCAL */
 %include "./interface/SBModule.i"
 %include "./interface/SBModuleSpec.i"
 %include "./interface/SBPlatform.i"

@@ -879,6 +879,7 @@ protected:
   friend class SBSymbol;
   friend class SBValue;
   friend class SBVariablesOptions;
+  friend class SBMixedArkTSDebugger; // OHOS_LOCAL
 
   // Constructors are private, use static Target::Create function to create an
   // instance of this class.

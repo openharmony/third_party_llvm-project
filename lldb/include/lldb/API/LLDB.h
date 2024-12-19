@@ -44,6 +44,7 @@
 #include "lldb/API/SBListener.h"
 #include "lldb/API/SBMemoryRegionInfo.h"
 #include "lldb/API/SBMemoryRegionInfoList.h"
+#include "lldb/API/SBMixedArkTSDebugger.h" // OHOS_LOCAL
 #include "lldb/API/SBModule.h"
 #include "lldb/API/SBModuleSpec.h"
 #include "lldb/API/SBPlatform.h"
