@@ -50,7 +50,8 @@ enum class LLDBLog : Log::MaskType {
   // OHOS_LOCAL begin
   Performance = Log::ChannelFlag<31>,
   OnDemand = Log::ChannelFlag<32>,
-  LLVM_MARK_AS_BITMASK_ENUM(OnDemand),
+  MixedDebugger = Log::ChannelFlag<33>,
+  LLVM_MARK_AS_BITMASK_ENUM(MixedDebugger),
   // OHOS_LOCAL end
 };
 
