@@ -21,6 +21,10 @@ add_lldb_library(lldbTarget
   MemoryHistory.cpp
   MemoryRegionInfo.cpp
   MemoryTagMap.cpp
+  # OHOS_LOCAL begin
+  MixedArkTSDebugger.cpp
+  MixedDebugger.cpp
+  # OHOS_LOCAL end
   ModuleCache.cpp
   OperatingSystem.cpp
   PathMappingList.cpp

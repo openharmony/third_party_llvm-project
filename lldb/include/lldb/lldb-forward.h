@@ -124,6 +124,10 @@ class Materializer;
 class MemoryHistory;
 class MemoryRegionInfo;
 class MemoryRegionInfos;
+// OHOS_LOCAL begin
+class MixedArkTSDebugger;
+class MixedDebugger;
+// OHOS_LOCAL end
 class Module;
 class ModuleList;
 class ModuleSpec;

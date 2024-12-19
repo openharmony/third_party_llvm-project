@@ -75,6 +75,7 @@ protected:
   friend class SBValue;
   friend class SBWatchpoint;
   friend class SBFile;
+  friend class SBMixedArkTSDebugger; // OHOS_LOCAL
 
   friend class lldb_private::ScriptInterpreter;
 

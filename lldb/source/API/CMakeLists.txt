@@ -65,6 +65,7 @@ add_lldb_library(liblldb ${LIBLLDB_LIB_TYPE} ${option_framework} # OHOS_LOCAL
   SBListener.cpp
   SBMemoryRegionInfo.cpp
   SBMemoryRegionInfoList.cpp
+  SBMixedArkTSDebugger.cpp # OHOS_LOCAL
   SBModule.cpp
   SBModuleSpec.cpp
   SBPlatform.cpp
