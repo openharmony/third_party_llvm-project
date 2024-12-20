@@ -1451,6 +1451,12 @@ public:
     return *this;
   }
 
+  // OHOS_LOCAL begin
+  intptr_t get_handler() {
+    return State->IterationHandle;
+  }
+  // OHOS_LOCAL end
+
   const directory_entry &operator*() const { return State->CurrentEntry; }
   const directory_entry *operator->() const { return &State->CurrentEntry; }
 
