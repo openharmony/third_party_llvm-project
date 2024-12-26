@@ -17,6 +17,7 @@
 #include "lldb/Core/PluginManager.h"
 #include "lldb/Core/Value.h"
 #include "lldb/Core/ValueObjectConstResult.h"
+#include "lldb/Core/ValueObjectMemory.h"
 #include "lldb/Symbol/UnwindPlan.h"
 #include "lldb/Target/Process.h"
 #include "lldb/Target/RegisterContext.h"
@@ -467,7 +468,8 @@ static bool LoadValueFromConsecutiveGPRRegisters(
     bool is_return_value, // false => parameter, true => return value
     uint32_t &NGRN,       // NGRN (see ABI documentation)
     uint32_t &NSRN,       // NSRN (see ABI documentation)
-    DataExtractor &data) {
+    DataExtractor &data,  
+    bool &is_sret) {      // OHOS_LOCAL
   llvm::Optional<uint64_t> byte_size =
       value_type.GetByteSize(exe_ctx.GetBestExecutionContextScope());
 
@@ -566,7 +568,28 @@ static bool LoadValueFromConsecutiveGPRRegisters(
       // does.  It looks like all the users of this ABI currently choose not to
       // do that, and so we can't reconstruct stack based returns on exit 
       // from the function.
-      return false;
+      // OHOS_LOCAL begin
+      // ohos supports to write the sret argument into x0.
+      if (exe_ctx.GetProcessRef().GetTarget().GetArchitecture().GetTriple().isOpenHOS()) {
+        Log *log = GetLog(LLDBLog::Expressions);
+        const RegisterInfo *x0_reg_info = reg_ctx->GetRegisterInfo(
+            eRegisterKindGeneric, LLDB_REGNUM_GENERIC_ARG1);
+        if (x0_reg_info == nullptr) {
+          LLDB_LOGF(log, "Failed to get register information for x0.");
+          return false;
+        }
+        lldb::addr_t return_value_addr =
+            reg_ctx->ReadRegisterAsUnsigned(x0_reg_info, LLDB_INVALID_ADDRESS);
+        if (return_value_addr == LLDB_INVALID_ADDRESS) {
+          LLDB_LOGF(log, "Failed to read the return value address from x0.");
+          return false;
+        }
+        is_sret = true;
+        return true;
+      } else {
+        return false;
+      }
+      // OHOS_LOCAL end
     } else {
       // We are assuming we are stopped at the first instruction in a function
       // and that the ABI is being respected so all parameters appear where
@@ -776,11 +799,23 @@ ValueObjectSP ABISysV_arm64::GetReturnValueObjectImpl(
     uint32_t NGRN = 0; // Search ABI docs for NGRN
     uint32_t NSRN = 0; // Search ABI docs for NSRN
     const bool is_return_value = true;
+    // OHOS_LOCAL begin
+    bool is_sret = false;
     if (LoadValueFromConsecutiveGPRRegisters(
             exe_ctx, reg_ctx, return_compiler_type, is_return_value, NGRN, NSRN,
-            data)) {
-      return_valobj_sp = ValueObjectConstResult::Create(
-          &thread, return_compiler_type, ConstString(""), data);
+            data, is_sret)) {
+      if (is_sret) {
+        const RegisterInfo *x0_reg_info = reg_ctx->GetRegisterInfo(
+            eRegisterKindGeneric, LLDB_REGNUM_GENERIC_ARG1);
+        lldb::addr_t return_value_addr = reg_ctx->ReadRegisterAsUnsigned(
+            x0_reg_info, LLDB_INVALID_ADDRESS);
+        return_valobj_sp = ValueObjectMemory::Create(
+            &thread, "", Address(return_value_addr, nullptr), return_compiler_type);        
+      } else {
+        return_valobj_sp = ValueObjectConstResult::Create(
+            &thread, return_compiler_type, ConstString(""), data);
+      }
+      // OHOS_LOCAL end
     }
   }
   return return_valobj_sp;
