@@ -5854,6 +5854,11 @@ public:
 
   bool CheckCaseExpression(Expr *E);
 
+  // __builtin_hm_type_signature(type)
+  ExprResult ActOnHMTypeSig(SourceLocation OpLoc,
+                                    UnaryExprOrTypeTrait ExprKind,
+                                    ParsedType ParsedTy, SourceRange ArgRange);
+
   /// Describes the result of an "if-exists" condition check.
   enum IfExistsResult {
     /// The symbol exists.

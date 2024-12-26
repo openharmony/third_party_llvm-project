@@ -6462,6 +6462,95 @@ private:
   friend class ASTStmtWriter;
 };
 
+// OHOS_LOCAL begin
+// This represents a use of the __builtin_hm_type_signature, which input a
+// Struct.
+class HMTypeSigExpr final : public Expr {
+  SourceLocation OpLoc, RParenLoc;
+  QualType DataType;
+
+public:
+  enum FieldType { PADDING = 0, POINTER = 1, DATA = 2 };
+
+  UnaryExprOrTypeTrait ExprKind;
+
+  /// Build an empty call expression.
+  explicit HMTypeSigExpr(EmptyShell Empty) : Expr(HMTypeSigExprClass, Empty) {}
+  HMTypeSigExpr(UnaryExprOrTypeTrait ExprKind, TypeSourceInfo *TInfo,
+                QualType resultType, SourceLocation op, SourceLocation rp);
+
+  FieldType getFieldTypeEnum(QualType FieldTy) const;
+  UnaryExprOrTypeTrait getKind() const { return ExprKind; }
+  std::string getFieldTypeStr(FieldType FieldEnum) const {
+    return std::to_string(FieldEnum);
+  }
+
+  // The structure is divided into multiple granules in the unit of 8 bytes. Each
+  // granule may contain multiple FieldTypes, Perform bitwise OR based on the
+  // contained FieldType to obtain a GranulesValue. signature: The structure
+  // signature is a character string composed of each GranulesValue. summary:
+  // Summary of a granule(GranuleSummay)=1<< GranulesValue. The summary of the
+  // structure is each GranuleSummay bitwise OR.
+  APValue EvaluateTypeSig(const ASTContext &Ctx) const;
+
+  APValue MakeStringLiteral(StringRef Tmp, const ASTContext &Ctx) const;
+  bool divideGranulesBase(FieldType CurType, uint64_t fieldSize,
+                          const ASTContext &Ctx, uint64_t &GranulesPos,
+                          std::vector<std::vector<FieldType>> &vec) const;
+  void divideGranulesArray(const ArrayType *CurType, const ASTContext &Ctx,
+                           uint64_t &GranulesPos,
+                           std::vector<std::vector<FieldType>> &vec) const;
+  void divideGranulesVector(const VectorType *CurType, const ASTContext &Ctx,
+                            uint64_t &GranulesPos,
+                            std::vector<std::vector<FieldType>> &vec) const;
+  void divideGranulesRecord(const RecordType *CurType, const ASTContext &Ctx,
+                            uint64_t &GranulesPos,
+                            std::vector<std::vector<FieldType>> &vec) const;
+  void divideGranulesUnion(const RecordType *CurType, const ASTContext &Ctx,
+                           uint64_t &GranulesPos,
+                           std::vector<std::vector<FieldType>> &vec) const;
+
+  /// Return a string representing the name of the specific builtin function.
+  StringRef getBuiltinStr() const;
+  APValue getBuiltinResult(const ASTContext &Ctx, std::string signature,
+                           unsigned short summary) const;
+  QualType getTypeOfArgument() const { return DataType; }
+
+  SourceLocation getOperatorLoc() const LLVM_READONLY { return OpLoc; }
+  void setOperatorLoc(SourceLocation L) { OpLoc = L; }
+
+  SourceLocation getRParenLoc() const LLVM_READONLY { return RParenLoc; }
+  void setRParenLoc(SourceLocation L) { RParenLoc = L; }
+
+  SourceLocation getBeginLoc() const LLVM_READONLY { return OpLoc; }
+  SourceLocation getEndLoc() const LLVM_READONLY { return RParenLoc; }
+
+  child_range children() {
+    return child_range(child_iterator(), child_iterator());
+  }
+  const_child_range children() const {
+    return const_child_range(child_iterator(), child_iterator());
+  }
+
+private:
+  // The structure is divided into 8-byte granularities and stored in the
+  // std::vector<std::vector<FieldType>> vec container. the outer container is a
+  // container for all granules, The size of the outer container is the number
+  // of granules. The inner container is a collection of different types of one
+  // granule. The process of generating the vector is a recursive invoking
+  // process. The fields of the structure may also be structures, arrays, or
+  // basic types. Therefore, the vector needs to be processed recursively.
+  void divideGranules(QualType CurType, const ASTContext &Ctx,
+                      uint64_t &GranulesPos,
+                      std::vector<std::vector<FieldType>> &vec) const;
+  void divideGranules(const FieldDecl *Field, const ASTContext &Ctx,
+                      uint64_t &GranulesPos,
+                      std::vector<std::vector<FieldType>> &vec) const;
+
+  friend class ASTStmtReader;
+  static const uint64_t GranulesSize = 64;
+};
 } // end namespace clang
+// OHOS_LOCAL end
 
 #endif // LLVM_CLANG_AST_EXPR_H

@@ -1423,6 +1423,8 @@ ExprResult Parser::ParseCastExpression(CastParseKind ParseKind,
   // unary-expression: '__builtin_omp_required_simd_align' '(' type-name ')'
   case tok::kw___builtin_omp_required_simd_align:
   case tok::kw___builtin_get_modifier_bytype: // OHOS_LOCAL
+  case tok::kw___builtin_hm_type_summary:
+  case tok::kw___builtin_hm_type_signature:
     if (NotPrimaryExpression)
       *NotPrimaryExpression = true;
     AllowSuffix = false;
@@ -2286,8 +2288,9 @@ Parser::ParseExprAfterUnaryExprOrTypeTrait(const Token &OpTok,
   assert(OpTok.isOneOf(tok::kw_typeof, tok::kw_sizeof, tok::kw___alignof,
                        tok::kw_alignof, tok::kw__Alignof, tok::kw_vec_step,
                        tok::kw___builtin_omp_required_simd_align,
-                       tok::kw___builtin_get_modifier_bytype // OHOS_LOCAL
-                       ) &&
+                       tok::kw___builtin_get_modifier_bytype,
+                       tok::kw___builtin_hm_type_summary,
+                       tok::kw___builtin_hm_type_signature) &&
          "Not a typeof/sizeof/alignof/vec_step expression!");
 
   ExprResult Operand;
@@ -2297,9 +2300,9 @@ Parser::ParseExprAfterUnaryExprOrTypeTrait(const Token &OpTok,
     // If construct allows a form without parenthesis, user may forget to put
     // pathenthesis around type name.
     if (OpTok.isOneOf(tok::kw_sizeof, tok::kw___alignof, tok::kw_alignof,
-                      tok::kw__Alignof,
-                      tok::kw___builtin_get_modifier_bytype // OHOS_LOCAL
-                      )) {
+                      tok::kw__Alignof, tok::kw___builtin_get_modifier_bytype,
+                      tok::kw___builtin_hm_type_summary,
+                      tok::kw___builtin_hm_type_signature)) {
       if (isTypeIdUnambiguously()) {
         DeclSpec DS(AttrFactory);
         ParseSpecifierQualifierList(DS);
@@ -2409,7 +2412,9 @@ ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
   assert(Tok.isOneOf(tok::kw_sizeof, tok::kw___alignof, tok::kw_alignof,
                      tok::kw__Alignof, tok::kw_vec_step,
                      tok::kw___builtin_omp_required_simd_align,
-                     tok::kw___builtin_get_modifier_bytype) && // OHOS_LOCAL
+                     tok::kw___builtin_get_modifier_bytype,
+                     tok::kw___builtin_hm_type_summary,
+                     tok::kw___builtin_hm_type_signature) &&
          "Not a sizeof/alignof/vec_step/get_modifier_bytype expression!");
   Token OpTok = Tok;
   ConsumeToken();
@@ -2489,6 +2494,16 @@ ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
   else if (OpTok.is(tok::kw___builtin_get_modifier_bytype))
     ExprKind = UETT_PacModifierByType;
   // OHOS_LOCAL End
+  else if (OpTok.is(tok::kw___builtin_hm_type_summary))
+    ExprKind = UETT_HMTypeSummary;
+  else if (OpTok.is(tok::kw___builtin_hm_type_signature))
+    ExprKind = UETT_HMTypeSignature;
+
+  if (isCastExpr && (OpTok.is(tok::kw___builtin_hm_type_summary) ||
+                     OpTok.is(tok::kw___builtin_hm_type_signature))) {
+    return Actions.ActOnHMTypeSig(OpTok.getLocation(), ExprKind, CastTy,
+                                  CastRange);
+  }
   if (isCastExpr)
     return Actions.ActOnUnaryExprOrTypeTraitExpr(OpTok.getLocation(),
                                                  ExprKind,

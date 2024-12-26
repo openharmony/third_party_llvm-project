@@ -38,6 +38,7 @@ bool useDataFieldTag();
 bool useDataFieldProtection();
 PartsBeCfiType getBeCfiType();
 uint16_t getTypeIdFor(const Type *T);
+std::string getLLVMRevision();
 }
 }
 #endif

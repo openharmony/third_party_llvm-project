@@ -2191,6 +2191,12 @@ void ASTStmtReader::VisitRecoveryExpr(RecoveryExpr *E) {
     Child = Record.readSubStmt();
 }
 
+void ASTStmtReader::VisitHMTypeSigExpr(HMTypeSigExpr *E) {
+  VisitExpr(E);
+  E->setOperatorLoc(readSourceLocation());
+  E->setRParenLoc(readSourceLocation());
+}
+
 //===----------------------------------------------------------------------===//
 // Microsoft Expressions and Statements
 //===----------------------------------------------------------------------===//
@@ -4004,11 +4010,16 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
       break;
     }
 
-    case EXPR_REQUIRES:
+    case EXPR_REQUIRES: {
       unsigned numLocalParameters = Record[ASTStmtReader::NumExprFields];
       unsigned numRequirement = Record[ASTStmtReader::NumExprFields + 1];
       S = RequiresExpr::Create(Context, Empty, numLocalParameters,
                                numRequirement);
+      break;
+    }
+
+    case EXPR_HM_TYPE_SIG:
+      S = new (Context) HMTypeSigExpr(Empty);
       break;
     }
 

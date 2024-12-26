@@ -3158,6 +3158,9 @@ DEF_TRAVERSE_STMT(OMPParallelGenericLoopDirective,
 
 DEF_TRAVERSE_STMT(OMPTargetParallelGenericLoopDirective,
                   { TRY_TO(TraverseOMPExecutableDirective(S)); })
+
+DEF_TRAVERSE_STMT(HMTypeSigExpr, {}) //OHOS_LOCAL
+
 // OpenMP clauses.
 template <typename Derived>
 bool RecursiveASTVisitor<Derived>::TraverseOMPClause(OMPClause *C) {

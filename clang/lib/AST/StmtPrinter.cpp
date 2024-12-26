@@ -2716,6 +2716,10 @@ void StmtPrinter::VisitAsTypeExpr(AsTypeExpr *Node) {
   OS << ")";
 }
 
+void StmtPrinter::VisitHMTypeSigExpr(HMTypeSigExpr *Node) {
+  OS << Node->getBuiltinStr() << "()";
+}
+
 //===----------------------------------------------------------------------===//
 // Stmt method implementations
 //===----------------------------------------------------------------------===//
