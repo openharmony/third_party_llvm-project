@@ -98,6 +98,11 @@ public:
   Status ReadMemoryWithoutTrap(lldb::addr_t addr, void *buf, size_t size,
                                size_t &bytes_read);
 
+  // OHOS_LOCAL begin
+  Status ShowMemoryWithoutTrap(lldb::addr_t addr, void *buf, size_t size,
+                               size_t &bytes_read);
+  // OHOS_LOCAL end
+
   virtual Status ReadMemoryTags(int32_t type, lldb::addr_t addr, size_t len,
                                 std::vector<uint8_t> &tags);
 

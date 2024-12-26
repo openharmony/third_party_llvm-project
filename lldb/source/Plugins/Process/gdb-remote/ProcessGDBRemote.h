@@ -136,6 +136,11 @@ public:
   size_t DoReadMemory(lldb::addr_t addr, void *buf, size_t size,
                       Status &error) override;
 
+  // OHOS_LOCAL begin
+  size_t DoShowMemory(lldb::addr_t addr, void *buf, size_t size,
+                      Status &error) override;
+  // OHOS_LOCAL end
+
   Status
   WriteObjectFile(std::vector<ObjectFile::LoadableData> entries) override;
 

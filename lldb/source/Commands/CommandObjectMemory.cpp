@@ -280,6 +280,115 @@ public:
   OptionValueLanguage m_language_for_type;
 };
 
+// OHOS_LOCAL begin
+class CommandObjectMemoryShow : public CommandObjectParsed {
+public:
+  CommandObjectMemoryShow(CommandInterpreter &interpreter)
+      : CommandObjectParsed(
+            interpreter, "memory show",
+            "Displays the memory of the certain address without covering breakpoints."
+            "This command is supported in the following scenarios:"
+            "local debugging on Linux, remote debugging from Linux or Windows to aarch64-linux-ohos,"
+            "and local debugging on aarch64-linux-ohos. However, it is not supported for local debugging on Windows. ", nullptr,
+            eCommandRequiresTarget | eCommandProcessMustBePaused) {
+    CommandArgumentEntry arg;
+    CommandArgumentData addr_arg;
+    addr_arg.arg_type = eArgTypeAddressOrExpression;
+    addr_arg.arg_repetition = eArgRepeatPlain;
+    arg.push_back(addr_arg);
+    m_arguments.push_back(arg);
+  }
+
+  ~CommandObjectMemoryShow() override = default;
+
+  Options *GetOptions() override { return nullptr; }
+
+  llvm::Optional<std::string> GetRepeatCommand(Args &current_command_args,
+                                               uint32_t index) override {
+    return m_cmd_name;
+  }
+
+protected:
+  bool DoExecute(Args &command, CommandReturnObject &result) override {
+    // No need to check "target" for validity as eCommandRequiresTarget ensures
+    // it is valid
+    Target *target = m_exe_ctx.GetTargetPtr();
+    const size_t argc = command.GetArgumentCount();
+    if (argc != 1) {
+      result.AppendError("Usage: memory show <address>");
+      return false;
+    }
+    lldb::addr_t addr;
+    size_t item_count = 32;
+    size_t item_byte_size = 1;
+    const size_t num_per_line = 16;
+    size_t total_byte_size = item_count * item_byte_size;
+    Status error;
+    addr = OptionArgParser::ToAddress(&m_exe_ctx, command[0].ref(),
+                                        LLDB_INVALID_ADDRESS, &error);
+
+    if (addr == LLDB_INVALID_ADDRESS) {
+      result.AppendError("invalid start address expression.");
+      result.AppendError(error.AsCString());
+      return false;
+    }
+
+    ABISP abi;
+    if (Process *proc = m_exe_ctx.GetProcessPtr())
+      abi = proc->GetABI();
+
+    if (abi)
+      addr = abi->FixDataAddress(addr);
+
+    WritableDataBufferSP data_sp;
+    size_t bytes_read = 0;
+    data_sp = std::make_shared<DataBufferHeap>(total_byte_size, '\0');
+    if (data_sp->GetBytes() == nullptr) {
+      result.AppendErrorWithFormat(
+          "can't allocate 0x%" PRIx32
+          " bytes for the memory show buffer, specify a smaller size to show",
+          (uint32_t)total_byte_size);
+      return false;
+    }
+
+    Address address(addr, nullptr);
+    bytes_read = target->ShowMemory(address, data_sp->GetBytes(),
+                                    data_sp->GetByteSize(), error);
+    if (bytes_read == 0) {
+      const char *error_cstr = error.AsCString();
+      if (error_cstr && error_cstr[0]) {
+        result.AppendError(error_cstr);
+      } else {
+        result.AppendErrorWithFormat(
+            "failed to show memory from 0x%" PRIx64 ".\n", addr);
+      }
+      return false;
+    }
+
+    if (bytes_read < total_byte_size)
+      result.AppendWarningWithFormat(
+          "Not all bytes (%" PRIu64 "/%" PRIu64
+          ") were able to be show from 0x%" PRIx64 ".\n",
+          (uint64_t)bytes_read, (uint64_t)total_byte_size, addr);
+
+    Stream *output_stream_p = &result.GetOutputStream();
+    ExecutionContextScope *exe_scope = m_exe_ctx.GetBestExecutionContextScope();
+
+    result.SetStatus(eReturnStatusSuccessFinishResult);
+    DataExtractor data(data_sp, target->GetArchitecture().GetByteOrder(),
+                       target->GetArchitecture().GetAddressByteSize(),
+                       target->GetArchitecture().GetDataByteSize());
+    assert(output_stream_p);
+    DumpDataExtractor(
+        data, output_stream_p, 0, eFormatBytesWithASCII, item_byte_size, item_count,
+        num_per_line / target->GetArchitecture().GetDataByteSize(), addr, 0, 0,
+        exe_scope, false);
+    output_stream_p->EOL();
+    return true;
+  }
+};
+// OHOS_LOCAL end
+
 // Read memory from the inferior process
 class CommandObjectMemoryRead : public CommandObjectParsed {
 public:
@@ -1880,6 +1989,10 @@ CommandObjectMemory::CommandObjectMemory(CommandInterpreter &interpreter)
                  CommandObjectSP(new CommandObjectMemoryRead(interpreter)));
   LoadSubCommand("write",
                  CommandObjectSP(new CommandObjectMemoryWrite(interpreter)));
+  // OHOS_LOCAL begin
+  LoadSubCommand("show",
+                 CommandObjectSP(new CommandObjectMemoryShow(interpreter)));
+  // OHOS_LOCAL end
   LoadSubCommand("history",
                  CommandObjectSP(new CommandObjectMemoryHistory(interpreter)));
   LoadSubCommand("region",
