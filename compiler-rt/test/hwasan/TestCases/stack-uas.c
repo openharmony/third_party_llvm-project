@@ -17,10 +17,6 @@
 // Stack histories currently are not recorded on x86.
 // XFAIL: x86_64
 
-// OHOS_LOCAL
-// Return value is undefined on OHOS
-// XFAIL: ohos_family
-
 void USE(void *x) { // pretend_to_do_something(void *x)
   __asm__ __volatile__(""
                        :
