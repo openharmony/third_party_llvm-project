@@ -686,6 +686,12 @@ class BuildUtils(object):
         prog = re.compile(r'#define MY_VERSION_NUMBERS "(.*?)"')
         return self.get_version(lzma_version_file, prog)
 
+    def merge_install_dir(self, name, platform_triple, *args):
+        return self.merge_out_path('third_party', name, 'install', platform_triple, *args)
+
+    def merge_build_dir(self, name, platform_triple, *args):
+        return self.merge_out_path('third_party', name, 'build', platform_triple, *args)
+
     def merge_ncurses_install_dir(self, platform_triple, *args):
         return self.merge_out_path('third_party', 'ncurses', 'install', platform_triple, *args)
 
@@ -898,7 +904,7 @@ class LlvmCore(BuildUtils):
                 llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
 
             if self.build_config.enable_lzma_7zip:
-                llvm_defines['LIBLZMA_LIBRARIES'] = self.merge_out_path('lzma', 'lib', self.use_platform(), 'liblzma.so')
+                llvm_defines['LIBLZMA_LIBRARIES'] = self.merge_install_dir('lzma', self.use_platform(), 'lib', 'liblzma.so')
 
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = \
@@ -955,7 +961,7 @@ class LlvmCore(BuildUtils):
         if self.build_config.enable_lzma_7zip:
             llvm_defines['LLDB_ENABLE_LZMA'] = 'ON'
             llvm_defines['LLDB_ENABLE_LZMA_7ZIP'] = 'ON'
-            llvm_defines['LIBLZMA_INCLUDE_DIRS'] = self.merge_out_path('lzma', 'include')
+            llvm_defines['LIBLZMA_INCLUDE_DIRS'] = self.merge_install_dir('lzma', self.use_platform(), 'include')
 
         if self.build_config.build_libedit:
             llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
@@ -1152,8 +1158,8 @@ class LlvmCore(BuildUtils):
         if self.build_config.enable_lzma_7zip:
             windows_defines['LLDB_ENABLE_LZMA'] = 'ON'
             windows_defines['LLDB_ENABLE_LZMA_7ZIP'] = 'ON'
-            windows_defines['LIBLZMA_INCLUDE_DIRS'] = self.merge_out_path('lzma', 'include')
-            windows_defines['LIBLZMA_LIBRARIES'] = self.merge_out_path('lzma', 'lib', 'windows-x86_64', 'liblzma.dll.a')
+            windows_defines['LIBLZMA_INCLUDE_DIRS'] = self.merge_install_dir('lzma', 'windows-x86_64', 'include')
+            windows_defines['LIBLZMA_LIBRARIES'] = self.merge_install_dir('lzma', 'windows-x86_64', 'lib', 'liblzma.dll.a')
 
     def llvm_compile_windows_flags(self,
                                    windows_defines,
@@ -1973,6 +1979,13 @@ class LlvmLibs(BuildUtils):
                 lldb_defines['LIBXML2_INCLUDE_DIR'] = self.merge_libxml2_install_dir(llvm_triple, 'include', 'libxml2')
                 lldb_defines['LIBXML2_LIBRARY'] = self.merge_libxml2_install_dir(llvm_triple, 'lib', 'libxml2.a')
 
+            if self.build_config.enable_lzma_7zip:
+                self.build_lzma(None, llvm_install, llvm_triple, True)
+                lldb_defines['LLDB_ENABLE_LZMA'] = 'ON'
+                lldb_defines['LLDB_ENABLE_LZMA_7ZIP'] = 'ON'
+                lldb_defines['LIBLZMA_INCLUDE_DIRS'] = self.merge_install_dir('lzma', llvm_triple, 'include')
+                lldb_defines['LIBLZMA_LIBRARIES'] = self.merge_install_dir('lzma', llvm_triple, 'lib', 'liblzma.a')
+
         if self.build_config.lldb_timeout:
             lldb_defines['LLDB_ENABLE_TIMEOUT'] = 'True'
 
@@ -2068,40 +2081,54 @@ class LlvmLibs(BuildUtils):
             self.llvm_package.copy_ncurses_to_llvm(platform_triple, llvm_make)
             self.llvm_package.copy_ncurses_to_llvm(platform_triple, llvm_install)
 
-    def build_lzma(self, llvm_make, llvm_install):
+    def build_lzma(self, llvm_make, llvm_install, platform_triple, static = False):
         self.logger().info('Building lzma')
         target_triple = self.use_platform()
-        liblzma_build_path = self.merge_out_path('lzma')
-        llvm_clang_prebuilts = os.path.abspath(os.path.join(self.buildtools_path, 'clang', 'ohos', self.use_platform(),
+        liblzma_install_path = self.merge_install_dir('lzma', platform_triple)
+        liblzma_build_path = self.merge_build_dir('lzma', platform_triple)
+        asm_source_dir = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'lzma', 'Asm')
+        sysroot = ""
+        asm_arc_dir = ""
+        ar = ""
+        if not platform_triple.endswith("ohos"):
+            if platform_triple.startswith("windows"):
+                llvm_clang_prebuilts = self.merge_out_path('llvm-install', 'bin', 'clang')
+                sysroot = self.merge_out_path('mingw', self.build_config.MINGW_TRIPLE)
+                target_triple = platform_triple
+            else:
+              llvm_clang_prebuilts = os.path.abspath(os.path.join(self.buildtools_path, 'clang', 'ohos', self.use_platform(),
                                                           'clang-%s' % self.build_config.CLANG_VERSION, 'bin', 'clang'))
+        else:
+            llvm_clang_prebuilts = self.merge_out_path('llvm-install', 'bin', 'clang')
+            sysroot = self.merge_out_path("sysroot")
+            ar = self.merge_out_path('llvm-install', 'bin', 'llvm-ar')
+            target_triple = platform_triple
+            if platform_triple.startswith("aarch64"):
+                asm_arc_dir = os.path.abspath(os.path.join(asm_source_dir, 'arm64'))
+            if platform_triple.startswith("arm"):
+                asm_arc_dir = os.path.abspath(os.path.join(asm_source_dir, 'arm'))
+
         src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'lzma', 'C'))
         cmd = [ 'make',
                 'install',
                 'CC=%s' % llvm_clang_prebuilts,
                 'SRC_PREFIX=%s/' % src_dir,
+                'ASM_PREFIX=%s/' % asm_arc_dir,
+                'SYSROOT=%s' % sysroot,
+                'AR=%s' % ar,
                 'TARGET_TRIPLE=%s' % target_triple,
-                'INSTALL_DIR=%s' % liblzma_build_path,
+                'INSTALL_DIR=%s' % liblzma_install_path,
+                'BUILD_DIR=%s' % liblzma_build_path,
                 'LIB_VERSION=%s' % self.build_config.LZMA_VERSION,
+                'IS_STATIC=%s' % static,
                 '-f',
                 'MakeLiblzma']
         os.chdir(self.build_config.LLVM_BUILD_DIR)
         self.check_call(cmd)
 
-        if self.host_is_darwin():
-            shlib_ext = f'.{self.build_config.LZMA_VERSION}.dylib'
-        if self.host_is_linux():
-            shlib_ext = '.so'
-        lzma_file = os.path.join(liblzma_build_path, 'lib', target_triple, 'liblzma' + shlib_ext)
-
-        self.logger().info('Copy lzma to llvm make dir is %s', llvm_make)
-        lib_make_path = os.path.join(llvm_make, 'lib')
-        self.check_create_dir(lib_make_path)
-        self.check_copy_file(lzma_file, lib_make_path + '/liblzma' + shlib_ext)
-
-        self.logger().info('Copy lzma to llvm install dir is %s', llvm_install)
-        lib_dst_path = os.path.join(llvm_install, 'lib')
-        self.check_create_dir(lib_dst_path)
-        self.check_copy_file(lzma_file, lib_dst_path + '/liblzma' + shlib_ext)
+        if not static:
+            self.llvm_package.copy_lzma_to_llvm(platform_triple, llvm_make)
+            self.llvm_package.copy_lzma_to_llvm(platform_triple, llvm_install)
 
     def build_libedit(self, llvm_make, llvm_install, platform_triple, static = False):
         self.logger().info('Building libedit')
@@ -2663,7 +2690,7 @@ class LlvmPackage(BuildUtils):
             if self.build_config.enable_lzma_7zip:
                 windows_additional_bin_files += ['liblzma%s' % shlib_ext]
                 bin_root = os.path.join(install_dir, 'bin')
-                prebuild_dir = self.merge_out_path('lzma', 'lib', 'windows-x86_64', 'liblzma.dll')
+                prebuild_dir = self.merge_install_dir('lzma', 'windows-x86_64', 'lib', 'liblzma.dll')
                 shutil.copyfile(prebuild_dir, os.path.join(bin_root, 'liblzma.dll'))
 
             new_necessary_bin_files = list(set(necessary_bin_files) - set(windows_forbidden_list_bin_files))
@@ -2834,6 +2861,25 @@ class LlvmPackage(BuildUtils):
 
             self.check_copy_file(libxml2_src, lib_dst_path)
 
+    def copy_lzma_to_llvm(self, platform_triple, install_dir):
+        self.logger().info('copy_lzma_to_llvm install_dir is %s', install_dir)
+
+        if self.host_is_darwin():
+            shlib_ext = [f'.{self.build_config.LZMA_VERSION}.dylib']
+        if self.host_is_linux():
+            shlib_ext = ['.so']
+        if platform_triple.startswith("windows"):
+            shlib_ext = ['.dll']
+        lzma_file = [self.merge_install_dir('lzma', platform_triple, 'lib',
+                                           f'liblzma{ext}') for ext in shlib_ext]
+
+        lib_dst_path = os.path.join(install_dir, 'lib')
+        if not os.path.exists(lib_dst_path):
+            os.makedirs(lib_dst_path)
+
+        for file in lzma_file:
+            self.check_copy_file(file, lib_dst_path)
+
     # Packing Operation.
 
     def package_operation(self, build_dir, host):
@@ -2986,7 +3032,7 @@ def main():
     if build_config.LZMA_VERSION is None:
         raise Exception('Lzma version information not found, please check if the 7zVersion.h file exists')
     if build_config.enable_lzma_7zip:
-        llvm_libs.build_lzma(llvm_make, llvm_install)
+        llvm_libs.build_lzma(llvm_make, llvm_install, build_utils.use_platform())
 
     build_config.LIBEDIT_VERSION = build_utils.get_libedit_version()
     if build_config.LIBEDIT_VERSION is None:
@@ -3106,22 +3152,7 @@ def main():
         if build_config.enable_lzma_7zip:
             build_utils.logger().info('build windows lzma')
             target_triple = 'windows-x86_64'
-            build_dir = build_utils.merge_out_path('lzma')
-            build_utils.check_create_dir(build_dir)
-            clang_path = build_utils.merge_out_path('llvm-install', 'bin', 'clang')
-            src_dir = os.path.abspath(os.path.join(build_config.REPOROOT_DIR, 'third_party', 'lzma', 'C'))
-            windows_sysroot = build_utils.merge_out_path('mingw', build_config.MINGW_TRIPLE)
-            cmd = [ 'make',
-                    'install',
-                    'CC=%s' % clang_path,
-                    'SRC_PREFIX=%s/' % src_dir,
-                    'SYSROOT=%s' % windows_sysroot,
-                    'TARGET_TRIPLE=%s' % target_triple,
-                    'INSTALL_DIR=%s' % build_dir,
-                    '-f',
-                    'MakeLiblzma']
-            os.chdir(build_config.LLVM_BUILD_DIR)
-            build_utils.check_call(cmd)
+            llvm_libs.build_lzma(build_utils.merge_out_path(target_triple), windows64_install, target_triple)
 
         llvm_core.llvm_compile_for_windows(build_config.TARGETS,
                                           build_config.enable_assertions,
