@@ -3493,6 +3493,24 @@ attributes.
   }];
 }
 
+// OHOS_LOCAL begin
+def OptimizeDocs : Documentation {
+  let Category = DocCatFunction;
+  let Content = [{
+The ``optimize`` attribute, when attached to a function, indicates that the
+function should be compiled with a different optimization level than specified
+on the command line. See the Function Attributes documentation on GCC's docs for
+more information. Currently, the attribute differs from GCC in that Clang only
+supports one argument, doesn't support ``-f`` arguments, and also doesn't
+support expressions or integers as arguments. Clang does not intend to fully
+support the GCC semantics. Optimization attributes only "omit-frame-pointer/no-omit-frame-pointer"
+are supported.
+
+Refer to: https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
+  }];
+}
+// OHOS_LOCAL end
+
 def LoopHintDocs : Documentation {
   let Category = DocCatStmt;
   let Heading = "#pragma clang loop";
