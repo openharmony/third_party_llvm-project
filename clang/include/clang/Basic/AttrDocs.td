@@ -1369,6 +1369,22 @@ def PacPtrTagDocs : Documentation {
 The ``pac_protected_ptr`` attribute asks the compiler to protect the struct pointer type field with PA
   }];
 }
+
+def PacExclTagDocs : Documentation {
+  let Category = DocCatField;
+  let Content = [{
+The ``pac_excl`` attribute asks the compiler to protect the struct field with PA
+by exclusive load/store instructions
+  }];
+}
+
+def PacSeqlTagDocs : Documentation {
+  let Category = DocCatField;
+  let Content = [{
+The ``pac_seql`` attribute asks the compiler to protect the struct field with PA
+by seqlock method
+  }];
+}
 // OHOS_LOCAL end
 
 def ObjCRequiresSuperDocs : Documentation {
