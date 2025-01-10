@@ -51,5 +51,5 @@ int main(void) {
   void * volatile res2 = malloc(100000);
   pthread_create(&t, 0, ThreadFn, 0);
   pthread_join(t, 0);
-  return (int)(size_t)res;
+  return 0; // OHOS_LOCAL
 }
