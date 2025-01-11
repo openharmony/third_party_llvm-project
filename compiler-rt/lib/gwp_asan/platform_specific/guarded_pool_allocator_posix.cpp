@@ -99,6 +99,10 @@ size_t GuardedPoolAllocator::getPlatformPageSize() {
   return sysconf(_SC_PAGESIZE);
 }
 
+#if defined(__OHOS__)
+    extern "C" GWP_ASAN_WEAK int pthread_atfork_for_gwpasan(void (*)(void), void (*)(void), void (*)(void));
+#endif
+
 void GuardedPoolAllocator::installAtFork() {
   auto Disable = []() {
     if (auto *S = getSingleton())
@@ -109,6 +113,8 @@ void GuardedPoolAllocator::installAtFork() {
       S->enable();
   };
 #if defined(__OHOS__)
+  Check(pthread_atfork_for_gwpasan,
+        "No implement for pthread_atfork_for_gwpasan");
   // We need to run the gwpasan handler to unlock first after the fork,
   // otherwise other handlers may call gwpasan malloc to cause a deadlock.
   // This interface will let the gwpasan handler to be executed first after the fork.
