@@ -86,3 +86,8 @@ HWASAN_FLAG(bool, malloc_bisect_dump, false,
 // are untagged before the call.
 HWASAN_FLAG(bool, fail_without_syscall_abi, true,
             "Exit if fail to request relaxed syscall ABI.")
+
+HWASAN_FLAG(
+    bool, print_uaf_stacks_with_same_tag, true,
+    "Control the output content of use-after-free, deciding whether to print "
+    "all stack traces of matched allocations with the same tag restriction.")
