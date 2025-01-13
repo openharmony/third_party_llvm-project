@@ -53,6 +53,11 @@ HWASAN_FLAG(int, heap_history_size, 1023,
           "The number of heap (de)allocations remembered per thread. "
           "Affects the quality of heap-related reports, but not the ability "
           "to find bugs.")
+HWASAN_FLAG(
+    int, heap_history_size_main_thread, 102300,
+    "The number of heap (de)allocations remembered for the main thread. "
+    "Affects the quality of heap-related reports, but not the ability "
+    "to find bugs.")
 HWASAN_FLAG(bool, export_memory_stats, true,
             "Export up-to-date memory stats through /proc")
 HWASAN_FLAG(int, stack_history_size, 1024,

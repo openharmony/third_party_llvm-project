@@ -44,7 +44,8 @@ void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
   static atomic_uint64_t unique_id;
   unique_id_ = atomic_fetch_add(&unique_id, 1, memory_order_relaxed);
 
-  if (auto sz = flags()->heap_history_size)
+  if (auto sz = IsMainThread() ? flags()->heap_history_size_main_thread
+                               : flags()->heap_history_size)
     heap_allocations_ = HeapAllocationsRingBuffer::New(sz);
 
 #if !SANITIZER_FUCHSIA
