@@ -393,6 +393,12 @@ void PrintAddressDescription(
            chunk.IsAllocated() ? "allocated" : "unallocated",
            size, untagged_addr - beg,
            d.Default());
+    if (chunk.IsAllocated() && chunk.GetAllocStackId()) {
+      Printf("%s", d.Allocation());
+      Printf("Currently allocated here:\n");
+      Printf("%s", d.Default());
+      GetStackTraceFromId(chunk.GetAllocStackId()).Print();
+    }
   }
 
   tag_t addr_tag = GetTagFromPointer(tagged_addr);
