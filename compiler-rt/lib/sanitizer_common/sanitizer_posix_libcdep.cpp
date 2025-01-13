@@ -36,6 +36,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#if SANITIZER_OHOS
+#include <sigchain.h>
+#endif
+
 #if SANITIZER_FREEBSD
 // The MAP_NORESERVE define has been removed in FreeBSD 11.x, and even before
 // that, it was never implemented.  So just define it to zero.
@@ -195,6 +199,7 @@ static void MaybeInstallSigaction(int signum,
                                   SignalHandlerType handler) {
   if (GetHandleSignalMode(signum) == kHandleSignalNo) return;
 
+#if !SANITIZER_OHOS
   struct sigaction sigact;
   internal_memset(&sigact, 0, sizeof(sigact));
   sigact.sa_sigaction = (sa_sigaction_t)handler;
@@ -204,6 +209,18 @@ static void MaybeInstallSigaction(int signum,
   if (common_flags()->use_sigaltstack) sigact.sa_flags |= SA_ONSTACK;
   CHECK_EQ(0, internal_sigaction(signum, &sigact, nullptr));
   VReport(1, "Installed the sigaction for signal %d\n", signum);
+#else
+  typedef bool (*sc)(int, siginfo_t *, void *);
+  sc h = (sc)handler;
+  struct signal_chain_action sigchain = {
+      .sca_sigaction = h,
+      .sca_mask = {},
+      .sca_flags = SA_SIGINFO | SA_NODEFER,
+  };
+  // This is a void function for OHOS. When there are too many registered
+  // functions, an internal error is reported. CHECK is not required.
+  add_special_signal_handler(signum, &sigchain);
+#endif
 }
 
 void InstallDeadlySignalHandlers(SignalHandlerType handler) {
