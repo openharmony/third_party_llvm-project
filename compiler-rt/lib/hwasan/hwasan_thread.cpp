@@ -47,7 +47,7 @@ void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
   if (auto sz = IsMainThread() ? flags()->heap_history_size_main_thread
                                : flags()->heap_history_size)
     heap_allocations_ = HeapAllocationsRingBuffer::New(sz);
-
+  trace_heap_allocation_ = true;
 #if !SANITIZER_FUCHSIA
   // Do not initialize the stack ring buffer just yet on Fuchsia. Threads will
   // be initialized before we enter the thread itself, so we will instead call

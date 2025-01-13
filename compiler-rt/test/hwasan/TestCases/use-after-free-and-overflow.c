@@ -58,4 +58,4 @@ int main(int argc, char **argv) {
 
 // CHECK-NOT: Cause: heap-buffer-overflow
 // CHECK: Cause: use-after-free
-// CHECK-NOT: Cause: heap-buffer-overflow
+// CHECK: Cause: heap-buffer-overflow

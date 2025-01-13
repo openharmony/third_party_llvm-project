@@ -61,6 +61,10 @@ class Thread {
   void DisableTagging() { tagging_disabled_++; }
   void EnableTagging() { tagging_disabled_--; }
 
+  void EnableTracingHeapAllocation() { trace_heap_allocation_ = true; }
+  void DisableTracingHeapAllocation() { trace_heap_allocation_ = false; }
+  bool AllowTracingHeapAllocation() { return trace_heap_allocation_; }
+
   u64 unique_id() const { return unique_id_; }
   void Announce() {
     if (announced_) return;
@@ -96,6 +100,8 @@ class Thread {
   bool announced_;
 
   bool random_state_inited_;  // Whether InitRandomState() has been called.
+
+  bool trace_heap_allocation_;
 
   friend struct ThreadListHead;
 };
