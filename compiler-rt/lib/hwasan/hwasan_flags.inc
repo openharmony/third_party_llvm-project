@@ -107,3 +107,7 @@ HWASAN_FLAG(int, heap_record_min, 0,
 HWASAN_FLAG(int, heap_record_max, 0,
             "Only recording the heap memory allocation information that is <= "
             "heap_record_max.")
+
+HWASAN_FLAG(int, memory_around_register_size, 128,
+            "When reporting, the memory content of the address in register "
+            "±memory_around_register_size is printed.")

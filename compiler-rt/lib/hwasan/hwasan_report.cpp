@@ -773,10 +773,56 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
 
   PrintTagsAroundAddr(tag_ptr);
 
-  if (registers_frame)
+  if (registers_frame) {
     ReportRegisters(registers_frame, pc);
+    ReportMemoryNearRegisters(registers_frame, pc);
+  }
 
   ReportErrorSummary(bug_type, stack);
+}
+
+void PrintMemoryAroundAddress(MemoryMappingLayout &proc_maps, int reg_num,
+                              uptr addr, uptr len, bool is_pc) {
+  const sptr kBufSize = 4095;
+  char *filename = (char *)MmapOrDie(kBufSize, __func__);
+  MemoryMappedSegment segment(filename, kBufSize);
+  while (proc_maps.Next(&segment)) {
+    if (segment.start <= addr && addr < segment.end && segment.IsReadable()) {
+      if (!is_pc) {
+        if (reg_num < 31)
+          Printf("x%d(%s):\n", reg_num, segment.filename);
+        else
+          Printf("sp(%s):\n", segment.filename);
+      } else {
+        Printf("pc(%s):\n", segment.filename);
+      }
+      uptr beg = RoundDownTo(addr - (addr < len ? addr : len), 8);
+      if (segment.start > beg)
+        beg = segment.start;
+      uptr end = RoundUpTo(addr + len, 8);
+      if (segment.end < end)
+        end = segment.end;
+      for (uptr pos = beg; pos < end; pos += 8) {
+        if (pos <= addr && addr < pos + 8)
+          Printf("==>\t\t%p %016llx\n", pos, *(uptr *)(pos));
+        else
+          Printf("\t\t%p %016llx\n", pos, *(uptr *)(pos));
+      }
+      break;
+    }
+  }
+}
+
+void ReportMemoryNearRegisters(uptr *frame, uptr pc) {
+  Printf("Memory near registers:\n");
+  MemoryMappingLayout proc_maps(/*cache_enabled*/ true);
+  for (int i = 0; i <= 31; ++i) {
+    PrintMemoryAroundAddress(proc_maps, i, UntagAddr(frame[i]),
+                             flags()->memory_around_register_size);
+    proc_maps.Reset();
+  }
+  PrintMemoryAroundAddress(proc_maps, -1, pc,
+                           flags()->memory_around_register_size, true);
 }
 
 // See the frame breakdown defined in __hwasan_tag_mismatch (from
