@@ -83,6 +83,14 @@ class HwasanThreadList {
     ring_buffer_size_ = RingBufferSize();
     thread_alloc_size_ =
         RoundUpTo(ring_buffer_size_ + sizeof(Thread), ring_buffer_size_ * 2);
+    freed_rb_fallback_ =
+      HeapAllocationsRingBuffer::New(flags()->heap_history_size_main_thread);
+
+    freed_rb_list_ = nullptr;
+    freed_rb_list_size_ = 0;
+    freed_rb_count_ = 0;
+    freed_rb_count_overflow_ = 0;
+    trace_heap_allocation_ = true;
   }
 
   Thread *CreateCurrentThread(const Thread::InitState *state = nullptr) {
@@ -127,7 +135,53 @@ class HwasanThreadList {
     CHECK(0 && "thread not found in live list");
   }
 
+  void AddFreedRingBuffer(Thread *t) {
+    if (t->heap_allocations() == nullptr ||
+        t->heap_allocations()->realsize() == 0)
+      return;
+
+    SpinMutexLock l(&freed_rb_mutex_);
+    if (!freed_rb_list_) {
+      size_t sz = flags()->freed_threads_history_size *
+                  sizeof(HeapAllocationsRingBuffer *);
+      freed_rb_list_ = reinterpret_cast<HeapAllocationsRingBuffer **>(
+          MmapOrDie(sz, "FreedRingBufferList"));
+      if (UNLIKELY(freed_rb_list_ == nullptr)) {
+        return;
+      }
+    }
+    if (freed_rb_list_size_ >= flags()->freed_threads_history_size) {
+      auto sz = flags()->freed_threads_history_size / 3;
+      for (uptr i = 0; i < sz; i++) {
+        if (freed_rb_list_[i])
+          freed_rb_list_[i]->Delete();
+      }
+      auto left = flags()->freed_threads_history_size - sz;
+      for (uptr i = 0; i < left; i++) {
+        freed_rb_list_[i] = freed_rb_list_[i + sz];
+      }
+      freed_rb_list_size_ = left;
+    }
+    HeapAllocationsRingBuffer *freed_allocations_;
+    freed_allocations_ = HeapAllocationsRingBuffer::New(
+        t->IsMainThread() ? flags()->heap_history_size_main_thread
+                          : flags()->heap_history_size);
+
+    HeapAllocationsRingBuffer *rb = t->heap_allocations();
+    for (uptr i = 0, size = rb->realsize(); i < size; i++) {
+      HeapAllocationRecord h = (*rb)[i];
+      freed_allocations_->push({h.tagged_addr, h.alloc_context_id,
+                                h.free_context_id, h.requested_size});
+    }
+    freed_rb_list_[freed_rb_list_size_] = freed_allocations_;
+    freed_rb_list_size_++;
+    freed_rb_count_++;
+    if (freed_rb_count_ == 0)
+      freed_rb_count_overflow_++;
+  }
+
   void ReleaseThread(Thread *t) {
+    AddFreedRingBuffer(t);
     RemoveThreadStats(t);
     t->Destroy();
     DontNeedThread(t);
@@ -154,6 +208,26 @@ class HwasanThreadList {
     for (Thread *t : live_list_) cb(t);
   }
 
+  template <class CB>
+  void VisitAllFreedRingBuffer(CB cb) {
+    DisableTracingHeapAllocation();
+    SpinMutexLock l(&freed_rb_mutex_);
+    for (size_t i = 0; i < freed_rb_list_size_; i++) {
+      cb(freed_rb_list_[i]);
+    }
+    if (freed_rb_fallback_)
+      cb(freed_rb_fallback_);
+    EnableTracingHeapAllocation();
+  }
+
+  void PrintFreedRingBufferSummary(void) {
+    SpinMutexLock l(&freed_rb_mutex_);
+    Printf("freed thread count: %llu, overflow %llu, %zd left\n",
+           freed_rb_count_, freed_rb_count_overflow_, freed_rb_list_size_);
+    if (freed_rb_fallback_)
+      Printf("fallback count: %llu\n", freed_rb_fallback_->realsize());
+  }
+
   void AddThreadStats(Thread *t) {
     SpinMutexLock l(&stats_mutex_);
     stats_.n_live_threads++;
@@ -172,6 +246,16 @@ class HwasanThreadList {
   }
 
   uptr GetRingBufferSize() const { return ring_buffer_size_; }
+
+  void RecordFallBack(HeapAllocationRecord h) {
+    SpinMutexLock l(&freed_rb_mutex_);
+    if (freed_rb_fallback_)
+      freed_rb_fallback_->push(h);
+  }
+
+  void EnableTracingHeapAllocation() { trace_heap_allocation_ = true; }
+  void DisableTracingHeapAllocation() { trace_heap_allocation_ = false; }
+  bool AllowTracingHeapAllocation() { return trace_heap_allocation_; }
 
  private:
   Thread *AllocThread() {
@@ -194,6 +278,14 @@ class HwasanThreadList {
   InternalMmapVector<Thread *> free_list_;
   SpinMutex live_list_mutex_;
   InternalMmapVector<Thread *> live_list_;
+
+  SpinMutex freed_rb_mutex_;
+  HeapAllocationsRingBuffer **freed_rb_list_;
+  HeapAllocationsRingBuffer *freed_rb_fallback_;
+  size_t freed_rb_list_size_;
+  u64 freed_rb_count_;
+  u64 freed_rb_count_overflow_;
+  bool trace_heap_allocation_;
 
   ThreadStats stats_;
   SpinMutex stats_mutex_;

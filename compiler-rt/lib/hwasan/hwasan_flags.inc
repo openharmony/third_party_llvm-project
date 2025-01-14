@@ -92,6 +92,12 @@ HWASAN_FLAG(
     "Control the output content of use-after-free, deciding whether to print "
     "all stack traces of matched allocations with the same tag restriction.")
 
+// Heap allocation information for freed threads
+HWASAN_FLAG(uptr, freed_threads_history_size, 100,
+            "The number of freed threads can be recorded.")
+HWASAN_FLAG(bool, verbose_freed_threads, false,
+            "Print the heap allocation information of freed threads.")
+
 // Limits the size of the heap memory allocated to be recorded in order to
 // reduce the data. As a result, information may be missing. By default, the
 // minimum/maximum threshold is not set.

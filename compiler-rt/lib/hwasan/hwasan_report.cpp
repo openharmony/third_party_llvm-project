@@ -475,6 +475,41 @@ void PrintAddressDescription(
     t->EnableTracingHeapAllocation();
   });
 
+  auto PrintUAFinFreedThread = [&](HeapAllocationRecord &har) {
+    uptr ha_untagged_addr = UntagAddr(har.tagged_addr);
+    Printf(
+        "%p (Previously freed thread ptr tags: %02x) is located %zd "
+        "bytes inside of %zd-byte region [%p,%p)\n",
+        untagged_addr, GetTagFromPointer(har.tagged_addr),
+        untagged_addr - ha_untagged_addr, har.requested_size, ha_untagged_addr,
+        ha_untagged_addr + har.requested_size);
+    Printf("freed by thread %d here:\n", har.free_thread);
+    GetStackTraceFromId(har.free_context_id).Print();
+    Printf("previously allocated by thread %d here:\n", har.alloc_thread);
+    GetStackTraceFromId(har.alloc_context_id).Print();
+    num_descriptions_printed++;
+  };
+  hwasanThreadList().VisitAllFreedRingBuffer(
+      [&](HeapAllocationsRingBuffer *rb) {
+        for (uptr i = 0, size = rb->realsize(); i < size; i++) {
+          auto har = (*rb)[i];
+          record_searched++;
+          if (flags()->print_uaf_stacks_with_same_tag) {
+            if (har.tagged_addr <= tagged_addr &&
+                har.tagged_addr + har.requested_size > tagged_addr) {
+              record_matched++;
+              PrintUAFinFreedThread(har);
+            }
+          } else {
+            if (UntagAddr(har.tagged_addr) <= untagged_addr &&
+                UntagAddr(har.tagged_addr) + har.requested_size >
+                    untagged_addr) {
+              record_matched++;
+              PrintUAFinFreedThread(har);
+            }
+          }
+        }
+      });
   Printf("Searched %lu records, find %lu with same addr %p\n\n",
          record_searched, record_matched, untagged_addr);
   if (!on_stack && candidate) {
@@ -484,6 +519,14 @@ void PrintAddressDescription(
 
   // Print the remaining threads, as an extra information, 1 line per thread.
   hwasanThreadList().VisitAllLiveThreads([&](Thread *t) { t->Announce(); });
+  hwasanThreadList().PrintFreedRingBufferSummary();
+  if (flags()->verbose_freed_threads) {
+    u32 freed_idx = 0;
+    hwasanThreadList().VisitAllFreedRingBuffer(
+        [&](HeapAllocationsRingBuffer *rb) {
+          Printf("RB %u: (%zd/%zu)\n", freed_idx++, rb->realsize(), rb->size());
+        });
+  }
 
   if (!num_descriptions_printed)
     // We exhausted our possibilities. Bail out.
