@@ -10,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 #ifndef HWASAN_FLAG
-# error "Define HWASAN_FLAG prior to including this file!"
+#  error "Define HWASAN_FLAG prior to including this file!"
 #endif
 
 // HWASAN_FLAG(Type, Name, DefaultValue, Description)
@@ -38,21 +38,20 @@ HWASAN_FLAG(
     "bytes that will be filled with malloc_fill_byte on malloc.")
 
 HWASAN_FLAG(bool, free_checks_tail_magic, 1,
-    "If set, free() will check the magic values "
-    "to the right of the allocated object "
-    "if the allocation size is not a divident of the granule size")
+            "If set, free() will check the magic values "
+            "to the right of the allocated object "
+            "if the allocation size is not a divident of the granule size")
 HWASAN_FLAG(
     int, max_free_fill_size, 0,
     "HWASan allocator flag. max_free_fill_size is the maximal amount of "
     "bytes that will be filled with free_fill_byte during free.")
 HWASAN_FLAG(int, malloc_fill_byte, 0xbe,
-          "Value used to fill the newly allocated memory.")
-HWASAN_FLAG(int, free_fill_byte, 0x55,
-          "Value used to fill deallocated memory.")
+            "Value used to fill the newly allocated memory.")
+HWASAN_FLAG(int, free_fill_byte, 0x55, "Value used to fill deallocated memory.")
 HWASAN_FLAG(int, heap_history_size, 1023,
-          "The number of heap (de)allocations remembered per thread. "
-          "Affects the quality of heap-related reports, but not the ability "
-          "to find bugs.")
+            "The number of heap (de)allocations remembered per thread. "
+            "Affects the quality of heap-related reports, but not the ability "
+            "to find bugs.")
 HWASAN_FLAG(
     int, heap_history_size_main_thread, 102300,
     "The number of heap (de)allocations remembered for the main thread. "
@@ -77,7 +76,6 @@ HWASAN_FLAG(uptr, malloc_bisect_right, 0,
 HWASAN_FLAG(bool, malloc_bisect_dump, false,
             "Print all allocations within [malloc_bisect_left, "
             "malloc_bisect_right] range ")
-
 
 // Exit if we fail to enable the AArch64 kernel ABI relaxation which allows
 // tagged pointers in syscalls.  This is the default, but being able to disable
@@ -111,3 +109,15 @@ HWASAN_FLAG(int, heap_record_max, 0,
 HWASAN_FLAG(int, memory_around_register_size, 128,
             "When reporting, the memory content of the address in register "
             "±memory_around_register_size is printed.")
+
+// Set the quarantine area for freed heap, which is used to detect UAF-Write and
+// Overflow-Write. Provide the detection capability for dynamic libraries
+// compiled without hwasan option.
+HWASAN_FLAG(int, heap_quarantine_thread_max_count, 128,
+            "Set the maximum count for heap quarantine per thread.")
+HWASAN_FLAG(int, heap_quarantine_min, 0,
+            "The freed heap size should be larger than the minimum size before "
+            "it is placed into the heap quarantine.")
+HWASAN_FLAG(int, heap_quarantine_max, 0,
+            "The freed heap size should be smaller than the maximum size before "
+            "it is placed into the heap quarantine.")

@@ -56,6 +56,7 @@ void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
 #endif
   InitStackAndTls(state);
   tid_ = GetTid();
+  heap_quarantine_controller()->Init();
 }
 
 void Thread::InitStackRingBuffer(uptr stack_buffer_start,
@@ -98,6 +99,7 @@ void Thread::ClearShadowForThreadStackAndTLS() {
 void Thread::Destroy() {
   if (flags()->verbose_threads)
     Print("Destroying: ");
+  heap_quarantine_controller()->ClearHeapQuarantine(allocator_cache());
   AllocatorSwallowThreadLocalCache(allocator_cache());
   ClearShadowForThreadStackAndTLS();
   if (heap_allocations_)
@@ -153,6 +155,12 @@ tag_t Thread::GenerateRandomTag(uptr num_bits) {
     }
   } while (!tag);
   return tag;
+}
+
+bool Thread::TryPutInQuarantineWithDealloc(uptr ptr, size_t s, u32 aid,
+                                           u32 fid) {
+  return heap_quarantine_controller()->TryPutInQuarantineWithDealloc(
+      ptr, s, aid, fid, allocator_cache());
 }
 
 } // namespace __hwasan

@@ -14,6 +14,7 @@ set(HWASAN_RTL_SOURCES
   hwasan_linux.cpp
   hwasan_memintrinsics.cpp
   hwasan_poisoning.cpp
+  hwasan_quarantine.cpp
   hwasan_report.cpp
   hwasan_setjmp_aarch64.S
   hwasan_setjmp_x86_64.S
@@ -42,6 +43,7 @@ set(HWASAN_RTL_HEADERS
   hwasan_malloc_bisect.h
   hwasan_mapping.h
   hwasan_poisoning.h
+  hwasan_quarantine.h
   hwasan_report.h
   hwasan_thread.h
   hwasan_thread_list.h

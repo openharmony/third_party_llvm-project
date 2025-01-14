@@ -114,6 +114,8 @@ typedef RingBuffer<HeapAllocationRecord> HeapAllocationsRingBuffer;
 
 void GetAllocatorStats(AllocatorStatCounters s);
 
+void SimpleThreadDeallocate(void *ptr, AllocatorCache *cache);
+
 inline bool InTaggableRegion(uptr addr) {
 #if defined(HWASAN_ALIASING_MODE)
   // Aliases are mapped next to shadow so that the upper bits match the shadow

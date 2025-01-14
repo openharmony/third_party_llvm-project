@@ -14,6 +14,7 @@
 #define HWASAN_THREAD_H
 
 #include "hwasan_allocator.h"
+#include "hwasan_quarantine.h"
 #include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_ring_buffer.h"
 
@@ -78,6 +79,12 @@ class Thread {
 
   uptr &vfork_spill() { return vfork_spill_; }
 
+  HeapQuarantineController *heap_quarantine_controller() {
+    return &heap_quarantine_controller_;
+  }
+
+  bool TryPutInQuarantineWithDealloc(uptr ptr, size_t s, u32 aid, u32 fid);
+
  private:
   // NOTE: There is no Thread constructor. It is allocated
   // via mmap() and *must* be valid in zero-initialized state.
@@ -96,6 +103,8 @@ class Thread {
   AllocatorCache allocator_cache_;
   HeapAllocationsRingBuffer *heap_allocations_;
   StackAllocationsRingBuffer *stack_allocations_;
+
+  HeapQuarantineController heap_quarantine_controller_;
 
   u64 unique_id_;  // counting from zero.
 
