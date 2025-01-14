@@ -125,6 +125,13 @@ inline __lsan::ChunkTag Metadata::GetLsanTag() const {
   return static_cast<__lsan::ChunkTag>(lsan_tag);
 }
 
+// OHOS_LOCAL begin
+void SimpleThreadDeallocate(void *ptr, AllocatorCache *cache) {
+  CHECK(ptr);
+  CHECK(cache);
+  allocator.Deallocate(cache, ptr);
+}
+
 uptr GetAliasRegionStart() {
 #if defined(HWASAN_ALIASING_MODE)
   constexpr uptr kAliasRegionOffset = 1ULL << (kTaggableRegionCheckShift - 1);
@@ -349,7 +356,11 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
 
   int aid = meta->thread_id;
   if (t) {
-    allocator.Deallocate(t->allocator_cache(), aligned_ptr);
+    if (!t->TryPutInQuarantineWithDealloc(reinterpret_cast<uptr>(aligned_ptr),
+                                          TaggedSize(orig_size),
+                                          alloc_context_id, free_context_id)) {
+      allocator.Deallocate(t->allocator_cache(), aligned_ptr);
+    }
     if (t->AllowTracingHeapAllocation()) {
       if (auto *ha = t->heap_allocations()) {
         if ((flags()->heap_record_max == 0 ||
