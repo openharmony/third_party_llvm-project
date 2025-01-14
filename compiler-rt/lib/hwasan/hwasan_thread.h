@@ -48,6 +48,13 @@ class Thread {
   uptr tls_end() { return tls_end_; }
   bool IsMainThread() { return unique_id_ == 0; }
 
+  void inc_record(void) {
+    all_record_count_++;
+    if (all_record_count_ == 0) {
+      all_record_count_overflow_++;
+    }
+  }
+
   bool AddrIsInStack(uptr addr) {
     return addr >= stack_bottom_ && addr < stack_top_;
   }
@@ -101,6 +108,9 @@ class Thread {
   bool trace_heap_allocation_;
 
   int tid_ = -1;  // Thread ID
+
+  u64 all_record_count_ = 0;  // Count record
+  u64 all_record_count_overflow_ = 0;  // Whether all_record_count_ overflow.
 
   friend struct ThreadListHead;
 };
