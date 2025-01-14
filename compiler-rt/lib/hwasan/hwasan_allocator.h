@@ -40,6 +40,7 @@ struct Metadata {
   u8 lsan_tag;
 
  public:
+  int thread_id;
   inline void SetAllocated(u32 stack, u64 size);
   inline void SetUnallocated();
 
@@ -49,7 +50,7 @@ struct Metadata {
   inline void SetLsanTag(__lsan::ChunkTag tag);
   inline __lsan::ChunkTag GetLsanTag() const;
 };
-static_assert(sizeof(Metadata) == 16);
+static_assert(sizeof(Metadata) == 24);
 
 struct HwasanMapUnmapCallback {
   void OnMap(uptr p, uptr size) const { UpdateMemoryUsage(); }
@@ -97,6 +98,7 @@ class HwasanChunkView {
   bool FromSmallHeap() const;
   bool AddrIsInside(uptr addr) const;
 
+  int AllocatedByThread() const;
  private:
   friend class __lsan::LsanMetadata;
   uptr block_;
@@ -114,6 +116,8 @@ struct HeapAllocationRecord {
   u32  alloc_context_id;
   u32  free_context_id;
   u32  requested_size;
+  int  alloc_thread;
+  int  free_thread;
 };
 
 typedef RingBuffer<HeapAllocationRecord> HeapAllocationsRingBuffer;

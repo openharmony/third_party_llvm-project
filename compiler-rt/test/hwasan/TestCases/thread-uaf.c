@@ -28,12 +28,12 @@ void *Deallocate(void *arg) {
 void *Use(void *arg) {
   x[5] = 42;
   // CHECK: ERROR: HWAddressSanitizer: tag-mismatch on address
-  // CHECK: WRITE of size 1 {{.*}} in thread T3
+  // CHECK: WRITE of size 1 {{.*}} in thread {{.*}}
   // CHECK: thread-uaf.c:[[@LINE-3]]
   // CHECK: Cause: use-after-free
-  // CHECK: freed by thread T2 here
+  // CHECK: freed by thread {{.*}} here
   // CHECK: in Deallocate
-  // CHECK: previously allocated here:
+  // CHECK: previously allocated by thread {{.*}} here:
   // CHECK: in Allocate
   // CHECK-DAG: Thread: T2 0x
   // CHECK-DAG: Thread: T3 0x

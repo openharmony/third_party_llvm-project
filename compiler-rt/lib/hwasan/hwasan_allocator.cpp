@@ -50,6 +50,12 @@ bool HwasanChunkView::IsAllocated() const {
   return metadata_ && metadata_->IsAllocated();
 }
 
+int HwasanChunkView::AllocatedByThread() const {
+  if (metadata_)
+    return metadata_->thread_id;
+  return -1;
+}
+
 uptr HwasanChunkView::Beg() const {
   return block_;
 }
@@ -193,6 +199,12 @@ static void *HwasanAllocate(StackTrace *stack, uptr orig_size, uptr alignment,
       return nullptr;
     ReportOutOfMemory(size, stack);
   }
+  Metadata *meta =
+      reinterpret_cast<Metadata *>(allocator.GetMetaData(allocated));
+  if (t)
+    meta->thread_id = t->tid();
+  else
+    meta->thread_id = -1;
   if (zeroise) {
     internal_memset(allocated, 0, size);
   } else if (flags()->max_malloc_fill_size > 0) {
@@ -232,8 +244,6 @@ static void *HwasanAllocate(StackTrace *stack, uptr orig_size, uptr alignment,
     }
   }
 
-  Metadata *meta =
-      reinterpret_cast<Metadata *>(allocator.GetMetaData(allocated));
 #if CAN_SANITIZE_LEAKS
   meta->SetLsanTag(__lsan::DisabledInThisThread() ? __lsan::kIgnored
                                                   : __lsan::kDirectlyLeaked);
@@ -335,6 +345,8 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
     TagMemoryAligned(reinterpret_cast<uptr>(aligned_ptr), TaggedSize(orig_size),
                      tag);
   }
+
+  int aid = meta->thread_id;
   if (t) {
     allocator.Deallocate(t->allocator_cache(), aligned_ptr);
     if (t->AllowTracingHeapAllocation()) {
@@ -344,7 +356,7 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
             (flags()->heap_record_min == 0 ||
             orig_size >= flags()->heap_record_min)) {
           ha->push({reinterpret_cast<uptr>(tagged_ptr), alloc_context_id,
-                    free_context_id, static_cast<u32>(orig_size)});
+                    free_context_id, static_cast<u32>(orig_size), aid, t->tid()});
         }
       }
     }

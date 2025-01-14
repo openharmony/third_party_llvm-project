@@ -57,6 +57,7 @@ void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
 #endif
   InitStackAndTls(state);
   dtls_ = DTLS_Get();
+  tid_ = GetTid();
 }
 
 void Thread::InitStackRingBuffer(uptr stack_buffer_start,
@@ -113,9 +114,9 @@ void Thread::Destroy() {
 }
 
 void Thread::Print(const char *Prefix) {
-  Printf("%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p)\n", Prefix, unique_id_,
-         (void *)this, stack_bottom(), stack_top(),
-         stack_top() - stack_bottom(), tls_begin(), tls_end());
+  Printf("%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p) tid: %d\n", Prefix,
+         unique_id_, (void *)this, stack_bottom(), stack_top(),
+         stack_top() - stack_bottom(), tls_begin(), tls_end(), tid_);
 }
 
 static u32 xorshift(u32 state) {
