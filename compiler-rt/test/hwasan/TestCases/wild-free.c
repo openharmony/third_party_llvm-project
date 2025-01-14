@@ -7,7 +7,7 @@ int main() {
   __hwasan_enable_allocator_tagging();
   char *p = (char *)malloc(1);
   free(p + 0x10000000000);
-  // CHECK: ERROR: HWAddressSanitizer: invalid-free on address {{.*}} at pc {{[0x]+}}[[PC:.*]] on thread T{{[0-9]+}}
+  // CHECK: ERROR: HWAddressSanitizer: invalid-free on address {{.*}} at pc {{[0x]+}}[[PC:.*]] on thread {{.*}}
   // CHECK: #0 {{[0x]+}}{{.*}}[[PC]] in {{.*}}free
   // CHECK: #1 {{.*}} in main {{.*}}wild-free.c:[[@LINE-3]]
   // CHECK-NOT: Segmentation fault

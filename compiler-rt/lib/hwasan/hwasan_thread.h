@@ -66,11 +66,8 @@ class Thread {
   bool AllowTracingHeapAllocation() { return trace_heap_allocation_; }
 
   u64 unique_id() const { return unique_id_; }
-  void Announce() {
-    if (announced_) return;
-    announced_ = true;
-    Print("Thread: ");
-  }
+  int tid() const { return tid_; }
+  void Announce() { Print("Thread: "); }
 
   uptr &vfork_spill() { return vfork_spill_; }
 
@@ -102,6 +99,8 @@ class Thread {
   bool random_state_inited_;  // Whether InitRandomState() has been called.
 
   bool trace_heap_allocation_;
+
+  int tid_ = -1;  // Thread ID
 
   friend struct ThreadListHead;
 };

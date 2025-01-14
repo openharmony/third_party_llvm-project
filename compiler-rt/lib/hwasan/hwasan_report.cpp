@@ -347,12 +347,13 @@ void PrintAddressDescription(
   if (uptr beg = chunk.Beg()) {
     uptr size = chunk.ActualSize();
     Printf("%s[%p,%p) is a %s %s heap chunk; "
-           "size: %zd offset: %zd\n%s",
+           "size: %zd offset: %zd, Allocated By %u\n%s",
            d.Location(),
            beg, beg + size,
            chunk.FromSmallHeap() ? "small" : "large",
            chunk.IsAllocated() ? "allocated" : "unallocated",
            size, untagged_addr - beg,
+           chunk.AllocatedByThread(),
            d.Default());
     if (chunk.IsAllocated() && chunk.GetAllocStackId()) {
       Printf("%s", d.Allocation());
@@ -375,8 +376,8 @@ void PrintAddressDescription(
       Printf("%s", d.Error());
       Printf("\nCause: stack tag-mismatch\n");
       Printf("%s", d.Location());
-      Printf("Address %p is located in stack of thread T%zd\n", untagged_addr,
-             t->unique_id());
+      Printf("Address %p is located in stack of thread %d\n", untagged_addr,
+             t->tid());
       Printf("%s", d.Default());
       t->Announce();
 
@@ -430,18 +431,19 @@ void PrintAddressDescription(
         untagged_addr - ha_untagged_addr, har.requested_size, ha_untagged_addr,
         ha_untagged_addr + har.requested_size);
     Printf("%s", d.Allocation());
-    Printf("freed by thread T%zd here:\n", t->unique_id());
+    Printf("freed by thread %d here:\n", t->tid());
     Printf("%s", d.Default());
     GetStackTraceFromId(har.free_context_id).Print();
 
     Printf("%s", d.Allocation());
-    Printf("previously allocated here:\n", t);
+    Printf("previously allocated by thread %d here:\n", har.alloc_thread);
     Printf("%s", d.Default());
     GetStackTraceFromId(har.alloc_context_id).Print();
-    t->Announce();
+
     Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ring_index + 1,
            t->IsMainThread() ? flags()->heap_history_size_main_thread
                              : flags()->heap_history_size);
+    t->Announce();
     num_descriptions_printed++;
   };
   u64 record_searched = 0;
@@ -571,8 +573,8 @@ void ReportInvalidFree(StackTrace *stack, uptr tagged_addr) {
   const char *bug_type = "invalid-free";
   const Thread *thread = GetCurrentThread();
   if (thread) {
-    Report("ERROR: %s: %s on address %p at pc %p on thread T%zd\n",
-           SanitizerToolName, bug_type, untagged_addr, pc, thread->unique_id());
+    Report("ERROR: %s: %s on address %p at pc %p on thread %d\n",
+           SanitizerToolName, bug_type, untagged_addr, pc, thread->tid());
   } else {
     Report("ERROR: %s: %s on address %p at pc %p on unknown thread\n",
            SanitizerToolName, bug_type, untagged_addr, pc);
@@ -708,13 +710,13 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
       }
     }
     Printf(
-        "%s of size %zu at %p tags: %02x/%02x(%02x) (ptr/mem) in thread T%zd\n",
+        "%s of size %zu at %p tags: %02x/%02x(%02x) (ptr/mem) in thread %d\n",
         is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
-        mem_tag, short_tag, t->unique_id());
+        mem_tag, short_tag, t->tid());
   } else {
-    Printf("%s of size %zu at %p tags: %02x/%02x (ptr/mem) in thread T%zd\n",
+    Printf("%s of size %zu at %p tags: %02x/%02x (ptr/mem) in thread %d\n",
            is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
-           mem_tag, t->unique_id());
+           mem_tag, t->tid());
   }
   if (offset != 0)
     Printf("Invalid access starting at offset %zu\n", offset);

@@ -35,6 +35,7 @@ struct Metadata {
   u32 requested_size_high : 31;
   u32 right_aligned : 1;
   u32 alloc_context_id;
+  int thread_id;
   u64 get_requested_size() {
     return (static_cast<u64>(requested_size_high) << 32) + requested_size_low;
   }
@@ -88,6 +89,7 @@ class HwasanChunkView {
   uptr ActualSize() const;     // Size allocated by the allocator.
   u32 GetAllocStackId() const;
   bool FromSmallHeap() const;
+  int AllocatedByThread() const;
  private:
   uptr block_;
   Metadata *const metadata_;
@@ -104,6 +106,8 @@ struct HeapAllocationRecord {
   u32  alloc_context_id;
   u32  free_context_id;
   u32  requested_size;
+  int  alloc_thread;
+  int  free_thread;
 };
 
 typedef RingBuffer<HeapAllocationRecord> HeapAllocationsRingBuffer;

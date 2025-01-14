@@ -53,6 +53,12 @@ static uptr AlignRight(uptr addr, uptr requested_size) {
   return addr + kShadowAlignment - tail_size;
 }
 
+int HwasanChunkView::AllocatedByThread() const {
+  if (metadata_)
+    return metadata_->thread_id;
+  return -1;
+}
+
 uptr HwasanChunkView::Beg() const {
   if (metadata_ && metadata_->right_aligned)
     return AlignRight(block_, metadata_->get_requested_size());
@@ -160,6 +166,10 @@ static void *HwasanAllocate(StackTrace *stack, uptr orig_size, uptr alignment,
   meta->set_requested_size(orig_size);
   meta->alloc_context_id = StackDepotPut(*stack);
   meta->right_aligned = false;
+  if (t)
+    meta->thread_id = t->tid();
+  else
+    meta->thread_id = -1;
   if (zeroise) {
     internal_memset(allocated, 0, size);
   } else if (flags()->max_malloc_fill_size > 0) {
@@ -295,6 +305,8 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
     TagMemoryAligned(reinterpret_cast<uptr>(aligned_ptr), TaggedSize(orig_size),
                      tag);
   }
+
+  int aid = meta->thread_id;
   if (t) {
     allocator.Deallocate(t->allocator_cache(), aligned_ptr);
     if (t->AllowTracingHeapAllocation()) {
@@ -304,7 +316,7 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
             (flags()->heap_record_min == 0 ||
             orig_size >= flags()->heap_record_min)) {
           ha->push({reinterpret_cast<uptr>(tagged_ptr), alloc_context_id,
-                    free_context_id, static_cast<u32>(orig_size)});
+                    free_context_id, static_cast<u32>(orig_size), aid, t->tid()});
         }
       }
     }
