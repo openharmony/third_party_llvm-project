@@ -1759,6 +1759,20 @@ def PacPtrTag : InheritableAttr {
   let Documentation = [PacPtrTagDocs];
   let SimpleHandler = 1;
 }
+
+def PacExclTag : InheritableAttr {
+  let Spellings = [GCC<"pac_excl">];
+  let Subjects = SubjectList<[Field], ErrorDiag>;
+  let Documentation = [PacExclTagDocs];
+  let SimpleHandler = 1;
+}
+
+def PacSeqlTag : InheritableAttr {
+  let Spellings = [GCC<"pac_seql">];
+  let Subjects = SubjectList<[Field], ErrorDiag>;
+  let Documentation = [PacSeqlTagDocs];
+  let SimpleHandler = 1;
+}
 // OHOS_LOCAL end
 
 def ReturnsTwice : InheritableAttr {

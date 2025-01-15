@@ -27,15 +27,80 @@ using namespace clang;
 std::map<const RecordDecl*, StringRef> RecordDecl2StructName;
 std::map<RecordDecl*, std::vector<FieldDecl*>> PacPtrNameInfos;
 std::map<RecordDecl*, std::vector<FieldDecl*>> PacFieldNameInfos;
+std::map<RecordDecl*, std::vector<FieldDecl*>> PacFieldExclNameInfos;
+std::map<RecordDecl*, std::vector<FieldDecl*>> PacFieldSeqlNameInfos;
 std::map<const RecordDecl*, llvm::StructType*> RecordDecl2StructType;
+
+bool IsBaseTypeNotArrStruct(RecordDecl *TagDecl, FieldDecl *Field, DiagnosticsEngine &Diags)
+{
+    if (Field->getType()->isConstantArrayType()) {
+        Diags.Report(Field->getLocation(), diag::warn_unsupported_pac_dfi_type) << "array"
+            << Field->getAttr<PacExclTagAttr>()->getSpelling();
+        return false;
+    }
+    return true;
+}
+
+void AppendFieldDecl(RecordDecl *TagDecl, FieldDecl *TargetField, FieldDecl *NewField)
+{
+    const RecordDecl::field_iterator TargetFieldIt = std::find(TagDecl->field_begin(), TagDecl->field_end(), TargetField);
+    if (TargetFieldIt != TagDecl->field_end()) {
+        llvm::SmallVector<FieldDecl *, 16> Fields;
+
+        for (FieldDecl *TmpFD :TagDecl->fields()) {
+            Fields.push_back(TmpFD);
+        }
+        for (FieldDecl *TmpFD : Fields) {
+            TagDecl->removeDecl(TmpFD);
+        }
+        for (FieldDecl *TmpFD : Fields) {
+            TagDecl->addDecl(TmpFD);
+            if (TmpFD == TargetField) {
+                TagDecl->addDecl(NewField);
+            }
+        }
+    }
+}
+
+void AppendPacFieldDecl(RecordDecl *TagDecl, FieldDecl *Field, ASTContext &Ctx)
+{
+    auto IntType = Ctx.getBitIntType(true, 64);
+    FieldDecl *PacFD = FieldDecl::Create(Ctx, TagDecl, SourceLocation(), SourceLocation(),
+        nullptr, IntType, nullptr, nullptr, true, ICIS_NoInit);
+    llvm::APInt PacAlign(32, 16);
+    Field->addAttr(AlignedAttr::CreateImplicit(
+        Ctx,
+        true,
+        IntegerLiteral::Create(Ctx, PacAlign, Ctx.IntTy,
+            SourceLocation()),
+        {},
+        AttributeCommonInfo::AS_GNU,
+        AlignedAttr::GNU_aligned));
+    AppendFieldDecl(TagDecl, Field, PacFD);
+}
+
+void AppendPacArrayFieldDecl(RecordDecl *TagDecl, FieldDecl *Field, unsigned ArySize, ASTContext &Ctx)
+{
+    auto Int64Ty = Ctx.getBitIntType(true, 64);
+    auto Int64ArrayTy = Ctx.getConstantArrayType(Int64Ty, llvm::APInt(64, ArySize),
+        nullptr, ArrayType::Normal, 0);
+    FieldDecl *PacArrayFD = FieldDecl::Create(Ctx, TagDecl, SourceLocation(), SourceLocation(),
+        nullptr, Int64ArrayTy, nullptr, nullptr, true, ICIS_NoInit);
+
+    AppendFieldDecl(TagDecl, Field, PacArrayFD);
+}
+
 void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &Diags)
 {
     if (!llvm::PARTS::useDataFieldTag()) {
         return;
     }
+
     // find pac_tag attr fields, and insert new fields
     std::vector<FieldDecl*> PacPtrNames;
     std::vector<FieldDecl*> PacFieldNames;
+    std::vector<FieldDecl*> PacFieldExclNames;
+    std::vector<FieldDecl*> PacFieldSeqlNames;
     unsigned int ArraySize = 0;
 
     for (auto *Field : TagDecl->fields()) {
@@ -57,6 +122,19 @@ void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &
             if (ElemTy->isStructureOrClassType()) {
                 Diags.Report(Field->getLocation(), diag::warn_unsupported_pac_dfi_type) << Field->getType()
                     << Field->getAttr<PacDataTagAttr>()->getSpelling();
+                continue;
+            }
+            if (Field->hasAttr<PacExclTagAttr>()) {
+                if (!IsBaseTypeNotArrStruct(TagDecl, Field, Diags)) {
+                    continue;
+                }
+                AppendPacFieldDecl(TagDecl, Field, Ctx);
+                PacFieldExclNames.push_back(Field);
+                continue;
+            }
+            if (Field->hasAttr<PacSeqlTagAttr>()) {
+                AppendPacArrayFieldDecl(TagDecl, Field, Inc, Ctx);
+                PacFieldSeqlNames.push_back(Field);
                 continue;
             }
             ArraySize += Inc;
@@ -84,6 +162,12 @@ void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &
     }
     if (!PacPtrNames.empty()) {
         PacPtrNameInfos.insert(std::make_pair(TagDecl, PacPtrNames));
+    }
+    if (!PacFieldExclNames.empty()) {
+        PacFieldExclNameInfos.insert(std::make_pair(TagDecl, PacFieldExclNames));
+    }
+    if (!PacFieldSeqlNames.empty()) {
+        PacFieldSeqlNameInfos.insert(std::make_pair(TagDecl, PacFieldSeqlNames));
     }
 }
 
@@ -126,6 +210,12 @@ void PacDfiEmitStructFieldsMetadata(llvm::Module &M, CodeGen::CodeGenModule *CGM
     if (!PacPtrNameInfos.empty()) {
         PacDfiCreateMetaData(PacPtrNameInfos, "pa_ptr_field_info", M, CGM, func);
     }
+    if (!PacFieldExclNameInfos.empty()) {
+        PacDfiCreateMetaData(PacFieldExclNameInfos, "pa_excl_field_info", M, CGM, func);
+    }
+    if (!PacFieldSeqlNameInfos.empty()) {
+        PacDfiCreateMetaData(PacFieldSeqlNameInfos, "pa_seql_field_info", M, CGM, func);
+    }
 }
 
 void PacDfiRecordDecl2StructName(const RecordDecl *RD, llvm::StructType *Entry)
@@ -138,3 +228,4 @@ void PacDfiRecordDecl2StructName(const RecordDecl *RD, llvm::StructType *Entry)
     }
     RecordDecl2StructName.insert(std::make_pair(RD, Entry->getName()));
 }
+

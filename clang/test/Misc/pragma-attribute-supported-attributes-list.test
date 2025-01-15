@@ -148,7 +148,9 @@
 // CHECK-NEXT: Owner (SubjectMatchRule_record_not_is_union)
 // OHOS_LOCAL begin
 // CHECK-NEXT: PacDataTag (SubjectMatchRule_field)
+// CHECK-NEXT: PacExclTag (SubjectMatchRule_field)
 // CHECK-NEXT: PacPtrTag (SubjectMatchRule_field)
+// CHECK-NEXT: PacSeqlTag (SubjectMatchRule_field)
 // OHOS_LOCAL end
 // CHECK-NEXT: ParamTypestate (SubjectMatchRule_variable_is_parameter)
 // CHECK-NEXT: PassObjectSize (SubjectMatchRule_variable_is_parameter)
