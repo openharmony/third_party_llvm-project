@@ -2624,6 +2624,7 @@ class LlvmPackage(BuildUtils):
             'llvm-cxxfilt%s' % ext,
             'llvm-dis%s' % ext,
             'llvm-dwp%s' % ext,
+            'llvm-ifs%s' % ext,
             'llvm-lib%s' % ext,
             'llvm-link%s' % ext,
             'llvm-modextract%s' % ext,
