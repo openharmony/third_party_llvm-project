@@ -2327,6 +2327,17 @@ def OptimizeNone : InheritableAttr {
   let Documentation = [OptnoneDocs];
 }
 
+// OHOS_LOCAL begin
+def Optimize : InheritableAttr {
+  let Spellings = [GCC<"optimize">];
+  let Args = [VariadicEnumArgument<"OptAttrs", "OptAttrKind",
+                                   ["omit-frame-pointer", "no-omit-frame-pointer"],
+                                   ["OmitFramePointer", "NoOmitFramePointer"]>];
+  let Subjects = SubjectList<[Function]>;
+  let Documentation = [OptimizeDocs];
+}
+// OHOS_LOCAL end
+
 def Overloadable : Attr {
   let Spellings = [Clang<"overloadable">];
   let Subjects = SubjectList<[Function], ErrorDiag>;

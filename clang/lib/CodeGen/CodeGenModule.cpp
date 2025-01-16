@@ -2160,6 +2160,21 @@ bool CodeGenModule::GetCPUAndFeaturesAttributes(GlobalDecl GD,
     llvm::StringMap<bool> FeatureMap;
     getContext().getFunctionFeatureMap(FeatureMap, GD);
 
+    // OHOS_LOCAL begin
+    auto TargetArch = getContext().getTargetInfo().getTriple().getArch();
+    // Enable aarch64 target attribute: general-regs-only
+    if (TargetArch == llvm::Triple::aarch64 ||
+        TargetArch == llvm::Triple::aarch64_be) {
+      auto EntryIt = FeatureMap.find("general-regs-only");
+      if (EntryIt != FeatureMap.end() && EntryIt->getValue()) {
+        FeatureMap["neon"] = false;
+        FeatureMap["crypto"] = false;
+        FeatureMap["fp-armv8"] = false;
+        FeatureMap["sve"] = false;
+        FeatureMap.erase("general-regs-only");
+      }
+    }
+    // OHOS_LOCAL end
     // Produce the canonical string for this set of features.
     for (const llvm::StringMap<bool>::value_type &Entry : FeatureMap)
       Features.push_back((Entry.getValue() ? "+" : "-") + Entry.getKey().str());

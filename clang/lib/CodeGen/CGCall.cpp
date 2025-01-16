@@ -1780,6 +1780,31 @@ static void AddAttributesFromAssumes(llvm::AttrBuilder &FuncAttrs,
                            llvm::join(Attrs.begin(), Attrs.end(), ","));
 }
 
+// OHOS_LOCAL begin
+static void AddAttributesFromOptimize(llvm::AttrBuilder &FuncAttrs,
+                                      const Decl *Callee) {
+  if (!Callee)
+    return;
+
+  const OptimizeAttr *OptAttrObj = Callee->getAttr<OptimizeAttr>();
+  if (!OptAttrObj)
+    return;
+
+  for (const auto &OA : OptAttrObj->optAttrs()) {
+    switch (OA) {
+    case OptimizeAttr::OmitFramePointer:
+      FuncAttrs.addAttribute("OPT-omit-frame-pointer");
+      break;
+    case OptimizeAttr::NoOmitFramePointer:
+      FuncAttrs.addAttribute("OPT-no-omit-frame-pointer");
+      break;
+    default:
+      llvm_unreachable("invalid enum");
+    }
+  }
+}
+// OHOS_LOCAL end
+
 bool CodeGenModule::MayDropFunctionReturn(const ASTContext &Context,
                                           QualType ReturnType) {
   // We can't just discard the return value for a record type with a
@@ -1832,6 +1857,13 @@ void CodeGenModule::getDefaultFunctionAttributes(StringRef Name,
       FpKind = "all";
       break;
     }
+    // OHOS_LOCAL begin
+    // optimize attr's priority is higher than command line args
+    if (FuncAttrs.contains("OPT-omit-frame-pointer"))
+      FpKind = "none";
+    if (FuncAttrs.contains("OPT-no-omit-frame-pointer"))
+      FpKind = "all";
+    // OHOS_LOCAL end
     FuncAttrs.addAttribute("frame-pointer", FpKind);
 
     if (CodeGenOpts.LessPreciseFPMAD)
@@ -2090,6 +2122,7 @@ void CodeGenModule::ConstructAttributeList(StringRef Name,
   // Attach assumption attributes to the declaration. If this is a call
   // site, attach assumptions from the caller to the call as well.
   AddAttributesFromAssumes(FuncAttrs, TargetDecl);
+  AddAttributesFromOptimize(FuncAttrs, TargetDecl); // OHOS_LOCAL
 
   bool HasOptnone = false;
   // The NoBuiltinAttr attached to the target FunctionDecl.
