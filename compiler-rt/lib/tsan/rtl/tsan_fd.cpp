@@ -212,7 +212,7 @@ void FdClose(ThreadState *thr, uptr pc, int fd, bool write) {
   {
     // Need to lock the slot to make MemoryAccess and MemoryResetRange atomic
     // with respect to global reset. See the comment in MemoryRangeFreed.
-    SlotLocker locker(thr);
+    SlotLocker locker(thr, thr->ignore_interceptors > 0); // OHOS_LOCAL
     if (!MustIgnoreInterceptor(thr)) {
       if (write) {
         // To catch races between fd usage and close.

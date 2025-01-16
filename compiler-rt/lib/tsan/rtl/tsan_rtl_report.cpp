@@ -656,6 +656,7 @@ bool OutputReport(ThreadState *thr, const ScopedReport &srep) {
     VPrintf(2, "[Suppression] Suppression hit type:%s file:%s pc:0x%zx.\n",
             supp->type, supp->templ, pc_or_addr);
   }
+  thr->ignore_interceptors++;  // OHOS_LOCAL
   {
     bool suppressed = OnReport(rep, pc_or_addr != 0);
     if (suppressed) {
@@ -664,6 +665,7 @@ bool OutputReport(ThreadState *thr, const ScopedReport &srep) {
     }
   }
   PrintReport(rep);
+  thr->ignore_interceptors--; // OHOS_LOCAL
   __tsan_on_report(rep);
   ctx->nreported++;
   if (flags()->halt_on_error)
