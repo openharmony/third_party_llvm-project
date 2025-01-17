@@ -1789,6 +1789,31 @@ class LlvmLibs(BuildUtils):
                           target=None,
                           install=True)
 
+        if arch == 'aarch64' and not first_time:
+            build_target = []
+            install_target = []
+            crt_extra_flags.append('-mbranch-protection=bti')
+            build_target = ['clang_rt.crtbegin-aarch64', 'clang_rt.crtend-aarch64']
+            install_target = ['install-clang_rt.crtend-aarch64', 'install-clang_rt.crtbegin-aarch64']
+            crt_flags = ' '.join(cflags + crt_extra_flags)
+            crt_defines['CMAKE_C_FLAGS'] = crt_flags
+            crt_defines['CMAKE_ASM_FLAGS'] = crt_flags
+            crt_defines['CMAKE_CXX_FLAGS'] = crt_flags
+
+            self.invoke_cmake(crt_cmake_path,
+                              crt_path,
+                              crt_defines,
+                              env=dict(self.build_config.ORIG_ENV))
+
+            self.invoke_ninja(out_path=crt_path,
+                              env=dict(self.build_config.ORIG_ENV),
+                              target=build_target,
+                              install=False)
+            self.invoke_ninja(out_path=crt_path,
+                              env=dict(self.build_config.ORIG_ENV),
+                              target=install_target,
+                              install=False)
+
     def build_libomp(self,
                      llvm_install,
                      arch,
