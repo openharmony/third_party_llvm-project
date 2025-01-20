@@ -3483,6 +3483,7 @@ bool Expr::HasSideEffects(const ASTContext &Ctx,
   case ConceptSpecializationExprClass:
   case RequiresExprClass:
   case SYCLUniqueStableNameExprClass:
+  case HMTypeSigExprClass: //OHOS_LOCAL
     // These never have a side-effect.
     return false;
 
@@ -4851,6 +4852,253 @@ RecoveryExpr *RecoveryExpr::CreateEmpty(ASTContext &Ctx, unsigned NumSubExprs) {
                            alignof(RecoveryExpr));
   return new (Mem) RecoveryExpr(EmptyShell(), NumSubExprs);
 }
+
+// OHOS_LOCAL begin
+HMTypeSigExpr::HMTypeSigExpr(UnaryExprOrTypeTrait ExprKind,
+                             TypeSourceInfo *TInfo, QualType resultTy,
+                             SourceLocation op, SourceLocation rp)
+    : Expr(HMTypeSigExprClass, resultTy, VK_PRValue, OK_Ordinary), OpLoc(op),
+      RParenLoc(rp) {
+  this->DataType = TInfo->getType();
+  this->ExprKind = ExprKind;
+}
+
+HMTypeSigExpr::FieldType
+HMTypeSigExpr::getFieldTypeEnum(QualType FieldTy) const {
+  if (FieldTy->isPointerType()) {
+    return HMTypeSigExpr::POINTER;
+  } else {
+    if (const auto *TT = FieldTy->getAs<TypedefType>()) {
+      auto typedefName = TT->getDecl()->getName();
+      if (typedefName == "uptr_t" || typedefName == "ptr_t" ||
+          typedefName == "uintptr_t" ||
+          typedefName == "intptr_t") {
+          return HMTypeSigExpr::POINTER;
+      }
+    }
+    return HMTypeSigExpr::DATA;
+  }
+}
+
+StringRef HMTypeSigExpr::getBuiltinStr() const {
+  if (getKind() == UETT_HMTypeSummary)
+    return "__builtin_hm_type_summary";
+  else
+    return "__builtin_hm_type_signature";
+}
+
+APValue HMTypeSigExpr::getBuiltinResult(const ASTContext &Ctx,
+                                        std::string signature,
+                                        unsigned short summary) const {
+  if (getKind() == UETT_HMTypeSignature)
+    return MakeStringLiteral(signature, Ctx);
+  else
+    return APValue(llvm::APSInt(
+        llvm::APInt(Ctx.getIntWidth(Ctx.UnsignedShortTy), summary, false)));
+}
+
+APValue HMTypeSigExpr::MakeStringLiteral(StringRef Tmp,
+                                         const ASTContext &Ctx) const {
+  using LValuePathEntry = APValue::LValuePathEntry;
+  StringLiteral *Res = Ctx.getPredefinedStringLiteralFromCache(Tmp);
+  // Decay the string to a pointer to the first character.
+  LValuePathEntry Path[1] = {LValuePathEntry::ArrayIndex(0)};
+  return APValue(Res, CharUnits::Zero(), Path, /*OnePastTheEnd=*/false);
+}
+
+APValue HMTypeSigExpr::EvaluateTypeSig(const ASTContext &Ctx) const {
+  if (!DataType->isRecordType()) {
+    return getBuiltinResult(Ctx,
+                            getFieldTypeStr(getFieldTypeEnum(
+                                DataType)),
+                            1 << getFieldTypeEnum(DataType));
+  }
+  RecordDecl *RD = DataType->castAs<RecordType>()->getDecl();
+  if (!RD->getDefinition()) {
+    llvm::errs() << "Only definitions can get signature.\n";
+    return getBuiltinResult(Ctx,
+                            getFieldTypeStr(getFieldTypeEnum(
+                                DataType)),
+                            1 << getFieldTypeEnum(DataType));
+  }
+  uint64_t GranulesPos = 0;
+  std::vector<std::vector<FieldType>> GranulesVec;
+  std::vector<FieldType> vec;
+  GranulesVec.push_back(vec);
+  divideGranules(DataType, Ctx, GranulesPos, GranulesVec);
+  std::string signature;
+  unsigned summary = 0;
+  for (auto tmpVec : GranulesVec) {
+    unsigned GranulesValue = 0;
+    if (tmpVec.empty()) {
+      continue;
+    }
+    for (auto type : tmpVec) {
+      GranulesValue =
+          GranulesValue | type; // Calculate the value of a single particle.
+    }
+    signature += std::to_string(GranulesValue);
+    summary |= (1 << GranulesValue);
+  }
+  return getBuiltinResult(Ctx, signature, summary);
+}
+
+void HMTypeSigExpr::divideGranules(
+    QualType CurType, const ASTContext &Ctx, uint64_t &GranulesPos,
+    std::vector<std::vector<FieldType>> &vec) const {
+  if (CurType->isRecordType()) {
+    divideGranulesRecord(CurType->castAs<RecordType>(), Ctx, GranulesPos, vec);
+  } else if (CurType->isArrayType()) {
+    divideGranulesArray(Ctx.getAsArrayType(CurType), Ctx, GranulesPos, vec);
+  } else if (CurType->isVectorType()) {
+    divideGranulesVector(CurType->castAs<VectorType>(), Ctx, GranulesPos, vec);
+  } else {
+    uint64_t fieldSize = Ctx.getTypeSize(CurType);
+    divideGranulesBase(getFieldTypeEnum(CurType), fieldSize, Ctx, GranulesPos,
+                       vec);
+  }
+}
+
+void HMTypeSigExpr::divideGranules(
+    const FieldDecl *Field, const ASTContext &Ctx, uint64_t &GranulesPos,
+    std::vector<std::vector<FieldType>> &vec) const {
+  auto CurType = Field->getType();
+  if (Field->isBitField()) {
+    uint64_t fieldSize = Field->getBitWidthValue(Ctx);
+    divideGranulesBase(getFieldTypeEnum(CurType), fieldSize, Ctx, GranulesPos,
+                       vec);
+    return;
+  }
+  divideGranules(CurType, Ctx, GranulesPos, vec);
+}
+
+bool HMTypeSigExpr::divideGranulesBase(
+    FieldType CurType, uint64_t fieldSize, const ASTContext &Ctx,
+    uint64_t &GranulesPos, std::vector<std::vector<FieldType>> &vec) const {
+  if ((GranulesPos + fieldSize) <= GranulesSize) {
+    vec.back().push_back(CurType);
+    GranulesPos += fieldSize;
+  } else {
+    uint64_t tmpSize = GranulesSize - GranulesPos;
+    // There are also 128-bit integers, which are added in two parts.
+    divideGranulesBase(CurType, tmpSize, Ctx, GranulesPos, vec);
+    fieldSize = fieldSize - tmpSize;
+    divideGranulesBase(CurType, fieldSize, Ctx, GranulesPos, vec);
+    return true;
+  }
+  if (GranulesPos == GranulesSize) {
+    std::vector<FieldType> subVec;
+    vec.push_back(subVec);
+    GranulesPos = 0;
+  }
+  return true;
+}
+
+void HMTypeSigExpr::divideGranulesArray(
+    const ArrayType *CurType, const ASTContext &Ctx, uint64_t &GranulesPos,
+    std::vector<std::vector<FieldType>> &vec) const {
+  if (!CurType) {
+    return;
+  }
+  uint64_t fieldSize = Ctx.getTypeSize(CurType);
+  auto elemType = CurType->getElementType();
+  uint64_t elemSize = Ctx.getTypeSize(elemType);
+  for (uint64_t elemPos = 0; elemPos < fieldSize; elemPos += elemSize) {
+    divideGranules(elemType, Ctx, GranulesPos, vec);
+  }
+}
+
+void HMTypeSigExpr::divideGranulesVector(
+    const VectorType *CurType, const ASTContext &Ctx, uint64_t &GranulesPos,
+    std::vector<std::vector<FieldType>> &vec) const {
+  if (!CurType) {
+    return;
+  }
+  unsigned elemNum = CurType->getNumElements();
+  auto elemType = CurType->getElementType();
+  for (unsigned i = 0; i < elemNum; i++) {
+    divideGranules(elemType, Ctx, GranulesPos, vec);
+  }
+}
+
+void HMTypeSigExpr::divideGranulesUnion(
+    const RecordType *CurType, const ASTContext &Ctx, uint64_t &GranulesPos,
+    std::vector<std::vector<FieldType>> &vec) const {
+  RecordDecl *RD = CurType->getDecl();
+  uint64_t UnionSize = Ctx.getTypeSize(CurType);
+  std::vector<std::vector<FieldType>> GranulesResult;
+  uint64_t TmpPos = GranulesPos;
+  for (auto *Field : RD->fields()) {
+    std::vector<std::vector<FieldType>> GranulesVec;
+    std::vector<FieldType> TmpVec;
+    GranulesVec.push_back(TmpVec);
+    TmpPos = GranulesPos;
+    uint64_t FieldSz = Field->isBitField() ? Field->getBitWidthValue(Ctx)
+                                           : Ctx.getTypeSize(Field->getType());
+    divideGranules(Field, Ctx, TmpPos, GranulesVec);
+    if (UnionSize > FieldSz) {
+      uint64_t FieldSize = UnionSize - FieldSz;
+      divideGranulesBase(PADDING, FieldSize, Ctx, TmpPos, GranulesVec);
+    }
+    unsigned i = 0;
+    unsigned vecSize = GranulesResult.size();
+    for (auto tmpVec : GranulesVec) {
+      if (i < vecSize) {
+          GranulesResult[i].insert(GranulesResult[i].end(), tmpVec.begin(),
+                                   tmpVec.end());
+      } else {
+          GranulesResult.push_back(tmpVec);
+      }
+      i++;
+    }
+  }
+  for (unsigned i = 0; i < GranulesResult.size(); i++) {
+    if (i == 0) {
+      for (auto type : GranulesResult[i]) {
+          vec.back().push_back(type);
+      }
+    } else {
+      vec.push_back(GranulesResult[i]);
+    }
+  }
+  GranulesPos = TmpPos;
+}
+
+void HMTypeSigExpr::divideGranulesRecord(
+    const RecordType *CurType, const ASTContext &Ctx, uint64_t &GranulesPos,
+    std::vector<std::vector<FieldType>> &vec) const {
+  if (!CurType) {
+    return;
+  }
+  RecordDecl *RD = CurType->getDecl();
+  if (!RD->getDefinition()) {
+    llvm::errs() << RD->getNameAsString()
+                 << "not defination cannot get signature.\n";
+    return;
+  }
+  if (RD->isUnion()) {
+    return divideGranulesUnion(CurType, Ctx, GranulesPos, vec);
+  }
+  uint64_t preFieldEnd = 0, curFieldStart = 0;
+  const ASTRecordLayout &Layout = Ctx.getASTRecordLayout(RD);
+  for (auto *Field : RD->fields()) {
+    curFieldStart = Layout.getFieldOffset(Field->getFieldIndex());
+    if (curFieldStart > preFieldEnd) {
+      uint64_t fieldSize = curFieldStart - preFieldEnd;
+      divideGranulesBase(PADDING, fieldSize, Ctx, GranulesPos, vec);
+    }
+    divideGranules(Field, Ctx, GranulesPos, vec);
+    uint64_t FieldSz = Field->isBitField() ? Field->getBitWidthValue(Ctx)
+                                           : Ctx.getTypeSize(Field->getType());
+    preFieldEnd = curFieldStart + FieldSz;
+  }
+  curFieldStart = Ctx.getTypeSize(CurType);
+  if (curFieldStart > preFieldEnd) {
+    uint64_t fieldSize = curFieldStart - preFieldEnd;
+    divideGranulesBase(PADDING, fieldSize, Ctx, GranulesPos, vec);
+  }
+}
+// OHOS_LOCAL end.
 
 void OMPArrayShapingExpr::setDimensions(ArrayRef<Expr *> Dims) {
   assert(

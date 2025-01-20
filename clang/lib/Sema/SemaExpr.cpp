@@ -20813,3 +20813,22 @@ ExprResult Sema::CreateRecoveryExpr(SourceLocation Begin, SourceLocation End,
 
   return RecoveryExpr::Create(Context, T, Begin, End, SubExprs);
 }
+
+// __builtin_hm_type_signature
+ExprResult Sema::ActOnHMTypeSig(SourceLocation OpLoc,
+                                UnaryExprOrTypeTrait ExprKind,
+                                ParsedType ParsedTy, SourceRange ArgRange) {
+  QualType resultTy;
+  TypeSourceInfo *TInfo;
+  GetTypeFromParser(ParsedTy, &TInfo);
+  if (ExprKind == UETT_HMTypeSummary)
+    resultTy = Context.UnsignedShortTy;
+  else { // UETT_HMTypeSignature
+    assert(ExprKind == UETT_HMTypeSignature);
+    QualType ArrTy = Context.getStringLiteralArrayType(Context.CharTy, 0);
+    resultTy =
+        Context.getPointerType(ArrTy->getAsArrayTypeUnsafe()->getElementType());
+  }
+  return new (Context)
+      HMTypeSigExpr(ExprKind, TInfo, resultTy, OpLoc, ArgRange.getEnd());
+}

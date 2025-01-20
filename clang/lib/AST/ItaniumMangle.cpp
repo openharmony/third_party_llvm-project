@@ -4289,6 +4289,7 @@ recurse:
   case Expr::AtomicExprClass:
   case Expr::SourceLocExprClass:
   case Expr::BuiltinBitCastExprClass:
+  case Expr::HMTypeSigExprClass:
   {
     NotPrimaryExpr();
     if (!NullOut) {
@@ -4692,6 +4693,8 @@ recurse:
       return;
     }
     // OHOS_LOCAL Begin
+    case UETT_HMTypeSummary:
+    case UETT_HMTypeSignature:
     case UETT_PacModifierByType: {
       return;
     }

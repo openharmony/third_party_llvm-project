@@ -2026,6 +2026,8 @@ static bool IsGlobalLValue(APValue::LValueBase B) {
     // constructor can produce a constant expression. We must assume that such
     // an expression might be a global lvalue.
     return true;
+  case Expr::HMTypeSigExprClass: // OHOS_LOCAL
+    return true;
   }
 }
 
@@ -8795,6 +8797,14 @@ public:
     return true;
   }
 
+  bool VisitHMTypeSigExpr(const HMTypeSigExpr *E) {
+    if (E->getKind() != UETT_HMTypeSignature)
+      return false;
+    APValue LValResult = E->EvaluateTypeSig(Info.Ctx);
+    Result.setFrom(Info.Ctx, LValResult);
+    return true;
+  }
+
   // FIXME: Missing: @protocol, @selector
 };
 } // end anonymous namespace
@@ -10985,6 +10995,7 @@ public:
 
   bool VisitCastExpr(const CastExpr* E);
   bool VisitUnaryExprOrTypeTraitExpr(const UnaryExprOrTypeTraitExpr *E);
+  bool VisitHMTypeSigExpr(const HMTypeSigExpr *E);
 
   bool VisitCXXBoolLiteralExpr(const CXXBoolLiteralExpr *E) {
     return Success(E->getValue(), E);
@@ -13288,6 +13299,10 @@ bool IntExprEvaluator::VisitUnaryExprOrTypeTraitExpr(
     }
     return Success(0, E);
   }
+  case UETT_HMTypeSummary:
+  case UETT_HMTypeSignature: {
+    return false;
+  }
   // OHOS_LOCAL End
   case UETT_OpenMPRequiredSimdAlign:
     assert(E->isArgumentType());
@@ -13299,6 +13314,14 @@ bool IntExprEvaluator::VisitUnaryExprOrTypeTraitExpr(
   }
 
   llvm_unreachable("unknown expr/type trait");
+}
+                                    
+bool IntExprEvaluator::VisitHMTypeSigExpr(const HMTypeSigExpr *E) {
+  if (E->getKind() != UETT_HMTypeSummary) {
+    return false;
+  }
+  APValue LValResult = E->EvaluateTypeSig(Info.Ctx);
+  return Success(LValResult, E);
 }
 
 bool IntExprEvaluator::VisitOffsetOfExpr(const OffsetOfExpr *OOE) {
@@ -15475,6 +15498,7 @@ static ICEDiag CheckICE(const Expr* E, const ASTContext &Ctx) {
   case Expr::ArrayTypeTraitExprClass:
   case Expr::ExpressionTraitExprClass:
   case Expr::CXXNoexceptExprClass:
+  case Expr::HMTypeSigExprClass:
     return NoDiag();
   case Expr::CallExprClass:
   case Expr::CXXOperatorCallExprClass: {

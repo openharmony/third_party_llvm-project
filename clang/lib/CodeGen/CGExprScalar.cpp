@@ -646,7 +646,12 @@ public:
     return ConstantEmitter(CGF).emitAbstract(SLE->getLocation(), Evaluated,
                                              SLE->getType());
   }
-
+  Value *VisitHMTypeSigExpr(HMTypeSigExpr *SLE) {
+    auto &Ctx = CGF.getContext();
+    APValue Evaluated = SLE->EvaluateTypeSig(Ctx);
+    return ConstantEmitter(CGF).emitAbstract(SLE->getBeginLoc(), Evaluated,
+                                              SLE->getType());
+  }
   Value *VisitCXXDefaultArgExpr(CXXDefaultArgExpr *DAE) {
     CodeGenFunction::CXXDefaultArgExprScope Scope(CGF, DAE);
     return Visit(DAE->getExpr());

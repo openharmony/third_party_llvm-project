@@ -137,3 +137,12 @@ uint16_t llvm::PARTS::getTypeIdFor(const Type *T)
     TypeIdCache.emplace(T, TheTypeId);
     return TheTypeId;
 }
+
+std::string llvm::PARTS::getLLVMRevision()
+{
+#ifdef LLVM_REVISION
+    return LLVM_REVISION;
+#else
+    return "";
+#endif
+}

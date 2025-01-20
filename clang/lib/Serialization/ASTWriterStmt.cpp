@@ -1273,6 +1273,13 @@ void ASTStmtWriter::VisitAtomicExpr(AtomicExpr *E) {
   Code = serialization::EXPR_ATOMIC;
 }
 
+void ASTStmtWriter::VisitHMTypeSigExpr(HMTypeSigExpr *E) {
+  VisitExpr(E);
+  Record.AddSourceLocation(E->getOperatorLoc());
+  Record.AddSourceLocation(E->getRParenLoc());
+  Code = serialization::EXPR_HM_TYPE_SIG;
+}
+
 //===----------------------------------------------------------------------===//
 // Objective-C Expressions and Statements.
 //===----------------------------------------------------------------------===//
