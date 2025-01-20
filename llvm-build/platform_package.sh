@@ -14,29 +14,33 @@
 
 # init variable
 commit_id=""
-date="" 
+date=""
 
 clang_linux_x86_64_tar="clang-dev-linux-x86_64.tar.gz"
 clang_darwin_arm64_tar="clang-dev-darwin-arm64.tar.gz"
 clang_darwin_x86_64_tar="clang-dev-darwin-x86_64.tar.gz"
 clang_windows_x86_64_tar="clang-dev-windows-x86_64.tar.gz"
 clang_ohos_arm64_tar="clang-dev-ohos-aarch64.tar.gz"
+clang_linux_aarch64_tar="clang-dev-linux-aarch64.tar.gz"
 libcxx_ndk_linux_x86_64_tar="libcxx-ndk-dev-linux-x86_64.tar.gz"
 libcxx_ndk_darwin_x86_64_tar="libcxx-ndk-dev-darwin-x86_64.tar.gz"
 libcxx_ndk_darwin_arm64_tar="libcxx-ndk-dev-darwin-arm64.tar.gz"
 libcxx_ndk_windows_x86_64_tar="libcxx-ndk-dev-windows-x86_64.tar.gz"
+libcxx_ndk_linux_aarch64_tar="libcxx-ndk-dev-linux-aarch64.tar.gz"
 
 clang_linux_x86_64="clang_linux-x86_64-${commit_id}-${date}"
 clang_darwin_arm64="clang_darwin-arm64-${commit_id}-${date}"
 clang_darwin_x86_64="clang_darwin-x86_64-${commit_id}-${date}"
 clang_windows_x86_64="clang_windows-x86_64-${commit_id}-${date}"
 clang_ohos_arm64="clang_ohos-arm64-${commit_id}-${date}"
+clang_linux_aarch64="clang_linux_aarch64-${commit_id}-${date}"
 libcxx_ndk_linux_x86_64="libcxx-ndk_linux-x86_64-${commit_id}-${date}"
 libcxx_ndk_darwin_x86_64="libcxx-ndk_darwin-x86_64-${commit_id}-${date}"
 libcxx_ndk_darwin_arm64="libcxx-ndk_darwin-arm64-${commit_id}-${date}"
 libcxx_ndk_windows_x86_64="libcxx-ndk_windows-x86_64-${commit_id}-${date}"
-libcxx_ndk_ohos_arm64="libcxx_ndk_ohos_arm64-${commit_id}-${date}"
-llvm_list=($clang_linux_x86_64 $clang_darwin_arm64 $clang_darwin_x86_64 $clang_windows_x86_64 $clang_ohos_arm64 $libcxx_ndk_linux_x86_64 $libcxx_ndk_darwin_x86_64 $libcxx_ndk_darwin_arm64 $libcxx_ndk_windows_x86_64 $libcxx_ndk_ohos_arm64)
+libcxx_ndk_ohos_arm64="libcxx_ndk_ohos-arm64-${commit_id}-${date}"
+libcxx_ndk_linux_aarch64="libcxx-ndk_linux-aarch64-${commit_id}-${date}"
+llvm_list=($clang_linux_x86_64 $clang_darwin_arm64 $clang_darwin_x86_64 $clang_windows_x86_64 $clang_ohos_arm64 $clang_linux_aarch64 $libcxx_ndk_linux_x86_64 $libcxx_ndk_darwin_x86_64 $libcxx_ndk_darwin_arm64 $libcxx_ndk_windows_x86_64 $libcxx_ndk_ohos_arm64 $libcxx_ndk_linux_aarch64)
 
 # decompress file and rename
 tar -xvf ${clang_linux_x86_64_tar}
@@ -48,7 +52,9 @@ mv clang-dev ${clang_darwin_x86_64}
 tar -xvf ${clang_windows_x86_64_tar}
 mv clang-dev ${clang_windows_x86_64}
 tar -xvf ${clang_ohos_arm64_tar}
-mv ohos-aarch64-install ${clang_ohos_arm64}
+mv clang-dev ${clang_ohos_arm64}
+tar -xvf ${clang_linux_aarch64_tar}
+mv clang-dev ${clang_linux_aarch64}
 tar -xvf ${libcxx_ndk_linux_x86_64_tar}
 mv libcxx-ndk ${libcxx_ndk_linux_x86_64}
 tar -xvf ${libcxx_ndk_darwin_x86_64_tar}
@@ -58,6 +64,8 @@ mv libcxx-ndk ${libcxx_ndk_darwin_arm64}
 tar -xvf ${libcxx_ndk_windows_x86_64_tar}
 mv libcxx-ndk ${libcxx_ndk_windows_x86_64}
 cp -ar ${libcxx_ndk_linux_x86_64} ${libcxx_ndk_ohos_arm64}
+tar -xvf ${libcxx_ndk_linux_aarch64_tar}
+mv libcxx-ndk ${libcxx_ndk_linux_aarch64}
 
 #clang-dev-darwin-arm64
 cp -rf ${clang_linux_x86_64}/lib/aarch64-linux-ohos ${clang_darwin_arm64}/lib
@@ -111,6 +119,20 @@ cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/profile ${clang_ohos_arm64
 cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/fuzzer ${clang_ohos_arm64}/lib/clang/15.0.4/include
 cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/sanitizer ${clang_ohos_arm64}/lib/clang/15.0.4/include
 
+#clang-dev-linux-aarch64
+cp -rf ${clang_linux_x86_64}/include/libcxx-ohos ${clang_linux_aarch64}/include
+cp -rf ${clang_linux_x86_64}/lib/aarch64-linux-ohos ${clang_linux_aarch64}/lib
+cp -rf ${clang_linux_x86_64}/lib/arm-liteos-ohos ${clang_linux_aarch64}/lib
+cp -rf ${clang_linux_x86_64}/lib/arm-linux-ohos ${clang_linux_aarch64}/lib
+cp -rf ${clang_linux_x86_64}/lib/x86_64-linux-ohos ${clang_linux_aarch64}/lib
+cp -rf ${clang_linux_x86_64}/lib/loongarch64-linux-ohos ${clang_linux_aarch64}/lib
+cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/bin ${clang_linux_aarch64}/lib/clang/15.0.4
+cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/share ${clang_linux_aarch64}/lib/clang/15.0.4
+cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/lib ${clang_linux_aarch64}/lib/clang/15.0.4
+cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/profile ${clang_linux_aarch64}/lib/clang/15.0.4/include
+cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/fuzzer ${clang_linux_aarch64}/lib/clang/15.0.4/include
+cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/sanitizer ${clang_linux_aarch64}/lib/clang/15.0.4/include
+
 
 #archive
 mkdir target_location
@@ -122,4 +144,4 @@ do
 done
 }
 
-packeage_llvm
+package_llvm

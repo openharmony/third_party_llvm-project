@@ -2465,7 +2465,7 @@ class LlvmPackage(BuildUtils):
             elif bin_filename not in script_bins and self.build_config.strip:
                 if self.host_is_darwin():
                     self.check_call(['strip', '-x', binary])
-                elif host.startswith('ohos'):
+                elif host.startswith('ohos') or host.endswith('aarch64'):
                     self.check_call(['eu-strip', binary])
                 else:
                     self.check_call(['strip', binary])
