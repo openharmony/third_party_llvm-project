@@ -177,6 +177,16 @@ class CrossToolchainBuilder:
                 )
             )
 
+        if self._build_config.enable_lzma_7zip:
+            lldb_defines['LLDB_ENABLE_LZMA'] = 'ON'
+            lldb_defines['LLDB_ENABLE_LZMA_7ZIP'] = 'ON'
+            lldb_defines['LIBLZMA_INCLUDE_DIRS'] = (
+                self._build_utils.merge_install_dir('lzma', self._llvm_triple, 'include')
+            )
+            lldb_defines['LIBLZMA_LIBRARIES'] = (
+                self._build_utils.merge_install_dir('lzma', self._llvm_triple, 'lib', 'liblzma.so')
+            )
+
         if self._build_config.build_python or self._install_python_from_prebuilts:
             lldb_defines["LLDB_ENABLE_PYTHON"] = "ON"
             lldb_defines["LLDB_EMBED_PYTHON_HOME"] = "ON"
@@ -199,7 +209,6 @@ class CrossToolchainBuilder:
             )
             lldb_defines['Python3_RPATH'] = os.path.join('$ORIGIN', '..', 'python3', 'lib')
 
-        lldb_defines["LLDB_ENABLE_LZMA"] = "OFF"
         # Debug & Tuning
         if self._build_config.enable_monitoring:
             lldb_defines["LLDB_ENABLE_PERFORMANCE"] = "ON"
@@ -216,6 +225,8 @@ class CrossToolchainBuilder:
         if self._build_config.build_python:
             self._python_builder.build()
             self._python_builder.prepare_for_package()
+        if self._build_config.enable_lzma_7zip:
+            self._llvm_libs.build_lzma(self._llvm_path, self._llvm_install, self._llvm_triple)
 
         self._build_utils.invoke_cmake(
             self._llvm_project_path,
