@@ -20,7 +20,7 @@
 #include "hwasan_mapping.h"
 #include "hwasan_malloc_bisect.h"
 #include "hwasan_thread.h"
-#include "hwasan_thread_list.h"
+#include "hwasan_thread_list.h" // OHOS_LOCAL
 #include "hwasan_report.h"
 #include "lsan/lsan_common.h"
 
@@ -51,11 +51,13 @@ bool HwasanChunkView::IsAllocated() const {
   return metadata_ && metadata_->IsAllocated();
 }
 
+// OHOS_LOCAL begin
 int HwasanChunkView::AllocatedByThread() const {
   if (metadata_)
     return metadata_->thread_id;
   return -1;
 }
+// OHOS_LOCAL end
 
 uptr HwasanChunkView::Beg() const {
   return block_;
@@ -131,6 +133,7 @@ void SimpleThreadDeallocate(void *ptr, AllocatorCache *cache) {
   CHECK(cache);
   allocator.Deallocate(cache, ptr);
 }
+// OHOS_LOCAL end
 
 uptr GetAliasRegionStart() {
 #if defined(HWASAN_ALIASING_MODE)
@@ -209,10 +212,13 @@ static void *HwasanAllocate(StackTrace *stack, uptr orig_size, uptr alignment,
   }
   Metadata *meta =
       reinterpret_cast<Metadata *>(allocator.GetMetaData(allocated));
+  
+  // OHOS_LOCAL begin
   if (t)
     meta->thread_id = t->tid();
   else
     meta->thread_id = -1;
+  // OHOS_LOCAL end
   if (zeroise) {
     internal_memset(allocated, 0, size);
   } else if (flags()->max_malloc_fill_size > 0) {
@@ -354,6 +360,7 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
                      tag);
   }
 
+// OHOS_LOCAL begin
   int aid = meta->thread_id;
   if (t) {
     if (!t->TryPutInQuarantineWithDealloc(reinterpret_cast<uptr>(aligned_ptr),
@@ -387,6 +394,7 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
     }
     allocator.Deallocate(cache, aligned_ptr);
   }
+// OHOS_LOCAL end
 }
 
 static void *HwasanReallocate(StackTrace *stack, void *tagged_ptr_old,

@@ -40,7 +40,7 @@ struct Metadata {
   u8 lsan_tag;
 
  public:
-  int thread_id;
+  int thread_id;  // OHOS_LOCAL
   inline void SetAllocated(u32 stack, u64 size);
   inline void SetUnallocated();
 
@@ -98,7 +98,7 @@ class HwasanChunkView {
   bool FromSmallHeap() const;
   bool AddrIsInside(uptr addr) const;
 
-  int AllocatedByThread() const;
+  int AllocatedByThread() const;  // OHOS_LOCAL
  private:
   friend class __lsan::LsanMetadata;
   uptr block_;
@@ -116,15 +116,15 @@ struct HeapAllocationRecord {
   u32  alloc_context_id;
   u32  free_context_id;
   u32  requested_size;
-  int  alloc_thread;
-  int  free_thread;
+  int  alloc_thread;  // OHOS_LOCAL
+  int  free_thread;   // OHOS_LOCAL
 };
 
 typedef RingBuffer<HeapAllocationRecord> HeapAllocationsRingBuffer;
 
 void GetAllocatorStats(AllocatorStatCounters s);
 
-void SimpleThreadDeallocate(void *ptr, AllocatorCache *cache);
+void SimpleThreadDeallocate(void *ptr, AllocatorCache *cache);  // OHOS_LOCAL
 
 inline bool InTaggableRegion(uptr addr) {
 #if defined(HWASAN_ALIASING_MODE)

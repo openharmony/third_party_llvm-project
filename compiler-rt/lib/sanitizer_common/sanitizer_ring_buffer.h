@@ -27,7 +27,7 @@ class RingBuffer {
     RingBuffer *RB = reinterpret_cast<RingBuffer*>(Ptr);
     uptr End = reinterpret_cast<uptr>(Ptr) + SizeInBytes(Size);
     RB->last_ = RB->next_ = reinterpret_cast<T*>(End - sizeof(T));
-    RB->full_ = false;
+    RB->full_ = false;  // OHOS_LOCAL
     return RB;
   }
   void Delete() {
@@ -36,17 +36,19 @@ class RingBuffer {
   uptr size() const {
     return last_ + 1 -
            reinterpret_cast<T *>(reinterpret_cast<uptr>(this) +
-                                 sizeof(RingBuffer) - sizeof(T));
+                                 sizeof(RingBuffer) - sizeof(T)); // OHOS_LOCAL
   }
 
+// OHOS_LOCAL begin
   uptr realsize() const {
     if (full_)
       return size();
     return reinterpret_cast<size_t>((uptr)last_ - (uptr)next_) / sizeof(T);
   }
+// OHOS_LOCAL end
 
   static uptr SizeInBytes(uptr Size) {
-    return Size * sizeof(T) + sizeof(RingBuffer) - sizeof(T);
+    return Size * sizeof(T) + sizeof(RingBuffer) - sizeof(T); // OHOS_LOCAL
   }
 
   uptr SizeInBytes() { return SizeInBytes(size()); }
@@ -57,7 +59,7 @@ class RingBuffer {
     // The condition below works only if sizeof(T) is divisible by sizeof(T*).
     if (next_ <= reinterpret_cast<T *>(&next_)) {
       next_ = last_;
-      full_ = true;
+      full_ = true; // OHOS_LOCAL
     }
   }
 

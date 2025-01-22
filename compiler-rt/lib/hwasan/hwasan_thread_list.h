@@ -83,6 +83,7 @@ class SANITIZER_MUTEX HwasanThreadList {
     ring_buffer_size_ = RingBufferSize();
     thread_alloc_size_ =
         RoundUpTo(ring_buffer_size_ + sizeof(Thread), ring_buffer_size_ * 2);
+// OHOS_LOCAL begin
     freed_rb_fallback_ =
       HeapAllocationsRingBuffer::New(flags()->heap_history_size_main_thread);
 
@@ -91,6 +92,7 @@ class SANITIZER_MUTEX HwasanThreadList {
     freed_rb_count_ = 0;
     freed_rb_count_overflow_ = 0;
     trace_heap_allocation_ = true;
+// OHOS_LOCAL end
   }
 
   Thread *CreateCurrentThread(const Thread::InitState *state = nullptr)
@@ -137,6 +139,7 @@ class SANITIZER_MUTEX HwasanThreadList {
     CHECK(0 && "thread not found in live list");
   }
 
+// OHOS_LOCAL begin
   void AddFreedRingBuffer(Thread *t) {
     if (t->heap_allocations() == nullptr ||
         t->heap_allocations()->realsize() == 0)
@@ -181,9 +184,10 @@ class SANITIZER_MUTEX HwasanThreadList {
     if (freed_rb_count_ == 0)
       freed_rb_count_overflow_++;
   }
+// OHOS_LOCAL end
 
   void ReleaseThread(Thread *t) SANITIZER_EXCLUDES(free_list_mutex_) {
-    AddFreedRingBuffer(t);
+    AddFreedRingBuffer(t);  // OHOS_LOCAL
     RemoveThreadStats(t);
     t->Destroy();
     DontNeedThread(t);
@@ -210,6 +214,7 @@ class SANITIZER_MUTEX HwasanThreadList {
     for (Thread *t : live_list_) cb(t);
   }
 
+// OHOS_LOCAL begin
   template <class CB>
   Thread *FindThreadLocked(CB cb) SANITIZER_CHECK_LOCKED(stats_mutex_) {
     CheckLocked();
@@ -238,7 +243,8 @@ class SANITIZER_MUTEX HwasanThreadList {
     if (freed_rb_fallback_)
       Printf("fallback count: %llu\n", freed_rb_fallback_->realsize());
   }
-  
+// OHOS_LOCAL end
+
   void AddThreadStats(Thread *t) SANITIZER_EXCLUDES(stats_mutex_) {
     SpinMutexLock l(&stats_mutex_);
     stats_.n_live_threads++;
@@ -257,7 +263,8 @@ class SANITIZER_MUTEX HwasanThreadList {
   }
 
   uptr GetRingBufferSize() const { return ring_buffer_size_; }
-  
+
+// OHOS_LOCAL begin
   void RecordFallBack(HeapAllocationRecord h) {
     SpinMutexLock l(&freed_rb_mutex_);
     if (freed_rb_fallback_)
@@ -267,6 +274,7 @@ class SANITIZER_MUTEX HwasanThreadList {
   void EnableTracingHeapAllocation() { trace_heap_allocation_ = true; }
   void DisableTracingHeapAllocation() { trace_heap_allocation_ = false; }
   bool AllowTracingHeapAllocation() { return trace_heap_allocation_; }
+// OHOS_LOCAL end
 
   void Lock() SANITIZER_ACQUIRE(live_list_mutex_) { live_list_mutex_.Lock(); }
   void CheckLocked() const SANITIZER_CHECK_LOCKED(live_list_mutex_) {
@@ -300,6 +308,7 @@ class SANITIZER_MUTEX HwasanThreadList {
   InternalMmapVector<Thread *> live_list_
       SANITIZER_GUARDED_BY(live_list_mutex_);
 
+// OHOS_LOCAL begin
   SpinMutex freed_rb_mutex_;
   HeapAllocationsRingBuffer **freed_rb_list_;
   HeapAllocationsRingBuffer *freed_rb_fallback_;
@@ -307,6 +316,7 @@ class SANITIZER_MUTEX HwasanThreadList {
   u64 freed_rb_count_;
   u64 freed_rb_count_overflow_;
   bool trace_heap_allocation_;
+// OHOS_LOCAL end
 
   SpinMutex stats_mutex_;
   ThreadStats stats_ SANITIZER_GUARDED_BY(stats_mutex_);
