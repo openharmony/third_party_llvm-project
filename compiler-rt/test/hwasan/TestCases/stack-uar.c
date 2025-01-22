@@ -38,6 +38,7 @@ int main() {
   // CHECK: is located in stack of thread
   // CHECK: Potentially referenced stack objects:
   // CHECK-NEXT: zzz in buggy {{.*}}stack-uar.c:[[@LINE-20]]
+  // OHOS_LOCAL
   // CHECK: Memory tags around the buggy address
 
   // NOSYM: Previously allocated frames:
@@ -45,6 +46,7 @@ int main() {
   // NOSYM-NEXT: record_addr:0x{{.*}} record:0x{{.*}} ({{.*}}/stack-uar.c.tmp+0x{{.*}}){{$}}
   // NOSYM-NEXT: record_addr:0x{{.*}} record:0x{{.*}} ({{.*}}/stack-uar.c.tmp+0x{{.*}}){{$}}
   // NOSYM-NEXT: record_addr:0x{{.*}} record:0x{{.*}} ({{.*}}/stack-uar.c.tmp+0x{{.*}}){{$}}
+  // OHOS_LOCAL
   // NOSYM: Memory tags around the buggy address
 
   // CHECK: SUMMARY: HWAddressSanitizer: tag-mismatch {{.*}} in main

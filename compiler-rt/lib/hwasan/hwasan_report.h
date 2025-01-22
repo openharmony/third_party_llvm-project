@@ -16,7 +16,7 @@
 #define HWASAN_REPORT_H
 
 #include "sanitizer_common/sanitizer_internal_defs.h"
-#include "sanitizer_common/sanitizer_procmaps.h"
+#include "sanitizer_common/sanitizer_procmaps.h"    // OHOS_LOCAL
 #include "sanitizer_common/sanitizer_stacktrace.h"
 
 namespace __hwasan {
@@ -28,9 +28,11 @@ void ReportInvalidFree(StackTrace *stack, uptr addr);
 void ReportTailOverwritten(StackTrace *stack, uptr addr, uptr orig_size,
                            const u8 *expected);
 void ReportRegisters(uptr *registers_frame, uptr pc);
+// OHOS_LOCAL begin
 void ReportMemoryNearRegisters(uptr *registers_frame, uptr pc);
 void PrintMemoryAroundAddress(MemoryMappingLayout &proc_maps, int reg_num,
                               uptr addr, uptr len, bool is_pc = false);
+// OHOS_LOCAL end
 void ReportAtExitStatistics();
 
 }  // namespace __hwasan

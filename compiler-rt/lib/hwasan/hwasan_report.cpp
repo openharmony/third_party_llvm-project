@@ -347,20 +347,22 @@ void PrintAddressDescription(
   if (uptr beg = chunk.Beg()) {
     uptr size = chunk.ActualSize();
     Printf("%s[%p,%p) is a %s %s heap chunk; "
-           "size: %zd offset: %zd, Allocated By %u\n%s",
+           "size: %zd offset: %zd, Allocated By %u\n%s",  // OHOS_LOCAL
            d.Location(),
            beg, beg + size,
            chunk.FromSmallHeap() ? "small" : "large",
            chunk.IsAllocated() ? "allocated" : "unallocated",
            size, untagged_addr - beg,
-           chunk.AllocatedByThread(),
+           chunk.AllocatedByThread(), // OHOS_LOCAL
            d.Default());
+// OHOS_LOCAL begin
     if (chunk.IsAllocated() && chunk.GetAllocStackId()) {
       Printf("%s", d.Allocation());
       Printf("Currently allocated here:\n");
       Printf("%s", d.Default());
       GetStackTraceFromId(chunk.GetAllocStackId()).Print();
     }
+// OHOS_LOCAL end
   }
 
   tag_t addr_tag = GetTagFromPointer(tagged_addr);
@@ -377,7 +379,7 @@ void PrintAddressDescription(
       Printf("\nCause: stack tag-mismatch\n");
       Printf("%s", d.Location());
       Printf("Address %p is located in stack of thread %d\n", untagged_addr,
-             t->tid());
+             t->tid()); // OHOS_LOCAL
       Printf("%s", d.Default());
       t->Announce();
 
@@ -415,10 +417,11 @@ void PrintAddressDescription(
 
   if (!on_stack && candidate && candidate_distance <= kCloseCandidateDistance) {
     ShowHeapOrGlobalCandidate(untagged_addr, candidate, left, right);
-    candidate = nullptr;
+    candidate = nullptr;  // OHOS_LOCAL
     num_descriptions_printed++;
   }
 
+// OHOS_LOCAL begin
   auto PrintUAF = [&](Thread *t, uptr ring_index, HeapAllocationRecord &har) {
     uptr ha_untagged_addr = UntagAddr(har.tagged_addr);
     Printf("%s", d.Error());
@@ -527,6 +530,7 @@ void PrintAddressDescription(
           Printf("RB %u: (%zd/%zu)\n", freed_idx++, rb->realsize(), rb->size());
         });
   }
+// OHOS_LOCAL end
 
   if (!num_descriptions_printed)
     // We exhausted our possibilities. Bail out.
@@ -616,8 +620,10 @@ void ReportInvalidFree(StackTrace *stack, uptr tagged_addr) {
   const char *bug_type = "invalid-free";
   const Thread *thread = GetCurrentThread();
   if (thread) {
+// OHOS_LOCAL begin
     Report("ERROR: %s: %s on address %p at pc %p on thread %d\n",
            SanitizerToolName, bug_type, untagged_addr, pc, thread->tid());
+// OHOS_LOCAL end
   } else {
     Report("ERROR: %s: %s on address %p at pc %p on unknown thread\n",
            SanitizerToolName, bug_type, untagged_addr, pc);
@@ -752,14 +758,18 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
         offset += mem_tag - in_granule_offset;
       }
     }
+// OHOS_LOCAL begin
     Printf(
         "%s of size %zu at %p tags: %02x/%02x(%02x) (ptr/mem) in thread %d\n",
         is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
         mem_tag, short_tag, t->tid());
+// OHOS_LOCAL end
   } else {
+// OHOS_LOCAL begin
     Printf("%s of size %zu at %p tags: %02x/%02x (ptr/mem) in thread %d\n",
            is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
            mem_tag, t->tid());
+// OHOS_LOCAL end
   }
   if (offset != 0)
     Printf("Invalid access starting at offset %zu\n", offset);
@@ -775,12 +785,13 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
 
   if (registers_frame) {
     ReportRegisters(registers_frame, pc);
-    ReportMemoryNearRegisters(registers_frame, pc);
+    ReportMemoryNearRegisters(registers_frame, pc); // OHOS_LOCAL
   }
 
   ReportErrorSummary(bug_type, stack);
 }
 
+// OHOS_LOCAL begin
 void PrintMemoryAroundAddress(MemoryMappingLayout &proc_maps, int reg_num,
                               uptr addr, uptr len, bool is_pc) {
   const sptr kBufSize = 4095;
@@ -824,6 +835,7 @@ void ReportMemoryNearRegisters(uptr *frame, uptr pc) {
   PrintMemoryAroundAddress(proc_maps, -1, pc,
                            flags()->memory_around_register_size, true);
 }
+// OHOS_LOCAL end
 
 // See the frame breakdown defined in __hwasan_tag_mismatch (from
 // hwasan_tag_mismatch_aarch64.S).

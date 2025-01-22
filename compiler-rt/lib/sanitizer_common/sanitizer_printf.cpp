@@ -310,16 +310,16 @@ static void NOINLINE SharedPrintfCode(bool append_pid, const char *format,
                            format, args);
 }
 
-static thread_local bool is_in_printf;
+static thread_local bool is_in_printf;  // OHOS_LOCAL
 
-bool IsInPrintf() { return is_in_printf; }
+bool IsInPrintf() { return is_in_printf; }  // OHOS_LOCAL
 
 void Printf(const char *format, ...) {
   va_list args;
   va_start(args, format);
-  is_in_printf = true;
+  is_in_printf = true;  // OHOS_LOCAL
   SharedPrintfCode(false, format, args);
-  is_in_printf =false;
+  is_in_printf =false;  // OHOS_LOCAL
   va_end(args);
 }
 

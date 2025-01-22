@@ -52,11 +52,13 @@ HWASAN_FLAG(int, heap_history_size, 1023,
             "The number of heap (de)allocations remembered per thread. "
             "Affects the quality of heap-related reports, but not the ability "
             "to find bugs.")
+// OHOS_LOCAL begin
 HWASAN_FLAG(
     int, heap_history_size_main_thread, 102300,
     "The number of heap (de)allocations remembered for the main thread. "
     "Affects the quality of heap-related reports, but not the ability "
     "to find bugs.")
+// OHOS_LOCAL end
 HWASAN_FLAG(bool, export_memory_stats, true,
             "Export up-to-date memory stats through /proc")
 HWASAN_FLAG(int, stack_history_size, 1024,
@@ -85,6 +87,7 @@ HWASAN_FLAG(bool, malloc_bisect_dump, false,
 HWASAN_FLAG(bool, fail_without_syscall_abi, true,
             "Exit if fail to request relaxed syscall ABI.")
 
+// OHOS_LOCAL begin
 HWASAN_FLAG(
     bool, print_uaf_stacks_with_same_tag, true,
     "Control the output content of use-after-free, deciding whether to print "
@@ -121,3 +124,4 @@ HWASAN_FLAG(int, heap_quarantine_min, 0,
 HWASAN_FLAG(int, heap_quarantine_max, 0,
             "The freed heap size should be smaller than the maximum size before "
             "it is placed into the heap quarantine.")
+// OHOS_LOCAL end

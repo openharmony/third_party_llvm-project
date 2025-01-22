@@ -58,14 +58,16 @@ int main() {
   // CHECK: is located in stack of thread
   // CHECK: Potentially referenced stack objects:
   // CHECK-NEXT: zzz in buggy {{.*}}stack-uas.c:[[@LINE-17]]
-  // CHECK-NEXT: Memory tags around the buggy address
+  // OHOS_LOCAL
+  // CHECK: Memory tags around the buggy address
 
   // NOSYM: Previously allocated frames:
   // NOSYM-NEXT: record_addr:0x{{.*}} record:0x{{.*}} ({{.*}}/stack-uas.c.tmp+0x{{.*}}){{$}}
   // NOSYM-NEXT: record_addr:0x{{.*}} record:0x{{.*}} ({{.*}}/stack-uas.c.tmp+0x{{.*}}){{$}}
   // NOSYM-NEXT: record_addr:0x{{.*}} record:0x{{.*}} ({{.*}}/stack-uas.c.tmp+0x{{.*}}){{$}}
   // NOSYM-NEXT: record_addr:0x{{.*}} record:0x{{.*}} ({{.*}}/stack-uas.c.tmp+0x{{.*}}){{$}}
-  // NOSYM-NEXT: Memory tags around the buggy address
+  // OHOS_LOCAL
+  // NOSYM: Memory tags around the buggy address
 
   // CHECK: SUMMARY: HWAddressSanitizer: tag-mismatch {{.*}} in buggy
 }

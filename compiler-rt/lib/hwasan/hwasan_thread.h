@@ -14,7 +14,7 @@
 #define HWASAN_THREAD_H
 
 #include "hwasan_allocator.h"
-#include "hwasan_quarantine.h"
+#include "hwasan_quarantine.h"  // OHOS_LOCAL
 #include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_ring_buffer.h"
 
@@ -49,12 +49,14 @@ class Thread {
   uptr tls_end() { return tls_end_; }
   bool IsMainThread() { return unique_id_ == 0; }
 
+// OHOS_LOCAL begin
   void inc_record(void) {
     all_record_count_++;
     if (all_record_count_ == 0) {
       all_record_count_overflow_++;
     }
   }
+// OHOS_LOCAL end
 
   bool AddrIsInStack(uptr addr) {
     return addr >= stack_bottom_ && addr < stack_top_;
@@ -69,21 +71,28 @@ class Thread {
   void DisableTagging() { tagging_disabled_++; }
   void EnableTagging() { tagging_disabled_--; }
 
+// OHOS_LOCAL begin
   void EnableTracingHeapAllocation() { trace_heap_allocation_ = true; }
   void DisableTracingHeapAllocation() { trace_heap_allocation_ = false; }
   bool AllowTracingHeapAllocation() { return trace_heap_allocation_; }
+// OHOS_LOCAL end
 
   u64 unique_id() const { return unique_id_; }
+
+// OHOS_LOCAL begin
   int tid() const { return tid_; }
   void Announce() { Print("Thread: "); }
+// OHOS_LOCAL end
 
   uptr &vfork_spill() { return vfork_spill_; }
 
+// OHOS_LOCAL begin
   HeapQuarantineController *heap_quarantine_controller() {
     return &heap_quarantine_controller_;
   }
 
   bool TryPutInQuarantineWithDealloc(uptr ptr, size_t s, u32 aid, u32 fid);
+// OHOS_LOCAL end
 
  private:
   // NOTE: There is no Thread constructor. It is allocated
@@ -104,6 +113,7 @@ class Thread {
   HeapAllocationsRingBuffer *heap_allocations_;
   StackAllocationsRingBuffer *stack_allocations_;
 
+// OHOS_LOCAL
   HeapQuarantineController heap_quarantine_controller_;
 
   u64 unique_id_;  // counting from zero.
@@ -114,12 +124,14 @@ class Thread {
 
   bool random_state_inited_;  // Whether InitRandomState() has been called.
 
+// OHOS_LOCAL begin
   bool trace_heap_allocation_;
 
   int tid_ = -1;  // Thread ID
 
   u64 all_record_count_ = 0;  // Count record
   u64 all_record_count_overflow_ = 0;  // Whether all_record_count_ overflow.
+// OHOS_LOCAL end
 
   friend struct ThreadListHead;
 };

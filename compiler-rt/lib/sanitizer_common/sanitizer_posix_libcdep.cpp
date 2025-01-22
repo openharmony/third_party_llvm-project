@@ -36,9 +36,11 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+// OHOS_LOCAL begin
 #if SANITIZER_OHOS
 #include <sigchain.h>
 #endif
+// OHOS_LOCAL end
 
 #if SANITIZER_FREEBSD
 // The MAP_NORESERVE define has been removed in FreeBSD 11.x, and even before
@@ -210,6 +212,7 @@ static void MaybeInstallSigaction(int signum,
   CHECK_EQ(0, internal_sigaction(signum, &sigact, nullptr));
   VReport(1, "Installed the sigaction for signal %d\n", signum);
 #else
+// OHOS_LOCAL begin
   typedef bool (*sc)(int, siginfo_t *, void *);
   sc h = (sc)handler;
   struct signal_chain_action sigchain = {
@@ -220,6 +223,7 @@ static void MaybeInstallSigaction(int signum,
   // This is a void function for OHOS. When there are too many registered
   // functions, an internal error is reported. CHECK is not required.
   add_special_signal_handler(signum, &sigchain);
+// OHOS_LOCAL end
 #endif
 }
 
