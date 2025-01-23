@@ -139,45 +139,6 @@ class Decorator: public __sanitizer::SanitizerCommonDecorator {
   const char *Thread() { return Green(); }
 };
 
-static bool FindHeapAllocation(HeapAllocationsRingBuffer *rb, uptr tagged_addr,
-                               HeapAllocationRecord *har, uptr *ring_index,
-                               uptr *num_matching_addrs,
-                               uptr *num_matching_addrs_4b) {
-  if (!rb) return false;
-
-  *num_matching_addrs = 0;
-  *num_matching_addrs_4b = 0;
-  for (uptr i = 0, size = rb->size(); i < size; i++) {
-    auto h = (*rb)[i];
-    if (h.tagged_addr <= tagged_addr &&
-        h.tagged_addr + h.requested_size > tagged_addr) {
-      *har = h;
-      *ring_index = i;
-      return true;
-    }
-
-    // Measure the number of heap ring buffer entries that would have matched
-    // if we had only one entry per address (e.g. if the ring buffer data was
-    // stored at the address itself). This will help us tune the allocator
-    // implementation for MTE.
-    if (UntagAddr(h.tagged_addr) <= UntagAddr(tagged_addr) &&
-        UntagAddr(h.tagged_addr) + h.requested_size > UntagAddr(tagged_addr)) {
-      ++*num_matching_addrs;
-    }
-
-    // Measure the number of heap ring buffer entries that would have matched
-    // if we only had 4 tag bits, which is the case for MTE.
-    auto untag_4b = [](uptr p) {
-      return p & ((1ULL << 60) - 1);
-    };
-    if (untag_4b(h.tagged_addr) <= untag_4b(tagged_addr) &&
-        untag_4b(h.tagged_addr) + h.requested_size > untag_4b(tagged_addr)) {
-      ++*num_matching_addrs_4b;
-    }
-  }
-  return false;
-}
-
 static void PrintStackAllocations(StackAllocationsRingBuffer *sa,
                                   tag_t addr_tag, uptr untagged_addr) {
   uptr frames = Min((uptr)flags()->stack_history_size, sa->size());
@@ -386,13 +347,22 @@ void PrintAddressDescription(
   if (uptr beg = chunk.Beg()) {
     uptr size = chunk.ActualSize();
     Printf("%s[%p,%p) is a %s %s heap chunk; "
-           "size: %zd offset: %zd\n%s",
+           "size: %zd offset: %zd, Allocated By %u\n%s",  // OHOS_LOCAL
            d.Location(),
            beg, beg + size,
            chunk.FromSmallHeap() ? "small" : "large",
            chunk.IsAllocated() ? "allocated" : "unallocated",
            size, untagged_addr - beg,
+           chunk.AllocatedByThread(), // OHOS_LOCAL
            d.Default());
+// OHOS_LOCAL begin
+    if (chunk.IsAllocated() && chunk.GetAllocStackId()) {
+      Printf("%s", d.Allocation());
+      Printf("Currently allocated here:\n");
+      Printf("%s", d.Default());
+      GetStackTraceFromId(chunk.GetAllocStackId()).Print();
+    }
+// OHOS_LOCAL end
   }
 
   tag_t addr_tag = GetTagFromPointer(tagged_addr);
@@ -408,8 +378,8 @@ void PrintAddressDescription(
       Printf("%s", d.Error());
       Printf("\nCause: stack tag-mismatch\n");
       Printf("%s", d.Location());
-      Printf("Address %p is located in stack of thread T%zd\n", untagged_addr,
-             t->unique_id());
+      Printf("Address %p is located in stack of thread %d\n", untagged_addr,
+             t->tid()); // OHOS_LOCAL
       Printf("%s", d.Default());
       t->Announce();
 
@@ -447,53 +417,120 @@ void PrintAddressDescription(
 
   if (!on_stack && candidate && candidate_distance <= kCloseCandidateDistance) {
     ShowHeapOrGlobalCandidate(untagged_addr, candidate, left, right);
+    candidate = nullptr;  // OHOS_LOCAL
     num_descriptions_printed++;
   }
 
+// OHOS_LOCAL begin
+  auto PrintUAF = [&](Thread *t, uptr ring_index, HeapAllocationRecord &har) {
+    uptr ha_untagged_addr = UntagAddr(har.tagged_addr);
+    Printf("%s", d.Error());
+    Printf("\nPotential Cause: use-after-free\n");
+    Printf("%s", d.Location());
+    Printf(
+        "%p (rb[%d] tags:%02x) is located %zd bytes inside of %zd-byte region "
+        "[%p,%p)\n",
+        untagged_addr, ring_index, GetTagFromPointer(har.tagged_addr),
+        untagged_addr - ha_untagged_addr, har.requested_size, ha_untagged_addr,
+        ha_untagged_addr + har.requested_size);
+    Printf("%s", d.Allocation());
+    Printf("freed by thread %d here:\n", t->tid());
+    Printf("%s", d.Default());
+    GetStackTraceFromId(har.free_context_id).Print();
+
+    Printf("%s", d.Allocation());
+    Printf("previously allocated by thread %d here:\n", har.alloc_thread);
+    Printf("%s", d.Default());
+    GetStackTraceFromId(har.alloc_context_id).Print();
+
+    Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ring_index + 1,
+           t->IsMainThread() ? flags()->heap_history_size_main_thread
+                             : flags()->heap_history_size);
+    t->Announce();
+    num_descriptions_printed++;
+  };
+  u64 record_searched = 0;
+  u64 record_matched = 0;
   hwasanThreadList().VisitAllLiveThreads([&](Thread *t) {
     // Scan all threads' ring buffers to find if it's a heap-use-after-free.
-    HeapAllocationRecord har;
-    uptr ring_index, num_matching_addrs, num_matching_addrs_4b;
-    if (FindHeapAllocation(t->heap_allocations(), tagged_addr, &har,
-                           &ring_index, &num_matching_addrs,
-                           &num_matching_addrs_4b)) {
-      Printf("%s", d.Error());
-      Printf("\nCause: use-after-free\n");
-      Printf("%s", d.Location());
-      Printf("%p is located %zd bytes inside of %zd-byte region [%p,%p)\n",
-             untagged_addr, untagged_addr - UntagAddr(har.tagged_addr),
-             har.requested_size, UntagAddr(har.tagged_addr),
-             UntagAddr(har.tagged_addr) + har.requested_size);
-      Printf("%s", d.Allocation());
-      Printf("freed by thread T%zd here:\n", t->unique_id());
-      Printf("%s", d.Default());
-      GetStackTraceFromId(har.free_context_id).Print();
-
-      Printf("%s", d.Allocation());
-      Printf("previously allocated here:\n", t);
-      Printf("%s", d.Default());
-      GetStackTraceFromId(har.alloc_context_id).Print();
-
-      // Print a developer note: the index of this heap object
-      // in the thread's deallocation ring buffer.
-      Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ring_index + 1,
-             flags()->heap_history_size);
-      Printf("hwasan_dev_note_num_matching_addrs: %zd\n", num_matching_addrs);
-      Printf("hwasan_dev_note_num_matching_addrs_4b: %zd\n",
-             num_matching_addrs_4b);
-
-      t->Announce();
-      num_descriptions_printed++;
+    auto *rb = t->heap_allocations();
+    if (!rb)
+      return;
+    t->DisableTracingHeapAllocation();
+    for (uptr i = 0, size = rb->realsize(); i < size; i++) {
+      auto h = (*rb)[i];
+      record_searched++;
+      if (flags()->print_uaf_stacks_with_same_tag) {
+        if (h.tagged_addr <= tagged_addr &&
+            h.tagged_addr + h.requested_size > tagged_addr) {
+          record_matched++;
+          PrintUAF(t, i, h);
+        }
+      } else {
+        uptr ha_untagged_addr = UntagAddr(h.tagged_addr);
+        if (ha_untagged_addr <= untagged_addr &&
+            ha_untagged_addr + h.requested_size > untagged_addr) {
+          record_matched++;
+          PrintUAF(t, i, h);
+        }
+      }
     }
+    t->EnableTracingHeapAllocation();
   });
 
-  if (candidate && num_descriptions_printed == 0) {
+  auto PrintUAFinFreedThread = [&](HeapAllocationRecord &har) {
+    uptr ha_untagged_addr = UntagAddr(har.tagged_addr);
+    Printf(
+        "%p (Previously freed thread ptr tags: %02x) is located %zd "
+        "bytes inside of %zd-byte region [%p,%p)\n",
+        untagged_addr, GetTagFromPointer(har.tagged_addr),
+        untagged_addr - ha_untagged_addr, har.requested_size, ha_untagged_addr,
+        ha_untagged_addr + har.requested_size);
+    Printf("freed by thread %d here:\n", har.free_thread);
+    GetStackTraceFromId(har.free_context_id).Print();
+    Printf("previously allocated by thread %d here:\n", har.alloc_thread);
+    GetStackTraceFromId(har.alloc_context_id).Print();
+    num_descriptions_printed++;
+  };
+  hwasanThreadList().VisitAllFreedRingBuffer(
+      [&](HeapAllocationsRingBuffer *rb) {
+        for (uptr i = 0, size = rb->realsize(); i < size; i++) {
+          auto har = (*rb)[i];
+          record_searched++;
+          if (flags()->print_uaf_stacks_with_same_tag) {
+            if (har.tagged_addr <= tagged_addr &&
+                har.tagged_addr + har.requested_size > tagged_addr) {
+              record_matched++;
+              PrintUAFinFreedThread(har);
+            }
+          } else {
+            if (UntagAddr(har.tagged_addr) <= untagged_addr &&
+                UntagAddr(har.tagged_addr) + har.requested_size >
+                    untagged_addr) {
+              record_matched++;
+              PrintUAFinFreedThread(har);
+            }
+          }
+        }
+      });
+  Printf("Searched %lu records, find %lu with same addr %p\n\n",
+         record_searched, record_matched, untagged_addr);
+  if (!on_stack && candidate) {
     ShowHeapOrGlobalCandidate(untagged_addr, candidate, left, right);
     num_descriptions_printed++;
   }
 
   // Print the remaining threads, as an extra information, 1 line per thread.
   hwasanThreadList().VisitAllLiveThreads([&](Thread *t) { t->Announce(); });
+  hwasanThreadList().PrintFreedRingBufferSummary();
+  if (flags()->verbose_freed_threads) {
+    u32 freed_idx = 0;
+    hwasanThreadList().VisitAllFreedRingBuffer(
+        [&](HeapAllocationsRingBuffer *rb) {
+          Printf("RB %u: (%zd/%zu)\n", freed_idx++, rb->realsize(), rb->size());
+        });
+  }
+// OHOS_LOCAL end
 
   if (!num_descriptions_printed)
     // We exhausted our possibilities. Bail out.
@@ -583,8 +620,10 @@ void ReportInvalidFree(StackTrace *stack, uptr tagged_addr) {
   const char *bug_type = "invalid-free";
   const Thread *thread = GetCurrentThread();
   if (thread) {
-    Report("ERROR: %s: %s on address %p at pc %p on thread T%zd\n",
-           SanitizerToolName, bug_type, untagged_addr, pc, thread->unique_id());
+// OHOS_LOCAL begin
+    Report("ERROR: %s: %s on address %p at pc %p on thread %d\n",
+           SanitizerToolName, bug_type, untagged_addr, pc, thread->tid());
+// OHOS_LOCAL end
   } else {
     Report("ERROR: %s: %s on address %p at pc %p on unknown thread\n",
            SanitizerToolName, bug_type, untagged_addr, pc);
@@ -719,14 +758,18 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
         offset += mem_tag - in_granule_offset;
       }
     }
+// OHOS_LOCAL begin
     Printf(
-        "%s of size %zu at %p tags: %02x/%02x(%02x) (ptr/mem) in thread T%zd\n",
+        "%s of size %zu at %p tags: %02x/%02x(%02x) (ptr/mem) in thread %d\n",
         is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
-        mem_tag, short_tag, t->unique_id());
+        mem_tag, short_tag, t->tid());
+// OHOS_LOCAL end
   } else {
-    Printf("%s of size %zu at %p tags: %02x/%02x (ptr/mem) in thread T%zd\n",
+// OHOS_LOCAL begin
+    Printf("%s of size %zu at %p tags: %02x/%02x (ptr/mem) in thread %d\n",
            is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
-           mem_tag, t->unique_id());
+           mem_tag, t->tid());
+// OHOS_LOCAL end
   }
   if (offset != 0)
     Printf("Invalid access starting at offset %zu\n", offset);
@@ -740,11 +783,59 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
 
   PrintTagsAroundAddr(tag_ptr);
 
-  if (registers_frame)
+  if (registers_frame) {
     ReportRegisters(registers_frame, pc);
+    ReportMemoryNearRegisters(registers_frame, pc); // OHOS_LOCAL
+  }
 
   ReportErrorSummary(bug_type, stack);
 }
+
+// OHOS_LOCAL begin
+void PrintMemoryAroundAddress(MemoryMappingLayout &proc_maps, int reg_num,
+                              uptr addr, uptr len, bool is_pc) {
+  const sptr kBufSize = 4095;
+  char *filename = (char *)MmapOrDie(kBufSize, __func__);
+  MemoryMappedSegment segment(filename, kBufSize);
+  while (proc_maps.Next(&segment)) {
+    if (segment.start <= addr && addr < segment.end && segment.IsReadable()) {
+      if (!is_pc) {
+        if (reg_num < 31)
+          Printf("x%d(%s):\n", reg_num, segment.filename);
+        else
+          Printf("sp(%s):\n", segment.filename);
+      } else {
+        Printf("pc(%s):\n", segment.filename);
+      }
+      uptr beg = RoundDownTo(addr - (addr < len ? addr : len), 8);
+      if (segment.start > beg)
+        beg = segment.start;
+      uptr end = RoundUpTo(addr + len, 8);
+      if (segment.end < end)
+        end = segment.end;
+      for (uptr pos = beg; pos < end; pos += 8) {
+        if (pos <= addr && addr < pos + 8)
+          Printf("==>\t\t%p %016llx\n", pos, *(uptr *)(pos));
+        else
+          Printf("\t\t%p %016llx\n", pos, *(uptr *)(pos));
+      }
+      break;
+    }
+  }
+}
+
+void ReportMemoryNearRegisters(uptr *frame, uptr pc) {
+  Printf("Memory near registers:\n");
+  MemoryMappingLayout proc_maps(/*cache_enabled*/ true);
+  for (int i = 0; i <= 31; ++i) {
+    PrintMemoryAroundAddress(proc_maps, i, UntagAddr(frame[i]),
+                             flags()->memory_around_register_size);
+    proc_maps.Reset();
+  }
+  PrintMemoryAroundAddress(proc_maps, -1, pc,
+                           flags()->memory_around_register_size, true);
+}
+// OHOS_LOCAL end
 
 // See the frame breakdown defined in __hwasan_tag_mismatch (from
 // hwasan_tag_mismatch_aarch64.S).
