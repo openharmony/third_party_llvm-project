@@ -402,7 +402,7 @@ llvm::Constant *CodeGenModule::getMemberFunctionPointer(const FunctionDecl *FD,
 std::optional<PointerAuthQualifier>
 CodeGenModule::computeVTPointerAuthentication(const CXXRecordDecl *ThisClass) {
   auto DefaultAuthentication = getCodeGenOpts().PointerAuth.CXXVTablePointers;
-  if (!DefaultAuthentication)
+  if (!DefaultAuthentication || ThisClass->hasAttr<NopacAttr>())
     return std::nullopt;
   const CXXRecordDecl *PrimaryBase =
       Context.baseForVTableAuthentication(ThisClass);
