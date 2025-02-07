@@ -21,9 +21,13 @@
 #include <functional>
 using namespace clang;
 
-void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &Diags);
-void PacDfiEmitStructFieldsMetadata(llvm::Module &M, CodeGen::CodeGenModule *CGM,
-    std::function<unsigned(CodeGen::CodeGenModule&, const RecordDecl*, const FieldDecl*)> func);
+void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx,
+                       DiagnosticsEngine &Diags);
+void PacDfiEmitStructFieldsMetadata(
+    llvm::Module &M, CodeGen::CodeGenModule *CGM,
+    std::function<unsigned(CodeGen::CodeGenModule &, const RecordDecl *,
+                           const FieldDecl *)>
+        func);
 void PacDfiRecordDecl2StructName(const RecordDecl *RD, llvm::StructType *Entry);
 
 #endif
