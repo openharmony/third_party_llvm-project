@@ -1,4 +1,4 @@
-// RUN: %clangxx_tsan %s -o %t && %run %t 2>&1 | FileCheck %s
+// RUN: %clangxx_tsan %s %link_libcxx_tsan -o %t && %run %t 2>&1 | FileCheck %s
 
 // REQUIRES: ohos_family
 
