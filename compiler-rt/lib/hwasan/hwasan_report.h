@@ -29,9 +29,10 @@ void ReportTailOverwritten(StackTrace *stack, uptr addr, uptr orig_size,
                            const u8 *expected);
 void ReportRegisters(uptr *registers_frame, uptr pc);
 // OHOS_LOCAL begin
-void ReportMemoryNearRegisters(uptr *registers_frame, uptr pc);
+void ReportMemoryNearRegisters(uptr *registers_frame, uptr sp, uptr pc);
 void PrintMemoryAroundAddress(MemoryMappingLayout &proc_maps, int reg_num,
-                              uptr addr, uptr len, bool is_pc = false);
+                              uptr addr, uptr len, bool is_sp = false,
+                              bool is_pc = false);
 // OHOS_LOCAL end
 void ReportAtExitStatistics();
 
