@@ -171,29 +171,53 @@ void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &
     }
 }
 
-void PacDfiCreateMetaData(std::map<RecordDecl*, std::vector<FieldDecl*>> &fieldInfos, StringRef mdName,
-    llvm::Module &M, CodeGen::CodeGenModule *CGM,
-    std::function<unsigned(CodeGen::CodeGenModule&, const RecordDecl*, const FieldDecl*)> func)
-{
-    llvm::NamedMDNode *PacNMD = M.getOrInsertNamedMetadata(mdName);
-    llvm::NamedMDNode *PacNMDName = M.getOrInsertNamedMetadata(mdName.str() + "name");
-    for (auto item : fieldInfos) {
-        if (RecordDecl2StructName.find(item.first) == RecordDecl2StructName.end()) {
-            continue;
+bool getStructNameFromRecord(const RecordDecl *Record, StringRef &Name) {
+    auto Item = RecordDecl2StructName.find(Record);
+    if (Item != RecordDecl2StructName.end()) {
+        Name = Item->second;
+        return true;
+    }
+    auto PreRecord = Record->getPreviousDecl();
+    while (PreRecord) {
+        auto PreItem = RecordDecl2StructName.find(PreRecord);
+        if (PreItem != RecordDecl2StructName.end()) {
+            Name = PreItem->second;
+            return true;
         }
+        PreRecord = PreRecord->getPreviousDecl();
+    }
+    return false;
+}
+
+void pacDfiCreateNameMetaData(
+    std::map<RecordDecl *, std::vector<FieldDecl *>> &FieldInfos,
+    StringRef MDName, llvm::Module &M, CodeGen::CodeGenModule *CGM,
+    std::function<unsigned(CodeGen::CodeGenModule &, const RecordDecl *,
+                           const FieldDecl *)>
+        Func) {
+    llvm::NamedMDNode *PacNMD = M.getOrInsertNamedMetadata(MDName);
+    llvm::NamedMDNode *PacNMDName =
+        M.getOrInsertNamedMetadata(MDName.str() + "name");
+    for (auto Item : FieldInfos) {
         std::vector<llvm::Metadata *> PacFields;
         std::vector<llvm::Metadata *> PacFieldsName;
-        auto styName = RecordDecl2StructName.find(item.first)->second;
-        PacFields.push_back(llvm::MDString::get(M.getContext(), styName));
-        PacFieldsName.push_back(llvm::MDString::get(M.getContext(), styName));
-        for (auto *Field : item.second) {
-            PacFieldsName.push_back(llvm::MDString::get(M.getContext(), Field->getName()));
-            unsigned idx = func(*CGM, item.first, Field);
-            PacFields.push_back(llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(
-                llvm::Type::getInt32Ty(M.getContext()), idx)));
+        StringRef StyName;
+        if (!getStructNameFromRecord(Item.first, StyName)) {
+            continue;
+        }
+        PacFields.push_back(llvm::MDString::get(M.getContext(), StyName));
+        PacFieldsName.push_back(llvm::MDString::get(M.getContext(), StyName));
+        for (auto *Field : Item.second) {
+            PacFieldsName.push_back(
+                llvm::MDString::get(M.getContext(), Field->getName()));
+            unsigned Idx = Func(*CGM, Item.first, Field);
+            PacFields.push_back(
+                llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(M.getContext()), Idx)));
         }
         PacNMD->addOperand(llvm::MDNode::get(M.getContext(), PacFields));
-        PacNMDName->addOperand(llvm::MDNode::get(M.getContext(), PacFieldsName));
+        PacNMDName->addOperand(
+            llvm::MDNode::get(M.getContext(), PacFieldsName));
     }
 }
 
@@ -205,16 +229,18 @@ void PacDfiEmitStructFieldsMetadata(llvm::Module &M, CodeGen::CodeGenModule *CGM
     }
     // emit struct fields that need to protect with PA
     if (!PacFieldNameInfos.empty()) {
-        PacDfiCreateMetaData(PacFieldNameInfos, "pa_field_info", M, CGM, func);
+        pacDfiCreateNameMetaData(PacFieldNameInfos, "pa_field_info", M, CGM,
+                                 func);
     }
     if (!PacPtrNameInfos.empty()) {
-        PacDfiCreateMetaData(PacPtrNameInfos, "pa_ptr_field_info", M, CGM, func);
+        pacDfiCreateNameMetaData(PacPtrNameInfos, "pa_ptr_field_info", M, CGM,
+                                 func);
     }
     if (!PacFieldExclNameInfos.empty()) {
-        PacDfiCreateMetaData(PacFieldExclNameInfos, "pa_excl_field_info", M, CGM, func);
+        pacDfiCreateNameMetaData(PacFieldExclNameInfos, "pa_excl_field_info", M, CGM, func);
     }
     if (!PacFieldSeqlNameInfos.empty()) {
-        PacDfiCreateMetaData(PacFieldSeqlNameInfos, "pa_seql_field_info", M, CGM, func);
+        pacDfiCreateNameMetaData(PacFieldSeqlNameInfos, "pa_seql_field_info", M, CGM, func);
     }
 }
 
