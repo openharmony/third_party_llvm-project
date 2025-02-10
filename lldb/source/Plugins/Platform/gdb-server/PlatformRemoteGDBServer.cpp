@@ -788,7 +788,11 @@ std::string PlatformRemoteGDBServer::MakeUrl(const char *scheme,
                                              const char *hostname,
                                              uint16_t port, const char *path) {
   StreamString result;
-  result.Printf("%s://[%s]", scheme, hostname);
+  // OHOS_LOCAL begin
+  bool is_abstract = !strcmp(scheme, "unix-abstract-connect");
+  auto* fmt_str = is_abstract ? "%s://%s" : "%s://[%s]";
+  result.Printf(fmt_str, scheme, hostname);
+  // OHOS_LOCAL end
   if (port != 0)
     result.Printf(":%u", port);
   if (path)
