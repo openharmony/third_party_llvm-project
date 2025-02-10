@@ -144,6 +144,14 @@ class HwasanThreadList {
       return;
 
     SpinMutexLock l(&freed_rb_mutex_);
+
+    freed_rb_count_++;
+    if (freed_rb_count_ == 0)
+      freed_rb_count_overflow_++;
+
+    if (!flags()->freed_threads_history_size)
+      return;
+
     if (!freed_rb_list_) {
       size_t sz = flags()->freed_threads_history_size *
                   sizeof(HeapAllocationsRingBuffer *);
@@ -155,6 +163,8 @@ class HwasanThreadList {
     }
     if (freed_rb_list_size_ >= flags()->freed_threads_history_size) {
       auto sz = flags()->freed_threads_history_size / 3;
+      if (sz == 0)
+        sz = 1;
       for (uptr i = 0; i < sz; i++) {
         if (freed_rb_list_[i])
           freed_rb_list_[i]->Delete();
@@ -178,9 +188,6 @@ class HwasanThreadList {
     }
     freed_rb_list_[freed_rb_list_size_] = freed_allocations_;
     freed_rb_list_size_++;
-    freed_rb_count_++;
-    if (freed_rb_count_ == 0)
-      freed_rb_count_overflow_++;
   }
 // OHOS_LOCAL end
 
