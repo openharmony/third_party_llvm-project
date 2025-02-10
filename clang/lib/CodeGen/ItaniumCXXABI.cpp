@@ -1183,7 +1183,7 @@ llvm::Constant *ItaniumCXXABI::BuildMemberPointer(const CXXMethodDecl *MD,
       // Don't set the LSB of adj to 1 if pointer authentication for member
       // function pointers is enabled.
       MemPtr[1] = llvm::ConstantInt::get(
-          CGM.PtrDiffTy, 2 * ThisAdjustment.getQuantity() + !Schema);
+          CGM.PtrDiffTy, 2 * ThisAdjustment.getQuantity() + (!Schema || NoPac));
     } else {
       // Itanium C++ ABI 2.3:
       //   For a virtual function, [the pointer field] is 1 plus the
