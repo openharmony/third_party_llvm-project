@@ -400,6 +400,14 @@ __attribute__((constructor(0))) void __hwasan_init() {
   __ubsan::InitAsPlugin();
 #endif
 
+// OHOS_LOCAL begin
+  if (flags()->memory_debug) {
+    flags()->max_malloc_fill_size = 256;
+    flags()->max_free_fill_size = 256;
+    flags()->heap_quarantine_max = 1024 + 1;
+  }
+// OHOS_LOCAL end
+
   if (CAN_SANITIZE_LEAKS) {
     __lsan::ScopedInterceptorDisabler disabler;
     Symbolizer::LateInitialize();

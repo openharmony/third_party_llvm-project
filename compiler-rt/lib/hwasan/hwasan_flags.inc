@@ -24,6 +24,8 @@ HWASAN_FLAG(bool, print_stats, false, "")
 HWASAN_FLAG(bool, halt_on_error, true, "")
 HWASAN_FLAG(bool, atexit, false, "")
 
+HWASAN_FLAG(bool, memory_debug, false, "")  // OHOS_LOCAL
+
 // Test only flag to disable malloc/realloc/free memory tagging on startup.
 // Tagging can be reenabled with __hwasan_enable_allocator_tagging().
 HWASAN_FLAG(bool, disable_allocator_tagging, false, "")
