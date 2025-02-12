@@ -36,14 +36,12 @@ void HeapQuarantineController::ClearHeapQuarantine(AllocatorCache *cache) {
 
 bool HeapQuarantineController::TryPutInQuarantineWithDealloc(
     uptr ptr, size_t s, u32 aid, u32 fid, AllocatorCache *cache) {
-  if (IsInPrintf()) {
+  if (IsInPrintf())
     return false;
-  }
   if ((flags()->heap_quarantine_max > 0) &&
       (flags()->heap_quarantine_max > s && flags()->heap_quarantine_min <= s)) {
-    if (UNLIKELY(flags()->heap_quarantine_thread_max_count == 0)) {
+    if (UNLIKELY(flags()->heap_quarantine_thread_max_count <= 0))
       return false;
-    }
     if (UNLIKELY(heap_quarantine_list_ == nullptr)) {
       size_t sz = RoundUpTo(
           flags()->heap_quarantine_thread_max_count * sizeof(HeapQuarantine),
@@ -66,6 +64,7 @@ void HeapQuarantineController::PutInQuarantineWithDealloc(
                flags()->heap_quarantine_thread_max_count)) {
     // free 1/3 heap_quarantine_list
     u32 free_count = heap_quarantine_tail_ / 3;
+    free_count = free_count > 0 ? free_count : 1;
     u32 left_count = heap_quarantine_tail_ - free_count;
     DeallocateWithHeapQuarantcheck(free_count, cache);
     internal_memcpy(
@@ -94,9 +93,9 @@ void HeapQuarantineController::DeallocateWithHeapQuarantcheck(
     u64 *ptrBeg = reinterpret_cast<u64 *>(heap_quarantine_list_[i].ptr);
     if (heap_quarantine_list_[i].s > sizeof(u64)) {
       if (flags()->max_free_fill_size > 0) {
-        uptr fill_size =
-            Min(heap_quarantine_list_[i].s, (uptr)flags()->max_free_fill_size);
-        for (size_t j = 0; j < (fill_size - 1) / sizeof(u64); j++) {
+        size_t fill_size =
+            Min(heap_quarantine_list_[i].s, (size_t)flags()->max_free_fill_size);
+        for (size_t j = 0; j < fill_size / sizeof(u64); j++) {
           if (ptrBeg[j] != magic) {
             Printf(
                 "ptrBeg was re-written after free %p[%zu], %p "
