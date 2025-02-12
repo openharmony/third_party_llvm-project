@@ -495,7 +495,17 @@ CallBase &llvm::promoteCall(CallBase &CB, Function *Callee,
   // If the function type of the call site matches that of the callee, no
   // additional work is required.
   if (CB.getFunctionType() == Callee->getFunctionType())
-    return CB;
+  {
+    CallBase *CBNew = CallBase::removeOperandBundle(&CB, LLVMContext::OB_ptrauth, CB.getIterator());
+
+    if(CBNew != &CB)
+    {
+      CBNew->copyMetadata(CB);
+      CB.replaceAllUsesWith(CBNew);
+      CB.eraseFromParent();
+    }
+    return *CBNew;
+  }
 
   // Save the return types of the call site and callee.
   Type *CallSiteRetTy = CB.getType();
@@ -557,7 +567,15 @@ CallBase &llvm::promoteCall(CallBase &CB, Function *Callee,
                                         AttributeSet::get(Ctx, RAttrs),
                                         NewArgAttrs));
 
-  return CB;
+  CallBase *CBNew = CallBase::removeOperandBundle(&CB, LLVMContext::OB_ptrauth, CB.getIterator());
+
+  if(CBNew != &CB)
+  {
+    CBNew->copyMetadata(CB);
+    CB.replaceAllUsesWith(CBNew);
+    CB.eraseFromParent();
+  }
+  return *CBNew;
 }
 
 CallBase &llvm::promoteCallWithIfThenElse(CallBase &CB, Function *Callee,
