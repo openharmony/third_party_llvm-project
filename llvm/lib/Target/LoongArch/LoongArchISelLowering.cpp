@@ -5708,3 +5708,8 @@ bool LoongArchTargetLowering::decomposeMulByConstant(LLVMContext &Context,
 
   return false;
 }
+
+ISD::NodeType LoongArchTargetLowering::getExtendForAtomicCmpSwapArg() const {
+  // TODO: LAMCAS will use amcas{_DB,}.[bhwd] which does not require extension.
+  return ISD::SIGN_EXTEND;
+}
