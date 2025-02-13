@@ -5525,15 +5525,35 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
 
   if (Arg *A = Args.getLastArg(options::OPT_mcmodel_EQ)) {
     StringRef CM = A->getValue();
-    if (CM == "small" || CM == "kernel" || CM == "medium" || CM == "large" ||
-        CM == "tiny") {
-      if (Triple.isOSAIX() && CM == "medium")
-        CmdArgs.push_back("-mcmodel=large");
-      else
-        A->render(Args, CmdArgs);
+    if (Triple.isLoongArch()) {
+      bool Ok = false;
+      if (CM == "extreme" &&
+          Args.hasFlagNoClaim(options::OPT_fplt, options::OPT_fno_plt, false))
+        D.Diag(diag::err_drv_argument_not_allowed_with)
+            << A->getAsString(Args) << "-fplt";
+      Ok = CM == "normal" || CM == "medium" || CM == "extreme";
+      // Convert to LLVM recognizable names.
+      if (Ok) {
+        CM = llvm::StringSwitch<StringRef>(CM)
+                 .Case("normal", "small")
+                 .Case("extreme", "large")
+                 .Default(CM);
+        CmdArgs.push_back(Args.MakeArgString("-mcmodel=" + CM));
+      } else {
+        D.Diag(diag::err_drv_invalid_argument_to_option)
+            << CM << A->getOption().getName();
+      }
     } else {
-      D.Diag(diag::err_drv_invalid_argument_to_option)
-          << CM << A->getOption().getName();
+      if (CM == "small" || CM == "kernel" || CM == "medium" || CM == "large" ||
+          CM == "tiny") {
+        if (Triple.isOSAIX() && CM == "medium")
+          CmdArgs.push_back("-mcmodel=large");
+        else
+          A->render(Args, CmdArgs);
+      } else {
+        D.Diag(diag::err_drv_invalid_argument_to_option)
+            << CM << A->getOption().getName();
+      }
     }
   }
 
