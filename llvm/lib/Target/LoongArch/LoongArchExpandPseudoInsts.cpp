@@ -29,6 +29,8 @@ using namespace llvm;
 
 #define LOONGARCH_PRERA_EXPAND_PSEUDO_NAME                                     \
   "LoongArch Pre-RA pseudo instruction expansion pass"
+#define LOONGARCH_EXPAND_PSEUDO_NAME                                           \
+  "LoongArch pseudo instruction expansion pass"
 
 namespace {
 
@@ -510,15 +512,74 @@ bool LoongArchPreRAExpandPseudo::expandFunctionCALL(
   return true;
 }
 
+class LoongArchExpandPseudo : public MachineFunctionPass {
+public:
+  const LoongArchInstrInfo *TII;
+  static char ID;
+
+  LoongArchExpandPseudo() : MachineFunctionPass(ID) {
+    initializeLoongArchExpandPseudoPass(*PassRegistry::getPassRegistry());
+  }
+
+  bool runOnMachineFunction(MachineFunction &MF) override;
+
+  StringRef getPassName() const override {
+    return LOONGARCH_EXPAND_PSEUDO_NAME;
+  }
+
+private:
+  bool expandMBB(MachineBasicBlock &MBB);
+  bool expandMI(MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
+                MachineBasicBlock::iterator &NextMBBI);
+};
+
+char LoongArchExpandPseudo::ID = 0;
+
+bool LoongArchExpandPseudo::runOnMachineFunction(MachineFunction &MF) {
+  TII =
+      static_cast<const LoongArchInstrInfo *>(MF.getSubtarget().getInstrInfo());
+
+  bool Modified = false;
+  for (auto &MBB : MF)
+    Modified |= expandMBB(MBB);
+
+  return Modified;
+}
+
+bool LoongArchExpandPseudo::expandMBB(MachineBasicBlock &MBB) {
+  bool Modified = false;
+
+  MachineBasicBlock::iterator MBBI = MBB.begin(), E = MBB.end();
+  while (MBBI != E) {
+    MachineBasicBlock::iterator NMBBI = std::next(MBBI);
+    Modified |= expandMI(MBB, MBBI, NMBBI);
+    MBBI = NMBBI;
+  }
+
+  return Modified;
+}
+
+bool LoongArchExpandPseudo::expandMI(MachineBasicBlock &MBB,
+                                     MachineBasicBlock::iterator MBBI,
+                                     MachineBasicBlock::iterator &NextMBBI) {
+  return false;
+}
+
 } // end namespace
 
 INITIALIZE_PASS(LoongArchPreRAExpandPseudo, "loongarch-prera-expand-pseudo",
                 LOONGARCH_PRERA_EXPAND_PSEUDO_NAME, false, false)
 
+INITIALIZE_PASS(LoongArchExpandPseudo, "loongarch-expand-pseudo",
+                LOONGARCH_EXPAND_PSEUDO_NAME, false, false)
+
 namespace llvm {
 
 FunctionPass *createLoongArchPreRAExpandPseudoPass() {
   return new LoongArchPreRAExpandPseudo();
+}
+FunctionPass *createLoongArchExpandPseudoPass() {
+  return new LoongArchExpandPseudo();
 }
 
 } // end namespace llvm
