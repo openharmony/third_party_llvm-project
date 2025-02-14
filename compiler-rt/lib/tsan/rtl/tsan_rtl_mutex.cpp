@@ -558,6 +558,7 @@ void ReportDestroyLocked(ThreadState *thr, uptr pc, uptr addr,
   Lock slot_lock(&ctx->slots[static_cast<uptr>(last_lock.sid())].mtx);
   ThreadRegistryLock l0(&ctx->thread_registry);
   Lock slots_lock(&ctx->slot_mtx);
+  bool thr_slocked_status = thr->slot_locked; // OHOS_LOCAL
   thr->slot_locked = true; // OHOS_LOCAL
   ScopedReport rep(ReportTypeMutexDestroyLocked);
   rep.AddMutex(addr, creation_stack_id);
@@ -574,7 +575,7 @@ void ReportDestroyLocked(ThreadState *thr, uptr pc, uptr addr,
   rep.AddStack(trace, true);
   rep.AddLocation(addr, 1);
   OutputReport(thr, rep);
-  thr->slot_locked = false; // OHOS_LOCAL
+  thr->slot_locked = thr_slocked_status; // OHOS_LOCAL
 }
 
 }  // namespace __tsan

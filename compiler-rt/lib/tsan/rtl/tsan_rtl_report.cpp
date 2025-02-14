@@ -777,6 +777,8 @@ void ReportRace(ThreadState *thr, RawShadow *shadow_mem, Shadow cur, Shadow old,
   Lock slot_lock(&ctx->slots[static_cast<uptr>(s[1].sid())].mtx);
   ThreadRegistryLock l0(&ctx->thread_registry);
   Lock slots_lock(&ctx->slot_mtx);
+  bool thr_slocked_status = thr->slot_locked; // OHOS_LOCAL
+  thr->slot_locked = true;  // OHOS_LOCAL
   if (SpuriousRace(old))
     return;
   if (!RestoreStack(EventType::kAccessExt, s[1].sid(), s[1].epoch(), addr1,
@@ -831,6 +833,7 @@ void ReportRace(ThreadState *thr, RawShadow *shadow_mem, Shadow cur, Shadow old,
     rep.AddSleep(thr->last_sleep_stack_id);
 #endif
   OutputReport(thr, rep);
+  thr->slot_locked = thr_slocked_status;  // OHOS_LOCAL
 }
 
 void PrintCurrentStack(ThreadState *thr, uptr pc) {
