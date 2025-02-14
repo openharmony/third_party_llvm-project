@@ -199,9 +199,9 @@ void UnsetAlternateSignalStack() {
 
 static void MaybeInstallSigaction(int signum,
                                   SignalHandlerType handler) {
+#if !SANITIZER_OHOS
   if (GetHandleSignalMode(signum) == kHandleSignalNo) return;
 
-#if !SANITIZER_OHOS
   struct sigaction sigact;
   internal_memset(&sigact, 0, sizeof(sigact));
   sigact.sa_sigaction = (sa_sigaction_t)handler;
@@ -212,17 +212,33 @@ static void MaybeInstallSigaction(int signum,
   CHECK_EQ(0, internal_sigaction(signum, &sigact, nullptr));
   VReport(1, "Installed the sigaction for signal %d\n", signum);
 #else
-// OHOS_LOCAL begin
-  typedef bool (*sc)(int, siginfo_t *, void *);
-  sc h = (sc)handler;
-  struct signal_chain_action sigchain = {
-      .sca_sigaction = h,
-      .sca_mask = {},
-      .sca_flags = SA_SIGINFO | SA_NODEFER,
-  };
-  // This is a void function for OHOS. When there are too many registered
-  // functions, an internal error is reported. CHECK is not required.
-  add_special_signal_handler(signum, &sigchain);
+// OHOS_LOCAL begin  
+  HandleSignalMode mode = GetHandleSignalMode(signum);
+
+  if (mode == kHandleSignalNo) return;
+  if (mode == kHandleSignalYes) {
+    struct sigaction sigact;
+    internal_memset(&sigact, 0, sizeof(sigact));
+    sigact.sa_sigaction = (sa_sigaction_t)handler;
+    // Do not block the signal from being received in that signal's handler.
+    // Clients are responsible for handling this correctly.
+    sigact.sa_flags = SA_SIGINFO | SA_NODEFER;
+    if (common_flags()->use_sigaltstack) sigact.sa_flags |= SA_ONSTACK;
+    CHECK_EQ(0, internal_sigaction(signum, &sigact, nullptr));
+    VReport(1, "Installed the sigaction for signal %d\n", signum);
+  } else {
+    typedef bool (*sc)(int, siginfo_t *, void *);
+    sc h = (sc)handler;
+    struct signal_chain_action sigchain = {
+        .sca_sigaction = h,
+        .sca_mask = {},
+        .sca_flags = SA_SIGINFO | SA_NODEFER,
+    };
+    // This is a void function for OHOS. When there are too many registered
+    // functions, an internal error is reported. CHECK is not required.
+    add_special_signal_handler(signum, &sigchain);
+    VReport(1, "Installed the sigaction for signal %d\n", signum);
+  }
 // OHOS_LOCAL end
 #endif
 }
