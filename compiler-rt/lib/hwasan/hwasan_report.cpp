@@ -794,9 +794,10 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
 
   if (registers_frame) {
     ReportRegisters(registers_frame, pc);
-    ReportMemoryNearRegisters(registers_frame,
-                              reinterpret_cast<uptr>(registers_frame) + 256,
-                              pc); // OHOS_LOCAL
+    if (flags()->memory_around_register_size)
+      ReportMemoryNearRegisters(registers_frame,
+                                reinterpret_cast<uptr>(registers_frame) + 256,
+                                pc); // OHOS_LOCAL
   }
 
   ReportErrorSummary(bug_type, stack);
@@ -838,7 +839,7 @@ void PrintMemoryAroundAddress(MemoryMappingLayout &proc_maps, int reg_num,
 void ReportMemoryNearRegisters(uptr *frame, uptr sp, uptr pc) {
   Printf("Memory near registers:\n");
   MemoryMappingLayout proc_maps(/*cache_enabled*/ true);
-  for (int i = 0; i <= 31; ++i) {
+  for (int i = 0; i <= 30; ++i) {
     PrintMemoryAroundAddress(proc_maps, i, UntagAddr(frame[i]),
                              flags()->memory_around_register_size);
   }
