@@ -100,7 +100,7 @@ cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/lib ${clang_windows_x86_64}/lib/cl
 cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/profile ${clang_windows_x86_64}/lib/clang/15.0.4/include
 cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/fuzzer ${clang_windows_x86_64}/lib/clang/15.0.4/include
 cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/sanitizer ${clang_windows_x86_64}/lib/clang/15.0.4/include
-
+cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/omp* ${clang_windows_x86_64}/lib/clang/15.0.4/include
 
 #clang-dev-ohos-aarch64
 cp -rf ${clang_linux_x86_64}/include/libcxx-ohos ${clang_ohos_arm64}/include
@@ -110,6 +110,7 @@ cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/lib ${clang_ohos_arm64}/lib/clang/
 cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/profile ${clang_ohos_arm64}/lib/clang/15.0.4/include
 cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/fuzzer ${clang_ohos_arm64}/lib/clang/15.0.4/include
 cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/sanitizer ${clang_ohos_arm64}/lib/clang/15.0.4/include
+cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/omp* ${clang_ohos_arm64}/lib/clang/15.0.4/include
 
 
 #archive
@@ -122,4 +123,4 @@ do
 done
 }
 
-packeage_llvm
+package_llvm
