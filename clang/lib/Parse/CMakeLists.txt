@@ -3,6 +3,7 @@ set(LLVM_LINK_COMPONENTS
   MC
   MCParser
   Support
+  TargetParser
   )
 
 add_clang_library(clangParse
@@ -22,14 +23,15 @@ add_clang_library(clangParse
   ParseTemplate.cpp
   ParseTentative.cpp
   Parser.cpp
+  ParseOpenACC.cpp
 
   LINK_LIBS
   clangAST
   clangBasic
   clangLex
   clangSema
-  pacDfi # OHOS_LOCAL
 
   DEPENDS
   omp_gen
+  ClangDriverOptions
   )

@@ -58,7 +58,7 @@ int MachineFrameInfo::CreateStackObject(uint64_t Size, Align Alignment,
                                 !IsSpillSlot, StackID));
   int Index = (int)Objects.size() - NumFixedObjects - 1;
   assert(Index >= 0 && "Bad frame index!");
-  if (StackID == 0)
+  if (contributesToMaxAlignment(StackID))
     ensureMaxAlignment(Alignment);
   return Index;
 }
@@ -128,8 +128,8 @@ BitVector MachineFrameInfo::getPristineRegs(const MachineFunction &MF) const {
 
   // Saved CSRs are not pristine.
   for (const auto &I : getCalleeSavedInfo())
-    for (MCSubRegIterator S(I.getReg(), TRI, true); S.isValid(); ++S)
-      BV.reset(*S);
+    for (MCPhysReg S : TRI->subregs_inclusive(I.getReg()))
+      BV.reset(S);
 
   return BV;
 }
@@ -184,7 +184,8 @@ uint64_t MachineFrameInfo::estimateStackSize(const MachineFunction &MF) const {
   return alignTo(Offset, StackAlign);
 }
 
-void MachineFrameInfo::computeMaxCallFrameSize(const MachineFunction &MF) {
+void MachineFrameInfo::computeMaxCallFrameSize(
+    MachineFunction &MF, std::vector<MachineBasicBlock::iterator> *FrameSDOps) {
   const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
   unsigned FrameSetupOpcode = TII.getCallFrameSetupOpcode();
   unsigned FrameDestroyOpcode = TII.getCallFrameDestroyOpcode();
@@ -192,18 +193,14 @@ void MachineFrameInfo::computeMaxCallFrameSize(const MachineFunction &MF) {
          "Can only compute MaxCallFrameSize if Setup/Destroy opcode are known");
 
   MaxCallFrameSize = 0;
-  for (const MachineBasicBlock &MBB : MF) {
-    for (const MachineInstr &MI : MBB) {
+  for (MachineBasicBlock &MBB : MF) {
+    for (MachineInstr &MI : MBB) {
       unsigned Opcode = MI.getOpcode();
       if (Opcode == FrameSetupOpcode || Opcode == FrameDestroyOpcode) {
-        unsigned Size = TII.getFrameSize(MI);
+        uint64_t Size = TII.getFrameSize(MI);
         MaxCallFrameSize = std::max(MaxCallFrameSize, Size);
-        AdjustsStack = true;
-      } else if (MI.isInlineAsm()) {
-        // Some inline asm's need a stack frame, as indicated by operand 1.
-        unsigned ExtraInfo = MI.getOperand(InlineAsm::MIOp_ExtraInfo).getImm();
-        if (ExtraInfo & InlineAsm::Extra_IsAlignStack)
-          AdjustsStack = true;
+        if (FrameSDOps != nullptr)
+          FrameSDOps->push_back(&MI);
       }
     }
   }
@@ -213,10 +210,7 @@ void MachineFrameInfo::print(const MachineFunction &MF, raw_ostream &OS) const{
   if (Objects.empty()) return;
 
   const TargetFrameLowering *FI = MF.getSubtarget().getFrameLowering();
-  // OHOS_LOCAL begin
-  auto CC = MF.getFunction().getCallingConv();
-  int ValOffset = (FI ? FI->getOffsetOfLocalArea(CC) : 0);
-  // OHOS_LOCAL end
+  int ValOffset = (FI ? FI->getOffsetOfLocalArea() : 0);
 
   OS << "Frame Objects:\n";
 
@@ -236,10 +230,6 @@ void MachineFrameInfo::print(const MachineFunction &MF, raw_ostream &OS) const{
     else
       OS << "size=" << SO.Size;
     OS << ", align=" << SO.Alignment.value();
-    // OHOS_LOCAL begin
-    if (SO.isArkSpillSlot)
-      OS << ", arkSpillObject";
-    // OHOS_LOCAL end
 
     if (i < NumFixedObjects)
       OS << ", fixed";

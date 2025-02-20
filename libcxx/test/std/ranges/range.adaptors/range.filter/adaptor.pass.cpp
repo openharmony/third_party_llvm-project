@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // std::views::filter
 
@@ -20,11 +19,7 @@
 #include <utility>
 
 #include "test_iterators.h"
-
-template <class View, class T>
-concept CanBePiped = requires (View&& view, T&& t) {
-  { std::forward<View>(view) | std::forward<T>(t) };
-};
+#include "test_range.h"
 
 struct NonCopyablePredicate {
   NonCopyablePredicate(NonCopyablePredicate const&) = delete;

@@ -2,9 +2,12 @@ add_lldb_unittest(LLDBCoreTests
   CommunicationTest.cpp
   DiagnosticEventTest.cpp
   DumpDataExtractorTest.cpp
+  DumpRegisterInfoTest.cpp
+  FileSpecListTest.cpp
   FormatEntityTest.cpp
   MangledTest.cpp
   ModuleSpecTest.cpp
+  ProgressReportTest.cpp
   RichManglingContextTest.cpp
   SourceLocationSpecTest.cpp
   SourceManagerTest.cpp
@@ -20,6 +23,7 @@ add_lldb_unittest(LLDBCoreTests
     lldbPluginSymbolFileSymtab
     lldbSymbol
     lldbUtilityHelpers
+    lldbHostHelpers
     LLVMTestingSupport
   LINK_COMPONENTS
     Support

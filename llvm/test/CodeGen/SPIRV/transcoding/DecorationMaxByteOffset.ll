@@ -1,4 +1,5 @@
 ; RUN: llc -O0 -mtriple=spirv32-unknown-unknown %s -o - | FileCheck %s --check-prefix=CHECK-SPIRV
+; TODO: %if spirv-tools %{ llc -O0 -mtriple=spirv32-unknown-unknown %s -o - -filetype=obj | spirv-val %}
 
 ; CHECK-SPIRV:     OpName %[[#PTR_ID:]] "ptr"
 ; CHECK-SPIRV:     OpName %[[#PTR2_ID:]] "ptr2"
@@ -9,7 +10,6 @@
 ; CHECK-SPIRV:     %[[#PTR_ID]] = OpFunctionParameter %[[#CHAR_PTR_T]]
 ; CHECK-SPIRV:     %[[#PTR2_ID]] = OpFunctionParameter %[[#CHAR_PTR_T]]
 
-; Function Attrs: nounwind
 define spir_kernel void @worker(i8 addrspace(3)* dereferenceable(12) %ptr) {
 entry:
   %ptr.addr = alloca i8 addrspace(3)*, align 4
@@ -17,7 +17,6 @@ entry:
   ret void
 }
 
-; Function Attrs: nounwind
 define spir_func void @not_a_kernel(i8 addrspace(3)* dereferenceable(123) %ptr2) {
 entry:
   ret void

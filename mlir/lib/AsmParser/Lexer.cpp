@@ -11,13 +11,19 @@
 //===----------------------------------------------------------------------===//
 
 #include "Lexer.h"
+#include "Token.h"
 #include "mlir/AsmParser/CodeComplete.h"
 #include "mlir/IR/Diagnostics.h"
 #include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
+#include "mlir/Support/LLVM.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringSwitch.h"
+#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/SourceMgr.h"
+#include <cassert>
+#include <cctype>
 
 using namespace mlir;
 
@@ -161,7 +167,7 @@ Token Lexer::lexToken() {
         curPtr += 2;
         return formToken(Token::file_metadata_end, tokStart);
       }
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     case '!':
     case '^':
     case '%':
@@ -265,7 +271,7 @@ void Lexer::skipComment() {
         --curPtr;
         return;
       }
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     default:
       // Skip over other characters.
       break;
@@ -415,7 +421,7 @@ Token Lexer::lexString(const char *tokStart) {
       // include it.  If it is the end of file, then it is an error.
       if (curPtr - 1 != curBuffer.end())
         continue;
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     case '\n':
     case '\v':
     case '\f':

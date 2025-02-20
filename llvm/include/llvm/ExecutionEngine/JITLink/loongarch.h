@@ -15,7 +15,7 @@
 
 #include "TableManager.h"
 #include "llvm/ExecutionEngine/JITLink/JITLink.h"
-#include "llvm/ExecutionEngine/JITLink/MemoryFlags.h"
+#include "llvm/ExecutionEngine/Orc/Shared/MemoryFlags.h"
 
 namespace llvm {
 namespace jitlink {
@@ -280,7 +280,7 @@ inline ArrayRef<char> getStubBlockContent(LinkGraph &G) {
 }
 
 /// Creates a new pointer block in the given section and returns an
-/// Anonymous symobl pointing to it.
+/// Anonymous symbol pointing to it.
 ///
 /// If InitialTarget is given then an Pointer64 relocation will be added to the
 /// block pointing at InitialTarget.
@@ -347,8 +347,8 @@ public:
 private:
   Section &getGOTSection(LinkGraph &G) {
     if (!GOTSection)
-      GOTSection =
-          &G.createSection(getSectionName(), MemProt::Read | MemProt::Exec);
+      GOTSection = &G.createSection(getSectionName(),
+                                    orc::MemProt::Read | orc::MemProt::Exec);
     return *GOTSection;
   }
 
@@ -383,8 +383,8 @@ public:
 public:
   Section &getStubsSection(LinkGraph &G) {
     if (!StubsSection)
-      StubsSection =
-          &G.createSection(getSectionName(), MemProt::Read | MemProt::Exec);
+      StubsSection = &G.createSection(getSectionName(),
+                                      orc::MemProt::Read | orc::MemProt::Exec);
     return *StubsSection;
   }
 

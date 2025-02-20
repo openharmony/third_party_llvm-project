@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
+// UNSUPPORTED: GCC-ALWAYS_INLINE-FIXME
 
 // <algorithm>
 
@@ -291,7 +291,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
       assert(std::ranges::equal(out, std::array<TracedCopy, 6>{1, 3, 5, 8, 15, 16}));
 
       assert(std::ranges::all_of(out, &TracedCopy::copiedOnce));
@@ -304,7 +304,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
       assert(std::ranges::equal(out, std::array<TracedCopy, 6>{1, 3, 5, 8, 15, 16}));
 
       assert(std::ranges::all_of(out, &TracedCopy::copiedOnce));
@@ -322,7 +322,7 @@ constexpr bool test() {
   // Stable ([algorithm.stable]). If [first1, last1) contains m elements that are
   // equivalent to each other and [first2, last2) contains n elements that are
   // equivalent to them, then all m elements from the first range are copied to the
-  // output range, in order, and then the final max(n−m,0) elements from the second
+  // output range, in order, and then the final max(n-m,0) elements from the second
   // range are copied to the output range, in order.
   {
     std::array<IntAndOrder, 3> r1{{{0, 0}, {0, 1}, {0, 2}}};
@@ -368,7 +368,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
     }
 
     // range overload
@@ -382,7 +382,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
     }
   }
 
@@ -403,7 +403,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
     }
 
     // range overload
@@ -415,7 +415,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
     }
   }
 
@@ -488,7 +488,7 @@ constexpr bool test() {
       assert(compProjs.numberOfProj2 < maxOperation);
     }
   }
-  
+
   return true;
 }
 

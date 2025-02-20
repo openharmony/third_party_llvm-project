@@ -9,7 +9,6 @@
 // <algorithm>
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // template<input_iterator I, sentinel_for<I> S, class Proj = identity,
 //          indirect_unary_predicate<projected<I, Proj>> Pred>
@@ -94,7 +93,7 @@ constexpr void test_iterators() {
       auto pred = [&](int) { ++predicateCount; return false; };
       auto proj = [&](int i) { ++projectionCount; return i; };
       std::array a = {9, 7, 5, 3};
-      assert(std::ranges::none_of(It(a.begin()), Sent(It(a.end())), pred, proj));
+      assert(std::ranges::none_of(It(a.data()), Sent(It(a.data() + a.size())), pred, proj));
       assert(predicateCount == 4);
       assert(projectionCount == 4);
     }

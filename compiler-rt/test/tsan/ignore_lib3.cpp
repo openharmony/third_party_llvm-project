@@ -11,10 +11,6 @@
 // Some aarch64 kernels do not support non executable write pages
 // REQUIRES: stable-runtime
 
-// OHOS_LOCAL
-// The expected log will not be printed because ohos libignore support dlclose.
-// UNSUPPORTED: ohos_family
-
 #ifndef LIB
 
 #include <dlfcn.h>

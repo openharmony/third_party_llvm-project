@@ -9,7 +9,6 @@
 // <algorithm>
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // template<forward_iterator I, sentinel_for<I> S, class Proj = identity,
 //          indirect_binary_predicate<projected<I, Proj>,
@@ -27,7 +26,6 @@
 #include <ranges>
 
 #include "almost_satisfies_types.h"
-#include "boolean_testable.h"
 #include "test_iterators.h"
 
 template <class Iter, class Sent = Iter>
@@ -52,13 +50,13 @@ static_assert(!HasAdjacentFindR<ForwardRangeNotSentinelSemiregular>);
 static_assert(!HasAdjacentFindR<ForwardRangeNotSentinelEqualityComparableWith>);
 static_assert(!HasAdjacentFindR<UncheckedRange<NotComparable>>);
 
-template <size_t N>
+template <std::size_t N>
 struct Data {
   std::array<int, N> input;
   int expected;
 };
 
-template <class Iter, class Sent, size_t N>
+template <class Iter, class Sent, std::size_t N>
 constexpr void test(Data<N> d) {
   {
     std::same_as<Iter> decltype(auto) ret =
@@ -170,19 +168,6 @@ constexpr bool test() {
       S a[] = {1, 2, 3, 4};
       auto ret = std::ranges::adjacent_find(a, &S::compare, &S::identity);
       assert(ret == a + 4);
-    }
-  }
-
-  { // check that the implicit conversion to bool works
-    {
-      int a[] = {1, 2, 2, 4};
-      auto ret = std::ranges::adjacent_find(a, a + 4, [](int i, int j) { return BooleanTestable{i == j}; });
-      assert(ret == a + 1);
-    }
-    {
-      int a[] = {1, 2, 2, 4};
-      auto ret = std::ranges::adjacent_find(a, [](int i, int j) { return BooleanTestable{i == j}; });
-      assert(ret == a + 1);
     }
   }
 

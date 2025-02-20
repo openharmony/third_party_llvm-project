@@ -103,7 +103,9 @@ lldb::thread_t Host::GetCurrentThread() {
 }
 
 void Host::Kill(lldb::pid_t pid, int signo) {
-  TerminateProcess((HANDLE)pid, 1);
+  AutoHandle handle(::OpenProcess(PROCESS_TERMINATE, FALSE, pid), nullptr);
+  if (handle.IsValid())
+    ::TerminateProcess(handle.get(), 1);
 }
 
 const char *Host::GetSignalAsCString(int signo) { return NULL; }
@@ -245,7 +247,7 @@ Status Host::ShellExpandArguments(ProcessLaunchInfo &launch_info) {
     }
 
     auto dict_sp = data_sp->GetAsDictionary();
-    if (!data_sp) {
+    if (!dict_sp) {
       error.SetErrorString("invalid JSON");
       return error;
     }

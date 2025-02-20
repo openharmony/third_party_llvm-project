@@ -17,6 +17,9 @@
 
 namespace mlir {
 
+#define GEN_PASS_DECL
+#include "mlir/Dialect/SCF/Transforms/Passes.h.inc"
+
 /// Creates a pass that bufferizes the SCF dialect.
 std::unique_ptr<Pass> createSCFBufferizePass();
 
@@ -34,7 +37,7 @@ std::unique_ptr<Pass> createSCFForLoopCanonicalizationPass();
 
 /// Creates a pass that transforms a single ParallelLoop over N induction
 /// variables into another ParallelLoop over less than N induction variables.
-std::unique_ptr<Pass> createParallelLoopCollapsingPass();
+std::unique_ptr<Pass> createTestSCFParallelLoopCollapsingPass();
 
 /// Creates a loop fusion pass which fuses parallel loops.
 std::unique_ptr<Pass> createParallelLoopFusionPass();
@@ -55,6 +58,12 @@ createParallelLoopTilingPass(llvm::ArrayRef<int64_t> tileSize = {},
 /// Creates a pass which folds arith ops on induction variable into
 /// loop range.
 std::unique_ptr<Pass> createForLoopRangeFoldingPass();
+
+/// Creates a pass that converts SCF forall loops to SCF for loops.
+std::unique_ptr<Pass> createForallToForLoopPass();
+
+/// Creates a pass that converts SCF forall loops to SCF parallel loops.
+std::unique_ptr<Pass> createForallToParallelLoopPass();
 
 // Creates a pass which lowers for loops into while loops.
 std::unique_ptr<Pass> createForToWhileLoopPass();

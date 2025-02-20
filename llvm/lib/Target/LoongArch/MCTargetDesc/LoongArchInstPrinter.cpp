@@ -56,7 +56,7 @@ void LoongArchInstPrinter::printInst(const MCInst *MI, uint64_t Address,
   printAnnotation(O, Annot);
 }
 
-void LoongArchInstPrinter::printRegName(raw_ostream &O, unsigned Reg) const {
+void LoongArchInstPrinter::printRegName(raw_ostream &O, MCRegister Reg) const {
   O << '$' << getRegisterName(Reg);
 }
 
@@ -87,7 +87,7 @@ void LoongArchInstPrinter::printAtomicMemOp(const MCInst *MI, unsigned OpNo,
   printRegName(O, MO.getReg());
 }
 
-const char *LoongArchInstPrinter::getRegisterName(unsigned Reg) {
+const char *LoongArchInstPrinter::getRegisterName(MCRegister Reg) {
   // Default print reg alias name
   return getRegisterName(Reg, NumericReg ? LoongArch::NoRegAltName
                                          : LoongArch::RegAliasName);

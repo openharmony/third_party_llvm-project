@@ -10,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 #ifndef HWASAN_FLAG
-#  error "Define HWASAN_FLAG prior to including this file!"
+# error "Define HWASAN_FLAG prior to including this file!"
 #endif
 
 // HWASAN_FLAG(Type, Name, DefaultValue, Description)
@@ -23,6 +23,9 @@ HWASAN_FLAG(bool, tag_in_free, true, "")
 HWASAN_FLAG(bool, print_stats, false, "")
 HWASAN_FLAG(bool, halt_on_error, true, "")
 HWASAN_FLAG(bool, atexit, false, "")
+HWASAN_FLAG(
+    bool, print_live_threads_info, true,
+    "If set, prints the remaining threads in report as an extra information.")
 
 // Test only flag to disable malloc/realloc/free memory tagging on startup.
 // Tagging can be reenabled with __hwasan_enable_allocator_tagging().
@@ -38,27 +41,21 @@ HWASAN_FLAG(
     "bytes that will be filled with malloc_fill_byte on malloc.")
 
 HWASAN_FLAG(bool, free_checks_tail_magic, 1,
-            "If set, free() will check the magic values "
-            "to the right of the allocated object "
-            "if the allocation size is not a divident of the granule size")
+    "If set, free() will check the magic values "
+    "after the allocated object "
+    "if the allocation size is not a divident of the granule size")
 HWASAN_FLAG(
     int, max_free_fill_size, 0,
     "HWASan allocator flag. max_free_fill_size is the maximal amount of "
     "bytes that will be filled with free_fill_byte during free.")
 HWASAN_FLAG(int, malloc_fill_byte, 0xbe,
-            "Value used to fill the newly allocated memory.")
-HWASAN_FLAG(int, free_fill_byte, 0x55, "Value used to fill deallocated memory.")
+          "Value used to fill the newly allocated memory.")
+HWASAN_FLAG(int, free_fill_byte, 0x55,
+          "Value used to fill deallocated memory.")
 HWASAN_FLAG(int, heap_history_size, 1023,
-            "The number of heap (de)allocations remembered per thread. "
-            "Affects the quality of heap-related reports, but not the ability "
-            "to find bugs.")
-// OHOS_LOCAL begin
-HWASAN_FLAG(
-    int, heap_history_size_main_thread, 102300,
-    "The number of heap (de)allocations remembered for the main thread. "
-    "Affects the quality of heap-related reports, but not the ability "
-    "to find bugs.")
-// OHOS_LOCAL end
+          "The number of heap (de)allocations remembered per thread. "
+          "Affects the quality of heap-related reports, but not the ability "
+          "to find bugs.")
 HWASAN_FLAG(bool, export_memory_stats, true,
             "Export up-to-date memory stats through /proc")
 HWASAN_FLAG(int, stack_history_size, 1024,
@@ -79,6 +76,7 @@ HWASAN_FLAG(bool, malloc_bisect_dump, false,
             "Print all allocations within [malloc_bisect_left, "
             "malloc_bisect_right] range ")
 
+
 // Exit if we fail to enable the AArch64 kernel ABI relaxation which allows
 // tagged pointers in syscalls.  This is the default, but being able to disable
 // that behaviour is useful for running the testsuite on more platforms (the
@@ -87,41 +85,9 @@ HWASAN_FLAG(bool, malloc_bisect_dump, false,
 HWASAN_FLAG(bool, fail_without_syscall_abi, true,
             "Exit if fail to request relaxed syscall ABI.")
 
-// OHOS_LOCAL begin
 HWASAN_FLAG(
-    bool, print_uaf_stacks_with_same_tag, true,
-    "Control the output content of use-after-free, deciding whether to print "
-    "all stack traces of matched allocations with the same tag restriction.")
-
-// Heap allocation information for freed threads
-HWASAN_FLAG(uptr, freed_threads_history_size, 100,
-            "The number of freed threads can be recorded.")
-HWASAN_FLAG(bool, verbose_freed_threads, false,
-            "Print the heap allocation information of freed threads.")
-
-// Limits the size of the heap memory allocated to be recorded in order to
-// reduce the data. As a result, information may be missing. By default, the
-// minimum/maximum threshold is not set.
-HWASAN_FLAG(int, heap_record_min, 0,
-            "Only recording the heap memory allocation information that is >= "
-            "heap_record_min.")
-HWASAN_FLAG(int, heap_record_max, 0,
-            "Only recording the heap memory allocation information that is <= "
-            "heap_record_max.")
-
-HWASAN_FLAG(int, memory_around_register_size, 128,
-            "When reporting, the memory content of the address in register "
-            "±memory_around_register_size is printed.")
-
-// Set the quarantine area for freed heap, which is used to detect UAF-Write and
-// Overflow-Write. Provide the detection capability for dynamic libraries
-// compiled without hwasan option.
-HWASAN_FLAG(int, heap_quarantine_thread_max_count, 128,
-            "Set the maximum count for heap quarantine per thread.")
-HWASAN_FLAG(int, heap_quarantine_min, 0,
-            "The freed heap size should be larger than the minimum size before "
-            "it is placed into the heap quarantine.")
-HWASAN_FLAG(int, heap_quarantine_max, 0,
-            "The freed heap size should be smaller than the maximum size before "
-            "it is placed into the heap quarantine.")
-// OHOS_LOCAL end
+    uptr, fixed_shadow_base, -1,
+    "If not -1, HWASan will attempt to allocate the shadow at this address, "
+    "instead of choosing one dynamically."
+    "Tip: this can be combined with the compiler option, "
+    "-hwasan-mapping-offset, to optimize the instrumentation.")

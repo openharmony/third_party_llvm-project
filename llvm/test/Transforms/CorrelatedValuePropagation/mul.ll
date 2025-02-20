@@ -179,8 +179,7 @@ define i1 @nuw_range1(i8 %b) {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[C:%.*]] = add nuw nsw i8 [[B:%.*]], 1
 ; CHECK-NEXT:    [[MUL:%.*]] = mul nuw i8 [[C]], 4
-; CHECK-NEXT:    [[CMP:%.*]] = icmp eq i8 [[MUL]], 0
-; CHECK-NEXT:    ret i1 [[CMP]]
+; CHECK-NEXT:    ret i1 false
 ;
 entry:
   %c = add nuw nsw i8 %b, 1
@@ -194,8 +193,7 @@ define i1 @nuw_range2(i8 %b) {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[C:%.*]] = add nuw nsw i8 [[B:%.*]], 3
 ; CHECK-NEXT:    [[MUL:%.*]] = mul nuw i8 [[C]], 4
-; CHECK-NEXT:    [[CMP:%.*]] = icmp ult i8 [[MUL]], 2
-; CHECK-NEXT:    ret i1 [[CMP]]
+; CHECK-NEXT:    ret i1 false
 ;
 entry:
   %c = add nuw nsw i8 %b, 3
@@ -209,12 +207,20 @@ define i1 @nsw_range1(i8 %b) {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[C:%.*]] = add nuw nsw i8 [[B:%.*]], -3
 ; CHECK-NEXT:    [[MUL:%.*]] = mul nsw i8 [[C]], 4
-; CHECK-NEXT:    [[CMP:%.*]] = icmp ult i8 [[C]], [[MUL]]
-; CHECK-NEXT:    ret i1 [[CMP]]
+; CHECK-NEXT:    ret i1 false
 ;
 entry:
   %c = add nuw nsw i8 %b, -3
   %mul = mul nsw i8 %c, 4
   %cmp = icmp slt i8 %c, %mul
   ret i1 %cmp
+}
+
+define i1 @one_bit(i1 %a, i1 %b) {
+; CHECK-LABEL: @one_bit(
+; CHECK-NEXT:    [[MUL:%.*]] = mul nuw i1 [[A:%.*]], [[B:%.*]]
+; CHECK-NEXT:    ret i1 [[MUL]]
+;
+  %mul = mul i1 %a, %b
+  ret i1 %mul
 }

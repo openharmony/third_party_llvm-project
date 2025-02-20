@@ -36,12 +36,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-// OHOS_LOCAL begin
-#if SANITIZER_OHOS
-#include <sigchain.h>
-#endif
-// OHOS_LOCAL end
-
 #if SANITIZER_FREEBSD
 // The MAP_NORESERVE define has been removed in FreeBSD 11.x, and even before
 // that, it was never implemented.  So just define it to zero.
@@ -97,12 +91,12 @@ static rlim_t getlim(int res) {
 
 static void setlim(int res, rlim_t lim) {
   struct rlimit rlim;
-  if (getrlimit(res, const_cast<struct rlimit *>(&rlim))) {
+  if (getrlimit(res, &rlim)) {
     Report("ERROR: %s getrlimit() failed %d\n", SanitizerToolName, errno);
     Die();
   }
   rlim.rlim_cur = lim;
-  if (setrlimit(res, const_cast<struct rlimit *>(&rlim))) {
+  if (setrlimit(res, &rlim)) {
     Report("ERROR: %s setrlimit() failed %d\n", SanitizerToolName, errno);
     Die();
   }
@@ -110,7 +104,27 @@ static void setlim(int res, rlim_t lim) {
 
 void DisableCoreDumperIfNecessary() {
   if (common_flags()->disable_coredump) {
-    setlim(RLIMIT_CORE, 0);
+    rlimit rlim;
+    CHECK_EQ(0, getrlimit(RLIMIT_CORE, &rlim));
+    // On Linux, if the kernel.core_pattern sysctl starts with a '|' (i.e. it
+    // is being piped to a coredump handler such as systemd-coredumpd), the
+    // kernel ignores RLIMIT_CORE (since we aren't creating a file in the file
+    // system) except for the magic value of 1, which disables coredumps when
+    // piping. 1 byte is too small for any kind of valid core dump, so it
+    // also disables coredumps if kernel.core_pattern creates files directly.
+    // While most piped coredump handlers do respect the crashing processes'
+    // RLIMIT_CORE, this is notable not the case for Debian's systemd-coredump
+    // due to a local patch that changes sysctl.d/50-coredump.conf to ignore
+    // the specified limit and instead use RLIM_INFINITY.
+    //
+    // The alternative to using RLIMIT_CORE=1 would be to use prctl() with the
+    // PR_SET_DUMPABLE flag, however that also prevents ptrace(), so makes it
+    // impossible to attach a debugger.
+    //
+    // Note: we use rlim_max in the Min() call here since that is the upper
+    // limit for what can be set without getting an EINVAL error.
+    rlim.rlim_cur = Min<rlim_t>(SANITIZER_LINUX ? 1 : 0, rlim.rlim_max);
+    CHECK_EQ(0, setrlimit(RLIMIT_CORE, &rlim));
   }
 }
 
@@ -177,8 +191,7 @@ void SetAlternateSignalStack() {
   CHECK_EQ(0, sigaltstack(nullptr, &oldstack));
   // If the alternate stack is already in place, do nothing.
   // Android always sets an alternate stack, but it's too small for us.
-  if (!SANITIZER_ANDROID && !(oldstack.ss_flags & SS_DISABLE))
-    return;
+  if (!SANITIZER_ANDROID && !(oldstack.ss_flags & SS_DISABLE)) return;
   // TODO(glider): the mapped stack should have the MAP_STACK flag in the
   // future. It is not required by man 2 sigaltstack now (they're using
   // malloc()).
@@ -201,7 +214,6 @@ static void MaybeInstallSigaction(int signum,
                                   SignalHandlerType handler) {
   if (GetHandleSignalMode(signum) == kHandleSignalNo) return;
 
-#if !SANITIZER_OHOS
   struct sigaction sigact;
   internal_memset(&sigact, 0, sizeof(sigact));
   sigact.sa_sigaction = (sa_sigaction_t)handler;
@@ -211,20 +223,6 @@ static void MaybeInstallSigaction(int signum,
   if (common_flags()->use_sigaltstack) sigact.sa_flags |= SA_ONSTACK;
   CHECK_EQ(0, internal_sigaction(signum, &sigact, nullptr));
   VReport(1, "Installed the sigaction for signal %d\n", signum);
-#else
-// OHOS_LOCAL begin
-  typedef bool (*sc)(int, siginfo_t *, void *);
-  sc h = (sc)handler;
-  struct signal_chain_action sigchain = {
-      .sca_sigaction = h,
-      .sca_mask = {},
-      .sca_flags = SA_SIGINFO | SA_NODEFER,
-  };
-  // This is a void function for OHOS. When there are too many registered
-  // functions, an internal error is reported. CHECK is not required.
-  add_special_signal_handler(signum, &sigchain);
-// OHOS_LOCAL end
-#endif
 }
 
 void InstallDeadlySignalHandlers(SignalHandlerType handler) {
@@ -329,9 +327,10 @@ static bool MmapFixed(uptr fixed_addr, uptr size, int additional_flags,
                 MAP_PRIVATE | MAP_FIXED | additional_flags | MAP_ANON, name);
   int reserrno;
   if (internal_iserror(p, &reserrno)) {
-    Report("ERROR: %s failed to "
-           "allocate 0x%zx (%zd) bytes at address %zx (errno: %d)\n",
-           SanitizerToolName, size, size, fixed_addr, reserrno);
+    Report(
+        "ERROR: %s failed to "
+        "allocate 0x%zx (%zd) bytes at address %p (errno: %d)\n",
+        SanitizerToolName, size, size, (void *)fixed_addr, reserrno);
     return false;
   }
   IncreaseTotalMmap(size);
@@ -405,7 +404,7 @@ SANITIZER_WEAK_ATTRIBUTE int
 real_pthread_attr_getstack(void *attr, void **addr, size_t *size);
 } // extern "C"
 
-int my_pthread_attr_getstack(void *attr, void **addr, uptr *size) {
+int internal_pthread_attr_getstack(void *attr, void **addr, uptr *size) {
 #if !SANITIZER_GO && !SANITIZER_APPLE
   if (&real_pthread_attr_getstack)
     return real_pthread_attr_getstack((pthread_attr_t *)attr, addr,
@@ -419,7 +418,7 @@ void AdjustStackSize(void *attr_) {
   pthread_attr_t *attr = (pthread_attr_t *)attr_;
   uptr stackaddr = 0;
   uptr stacksize = 0;
-  my_pthread_attr_getstack(attr, (void**)&stackaddr, &stacksize);
+  internal_pthread_attr_getstack(attr, (void **)&stackaddr, &stacksize);
   // GLibC will return (0 - stacksize) as the stack address in the case when
   // stacksize is set, but stackaddr is not.
   bool stack_set = (stackaddr != 0) && (stackaddr + stacksize != 0);

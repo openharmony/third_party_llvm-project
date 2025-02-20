@@ -1,13 +1,16 @@
 add_lldb_unittest(EmulatorTests
-  TestAArch64Emulator.cpp
-  TestLoongArchEmulator.cpp
+  ARM64/TestAArch64Emulator.cpp
+  LoongArch/TestLoongArchEmulator.cpp
+  RISCV/TestRISCVEmulator.cpp
+
   LINK_LIBS
     lldbCore
     lldbSymbol
     lldbTarget
     lldbPluginInstructionARM64
     lldbPluginInstructionLoongArch
+    lldbPluginInstructionRISCV
+
   LINK_COMPONENTS
     Support
-    ${LLVM_TARGETS_TO_BUILD}
-)
+  )

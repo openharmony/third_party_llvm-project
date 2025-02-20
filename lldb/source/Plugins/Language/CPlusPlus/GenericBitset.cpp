@@ -11,6 +11,7 @@
 #include "Plugins/TypeSystem/Clang/TypeSystemClang.h"
 #include "lldb/DataFormatters/FormattersHelpers.h"
 #include "lldb/Target/Target.h"
+#include <optional>
 
 using namespace lldb;
 using namespace lldb_private;
@@ -32,12 +33,14 @@ public:
   }
 
   bool MightHaveChildren() override { return true; }
-  bool Update() override;
-  size_t CalculateNumChildren() override { return m_elements.size(); }
-  ValueObjectSP GetChildAtIndex(size_t idx) override;
+  lldb::ChildCacheState Update() override;
+  llvm::Expected<uint32_t> CalculateNumChildren() override {
+    return m_elements.size();
+  }
+  ValueObjectSP GetChildAtIndex(uint32_t idx) override;
 
 private:
-  ConstString GetDataContainerMemberName();
+  llvm::StringRef GetDataContainerMemberName();
 
   // The lifetime of a ValueObject and all its derivative ValueObjects
   // (children, clones, etc.) is managed by a ClusterManager. These
@@ -65,41 +68,38 @@ GenericBitsetFrontEnd::GenericBitsetFrontEnd(ValueObject &valobj, StdLib stdlib)
   }
 }
 
-ConstString GenericBitsetFrontEnd::GetDataContainerMemberName() {
+llvm::StringRef GenericBitsetFrontEnd::GetDataContainerMemberName() {
+  static constexpr llvm::StringLiteral s_libcxx_case("__first_");
+  static constexpr llvm::StringLiteral s_libstdcpp_case("_M_w");
   switch (m_stdlib) {
   case StdLib::LibCxx:
-    return ConstString("__first_");
+    return s_libcxx_case;
   case StdLib::LibStdcpp:
-    return ConstString("_M_w");
+    return s_libstdcpp_case;
   }
   llvm_unreachable("Unknown StdLib enum");
 }
 
-bool GenericBitsetFrontEnd::Update() {
+lldb::ChildCacheState GenericBitsetFrontEnd::Update() {
   m_elements.clear();
   m_first = nullptr;
 
   TargetSP target_sp = m_backend.GetTargetSP();
   if (!target_sp)
-    return false;
+    return lldb::ChildCacheState::eRefetch;
 
   size_t size = 0;
 
-  // OHOS_LOCAL begin
-  const size_t bit_in_byte_cnt = 8;
-  const size_t sizeof_sizet_in_bits = sizeof(size_t) * bit_in_byte_cnt;
-
   if (auto arg = m_backend.GetCompilerType().GetIntegralTemplateArgument(0))
-    size = (arg->value.getLimitedValue() + sizeof_sizet_in_bits - 1) / sizeof_sizet_in_bits;
-  // OHOS_LOCAL end
+    size = arg->value.getLimitedValue();
 
   m_elements.assign(size, ValueObjectSP());
-  m_first = m_backend.GetChildMemberWithName(GetDataContainerMemberName(), true)
-                .get();
-  return false;
+  m_first =
+      m_backend.GetChildMemberWithName(GetDataContainerMemberName()).get();
+  return lldb::ChildCacheState::eRefetch;
 }
 
-ValueObjectSP GenericBitsetFrontEnd::GetChildAtIndex(size_t idx) {
+ValueObjectSP GenericBitsetFrontEnd::GetChildAtIndex(uint32_t idx) {
   if (idx >= m_elements.size() || !m_first)
     return ValueObjectSP();
 
@@ -107,23 +107,32 @@ ValueObjectSP GenericBitsetFrontEnd::GetChildAtIndex(size_t idx) {
     return m_elements[idx];
 
   ExecutionContext ctx = m_backend.GetExecutionContextRef().Lock(false);
+  CompilerType type;
   ValueObjectSP chunk;
   // For small bitsets __first_ is not an array, but a plain size_t.
-  // OHOS_LOCAL begin
-  if (m_first->GetCompilerType().IsArrayType(nullptr)) {
-    chunk = m_first->GetChildAtIndex(idx, true);
-  // OHOS_LOCAL end
+  if (m_first->GetCompilerType().IsArrayType(&type)) {
+    std::optional<uint64_t> bit_size =
+        type.GetBitSize(ctx.GetBestExecutionContextScope());
+    if (!bit_size || *bit_size == 0)
+      return {};
+    chunk = m_first->GetChildAtIndex(idx / *bit_size);
   } else {
+    type = m_first->GetCompilerType();
     chunk = m_first->GetSP();
   }
-  // OHOS_LOCAL begin
-  if (!chunk)
+  if (!type || !chunk)
     return {};
 
-  StreamString name;
-  name.Printf("[%" PRIu64 "]", (uint64_t)idx);
-  m_elements[idx] = chunk->Clone(ConstString(name.GetString()));
-  // OHOS_LOCAL end
+  std::optional<uint64_t> bit_size =
+      type.GetBitSize(ctx.GetBestExecutionContextScope());
+  if (!bit_size || *bit_size == 0)
+    return {};
+  size_t chunk_idx = idx % *bit_size;
+  uint8_t value = !!(chunk->GetValueAsUnsigned(0) & (uint64_t(1) << chunk_idx));
+  DataExtractor data(&value, sizeof(value), m_byte_order, m_byte_size);
+
+  m_elements[idx] = CreateValueObjectFromData(llvm::formatv("[{0}]", idx).str(),
+                                              data, ctx, m_bool_type);
 
   return m_elements[idx];
 }

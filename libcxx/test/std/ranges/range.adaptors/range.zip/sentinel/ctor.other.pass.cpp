@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17, c++20
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // constexpr sentinel(sentinel<!Const> s);
 
@@ -47,7 +46,7 @@ static_assert(std::ranges::random_access_range<NonSimpleNonCommonConvertibleView
 static_assert(!std::ranges::sized_range<NonSimpleNonCommonConvertibleView>);
 static_assert(std::convertible_to<std::ranges::sentinel_t<NonSimpleNonCommonConvertibleView>,
                                   std::ranges::sentinel_t<NonSimpleNonCommonConvertibleView const>>);
-LIBCPP_STATIC_ASSERT(!std::ranges::__simple_view<NonSimpleNonCommonConvertibleView>);
+static_assert(!simple_view<NonSimpleNonCommonConvertibleView>);
 
 constexpr bool test() {
   int buffer1[4] = {1, 2, 3, 4};

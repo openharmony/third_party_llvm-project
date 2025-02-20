@@ -9,11 +9,7 @@
 // RUN: %env_asan_opts=mmap_limit_mb=300 not %run %t 500 1000000 2>&1 | FileCheck %s
 //
 // FIXME: Windows doesn't implement mmap_limit_mb.
-// XFAIL: windows-msvc
-//
-// OHOS_LOCAL
-// FIXME: timed out test
-// XFAIL: ohos_family
+// XFAIL: target={{.*windows-msvc.*}}
 
 #include <assert.h>
 #include <stdlib.h>

@@ -54,26 +54,11 @@ extern "C" {
 }
 
 namespace {
-#ifdef ARK_GC_SUPPORT
-// We put information about the JITed function in this global, which the
-// debugger reads.  Make sure to specify the version statically, because the
-// debugger checks the version before we can set it during runtime.
-struct jit_descriptor __jit_debug_descriptor = {1, 0, nullptr, nullptr};
 
-// Debuggers that implement the GDB JIT interface put a special breakpoint in
-// this function.
-LLVM_ATTRIBUTE_NOINLINE void __jit_debug_register_code() {
-  // The noinline and the asm prevent calls to this function from being
-  // optimized out.
-#if !defined(_MSC_VER)
-  asm volatile("" ::: "memory");
-#endif
-}
-#endif
 // FIXME: lli aims to provide both, RuntimeDyld and JITLink, as the dynamic
-// loaders for it's JIT implementations. And they both offer debugging via the
+// loaders for its JIT implementations. And they both offer debugging via the
 // GDB JIT interface, which builds on the two well-known symbol names below.
-// As these symbols must be unique accross the linked executable, we can only
+// As these symbols must be unique across the linked executable, we can only
 // define them in one of the libraries and make the other depend on it.
 // OrcTargetProcess is a minimal stub for embedding a JIT client in remote
 // executors. For the moment it seems reasonable to have the definition there
@@ -191,7 +176,7 @@ void GDBJITRegistrationListener::notifyObjectLoaded(
   size_t      Size = DebugObj.getBinary()->getMemoryBufferRef().getBufferSize();
 
   std::lock_guard<llvm::sys::Mutex> locked(JITDebugLock);
-  assert(ObjectBufferMap.find(K) == ObjectBufferMap.end() &&
+  assert(!ObjectBufferMap.contains(K) &&
          "Second attempt to perform debug registration.");
   jit_code_entry* JITCodeEntry = new jit_code_entry();
 

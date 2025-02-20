@@ -16,9 +16,7 @@
 
 using namespace clang::ast_matchers;
 
-namespace clang {
-namespace tidy {
-namespace bugprone {
+namespace clang::tidy::bugprone {
 
 void ForwardDeclarationNamespaceCheck::registerMatchers(MatchFinder *Finder) {
   // Match all class declarations/definitions *EXCEPT*
@@ -97,7 +95,7 @@ static bool haveSameNamespaceOrTranslationUnit(const CXXRecordDecl *Decl1,
          "ParentDecl2 declaration must be a namespace");
   auto *Ns1 = NamespaceDecl::castFromDeclContext(ParentDecl1);
   auto *Ns2 = NamespaceDecl::castFromDeclContext(ParentDecl2);
-  return Ns1->getOriginalNamespace() == Ns2->getOriginalNamespace();
+  return Ns1->getFirstDecl() == Ns2->getFirstDecl();
 }
 
 static std::string getNameOfNamespace(const CXXRecordDecl *Decl) {
@@ -149,7 +147,7 @@ void ForwardDeclarationNamespaceCheck::onEndOfTranslationUnit() {
       }
       // Check if a definition in another namespace exists.
       const auto DeclName = CurDecl->getName();
-      if (DeclNameToDefinitions.find(DeclName) == DeclNameToDefinitions.end()) {
+      if (!DeclNameToDefinitions.contains(DeclName)) {
         continue; // No definition in this translation unit, we can skip it.
       }
       // Make a warning for each definition with the same name (in other
@@ -168,6 +166,4 @@ void ForwardDeclarationNamespaceCheck::onEndOfTranslationUnit() {
   }
 }
 
-} // namespace bugprone
-} // namespace tidy
-} // namespace clang
+} // namespace clang::tidy::bugprone

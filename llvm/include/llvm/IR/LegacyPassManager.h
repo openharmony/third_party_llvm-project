@@ -16,9 +16,6 @@
 #ifndef LLVM_IR_LEGACYPASSMANAGER_H
 #define LLVM_IR_LEGACYPASSMANAGER_H
 
-#ifdef ARK_GC_SUPPORT
-#include "llvm/Pass.h"
-#endif
 #include "llvm/Support/CBindingWrapping.h"
 
 namespace llvm {

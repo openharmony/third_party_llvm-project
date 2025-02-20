@@ -69,6 +69,7 @@ class Loop;
 class Module;
 } // namespace llvm
 
+#include "polly/Support/PollyDebug.h"
 #define DEBUG_TYPE "polly-opt-isl"
 
 static cl::opt<std::string>
@@ -95,6 +96,13 @@ static cl::opt<std::string>
     MaximizeBandDepth("polly-opt-maximize-bands",
                       cl::desc("Maximize the band depth (yes/no)"), cl::Hidden,
                       cl::init("yes"), cl::cat(PollyCategory));
+
+static cl::opt<int>
+    ScheduleComputeOut("polly-schedule-computeout",
+                       cl::desc("Bound the scheduler by maximal amount"
+                                "of computational steps. "),
+                       cl::Hidden, cl::init(300000), cl::ZeroOrMore,
+                       cl::cat(PollyCategory));
 
 static cl::opt<bool>
     GreedyFusion("polly-loopfusion-greedy",
@@ -296,6 +304,16 @@ private:
   /// @param Node The node to check.
   static bool isTileableBandNode(isl::schedule_node Node);
 
+  /// Check if this node is a band node we want to transform using pattern
+  /// matching.
+  ///
+  /// We look for innermost band nodes where individual dimensions are marked as
+  /// permutable. There is no restriction on the number of individual
+  /// dimensions.
+  ///
+  /// @param Node The node to check.
+  static bool isPMOptimizableBandNode(isl::schedule_node Node);
+
   /// Pre-vectorizes one scheduling dimension of a schedule band.
   ///
   /// prevectSchedBand splits out the dimension DimToVectorize, tiles it and
@@ -456,11 +474,21 @@ static bool isSimpleInnermostBand(const isl::schedule_node &Node) {
   return true;
 }
 
-bool ScheduleTreeOptimizer::isTileableBandNode(isl::schedule_node Node) {
+/// Check if this node is a band node, which has only one child.
+///
+/// @param Node The node to check.
+static bool isOneTimeParentBandNode(isl::schedule_node Node) {
   if (isl_schedule_node_get_type(Node.get()) != isl_schedule_node_band)
     return false;
 
   if (isl_schedule_node_n_children(Node.get()) != 1)
+    return false;
+
+  return true;
+}
+
+bool ScheduleTreeOptimizer::isTileableBandNode(isl::schedule_node Node) {
+  if (!isOneTimeParentBandNode(Node))
     return false;
 
   if (!isl_schedule_node_band_get_permutable(Node.get()))
@@ -472,6 +500,13 @@ bool ScheduleTreeOptimizer::isTileableBandNode(isl::schedule_node Node) {
     return false;
 
   return isSimpleInnermostBand(Node);
+}
+
+bool ScheduleTreeOptimizer::isPMOptimizableBandNode(isl::schedule_node Node) {
+  if (!isOneTimeParentBandNode(Node))
+    return false;
+
+  return Node.child(0).isa<isl::schedule_node_leaf>();
 }
 
 __isl_give isl::schedule_node
@@ -519,10 +554,8 @@ ScheduleTreeOptimizer::optimizeBand(__isl_take isl_schedule_node *NodeArg,
   assert(OAI && "Expecting optimization options");
 
   isl::schedule_node Node = isl::manage(NodeArg);
-  if (!isTileableBandNode(Node))
-    return Node.release();
 
-  if (OAI->PatternOpts) {
+  if (OAI->PatternOpts && isPMOptimizableBandNode(Node)) {
     isl::schedule_node PatternOptimizedSchedule =
         tryOptimizeMatMulPattern(Node, OAI->TTI, OAI->D);
     if (!PatternOptimizedSchedule.is_null()) {
@@ -531,6 +564,9 @@ ScheduleTreeOptimizer::optimizeBand(__isl_take isl_schedule_node *NodeArg,
       return PatternOptimizedSchedule.release();
     }
   }
+
+  if (!isTileableBandNode(Node))
+    return Node.release();
 
   if (OAI->Postopts)
     Node = applyTileBandOpt(Node);
@@ -683,11 +719,6 @@ static void runIslScheduleOptimizer(
     function_ref<const Dependences &(Dependences::AnalysisLevel)> GetDeps,
     TargetTransformInfo *TTI, OptimizationRemarkEmitter *ORE,
     isl::schedule &LastSchedule, bool &DepsChanged) {
-
-  // Skip SCoPs in case they're already optimised by PPCGCodeGeneration
-  if (S.isToBeSkipped())
-    return;
-
   // Skip empty SCoPs but still allow code generation as it will delete the
   // loops present but not needed.
   if (S.getSize() == 0) {
@@ -700,14 +731,14 @@ static void runIslScheduleOptimizer(
   // Schedule without optimizations.
   isl::schedule Schedule = S.getScheduleTree();
   walkScheduleTreeForStatistics(S.getScheduleTree(), 0);
-  LLVM_DEBUG(printSchedule(dbgs(), Schedule, "Original schedule tree"));
+  POLLY_DEBUG(printSchedule(dbgs(), Schedule, "Original schedule tree"));
 
   bool HasUserTransformation = false;
   if (PragmaBasedOpts) {
     isl::schedule ManuallyTransformed = applyManualTransformations(
         &S, Schedule, GetDeps(Dependences::AL_Statement), ORE);
     if (ManuallyTransformed.is_null()) {
-      LLVM_DEBUG(dbgs() << "Error during manual optimization\n");
+      POLLY_DEBUG(dbgs() << "Error during manual optimization\n");
       return;
     }
 
@@ -715,7 +746,7 @@ static void runIslScheduleOptimizer(
       // User transformations have precedence over other transformations.
       HasUserTransformation = true;
       Schedule = std::move(ManuallyTransformed);
-      LLVM_DEBUG(
+      POLLY_DEBUG(
           printSchedule(dbgs(), Schedule, "After manual transformations"));
     }
   }
@@ -725,18 +756,18 @@ static void runIslScheduleOptimizer(
   // TODO: Detect disabled heuristics and no user-directed transformation
   // metadata earlier in ScopDetection.
   if (!HasUserTransformation && S.hasDisableHeuristicsHint()) {
-    LLVM_DEBUG(dbgs() << "Heuristic optimizations disabled by metadata\n");
+    POLLY_DEBUG(dbgs() << "Heuristic optimizations disabled by metadata\n");
     return;
   }
 
   // Get dependency analysis.
   const Dependences &D = GetDeps(Dependences::AL_Statement);
   if (D.getSharedIslCtx() != S.getSharedIslCtx()) {
-    LLVM_DEBUG(dbgs() << "DependenceInfo for another SCoP/isl_ctx\n");
+    POLLY_DEBUG(dbgs() << "DependenceInfo for another SCoP/isl_ctx\n");
     return;
   }
   if (!D.hasValidDependences()) {
-    LLVM_DEBUG(dbgs() << "Dependency information not available\n");
+    POLLY_DEBUG(dbgs() << "Dependency information not available\n");
     return;
   }
 
@@ -746,9 +777,9 @@ static void runIslScheduleOptimizer(
   // are added by the rescheduling analyzer. Therefore, disabling the
   // rescheduler implicitly also disables these optimizations.
   if (!EnableReschedule) {
-    LLVM_DEBUG(dbgs() << "Skipping rescheduling due to command line option\n");
+    POLLY_DEBUG(dbgs() << "Skipping rescheduling due to command line option\n");
   } else if (HasUserTransformation) {
-    LLVM_DEBUG(
+    POLLY_DEBUG(
         dbgs() << "Skipping rescheduling due to manual transformation\n");
   } else {
     // Build input data.
@@ -794,10 +825,10 @@ static void runIslScheduleOptimizer(
              "or 'no'. Falling back to default: 'yes'\n";
     }
 
-    LLVM_DEBUG(dbgs() << "\n\nCompute schedule from: ");
-    LLVM_DEBUG(dbgs() << "Domain := " << Domain << ";\n");
-    LLVM_DEBUG(dbgs() << "Proximity := " << Proximity << ";\n");
-    LLVM_DEBUG(dbgs() << "Validity := " << Validity << ";\n");
+    POLLY_DEBUG(dbgs() << "\n\nCompute schedule from: ");
+    POLLY_DEBUG(dbgs() << "Domain := " << Domain << ";\n");
+    POLLY_DEBUG(dbgs() << "Proximity := " << Proximity << ";\n");
+    POLLY_DEBUG(dbgs() << "Validity := " << Validity << ";\n");
 
     int IslMaximizeBands;
     if (MaximizeBandDepth == "yes") {
@@ -837,11 +868,20 @@ static void runIslScheduleOptimizer(
     SC = SC.set_proximity(Proximity);
     SC = SC.set_validity(Validity);
     SC = SC.set_coincidence(Validity);
-    Schedule = SC.compute_schedule();
+
+    {
+      IslMaxOperationsGuard MaxOpGuard(Ctx, ScheduleComputeOut);
+      Schedule = SC.compute_schedule();
+
+      if (MaxOpGuard.hasQuotaExceeded())
+        POLLY_DEBUG(
+            dbgs() << "Schedule optimizer calculation exceeds ISL quota\n");
+    }
+
     isl_options_set_on_error(Ctx, OnErrorStatus);
 
     ScopsRescheduled++;
-    LLVM_DEBUG(printSchedule(dbgs(), Schedule, "After rescheduling"));
+    POLLY_DEBUG(printSchedule(dbgs(), Schedule, "After rescheduling"));
   }
 
   walkScheduleTreeForStatistics(Schedule, 1);
@@ -869,7 +909,7 @@ static void runIslScheduleOptimizer(
   if (OAI.PatternOpts || OAI.Postopts || OAI.Prevect) {
     Schedule = ScheduleTreeOptimizer::optimizeSchedule(Schedule, &OAI);
     Schedule = hoistExtensionNodes(Schedule);
-    LLVM_DEBUG(printSchedule(dbgs(), Schedule, "After post-optimizations"));
+    POLLY_DEBUG(printSchedule(dbgs(), Schedule, "After post-optimizations"));
     walkScheduleTreeForStatistics(Schedule, 2);
   }
 

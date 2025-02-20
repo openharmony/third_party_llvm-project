@@ -3,8 +3,7 @@
 misc-throw-by-value-catch-by-reference
 ======================================
 
-`cert-err09-cpp` redirects here as an alias for this check.
-`cert-err61-cpp` redirects here as an alias for this check.
+`cert-err09-cpp` and `cert-err61-cpp` redirect here as aliases of this check.
 
 Finds violations of the rule "Throw by value, catch by reference" presented for
 example in "C++ Coding Standards" by H. Sutter and A. Alexandrescu, as well as
@@ -17,7 +16,7 @@ Exceptions:
     are not susceptible to slicing and the usage of string literals is
     idiomatic.
   * Catching character pointers (``char``, ``wchar_t``, unicode character types)
-    will not be flagged to allow catching sting literals.
+    will not be flagged to allow catching string literals.
   * Moved named values will not be flagged as not throwing an anonymous
     temporary. In this case we can be sure that the user knows that the object
     can't be accessed outside catch blocks handling the error.

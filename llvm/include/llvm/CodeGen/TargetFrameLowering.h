@@ -13,14 +13,11 @@
 #ifndef LLVM_CODEGEN_TARGETFRAMELOWERING_H
 #define LLVM_CODEGEN_TARGETFRAMELOWERING_H
 
+#include "llvm/ADT/BitVector.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
-#include "llvm/CodeGen/StackProtectorRetLowering.h" // OHOS_LOCAL
+#include "llvm/CodeGen/MachineOptimizationRemarkEmitter.h"
 #include "llvm/Support/TypeSize.h"
-#include "llvm/IR/CallingConv.h" // OHOS_LOCAL
 #include <vector>
-#ifdef ARK_GC_SUPPORT
-#include "llvm/ADT/Triple.h"
-#endif
 
 namespace llvm {
   class BitVector;
@@ -55,19 +52,22 @@ public:
   // Maps a callee saved register to a stack slot with a fixed offset.
   struct SpillSlot {
     unsigned Reg;
-    int Offset; // Offset relative to stack pointer on function entry.
+    int64_t Offset; // Offset relative to stack pointer on function entry.
   };
 
   struct DwarfFrameBase {
-    // The frame base may be either a register (the default), the CFA,
-    // or a WebAssembly-specific location description.
+    // The frame base may be either a register (the default), the CFA with an
+    // offset, or a WebAssembly-specific location description.
     enum FrameBaseKind { Register, CFA, WasmFrameBase } Kind;
     struct WasmFrameBase {
       unsigned Kind; // Wasm local, global, or value stack
       unsigned Index;
     };
     union {
+      // Used with FrameBaseKind::Register.
       unsigned Reg;
+      // Used with FrameBaseKind::CFA.
+      int64_t Offset;
       struct WasmFrameBase WasmLoc;
     } Location;
   };
@@ -104,6 +104,10 @@ public:
   ///
   Align getStackAlign() const { return StackAlignment; }
 
+  /// getStackThreshold - Return the maximum stack size
+  ///
+  virtual uint64_t getStackThreshold() const { return UINT_MAX; }
+
   /// alignSPAdjust - This method aligns the stack adjustment to the correct
   /// alignment.
   ///
@@ -128,11 +132,6 @@ public:
     return StackRealignable;
   }
 
-  /// Return the skew that has to be applied to stack alignment under
-  /// certain conditions (e.g. stack was adjusted before function \p MF
-  /// was called).
-  virtual unsigned getStackAlignmentSkew(const MachineFunction &MF) const;
-
   /// This method returns whether or not it is safe for an object with the
   /// given stack id to be bundled into the local area.
   virtual bool isStackIdSafeForLocalArea(unsigned StackId) const {
@@ -142,11 +141,7 @@ public:
   /// getOffsetOfLocalArea - This method returns the offset of the local area
   /// from the stack pointer on entrance to a function.
   ///
-  // OHOS_LOCAL begin
-  virtual int getOffsetOfLocalArea(CallingConv::ID CC = CallingConv::C) const {
-    return LocalAreaOffset;
-  }
-  // OHOS_LOCAL end
+  int getOffsetOfLocalArea() const { return LocalAreaOffset; }
 
   /// Control the placement of special register scavenging spill slots when
   /// allocating a stack frame.
@@ -225,33 +220,6 @@ public:
   /// emitZeroCallUsedRegs - Zeros out call used registers.
   virtual void emitZeroCallUsedRegs(BitVector RegsToZero,
                                     MachineBasicBlock &MBB) const {}
-  #ifdef ARK_GC_SUPPORT
-  template <typename T>
-  constexpr T RoundUp(T x, size_t n) const
-  {
-      static_assert(std::is_integral<T>::value, "T must be integral");
-      return (static_cast<size_t>(x) + n - 1U) & (-n);
-  }
-
-  virtual Triple::ArchType GetArkSupportTarget() const
-  {
-    return Triple::UnknownArch;
-  }
-
-  virtual int GetFixedFpPosition() const
-  {
-    return 2;
-  }
-
-  virtual int GetFrameReserveSize(MachineFunction &MF) const;
-  #endif
-
-  /// OHOS_LOCAL begin
-  /// Instances about backward cfi and stack protection provided by different architectures.
-  virtual const StackProtectorRetLowering *getStackProtectorRet() const {
-    return nullptr;
-  }
-  /// OHOS_LOCAL begin
 
   /// With basic block sections, emit callee saved frame moves for basic blocks
   /// that are in a different section.
@@ -294,28 +262,6 @@ public:
                                          const TargetRegisterInfo *TRI) const {
     return false;
   }
-
-  // OHOS_LOCAL begin
-  /// Return true if the target implements spilling & restoring caller-saved
-  /// registers from Ark spill slots.
-  virtual bool supportsArkSpills() const {
-    return false;
-  }
-
-  /// Return offset of Ark frame adaptation
-  virtual int getArkFrameAdaptationOffset(const MachineFunction &MF) const {
-    return 0;
-  }
-
-#ifdef ARK_GC_SUPPORT
-  virtual void adjustForArkFrame(MachineFunction &MF,
-                                 MachineBasicBlock &PrologueMBB) const {}
-  static const std::string TypeKey;
-  static const std::string JSFuncIdxKey;
-  static const std::string TypeOffsetKey;
-  static const std::string JSFuncIdxOffsetKey;
-#endif
-  // OHOS_LOCAL end
 
   /// restoreCalleeSavedRegisters - Issues instruction(s) to restore all callee
   /// saved registers and returns true if it isn't possible / profitable to do
@@ -397,6 +343,13 @@ public:
     Register FrameReg;
     return getFrameIndexReference(MF, FI, FrameReg);
   }
+
+  /// getFrameIndexReferenceFromSP - This method returns the offset from the
+  /// stack pointer to the slot of the specified index. This function serves to
+  /// provide a comparable offset from a single reference point (the value of
+  /// the stack-pointer at function entry) that can be used for analysis.
+  virtual StackOffset getFrameIndexReferenceFromSP(const MachineFunction &MF,
+                                                   int FI) const;
 
   /// Returns the callee-saved registers as computed by determineCalleeSaves
   /// in the BitVector \p SavedRegs.
@@ -521,6 +474,11 @@ public:
   /// Return the frame base information to be encoded in the DWARF subprogram
   /// debug info.
   virtual DwarfFrameBase getDwarfFrameBase(const MachineFunction &MF) const;
+
+  /// This method is called at the end of prolog/epilog code insertion, so
+  /// targets can emit remarks based on the final frame layout.
+  virtual void emitRemarks(const MachineFunction &MF,
+                           MachineOptimizationRemarkEmitter *ORE) const {};
 };
 
 } // End llvm namespace

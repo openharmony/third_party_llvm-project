@@ -101,7 +101,7 @@ void ComputeOffsetsHelper::Compute(Scope &scope) {
   }
   // Assign offsets for non-COMMON EQUIVALENCE blocks
   for (auto &[symbol, blockInfo] : equivalenceBlock_) {
-    if (!InCommonBlock(*symbol)) {
+    if (!FindCommonBlockContaining(*symbol)) {
       DoSymbol(*symbol);
       DoEquivalenceBlockBase(*symbol, blockInfo);
       offset_ = std::max(offset_, symbol->offset() + blockInfo.size);
@@ -110,17 +110,22 @@ void ComputeOffsetsHelper::Compute(Scope &scope) {
   // Process remaining non-COMMON symbols; this is all of them if there
   // was no use of EQUIVALENCE in the scope.
   for (auto &symbol : scope.GetSymbols()) {
-    if (!InCommonBlock(*symbol) &&
+    if (!FindCommonBlockContaining(*symbol) &&
         dependents_.find(symbol) == dependents_.end() &&
         equivalenceBlock_.find(symbol) == equivalenceBlock_.end()) {
       DoSymbol(*symbol);
     }
   }
+  // Ensure that the size is a multiple of the alignment
+  offset_ = Align(offset_, alignment_);
   scope.set_size(offset_);
   scope.SetAlignment(alignment_);
-  // Assign offsets in COMMON blocks.
-  for (auto &pair : scope.commonBlocks()) {
-    DoCommonBlock(*pair.second);
+  // Assign offsets in COMMON blocks, unless this scope is a BLOCK construct,
+  // where COMMON blocks are illegal (C1107 and C1108).
+  if (scope.kind() != Scope::Kind::BlockConstruct) {
+    for (auto &pair : scope.commonBlocks()) {
+      DoCommonBlock(*pair.second);
+    }
   }
   for (auto &[symbol, dep] : dependents_) {
     symbol->set_offset(dep.symbol->offset() + dep.offset);
@@ -149,15 +154,19 @@ void ComputeOffsetsHelper::DoCommonBlock(Symbol &commonBlock) {
   alignment_ = 0;
   std::size_t minSize{0};
   std::size_t minAlignment{0};
-  for (auto &object : details.objects()) {
+  UnorderedSymbolSet previous;
+  for (auto object : details.objects()) {
     Symbol &symbol{*object};
     auto errorSite{
         commonBlock.name().empty() ? symbol.name() : commonBlock.name()};
-    if (std::size_t padding{DoSymbol(symbol)}) {
-      context_.Say(errorSite,
-          "COMMON block /%s/ requires %zd bytes of padding before '%s' for alignment"_port_en_US,
-          commonBlock.name(), padding, symbol.name());
+    if (std::size_t padding{DoSymbol(symbol.GetUltimate())}) {
+      if (context_.ShouldWarn(common::UsageWarning::CommonBlockPadding)) {
+        context_.Say(errorSite,
+            "COMMON block /%s/ requires %zd bytes of padding before '%s' for alignment"_port_en_US,
+            commonBlock.name(), padding, symbol.name());
+      }
     }
+    previous.emplace(symbol);
     auto eqIter{equivalenceBlock_.end()};
     auto iter{dependents_.find(symbol)};
     if (iter == dependents_.end()) {
@@ -170,10 +179,13 @@ void ComputeOffsetsHelper::DoCommonBlock(Symbol &commonBlock) {
       Symbol &base{*dep.symbol};
       if (const auto *baseBlock{FindCommonBlockContaining(base)}) {
         if (baseBlock == &commonBlock) {
-          context_.Say(errorSite,
-              "'%s' is storage associated with '%s' by EQUIVALENCE elsewhere in COMMON block /%s/"_err_en_US,
-              symbol.name(), base.name(), commonBlock.name());
-        } else { // 8.10.3(1)
+          if (previous.find(SymbolRef{base}) == previous.end() ||
+              base.offset() != symbol.offset() - dep.offset) {
+            context_.Say(errorSite,
+                "'%s' is storage associated with '%s' by EQUIVALENCE elsewhere in COMMON block /%s/"_err_en_US,
+                symbol.name(), base.name(), commonBlock.name());
+          }
+        } else { // F'2023 8.10.3 p1
           context_.Say(errorSite,
               "'%s' in COMMON block /%s/ must not be storage associated with '%s' in COMMON block /%s/ by EQUIVALENCE"_err_en_US,
               symbol.name(), commonBlock.name(), base.name(),
@@ -187,6 +199,7 @@ void ComputeOffsetsHelper::DoCommonBlock(Symbol &commonBlock) {
         eqIter = equivalenceBlock_.find(base);
         base.get<ObjectEntityDetails>().set_commonBlock(commonBlock);
         base.set_offset(symbol.offset() - dep.offset);
+        previous.emplace(base);
       }
     }
     // Get full extent of any EQUIVALENCE block into size of COMMON ( see
@@ -264,20 +277,22 @@ std::size_t ComputeOffsetsHelper::ComputeOffset(
     const EquivalenceObject &object) {
   std::size_t offset{0};
   if (!object.subscripts.empty()) {
-    const ArraySpec &shape{object.symbol.get<ObjectEntityDetails>().shape()};
-    auto lbound{[&](std::size_t i) {
-      return *ToInt64(shape[i].lbound().GetExplicit());
-    }};
-    auto ubound{[&](std::size_t i) {
-      return *ToInt64(shape[i].ubound().GetExplicit());
-    }};
-    for (std::size_t i{object.subscripts.size() - 1};;) {
-      offset += object.subscripts[i] - lbound(i);
-      if (i == 0) {
-        break;
+    if (const auto *details{object.symbol.detailsIf<ObjectEntityDetails>()}) {
+      const ArraySpec &shape{details->shape()};
+      auto lbound{[&](std::size_t i) {
+        return *ToInt64(shape[i].lbound().GetExplicit());
+      }};
+      auto ubound{[&](std::size_t i) {
+        return *ToInt64(shape[i].ubound().GetExplicit());
+      }};
+      for (std::size_t i{object.subscripts.size() - 1};;) {
+        offset += object.subscripts[i] - lbound(i);
+        if (i == 0) {
+          break;
+        }
+        --i;
+        offset *= ubound(i) - lbound(i) + 1;
       }
-      --i;
-      offset *= ubound(i) - lbound(i) + 1;
     }
   }
   auto result{offset * GetSizeAndAlignment(object.symbol, false).size};
@@ -315,11 +330,12 @@ auto ComputeOffsetsHelper::GetSizeAndAlignment(
     const Symbol &symbol, bool entire) -> SizeAndAlignment {
   auto &targetCharacteristics{context_.targetCharacteristics()};
   if (IsDescriptor(symbol)) {
-    const auto *derived{
-        evaluate::GetDerivedTypeSpec(evaluate::DynamicType::From(symbol))};
+    auto dyType{evaluate::DynamicType::From(symbol)};
+    const auto *derived{evaluate::GetDerivedTypeSpec(dyType)};
     int lenParams{derived ? CountLenParameters(*derived) : 0};
+    bool needAddendum{derived || (dyType && dyType->IsUnlimitedPolymorphic())};
     std::size_t size{runtime::Descriptor::SizeInBytes(
-        symbol.Rank(), derived != nullptr, lenParams)};
+        symbol.Rank(), needAddendum, lenParams)};
     return {size, targetCharacteristics.descriptorAlignment()};
   }
   if (IsProcedurePointer(symbol)) {

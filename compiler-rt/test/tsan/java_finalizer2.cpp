@@ -37,9 +37,9 @@ void *Thread3(void *p) {
   Heap* heap = (Heap*)p;
   pthread_barrier_wait(&heap->barrier_finalizer);
   while (__atomic_load_n(&heap->ready, __ATOMIC_ACQUIRE) != 1)
-    sched_yield(); // OHOS_LOCAL
+    pthread_yield();
   while (__atomic_load_n(&heap->finalized, __ATOMIC_RELAXED) != 1)
-    sched_yield(); // OHOS_LOCAL
+    pthread_yield();
   __atomic_fetch_add(&heap->wg, 1, __ATOMIC_RELEASE);
   return 0;
 }
@@ -51,7 +51,7 @@ void *Ballast(void *p) {
 }
 
 int main() {
-  Heap* heap = (Heap*)calloc(sizeof(Heap), 2) + 1;
+  Heap *heap = (Heap *)calloc(2, sizeof(Heap)) + 1;
   __tsan_java_init((jptr)heap, sizeof(*heap));
   __tsan_java_alloc((jptr)heap, sizeof(*heap));
   // Ballast threads merely make the bug a bit easier to trigger.
@@ -70,7 +70,7 @@ int main() {
     pthread_join(ballast[i], 0);
   pthread_barrier_wait(&heap->barrier_finalizer);
   while (__atomic_load_n(&heap->wg, __ATOMIC_ACQUIRE) != 2)
-    sched_yield(); // OHOS_LOCAL
+    pthread_yield();
   if (heap->data != 1)
     exit(printf("no data\n"));
   for (int i = 0; i < 3; i++)

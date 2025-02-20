@@ -3,10 +3,6 @@
 // on_exit() is not available on Darwin.
 // UNSUPPORTED: darwin
 
-// OHOS_LOCAL
-// on_exit() is not available on musl.
-// UNSUPPORTED: ohos_family
-
 #include "test.h"
 
 volatile long global;

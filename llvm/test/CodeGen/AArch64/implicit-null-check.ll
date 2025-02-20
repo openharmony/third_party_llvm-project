@@ -6,7 +6,7 @@
 ; related to memory folding of arithmetic (since aarch64 doesn't), and add
 ; a couple of aarch64 specific tests.
 
-define i32 @imp_null_check_load_fallthrough(i32* %x) {
+define i32 @imp_null_check_load_fallthrough(ptr %x) {
 ; CHECK-LABEL: imp_null_check_load_fallthrough:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:  .Ltmp0:
@@ -17,11 +17,11 @@ define i32 @imp_null_check_load_fallthrough(i32* %x) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  not_null:
-  %t = load i32, i32* %x
+  %t = load i32, ptr %x
   ret i32 %t
 
 is_null:
@@ -29,7 +29,7 @@ is_null:
 }
 
 
-define i32 @imp_null_check_load_reorder(i32* %x) {
+define i32 @imp_null_check_load_reorder(ptr %x) {
 ; CHECK-LABEL: imp_null_check_load_reorder:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:  .Ltmp1:
@@ -40,18 +40,18 @@ define i32 @imp_null_check_load_reorder(i32* %x) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret i32 42
 
  not_null:
-  %t = load i32, i32* %x
+  %t = load i32, ptr %x
   ret i32 %t
 }
 
-define i32 @imp_null_check_unordered_load(i32* %x) {
+define i32 @imp_null_check_unordered_load(ptr %x) {
 ; CHECK-LABEL: imp_null_check_unordered_load:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:  .Ltmp2:
@@ -62,21 +62,21 @@ define i32 @imp_null_check_unordered_load(i32* %x) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret i32 42
 
  not_null:
-  %t = load atomic i32, i32* %x unordered, align 4
+  %t = load atomic i32, ptr %x unordered, align 4
   ret i32 %t
 }
 
 
 ; TODO: Can be converted into implicit check.
 ;; Probably could be implicit, but we're conservative for now
-define i32 @imp_null_check_seq_cst_load(i32* %x) {
+define i32 @imp_null_check_seq_cst_load(ptr %x) {
 ; CHECK-LABEL: imp_null_check_seq_cst_load:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:    cbz x0, .LBB3_2
@@ -87,19 +87,19 @@ define i32 @imp_null_check_seq_cst_load(i32* %x) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret i32 42
 
  not_null:
-  %t = load atomic i32, i32* %x seq_cst, align 4
+  %t = load atomic i32, ptr %x seq_cst, align 4
   ret i32 %t
 }
 
 ;; Might be memory mapped IO, so can't rely on fault behavior
-define i32 @imp_null_check_volatile_load(i32* %x) {
+define i32 @imp_null_check_volatile_load(ptr %x) {
 ; CHECK-LABEL: imp_null_check_volatile_load:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:    cbz x0, .LBB4_2
@@ -110,19 +110,19 @@ define i32 @imp_null_check_volatile_load(i32* %x) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret i32 42
 
  not_null:
-  %t = load volatile i32, i32* %x, align 4
+  %t = load volatile i32, ptr %x, align 4
   ret i32 %t
 }
 
 
-define i8 @imp_null_check_load_i8(i8* %x) {
+define i8 @imp_null_check_load_i8(ptr %x) {
 ; CHECK-LABEL: imp_null_check_load_i8:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:  .Ltmp3:
@@ -133,18 +133,18 @@ define i8 @imp_null_check_load_i8(i8* %x) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i8* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret i8 42
 
  not_null:
-  %t = load i8, i8* %x
+  %t = load i8, ptr %x
   ret i8 %t
 }
 
-define i256 @imp_null_check_load_i256(i256* %x) {
+define i256 @imp_null_check_load_i256(ptr %x) {
 ; CHECK-LABEL: imp_null_check_load_i256:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:    cbz x0, .LBB6_2
@@ -159,20 +159,20 @@ define i256 @imp_null_check_load_i256(i256* %x) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i256* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret i256 42
 
  not_null:
-  %t = load i256, i256* %x
+  %t = load i256, ptr %x
   ret i256 %t
 }
 
 
 
-define i32 @imp_null_check_gep_load(i32* %x) {
+define i32 @imp_null_check_gep_load(ptr %x) {
 ; CHECK-LABEL: imp_null_check_gep_load:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:  .Ltmp4:
@@ -183,19 +183,19 @@ define i32 @imp_null_check_gep_load(i32* %x) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret i32 42
 
  not_null:
-  %x.gep = getelementptr i32, i32* %x, i32 32
-  %t = load i32, i32* %x.gep
+  %x.gep = getelementptr i32, ptr %x, i32 32
+  %t = load i32, ptr %x.gep
   ret i32 %t
 }
 
-define i32 @imp_null_check_add_result(i32* %x, i32 %p) {
+define i32 @imp_null_check_add_result(ptr %x, i32 %p) {
 ; CHECK-LABEL: imp_null_check_add_result:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:  .Ltmp5:
@@ -207,36 +207,34 @@ define i32 @imp_null_check_add_result(i32* %x, i32 %p) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret i32 42
 
  not_null:
-  %t = load i32, i32* %x
+  %t = load i32, ptr %x
   %p1 = add i32 %t, %p
   ret i32 %p1
 }
 
 ; Can hoist over a potential faulting instruction as long as we don't
 ; change the conditions under which the instruction faults.
-define i32 @imp_null_check_hoist_over_udiv(i32* %x, i32 %a, i32 %b) {
+define i32 @imp_null_check_hoist_over_udiv(ptr %x, i32 %a, i32 %b) {
 ; CHECK-LABEL: imp_null_check_hoist_over_udiv:
 ; CHECK:       // %bb.0: // %entry
-;; OHOS_LOCAL begin
-; CHECK-NEXT:  .Ltmp6:
-; CHECK-NEXT:    ldr w9, [x0] // on-fault: .LBB9_2
+; CHECK-NEXT:    cbz x0, .LBB9_2
 ; CHECK-NEXT:  // %bb.1: // %not_null
 ; CHECK-NEXT:    udiv w8, w1, w2
+; CHECK-NEXT:    ldr w9, [x0]
 ; CHECK-NEXT:    add w0, w9, w8
-;; OHOS_LOCAL end
 ; CHECK-NEXT:    ret
 ; CHECK-NEXT:  .LBB9_2:
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
@@ -244,45 +242,44 @@ define i32 @imp_null_check_hoist_over_udiv(i32* %x, i32 %a, i32 %b) {
 
  not_null:
   %p1 = udiv i32 %a, %b
-  %t = load i32, i32* %x
+  %t = load i32, ptr %x
   %res = add i32 %t, %p1
   ret i32 %res
 }
 
-define i32 @imp_null_check_hoist_over_unrelated_load(i32* %x, i32* %y, i32* %z) {
-;; OHOS_LOCAL begin
+
+; TODO: We should be able to hoist this - we can on x86, why isn't this
+; working for aarch64?  Aliasing?
+define i32 @imp_null_check_hoist_over_unrelated_load(ptr %x, ptr %y, ptr %z) {
 ; CHECK-LABEL: imp_null_check_hoist_over_unrelated_load:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:  .Ltmp7:
-; CHECK-NEXT:    ldr w0, [x0] // on-fault: .LBB10_2
+; CHECK-NEXT:    cbz x0, .LBB10_2
 ; CHECK-NEXT:  // %bb.1: // %not_null
 ; CHECK-NEXT:    ldr w8, [x1]
+; CHECK-NEXT:    ldr w0, [x0]
 ; CHECK-NEXT:    str w8, [x2]
 ; CHECK-NEXT:    ret
 ; CHECK-NEXT:  .LBB10_2:
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
-;; OHOS_LOCAL end
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret i32 42
 
  not_null:
-  %t0 = load i32, i32* %y
-  %t1 = load i32, i32* %x
-  store i32 %t0, i32* %z
+  %t0 = load i32, ptr %y
+  %t1 = load i32, ptr %x
+  store i32 %t0, ptr %z
   ret i32 %t1
 }
 
-define i32 @imp_null_check_gep_load_with_use_dep(i32* %x, i32 %a) {
+define i32 @imp_null_check_gep_load_with_use_dep(ptr %x, i32 %a) {
 ; CHECK-LABEL: imp_null_check_gep_load_with_use_dep:
 ; CHECK:       // %bb.0: // %entry
-;; OHOS_LOCAL begin
-; CHECK-NEXT:  .Ltmp8:
-;; OHOS_LOCAL end
+; CHECK-NEXT:  .Ltmp6:
 ; CHECK-NEXT:    ldr w8, [x0] // on-fault: .LBB11_2
 ; CHECK-NEXT:  // %bb.1: // %not_null
 ; CHECK-NEXT:    add w9, w0, w1
@@ -293,24 +290,24 @@ define i32 @imp_null_check_gep_load_with_use_dep(i32* %x, i32 %a) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret i32 42
 
  not_null:
-  %x.loc = getelementptr i32, i32* %x, i32 1
-  %y = ptrtoint i32* %x.loc to i32
+  %x.loc = getelementptr i32, ptr %x, i32 1
+  %y = ptrtoint ptr %x.loc to i32
   %b = add i32 %a, %y
-  %t = load i32, i32* %x
+  %t = load i32, ptr %x
   %z = add i32 %t, %b
   ret i32 %z
 }
 
 ;; TODO: We could handle this case as we can lift the fence into the
 ;; previous block before the conditional without changing behavior.
-define i32 @imp_null_check_load_fence1(i32* %x) {
+define i32 @imp_null_check_load_fence1(ptr %x) {
 ; CHECK-LABEL: imp_null_check_load_fence1:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:    cbz x0, .LBB12_2
@@ -322,7 +319,7 @@ define i32 @imp_null_check_load_fence1(i32* %x) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
 entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
 is_null:
@@ -330,13 +327,13 @@ is_null:
 
 not_null:
   fence acquire
-  %t = load i32, i32* %x
+  %t = load i32, ptr %x
   ret i32 %t
 }
 
 ;; TODO: We could handle this case as we can lift the fence into the
 ;; previous block before the conditional without changing behavior.
-define i32 @imp_null_check_load_fence2(i32* %x) {
+define i32 @imp_null_check_load_fence2(ptr %x) {
 ; CHECK-LABEL: imp_null_check_load_fence2:
 ; CHECK:       // %bb.0: // %entry
 ; CHECK-NEXT:    cbz x0, .LBB13_2
@@ -348,7 +345,7 @@ define i32 @imp_null_check_load_fence2(i32* %x) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
 entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
 is_null:
@@ -356,62 +353,58 @@ is_null:
 
 not_null:
   fence seq_cst
-  %t = load i32, i32* %x
+  %t = load i32, ptr %x
   ret i32 %t
 }
 
-define void @imp_null_check_store(i32* %x) {
-;; OHOS_LOCAL begin
+; TODO: We can fold to implicit null here, not sure why this isn't working
+define void @imp_null_check_store(ptr %x) {
 ; CHECK-LABEL: imp_null_check_store:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    mov w8, #1
-; CHECK-NEXT:  .Ltmp9:
-; CHECK-NEXT:    str w8, [x0] // on-fault: .LBB14_2
+; CHECK-NEXT:    cbz x0, .LBB14_2
 ; CHECK-NEXT:  // %bb.1: // %not_null
-;; OHOS_LOCAL end
+; CHECK-NEXT:    mov w8, #1
+; CHECK-NEXT:    str w8, [x0]
 ; CHECK-NEXT:  .LBB14_2: // %common.ret
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret void
 
  not_null:
-  store i32 1, i32* %x
+  store i32 1, ptr %x
   ret void
 }
 
-define void @imp_null_check_unordered_store(i32* %x) {
-;; OHOS_LOCAL begin
+;; TODO: can be implicit
+define void @imp_null_check_unordered_store(ptr %x) {
 ; CHECK-LABEL: imp_null_check_unordered_store:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    mov w8, #1
-; CHECK-NEXT:  .Ltmp10:
-; CHECK-NEXT:    str w8, [x0] // on-fault: .LBB15_2
+; CHECK-NEXT:    cbz x0, .LBB15_2
 ; CHECK-NEXT:  // %bb.1: // %not_null
-;; OHOS_LOCAL end
+; CHECK-NEXT:    mov w8, #1
+; CHECK-NEXT:    str w8, [x0]
 ; CHECK-NEXT:  .LBB15_2: // %common.ret
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret void
 
  not_null:
-  store atomic i32 1, i32* %x unordered, align 4
+  store atomic i32 1, ptr %x unordered, align 4
   ret void
 }
 
-define i32 @imp_null_check_neg_gep_load(i32* %x) {
+define i32 @imp_null_check_neg_gep_load(ptr %x) {
 ; CHECK-LABEL: imp_null_check_neg_gep_load:
 ; CHECK:       // %bb.0: // %entry
-;; OHOS_LOCAL begin
-; CHECK-NEXT:  .Ltmp11:
-;; OHOS_LOCAL end
+; CHECK-NEXT:  .Ltmp7:
 ; CHECK-NEXT:    ldur w0, [x0, #-128] // on-fault: .LBB16_2
 ; CHECK-NEXT:  // %bb.1: // %not_null
 ; CHECK-NEXT:    ret
@@ -419,45 +412,16 @@ define i32 @imp_null_check_neg_gep_load(i32* %x) {
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
  entry:
-  %c = icmp eq i32* %x, null
+  %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
 
  is_null:
   ret i32 42
 
  not_null:
-  %x.gep = getelementptr i32, i32* %x, i32 -32
-  %t = load i32, i32* %x.gep
+  %x.gep = getelementptr i32, ptr %x, i32 -32
+  %t = load i32, ptr %x.gep
   ret i32 %t
 }
-
-;; OHOS_LOCAL begin
-;; LLVM does not support implicit null checks for ldp and stp
-;; The test must be fixed, when such is introduced
-define i64 @imp_null_check_load_pair(i64* %array) {
-; CHECK-LABEL: imp_null_check_load_pair:
-; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    cbz x0, .LBB17_2
-; CHECK-NEXT:  // %bb.1: // %if.end
-; CHECK-NEXT:    ldp x8, x9, [x0]
-; CHECK-NEXT:    add x0, x9, x8
-; CHECK-NEXT:  .LBB17_2: // %return
-; CHECK-NEXT:    ret
-entry:
-  %cmp = icmp eq i64* %array, null
-  br i1 %cmp, label %return, label %if.end, !make.implicit !0
-
-if.end:                                           ; preds = %entry
-  %0 = load i64, i64* %array, align 8
-  %arrayidx1 = getelementptr inbounds i64, i64* %array, i64 1
-  %1 = load i64, i64* %arrayidx1, align 8
-  %add = add nsw i64 %1, %0
-  br label %return
-
-return:                                           ; preds = %entry, %if.end
-  %retval.0 = phi i64 [ %add, %if.end ], [ 0, %entry ]
-  ret i64 %retval.0
-}
-;; OHOS_LOCAL end
 
 !0 = !{}

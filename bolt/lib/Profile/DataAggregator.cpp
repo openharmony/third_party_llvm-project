@@ -14,12 +14,16 @@
 #include "bolt/Profile/DataAggregator.h"
 #include "bolt/Core/BinaryContext.h"
 #include "bolt/Core/BinaryFunction.h"
+#include "bolt/Passes/BinaryPasses.h"
 #include "bolt/Profile/BoltAddressTranslation.h"
 #include "bolt/Profile/Heatmap.h"
+#include "bolt/Profile/YAMLProfileWriter.h"
 #include "bolt/Utils/CommandLineOpts.h"
 #include "bolt/Utils/Utils.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
@@ -29,6 +33,7 @@
 #include "llvm/Support/Timer.h"
 #include "llvm/Support/raw_ostream.h"
 #include <map>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 
@@ -43,6 +48,11 @@ static cl::opt<bool>
     BasicAggregation("nl",
                      cl::desc("aggregate basic samples (without LBR info)"),
                      cl::cat(AggregatorCategory));
+
+static cl::opt<std::string>
+    ITraceAggregation("itrace",
+                      cl::desc("Generate LBR info with perf itrace argument"),
+                      cl::cat(AggregatorCategory));
 
 static cl::opt<bool>
 FilterMemProfile("filter-mem-profile",
@@ -76,6 +86,9 @@ MaxSamples("max-samples",
   cl::Optional,
   cl::Hidden,
   cl::cat(AggregatorCategory));
+
+extern cl::opt<opts::ProfileFormatKind> ProfileFormat;
+extern cl::opt<std::string> SaveProfile;
 
 cl::opt<bool> ReadPreAggregated(
     "pa", cl::desc("skip perf and read data from a pre-aggregated file format"),
@@ -141,7 +154,7 @@ void DataAggregator::deleteTempFiles() {
 }
 
 void DataAggregator::findPerfExecutable() {
-  Optional<std::string> PerfExecutable =
+  std::optional<std::string> PerfExecutable =
       sys::Process::FindInEnvPath("PATH", "perf");
   if (!PerfExecutable) {
     outs() << "PERF2BOLT: No perf executable found!\n";
@@ -159,16 +172,23 @@ void DataAggregator::start() {
 
   findPerfExecutable();
 
-  if (opts::BasicAggregation)
+  if (opts::BasicAggregation) {
     launchPerfProcess("events without LBR",
                       MainEventsPPI,
                       "script -F pid,event,ip",
                       /*Wait = */false);
-  else
+  } else if (!opts::ITraceAggregation.empty()) {
+    std::string ItracePerfScriptArgs = llvm::formatv(
+        "script -F pid,ip,brstack --itrace={0}", opts::ITraceAggregation);
+    launchPerfProcess("branch events with itrace", MainEventsPPI,
+                      ItracePerfScriptArgs.c_str(),
+                      /*Wait = */ false);
+  } else {
     launchPerfProcess("branch events",
                       MainEventsPPI,
                       "script -F pid,ip,brstack",
                       /*Wait = */false);
+  }
 
   // Note: we launch script for mem events regardless of the option, as the
   //       command fails fairly fast if mem events were not collected.
@@ -177,15 +197,13 @@ void DataAggregator::start() {
                     "script -F pid,event,addr,ip",
                     /*Wait = */false);
 
-  launchPerfProcess("process events",
-                    MMapEventsPPI,
-                    "script --show-mmap-events",
-                    /*Wait = */false);
+  launchPerfProcess("process events", MMapEventsPPI,
+                    "script --show-mmap-events --no-itrace",
+                    /*Wait = */ false);
 
-  launchPerfProcess("task events",
-                    TaskEventsPPI,
-                    "script --show-task-events",
-                    /*Wait = */false);
+  launchPerfProcess("task events", TaskEventsPPI,
+                    "script --show-task-events --no-itrace",
+                    /*Wait = */ false);
 }
 
 void DataAggregator::abort() {
@@ -195,10 +213,10 @@ void DataAggregator::abort() {
   std::string Error;
 
   // Kill subprocesses in case they are not finished
-  sys::Wait(TaskEventsPPI.PI, 1, false, &Error);
-  sys::Wait(MMapEventsPPI.PI, 1, false, &Error);
-  sys::Wait(MainEventsPPI.PI, 1, false, &Error);
-  sys::Wait(MemEventsPPI.PI, 1, false, &Error);
+  sys::Wait(TaskEventsPPI.PI, 1, &Error);
+  sys::Wait(MMapEventsPPI.PI, 1, &Error);
+  sys::Wait(MainEventsPPI.PI, 1, &Error);
+  sys::Wait(MemEventsPPI.PI, 1, &Error);
 
   deleteTempFiles();
 
@@ -212,17 +230,7 @@ void DataAggregator::launchPerfProcess(StringRef Name, PerfProcessInfo &PPI,
   outs() << "PERF2BOLT: spawning perf job to read " << Name << '\n';
   Argv.push_back(PerfPath.data());
 
-  char *WritableArgsString = strdup(ArgsString);
-  char *Str = WritableArgsString;
-  do {
-    Argv.push_back(Str);
-    while (*Str && *Str != ' ')
-      ++Str;
-    if (!*Str)
-      break;
-    *Str++ = 0;
-  } while (true);
-
+  StringRef(ArgsString).split(Argv, ' ');
   Argv.push_back("-f");
   Argv.push_back("-i");
   Argv.push_back(Filename.c_str());
@@ -243,8 +251,8 @@ void DataAggregator::launchPerfProcess(StringRef Name, PerfProcessInfo &PPI,
   }
   TempFiles.push_back(PPI.StderrPath.data());
 
-  Optional<StringRef> Redirects[] = {
-      llvm::None,                        // Stdin
+  std::optional<StringRef> Redirects[] = {
+      std::nullopt,                      // Stdin
       StringRef(PPI.StdoutPath.data()),  // Stdout
       StringRef(PPI.StderrPath.data())}; // Stderr
 
@@ -258,12 +266,10 @@ void DataAggregator::launchPerfProcess(StringRef Name, PerfProcessInfo &PPI,
 
   if (Wait)
     PPI.PI.ReturnCode = sys::ExecuteAndWait(PerfPath.data(), Argv,
-                                            /*envp*/ llvm::None, Redirects);
+                                            /*envp*/ std::nullopt, Redirects);
   else
-    PPI.PI = sys::ExecuteNoWait(PerfPath.data(), Argv, /*envp*/ llvm::None,
+    PPI.PI = sys::ExecuteNoWait(PerfPath.data(), Argv, /*envp*/ std::nullopt,
                                 Redirects);
-
-  free(WritableArgsString);
 }
 
 void DataAggregator::processFileBuildID(StringRef FileBuildID) {
@@ -295,7 +301,7 @@ void DataAggregator::processFileBuildID(StringRef FileBuildID) {
   FileBuf = std::move(*MB);
   ParsingBuf = FileBuf->getBuffer();
 
-  Optional<StringRef> FileName = getFileNameForBuildID(FileBuildID);
+  std::optional<StringRef> FileName = getFileNameForBuildID(FileBuildID);
   if (!FileName) {
     if (hasAllBuildIDs()) {
       errs() << "PERF2BOLT-ERROR: failed to match build-id from perf output. "
@@ -316,8 +322,6 @@ void DataAggregator::processFileBuildID(StringRef FileBuildID) {
   } else {
     outs() << "PERF2BOLT: matched build-id and file name\n";
   }
-
-  return;
 }
 
 bool DataAggregator::checkPerfDataMagic(StringRef FileName) {
@@ -325,15 +329,22 @@ bool DataAggregator::checkPerfDataMagic(StringRef FileName) {
     return true;
 
   Expected<sys::fs::file_t> FD = sys::fs::openNativeFileForRead(FileName);
-  if (!FD)
+  if (!FD) {
+    consumeError(FD.takeError());
     return false;
+  }
 
   char Buf[7] = {0, 0, 0, 0, 0, 0, 0};
 
   auto Close = make_scope_exit([&] { sys::fs::closeFile(*FD); });
   Expected<size_t> BytesRead = sys::fs::readNativeFileSlice(
-      *FD, makeMutableArrayRef(Buf, sizeof(Buf)), 0);
-  if (!BytesRead || *BytesRead != 7)
+      *FD, MutableArrayRef(Buf, sizeof(Buf)), 0);
+  if (!BytesRead) {
+    consumeError(BytesRead.takeError());
+    return false;
+  }
+
+  if (*BytesRead != 7)
     return false;
 
   if (strncmp(Buf, "PERFILE", 7) == 0)
@@ -400,28 +411,20 @@ std::error_code DataAggregator::writeAutoFDOData(StringRef OutputFilename) {
   };
 
   OutFile << FallthroughLBRs.size() << "\n";
-  for (const auto &AggrLBR : FallthroughLBRs) {
-    const Trace &Trace = AggrLBR.first;
-    const FTInfo &Info = AggrLBR.second;
-    OutFile << Twine::utohexstr(filterAddress(Trace.From)) << "-"
-            << Twine::utohexstr(filterAddress(Trace.To)) << ":"
-            << (Info.InternCount + Info.ExternCount) << "\n";
+  for (const auto &[Trace, Info] : FallthroughLBRs) {
+    OutFile << formatv("{0:x-}-{1:x-}:{2}\n", filterAddress(Trace.From),
+                       filterAddress(Trace.To),
+                       Info.InternCount + Info.ExternCount);
   }
 
   OutFile << BasicSamples.size() << "\n";
-  for (const auto &Sample : BasicSamples) {
-    uint64_t PC = Sample.first;
-    uint64_t HitCount = Sample.second;
-    OutFile << Twine::utohexstr(filterAddress(PC)) << ":" << HitCount << "\n";
-  }
+  for (const auto [PC, HitCount] : BasicSamples)
+    OutFile << formatv("{0:x-}:{1}\n", filterAddress(PC), HitCount);
 
   OutFile << BranchLBRs.size() << "\n";
-  for (const auto &AggrLBR : BranchLBRs) {
-    const Trace &Trace = AggrLBR.first;
-    const BranchInfo &Info = AggrLBR.second;
-    OutFile << Twine::utohexstr(filterAddress(Trace.From)) << "->"
-            << Twine::utohexstr(filterAddress(Trace.To)) << ":"
-            << Info.TakenCount << "\n";
+  for (const auto &[Trace, Info] : BranchLBRs) {
+    OutFile << formatv("{0:x-}->{1:x-}:{2}\n", filterAddress(Trace.From),
+                       filterAddress(Trace.To), Info.TakenCount);
   }
 
   outs() << "PERF2BOLT: wrote " << FallthroughLBRs.size() << " unique traces, "
@@ -458,6 +461,45 @@ void DataAggregator::filterBinaryMMapInfo() {
   }
 }
 
+int DataAggregator::prepareToParse(StringRef Name, PerfProcessInfo &Process,
+                                   PerfProcessErrorCallbackTy Callback) {
+  std::string Error;
+  outs() << "PERF2BOLT: waiting for perf " << Name
+         << " collection to finish...\n";
+  sys::ProcessInfo PI = sys::Wait(Process.PI, std::nullopt, &Error);
+
+  if (!Error.empty()) {
+    errs() << "PERF-ERROR: " << PerfPath << ": " << Error << "\n";
+    deleteTempFiles();
+    exit(1);
+  }
+
+  if (PI.ReturnCode != 0) {
+    ErrorOr<std::unique_ptr<MemoryBuffer>> ErrorMB =
+        MemoryBuffer::getFileOrSTDIN(Process.StderrPath.data());
+    StringRef ErrBuf = (*ErrorMB)->getBuffer();
+
+    deleteTempFiles();
+    Callback(PI.ReturnCode, ErrBuf);
+    return PI.ReturnCode;
+  }
+
+  ErrorOr<std::unique_ptr<MemoryBuffer>> MB =
+      MemoryBuffer::getFileOrSTDIN(Process.StdoutPath.data());
+  if (std::error_code EC = MB.getError()) {
+    errs() << "Cannot open " << Process.StdoutPath.data() << ": "
+           << EC.message() << "\n";
+    deleteTempFiles();
+    exit(1);
+  }
+
+  FileBuf = std::move(*MB);
+  ParsingBuf = FileBuf->getBuffer();
+  Col = 0;
+  Line = 1;
+  return PI.ReturnCode;
+}
+
 Error DataAggregator::preprocessProfile(BinaryContext &BC) {
   this->BC = &BC;
 
@@ -466,7 +508,7 @@ Error DataAggregator::preprocessProfile(BinaryContext &BC) {
     return Error::success();
   }
 
-  if (Optional<StringRef> FileBuildID = BC.getFileBuildID()) {
+  if (std::optional<StringRef> FileBuildID = BC.getFileBuildID()) {
     outs() << "BOLT-INFO: binary build-id is:     " << *FileBuildID << "\n";
     processFileBuildID(*FileBuildID);
   } else {
@@ -474,45 +516,19 @@ Error DataAggregator::preprocessProfile(BinaryContext &BC) {
               "not read one from input binary\n";
   }
 
-  auto prepareToParse = [&](StringRef Name, PerfProcessInfo &Process) {
-    std::string Error;
-    outs() << "PERF2BOLT: waiting for perf " << Name
-           << " collection to finish...\n";
-    sys::ProcessInfo PI = sys::Wait(Process.PI, 0, true, &Error);
-
-    if (!Error.empty()) {
-      errs() << "PERF-ERROR: " << PerfPath << ": " << Error << "\n";
-      deleteTempFiles();
-      exit(1);
-    }
-
-    if (PI.ReturnCode != 0) {
-      ErrorOr<std::unique_ptr<MemoryBuffer>> ErrorMB =
-          MemoryBuffer::getFileOrSTDIN(Process.StderrPath.data());
-      StringRef ErrBuf = (*ErrorMB)->getBuffer();
-
-      errs() << "PERF-ERROR: return code " << PI.ReturnCode << "\n";
-      errs() << ErrBuf;
-      deleteTempFiles();
-      exit(1);
-    }
-
-    ErrorOr<std::unique_ptr<MemoryBuffer>> MB =
-        MemoryBuffer::getFileOrSTDIN(Process.StdoutPath.data());
-    if (std::error_code EC = MB.getError()) {
-      errs() << "Cannot open " << Process.StdoutPath.data() << ": "
-             << EC.message() << "\n";
-      deleteTempFiles();
-      exit(1);
-    }
-
-    FileBuf = std::move(*MB);
-    ParsingBuf = FileBuf->getBuffer();
-    Col = 0;
-    Line = 1;
+  auto ErrorCallback = [](int ReturnCode, StringRef ErrBuf) {
+    errs() << "PERF-ERROR: return code " << ReturnCode << "\n" << ErrBuf;
+    exit(1);
   };
 
-  if (opts::LinuxKernelMode) {
+  auto MemEventsErrorCallback = [&](int ReturnCode, StringRef ErrBuf) {
+    Regex NoData("Samples for '.*' event do not have ADDR attribute set. "
+                 "Cannot print 'addr' field.");
+    if (!NoData.match(ErrBuf))
+      ErrorCallback(ReturnCode, ErrBuf);
+  };
+
+  if (BC.IsLinuxKernel) {
     // Current MMap parsing logic does not work with linux kernel.
     // MMap entries for linux kernel uses PERF_RECORD_MMAP
     // format instead of typical PERF_RECORD_MMAP2 format.
@@ -528,17 +544,17 @@ Error DataAggregator::preprocessProfile(BinaryContext &BC) {
     // in Linux kernel mode.
     opts::IgnoreInterruptLBR = false;
   } else {
-    prepareToParse("mmap events", MMapEventsPPI);
+    prepareToParse("mmap events", MMapEventsPPI, ErrorCallback);
     if (parseMMapEvents())
       errs() << "PERF2BOLT: failed to parse mmap events\n";
   }
 
-  prepareToParse("task events", TaskEventsPPI);
+  prepareToParse("task events", TaskEventsPPI, ErrorCallback);
   if (parseTaskEvents())
     errs() << "PERF2BOLT: failed to parse task events\n";
 
   filterBinaryMMapInfo();
-  prepareToParse("events", MainEventsPPI);
+  prepareToParse("events", MainEventsPPI, ErrorCallback);
 
   if (opts::HeatmapMode) {
     if (std::error_code EC = printLBRHeatMap()) {
@@ -562,38 +578,9 @@ Error DataAggregator::preprocessProfile(BinaryContext &BC) {
   }
 
   // Special handling for memory events
-  std::string Error;
-  sys::ProcessInfo PI = sys::Wait(MemEventsPPI.PI, 0, true, &Error);
-  if (PI.ReturnCode != 0) {
-    ErrorOr<std::unique_ptr<MemoryBuffer>> MB =
-        MemoryBuffer::getFileOrSTDIN(MemEventsPPI.StderrPath.data());
-    StringRef ErrBuf = (*MB)->getBuffer();
-
-    deleteTempFiles();
-
-    Regex NoData("Samples for '.*' event do not have ADDR attribute set. "
-                 "Cannot print 'addr' field.");
-    if (!NoData.match(ErrBuf)) {
-      errs() << "PERF-ERROR: return code " << PI.ReturnCode << "\n";
-      errs() << ErrBuf;
-      exit(1);
-    }
+  if (prepareToParse("mem events", MemEventsPPI, MemEventsErrorCallback))
     return Error::success();
-  }
 
-  ErrorOr<std::unique_ptr<MemoryBuffer>> MB =
-      MemoryBuffer::getFileOrSTDIN(MemEventsPPI.StdoutPath.data());
-  if (std::error_code EC = MB.getError()) {
-    errs() << "Cannot open " << MemEventsPPI.StdoutPath.data() << ": "
-           << EC.message() << "\n";
-    deleteTempFiles();
-    exit(1);
-  }
-
-  FileBuf = std::move(*MB);
-  ParsingBuf = FileBuf->getBuffer();
-  Col = 0;
-  Line = 1;
   if (const std::error_code EC = parseMemEvents())
     errs() << "PERF2BOLT: failed to parse memory events: " << EC.message()
            << '\n';
@@ -612,8 +599,20 @@ Error DataAggregator::readProfile(BinaryContext &BC) {
   }
 
   if (opts::AggregateOnly) {
-    if (std::error_code EC = writeAggregatedFile(opts::OutputFilename))
-      report_error("cannot create output data file", EC);
+    if (opts::ProfileFormat == opts::ProfileFormatKind::PF_Fdata)
+      if (std::error_code EC = writeAggregatedFile(opts::OutputFilename))
+        report_error("cannot create output data file", EC);
+
+    // BAT YAML is handled by DataAggregator since normal YAML output requires
+    // CFG which is not available in BAT mode.
+    if (usesBAT()) {
+      if (opts::ProfileFormat == opts::ProfileFormatKind::PF_YAML)
+        if (std::error_code EC = writeBATYAML(BC, opts::OutputFilename))
+          report_error("cannot create output data file", EC);
+      if (!opts::SaveProfile.empty())
+        if (std::error_code EC = writeBATYAML(BC, opts::SaveProfile))
+          report_error("cannot create output data file", EC);
+    }
   }
 
   return Error::success();
@@ -634,14 +633,19 @@ void DataAggregator::processProfile(BinaryContext &BC) {
   processMemEvents();
 
   // Mark all functions with registered events as having a valid profile.
+  const auto Flags = opts::BasicAggregation ? BinaryFunction::PF_SAMPLE
+                                            : BinaryFunction::PF_LBR;
   for (auto &BFI : BC.getBinaryFunctions()) {
     BinaryFunction &BF = BFI.second;
-    if (getBranchData(BF)) {
-      const auto Flags = opts::BasicAggregation ? BinaryFunction::PF_SAMPLE
-                                                : BinaryFunction::PF_LBR;
+    if (getBranchData(BF) || getFuncSampleData(BF.getNames()))
       BF.markProfiled(Flags);
-    }
   }
+
+  for (auto &FuncBranches : NamesToBranches)
+    llvm::stable_sort(FuncBranches.second.Data);
+
+  for (auto &MemEvents : NamesToMemEvents)
+    llvm::stable_sort(MemEvents.second.Data);
 
   // Release intermediate storage.
   clear(BranchLBRs);
@@ -660,18 +664,20 @@ DataAggregator::getBinaryFunctionContainingAddress(uint64_t Address) const {
                                                 /*UseMaxSize=*/true);
 }
 
-StringRef DataAggregator::getLocationName(BinaryFunction &Func,
-                                          uint64_t Count) {
+BinaryFunction *
+DataAggregator::getBATParentFunction(const BinaryFunction &Func) const {
+  if (BAT)
+    if (const uint64_t HotAddr = BAT->fetchParentAddress(Func.getAddress()))
+      return getBinaryFunctionContainingAddress(HotAddr);
+  return nullptr;
+}
+
+StringRef DataAggregator::getLocationName(const BinaryFunction &Func,
+                                          bool BAT) {
   if (!BAT)
     return Func.getOneName();
 
   const BinaryFunction *OrigFunc = &Func;
-  if (const uint64_t HotAddr = BAT->fetchParentAddress(Func.getAddress())) {
-    NumColdSamples += Count;
-    BinaryFunction *HotFunc = getBinaryFunctionContainingAddress(HotAddr);
-    if (HotFunc)
-      OrigFunc = HotFunc;
-  }
   // If it is a local function, prefer the name containing the file name where
   // the local function was declared
   for (StringRef AlternativeName : OrigFunc->getNames()) {
@@ -686,12 +692,17 @@ StringRef DataAggregator::getLocationName(BinaryFunction &Func,
   return OrigFunc->getOneName();
 }
 
-bool DataAggregator::doSample(BinaryFunction &Func, uint64_t Address,
+bool DataAggregator::doSample(BinaryFunction &OrigFunc, uint64_t Address,
                               uint64_t Count) {
+  BinaryFunction *ParentFunc = getBATParentFunction(OrigFunc);
+  BinaryFunction &Func = ParentFunc ? *ParentFunc : OrigFunc;
+  if (ParentFunc)
+    NumColdSamples += Count;
+
   auto I = NamesToSamples.find(Func.getOneName());
   if (I == NamesToSamples.end()) {
     bool Success;
-    StringRef LocName = getLocationName(Func, Count);
+    StringRef LocName = getLocationName(Func, BAT);
     std::tie(I, Success) = NamesToSamples.insert(
         std::make_pair(Func.getOneName(),
                        FuncSampleData(LocName, FuncSampleData::ContainerTy())));
@@ -699,7 +710,7 @@ bool DataAggregator::doSample(BinaryFunction &Func, uint64_t Address,
 
   Address -= Func.getAddress();
   if (BAT)
-    Address = BAT->translate(Func, Address, /*IsBranchSrc=*/false);
+    Address = BAT->translate(Func.getAddress(), Address, /*IsBranchSrc=*/false);
 
   I->second.bumpCount(Address, Count);
   return true;
@@ -711,25 +722,12 @@ bool DataAggregator::doIntraBranch(BinaryFunction &Func, uint64_t From,
   FuncBranchData *AggrData = getBranchData(Func);
   if (!AggrData) {
     AggrData = &NamesToBranches[Func.getOneName()];
-    AggrData->Name = getLocationName(Func, Count);
+    AggrData->Name = getLocationName(Func, BAT);
     setBranchData(Func, AggrData);
   }
 
-  From -= Func.getAddress();
-  To -= Func.getAddress();
-  LLVM_DEBUG(dbgs() << "BOLT-DEBUG: bumpBranchCount: " << Func.getPrintName()
-                    << " @ " << Twine::utohexstr(From) << " -> "
-                    << Func.getPrintName() << " @ " << Twine::utohexstr(To)
-                    << '\n');
-  if (BAT) {
-    From = BAT->translate(Func, From, /*IsBranchSrc=*/true);
-    To = BAT->translate(Func, To, /*IsBranchSrc=*/false);
-    LLVM_DEBUG(dbgs() << "BOLT-DEBUG: BAT translation on bumpBranchCount: "
-                      << Func.getPrintName() << " @ " << Twine::utohexstr(From)
-                      << " -> " << Func.getPrintName() << " @ "
-                      << Twine::utohexstr(To) << '\n');
-  }
-
+  LLVM_DEBUG(dbgs() << "BOLT-DEBUG: bumpBranchCount: "
+                    << formatv("{0} @ {1:x} -> {0} @ {2:x}\n", Func, From, To));
   AggrData->bumpBranchCount(From, To, Count, Mispreds);
   return true;
 }
@@ -743,30 +741,24 @@ bool DataAggregator::doInterBranch(BinaryFunction *FromFunc,
   StringRef SrcFunc;
   StringRef DstFunc;
   if (FromFunc) {
-    SrcFunc = getLocationName(*FromFunc, Count);
+    SrcFunc = getLocationName(*FromFunc, BAT);
     FromAggrData = getBranchData(*FromFunc);
     if (!FromAggrData) {
       FromAggrData = &NamesToBranches[FromFunc->getOneName()];
       FromAggrData->Name = SrcFunc;
       setBranchData(*FromFunc, FromAggrData);
     }
-    From -= FromFunc->getAddress();
-    if (BAT)
-      From = BAT->translate(*FromFunc, From, /*IsBranchSrc=*/true);
 
     recordExit(*FromFunc, From, Mispreds, Count);
   }
   if (ToFunc) {
-    DstFunc = getLocationName(*ToFunc, 0);
+    DstFunc = getLocationName(*ToFunc, BAT);
     ToAggrData = getBranchData(*ToFunc);
     if (!ToAggrData) {
       ToAggrData = &NamesToBranches[ToFunc->getOneName()];
       ToAggrData->Name = DstFunc;
       setBranchData(*ToFunc, ToAggrData);
     }
-    To -= ToFunc->getAddress();
-    if (BAT)
-      To = BAT->translate(*ToFunc, To, /*IsBranchSrc=*/false);
 
     recordEntry(*ToFunc, To, Mispreds, Count);
   }
@@ -782,14 +774,45 @@ bool DataAggregator::doInterBranch(BinaryFunction *FromFunc,
 
 bool DataAggregator::doBranch(uint64_t From, uint64_t To, uint64_t Count,
                               uint64_t Mispreds) {
-  BinaryFunction *FromFunc = getBinaryFunctionContainingAddress(From);
-  BinaryFunction *ToFunc = getBinaryFunctionContainingAddress(To);
+  bool IsReturn = false;
+  auto handleAddress = [&](uint64_t &Addr, bool IsFrom) -> BinaryFunction * {
+    if (BinaryFunction *Func = getBinaryFunctionContainingAddress(Addr)) {
+      Addr -= Func->getAddress();
+      if (IsFrom) {
+        auto checkReturn = [&](auto MaybeInst) {
+          IsReturn = MaybeInst && BC->MIB->isReturn(*MaybeInst);
+        };
+        if (Func->hasInstructions())
+          checkReturn(Func->getInstructionAtOffset(Addr));
+        else
+          checkReturn(Func->disassembleInstructionAtOffset(Addr));
+      }
+
+      if (BAT)
+        Addr = BAT->translate(Func->getAddress(), Addr, IsFrom);
+
+      if (BinaryFunction *ParentFunc = getBATParentFunction(*Func)) {
+        Func = ParentFunc;
+        if (IsFrom)
+          NumColdSamples += Count;
+      }
+
+      return Func;
+    }
+    return nullptr;
+  };
+
+  BinaryFunction *FromFunc = handleAddress(From, /*IsFrom=*/true);
+  // Ignore returns.
+  if (IsReturn)
+    return true;
+  BinaryFunction *ToFunc = handleAddress(To, /*IsFrom=*/false);
   if (!FromFunc && !ToFunc)
     return false;
 
-  if (FromFunc == ToFunc) {
-    recordBranch(*FromFunc, From - FromFunc->getAddress(),
-                 To - FromFunc->getAddress(), Count, Mispreds);
+  // Treat recursive control transfers as inter-branches.
+  if (FromFunc == ToFunc && To != 0) {
+    recordBranch(*FromFunc, From, To, Count, Mispreds);
     return doIntraBranch(*FromFunc, From, To, Count, Mispreds);
   }
 
@@ -801,28 +824,29 @@ bool DataAggregator::doTrace(const LBREntry &First, const LBREntry &Second,
   BinaryFunction *FromFunc = getBinaryFunctionContainingAddress(First.To);
   BinaryFunction *ToFunc = getBinaryFunctionContainingAddress(Second.From);
   if (!FromFunc || !ToFunc) {
-    LLVM_DEBUG(
-        dbgs() << "Out of range trace starting in " << FromFunc->getPrintName()
-               << " @ " << Twine::utohexstr(First.To - FromFunc->getAddress())
-               << " and ending in " << ToFunc->getPrintName() << " @ "
-               << ToFunc->getPrintName() << " @ "
-               << Twine::utohexstr(Second.From - ToFunc->getAddress()) << '\n');
+    LLVM_DEBUG({
+      dbgs() << "Out of range trace starting in " << FromFunc->getPrintName()
+             << formatv(" @ {0:x}", First.To - FromFunc->getAddress())
+             << " and ending in " << ToFunc->getPrintName()
+             << formatv(" @ {0:x}\n", Second.From - ToFunc->getAddress());
+    });
     NumLongRangeTraces += Count;
     return false;
   }
   if (FromFunc != ToFunc) {
     NumInvalidTraces += Count;
-    LLVM_DEBUG(
-        dbgs() << "Invalid trace starting in " << FromFunc->getPrintName()
-               << " @ " << Twine::utohexstr(First.To - FromFunc->getAddress())
-               << " and ending in " << ToFunc->getPrintName() << " @ "
-               << ToFunc->getPrintName() << " @ "
-               << Twine::utohexstr(Second.From - ToFunc->getAddress()) << '\n');
+    LLVM_DEBUG({
+      dbgs() << "Invalid trace starting in " << FromFunc->getPrintName()
+             << formatv(" @ {0:x}", First.To - FromFunc->getAddress())
+             << " and ending in " << ToFunc->getPrintName()
+             << formatv(" @ {0:x}\n", Second.From - ToFunc->getAddress());
+    });
     return false;
   }
 
-  Optional<BoltAddressTranslation::FallthroughListTy> FTs =
-      BAT ? BAT->getFallthroughsInTrace(*FromFunc, First.To, Second.From)
+  std::optional<BoltAddressTranslation::FallthroughListTy> FTs =
+      BAT ? BAT->getFallthroughsInTrace(FromFunc->getAddress(), First.To,
+                                        Second.From)
           : getFallthroughsInTrace(*FromFunc, First, Second, Count);
   if (!FTs) {
     LLVM_DEBUG(
@@ -839,23 +863,29 @@ bool DataAggregator::doTrace(const LBREntry &First, const LBREntry &Second,
                     << FromFunc->getPrintName() << ":"
                     << Twine::utohexstr(First.To) << " to "
                     << Twine::utohexstr(Second.From) << ".\n");
-  for (const std::pair<uint64_t, uint64_t> &Pair : *FTs)
-    doIntraBranch(*FromFunc, Pair.first + FromFunc->getAddress(),
-                  Pair.second + FromFunc->getAddress(), Count, false);
+  BinaryFunction *ParentFunc = getBATParentFunction(*FromFunc);
+  for (auto [From, To] : *FTs) {
+    if (BAT) {
+      From = BAT->translate(FromFunc->getAddress(), From, /*IsBranchSrc=*/true);
+      To = BAT->translate(FromFunc->getAddress(), To, /*IsBranchSrc=*/false);
+    }
+    doIntraBranch(ParentFunc ? *ParentFunc : *FromFunc, From, To, Count, false);
+  }
 
   return true;
 }
 
-bool DataAggregator::recordTrace(
-    BinaryFunction &BF,
-    const LBREntry &FirstLBR,
-    const LBREntry &SecondLBR,
-    uint64_t Count,
-    SmallVector<std::pair<uint64_t, uint64_t>, 16> *Branches) const {
+std::optional<SmallVector<std::pair<uint64_t, uint64_t>, 16>>
+DataAggregator::getFallthroughsInTrace(BinaryFunction &BF,
+                                       const LBREntry &FirstLBR,
+                                       const LBREntry &SecondLBR,
+                                       uint64_t Count) const {
+  SmallVector<std::pair<uint64_t, uint64_t>, 16> Branches;
+
   BinaryContext &BC = BF.getBinaryContext();
 
   if (!BF.isSimple())
-    return false;
+    return std::nullopt;
 
   assert(BF.hasCFG() && "can only record traces in CFG state");
 
@@ -864,19 +894,20 @@ bool DataAggregator::recordTrace(
   const uint64_t To = SecondLBR.From - BF.getAddress();
 
   if (From > To)
-    return false;
+    return std::nullopt;
 
-  BinaryBasicBlock *FromBB = BF.getBasicBlockContainingOffset(From);
-  BinaryBasicBlock *ToBB = BF.getBasicBlockContainingOffset(To);
+  const BinaryBasicBlock *FromBB = BF.getBasicBlockContainingOffset(From);
+  const BinaryBasicBlock *ToBB = BF.getBasicBlockContainingOffset(To);
 
   if (!FromBB || !ToBB)
-    return false;
+    return std::nullopt;
 
   // Adjust FromBB if the first LBR is a return from the last instruction in
   // the previous block (that instruction should be a call).
   if (From == FromBB->getOffset() && !BF.containsAddress(FirstLBR.From) &&
       !FromBB->isEntryPoint() && !FromBB->isLandingPad()) {
-    BinaryBasicBlock *PrevBB = BF.getLayout().getBlock(FromBB->getIndex() - 1);
+    const BinaryBasicBlock *PrevBB =
+        BF.getLayout().getBlock(FromBB->getIndex() - 1);
     if (PrevBB->getSuccessor(FromBB->getLabel())) {
       const MCInst *Instr = PrevBB->getLastNonPseudoInstr();
       if (Instr && BC.MIB->isCall(*Instr))
@@ -893,7 +924,7 @@ bool DataAggregator::recordTrace(
   // within the same basic block, e.g. when two call instructions are in the
   // same block. In this case we skip the processing.
   if (FromBB == ToBB)
-    return true;
+    return Branches;
 
   // Process blocks in the original layout order.
   BinaryBasicBlock *BB = BF.getLayout().getBlock(FromBB->getIndex());
@@ -907,41 +938,31 @@ bool DataAggregator::recordTrace(
       LLVM_DEBUG(dbgs() << "no fall-through for the trace:\n"
                         << "  " << FirstLBR << '\n'
                         << "  " << SecondLBR << '\n');
-      return false;
+      return std::nullopt;
     }
 
-    // Record fall-through jumps
-    BinaryBasicBlock::BinaryBranchInfo &BI = BB->getBranchInfo(*NextBB);
-    BI.Count += Count;
+    const MCInst *Instr = BB->getLastNonPseudoInstr();
+    uint64_t Offset = 0;
+    if (Instr)
+      Offset = BC.MIB->getOffsetWithDefault(*Instr, 0);
+    else
+      Offset = BB->getOffset();
 
-    if (Branches) {
-      const MCInst *Instr = BB->getLastNonPseudoInstr();
-      uint64_t Offset = 0;
-      if (Instr)
-        Offset = BC.MIB->getOffsetWithDefault(*Instr, 0);
-      else
-        Offset = BB->getOffset();
-
-      Branches->emplace_back(Offset, NextBB->getOffset());
-    }
+    Branches.emplace_back(Offset, NextBB->getOffset());
 
     BB = NextBB;
   }
 
-  return true;
-}
+  // Record fall-through jumps
+  for (const auto &[FromOffset, ToOffset] : Branches) {
+    BinaryBasicBlock *FromBB = BF.getBasicBlockContainingOffset(FromOffset);
+    BinaryBasicBlock *ToBB = BF.getBasicBlockAtOffset(ToOffset);
+    assert(FromBB && ToBB);
+    BinaryBasicBlock::BinaryBranchInfo &BI = FromBB->getBranchInfo(*ToBB);
+    BI.Count += Count;
+  }
 
-Optional<SmallVector<std::pair<uint64_t, uint64_t>, 16>>
-DataAggregator::getFallthroughsInTrace(BinaryFunction &BF,
-                                       const LBREntry &FirstLBR,
-                                       const LBREntry &SecondLBR,
-                                       uint64_t Count) const {
-  SmallVector<std::pair<uint64_t, uint64_t>, 16> Res;
-
-  if (!recordTrace(BF, FirstLBR, SecondLBR, Count, &Res))
-    return NoneType();
-
-  return Res;
+  return Branches;
 }
 
 bool DataAggregator::recordEntry(BinaryFunction &BF, uint64_t To, bool Mispred,
@@ -1052,6 +1073,10 @@ void DataAggregator::consumeRestOfLine() {
   Line += 1;
 }
 
+bool DataAggregator::checkNewLine() {
+  return ParsingBuf[0] == '\n';
+}
+
 ErrorOr<DataAggregator::PerfBranchSample> DataAggregator::parseBranchSample() {
   PerfBranchSample Res;
 
@@ -1062,7 +1087,7 @@ ErrorOr<DataAggregator::PerfBranchSample> DataAggregator::parseBranchSample() {
   if (std::error_code EC = PIDRes.getError())
     return EC;
   auto MMapInfoIter = BinaryMMapInfo.find(*PIDRes);
-  if (!opts::LinuxKernelMode && MMapInfoIter == BinaryMMapInfo.end()) {
+  if (!BC->IsLinuxKernel && MMapInfoIter == BinaryMMapInfo.end()) {
     consumeRestOfLine();
     return make_error_code(errc::no_such_process);
   }
@@ -1157,7 +1182,7 @@ ErrorOr<DataAggregator::PerfMemSample> DataAggregator::parseMemSample() {
   ErrorOr<StringRef> Event = parseString(FieldSeparator);
   if (std::error_code EC = Event.getError())
     return EC;
-  if (Event.get().find("mem-loads") == StringRef::npos) {
+  if (!Event.get().contains("mem-loads")) {
     consumeRestOfLine();
     return Res;
   }
@@ -1202,7 +1227,7 @@ ErrorOr<Location> DataAggregator::parseLocationOrOffset() {
   if (Sep == StringRef::npos)
     return parseOffset();
   StringRef LookAhead = ParsingBuf.substr(0, Sep);
-  if (LookAhead.find_first_of(":") == StringRef::npos)
+  if (!LookAhead.contains(':'))
     return parseOffset();
 
   ErrorOr<StringRef> BuildID = parseString(':');
@@ -1283,7 +1308,7 @@ std::error_code DataAggregator::printLBRHeatMap() {
   NamedRegionTimer T("parseBranch", "Parsing branch events", TimerGroupName,
                      TimerGroupDesc, opts::TimeAggregator);
 
-  if (opts::LinuxKernelMode) {
+  if (BC->IsLinuxKernel) {
     opts::HeatmapMaxAddress = 0xffffffffffffffff;
     opts::HeatmapMinAddress = KernelBaseAddr;
   }
@@ -1378,6 +1403,74 @@ std::error_code DataAggregator::printLBRHeatMap() {
   return std::error_code();
 }
 
+uint64_t DataAggregator::parseLBRSample(const PerfBranchSample &Sample,
+                                        bool NeedsSkylakeFix) {
+  uint64_t NumTraces{0};
+  // LBRs are stored in reverse execution order. NextPC refers to the next
+  // recorded executed PC.
+  uint64_t NextPC = opts::UseEventPC ? Sample.PC : 0;
+  uint32_t NumEntry = 0;
+  for (const LBREntry &LBR : Sample.LBR) {
+    ++NumEntry;
+    // Hardware bug workaround: Intel Skylake (which has 32 LBR entries)
+    // sometimes record entry 32 as an exact copy of entry 31. This will cause
+    // us to likely record an invalid trace and generate a stale function for
+    // BAT mode (non BAT disassembles the function and is able to ignore this
+    // trace at aggregation time). Drop first 2 entries (last two, in
+    // chronological order)
+    if (NeedsSkylakeFix && NumEntry <= 2)
+      continue;
+    if (NextPC) {
+      // Record fall-through trace.
+      const uint64_t TraceFrom = LBR.To;
+      const uint64_t TraceTo = NextPC;
+      const BinaryFunction *TraceBF =
+          getBinaryFunctionContainingAddress(TraceFrom);
+      if (TraceBF && TraceBF->containsAddress(TraceTo)) {
+        FTInfo &Info = FallthroughLBRs[Trace(TraceFrom, TraceTo)];
+        if (TraceBF->containsAddress(LBR.From))
+          ++Info.InternCount;
+        else
+          ++Info.ExternCount;
+      } else {
+        const BinaryFunction *ToFunc =
+            getBinaryFunctionContainingAddress(TraceTo);
+        if (TraceBF && ToFunc) {
+          LLVM_DEBUG({
+            dbgs() << "Invalid trace starting in " << TraceBF->getPrintName()
+                   << formatv(" @ {0:x}", TraceFrom - TraceBF->getAddress())
+                   << formatv(" and ending @ {0:x}\n", TraceTo);
+          });
+          ++NumInvalidTraces;
+        } else {
+          LLVM_DEBUG({
+            dbgs() << "Out of range trace starting in "
+                   << (TraceBF ? TraceBF->getPrintName() : "None")
+                   << formatv(" @ {0:x}",
+                              TraceFrom - (TraceBF ? TraceBF->getAddress() : 0))
+                   << " and ending in "
+                   << (ToFunc ? ToFunc->getPrintName() : "None")
+                   << formatv(" @ {0:x}\n",
+                              TraceTo - (ToFunc ? ToFunc->getAddress() : 0));
+          });
+          ++NumLongRangeTraces;
+        }
+      }
+      ++NumTraces;
+    }
+    NextPC = LBR.From;
+
+    uint64_t From = getBinaryFunctionContainingAddress(LBR.From) ? LBR.From : 0;
+    uint64_t To = getBinaryFunctionContainingAddress(LBR.To) ? LBR.To : 0;
+    if (!From && !To)
+      continue;
+    TakenBranchInfo &Info = BranchLBRs[Trace(From, To)];
+    ++Info.TakenCount;
+    Info.MispredCount += LBR.Mispred;
+  }
+  return NumTraces;
+}
+
 std::error_code DataAggregator::parseBranchEvents() {
   outs() << "PERF2BOLT: parse branch events...\n";
   NamedRegionTimer T("parseBranch", "Parsing branch events", TimerGroupName,
@@ -1416,88 +1509,13 @@ std::error_code DataAggregator::parseBranchEvents() {
       NeedsSkylakeFix = true;
     }
 
-    // LBRs are stored in reverse execution order. NextPC refers to the next
-    // recorded executed PC.
-    uint64_t NextPC = opts::UseEventPC ? Sample.PC : 0;
-    uint32_t NumEntry = 0;
-    for (const LBREntry &LBR : Sample.LBR) {
-      ++NumEntry;
-      // Hardware bug workaround: Intel Skylake (which has 32 LBR entries)
-      // sometimes record entry 32 as an exact copy of entry 31. This will cause
-      // us to likely record an invalid trace and generate a stale function for
-      // BAT mode (non BAT disassembles the function and is able to ignore this
-      // trace at aggregation time). Drop first 2 entries (last two, in
-      // chronological order)
-      if (NeedsSkylakeFix && NumEntry <= 2)
-        continue;
-      if (NextPC) {
-        // Record fall-through trace.
-        const uint64_t TraceFrom = LBR.To;
-        const uint64_t TraceTo = NextPC;
-        const BinaryFunction *TraceBF =
-            getBinaryFunctionContainingAddress(TraceFrom);
-        if (TraceBF && TraceBF->containsAddress(TraceTo)) {
-          FTInfo &Info = FallthroughLBRs[Trace(TraceFrom, TraceTo)];
-          if (TraceBF->containsAddress(LBR.From))
-            ++Info.InternCount;
-          else
-            ++Info.ExternCount;
-        } else {
-          if (TraceBF && getBinaryFunctionContainingAddress(TraceTo)) {
-            LLVM_DEBUG(dbgs()
-                       << "Invalid trace starting in "
-                       << TraceBF->getPrintName() << " @ "
-                       << Twine::utohexstr(TraceFrom - TraceBF->getAddress())
-                       << " and ending @ " << Twine::utohexstr(TraceTo)
-                       << '\n');
-            ++NumInvalidTraces;
-          } else {
-            LLVM_DEBUG(dbgs()
-                       << "Out of range trace starting in "
-                       << (TraceBF ? TraceBF->getPrintName() : "None") << " @ "
-                       << Twine::utohexstr(
-                              TraceFrom - (TraceBF ? TraceBF->getAddress() : 0))
-                       << " and ending in "
-                       << (getBinaryFunctionContainingAddress(TraceTo)
-                               ? getBinaryFunctionContainingAddress(TraceTo)
-                                     ->getPrintName()
-                               : "None")
-                       << " @ "
-                       << Twine::utohexstr(
-                              TraceTo -
-                              (getBinaryFunctionContainingAddress(TraceTo)
-                                   ? getBinaryFunctionContainingAddress(TraceTo)
-                                         ->getAddress()
-                                   : 0))
-                       << '\n');
-            ++NumLongRangeTraces;
-          }
-        }
-        ++NumTraces;
-      }
-      NextPC = LBR.From;
-
-      uint64_t From = LBR.From;
-      if (!getBinaryFunctionContainingAddress(From))
-        From = 0;
-      uint64_t To = LBR.To;
-      if (!getBinaryFunctionContainingAddress(To))
-        To = 0;
-      if (!From && !To)
-        continue;
-      BranchInfo &Info = BranchLBRs[Trace(From, To)];
-      ++Info.TakenCount;
-      Info.MispredCount += LBR.Mispred;
-    }
+    NumTraces += parseLBRSample(Sample, NeedsSkylakeFix);
   }
 
-  for (const auto &LBR : BranchLBRs) {
-    const Trace &Trace = LBR.first;
-    if (BinaryFunction *BF = getBinaryFunctionContainingAddress(Trace.From))
-      BF->setHasProfileAvailable();
-    if (BinaryFunction *BF = getBinaryFunctionContainingAddress(Trace.To))
-      BF->setHasProfileAvailable();
-  }
+  for (const Trace &Trace : llvm::make_first_range(BranchLBRs))
+    for (const uint64_t Addr : {Trace.From, Trace.To})
+      if (BinaryFunction *BF = getBinaryFunctionContainingAddress(Addr))
+        BF->setHasProfileAvailable();
 
   auto printColored = [](raw_ostream &OS, float Percent, float T1, float T2) {
     OS << " (";
@@ -1591,7 +1609,7 @@ void DataAggregator::processBranchEvents() {
 
   for (const auto &AggrLBR : BranchLBRs) {
     const Trace &Loc = AggrLBR.first;
-    const BranchInfo &Info = AggrLBR.second;
+    const TakenBranchInfo &Info = AggrLBR.second;
     doBranch(Loc.From, Loc.To, Info.TakenCount, Info.MispredCount);
   }
 }
@@ -1696,8 +1714,7 @@ void DataAggregator::processMemEvents() {
     BinaryFunction *Func = getBinaryFunctionContainingAddress(PC);
     if (!Func) {
       LLVM_DEBUG(if (PC != 0) {
-        dbgs() << "Skipped mem event: 0x" << Twine::utohexstr(PC) << " => 0x"
-               << Twine::utohexstr(Addr) << "\n";
+        dbgs() << formatv("Skipped mem event: {0:x} => {1:x}\n", PC, Addr);
       });
       continue;
     }
@@ -1718,6 +1735,7 @@ void DataAggregator::processMemEvents() {
     const Location AddrLoc(!MemName.empty(), MemName, Addr);
 
     FuncMemData *MemData = &NamesToMemEvents[FuncName];
+    MemData->Name = FuncName;
     setMemData(*Func, MemData);
     MemData->update(FuncLoc, AddrLoc);
     LLVM_DEBUG(dbgs() << "Mem event: " << FuncLoc << " = " << AddrLoc << "\n");
@@ -1733,12 +1751,9 @@ std::error_code DataAggregator::parsePreAggregatedLBRSamples() {
     if (std::error_code EC = AggrEntry.getError())
       return EC;
 
-    if (BinaryFunction *BF =
-            getBinaryFunctionContainingAddress(AggrEntry->From.Offset))
-      BF->setHasProfileAvailable();
-    if (BinaryFunction *BF =
-            getBinaryFunctionContainingAddress(AggrEntry->To.Offset))
-      BF->setHasProfileAvailable();
+    for (const uint64_t Addr : {AggrEntry->From.Offset, AggrEntry->To.Offset})
+      if (BinaryFunction *BF = getBinaryFunctionContainingAddress(Addr))
+        BF->setHasProfileAvailable();
 
     AggregatedLBRs.emplace_back(std::move(AggrEntry.get()));
   }
@@ -1807,18 +1822,18 @@ void DataAggregator::processPreAggregated() {
   outs() << "\n";
 }
 
-Optional<int32_t> DataAggregator::parseCommExecEvent() {
+std::optional<int32_t> DataAggregator::parseCommExecEvent() {
   size_t LineEnd = ParsingBuf.find_first_of("\n");
   if (LineEnd == StringRef::npos) {
     reportError("expected rest of line");
     Diag << "Found: " << ParsingBuf << "\n";
-    return NoneType();
+    return std::nullopt;
   }
   StringRef Line = ParsingBuf.substr(0, LineEnd);
 
   size_t Pos = Line.find("PERF_RECORD_COMM exec");
   if (Pos == StringRef::npos)
-    return NoneType();
+    return std::nullopt;
   Line = Line.drop_front(Pos);
 
   // Line:
@@ -1828,26 +1843,26 @@ Optional<int32_t> DataAggregator::parseCommExecEvent() {
   if (PIDStr.getAsInteger(10, PID)) {
     reportError("expected PID");
     Diag << "Found: " << PIDStr << "in '" << Line << "'\n";
-    return NoneType();
+    return std::nullopt;
   }
 
   return PID;
 }
 
 namespace {
-Optional<uint64_t> parsePerfTime(const StringRef TimeStr) {
+std::optional<uint64_t> parsePerfTime(const StringRef TimeStr) {
   const StringRef SecTimeStr = TimeStr.split('.').first;
   const StringRef USecTimeStr = TimeStr.split('.').second;
   uint64_t SecTime;
   uint64_t USecTime;
   if (SecTimeStr.getAsInteger(10, SecTime) ||
       USecTimeStr.getAsInteger(10, USecTime))
-    return NoneType();
+    return std::nullopt;
   return SecTime * 1000000ULL + USecTime;
 }
 }
 
-Optional<DataAggregator::ForkInfo> DataAggregator::parseForkEvent() {
+std::optional<DataAggregator::ForkInfo> DataAggregator::parseForkEvent() {
   while (checkAndConsumeFS()) {
   }
 
@@ -1855,21 +1870,21 @@ Optional<DataAggregator::ForkInfo> DataAggregator::parseForkEvent() {
   if (LineEnd == StringRef::npos) {
     reportError("expected rest of line");
     Diag << "Found: " << ParsingBuf << "\n";
-    return NoneType();
+    return std::nullopt;
   }
   StringRef Line = ParsingBuf.substr(0, LineEnd);
 
   size_t Pos = Line.find("PERF_RECORD_FORK");
   if (Pos == StringRef::npos) {
     consumeRestOfLine();
-    return NoneType();
+    return std::nullopt;
   }
 
   ForkInfo FI;
 
   const StringRef TimeStr =
       Line.substr(0, Pos).rsplit(':').first.rsplit(FieldSeparator).second;
-  if (Optional<uint64_t> TimeRes = parsePerfTime(TimeStr)) {
+  if (std::optional<uint64_t> TimeRes = parsePerfTime(TimeStr)) {
     FI.Time = *TimeRes;
   }
 
@@ -1881,14 +1896,14 @@ Optional<DataAggregator::ForkInfo> DataAggregator::parseForkEvent() {
   if (ChildPIDStr.getAsInteger(10, FI.ChildPID)) {
     reportError("expected PID");
     Diag << "Found: " << ChildPIDStr << "in '" << Line << "'\n";
-    return NoneType();
+    return std::nullopt;
   }
 
   const StringRef ParentPIDStr = Line.rsplit('(').second.split(':').first;
   if (ParentPIDStr.getAsInteger(10, FI.ParentPID)) {
     reportError("expected PID");
     Diag << "Found: " << ParentPIDStr << "in '" << Line << "'\n";
-    return NoneType();
+    return std::nullopt;
   }
 
   consumeRestOfLine();
@@ -1922,7 +1937,7 @@ DataAggregator::parseMMapEvent() {
 
   const StringRef TimeStr =
       Line.substr(0, Pos).rsplit(':').first.rsplit(FieldSeparator).second;
-  if (Optional<uint64_t> TimeRes = parsePerfTime(TimeStr))
+  if (std::optional<uint64_t> TimeRes = parsePerfTime(TimeStr))
     ParsedInfo.Time = *TimeRes;
 
   Line = Line.drop_front(Pos);
@@ -1931,7 +1946,7 @@ DataAggregator::parseMMapEvent() {
   //   PERF_RECORD_MMAP2 <pid>/<tid>: [<hexbase>(<hexsize>) .*]: .* <file_name>
 
   StringRef FileName = Line.rsplit(FieldSeparator).second;
-  if (FileName.startswith("//") || FileName.startswith("[")) {
+  if (FileName.starts_with("//") || FileName.starts_with("[")) {
     consumeRestOfLine();
     return std::make_pair(StringRef(), ParsedInfo);
   }
@@ -1985,16 +2000,15 @@ std::error_code DataAggregator::parseMMapEvents() {
     std::pair<StringRef, MMapInfo> FileMMapInfo = FileMMapInfoRes.get();
     if (FileMMapInfo.second.PID == -1)
       continue;
+    if (FileMMapInfo.first == "(deleted)")
+      continue;
 
     // Consider only the first mapping of the file for any given PID
-    bool PIDExists = false;
     auto Range = GlobalMMapInfo.equal_range(FileMMapInfo.first);
-    for (auto MI = Range.first; MI != Range.second; ++MI) {
-      if (MI->second.PID == FileMMapInfo.second.PID) {
-        PIDExists = true;
-        break;
-      }
-    }
+    bool PIDExists = llvm::any_of(make_range(Range), [&](const auto &MI) {
+      return MI.second.PID == FileMMapInfo.second.PID;
+    });
+
     if (PIDExists)
       continue;
 
@@ -2002,12 +2016,11 @@ std::error_code DataAggregator::parseMMapEvents() {
   }
 
   LLVM_DEBUG({
-    dbgs() << "FileName -> mmap info:\n";
-    for (const std::pair<const StringRef, MMapInfo> &Pair : GlobalMMapInfo)
-      dbgs() << "  " << Pair.first << " : " << Pair.second.PID << " [0x"
-             << Twine::utohexstr(Pair.second.MMapAddress) << ", "
-             << Twine::utohexstr(Pair.second.Size) << " @ "
-             << Twine::utohexstr(Pair.second.Offset) << "]\n";
+    dbgs() << "FileName -> mmap info:\n"
+           << "  Filename : PID [MMapAddr, Size, Offset]\n";
+    for (const auto &[Name, MMap] : GlobalMMapInfo)
+      dbgs() << formatv("  {0} : {1} [{2:x}, {3:x} @ {4:x}]\n", Name, MMap.PID,
+                        MMap.MMapAddress, MMap.Size, MMap.Offset);
   });
 
   StringRef NameToUse = llvm::sys::path::filename(BC->getFilename());
@@ -2018,23 +2031,19 @@ std::error_code DataAggregator::parseMMapEvents() {
   }
 
   auto Range = GlobalMMapInfo.equal_range(NameToUse);
-  for (auto I = Range.first; I != Range.second; ++I) {
-    MMapInfo &MMapInfo = I->second;
+  for (MMapInfo &MMapInfo : llvm::make_second_range(make_range(Range))) {
     if (BC->HasFixedLoadAddress && MMapInfo.MMapAddress) {
       // Check that the binary mapping matches one of the segments.
-      bool MatchFound = false;
-      for (auto &KV : BC->SegmentMapInfo) {
-        SegmentInfo &SegInfo = KV.second;
-        // The mapping is page-aligned and hence the MMapAddress could be
-        // different from the segment start address. We cannot know the page
-        // size of the mapping, but we know it should not exceed the segment
-        // alignment value. Hence we are performing an approximate check.
-        if (SegInfo.Address >= MMapInfo.MMapAddress &&
-            SegInfo.Address - MMapInfo.MMapAddress < SegInfo.Alignment) {
-          MatchFound = true;
-          break;
-        }
-      }
+      bool MatchFound = llvm::any_of(
+          llvm::make_second_range(BC->SegmentMapInfo),
+          [&](SegmentInfo &SegInfo) {
+            // The mapping is page-aligned and hence the MMapAddress could be
+            // different from the segment start address. We cannot know the page
+            // size of the mapping, but we know it should not exceed the segment
+            // alignment value. Hence we are performing an approximate check.
+            return SegInfo.Address >= MMapInfo.MMapAddress &&
+                   SegInfo.Address - MMapInfo.MMapAddress < SegInfo.Alignment;
+          });
       if (!MatchFound) {
         errs() << "PERF2BOLT-WARNING: ignoring mapping of " << NameToUse
                << " at 0x" << Twine::utohexstr(MMapInfo.MMapAddress) << '\n';
@@ -2044,7 +2053,7 @@ std::error_code DataAggregator::parseMMapEvents() {
 
     // Set base address for shared objects.
     if (!BC->HasFixedLoadAddress) {
-      Optional<uint64_t> BaseAddress =
+      std::optional<uint64_t> BaseAddress =
           BC->getBaseAddressForMapping(MMapInfo.MMapAddress, MMapInfo.Offset);
       if (!BaseAddress) {
         errs() << "PERF2BOLT-WARNING: unable to find base address of the "
@@ -2090,7 +2099,7 @@ std::error_code DataAggregator::parseTaskEvents() {
                      TimerGroupDesc, opts::TimeAggregator);
 
   while (hasData()) {
-    if (Optional<int32_t> CommInfo = parseCommExecEvent()) {
+    if (std::optional<int32_t> CommInfo = parseCommExecEvent()) {
       // Remove forked child that ran execve
       auto MMapInfoIter = BinaryMMapInfo.find(*CommInfo);
       if (MMapInfoIter != BinaryMMapInfo.end() && MMapInfoIter->second.Forked)
@@ -2099,7 +2108,7 @@ std::error_code DataAggregator::parseTaskEvents() {
       continue;
     }
 
-    Optional<ForkInfo> ForkInfo = parseForkEvent();
+    std::optional<ForkInfo> ForkInfo = parseForkEvent();
     if (!ForkInfo)
       continue;
 
@@ -2126,32 +2135,33 @@ std::error_code DataAggregator::parseTaskEvents() {
          << BinaryMMapInfo.size() << " PID(s)\n";
 
   LLVM_DEBUG({
-    for (std::pair<const uint64_t, MMapInfo> &MMI : BinaryMMapInfo)
-      outs() << "  " << MMI.second.PID << (MMI.second.Forked ? " (forked)" : "")
-             << ": (0x" << Twine::utohexstr(MMI.second.MMapAddress) << ": 0x"
-             << Twine::utohexstr(MMI.second.Size) << ")\n";
+    for (const MMapInfo &MMI : llvm::make_second_range(BinaryMMapInfo))
+      outs() << formatv("  {0}{1}: ({2:x}: {3:x})\n", MMI.PID,
+                        (MMI.Forked ? " (forked)" : ""), MMI.MMapAddress,
+                        MMI.Size);
   });
 
   return std::error_code();
 }
 
-Optional<std::pair<StringRef, StringRef>>
+std::optional<std::pair<StringRef, StringRef>>
 DataAggregator::parseNameBuildIDPair() {
   while (checkAndConsumeFS()) {
   }
 
   ErrorOr<StringRef> BuildIDStr = parseString(FieldSeparator, true);
   if (std::error_code EC = BuildIDStr.getError())
-    return NoneType();
+    return std::nullopt;
 
   // If one of the strings is missing, don't issue a parsing error, but still
   // do not return a value.
-  if (ParsingBuf[0] == '\n')
-    return NoneType();
+  consumeAllRemainingFS();
+  if (checkNewLine())
+    return std::nullopt;
 
   ErrorOr<StringRef> NameStr = parseString(FieldSeparator, true);
   if (std::error_code EC = NameStr.getError())
-    return NoneType();
+    return std::nullopt;
 
   consumeRestOfLine();
   return std::make_pair(NameStr.get(), BuildIDStr.get());
@@ -2176,19 +2186,20 @@ bool DataAggregator::hasAllBuildIDs() {
   return !HasInvalidEntries;
 }
 
-Optional<StringRef>
+std::optional<StringRef>
 DataAggregator::getFileNameForBuildID(StringRef FileBuildID) {
   const StringRef SavedParsingBuf = ParsingBuf;
 
   StringRef FileName;
   while (hasData()) {
-    Optional<std::pair<StringRef, StringRef>> IDPair = parseNameBuildIDPair();
+    std::optional<std::pair<StringRef, StringRef>> IDPair =
+        parseNameBuildIDPair();
     if (!IDPair) {
       consumeRestOfLine();
       continue;
     }
 
-    if (IDPair->second.startswith(FileBuildID)) {
+    if (IDPair->second.starts_with(FileBuildID)) {
       FileName = sys::path::filename(IDPair->first);
       break;
     }
@@ -2199,7 +2210,7 @@ DataAggregator::getFileNameForBuildID(StringRef FileBuildID) {
   if (!FileName.empty())
     return FileName;
 
-  return NoneType();
+  return std::nullopt;
 }
 
 std::error_code
@@ -2227,26 +2238,28 @@ DataAggregator::writeAggregatedFile(StringRef OutputFilename) const {
     OutFile << "boltedcollection\n";
   if (opts::BasicAggregation) {
     OutFile << "no_lbr";
-    for (const StringMapEntry<NoneType> &Entry : EventNames)
+    for (const StringMapEntry<std::nullopt_t> &Entry : EventNames)
       OutFile << " " << Entry.getKey();
     OutFile << "\n";
 
-    for (const StringMapEntry<FuncSampleData> &Func : NamesToSamples) {
-      for (const SampleInfo &SI : Func.getValue().Data) {
+    for (const auto &KV : NamesToSamples) {
+      const FuncSampleData &FSD = KV.second;
+      for (const SampleInfo &SI : FSD.Data) {
         writeLocation(SI.Loc);
         OutFile << SI.Hits << "\n";
         ++BranchValues;
       }
     }
   } else {
-    for (const StringMapEntry<FuncBranchData> &Func : NamesToBranches) {
-      for (const llvm::bolt::BranchInfo &BI : Func.getValue().Data) {
+    for (const auto &KV : NamesToBranches) {
+      const FuncBranchData &FBD = KV.second;
+      for (const BranchInfo &BI : FBD.Data) {
         writeLocation(BI.From);
         writeLocation(BI.To);
         OutFile << BI.Mispreds << " " << BI.Branches << "\n";
         ++BranchValues;
       }
-      for (const llvm::bolt::BranchInfo &BI : Func.getValue().EntryData) {
+      for (const BranchInfo &BI : FBD.EntryData) {
         // Do not output if source is a known symbol, since this was already
         // accounted for in the source function
         if (BI.From.IsSymbol)
@@ -2259,8 +2272,9 @@ DataAggregator::writeAggregatedFile(StringRef OutputFilename) const {
     }
 
     WriteMemLocs = true;
-    for (const StringMapEntry<FuncMemData> &Func : NamesToMemEvents) {
-      for (const MemInfo &MemEvent : Func.getValue().Data) {
+    for (const auto &KV : NamesToMemEvents) {
+      const FuncMemData &FMD = KV.second;
+      for (const MemInfo &MemEvent : FMD.Data) {
         writeLocation(MemEvent.Offset);
         writeLocation(MemEvent.Addr);
         OutFile << MemEvent.Count << "\n";
@@ -2272,6 +2286,159 @@ DataAggregator::writeAggregatedFile(StringRef OutputFilename) const {
   outs() << "PERF2BOLT: wrote " << BranchValues << " objects and " << MemValues
          << " memory objects to " << OutputFilename << "\n";
 
+  return std::error_code();
+}
+
+std::error_code DataAggregator::writeBATYAML(BinaryContext &BC,
+                                             StringRef OutputFilename) const {
+  std::error_code EC;
+  raw_fd_ostream OutFile(OutputFilename, EC, sys::fs::OpenFlags::OF_None);
+  if (EC)
+    return EC;
+
+  yaml::bolt::BinaryProfile BP;
+
+  const MCPseudoProbeDecoder *PseudoProbeDecoder = BC.getPseudoProbeDecoder();
+
+  // Fill out the header info.
+  BP.Header.Version = 1;
+  BP.Header.FileName = std::string(BC.getFilename());
+  std::optional<StringRef> BuildID = BC.getFileBuildID();
+  BP.Header.Id = BuildID ? std::string(*BuildID) : "<unknown>";
+  BP.Header.Origin = std::string(getReaderName());
+  // Only the input binary layout order is supported.
+  BP.Header.IsDFSOrder = false;
+  // FIXME: Need to match hash function used to produce BAT hashes.
+  BP.Header.HashFunction = HashFunction::Default;
+
+  ListSeparator LS(",");
+  raw_string_ostream EventNamesOS(BP.Header.EventNames);
+  for (const StringMapEntry<std::nullopt_t> &EventEntry : EventNames)
+    EventNamesOS << LS << EventEntry.first().str();
+
+  BP.Header.Flags = opts::BasicAggregation ? BinaryFunction::PF_SAMPLE
+                                           : BinaryFunction::PF_LBR;
+
+  if (!opts::BasicAggregation) {
+    // Convert profile for functions not covered by BAT
+    for (auto &BFI : BC.getBinaryFunctions()) {
+      BinaryFunction &Function = BFI.second;
+      if (!Function.hasProfile())
+        continue;
+      if (BAT->isBATFunction(Function.getAddress()))
+        continue;
+      BP.Functions.emplace_back(
+          YAMLProfileWriter::convert(Function, /*UseDFS=*/false, BAT));
+    }
+
+    for (const auto &KV : NamesToBranches) {
+      const StringRef FuncName = KV.first;
+      const FuncBranchData &Branches = KV.second;
+      yaml::bolt::BinaryFunctionProfile YamlBF;
+      BinaryData *BD = BC.getBinaryDataByName(FuncName);
+      assert(BD);
+      uint64_t FuncAddress = BD->getAddress();
+      if (!BAT->isBATFunction(FuncAddress))
+        continue;
+      BinaryFunction *BF = BC.getBinaryFunctionAtAddress(FuncAddress);
+      assert(BF);
+      YamlBF.Name = getLocationName(*BF, BAT);
+      YamlBF.Id = BF->getFunctionNumber();
+      YamlBF.Hash = BAT->getBFHash(FuncAddress);
+      YamlBF.ExecCount = BF->getKnownExecutionCount();
+      YamlBF.NumBasicBlocks = BAT->getNumBasicBlocks(FuncAddress);
+      const BoltAddressTranslation::BBHashMapTy &BlockMap =
+          BAT->getBBHashMap(FuncAddress);
+      YamlBF.Blocks.resize(YamlBF.NumBasicBlocks);
+
+      for (auto &&[Entry, YamlBB] : llvm::zip(BlockMap, YamlBF.Blocks)) {
+        const auto &Block = Entry.second;
+        YamlBB.Hash = Block.Hash;
+        YamlBB.Index = Block.Index;
+      }
+
+      // Lookup containing basic block offset and index
+      auto getBlock = [&BlockMap](uint32_t Offset) {
+        auto BlockIt = BlockMap.upper_bound(Offset);
+        if (LLVM_UNLIKELY(BlockIt == BlockMap.begin())) {
+          errs() << "BOLT-ERROR: invalid BAT section\n";
+          exit(1);
+        }
+        --BlockIt;
+        return std::pair(BlockIt->first, BlockIt->second.Index);
+      };
+
+      for (const BranchInfo &BI : Branches.Data) {
+        using namespace yaml::bolt;
+        const auto &[BlockOffset, BlockIndex] = getBlock(BI.From.Offset);
+        BinaryBasicBlockProfile &YamlBB = YamlBF.Blocks[BlockIndex];
+        if (BI.To.IsSymbol && BI.To.Name == BI.From.Name && BI.To.Offset != 0) {
+          // Internal branch
+          const unsigned SuccIndex = getBlock(BI.To.Offset).second;
+          auto &SI = YamlBB.Successors.emplace_back(SuccessorInfo{SuccIndex});
+          SI.Count = BI.Branches;
+          SI.Mispreds = BI.Mispreds;
+        } else {
+          // Call
+          const uint32_t Offset = BI.From.Offset - BlockOffset;
+          auto &CSI = YamlBB.CallSites.emplace_back(CallSiteInfo{Offset});
+          CSI.Count = BI.Branches;
+          CSI.Mispreds = BI.Mispreds;
+          if (const BinaryData *BD = BC.getBinaryDataByName(BI.To.Name))
+            YAMLProfileWriter::setCSIDestination(BC, CSI, BD->getSymbol(), BAT,
+                                                 BI.To.Offset);
+        }
+      }
+      // Set entry counts, similar to DataReader::readProfile.
+      for (const BranchInfo &BI : Branches.EntryData) {
+        if (!BlockMap.isInputBlock(BI.To.Offset)) {
+          if (opts::Verbosity >= 1)
+            errs() << "BOLT-WARNING: Unexpected EntryData in " << FuncName
+                   << " at 0x" << Twine::utohexstr(BI.To.Offset) << '\n';
+          continue;
+        }
+        const unsigned BlockIndex = BlockMap.getBBIndex(BI.To.Offset);
+        YamlBF.Blocks[BlockIndex].ExecCount += BI.Branches;
+      }
+      if (PseudoProbeDecoder) {
+        if ((YamlBF.GUID = BF->getGUID())) {
+          const MCPseudoProbeFuncDesc *FuncDesc =
+              PseudoProbeDecoder->getFuncDescForGUID(YamlBF.GUID);
+          YamlBF.PseudoProbeDescHash = FuncDesc->FuncHash;
+        }
+        // Fetch probes belonging to all fragments
+        const AddressProbesMap &ProbeMap =
+            PseudoProbeDecoder->getAddress2ProbesMap();
+        BinaryFunction::FragmentsSetTy Fragments(BF->Fragments);
+        Fragments.insert(BF);
+        for (const BinaryFunction *F : Fragments) {
+          const uint64_t FuncAddr = F->getAddress();
+          const auto &FragmentProbes =
+              llvm::make_range(ProbeMap.lower_bound(FuncAddr),
+                               ProbeMap.lower_bound(FuncAddr + F->getSize()));
+          for (const auto &[OutputAddress, Probes] : FragmentProbes) {
+            const uint32_t InputOffset = BAT->translate(
+                FuncAddr, OutputAddress - FuncAddr, /*IsBranchSrc=*/true);
+            const unsigned BlockIndex = getBlock(InputOffset).second;
+            for (const MCDecodedPseudoProbe &Probe : Probes)
+              YamlBF.Blocks[BlockIndex].PseudoProbes.emplace_back(
+                  yaml::bolt::PseudoProbeInfo{Probe.getGuid(), Probe.getIndex(),
+                                              Probe.getType()});
+          }
+        }
+      }
+      // Drop blocks without a hash, won't be useful for stale matching.
+      llvm::erase_if(YamlBF.Blocks,
+                     [](const yaml::bolt::BinaryBasicBlockProfile &YamlBB) {
+                       return YamlBB.Hash == (yaml::Hex64)0;
+                     });
+      BP.Functions.emplace_back(YamlBF);
+    }
+  }
+
+  // Write the profile.
+  yaml::Output Out(OutFile, nullptr, 0);
+  Out << BP;
   return std::error_code();
 }
 

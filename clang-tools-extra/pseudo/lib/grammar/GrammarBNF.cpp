@@ -33,11 +33,11 @@ public:
 
     assert(llvm::all_of(Specs,
                         [](const RuleSpec &R) {
-                          if (R.Target.endswith(OptSuffix))
+                          if (R.Target.ends_with(OptSuffix))
                             return false;
                           return llvm::all_of(
                               R.Sequence, [](const RuleSpec::Element &E) {
-                                return !E.Symbol.endswith(OptSuffix);
+                                return !E.Symbol.ends_with(OptSuffix);
                               });
                         }) &&
            "Optional symbols should be eliminated!");
@@ -64,10 +64,10 @@ public:
            UniqueAttributeValues.insert(KV.second);
       }
     }
-    llvm::for_each(UniqueNonterminals, [&T](llvm::StringRef Name) {
+    for (llvm::StringRef Name : UniqueNonterminals) {
       T->Nonterminals.emplace_back();
       T->Nonterminals.back().Name = Name.str();
-    });
+    }
     assert(T->Nonterminals.size() < (1 << (SymbolBits - 1)) &&
            "Too many nonterminals to fit in SymbolID bits!");
     llvm::sort(T->Nonterminals, [](const GrammarTable::Nonterminal &L,
@@ -77,10 +77,10 @@ public:
     // Add an empty string for the corresponding sentinel unset attribute.
     T->AttributeValues.push_back("");
     UniqueAttributeValues.erase("");
-    llvm::for_each(UniqueAttributeValues, [&T](llvm::StringRef Name) {
+    for (llvm::StringRef Name : UniqueAttributeValues) {
       T->AttributeValues.emplace_back();
       T->AttributeValues.back() = Name.str();
-    });
+    }
     llvm::sort(T->AttributeValues);
     assert(T->AttributeValues.front() == "");
 
@@ -225,7 +225,7 @@ private:
       Chunk = Chunk.trim();
       if (Chunk.empty())
         continue; // skip empty
-      if (Chunk.startswith("[") && Chunk.endswith("]")) {
+      if (Chunk.starts_with("[") && Chunk.ends_with("]")) {
         if (Out.Sequence.empty())
           continue;
 
@@ -241,7 +241,7 @@ private:
   bool parseAttributes(
       llvm::StringRef Content,
       std::vector<std::pair<llvm::StringRef, llvm::StringRef>> &Out) {
-    assert(Content.startswith("[") && Content.endswith("]"));
+    assert(Content.starts_with("[") && Content.ends_with("]"));
     auto KV = Content.drop_front().drop_back().split('=');
     Out.push_back({KV.first, KV.second.trim()});
 
@@ -299,7 +299,7 @@ private:
     if (Elements.empty())
       return CB();
     auto Front = Elements.front();
-    if (!Front.Symbol.endswith(OptSuffix)) {
+    if (!Front.Symbol.ends_with(OptSuffix)) {
       Result.push_back(std::move(Front));
       eliminateOptionalTail(Elements.drop_front(1), Result, CB);
       Result.pop_back();
@@ -327,8 +327,13 @@ private:
             "Token-like name {0} is used as a nonterminal", G.symbolName(SID)));
       }
     }
-    for (RuleID RID = 0; RID + 1u < T.Rules.size(); ++RID) {
-      if (T.Rules[RID] == T.Rules[RID + 1])
+    llvm::DenseSet<llvm::hash_code> VisitedRules;
+    for (RuleID RID = 0; RID < T.Rules.size(); ++RID) {
+      const auto &R = T.Rules[RID];
+      auto Code = llvm::hash_combine(
+          R.Target, llvm::hash_combine_range(R.seq().begin(), R.seq().end()));
+      auto [_, New] = VisitedRules.insert(Code);
+      if (!New)
         Diagnostics.push_back(
             llvm::formatv("Duplicate rule: `{0}`", G.dumpRule(RID)));
     }
