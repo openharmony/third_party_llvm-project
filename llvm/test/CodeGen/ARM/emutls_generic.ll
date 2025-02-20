@@ -10,8 +10,6 @@
 ; RUN:     | FileCheck -check-prefix=DARWIN %s
 ; RUN: llc < %s -emulated-tls -mtriple=thumbv7-windows-gnu -O3 \
 ; RUN:     | FileCheck -check-prefix=WIN %s
-; RUN: llc < %s -emulated-tls -mtriple=arm-linux-ohos -relocation-model=pic \
-; RUN:     | FileCheck -check-prefix=ARM_32 %s
 
 ; RUN: llc < %s -mtriple=arm-linux-android -relocation-model=pic \
 ; RUN:     | FileCheck -check-prefix=ARM_32 %s
@@ -23,8 +21,6 @@
 ; RUN:     | FileCheck -check-prefix=ARM_32 %s
 ; arm-apple-darwin must use -emulated-tls
 ; windows must use -emulated-tls
-; RUN: llc < %s -mtriple=arm-linux-ohos -relocation-model=pic \
-; RUN:     | FileCheck -check-prefix=ARM_32 %s
 
 ; Make sure that TLS symbols are emitted in expected order.
 
@@ -32,19 +28,19 @@
 @external_y = thread_local global i8 7, align 2
 @internal_y = internal thread_local global i64 9, align 16
 
-define i32* @get_external_x() {
+define ptr @get_external_x() {
 entry:
-  ret i32* @external_x
+  ret ptr @external_x
 }
 
-define i8* @get_external_y() {
+define ptr @get_external_y() {
 entry:
-  ret i8* @external_y
+  ret ptr @external_y
 }
 
-define i64* @get_internal_y() {
+define ptr @get_internal_y() {
 entry:
-  ret i64* @internal_y
+  ret ptr @internal_y
 }
 
 ; ARM_32-LABEL:  get_external_x:

@@ -65,6 +65,18 @@ void test_sched_barrier(int x)
   __builtin_amdgcn_sched_barrier(x); // expected-error {{argument to '__builtin_amdgcn_sched_barrier' must be a constant integer}}
 }
 
+void test_sched_group_barrier(int x)
+{
+  __builtin_amdgcn_sched_group_barrier(x, 0, 1); // expected-error {{argument to '__builtin_amdgcn_sched_group_barrier' must be a constant integer}}
+  __builtin_amdgcn_sched_group_barrier(0, x, 1); // expected-error {{argument to '__builtin_amdgcn_sched_group_barrier' must be a constant integer}}
+  __builtin_amdgcn_sched_group_barrier(0, 1, x); // expected-error {{argument to '__builtin_amdgcn_sched_group_barrier' must be a constant integer}}
+}
+
+void test_iglp_opt(int x)
+{
+  __builtin_amdgcn_iglp_opt(x); // expected-error {{argument to '__builtin_amdgcn_iglp_opt' must be a constant integer}}
+}
+
 void test_sicmp_i32(global ulong* out, int a, int b, uint c)
 {
   *out = __builtin_amdgcn_sicmp(a, b, c); // expected-error {{argument to '__builtin_amdgcn_sicmp' must be a constant integer}}
@@ -143,8 +155,8 @@ void test_ds_fmaxf(local float *out, float src, int a) {
 void test_fence() {
   __builtin_amdgcn_fence(__ATOMIC_SEQ_CST + 1, "workgroup"); // expected-warning {{memory order argument to atomic operation is invalid}}
   __builtin_amdgcn_fence(__ATOMIC_ACQUIRE - 1, "workgroup"); // expected-warning {{memory order argument to atomic operation is invalid}}
-  __builtin_amdgcn_fence(4); // expected-error {{too few arguments to function call, expected 2}}
-  __builtin_amdgcn_fence(4, 4, 4); // expected-error {{too many arguments to function call, expected 2}}
+  __builtin_amdgcn_fence(4); // expected-error {{too few arguments to function call, expected at least 2, have 1}}
+  __builtin_amdgcn_fence(4, 4, 4); // expected-error {{incompatible integer to pointer conversion passing 'int' to parameter of type 'const char *'}}
   __builtin_amdgcn_fence(3.14, ""); // expected-warning {{implicit conversion from 'double' to 'unsigned int' changes value from 3.14 to 3}}
   __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, 5); // expected-error {{incompatible integer to pointer conversion passing 'int' to parameter of type 'const char *'}}
   const char ptr[] = "workgroup";

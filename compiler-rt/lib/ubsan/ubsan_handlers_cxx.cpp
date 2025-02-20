@@ -26,7 +26,7 @@ using namespace __sanitizer;
 using namespace __ubsan;
 
 namespace __ubsan {
-  extern const char *TypeCheckKinds[];
+  extern const char *const TypeCheckKinds[];
 }
 
 // Returns true if UBSan has printed an error report.
@@ -94,31 +94,6 @@ void __ubsan::__ubsan_handle_dynamic_type_cache_miss_abort(
     Die();
 }
 
-static bool StartsWith(const char *Str, const char *Pattern, uptr PatternLen) {
-  return internal_strncmp(Str, Pattern, PatternLen) == 0;
-}
-static bool EndsWith(const char *Str, uptr StrLen, const char *Pattern, uptr PatternLen) {
-  return (StrLen >= PatternLen) &&
-         (internal_strcmp(Str + StrLen - PatternLen, Pattern) == 0);
-}
-
-static const char *UndecorateCfiTypeIdSymbol(char *Str) {
-  const char StartPattern[] = "__typeid_";
-  const char EndPattern[] = "_global_addr";
-  auto StartPatternLen = sizeof(StartPattern) - 1;
-  auto EndPatternLen = sizeof(EndPattern) - 1;
-
-  uptr Len = internal_strlen(Str);
-  if (Len > StartPatternLen + EndPatternLen &&
-      StartsWith(Str, StartPattern, StartPatternLen) &&
-      EndsWith(Str, Len, EndPattern, EndPatternLen)) {
-    Str[Len - EndPatternLen] = 0;
-    Str += StartPatternLen;
-    return common_flags()->demangle ? demangle(Str) : Str;
-  }
-  return nullptr;
-}
-
 namespace __ubsan {
 void __ubsan_handle_cfi_bad_type(CFICheckFailData *Data, ValueHandle Vtable,
                                  bool ValidVtable, ReportOptions Opts) {
@@ -161,26 +136,11 @@ void __ubsan_handle_cfi_bad_type(CFICheckFailData *Data, ValueHandle Vtable,
       << Data->Type << CheckKindStr << (void *)Vtable;
 
   // If possible, say what type it actually points to.
-  DataInfo VtableDataInfo;
-  if (DTI.isValid()) {
+  if (!DTI.isValid())
+    Diag(Vtable, DL_Note, ET, "invalid vtable");
+  else
     Diag(Vtable, DL_Note, ET, "vtable is of type %0")
         << TypeName(DTI.getMostDerivedTypeName());
-  } else if (getSymbolizedData(Vtable, &VtableDataInfo) &&
-             VtableDataInfo.name) {
-    if (ValidVtable) {
-      const char *PrintedName = VtableDataInfo.name;
-      if (auto *Undecorated = UndecorateCfiTypeIdSymbol(VtableDataInfo.name))
-        PrintedName = Undecorated;
-      Diag(Vtable, DL_Note, ET, "vtable CFI typeid is (or aliases) %0`%1")
-          << VtableDataInfo.module << PrintedName;
-    } else {
-      Diag(Vtable, DL_Note, ET, "invalid vtable (address points to %0`%1)")
-          << VtableDataInfo.module << VtableDataInfo.name;
-    }
-  } else {
-    Diag(Vtable, DL_Note, ET, "invalid vtable");
-  }
-  VtableDataInfo.Clear();
 
   // If the failure involved different DSOs for the check location and vtable,
   // report the DSO names.
@@ -195,50 +155,6 @@ void __ubsan_handle_cfi_bad_type(CFICheckFailData *Data, ValueHandle Vtable,
   if (internal_strcmp(SrcModule, DstModule))
     Diag(Loc, DL_Note, ET, "check failed in %0, vtable located in %1")
         << SrcModule << DstModule;
-}
-
-static bool handleFunctionTypeMismatch(FunctionTypeMismatchData *Data,
-                                       ValueHandle Function,
-                                       ValueHandle calleeRTTI,
-                                       ValueHandle fnRTTI, ReportOptions Opts) {
-  if (checkTypeInfoEquality(reinterpret_cast<void *>(calleeRTTI),
-                            reinterpret_cast<void *>(fnRTTI)))
-    return false;
-
-  SourceLocation CallLoc = Data->Loc.acquire();
-  ErrorType ET = ErrorType::FunctionTypeMismatch;
-
-  if (ignoreReport(CallLoc, Opts, ET))
-    return true;
-
-  ScopedReport R(Opts, CallLoc, ET);
-
-  SymbolizedStackHolder FLoc(getSymbolizedLocation(Function));
-  const char *FName = FLoc.get()->info.function;
-  if (!FName)
-    FName = "(unknown)";
-
-  Diag(CallLoc, DL_Error, ET,
-       "call to function %0 through pointer to incorrect function type %1")
-      << FName << Data->Type;
-  Diag(FLoc, DL_Note, ET, "%0 defined here") << FName;
-  return true;
-}
-
-void __ubsan_handle_function_type_mismatch_v1(FunctionTypeMismatchData *Data,
-                                              ValueHandle Function,
-                                              ValueHandle calleeRTTI,
-                                              ValueHandle fnRTTI) {
-  GET_REPORT_OPTIONS(false);
-  handleFunctionTypeMismatch(Data, Function, calleeRTTI, fnRTTI, Opts);
-}
-
-void __ubsan_handle_function_type_mismatch_v1_abort(
-    FunctionTypeMismatchData *Data, ValueHandle Function,
-    ValueHandle calleeRTTI, ValueHandle fnRTTI) {
-  GET_REPORT_OPTIONS(true);
-  if (handleFunctionTypeMismatch(Data, Function, calleeRTTI, fnRTTI, Opts))
-    Die();
 }
 }  // namespace __ubsan
 

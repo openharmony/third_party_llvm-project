@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // friend constexpr range_rvalue_reference_t<V> iter_move(iterator const& i)
 //  noexcept(noexcept(ranges::iter_move(i.current_)));
@@ -35,12 +34,12 @@ constexpr void test() {
 
   {
     std::array<int, 5> array{0, 1, 2, 3, 4};
-    FilterView view = make_filter_view(array.begin(), array.end(), AlwaysTrue{});
+    FilterView view = make_filter_view(array.data(), array.data() + array.size(), AlwaysTrue{});
     FilterIterator const it = view.begin();
 
     int&& result = iter_move(it);
     static_assert(noexcept(iter_move(it)) == HasNoexceptIterMove);
-    assert(&result == array.begin());
+    assert(&result == array.data());
   }
 }
 

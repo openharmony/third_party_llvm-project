@@ -14,15 +14,28 @@ set(HWASAN_RTL_SOURCES
   hwasan_linux.cpp
   hwasan_memintrinsics.cpp
   hwasan_poisoning.cpp
-  hwasan_quarantine.cpp # OHOS_LOCAL
   hwasan_report.cpp
-  hwasan_setjmp_aarch64.S
-  hwasan_setjmp_x86_64.S
-  hwasan_tag_mismatch_aarch64.S
   hwasan_thread.cpp
   hwasan_thread_list.cpp
   hwasan_type_test.cpp
   )
+
+foreach(arch ${HWASAN_SUPPORTED_ARCH})
+  if(${arch} MATCHES "aarch64")
+    list(APPEND HWASAN_RTL_SOURCES
+      hwasan_setjmp_aarch64.S
+      hwasan_tag_mismatch_aarch64.S)
+  endif()
+  if(${arch} MATCHES "riscv64")
+    list(APPEND HWASAN_RTL_SOURCES
+      hwasan_setjmp_riscv64.S
+      hwasan_tag_mismatch_riscv64.S)
+  endif()
+  if(${arch} MATCHES "x86_64")
+    list(APPEND HWASAN_RTL_SOURCES
+      hwasan_setjmp_x86_64.S)
+  endif()
+endforeach()
 
 set(HWASAN_RTL_CXX_SOURCES
   hwasan_new_delete.cpp
@@ -43,7 +56,6 @@ set(HWASAN_RTL_HEADERS
   hwasan_malloc_bisect.h
   hwasan_mapping.h
   hwasan_poisoning.h
-  hwasan_quarantine.h # OHOS_LOCAL
   hwasan_report.h
   hwasan_thread.h
   hwasan_thread_list.h
@@ -66,14 +78,6 @@ append_list_if(COMPILER_RT_HAS_FFREESTANDING_FLAG -ffreestanding HWASAN_RTL_CFLA
 # Too many existing bugs, needs cleanup.
 append_list_if(COMPILER_RT_HAS_WNO_FORMAT -Wno-format HWASAN_RTL_CFLAGS)
 
-# OHOS_LOCAL begin
-# OHOS can't use emulated tls with hwasan -
-# it leads to infinite recursion when creating new thread.
-if(OHOS)
-  list(APPEND HWASAN_RTL_CFLAGS -fno-emulated-tls)
-endif()
-#OHOS_LOCAL end
-
 set(HWASAN_DYNAMIC_LINK_FLAGS ${SANITIZER_COMMON_LINK_FLAGS})
 
 if(ANDROID)
@@ -89,7 +93,10 @@ append_list_if(COMPILER_RT_HAS_FTLS_MODEL_INITIAL_EXEC
   -ftls-model=initial-exec HWASAN_DYNAMIC_CFLAGS)
 append_list_if(MSVC /DEBUG HWASAN_DYNAMIC_LINK_FLAGS)
 
-set(HWASAN_DYNAMIC_LIBS ${SANITIZER_CXX_ABI_LIBRARIES} ${SANITIZER_COMMON_LINK_LIBS})
+set(HWASAN_DYNAMIC_LIBS
+  ${COMPILER_RT_UNWINDER_LINK_LIBS}
+  ${SANITIZER_CXX_ABI_LIBRARIES}
+  ${SANITIZER_COMMON_LINK_LIBS})
 
 append_list_if(COMPILER_RT_HAS_LIBDL dl HWASAN_DYNAMIC_LIBS)
 append_list_if(COMPILER_RT_HAS_LIBRT rt HWASAN_DYNAMIC_LIBS)
@@ -169,6 +176,8 @@ function(add_hwasan_runtimes arch use_aliases)
                 RTSanitizerCommonLibc
                 RTSanitizerCommonCoverage
                 RTSanitizerCommonSymbolizer
+                RTSanitizerCommonSymbolizerInternal
+                RTLSanCommon
                 RTUbsan
     CFLAGS ${hwasan_rtl_flags}
     PARENT_TARGET hwasan)
@@ -205,6 +214,8 @@ function(add_hwasan_runtimes arch use_aliases)
             RTSanitizerCommonLibc
             RTSanitizerCommonCoverage
             RTSanitizerCommonSymbolizer
+            RTSanitizerCommonSymbolizerInternal
+            RTLSanCommon
             RTUbsan
             RTUbsan_cxx
             # The only purpose of RTHWAsan_dynamic_version_script_dummy is to

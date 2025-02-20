@@ -27,7 +27,6 @@ class RingBuffer {
     RingBuffer *RB = reinterpret_cast<RingBuffer*>(Ptr);
     uptr End = reinterpret_cast<uptr>(Ptr) + SizeInBytes(Size);
     RB->last_ = RB->next_ = reinterpret_cast<T*>(End - sizeof(T));
-    RB->full_ = false;  // OHOS_LOCAL
     return RB;
   }
   void Delete() {
@@ -36,19 +35,11 @@ class RingBuffer {
   uptr size() const {
     return last_ + 1 -
            reinterpret_cast<T *>(reinterpret_cast<uptr>(this) +
-                                 sizeof(RingBuffer) - sizeof(T)); // OHOS_LOCAL
+                                 2 * sizeof(T *));
   }
-
-// OHOS_LOCAL begin
-  uptr realsize() const {
-    if (full_)
-      return size();
-    return reinterpret_cast<size_t>((uptr)last_ - (uptr)next_) / sizeof(T);
-  }
-// OHOS_LOCAL end
 
   static uptr SizeInBytes(uptr Size) {
-    return Size * sizeof(T) + sizeof(RingBuffer) - sizeof(T); // OHOS_LOCAL
+    return Size * sizeof(T) + 2 * sizeof(T*);
   }
 
   uptr SizeInBytes() { return SizeInBytes(size()); }
@@ -56,11 +47,11 @@ class RingBuffer {
   void push(T t) {
     *next_ = t;
     next_--;
-    // The condition below works only if sizeof(T) is divisible by sizeof(T*).
-    if (next_ <= reinterpret_cast<T *>(&next_)) {
+    static_assert((sizeof(T) % sizeof(T *)) == 0,
+                  "The condition below works only if sizeof(T) is divisible by "
+                  "sizeof(T*).");
+    if (next_ <= reinterpret_cast<T*>(&next_))
       next_ = last_;
-      full_ = true; // OHOS_LOCAL
-    }
   }
 
   T operator[](uptr Idx) const {
@@ -77,13 +68,11 @@ class RingBuffer {
   RingBuffer(const RingBuffer&) = delete;
 
   // Data layout:
-  // FLNDDDDDDDD
-  // F: indicates whether the ring buffer is full
+  // LNDDDDDDDD
   // D: data elements.
   // L: last_, always points to the last data element.
   // N: next_, initially equals to last_, is decremented on every push,
   //    wraps around if it's less or equal than its own address.
-  bool full_;
   T *last_;
   T *next_;
   T data_[1];  // flexible array.

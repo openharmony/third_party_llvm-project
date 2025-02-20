@@ -6,66 +6,66 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "src/__support/CPP/StringView.h"
+#include "src/__support/CPP/string_view.h"
 #include "src/dirent/closedir.h"
 #include "src/dirent/dirfd.h"
 #include "src/dirent/opendir.h"
 #include "src/dirent/readdir.h"
+#include "src/errno/libc_errno.h"
 
-#include "utils/UnitTest/Test.h"
+#include "test/UnitTest/Test.h"
 
 #include <dirent.h>
-#include <errno.h>
 
-using StringView = __llvm_libc::cpp::StringView;
+using string_view = LIBC_NAMESPACE::cpp::string_view;
 
 TEST(LlvmLibcDirentTest, SimpleOpenAndRead) {
-  ::DIR *dir = __llvm_libc::opendir("testdata");
+  ::DIR *dir = LIBC_NAMESPACE::opendir("testdata");
   ASSERT_TRUE(dir != nullptr);
   // The file descriptors 0, 1 and 2 are reserved for standard streams.
   // So, the file descriptor for the newly opened directory should be
   // greater than 2.
-  ASSERT_GT(__llvm_libc::dirfd(dir), 2);
+  ASSERT_GT(LIBC_NAMESPACE::dirfd(dir), 2);
 
   struct ::dirent *file1 = nullptr, *file2 = nullptr, *dir1 = nullptr,
                   *dir2 = nullptr;
   while (true) {
-    struct ::dirent *d = __llvm_libc::readdir(dir);
+    struct ::dirent *d = LIBC_NAMESPACE::readdir(dir);
     if (d == nullptr)
       break;
-    if (StringView(&d->d_name[0]).equals("file1.txt"))
+    if (string_view(&d->d_name[0]) == "file1.txt")
       file1 = d;
-    if (StringView(&d->d_name[0]).equals("file2.txt"))
+    if (string_view(&d->d_name[0]) == "file2.txt")
       file2 = d;
-    if (StringView(&d->d_name[0]).equals("dir1"))
+    if (string_view(&d->d_name[0]) == "dir1")
       dir1 = d;
-    if (StringView(&d->d_name[0]).equals("dir2"))
+    if (string_view(&d->d_name[0]) == "dir2")
       dir2 = d;
   }
 
   // Verify that we don't break out of the above loop in error.
-  ASSERT_EQ(errno, 0);
+  ASSERT_ERRNO_SUCCESS();
 
   ASSERT_TRUE(file1 != nullptr);
   ASSERT_TRUE(file2 != nullptr);
   ASSERT_TRUE(dir1 != nullptr);
   ASSERT_TRUE(dir2 != nullptr);
 
-  ASSERT_EQ(__llvm_libc::closedir(dir), 0);
+  ASSERT_EQ(LIBC_NAMESPACE::closedir(dir), 0);
 }
 
 TEST(LlvmLibcDirentTest, OpenNonExistentDir) {
-  errno = 0;
-  ::DIR *dir = __llvm_libc::opendir("___xyz123__.non_existent__");
+  LIBC_NAMESPACE::libc_errno = 0;
+  ::DIR *dir = LIBC_NAMESPACE::opendir("___xyz123__.non_existent__");
   ASSERT_TRUE(dir == nullptr);
-  ASSERT_EQ(errno, ENOENT);
-  errno = 0;
+  ASSERT_ERRNO_EQ(ENOENT);
+  LIBC_NAMESPACE::libc_errno = 0;
 }
 
 TEST(LlvmLibcDirentTest, OpenFile) {
-  errno = 0;
-  ::DIR *dir = __llvm_libc::opendir("testdata/file1.txt");
+  LIBC_NAMESPACE::libc_errno = 0;
+  ::DIR *dir = LIBC_NAMESPACE::opendir("testdata/file1.txt");
   ASSERT_TRUE(dir == nullptr);
-  ASSERT_EQ(errno, ENOTDIR);
-  errno = 0;
+  ASSERT_ERRNO_EQ(ENOTDIR);
+  LIBC_NAMESPACE::libc_errno = 0;
 }

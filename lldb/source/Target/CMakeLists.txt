@@ -6,6 +6,7 @@ lldb_tablegen(TargetPropertiesEnum.inc -gen-lldb-property-enum-defs
   SOURCE TargetProperties.td
   TARGET LLDBTargetPropertiesEnumGen)
 
+# TODO: Add property `NO_PLUGIN_DEPENDENCIES` to lldbTarget
 add_lldb_library(lldbTarget
   ABI.cpp
   AssertFrameRecognizer.cpp
@@ -21,10 +22,6 @@ add_lldb_library(lldbTarget
   MemoryHistory.cpp
   MemoryRegionInfo.cpp
   MemoryTagMap.cpp
-  # OHOS_LOCAL begin
-  MixedArkTSDebugger.cpp
-  MixedDebugger.cpp
-  # OHOS_LOCAL end
   ModuleCache.cpp
   OperatingSystem.cpp
   PathMappingList.cpp
@@ -36,6 +33,7 @@ add_lldb_library(lldbTarget
   QueueList.cpp
   RegisterContext.cpp
   RegisterContextUnwind.cpp
+  RegisterFlags.cpp
   RegisterNumber.cpp
   RemoteAwarePlatform.cpp
   SectionLoadHistory.cpp
@@ -80,6 +78,7 @@ add_lldb_library(lldbTarget
   UnixSignals.cpp
   UnwindAssembly.cpp
   UnwindLLDB.cpp
+  VerboseTrapFrameRecognizer.cpp
 
   LINK_LIBS
     lldbBreakpoint

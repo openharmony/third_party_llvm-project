@@ -83,12 +83,9 @@ define <2 x float> @test6(<2 x float> %x) nounwind  {
 }
 
 ; Test with an undef element
-; TODO: Support undef elements.
 define <2 x float> @test6_undef(<2 x float> %x) nounwind  {
 ; CHECK-LABEL: @test6_undef(
-; CHECK-NEXT:    [[T1:%.*]] = fpext <2 x float> [[X:%.*]] to <2 x double>
-; CHECK-NEXT:    [[T3:%.*]] = fadd <2 x double> [[T1]], <double 0.000000e+00, double undef>
-; CHECK-NEXT:    [[T34:%.*]] = fptrunc <2 x double> [[T3]] to <2 x float>
+; CHECK-NEXT:    [[T34:%.*]] = fadd <2 x float> [[X:%.*]], <float 0.000000e+00, float undef>
 ; CHECK-NEXT:    ret <2 x float> [[T34]]
 ;
   %t1 = fpext <2 x float> %x to <2 x double>
@@ -439,4 +436,15 @@ define half @bf16_to_f32_to_f16(bfloat %a) nounwind {
   %y = fpext bfloat %a to float
   %z = fptrunc float %y to half
   ret half %z
+}
+
+define bfloat @bf16_frem(bfloat %x) {
+; CHECK-LABEL: @bf16_frem(
+; CHECK-NEXT:    [[FREM:%.*]] = frem bfloat [[X:%.*]], 0xR40C9
+; CHECK-NEXT:    ret bfloat [[FREM]]
+;
+  %t1 = fpext bfloat %x to float
+  %t2 = frem float %t1, 6.281250e+00
+  %t3 = fptrunc float %t2 to bfloat
+  ret bfloat %t3
 }

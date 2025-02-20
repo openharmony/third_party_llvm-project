@@ -23,6 +23,7 @@ function(add_linalg_ods_yaml_gen yaml_ast_file output_file)
     ${MLIR_LINALG_ODS_YAML_GEN_EXE}
     ${MLIR_LINALG_ODS_YAML_GEN_TARGET}
     ${GEN_ODS_FILE} ${GEN_CPP_FILE})
+  set_target_properties(MLIR${output_file}YamlIncGen PROPERTIES FOLDER "MLIR/Tablegenning")
   list(APPEND LLVM_TARGET_DEPENDS ${GEN_ODS_FILE})
   set(LLVM_TARGET_DEPENDS ${LLVM_TARGET_DEPENDS} PARENT_SCOPE)
 endfunction()
@@ -40,11 +41,12 @@ add_custom_target(LinalgOdsGen
   DEPENDS
   MLIRLinalgNamedStructuredOpsYamlIncGen
 )
+set_target_properties(LinalgOdsGen PROPERTIES FOLDER "MLIR/Tablegenning")
 add_dependencies(mlir-headers LinalgOdsGen)
 
 add_mlir_dialect(LinalgOps linalg)
 
-set(LLVM_TARGET_DEFINITIONS LinalgOps.td)
+set(LLVM_TARGET_DEFINITIONS LinalgEnums.td)
 mlir_tablegen(LinalgOpsEnums.h.inc -gen-enum-decls)
 mlir_tablegen(LinalgOpsEnums.cpp.inc -gen-enum-defs)
 add_public_tablegen_target(MLIRLinalgOpsEnumsIncGen)

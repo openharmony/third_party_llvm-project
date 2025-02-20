@@ -12,12 +12,12 @@
 // CHECKPREL-NEXT:  R_AARCH64_PREL32      {{.*}} _start + 4
 // CHECKPREL-NEXT:  R_AARCH64_PREL64      {{.*}} _start + 8
 
-// RUN: llvm-bolt %t.exe -o %t.bolt
+// RUN: llvm-bolt %t.exe -o %t.bolt --strict
 // RUN: llvm-objdump -D %t.bolt | FileCheck %s --check-prefix=CHECKPREL32
 
 // CHECKPREL32: [[#%x,DATATABLEADDR:]] <datatable>:
 // CHECKPREL32-NEXT: 00:
-// CHECKPREL32-NEXT: 04: [[#%x,VALUE:]]
+// CHECKPREL32-NEXT: 04: {{.*}} .word 0x[[#%x,VALUE:]]
 
 // 4 is offset in datatable
 // 8 is addend
@@ -27,8 +27,8 @@
 // CHECKPREL64: [[#%x,DATATABLEADDR:]] <datatable>:
 // CHECKPREL64-NEXT: 00:
 // CHECKPREL64-NEXT: 04:
-// CHECKPREL64-NEXT: 08: [[#%x,VALUE:]]
-// CHECKPREL64-NEXT: 0c: 00000000
+// CHECKPREL64-NEXT: 08: {{.*}} .word 0x[[#%x,VALUE:]]
+// CHECKPREL64-NEXT: 0c: {{.*}} .word 0x00000000
 
 // 8 is offset in datatable
 // 12 is addend
@@ -43,7 +43,7 @@ _start:
   mov x0, #0
   ret 
 
-.section .dummy, "da"
+.section .dummy, "a", @progbits
 dummy:
   .word 0
 

@@ -53,6 +53,7 @@ enum class E4 {
   e1 = -2147483648, // ok
   e2 = 2147483647, // ok
   e3 = 2147483648 // expected-error{{enumerator value evaluates to 2147483648, which cannot be narrowed to type 'int'}}
+                  // expected-warning@-1{{changes value}}
 };
 
 enum class E5 {
@@ -114,8 +115,7 @@ enum : long {
   long_enum_val = 10000
 };
 
-enum : long x; // expected-error{{unnamed enumeration must be a definition}} \
-// expected-warning{{declaration does not declare anything}}
+enum : long x; // expected-error{{unnamed enumeration must be a definition}}
 
 void PR9333() {
   enum class scoped_enum { yes, no, maybe };
@@ -123,13 +123,12 @@ void PR9333() {
   if (e == scoped_enum::no) { }
 }
 
-// <rdar://problem/9366066>
 namespace rdar9366066 {
   enum class X : unsigned { value };
 
   void f(X x) {
-    x % X::value; // expected-error{{invalid operands to binary expression ('rdar9366066::X' and 'rdar9366066::X')}}
-    x % 8; // expected-error{{invalid operands to binary expression ('rdar9366066::X' and 'int')}}
+    x % X::value; // expected-error{{invalid operands to binary expression ('X' and 'rdar9366066::X')}}
+    x % 8; // expected-error{{invalid operands to binary expression ('X' and 'int')}}
   }
 }
 
@@ -148,7 +147,9 @@ namespace test5 {
 namespace test6 {
   enum A : unsigned;
   struct A::a; // expected-error {{incomplete type 'test6::A' named in nested name specifier}}
+               // expected-error@-1{{forward declaration of struct cannot have a nested name specifier}}
   enum A::b; // expected-error {{incomplete type 'test6::A' named in nested name specifier}}
+             // expected-error@-1{{forward declaration of enum cannot have a nested name specifier}}
   int A::c; // expected-error {{incomplete type 'test6::A' named in nested name specifier}}
   void A::d(); // expected-error {{incomplete type 'test6::A' named in nested name specifier}}
   void test() {
@@ -174,11 +175,21 @@ namespace N2764 {
 
   struct S {
     friend enum class E; // expected-error {{reference to enumeration must use 'enum' not 'enum class'}}
+                         // expected-warning@-1 {{elaborated enum specifier cannot be declared as a friend}}
+                         // expected-note@-2 {{remove 'enum class' to befriend an enum}}
     friend enum class F; // expected-error {{reference to enumeration must use 'enum' not 'enum class'}}
+                         // expected-warning@-1 {{elaborated enum specifier cannot be declared as a friend}}
+                         // expected-note@-2 {{remove 'enum class' to befriend an enum}}
 
     friend enum G {}; // expected-error {{forward reference}} expected-error {{cannot define a type in a friend declaration}}
+                      // expected-warning@-1 {{elaborated enum specifier cannot be declared as a friend}}
+                      // expected-note@-2 {{remove 'enum' to befriend an enum}}
     friend enum class H {}; // expected-error {{forward reference}} expected-error {{cannot define a type in a friend declaration}}
+                            // expected-warning@-1 {{elaborated enum specifier cannot be declared as a friend}}
+                            // expected-note@-2 {{remove 'enum' to befriend an enum}}
     friend enum I : int {}; // expected-error {{forward reference}} expected-error {{cannot define a type in a friend declaration}}
+                            // expected-warning@-1 {{elaborated enum specifier cannot be declared as a friend}}
+                            // expected-note@-2 {{remove 'enum' to befriend an enum}}
 
     enum A : int;
     A a;
@@ -285,7 +296,7 @@ namespace PR15633 {
 
 namespace PR16900 {
   enum class A;
-  A f(A a) { return -a; } // expected-error {{invalid argument type 'PR16900::A' to unary expression}}
+  A f(A a) { return -a; } // expected-error {{invalid argument type 'A' to unary expression}}
 }
 
 namespace PR18551 {
@@ -323,11 +334,11 @@ namespace test11 {
   typedef E E2;
   E2 f1() { return E::a; }
 
-  bool f() { return !f1(); } // expected-error {{invalid argument type 'test11::E2' (aka 'test11::E') to unary expression}}
+  bool f() { return !f1(); } // expected-error {{invalid argument type 'E2' (aka 'test11::E') to unary expression}}
 }
 
 namespace PR35586 {
-  enum C { R, G, B };
+  enum C { R=-1, G, B };
   enum B { F = (enum C) -1, T}; // this should compile cleanly, it used to assert.
 };
 

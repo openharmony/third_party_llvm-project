@@ -11,7 +11,7 @@
 #include <stdarg.h>
 #include "abort_message.h"
 
-#if defined(__BIONIC__) && !defined(__OHOS__)
+#ifdef __BIONIC__
 #   include <android/api-level.h>
 #   if __ANDROID_API__ >= 21
 #       include <syslog.h>
@@ -24,10 +24,6 @@
 #if defined(__APPLE__) && __has_include(<CrashReporterClient.h>)
 #   include <CrashReporterClient.h>
 #   define _LIBCXXABI_USE_CRASHREPORTER_CLIENT
-#endif
-
-#if defined(__OHOS__)
-    extern "C" __attribute__((weak)) void set_fatal_message(const char *msg);
 #endif
 
 void abort_message(const char* format, ...)
@@ -56,18 +52,6 @@ void abort_message(const char* format, ...)
     va_end(list);
 
     CRSetCrashLogMessage(buffer);
-
-#elif defined(__OHOS__)
-    char* buffer;
-    va_list list;
-    va_start(list, format);
-    vasprintf(&buffer, format, list);
-    va_end(list);
-
-    if (&set_fatal_message) {
-        set_fatal_message(buffer);
-    }
-
 #elif defined(__BIONIC__)
     char* buffer;
     va_list list;
@@ -89,7 +73,7 @@ void abort_message(const char* format, ...)
     // (tombstone and/or logcat) in older releases.
     __assert2(__FILE__, __LINE__, __func__, buffer);
 #   endif // __ANDROID_API__ >= 21
-#endif // __BIONIC__ || __OHOS__
+#endif // __BIONIC__
 
     abort();
 }

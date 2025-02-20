@@ -10,6 +10,7 @@
 #include "flang/Common/idioms.h"
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
+#include <set>
 #include <utility>
 
 namespace Fortran::parser {
@@ -166,6 +167,16 @@ void AllSources::AppendSearchPathDirectory(std::string directory) {
   searchPath_.push_back(directory);
 }
 
+const SourceFile *AllSources::OpenPath(
+    std::string path, llvm::raw_ostream &error) {
+  std::unique_ptr<SourceFile> source{std::make_unique<SourceFile>(encoding_)};
+  if (source->Open(path, error)) {
+    return ownedSourceFiles_.emplace_back(std::move(source)).get();
+  } else {
+    return nullptr;
+  }
+}
+
 const SourceFile *AllSources::Open(std::string path, llvm::raw_ostream &error,
     std::optional<std::string> &&prependPath) {
   std::unique_ptr<SourceFile> source{std::make_unique<SourceFile>(encoding_)};
@@ -179,12 +190,10 @@ const SourceFile *AllSources::Open(std::string path, llvm::raw_ostream &error,
   if (prependPath) {
     searchPath_.pop_front();
   }
-  if (!found) {
-    error << "Source file '" << path << "' was not found";
-    return nullptr;
-  } else if (source->Open(*found, error)) {
-    return ownedSourceFiles_.emplace_back(std::move(source)).get();
+  if (found) {
+    return OpenPath(*found, error);
   } else {
+    error << "Source file '" << path << "' was not found";
     return nullptr;
   }
 }
@@ -223,10 +232,26 @@ ProvenanceRange AllSources::AddCompilerInsertion(std::string text) {
   return covers;
 }
 
+static void EmitPrefix(llvm::raw_ostream &o, llvm::raw_ostream::Colors color,
+    const std::string &prefix, bool showColors) {
+  if (prefix.empty()) {
+    return;
+  }
+  if (showColors) {
+    o.changeColor(color, true);
+  }
+  o << prefix;
+  if (showColors) {
+    o.resetColor();
+  }
+}
+
 void AllSources::EmitMessage(llvm::raw_ostream &o,
     const std::optional<ProvenanceRange> &range, const std::string &message,
+    const std::string &prefix, llvm::raw_ostream::Colors color,
     bool echoSourceLine) const {
   if (!range) {
+    EmitPrefix(o, color, prefix, this->getShowColors());
     o << message << '\n';
     return;
   }
@@ -235,14 +260,14 @@ void AllSources::EmitMessage(llvm::raw_ostream &o,
   common::visit(
       common::visitors{
           [&](const Inclusion &inc) {
-            o << inc.source.path();
             std::size_t offset{origin.covers.MemberOffset(range->start())};
-            SourcePosition pos{inc.source.FindOffsetLineAndColumn(offset)};
-            o << ':' << pos.line << ':' << pos.column;
-            o << ": " << message << '\n';
+            SourcePosition pos{inc.source.GetSourcePosition(offset)};
+            o << pos.path << ':' << pos.line << ':' << pos.column << ": ";
+            EmitPrefix(o, color, prefix, this->getShowColors());
+            o << message << '\n';
             if (echoSourceLine) {
               const char *text{inc.source.content().data() +
-                  inc.source.GetLineStartOffset(pos.line)};
+                  inc.source.GetLineStartOffset(pos.trueLineNumber)};
               o << "  ";
               for (const char *p{text}; *p != '\n'; ++p) {
                 o << *p;
@@ -257,7 +282,7 @@ void AllSources::EmitMessage(llvm::raw_ostream &o,
                 auto last{range->start() + range->size() - 1};
                 if (&MapToOrigin(last) == &origin) {
                   auto endOffset{origin.covers.MemberOffset(last)};
-                  auto endPos{inc.source.FindOffsetLineAndColumn(endOffset)};
+                  auto endPos{inc.source.GetSourcePosition(endOffset)};
                   if (pos.line == endPos.line) {
                     for (int j{pos.column}; j < endPos.column; ++j) {
                       o << '^';
@@ -269,14 +294,15 @@ void AllSources::EmitMessage(llvm::raw_ostream &o,
             }
             if (IsValid(origin.replaces)) {
               EmitMessage(o, origin.replaces,
-                  inc.isModule ? "used here"s : "included here"s,
+                  inc.isModule ? "used here"s : "included here"s, prefix, color,
                   echoSourceLine);
             }
           },
           [&](const Macro &mac) {
-            EmitMessage(o, origin.replaces, message, echoSourceLine);
             EmitMessage(
-                o, mac.definition, "in a macro defined here", echoSourceLine);
+                o, origin.replaces, message, prefix, color, echoSourceLine);
+            EmitMessage(o, mac.definition, "in a macro defined here", ""s,
+                color, echoSourceLine);
             if (echoSourceLine) {
               o << "that expanded to:\n  " << mac.expansion << "\n  ";
               for (std::size_t j{0};
@@ -286,20 +312,28 @@ void AllSources::EmitMessage(llvm::raw_ostream &o,
               o << "^\n";
             }
           },
-          [&](const CompilerInsertion &) { o << message << '\n'; },
+          [&](const CompilerInsertion &) {
+            EmitPrefix(o, color, prefix, this->getShowColors());
+            o << message << '\n';
+          },
       },
       origin.u);
 }
 
 const SourceFile *AllSources::GetSourceFile(
-    Provenance at, std::size_t *offset) const {
+    Provenance at, std::size_t *offset, bool topLevel) const {
   const Origin &origin{MapToOrigin(at)};
   return common::visit(common::visitors{
                            [&](const Inclusion &inc) {
-                             if (offset) {
-                               *offset = origin.covers.MemberOffset(at);
+                             if (topLevel && !origin.replaces.empty()) {
+                               return GetSourceFile(
+                                   origin.replaces.start(), offset, topLevel);
+                             } else {
+                               if (offset) {
+                                 *offset = origin.covers.MemberOffset(at);
+                               }
+                               return &inc.source;
                              }
-                             return &inc.source;
                            },
                            [&](const Macro &) {
                              return GetSourceFile(
@@ -330,7 +364,7 @@ std::optional<SourcePosition> AllSources::GetSourcePosition(
       common::visitors{
           [&](const Inclusion &inc) -> std::optional<SourcePosition> {
             std::size_t offset{origin.covers.MemberOffset(prov)};
-            return inc.source.FindOffsetLineAndColumn(offset);
+            return inc.source.GetSourcePosition(offset);
           },
           [&](const Macro &) {
             return GetSourcePosition(origin.replaces.start());
@@ -351,15 +385,16 @@ std::optional<ProvenanceRange> AllSources::GetFirstFileProvenance() const {
   return std::nullopt;
 }
 
-std::string AllSources::GetPath(Provenance at) const {
-  const SourceFile *source{GetSourceFile(at)};
-  return source ? source->path() : ""s;
+std::string AllSources::GetPath(Provenance at, bool topLevel) const {
+  std::size_t offset{0};
+  const SourceFile *source{GetSourceFile(at, &offset, topLevel)};
+  return source ? *source->GetSourcePosition(offset).path : ""s;
 }
 
 int AllSources::GetLineNumber(Provenance at) const {
   std::size_t offset{0};
   const SourceFile *source{GetSourceFile(at, &offset)};
-  return source ? source->FindOffsetLineAndColumn(offset).line : 0;
+  return source ? source->GetSourcePosition(offset).line : 0;
 }
 
 Provenance AllSources::CompilerInsertionProvenance(char ch) {
@@ -430,6 +465,14 @@ const AllSources::Origin &AllSources::MapToOrigin(Provenance at) const {
   return origin_[low];
 }
 
+Provenance AllSources::GetReplacedProvenance(Provenance provenance) const {
+  const Origin &origin{MapToOrigin(provenance)};
+  if (std::holds_alternative<Macro>(origin.u)) {
+    return origin.replaces.start();
+  }
+  return provenance;
+}
+
 std::optional<ProvenanceRange> CookedSource::GetProvenanceRange(
     CharBlock cookedRange) const {
   if (!AsCharBlock().Contains(cookedRange)) {
@@ -443,7 +486,16 @@ std::optional<ProvenanceRange> CookedSource::GetProvenanceRange(
   if (first.start() <= last.start()) {
     return {ProvenanceRange{first.start(), last.start() - first.start() + 1}};
   } else {
-    return std::nullopt;
+    // cookedRange may start (resp. end) in a macro expansion while it does not
+    // end (resp. start) in this macro expansion. Attempt to build a range
+    // over the replaced source.
+    Provenance firstStart{allSources_.GetReplacedProvenance(first.start())};
+    Provenance lastStart{allSources_.GetReplacedProvenance(last.start())};
+    if (firstStart <= lastStart) {
+      return {ProvenanceRange{firstStart, lastStart - firstStart + 1}};
+    } else {
+      return std::nullopt;
+    }
   }
 }
 
@@ -466,6 +518,16 @@ void CookedSource::Marshal(AllCookedSources &allCookedSources) {
       "(after end of source)"));
   data_ = buffer_.Marshal();
   buffer_.clear();
+  for (std::size_t ffStart : possibleFixedFormContinuations_) {
+    if (ffStart > 0 && ffStart + 1 < data_.size() &&
+        data_[ffStart - 1] == '\n' && data_[ffStart] == ' ') {
+      // This fixed form include line is the first source line in an
+      // #include file (or after an empty one).  Connect it with the previous
+      // source line by deleting its terminal newline.
+      data_[ffStart - 1] = ' ';
+    }
+  }
+  possibleFixedFormContinuations_.clear();
   allCookedSources.Register(*this);
 }
 
@@ -508,6 +570,7 @@ llvm::raw_ostream &AllSources::Dump(llvm::raw_ostream &o) const {
   o << "AllSources range_ ";
   DumpRange(o, range_);
   o << '\n';
+  std::set<const SourceFile *> sources;
   for (const Origin &m : origin_) {
     o << "   ";
     DumpRange(o, m.covers);
@@ -518,6 +581,7 @@ llvm::raw_ostream &AllSources::Dump(llvm::raw_ostream &o) const {
                           o << "module ";
                         }
                         o << "file " << inc.source.path();
+                        sources.emplace(&inc.source);
                       },
                       [&](const Macro &mac) { o << "macro " << mac.expansion; },
                       [&](const CompilerInsertion &ins) {
@@ -536,6 +600,9 @@ llvm::raw_ostream &AllSources::Dump(llvm::raw_ostream &o) const {
     }
     o << '\n';
   }
+  for (const SourceFile *sf : sources) {
+    sf->Dump(o);
+  }
   return o;
 }
 
@@ -551,7 +618,7 @@ AllCookedSources::AllCookedSources(AllSources &s) : allSources_{s} {}
 AllCookedSources::~AllCookedSources() {}
 
 CookedSource &AllCookedSources::NewCookedSource() {
-  return cooked_.emplace_back();
+  return cooked_.emplace_back(allSources_);
 }
 
 const CookedSource *AllCookedSources::Find(CharBlock x) const {

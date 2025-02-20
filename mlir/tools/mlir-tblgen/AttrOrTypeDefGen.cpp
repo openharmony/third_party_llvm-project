@@ -41,7 +41,7 @@ static void collectAllDefs(StringRef selectedDialect,
   if (selectedDialect.empty()) {
     // If a dialect was not specified, ensure that all found defs belong to the
     // same dialect.
-    if (!llvm::is_splat(llvm::map_range(
+    if (!llvm::all_equal(llvm::map_range(
             defs, [](const auto &def) { return def.getDialect(); }))) {
       llvm::PrintFatalError("defs belonging to more than one dialect. Must "
                             "select one via '--(attr|type)defs-dialect'");
@@ -50,7 +50,7 @@ static void collectAllDefs(StringRef selectedDialect,
   } else {
     // Otherwise, generate the defs that belong to the selected dialect.
     auto dialectDefs = llvm::make_filter_range(defs, [&](const auto &def) {
-      return def.getDialect().getName().equals(selectedDialect);
+      return def.getDialect().getName() == selectedDialect;
     });
     resultDefs.assign(dialectDefs.begin(), dialectDefs.end());
   }
@@ -67,7 +67,7 @@ public:
   DefGen(const AttrOrTypeDef &def);
 
   void emitDecl(raw_ostream &os) const {
-    if (storageCls) {
+    if (storageCls && def.genStorageClass()) {
       NamespaceEmitter ns(os, def.getStorageNamespace());
       os << "struct " << def.getStorageClassName() << ";\n";
     }
@@ -87,6 +87,10 @@ private:
   /// Emit top-level declarations: using declarations and any extra class
   /// declarations.
   void emitTopLevelDeclarations();
+  /// Emit the function that returns the type or attribute name.
+  void emitName();
+  /// Emit the dialect name as a static member variable.
+  void emitDialectName();
   /// Emit attribute or type builders.
   void emitBuilders();
   /// Emit a verifier for the def.
@@ -151,7 +155,7 @@ private:
   Class defCls;
   /// An optional attribute or type storage class. The storage class will
   /// exist if and only if the def has more than zero parameters.
-  Optional<Class> storageCls;
+  std::optional<Class> storageCls;
 
   /// The C++ base value of the def, either "Attribute" or "Type".
   StringRef valueType;
@@ -180,6 +184,10 @@ DefGen::DefGen(const AttrOrTypeDef &def)
   // Emit builders for defs with parameters
   if (storageCls)
     emitBuilders();
+  // Emit the type name.
+  emitName();
+  // Emit the dialect name.
+  emitDialectName();
   // Emit the verifier.
   if (storageCls && def.genVerifyDecl())
     emitVerifier();
@@ -214,14 +222,42 @@ void DefGen::createParentWithTraits() {
   defCls.addParent(std::move(defParent));
 }
 
+/// Include declarations specified on NativeTrait
+static std::string formatExtraDeclarations(const AttrOrTypeDef &def) {
+  SmallVector<StringRef> extraDeclarations;
+  // Include extra class declarations from NativeTrait
+  for (const auto &trait : def.getTraits()) {
+    if (auto *attrOrTypeTrait = dyn_cast<tblgen::NativeTrait>(&trait)) {
+      StringRef value = attrOrTypeTrait->getExtraConcreteClassDeclaration();
+      if (value.empty())
+        continue;
+      extraDeclarations.push_back(value);
+    }
+  }
+  if (std::optional<StringRef> extraDecl = def.getExtraDecls()) {
+    extraDeclarations.push_back(*extraDecl);
+  }
+  return llvm::join(extraDeclarations, "\n");
+}
+
 /// Extra class definitions have a `$cppClass` substitution that is to be
 /// replaced by the C++ class name.
 static std::string formatExtraDefinitions(const AttrOrTypeDef &def) {
-  if (Optional<StringRef> extraDef = def.getExtraDefs()) {
-    FmtContext ctx = FmtContext().addSubst("cppClass", def.getCppClassName());
-    return tgfmt(*extraDef, &ctx).str();
+  SmallVector<StringRef> extraDefinitions;
+  // Include extra class definitions from NativeTrait
+  for (const auto &trait : def.getTraits()) {
+    if (auto *attrOrTypeTrait = dyn_cast<tblgen::NativeTrait>(&trait)) {
+      StringRef value = attrOrTypeTrait->getExtraConcreteClassDefinition();
+      if (value.empty())
+        continue;
+      extraDefinitions.push_back(value);
+    }
   }
-  return "";
+  if (std::optional<StringRef> extraDef = def.getExtraDefs()) {
+    extraDefinitions.push_back(*extraDef);
+  }
+  FmtContext ctx = FmtContext().addSubst("cppClass", def.getCppClassName());
+  return tgfmt(llvm::join(extraDefinitions, "\n"), &ctx).str();
 }
 
 void DefGen::emitTopLevelDeclarations() {
@@ -230,10 +266,30 @@ void DefGen::emitTopLevelDeclarations() {
   defCls.declare<UsingDeclaration>("Base::Base");
 
   // Emit the extra declarations first in case there's a definition in there.
-  Optional<StringRef> extraDecl = def.getExtraDecls();
+  std::string extraDecl = formatExtraDeclarations(def);
   std::string extraDef = formatExtraDefinitions(def);
-  defCls.declare<ExtraClassDeclaration>(extraDecl ? *extraDecl : "",
+  defCls.declare<ExtraClassDeclaration>(std::move(extraDecl),
                                         std::move(extraDef));
+}
+
+void DefGen::emitName() {
+  StringRef name;
+  if (auto *attrDef = dyn_cast<AttrDef>(&def)) {
+    name = attrDef->getAttrName();
+  } else {
+    auto *typeDef = cast<TypeDef>(&def);
+    name = typeDef->getTypeName();
+  }
+  std::string nameDecl =
+      strfmt("static constexpr ::llvm::StringLiteral name = \"{0}\";\n", name);
+  defCls.declare<ExtraClassDeclaration>(std::move(nameDecl));
+}
+
+void DefGen::emitDialectName() {
+  std::string decl =
+      strfmt("static constexpr ::llvm::StringLiteral dialectName = \"{0}\";\n",
+             def.getDialect().getName());
+  defCls.declare<ExtraClassDeclaration>(std::move(decl));
 }
 
 void DefGen::emitBuilders() {
@@ -252,7 +308,7 @@ void DefGen::emitBuilders() {
 void DefGen::emitVerifier() {
   defCls.declare<UsingDeclaration>("Base::getChecked");
   defCls.declareStaticMethod(
-      "::mlir::LogicalResult", "verify",
+      "::llvm::LogicalResult", "verify",
       getBuilderParams({{"::llvm::function_ref<::mlir::InFlightDiagnostic()>",
                          "emitError"}}));
 }
@@ -295,11 +351,7 @@ void DefGen::emitAccessors() {
     // class. Otherwise, let the user define the exact accessor definition.
     if (!def.genStorageClass())
       continue;
-    auto scope = m->body().indent().scope("return getImpl()->", ";");
-    if (isa<AttributeSelfTypeParameter>(param))
-      m->body() << formatv("getType().cast<{0}>()", param.getCppType());
-    else
-      m->body() << param.getName();
+    m->body().indent() << "return getImpl()->" << param.getName() << ";";
   }
 }
 
@@ -329,7 +381,7 @@ void DefGen::emitDefaultBuilder() {
   MethodBody &body = m->body().indent();
   auto scope = body.scope("return Base::get(context", ");");
   for (const auto &param : params)
-    body << ", " << param.getName();
+    body << ", std::move(" << param.getName() << ")";
 }
 
 void DefGen::emitCheckedBuilder() {
@@ -363,7 +415,7 @@ void DefGen::emitCustomBuilder(const AttrOrTypeBuilder &builder) {
   // Don't emit a body if there isn't one.
   auto props = builder.getBody() ? Method::Static : Method::StaticDeclaration;
   StringRef returnType = def.getCppClassName();
-  if (Optional<StringRef> builderReturnType = builder.getReturnType())
+  if (std::optional<StringRef> builderReturnType = builder.getReturnType())
     returnType = *builderReturnType;
   Method *m = defCls.addMethod(returnType, "get", props,
                                getCustomBuilderParams({}, builder));
@@ -391,7 +443,7 @@ void DefGen::emitCheckedCustomBuilder(const AttrOrTypeBuilder &builder) {
   // Don't emit a body if there isn't one.
   auto props = builder.getBody() ? Method::Static : Method::StaticDeclaration;
   StringRef returnType = def.getCppClassName();
-  if (Optional<StringRef> builderReturnType = builder.getReturnType())
+  if (std::optional<StringRef> builderReturnType = builder.getReturnType())
     returnType = *builderReturnType;
   Method *m = defCls.addMethod(
       returnType, "getChecked", props,
@@ -450,36 +502,9 @@ void DefGen::emitTraitMethod(const InterfaceMethod &method) {
 void DefGen::emitStorageConstructor() {
   Constructor *ctor =
       storageCls->addConstructor<Method::Inline>(getBuilderParams({}));
-  if (auto *attrDef = dyn_cast<AttrDef>(&def)) {
-    // For attributes, a parameter marked with AttributeSelfTypeParameter is
-    // the type initializer that must be passed to the parent constructor.
-    const auto isSelfType = [](const AttrOrTypeParameter &param) {
-      return isa<AttributeSelfTypeParameter>(param);
-    };
-    auto *selfTypeParam = llvm::find_if(params, isSelfType);
-    if (std::count_if(selfTypeParam, params.end(), isSelfType) > 1) {
-      PrintFatalError(def.getLoc(),
-                      "Only one attribute parameter can be marked as "
-                      "AttributeSelfTypeParameter");
-    }
-    // Alternatively, if a type builder was specified, use that instead.
-    std::string attrStorageInit =
-        selfTypeParam == params.end() ? "" : selfTypeParam->getName().str();
-    if (attrDef->getTypeBuilder()) {
-      FmtContext ctx;
-      for (auto &param : params)
-        ctx.addSubst(strfmt("_{0}", param.getName()), param.getName());
-      attrStorageInit = tgfmt(*attrDef->getTypeBuilder(), &ctx);
-    }
-    ctor->addMemberInitializer("::mlir::AttributeStorage",
-                               std::move(attrStorageInit));
-    // Initialize members that aren't the attribute's type.
-    for (auto &param : params)
-      if (selfTypeParam == params.end() || *selfTypeParam != param)
-        ctor->addMemberInitializer(param.getName(), param.getName());
-  } else {
-    for (auto &param : params)
-      ctor->addMemberInitializer(param.getName(), param.getName());
+  for (auto &param : params) {
+    std::string movedValue = ("std::move(" + param.getName() + ")").str();
+    ctor->addMemberInitializer(param.getName(), movedValue);
   }
 }
 
@@ -490,6 +515,13 @@ void DefGen::emitKeyType() {
                         [&](auto &param) { os << param.getCppType(); });
   os << '>';
   storageCls->declare<UsingDeclaration>("KeyTy", std::move(os.str()));
+
+  // Add a method to construct the key type from the storage.
+  Method *m = storageCls->addConstMethod<Method::Inline>("KeyTy", "getAsKey");
+  m->body().indent() << "return KeyTy(";
+  llvm::interleaveComma(params, m->body().indent(),
+                        [&](auto &param) { m->body() << param.getName(); });
+  m->body() << ");";
 }
 
 void DefGen::emitEquals() {
@@ -498,9 +530,7 @@ void DefGen::emitEquals() {
   auto &body = eq->body().indent();
   auto scope = body.scope("return (", ");");
   const auto eachFn = [&](auto it) {
-    FmtContext ctx({{"_lhs", isa<AttributeSelfTypeParameter>(it.value())
-                                 ? "getType()"
-                                 : it.value().getName()},
+    FmtContext ctx({{"_lhs", it.value().getName()},
                     {"_rhs", strfmt("std::get<{0}>(tblgenKey)", it.index())}});
     body << tgfmt(it.value().getComparator(), &ctx);
   };
@@ -525,17 +555,17 @@ void DefGen::emitConstruct() {
                                         : Method::Static,
       MethodParameter(strfmt("::mlir::{0}StorageAllocator &", valueType),
                       "allocator"),
-      MethodParameter("const KeyTy &", "tblgenKey"));
+      MethodParameter("KeyTy &&", "tblgenKey"));
   if (!def.hasStorageCustomConstructor()) {
     auto &body = construct->body().indent();
     for (const auto &it : llvm::enumerate(params)) {
-      body << formatv("auto {0} = std::get<{1}>(tblgenKey);\n",
+      body << formatv("auto {0} = std::move(std::get<{1}>(tblgenKey));\n",
                       it.value().getName(), it.index());
     }
     // Use the parameters' custom allocator code, if provided.
     FmtContext ctx = FmtContext().addSubst("_allocator", "allocator");
     for (auto &param : params) {
-      if (Optional<StringRef> allocCode = param.getAllocator()) {
+      if (std::optional<StringRef> allocCode = param.getAllocator()) {
         ctx.withSelf(param.getName()).addSubst("_dst", param.getName());
         body << tgfmt(*allocCode, &ctx) << '\n';
       }
@@ -544,8 +574,9 @@ void DefGen::emitConstruct() {
         body.scope(strfmt("return new (allocator.allocate<{0}>()) {0}(",
                           def.getStorageClassName()),
                    ");");
-    llvm::interleaveComma(params, body,
-                          [&](auto &param) { body << param.getName(); });
+    llvm::interleaveComma(params, body, [&](auto &param) {
+      body << "std::move(" << param.getName() << ")";
+    });
   }
 }
 
@@ -566,8 +597,7 @@ void DefGen::emitStorageClass() {
   // Emit the storage class members as public, at the very end of the struct.
   storageCls->finalize();
   for (auto &param : params)
-    if (!isa<AttributeSelfTypeParameter>(param))
-      storageCls->declare<Field>(param.getCppType(), param.getName());
+    storageCls->declare<Field>(param.getCppType(), param.getName());
 }
 
 //===----------------------------------------------------------------------===//
@@ -585,7 +615,12 @@ protected:
   DefGenerator(std::vector<llvm::Record *> &&defs, raw_ostream &os,
                StringRef defType, StringRef valueType, bool isAttrGenerator)
       : defRecords(std::move(defs)), os(os), defType(defType),
-        valueType(valueType), isAttrGenerator(isAttrGenerator) {}
+        valueType(valueType), isAttrGenerator(isAttrGenerator) {
+    // Sort by occurrence in file.
+    llvm::sort(defRecords, [](llvm::Record *lhs, llvm::Record *rhs) {
+      return lhs->getID() < rhs->getID();
+    });
+  }
 
   /// Emit the list of def type names.
   void emitTypeDefList(ArrayRef<AttrOrTypeDef> defs);
@@ -696,7 +731,7 @@ static const char *const dialectDefaultAttrPrinterParserDispatch = R"(
   {{
     ::mlir::Attribute attr;
     auto parseResult = generatedAttributeParser(parser, &attrTag, type, attr);
-    if (parseResult.hasValue())
+    if (parseResult.has_value())
       return attr;
   }
   {1}
@@ -718,8 +753,8 @@ static const char *const dialectDynamicAttrParserDispatch = R"(
   {
     ::mlir::Attribute genAttr;
     auto parseResult = parseOptionalDynamicAttr(attrTag, parser, genAttr);
-    if (parseResult.hasValue()) {
-      if (::mlir::succeeded(parseResult.getValue()))
+    if (parseResult.has_value()) {
+      if (::mlir::succeeded(parseResult.value()))
         return genAttr;
       return Attribute();
     }
@@ -743,7 +778,7 @@ static const char *const dialectDefaultTypePrinterParserDispatch = R"(
   ::llvm::StringRef mnemonic;
   ::mlir::Type genType;
   auto parseResult = generatedTypeParser(parser, &mnemonic, genType);
-  if (parseResult.hasValue())
+  if (parseResult.has_value())
     return genType;
   {1}
   parser.emitError(typeLoc) << "unknown  type `"
@@ -763,10 +798,10 @@ void {0}::printType(::mlir::Type type,
 static const char *const dialectDynamicTypeParserDispatch = R"(
   {
     auto parseResult = parseOptionalDynamicType(mnemonic, parser, genType);
-    if (parseResult.hasValue()) {
-      if (::mlir::succeeded(parseResult.getValue()))
+    if (parseResult.has_value()) {
+      if (::mlir::succeeded(parseResult.value()))
         return genType;
-      return Type();
+      return ::mlir::Type();
     }
   }
 )";
@@ -795,7 +830,7 @@ void DefGenerator::emitParsePrintDispatch(ArrayRef<AttrOrTypeDef> defs) {
                strfmt("generated{0}Parser", valueType), Method::StaticInline,
                std::move(params));
   // Declare the printer.
-  Method printer("::mlir::LogicalResult",
+  Method printer("::llvm::LogicalResult",
                  strfmt("generated{0}Printer", valueType), Method::StaticInline,
                  {{strfmt("::mlir::{0}", valueType), "def"},
                   {"::mlir::AsmPrinter &", "printer"}});
@@ -815,7 +850,7 @@ void DefGenerator::emitParsePrintDispatch(ArrayRef<AttrOrTypeDef> defs) {
   // The printer dispatch uses llvm::TypeSwitch to find and call the correct
   // printer.
   printer.body() << "  return ::llvm::TypeSwitch<::mlir::" << valueType
-                 << ", ::mlir::LogicalResult>(def)";
+                 << ", ::llvm::LogicalResult>(def)";
   const char *const printValue = R"(    .Case<{0}>([&](auto t) {{
       printer << {0}::getMnemonic();{1}
       return ::mlir::success();
@@ -844,7 +879,7 @@ void DefGenerator::emitParsePrintDispatch(ArrayRef<AttrOrTypeDef> defs) {
   }
   parse.body() << "    .Default([&](llvm::StringRef keyword, llvm::SMLoc) {\n"
                   "      *mnemonic = keyword;\n"
-                  "      return llvm::None;\n"
+                  "      return std::nullopt;\n"
                   "    });";
   printer.body() << "    .Default([](auto) { return ::mlir::failure(); });";
 

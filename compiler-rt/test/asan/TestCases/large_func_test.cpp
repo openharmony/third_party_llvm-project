@@ -29,8 +29,6 @@ static void LargeFunction(int *x, int zero) {
   // CHECK-Windows:{{#0 0x.* in LargeFunction.*large_func_test.cpp:}}[[@LINE-5]]
   // CHECK-FreeBSD:{{#0 0x.* in LargeFunction.*large_func_test.cpp:}}[[@LINE-6]]
   // CHECK-Darwin: {{#0 0x.* in .*LargeFunction.*large_func_test.cpp}}:[[@LINE-7]]
-  // OHOS_LOCAL
-  // CHECK-OHOS:   {{#0 0x.* in LargeFunction.*large_func_test.cpp:}}[[@LINE-9]]
 
   x[10]++;
   x[11]++;
@@ -48,16 +46,14 @@ int main(int argc, char **argv) {
   int *x = new int[100];
   LargeFunction(x, argc - 1);
   // CHECK: {{    #1 0x.* in main .*large_func_test.cpp:}}[[@LINE-1]]
-  // CHECK: {{0x.* is located 12 bytes to the right of 400-byte region}}
+  // CHECK: {{0x.* is located 12 bytes after 400-byte region}}
   // CHECK: {{allocated by thread T0 here:}}
   // CHECK-Linux:  {{    #0 0x.* in operator new}}
   // CHECK-SunOS:  {{    #0 0x.* in operator new}}
   // CHECK-Windows:{{    #0 0x.* in operator new}}
   // CHECK-FreeBSD:{{    #0 0x.* in operator new}}
   // CHECK-Darwin: {{    #0 0x.* in .*_Zna}}
-  // OHOS_LOCAL
-  // CHECK-OHOS:   {{    #0 0x.* in operator new}}
-  // CHECK-NEXT:   {{    #1 0x.* in main .*large_func_test.cpp:}}[[@LINE-12]]
+  // CHECK-NEXT:   {{    #1 0x.* in main .*large_func_test.cpp:}}[[@LINE-10]]
   int y = x[argc];
   delete[] x;
   return y;

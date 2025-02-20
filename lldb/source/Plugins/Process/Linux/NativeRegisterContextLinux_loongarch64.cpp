@@ -48,6 +48,11 @@ NativeRegisterContextLinux::CreateHostNativeRegisterContextLinux(
   }
 }
 
+llvm::Expected<ArchSpec>
+NativeRegisterContextLinux::DetermineArchitecture(lldb::tid_t tid) {
+  return HostInfo::GetArchitecture();
+}
+
 NativeRegisterContextLinux_loongarch64::NativeRegisterContextLinux_loongarch64(
     const ArchSpec &target_arch, NativeThreadProtocol &native_thread,
     std::unique_ptr<RegisterInfoPOSIX_loongarch64> register_info_up)
@@ -123,7 +128,7 @@ Status NativeRegisterContextLinux_loongarch64::ReadRegister(
     return Status("failed - register wasn't recognized to be a GPR or an FPR, "
                   "write strategy unknown");
 
-  reg_value.SetFromMemoryData(reg_info, src, reg_info->byte_size,
+  reg_value.SetFromMemoryData(*reg_info, src, reg_info->byte_size,
                               eByteOrderLittle, error);
 
   return error;

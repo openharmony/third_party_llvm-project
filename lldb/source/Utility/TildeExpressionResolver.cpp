@@ -47,7 +47,7 @@ bool StandardTildeExpressionResolver::ResolvePartial(StringRef Expr,
   assert(Expr.empty() || Expr[0] == '~');
 
   Output.clear();
-#if defined(_WIN32) || defined(__ANDROID__) || defined(__OHOS_FAMILY__)
+#if defined(_WIN32) || defined(__ANDROID__)
   return false;
 #else
   if (Expr.empty())
@@ -60,7 +60,7 @@ bool StandardTildeExpressionResolver::ResolvePartial(StringRef Expr,
 
   while ((user_entry = getpwent()) != nullptr) {
     StringRef ThisName(user_entry->pw_name);
-    if (!ThisName.startswith(Expr))
+    if (!ThisName.starts_with(Expr))
       continue;
 
     Buffer.resize(1);
@@ -75,7 +75,7 @@ bool StandardTildeExpressionResolver::ResolvePartial(StringRef Expr,
 
 bool TildeExpressionResolver::ResolveFullPath(
     StringRef Expr, llvm::SmallVectorImpl<char> &Output) {
-  if (!Expr.startswith("~")) {
+  if (!Expr.starts_with("~")) {
     Output.assign(Expr.begin(), Expr.end());
     return false;
   }

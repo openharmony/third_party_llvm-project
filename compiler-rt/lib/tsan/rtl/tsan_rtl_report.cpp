@@ -10,20 +10,20 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_libc.h"
 #include "sanitizer_common/sanitizer_placement_new.h"
 #include "sanitizer_common/sanitizer_stackdepot.h"
-#include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_stacktrace.h"
+#include "tsan_fd.h"
+#include "tsan_flags.h"
+#include "tsan_mman.h"
 #include "tsan_platform.h"
+#include "tsan_report.h"
 #include "tsan_rtl.h"
 #include "tsan_suppressions.h"
 #include "tsan_symbolize.h"
-#include "tsan_report.h"
 #include "tsan_sync.h"
-#include "tsan_mman.h"
-#include "tsan_flags.h"
-#include "tsan_fd.h"
 
 namespace __tsan {
 
@@ -281,16 +281,16 @@ void ScopedReportBase::AddLocation(uptr addr, uptr size) {
   int fd = -1;
   Tid creat_tid = kInvalidTid;
   StackID creat_stack = 0;
-  if (FdLocation(addr, &fd, &creat_tid, &creat_stack)) {
+  bool closed = false;
+  if (FdLocation(addr, &fd, &creat_tid, &creat_stack, &closed)) {
     auto *loc = New<ReportLocation>();
     loc->type = ReportLocationFD;
+    loc->fd_closed = closed;
     loc->fd = fd;
     loc->tid = creat_tid;
     loc->stack = SymbolizeStackId(creat_stack);
     rep_->locs.PushBack(loc);
-    ThreadContext *tctx = FindThreadByTidLocked(creat_tid);
-    if (tctx)
-      AddThread(tctx);
+    AddThread(creat_tid);
     return;
   }
   MBlock *b = 0;
@@ -312,8 +312,7 @@ void ScopedReportBase::AddLocation(uptr addr, uptr size) {
     loc->tid = b->tid;
     loc->stack = SymbolizeStackId(b->stk);
     rep_->locs.PushBack(loc);
-    if (ThreadContext *tctx = FindThreadByTidLocked(b->tid))
-      AddThread(tctx);
+    AddThread(b->tid);
     return;
   }
   bool is_stack = false;
@@ -652,11 +651,7 @@ bool OutputReport(ThreadState *thr, const ScopedReport &srep) {
     Lock lock(&ctx->fired_suppressions_mtx);
     FiredSuppression s = {srep.GetReport()->typ, pc_or_addr, supp};
     ctx->fired_suppressions.push_back(s);
-    // OHOS_LOCAL
-    VPrintf(2, "[Suppression] Suppression hit type:%s file:%s pc:0x%zx.\n",
-            supp->type, supp->templ, pc_or_addr);
   }
-  thr->ignore_interceptors++;  // OHOS_LOCAL
   {
     bool suppressed = OnReport(rep, pc_or_addr != 0);
     if (suppressed) {
@@ -665,7 +660,6 @@ bool OutputReport(ThreadState *thr, const ScopedReport &srep) {
     }
   }
   PrintReport(rep);
-  thr->ignore_interceptors--; // OHOS_LOCAL
   __tsan_on_report(rep);
   ctx->nreported++;
   if (flags()->halt_on_error)
@@ -684,11 +678,6 @@ bool IsFiredSuppression(Context *ctx, ReportType type, StackTrace trace) {
       if (trace.trace[j] == s->pc_or_addr) {
         if (s->supp)
           atomic_fetch_add(&s->supp->hit_count, 1, memory_order_relaxed);
-        // OHOS_LOCAL
-        VPrintf(
-            2,
-            "[Suppression] Fired suppression hit type:%s file:%s pc:0x%zx.\n",
-            s->supp->type, s->supp->templ, s->pc_or_addr);
         return true;
       }
     }

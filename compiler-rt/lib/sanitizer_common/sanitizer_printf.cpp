@@ -54,7 +54,7 @@ static int AppendNumber(char **buff, const char *buff_end, u64 absolute_value,
   uptr num_buffer[kMaxLen];
   int pos = 0;
   do {
-    RAW_CHECK_MSG((uptr)pos < kMaxLen, "AppendNumber buffer overflow");
+    RAW_CHECK_MSG((uptr)pos < kMaxLen, "AppendNumber buffer overflow",);
     num_buffer[pos++] = absolute_value % base;
     absolute_value /= base;
   } while (absolute_value > 0);
@@ -310,16 +310,10 @@ static void NOINLINE SharedPrintfCode(bool append_pid, const char *format,
                            format, args);
 }
 
-static thread_local bool is_in_printf;  // OHOS_LOCAL
-
-bool IsInPrintf() { return is_in_printf; }  // OHOS_LOCAL
-
 void Printf(const char *format, ...) {
   va_list args;
   va_start(args, format);
-  is_in_printf = true;  // OHOS_LOCAL
   SharedPrintfCode(false, format, args);
-  is_in_printf =false;  // OHOS_LOCAL
   va_end(args);
 }
 
@@ -343,7 +337,14 @@ int internal_snprintf(char *buffer, uptr length, const char *format, ...) {
   return needed_length;
 }
 
-void InternalScopedString::append(const char *format, ...) {
+void InternalScopedString::Append(const char *str) {
+  uptr prev_len = length();
+  uptr str_len = internal_strlen(str);
+  buffer_.resize(prev_len + str_len + 1);
+  internal_memcpy(buffer_.data() + prev_len, str, str_len + 1);
+}
+
+void InternalScopedString::AppendF(const char *format, ...) {
   uptr prev_len = length();
 
   while (true) {

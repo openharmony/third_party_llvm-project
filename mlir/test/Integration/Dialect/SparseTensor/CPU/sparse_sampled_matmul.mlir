@@ -1,27 +1,43 @@
-// RUN: mlir-opt %s --sparse-compiler | \
-// RUN: TENSOR0="%mlir_integration_test_dir/data/test.mtx" \
-// RUN: mlir-cpu-runner \
-// RUN:  -e entry -entry-point-result=void  \
-// RUN:  -shared-libs=%mlir_integration_test_dir/libmlir_c_runner_utils%shlibext | \
-// RUN: FileCheck %s
+//--------------------------------------------------------------------------------------------------
+// WHEN CREATING A NEW TEST, PLEASE JUST COPY & PASTE WITHOUT EDITS.
 //
-// Do the same run, but now with SIMDization as well. This should not change the outcome.
+// Set-up that's shared across all tests in this directory. In principle, this
+// config could be moved to lit.local.cfg. However, there are downstream users that
+//  do not use these LIT config files. Hence why this is kept inline.
 //
-// RUN: mlir-opt %s \
-// RUN:   --sparse-compiler="vectorization-strategy=2 vl=4 enable-simd-index32" | \
-// RUN: TENSOR0="%mlir_integration_test_dir/data/test.mtx" \
-// RUN: mlir-cpu-runner \
-// RUN:  -e entry -entry-point-result=void  \
-// RUN:  -shared-libs=%mlir_integration_test_dir/libmlir_c_runner_utils%shlibext | \
-// RUN: FileCheck %s
+// DEFINE: %{sparsifier_opts} = enable-runtime-library=true
+// DEFINE: %{sparsifier_opts_sve} = enable-arm-sve=true %{sparsifier_opts}
+// DEFINE: %{compile} = mlir-opt %s --sparsifier="%{sparsifier_opts}"
+// DEFINE: %{compile_sve} = mlir-opt %s --sparsifier="%{sparsifier_opts_sve}"
+// DEFINE: %{run_libs} = -shared-libs=%mlir_c_runner_utils,%mlir_runner_utils
+// DEFINE: %{run_opts} = -e main -entry-point-result=void
+// DEFINE: %{run} = mlir-cpu-runner %{run_opts} %{run_libs}
+// DEFINE: %{run_sve} = %mcr_aarch64_cmd --march=aarch64 --mattr="+sve" %{run_opts} %{run_libs}
 //
+// DEFINE: %{env} =
+//--------------------------------------------------------------------------------------------------
 
-!Filename = !llvm.ptr<i8>
+// REDEFINE: %{env} = TENSOR0="%mlir_src_dir/test/Integration/data/test.mtx"
+// RUN: %{compile} | env %{env} %{run} | FileCheck %s
+//
+// Do the same run, but now with direct IR generation.
+// REDEFINE: %{sparsifier_opts} = enable-runtime-library=false
+// RUN: %{compile} | env %{env} %{run} | FileCheck %s
+//
+// Do the same run, but now with direct IR generation and vectorization.
+// REDEFINE: %{sparsifier_opts} = enable-runtime-library=false vl=2 reassociate-fp-reductions=true enable-index-optimizations=true
+// RUN: %{compile} | env %{env} %{run} | FileCheck %s
+//
+// Do the same run, but now with direct IR generation and, if available, VLA
+// vectorization.
+// RUN: %if mlir_arm_sve_tests %{ %{compile_sve} | env %{env} %{run_sve} | FileCheck %s %}
+
+!Filename = !llvm.ptr
 
 #SparseMatrix = #sparse_tensor.encoding<{
-  dimLevelType = [ "compressed", "compressed" ],
-  pointerBitWidth = 32,
-  indexBitWidth = 32
+  map = (d0, d1) -> (d0 : compressed, d1 : compressed),
+  posWidth = 32,
+  crdWidth = 32
 }>
 
 #trait_sampled_dense_dense = {
@@ -65,34 +81,34 @@ module {
   //
   // Main driver that reads matrix from file and calls the sparse kernel.
   //
-  func.func @entry() {
+  func.func @main() {
     %d0 = arith.constant 0.0 : f32
     %c0 = arith.constant 0 : index
     %c1 = arith.constant 1 : index
     %c5 = arith.constant 5 : index
     %c10 = arith.constant 10 : index
 
-    // Setup memory for the dense matrices and initialize.
-    %a0 = bufferization.alloc_tensor(%c5, %c10) : tensor<?x?xf32>
-    %b0 = bufferization.alloc_tensor(%c10, %c5) : tensor<?x?xf32>
-    %x0 = bufferization.alloc_tensor(%c5, %c5) : tensor<?x?xf32>
-    %a, %b, %x = scf.for %i = %c0 to %c5 step %c1 iter_args(%a1 = %a0, %b1 = %b0, %x1 = %x0)
-        -> (tensor<?x?xf32>, tensor<?x?xf32>, tensor<?x?xf32>) {
-      %x2 = scf.for %j = %c0 to %c5 step %c1 iter_args(%x3 = %x1) -> (tensor<?x?xf32>) {
-        %x4 = tensor.insert %d0 into %x3[%i, %j] : tensor<?x?xf32>
-        scf.yield %x4 : tensor<?x?xf32>
-      }
+    // Initialize dense matrices.
+    %x = tensor.generate %c5, %c5 {
+    ^bb0(%i : index, %j : index):
+      tensor.yield %d0 : f32
+    } : tensor<?x?xf32>
+
+    %a = tensor.generate %c5, %c10 {
+    ^bb0(%i: index, %j: index):
       %p = arith.addi %i, %c1 : index
       %q = arith.index_cast %p : index to i32
       %d = arith.sitofp %q : i32 to f32
-      %a2, %b2 = scf.for %j = %c0 to %c10 step %c1 iter_args(%a3 = %a1, %b3 = %b1)
-          -> (tensor<?x?xf32>, tensor<?x?xf32>) {
-        %a4 = tensor.insert %d into %a3[%i, %j] : tensor<?x?xf32>
-        %b4 = tensor.insert %d into %b3[%j, %i] : tensor<?x?xf32>
-        scf.yield %a4, %b4 : tensor<?x?xf32>, tensor<?x?xf32>
-      }
-      scf.yield %a2, %b2, %x2 : tensor<?x?xf32>, tensor<?x?xf32>, tensor<?x?xf32>
-    }
+      tensor.yield %d : f32
+    } : tensor<?x?xf32>
+
+    %b = tensor.generate %c10, %c5 {
+    ^bb0(%i: index, %j: index):
+      %p = arith.addi %j, %c1 : index
+      %q = arith.index_cast %p : index to i32
+      %d = arith.sitofp %q : i32 to f32
+      tensor.yield %d : f32
+    } : tensor<?x?xf32>
 
     // Read the sparse matrix from file, construct sparse storage.
     %fileName = call @getTensorFilename(%c0) : (index) -> (!Filename)
@@ -118,6 +134,9 @@ module {
 
     // Release the resources.
     bufferization.dealloc_tensor %s : tensor<?x?xf32, #SparseMatrix>
+    bufferization.dealloc_tensor %0 : tensor<?x?xf32>
+    bufferization.dealloc_tensor %a : tensor<?x?xf32>
+    bufferization.dealloc_tensor %b : tensor<?x?xf32>
 
     return
   }

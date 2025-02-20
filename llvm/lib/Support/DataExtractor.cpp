@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Support/DataExtractor.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LEB128.h"
@@ -137,24 +138,20 @@ uint64_t DataExtractor::getUnsigned(uint64_t *offset_ptr, uint32_t byte_size,
   llvm_unreachable("getUnsigned unhandled case!");
 }
 
-// OHOS_LOCAL begin
-
-int64_t DataExtractor::getSigned(uint64_t *offset_ptr, uint32_t byte_size,
-                                 llvm::Error *Err) const {
+int64_t
+DataExtractor::getSigned(uint64_t *offset_ptr, uint32_t byte_size) const {
   switch (byte_size) {
   case 1:
-    return (int8_t)getU8(offset_ptr, Err);
+    return (int8_t)getU8(offset_ptr);
   case 2:
-    return (int16_t)getU16(offset_ptr, Err);
+    return (int16_t)getU16(offset_ptr);
   case 4:
-    return (int32_t)getU32(offset_ptr, Err);
+    return (int32_t)getU32(offset_ptr);
   case 8:
-    return (int64_t)getU64(offset_ptr, Err);
+    return (int64_t)getU64(offset_ptr);
   }
   llvm_unreachable("getSigned unhandled case!");
 }
-
-// OHOS_LOCAL end
 
 StringRef DataExtractor::getCStrRef(uint64_t *OffsetPtr, Error *Err) const {
   ErrorAsOutParameter ErrAsOut(Err);
@@ -205,7 +202,7 @@ static T getLEB128(StringRef Data, uint64_t *OffsetPtr, Error *Err,
   if (isError(Err))
     return T();
 
-  const char *error;
+  const char *error = nullptr;
   unsigned bytes_read;
   T result =
       Decoder(Bytes.data() + *OffsetPtr, &bytes_read, Bytes.end(), &error);

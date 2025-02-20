@@ -1,4 +1,5 @@
 // RUN: %clang_cc1 %s -fsyntax-only -Wno-strict-prototypes -verify -pedantic -std=c11
+// RUN: %clang_cc1 %s -fsyntax-only -Wno-strict-prototypes -verify -pedantic -std=c11 -fexperimental-new-constant-interpreter
 
 __auto_type a = 5; // expected-warning {{'__auto_type' is a GNU extension}}
 __extension__ __auto_type a1 = 5;
@@ -37,7 +38,7 @@ void Issue53652(void) {
 
   // GCC does not accept this either, for the same reason.
   _Atomic(__auto_type) aat2 = a; // expected-error {{'__auto_type' not allowed here}} \
-                                 // expected-warning {{type specifier missing, defaults to 'int'}}
+                                 // expected-error {{type specifier missing, defaults to 'int'}}
 
   // Ensure the types are what we expect them to be, regardless of order we
   // pass the types.

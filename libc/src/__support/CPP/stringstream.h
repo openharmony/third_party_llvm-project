@@ -6,23 +6,24 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_LIBC_SRC_SUPPORT_CPP_STRINGSTREAM_H
-#define LLVM_LIBC_SRC_SUPPORT_CPP_STRINGSTREAM_H
+#ifndef LLVM_LIBC_SRC___SUPPORT_CPP_STRINGSTREAM_H
+#define LLVM_LIBC_SRC___SUPPORT_CPP_STRINGSTREAM_H
 
-#include "ArrayRef.h"
-#include "StringView.h"
-#include "TypeTraits.h"
+#include "span.h"
+#include "src/__support/macros/config.h"
+#include "string_view.h"
+#include "type_traits.h"
 
 #include "src/__support/integer_to_string.h"
 
-namespace __llvm_libc {
+namespace LIBC_NAMESPACE_DECL {
 namespace cpp {
 
 // This class is to be used to write simple strings into a user provided buffer
 // without any dynamic memory allocation. There is no requirement to mimic the
 // C++ standard library class std::stringstream.
 class StringStream {
-  MutableArrayRef<char> data;
+  span<char> data;
   size_t write_ptr = 0; // The current write pointer
   bool err = false;     // If an error occurs while writing
 
@@ -41,32 +42,32 @@ public:
   static constexpr char ENDS = '\0';
 
   // Create a string stream which will write into |buf|.
-  constexpr StringStream(const MutableArrayRef<char> &buf) : data(buf) {}
+  constexpr StringStream(const span<char> &buf) : data(buf) {}
 
-  // Return a StringView to the current characters in the stream. If a
+  // Return a string_view to the current characters in the stream. If a
   // null terminator was not explicitly written, then the return value
-  // will not include one. In order to produce a StringView to a null
+  // will not include one. In order to produce a string_view to a null
   // terminated string, write ENDS explicitly.
-  StringView str() const { return StringView(data.data(), write_ptr); }
+  string_view str() const { return string_view(data.data(), write_ptr); }
 
   // Write the characters from |str| to the stream.
-  StringStream &operator<<(StringView str) {
+  StringStream &operator<<(string_view str) {
     write(str.data(), str.size());
     return *this;
   }
 
   // Write the |val| as string.
-  template <typename T, EnableIfType<IsIntegral<T>::Value, int> = 0>
+  template <typename T, enable_if_t<is_integral_v<T>, int> = 0>
   StringStream &operator<<(T val) {
-    const auto int_to_str = integer_to_string(val);
-    return operator<<(int_to_str.str());
+    const IntegerToString<T> buffer(val);
+    return *this << buffer.view();
   }
 
-  template <typename T, EnableIfType<IsFloatingPointType<T>::Value, int> = 0>
-  StringStream &operator<<(T val) {
+  template <typename T, enable_if_t<is_floating_point_v<T>, int> = 0>
+  StringStream &operator<<(T) {
     // If this specialization gets activated, then the static_assert will
     // trigger a compile error about missing floating point number support.
-    static_assert(!IsFloatingPointType<T>::Value,
+    static_assert(!is_floating_point_v<T>,
                   "Writing floating point numbers is not yet supported");
     return *this;
   }
@@ -74,7 +75,7 @@ public:
   // Write a null-terminated string. The terminating null character is not
   // written to allow stremaing to continue.
   StringStream &operator<<(const char *str) {
-    return operator<<(StringView(str));
+    return operator<<(string_view(str));
   }
 
   // Write a single character.
@@ -85,9 +86,11 @@ public:
 
   // Return true if any write operation(s) failed due to insufficient size.
   bool overflow() const { return err; }
+
+  size_t bufsize() const { return data.size(); }
 };
 
 } // namespace cpp
-} // namespace __llvm_libc
+} // namespace LIBC_NAMESPACE_DECL
 
-#endif // LLVM_LIBC_SRC_SUPPORT_CPP_STRINGSTREAM_H
+#endif // LLVM_LIBC_SRC___SUPPORT_CPP_STRINGSTREAM_H

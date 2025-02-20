@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cstdlib>
+#include <optional>
 
 #include "EmulateInstructionLoongArch.h"
 #include "Plugins/Process/Utility/InstructionUtils.h"
@@ -63,7 +64,7 @@ EmulateInstructionLoongArch::GetOpcodeForInstruction(uint32_t inst) {
        "bgeu rj, rd, offs16"},
       {0x00000000, 0x00000000, &EmulateInstructionLoongArch::EmulateNonJMP,
        "NonJMP"}};
-  static const size_t num_loongarch_opcodes = llvm::array_lengthof(g_opcodes);
+  static const size_t num_loongarch_opcodes = std::size(g_opcodes);
 
   for (size_t i = 0; i < num_loongarch_opcodes; ++i)
     if ((g_opcodes[i].mask & inst) == g_opcodes[i].value)
@@ -143,9 +144,9 @@ bool EmulateInstructionLoongArch::WritePC(lldb::addr_t pc) {
                                LLDB_REGNUM_GENERIC_PC, pc);
 }
 
-bool EmulateInstructionLoongArch::GetRegisterInfo(lldb::RegisterKind reg_kind,
-                                                  uint32_t reg_index,
-                                                  RegisterInfo &reg_info) {
+std::optional<RegisterInfo>
+EmulateInstructionLoongArch::GetRegisterInfo(lldb::RegisterKind reg_kind,
+                                             uint32_t reg_index) {
   if (reg_kind == eRegisterKindGeneric) {
     switch (reg_index) {
     case LLDB_REGNUM_GENERIC_PC:
@@ -177,10 +178,8 @@ bool EmulateInstructionLoongArch::GetRegisterInfo(lldb::RegisterKind reg_kind,
       RegisterInfoPOSIX_loongarch64::GetRegisterInfoCount(m_arch);
 
   if (reg_index >= length || reg_kind != eRegisterKindLLDB)
-    return false;
-
-  reg_info = array[reg_index];
-  return true;
+    return {};
+  return array[reg_index];
 }
 
 bool EmulateInstructionLoongArch::SetTargetTriple(const ArchSpec &arch) {
@@ -188,7 +187,7 @@ bool EmulateInstructionLoongArch::SetTargetTriple(const ArchSpec &arch) {
 }
 
 bool EmulateInstructionLoongArch::TestEmulation(
-    Stream *out_stream, ArchSpec &arch, OptionValueDictionary *test_data) {
+    Stream &out_stream, ArchSpec &arch, OptionValueDictionary *test_data) {
   return false;
 }
 

@@ -243,7 +243,7 @@ struct PositiveUninitializedBaseOrdering : public NegativeAggregateType,
 };
 
 // We shouldn't need to initialize anything because PositiveUninitializedBase
-// has a user-defined constructor.
+// has a user-provided constructor.
 struct NegativeUninitializedBase : public PositiveUninitializedBase {
   NegativeUninitializedBase() {}
 };
@@ -372,8 +372,7 @@ template <typename T>
 class PositiveSelfInitialization : NegativeAggregateType
 {
   PositiveSelfInitialization() : PositiveSelfInitialization() {}
-  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: constructor does not initialize these bases: NegativeAggregateType
-  // CHECK-FIXES: PositiveSelfInitialization() : NegativeAggregateType(), PositiveSelfInitialization() {}
+  // This will be detected by -Wdelegating-ctor-cycles and there is no proper way to fix this
 };
 
 class PositiveIndirectMember {
@@ -464,12 +463,6 @@ struct NegativeIncompleteArrayMember {
   char e[];
 };
 
-template <typename T> class NoCrash {
-  class B : public NoCrash {
-    template <typename U> B(U u) {}
-  };
-};
-
 struct PositiveBitfieldMember {
   PositiveBitfieldMember() {}
   // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: constructor does not initialize these fields: F
@@ -552,3 +545,69 @@ union U2 {
   int A;
   // CHECK-FIXES-NOT: int A{};
 };
+
+struct S1 {
+  S1() {}
+  union {
+    int a = 0;
+    int b;
+  };
+};
+
+struct S2 {
+  S2() : a{} {}
+  union {
+    int a;
+    int b;
+  };
+};
+
+struct S3 {
+  S3() {}
+  // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: constructor does not initialize these fields: A [cppcoreguidelines-pro-type-member-init]
+  int A;
+  // CHECK-FIXES: int A{};
+  union {
+    int B;
+    int C = 0;
+  };
+};
+
+// Ignore issues from delegate constructors
+namespace PR37250 {
+  template <typename T>
+  struct A {
+    A() : A(42) {}
+    explicit A(int value) : value_(value) {}
+    int value_;
+  };
+
+  struct B {
+    B() : B(42) {}
+    explicit B(int value) : value_(value) {}
+    int value_;
+  };
+
+  template <typename T>
+  struct C {
+    C() : C(T()) {}
+    explicit C(T value) : value_(value) {}
+    T value_;
+  };
+
+  struct V {
+    unsigned size() const;
+  };
+
+  struct S {
+    unsigned size_;
+
+    S(unsigned size) : size_{size} {}
+
+    template<typename U>
+    S(const U& u) : S(u.size()) {}
+  };
+
+  const V v;
+  const S s{v};
+}

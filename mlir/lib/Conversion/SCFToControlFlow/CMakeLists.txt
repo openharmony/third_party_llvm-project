@@ -11,8 +11,9 @@ add_mlir_conversion_library(MLIRSCFToControlFlow
   Core
 
   LINK_LIBS PUBLIC
-  MLIRArithmeticDialect
+  MLIRArithDialect
   MLIRControlFlowDialect
   MLIRSCFDialect
+  MLIRSCFTransforms
   MLIRTransforms
   )

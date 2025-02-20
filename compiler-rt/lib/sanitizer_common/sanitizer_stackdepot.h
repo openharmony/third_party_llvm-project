@@ -31,8 +31,7 @@ struct StackDepotHandle {
   void inc_use_count_unsafe();
 };
 
-const int kStackDepotMaxUseCount =
-    1U << ((SANITIZER_ANDROID || SANITIZER_OHOS) ? 16 : 20);
+const int kStackDepotMaxUseCount = 1U << (SANITIZER_ANDROID ? 16 : 20);
 
 StackDepotStats StackDepotGetStats();
 u32 StackDepotPut(StackTrace stack);
@@ -40,8 +39,8 @@ StackDepotHandle StackDepotPut_WithHandle(StackTrace stack);
 // Retrieves a stored stack trace by the id.
 StackTrace StackDepotGet(u32 id);
 
-void StackDepotLockAll();
-void StackDepotUnlockAll();
+void StackDepotLockBeforeFork();
+void StackDepotUnlockAfterFork(bool fork_child);
 void StackDepotPrintAll();
 void StackDepotStopBackgroundThread();
 

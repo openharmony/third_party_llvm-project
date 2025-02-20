@@ -61,12 +61,16 @@ std::string Linux::getMultiarchTriple(const Driver &D,
   case llvm::Triple::thumb:
     if (IsAndroid)
       return "arm-linux-androideabi";
-    if (TargetEnvironment == llvm::Triple::GNUEABIHF)
+    if (TargetEnvironment == llvm::Triple::GNUEABIHF ||
+        TargetEnvironment == llvm::Triple::MuslEABIHF ||
+        TargetEnvironment == llvm::Triple::EABIHF)
       return "arm-linux-gnueabihf";
     return "arm-linux-gnueabi";
   case llvm::Triple::armeb:
   case llvm::Triple::thumbeb:
-    if (TargetEnvironment == llvm::Triple::GNUEABIHF)
+    if (TargetEnvironment == llvm::Triple::GNUEABIHF ||
+        TargetEnvironment == llvm::Triple::MuslEABIHF ||
+        TargetEnvironment == llvm::Triple::EABIHF)
       return "armeb-linux-gnueabihf";
     return "armeb-linux-gnueabi";
   case llvm::Triple::x86:
@@ -82,6 +86,9 @@ std::string Linux::getMultiarchTriple(const Driver &D,
   case llvm::Triple::aarch64:
     if (IsAndroid)
       return "aarch64-linux-android";
+    if (hasEffectiveTriple() &&
+        getEffectiveTriple().getEnvironment() == llvm::Triple::PAuthTest)
+      return "aarch64-linux-pauthtest";
     return "aarch64-linux-gnu";
   case llvm::Triple::aarch64_be:
     return "aarch64_be-linux-gnu";
@@ -125,8 +132,6 @@ std::string Linux::getMultiarchTriple(const Driver &D,
   case llvm::Triple::mips:
     return IsMipsR6 ? "mipsisa32r6-linux-gnu" : "mips-linux-gnu";
   case llvm::Triple::mipsel:
-    if (IsAndroid)
-      return "mipsel-linux-android";
     return IsMipsR6 ? "mipsisa32r6el-linux-gnu" : "mipsel-linux-gnu";
   case llvm::Triple::mips64: {
     std::string MT = std::string(IsMipsR6 ? "mipsisa64r6" : "mips64") +
@@ -138,8 +143,6 @@ std::string Linux::getMultiarchTriple(const Driver &D,
     break;
   }
   case llvm::Triple::mips64el: {
-    if (IsAndroid)
-      return "mips64el-linux-android";
     std::string MT = std::string(IsMipsR6 ? "mipsisa64r6el" : "mips64el") +
                      "-linux-" + (IsMipsN32Abi ? "gnuabin32" : "gnuabi64");
     if (D.getVFS().exists(concat(SysRoot, "/lib", MT)))
@@ -159,6 +162,8 @@ std::string Linux::getMultiarchTriple(const Driver &D,
   case llvm::Triple::ppc64le:
     return "powerpc64le-linux-gnu";
   case llvm::Triple::riscv64:
+    if (IsAndroid)
+      return "riscv64-linux-android";
     return "riscv64-linux-gnu";
   case llvm::Triple::sparc:
     return "sparc-linux-gnu";
@@ -215,7 +220,7 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
     : Generic_ELF(D, Triple, Args) {
   GCCInstallation.init(Triple, Args);
   Multilibs = GCCInstallation.getMultilibs();
-  SelectedMultilib = GCCInstallation.getMultilib();
+  SelectedMultilibs.assign({GCCInstallation.getMultilib()});
   llvm::Triple::ArchType Arch = Triple.getArch();
   std::string SysRoot = computeSysRoot();
   ToolChain::path_list &PPaths = getProgramPaths();
@@ -235,11 +240,19 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
     ExtraOpts.push_back("relro");
   }
 
-  // Android ARM/AArch64 use max-page-size=4096 to reduce VMA usage. Note, lld
-  // from 11 onwards default max-page-size to 65536 for both ARM and AArch64.
-  if ((Triple.isARM() || Triple.isAArch64()) && Triple.isAndroid()) {
-    ExtraOpts.push_back("-z");
-    ExtraOpts.push_back("max-page-size=4096");
+  // Note, lld from 11 onwards default max-page-size to 65536 for both ARM and
+  // AArch64.
+  if (Triple.isAndroid()) {
+    if (Triple.isARM()) {
+      // Android ARM uses max-page-size=4096 to reduce VMA usage.
+      ExtraOpts.push_back("-z");
+      ExtraOpts.push_back("max-page-size=4096");
+    } else if (Triple.isAArch64() || Triple.getArch() == llvm::Triple::x86_64) {
+      // Android AArch64 uses max-page-size=16384 to support 4k/16k page sizes.
+      // Android emulates a 16k page size for app testing on x86_64 machines.
+      ExtraOpts.push_back("-z");
+      ExtraOpts.push_back("max-page-size=16384");
+    }
   }
 
   if (GCCInstallation.getParentLibPath().contains("opt/rh/"))
@@ -259,8 +272,8 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
   const bool IsRISCV = Triple.isRISCV();
   const bool IsCSKY = Triple.isCSKY();
 
-  if (IsCSKY)
-    SysRoot = SysRoot + SelectedMultilib.osSuffix();
+  if (IsCSKY && !SelectedMultilibs.empty())
+    SysRoot = SysRoot + SelectedMultilibs.back().osSuffix();
 
   if ((IsMips || IsCSKY) && !SysRoot.empty())
     ExtraOpts.push_back("--sysroot=" + SysRoot);
@@ -272,24 +285,17 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
   // Android loader does not support .gnu.hash until API 23.
   // Hexagon linker/loader does not support .gnu.hash
   if (!IsMips && !IsHexagon) {
-    if (Distro.IsRedhat() || Distro.IsOpenSUSE() || Distro.IsAlpineLinux() ||
-        (Distro.IsUbuntu() && Distro >= Distro::UbuntuMaverick) ||
-        (IsAndroid && !Triple.isAndroidVersionLT(23)))
-      ExtraOpts.push_back("--hash-style=gnu");
-
-    if (Distro.IsDebian() || Distro.IsOpenSUSE() ||
-        Distro == Distro::UbuntuLucid || Distro == Distro::UbuntuJaunty ||
-        Distro == Distro::UbuntuKarmic ||
+    if (Distro.IsOpenSUSE() || Distro == Distro::UbuntuLucid ||
+        Distro == Distro::UbuntuJaunty || Distro == Distro::UbuntuKarmic ||
         (IsAndroid && Triple.isAndroidVersionLT(23)))
       ExtraOpts.push_back("--hash-style=both");
+    else
+      ExtraOpts.push_back("--hash-style=gnu");
   }
 
 #ifdef ENABLE_LINKER_BUILD_ID
   ExtraOpts.push_back("--build-id");
 #endif
-
-  if (IsAndroid || Distro.IsOpenSUSE())
-    ExtraOpts.push_back("--enable-new-dtags");
 
   // The selection of paths to try here is designed to match the patterns which
   // the GCC driver itself uses, as this is part of the GCC-compatible driver.
@@ -341,13 +347,6 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
 
   Generic_GCC::AddMultiarchPaths(D, SysRoot, OSLibDir, Paths);
 
-  // The deprecated -DLLVM_ENABLE_PROJECTS=libcxx configuration installs
-  // libc++.so in D.Dir+"/../lib/". Detect this path.
-  // TODO Remove once LLVM_ENABLE_PROJECTS=libcxx is unsupported.
-  if (StringRef(D.Dir).startswith(SysRoot) &&
-      D.getVFS().exists(D.Dir + "/../lib/libc++.so"))
-    addPathIfExists(D, D.Dir + "/../lib", Paths);
-
   addPathIfExists(D, concat(SysRoot, "/lib"), Paths);
   addPathIfExists(D, concat(SysRoot, "/usr/lib"), Paths);
 }
@@ -389,7 +388,7 @@ std::string Linux::computeSysRoot() const {
   if (getTriple().isAndroid()) {
     // Android toolchains typically include a sysroot at ../sysroot relative to
     // the clang binary.
-    const StringRef ClangDir = getDriver().getInstalledDir();
+    const StringRef ClangDir = getDriver().Dir;
     std::string AndroidSysRootPath = (ClangDir + "/../sysroot").str();
     if (getVFS().exists(AndroidSysRootPath))
       return AndroidSysRootPath;
@@ -442,9 +441,17 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
 
   const Distro Distro(getDriver().getVFS(), Triple);
 
-  if (Triple.isAndroid())
+  if (Triple.isAndroid()) {
+    if (getSanitizerArgs(Args).needsHwasanRt() &&
+        !Triple.isAndroidVersionLT(34) && Triple.isArch64Bit()) {
+      // On Android 14 and newer, there is a special linker_hwasan64 that
+      // allows to run HWASan binaries on non-HWASan system images. This
+      // is also available on HWASan system images, so we can just always
+      // use that instead.
+      return "/system/bin/linker_hwasan64";
+    }
     return Triple.isArch64Bit() ? "/system/bin/linker64" : "/system/bin/linker";
-
+  }
   if (Triple.isMusl()) {
     std::string ArchName;
     bool IsArm = false;
@@ -501,6 +508,7 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
   case llvm::Triple::thumbeb: {
     const bool HF =
         Triple.getEnvironment() == llvm::Triple::GNUEABIHF ||
+        Triple.getEnvironment() == llvm::Triple::GNUEABIHFT64 ||
         tools::arm::getARMFloatABI(*this, Args) == tools::arm::FloatABI::Hard;
 
     LibDir = "lib";
@@ -564,16 +572,12 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
     Loader =
         (tools::ppc::hasPPCAbiArg(Args, "elfv1")) ? "ld64.so.1" : "ld64.so.2";
     break;
-  case llvm::Triple::riscv32: {
-    StringRef ABIName = tools::riscv::getRISCVABI(Args, Triple);
-    LibDir = "lib";
-    Loader = ("ld-linux-riscv32-" + ABIName + ".so.1").str();
-    break;
-  }
+  case llvm::Triple::riscv32:
   case llvm::Triple::riscv64: {
+    StringRef ArchName = llvm::Triple::getArchTypeName(Arch);
     StringRef ABIName = tools::riscv::getRISCVABI(Args, Triple);
     LibDir = "lib";
-    Loader = ("ld-linux-riscv64-" + ABIName + ".so.1").str();
+    Loader = ("ld-linux-" + ArchName + "-" + ABIName + ".so.1").str();
     break;
   }
   case llvm::Triple::sparc:
@@ -721,19 +725,23 @@ void Linux::addLibStdCxxIncludePaths(const llvm::opt::ArgList &DriverArgs,
 
 void Linux::AddCudaIncludeArgs(const ArgList &DriverArgs,
                                ArgStringList &CC1Args) const {
-  CudaInstallation.AddCudaIncludeArgs(DriverArgs, CC1Args);
+  CudaInstallation->AddCudaIncludeArgs(DriverArgs, CC1Args);
 }
 
 void Linux::AddHIPIncludeArgs(const ArgList &DriverArgs,
                               ArgStringList &CC1Args) const {
-  RocmInstallation.AddHIPIncludeArgs(DriverArgs, CC1Args);
+  RocmInstallation->AddHIPIncludeArgs(DriverArgs, CC1Args);
 }
 
 void Linux::AddHIPRuntimeLibArgs(const ArgList &Args,
                                  ArgStringList &CmdArgs) const {
-  CmdArgs.append(
-      {Args.MakeArgString(StringRef("-L") + RocmInstallation.getLibPath()),
-       "-rpath", Args.MakeArgString(RocmInstallation.getLibPath())});
+  CmdArgs.push_back(
+      Args.MakeArgString(StringRef("-L") + RocmInstallation->getLibPath()));
+
+  if (Args.hasFlag(options::OPT_frtlib_add_rpath,
+                   options::OPT_fno_rtlib_add_rpath, false))
+    CmdArgs.append(
+        {"-rpath", Args.MakeArgString(RocmInstallation->getLibPath())});
 
   CmdArgs.push_back("-lamdhip64");
 }
@@ -749,11 +757,8 @@ void Linux::AddIAMCUIncludeArgs(const ArgList &DriverArgs,
 }
 
 bool Linux::isPIEDefault(const llvm::opt::ArgList &Args) const {
-  // TODO: Remove the special treatment for Flang once its frontend driver can
-  // generate position independent code.
-  return !getDriver().IsFlangMode() &&
-         (CLANG_DEFAULT_PIE_ON_LINUX || getTriple().isAndroid() ||
-          getTriple().isMusl() || getSanitizerArgs(Args).requiresPIE());
+  return CLANG_DEFAULT_PIE_ON_LINUX || getTriple().isAndroid() ||
+         getTriple().isMusl() || getSanitizerArgs(Args).requiresPIE();
 }
 
 bool Linux::IsAArch64OutlineAtomicsDefault(const ArgList &Args) const {
@@ -802,25 +807,31 @@ SanitizerMask Linux::getSupportedSanitizers() const {
   Res |= SanitizerKind::Memory;
   Res |= SanitizerKind::Vptr;
   Res |= SanitizerKind::SafeStack;
-  if (IsX86_64 || IsMIPS64 || IsAArch64)
+  if (IsX86_64 || IsMIPS64 || IsAArch64 || IsLoongArch64)
     Res |= SanitizerKind::DataFlow;
   if (IsX86_64 || IsMIPS64 || IsAArch64 || IsX86 || IsArmArch || IsPowerPC64 ||
       IsRISCV64 || IsSystemZ || IsHexagon || IsLoongArch64)
     Res |= SanitizerKind::Leak;
   if (IsX86_64 || IsMIPS64 || IsAArch64 || IsPowerPC64 || IsSystemZ ||
-      IsLoongArch64)
+      IsLoongArch64 || IsRISCV64)
     Res |= SanitizerKind::Thread;
-  if (IsX86_64)
+  if (IsX86_64 || IsSystemZ || IsPowerPC64)
     Res |= SanitizerKind::KernelMemory;
-  if (IsX86 || IsX86_64)
-    Res |= SanitizerKind::Function;
   if (IsX86_64 || IsMIPS64 || IsAArch64 || IsX86 || IsMIPS || IsArmArch ||
-      IsPowerPC64 || IsHexagon || IsLoongArch64)
+      IsPowerPC64 || IsHexagon || IsLoongArch64 || IsRISCV64)
     Res |= SanitizerKind::Scudo;
-  if (IsX86_64 || IsAArch64) {
+  if (IsX86_64 || IsAArch64 || IsRISCV64) {
     Res |= SanitizerKind::HWAddress;
+  }
+  if (IsX86_64 || IsAArch64) {
     Res |= SanitizerKind::KernelHWAddress;
   }
+  if (IsX86_64)
+    Res |= SanitizerKind::NumericalStability;
+
+  // Work around "Cannot represent a difference across sections".
+  if (getTriple().getArch() == llvm::Triple::ppc64)
+    Res &= ~SanitizerKind::Function;
   return Res;
 }
 
@@ -834,26 +845,13 @@ void Linux::addProfileRTLibs(const llvm::opt::ArgList &Args,
   ToolChain::addProfileRTLibs(Args, CmdArgs);
 }
 
-llvm::DenormalMode
-Linux::getDefaultDenormalModeForType(const llvm::opt::ArgList &DriverArgs,
-                                     const JobAction &JA,
-                                     const llvm::fltSemantics *FPType) const {
-  switch (getTriple().getArch()) {
-  case llvm::Triple::x86:
-  case llvm::Triple::x86_64: {
-    std::string Unused;
-    // DAZ and FTZ are turned on in crtfastmath.o
-    if (!DriverArgs.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles) &&
-        isFastMathRuntimeAvailable(DriverArgs, Unused))
-      return llvm::DenormalMode::getPreserveSign();
-    return llvm::DenormalMode::getIEEE();
-  }
-  default:
-    return llvm::DenormalMode::getIEEE();
-  }
-}
-
 void Linux::addExtraOpts(llvm::opt::ArgStringList &CmdArgs) const {
   for (const auto &Opt : ExtraOpts)
     CmdArgs.push_back(Opt.c_str());
+}
+
+const char *Linux::getDefaultLinker() const {
+  if (getTriple().isAndroid())
+    return "ld.lld";
+  return Generic_ELF::getDefaultLinker();
 }

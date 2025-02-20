@@ -37,10 +37,6 @@ static void CommonInit() {
 static void UbsanDie() {
   if (common_flags()->print_module_map >= 1)
     DumpProcessMap();
-
-  // OHOS_LOCAL
-  // a mark for DFX to identify ubsan log and synchronize the log file to faultlog folder
-  Report("End Ubsan report (UbsanDie)\n");
 }
 
 static void CommonStandaloneInit() {
@@ -50,7 +46,6 @@ static void CommonStandaloneInit() {
   __sanitizer::InitializePlatformEarly();
   __sanitizer_set_report_path(common_flags()->log_path);
   AndroidLogInit();
-  OhosLogInit(); // OHOS_LOCAL
   InitializeCoverage(common_flags()->coverage, common_flags()->coverage_dir);
   CommonInit();
 

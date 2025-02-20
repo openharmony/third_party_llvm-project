@@ -15,7 +15,6 @@
 #include "lldb/Host/LockFile.h"
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
-#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/FileUtilities.h"
 
@@ -130,43 +129,14 @@ Status CreateHostSysRootModuleLink(const FileSpec &root_dir_spec,
                                    const FileSpec &platform_module_spec,
                                    const FileSpec &local_module_spec,
                                    bool delete_existing) {
-  Log *log = GetLog(LLDBLog::Modules);
   const auto sysroot_module_path_spec =
       JoinPath(JoinPath(root_dir_spec, hostname),
                platform_module_spec.GetPath().c_str());
-
   if (FileSystem::Instance().Exists(sysroot_module_path_spec)) {
-    // OHOS_LOCAL begin
-    if (FileSystem::Instance().Exists(local_module_spec)) {
-      UUID sysroot_module_sp_uuid = (std::make_shared<Module>(ModuleSpec(sysroot_module_path_spec)))->GetUUID();
-      UUID module_spec_uuid = (std::make_shared<Module>(ModuleSpec(local_module_spec)))->GetUUID();
-      if (sysroot_module_sp_uuid.IsValid() && (sysroot_module_sp_uuid == module_spec_uuid)) {
-        delete_existing = false;
-      }
-      LLDB_LOGF(log, "CreateHostSysRootModuleLink delete_existing(%i)", delete_existing);
-    }
-    // OHOS_LOCAL end
     if (!delete_existing)
       return Status();
 
     DecrementRefExistingModule(root_dir_spec, sysroot_module_path_spec);
-  }
-
-  // sysroot_module_path_spec might still exist.
-  // It means that module UUID is not valid.
-  if (FileSystem::Instance().Exists(sysroot_module_path_spec)) {
-    auto module_sp =
-        std::make_shared<Module>(ModuleSpec(sysroot_module_path_spec));
-    UUID module_uuid = module_sp->GetUUID();
-
-    if (!module_uuid.IsValid()) {
-      LLDB_LOGF(log, "Try CreateHostSysRootModuleLink but uuid is invalid %s",
-                module_uuid.GetAsString().c_str());
-      return Status();
-    }
-
-    LLDB_LOGF(log, "CreateHostSysRootModuleLink with uuid %s",
-              module_uuid.GetAsString().c_str());
   }
 
   const auto error = MakeDirectory(
@@ -245,16 +215,13 @@ Status ModuleCache::Put(const FileSpec &root_dir_spec, const char *hostname,
 Status ModuleCache::Get(const FileSpec &root_dir_spec, const char *hostname,
                         const ModuleSpec &module_spec,
                         ModuleSP &cached_module_sp, bool *did_create_ptr) {
-  {
-    std::lock_guard<std::recursive_mutex> lock(m_cache_mutex);
-    const auto find_it =
-        m_loaded_modules.find(module_spec.GetUUID().GetAsString());
-    if (find_it != m_loaded_modules.end()) {
-      cached_module_sp = (*find_it).second.lock();
-      if (cached_module_sp)
-        return Status();
-      m_loaded_modules.erase(find_it);
-    }
+  const auto find_it =
+      m_loaded_modules.find(module_spec.GetUUID().GetAsString());
+  if (find_it != m_loaded_modules.end()) {
+    cached_module_sp = (*find_it).second.lock();
+    if (cached_module_sp)
+      return Status();
+    m_loaded_modules.erase(find_it);
   }
 
   const auto module_spec_dir =
@@ -293,7 +260,6 @@ Status ModuleCache::Get(const FileSpec &root_dir_spec, const char *hostname,
   if (FileSystem::Instance().Exists(symfile_spec))
     cached_module_sp->SetSymbolFileFileSpec(symfile_spec);
 
-  std::lock_guard<std::recursive_mutex> lock(m_cache_mutex);
   m_loaded_modules.insert(
       std::make_pair(module_spec.GetUUID().GetAsString(), cached_module_sp));
 
@@ -307,7 +273,6 @@ Status ModuleCache::GetAndPut(const FileSpec &root_dir_spec,
                               const SymfileDownloader &symfile_downloader,
                               lldb::ModuleSP &cached_module_sp,
                               bool *did_create_ptr) {
-  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_MODULES);    // OHOS_LOCAL
   const auto module_spec_dir =
       GetModuleDirectory(root_dir_spec, module_spec.GetUUID());
   auto error = MakeDirectory(module_spec_dir);

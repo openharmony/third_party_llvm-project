@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "src/__support/threads/thread.h"
-#include "utils/IntegrationTest/test.h"
+#include "test/IntegrationTest/test.h"
 
 static constexpr int INIT_VAL = 100;
 static constexpr int UPDATE_VAL = 123;
@@ -24,18 +24,18 @@ int func(void *) {
 void thread_local_test() {
   int retval;
 
-  __llvm_libc::Thread th1;
+  LIBC_NAMESPACE::Thread th1;
   th1.run(func, nullptr, nullptr, 0);
   th1.join(&retval);
   ASSERT_EQ(retval, INIT_VAL);
 
-  __llvm_libc::Thread th2;
+  LIBC_NAMESPACE::Thread th2;
   th2.run(func, nullptr, nullptr, 0);
   th2.join(&retval);
   ASSERT_EQ(retval, INIT_VAL);
 }
 
-int main() {
+TEST_MAIN() {
   // From the main thread, we will update the main thread's tlval.
   // This should not affect the child thread's tlval;
   ASSERT_EQ(tlval, INIT_VAL);

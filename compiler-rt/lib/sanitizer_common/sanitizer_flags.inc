@@ -19,12 +19,6 @@
 // Default value must be a compile-time constant.
 // Description must be a string literal.
 
-// OHOS_LOCAL begin
-COMMON_FLAG(
-    bool, check_log_path_on_init, true,
-    "If set, log_path will be checked during initialization.")
-// OHOS_LOCAL end
-
 COMMON_FLAG(
     bool, symbolize, true,
     "If set, use the online symbolizer from common sanitizer runtime to turn "
@@ -68,7 +62,7 @@ COMMON_FLAG(
 COMMON_FLAG(const char *, log_suffix, nullptr,
             "String to append to log file name, e.g. \".txt\".")
 COMMON_FLAG(
-    bool, log_to_syslog, (bool)SANITIZER_ANDROID || (bool)SANITIZER_OHOS || (bool)SANITIZER_APPLE,
+    bool, log_to_syslog, (bool)SANITIZER_ANDROID || (bool)SANITIZER_APPLE,
     "Write all sanitizer output to syslog in addition to other means of "
     "logging.")
 COMMON_FLAG(
@@ -248,13 +242,13 @@ COMMON_FLAG(bool, intercept_stat, true,
 COMMON_FLAG(bool, intercept_send, true,
             "If set, uses custom wrappers for send* functions "
             "to find more errors.")
-COMMON_FLAG(bool, decorate_proc_maps, (bool)SANITIZER_ANDROID || (bool)SANITIZER_OHOS,
+COMMON_FLAG(bool, decorate_proc_maps, (bool)SANITIZER_ANDROID,
             "If set, decorate sanitizer mappings in /proc/self/maps with "
             "user-readable names")
 COMMON_FLAG(int, exitcode, 1, "Override the program exit status if the tool "
                               "found an error")
 COMMON_FLAG(
-    bool, abort_on_error, (bool)SANITIZER_ANDROID || (bool)SANITIZER_OHOS || (bool)SANITIZER_APPLE,
+    bool, abort_on_error, (bool)SANITIZER_ANDROID || (bool)SANITIZER_APPLE,
     "If set, the tool calls abort() instead of _exit() after printing the "
     "error report.")
 COMMON_FLAG(bool, suppress_equal_pcs, true,
@@ -275,3 +269,16 @@ COMMON_FLAG(bool, detect_write_exec, false,
 COMMON_FLAG(bool, test_only_emulate_no_memorymap, false,
             "TEST ONLY fail to read memory mappings to emulate sanitized "
             "\"init\"")
+// With static linking, dladdr((void*)pthread_join) or similar will return the
+// path to the main program. This flag will replace dlopen(<main program,...>
+// with dlopen(NULL,...), which is the correct way to get a handle to the main
+// program.
+COMMON_FLAG(bool, test_only_replace_dlopen_main_program, false,
+            "TEST ONLY replace dlopen(<main program>,...) with dlopen(NULL)")
+
+COMMON_FLAG(bool, enable_symbolizer_markup, SANITIZER_FUCHSIA,
+            "Use sanitizer symbolizer markup, available on Linux "
+            "and always set true for Fuchsia.")
+
+COMMON_FLAG(bool, detect_invalid_join, true,
+            "If set, check invalid joins of threads.")

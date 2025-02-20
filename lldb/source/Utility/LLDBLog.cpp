@@ -63,7 +63,7 @@ static constexpr Log::Category g_categories[] = {
     {{"on-demand"},
      {"log symbol on-demand related activities"},
      LLDBLog::OnDemand},
-     {{"performance"}, {"log performance monitoring point"}, LLDBLog::Performance}, // OHOS_LOCAL
+    {{"source"}, {"log source related activities"}, LLDBLog::Source},
 };
 
 static Log::Channel g_log_channel(g_categories,
@@ -72,8 +72,7 @@ static Log::Channel g_log_channel(g_categories,
                                       LLDBLog::Breakpoints |
                                       LLDBLog::Watchpoints | LLDBLog::Step |
                                       LLDBLog::State | LLDBLog::Symbols |
-                                      LLDBLog::Target | LLDBLog::Commands |
-                                      LLDBLog::Performance); // OHOS_LOCAL
+                                      LLDBLog::Target | LLDBLog::Commands);
 
 template <> Log::Channel &lldb_private::LogChannelFor<LLDBLog>() {
   return g_log_channel;

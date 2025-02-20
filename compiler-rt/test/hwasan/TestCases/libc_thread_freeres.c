@@ -1,6 +1,4 @@
 // RUN: %clang_hwasan %s -o %t && %env_hwasan_opts=random_tags=1 %run %t
-// OHOS_LOCAL
-// REQUIRES: stable-runtime && !ohos_family
 
 #include <pthread.h>
 #include <sanitizer/hwasan_interface.h>

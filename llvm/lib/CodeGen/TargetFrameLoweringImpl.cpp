@@ -17,7 +17,6 @@
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/Attributes.h"
-#include "llvm/IR/CallingConv.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/MC/MCAsmInfo.h"
@@ -57,11 +56,23 @@ TargetFrameLowering::getFrameIndexReference(const MachineFunction &MF, int FI,
   // something different.
   FrameReg = RI->getFrameRegister(MF);
 
-  // OHOS_LOCAL begin
   return StackOffset::getFixed(MFI.getObjectOffset(FI) + MFI.getStackSize() -
-                               getOffsetOfLocalArea(MF.getFunction().getCallingConv()) +
+                               getOffsetOfLocalArea() +
                                MFI.getOffsetAdjustment());
-  // OHOS_LOCAL end
+}
+
+/// Returns the offset from the stack pointer to the slot of the specified
+/// index. This function serves to provide a comparable offset from a single
+/// reference point (the value of the stack-pointer at function entry) that can
+/// be used for analysis. This is the default implementation using
+/// MachineFrameInfo offsets.
+StackOffset
+TargetFrameLowering::getFrameIndexReferenceFromSP(const MachineFunction &MF,
+                                                  int FI) const {
+  // To display the true offset from SP, we need to subtract the offset to the
+  // local area from MFI's ObjectOffset.
+  return StackOffset::getFixed(MF.getFrameInfo().getObjectOffset(FI) -
+                               getOffsetOfLocalArea());
 }
 
 bool TargetFrameLowering::needsFrameIndexResolution(
@@ -133,16 +144,6 @@ void TargetFrameLowering::determineCalleeSaves(MachineFunction &MF,
   }
 }
 
-unsigned TargetFrameLowering::getStackAlignmentSkew(
-    const MachineFunction &MF) const {
-  // When HHVM function is called, the stack is skewed as the return address
-  // is removed from the stack before we enter the function.
-  if (LLVM_UNLIKELY(MF.getFunction().getCallingConv() == CallingConv::HHVM))
-    return MF.getTarget().getAllocaPointerSize();
-
-  return 0;
-}
-
 bool TargetFrameLowering::allocateScavengingFrameIndexesNearIncomingSP(
   const MachineFunction &MF) const {
   if (!hasFP(MF))
@@ -179,25 +180,3 @@ TargetFrameLowering::getDwarfFrameBase(const MachineFunction &MF) const {
   const TargetRegisterInfo *RI = MF.getSubtarget().getRegisterInfo();
   return DwarfFrameBase{DwarfFrameBase::Register, {RI->getFrameRegister(MF)}};
 }
-
-#ifdef ARK_GC_SUPPORT
-// OHOS_LOCAL begin
-int TargetFrameLowering::GetFrameReserveSize(MachineFunction &MF) const
-{
-    int slotSize = sizeof(uint64_t);
-    int64_t marker = 0x0;
-    int reserveSize = 0;
-    MF.getFunction()
-      .getFnAttribute("frame-reserved-slots")
-      .getValueAsString()
-      .getAsInteger(10, marker);
-    return marker;
-}
-
-const std::string TargetFrameLowering::TypeKey = "ark-frame-type";
-const std::string TargetFrameLowering::JSFuncIdxKey = "ark-jsfunc-arg-idx";
-const std::string TargetFrameLowering::TypeOffsetKey = TypeKey + "-offset";
-const std::string TargetFrameLowering::JSFuncIdxOffsetKey =
-    JSFuncIdxKey + "-offset";
-// OHOS_LOCAL end
-#endif

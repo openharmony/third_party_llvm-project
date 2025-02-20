@@ -9,7 +9,6 @@
 // <algorithm>
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // template<input_iterator I, sentinel_for<I> S, class T, class Proj = identity,
 //          indirect_unary_predicate<projected<I, Proj>> Pred>
@@ -27,7 +26,6 @@
 #include <ranges>
 
 #include "almost_satisfies_types.h"
-#include "boolean_testable.h"
 #include "test_iterators.h"
 
 struct FalsePredicate {
@@ -130,19 +128,6 @@ constexpr bool test() {
     {
       S a[] = {1, 2, 3, 4};
       auto ret = std::ranges::replace_if(a, &S::check, S{2}, &S::identity);
-      assert(ret == std::end(a));
-    }
-  }
-
-  { // check that the implicit conversion to bool works
-    {
-      int a[] = {1, 2, 2, 4};
-      auto ret = std::ranges::replace_if(std::begin(a), std::end(a), [](int) { return BooleanTestable{false}; }, 2);
-      assert(ret == std::end(a));
-    }
-    {
-      int a[] = {1, 2, 2, 4};
-      auto ret = std::ranges::replace_if(a, [](int) { return BooleanTestable{false}; }, 2);
       assert(ret == std::end(a));
     }
   }

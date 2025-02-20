@@ -9,7 +9,6 @@
 // <algorithm>
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // template<forward_iterator I1, sentinel_for<I1> S1, forward_iterator I2, sentinel_for<I2> S2,
 //          class Pred = ranges::equal_to, class Proj1 = identity, class Proj2 = identity>
@@ -183,16 +182,16 @@ constexpr void test_iterators() {
   { // pattern has zero length
     {
       int a[] = {6, 7, 8};
-      int p[] = {};
-      auto ret = std::ranges::find_end(Iter1(a), Sent1(Iter1(a + 3)), Iter2(p), Sent2(Iter2(p)));
+      std::array<int, 0> p = {};
+      auto ret = std::ranges::find_end(Iter1(a), Sent1(Iter1(a + 3)), Iter2(p.data()), Sent2(Iter2(p.data())));
       assert(base(ret.begin()) == a + 3);
       assert(base(ret.end()) == a + 3);
     }
     {
       int a[] = {6, 7, 8};
-      int p[] = {};
+      std::array<int, 0> p = {};
       auto range1 = std::ranges::subrange(Iter1(a), Sent1(Iter1(a + 3)));
-      auto range2 = std::ranges::subrange(Iter2(p), Sent2(Iter2(p)));
+      auto range2          = std::ranges::subrange(Iter2(p.data()), Sent2(Iter2(p.data())));
       auto ret = std::ranges::find_end(range1, range2);
       assert(base(ret.begin()) == a + 3);
       assert(base(ret.end()) == a + 3);
@@ -201,20 +200,20 @@ constexpr void test_iterators() {
 
   { // range has zero length
     {
-      int a[] = {};
+      std::array<int, 0> a = {};
       int p[] = {6, 7, 8};
-      auto ret = std::ranges::find_end(Iter1(a), Sent1(Iter1(a)), Iter2(p), Sent2(Iter2(p + 3)));
-      assert(base(ret.begin()) == a);
-      assert(base(ret.end()) == a);
+      auto ret = std::ranges::find_end(Iter1(a.data()), Sent1(Iter1(a.data())), Iter2(p), Sent2(Iter2(p + 3)));
+      assert(base(ret.begin()) == a.data());
+      assert(base(ret.end()) == a.data());
     }
     {
-      int a[] = {};
+      std::array<int, 0> a = {};
       int p[] = {6, 7, 8};
-      auto range1 = std::ranges::subrange(Iter1(a), Sent1(Iter1(a)));
+      auto range1          = std::ranges::subrange(Iter1(a.data()), Sent1(Iter1(a.data())));
       auto range2 = std::ranges::subrange(Iter2(p), Sent2(Iter2(p + 3)));
       auto ret = std::ranges::find_end(range1, range2);
-      assert(base(ret.begin()) == a);
-      assert(base(ret.end()) == a);
+      assert(base(ret.begin()) == a.data());
+      assert(base(ret.end()) == a.data());
     }
   }
 

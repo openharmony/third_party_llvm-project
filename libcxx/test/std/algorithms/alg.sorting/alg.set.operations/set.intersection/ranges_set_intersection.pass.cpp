@@ -9,7 +9,6 @@
 // <algorithm>
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // template<input_iterator I1, sentinel_for<I1> S1, input_iterator I2, sentinel_for<I2> S2,
 //          weakly_incrementable O, class Comp = ranges::less,
@@ -29,6 +28,8 @@
 #include <algorithm>
 #include <array>
 #include <concepts>
+#include <cstddef>
+#include <ranges>
 
 #include "almost_satisfies_types.h"
 #include "MoveOnly.h"
@@ -286,7 +287,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
       assert(std::ranges::equal(out, std::array<TracedCopy, 2>{3, 8}));
 
       assert(std::ranges::all_of(out, &TracedCopy::copiedOnce));
@@ -299,7 +300,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
       assert(std::ranges::equal(out, std::array<TracedCopy, 2>{3, 8}));
 
       assert(std::ranges::all_of(out, &TracedCopy::copiedOnce));
@@ -363,7 +364,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
     }
 
     // range overload
@@ -377,7 +378,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
     }
 
     // member pointer Comparator iterator overload
@@ -390,7 +391,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
     }
 
     // member pointer Comparator range overload
@@ -402,7 +403,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
     }
   }
 
@@ -423,7 +424,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
     }
 
     // range overload
@@ -435,7 +436,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
     }
 
     // member pointer Projection iterator overload
@@ -448,7 +449,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
+      assert(result.out == out.data() + out.size());
     }
 
     // member pointer Projection range overload
@@ -460,76 +461,7 @@ constexpr bool test() {
 
       assert(result.in1 == r1.end());
       assert(result.in2 == r2.end());
-      assert(result.out == out.end());
-    }
-  }
-
-  // Complexity: At most 2 * ((last1 - first1) + (last2 - first2)) - 1 comparisons and applications of each projection.
-  {
-    std::array<Data, 5> r1{{{1}, {3}, {5}, {7}, {9}}};
-    std::array<Data, 5> r2{{{2}, {4}, {6}, {8}, {10}}};
-    std::array<int, 0> expected{};
-
-    const std::size_t maxOperation = 2 * (r1.size() + r2.size()) - 1;
-
-    // iterator overload
-    {
-      std::array<Data, 0> out{};
-      std::size_t numberOfComp  = 0;
-      std::size_t numberOfProj1 = 0;
-      std::size_t numberOfProj2 = 0;
-
-      const auto comp = [&numberOfComp](int x, int y) {
-        ++numberOfComp;
-        return x < y;
-      };
-
-      const auto proj1 = [&numberOfProj1](const Data& d) {
-        ++numberOfProj1;
-        return d.data;
-      };
-
-      const auto proj2 = [&numberOfProj2](const Data& d) {
-        ++numberOfProj2;
-        return d.data;
-      };
-
-      std::ranges::set_intersection(r1.begin(), r1.end(), r2.begin(), r2.end(), out.data(), comp, proj1, proj2);
-
-      assert(std::ranges::equal(out, expected, {}, &Data::data));
-      assert(numberOfComp < maxOperation);
-      assert(numberOfProj1 < maxOperation);
-      assert(numberOfProj2 < maxOperation);
-    }
-
-    // range overload
-    {
-      std::array<Data, 0> out{};
-      std::size_t numberOfComp  = 0;
-      std::size_t numberOfProj1 = 0;
-      std::size_t numberOfProj2 = 0;
-
-      const auto comp = [&numberOfComp](int x, int y) {
-        ++numberOfComp;
-        return x < y;
-      };
-
-      const auto proj1 = [&numberOfProj1](const Data& d) {
-        ++numberOfProj1;
-        return d.data;
-      };
-
-      const auto proj2 = [&numberOfProj2](const Data& d) {
-        ++numberOfProj2;
-        return d.data;
-      };
-
-      std::ranges::set_intersection(r1, r2, out.data(), comp, proj1, proj2);
-
-      assert(std::ranges::equal(out, expected, {}, &Data::data));
-      assert(numberOfComp < maxOperation);
-      assert(numberOfProj1 < maxOperation);
-      assert(numberOfProj2 < maxOperation);
+      assert(result.out == out.data() + out.size());
     }
   }
 
@@ -568,8 +500,8 @@ int main(int, char**) {
 
   // Cannot static_assert on the entire permutation test because it exceeds the constexpr execution step limit
   // due to the large number of combination of types of iterators (it is a 3-dimensional cartesian product)
-  // Instead of having one single static_assert that tests all the combinations, in the runAllIteratorPermutationsTests 
-  // function, it has lots of smaller static_assert and each of them test 2-dimensional cartesian product which is less 
+  // Instead of having one single static_assert that tests all the combinations, in the runAllIteratorPermutationsTests
+  // function, it has lots of smaller static_assert and each of them test 2-dimensional cartesian product which is less
   // than the step limit.
   runAllIteratorPermutationsTests();
 

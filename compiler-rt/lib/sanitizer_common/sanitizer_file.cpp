@@ -21,8 +21,6 @@
 #include "sanitizer_file.h"
 #  include "sanitizer_interface_internal.h"
 
-extern "C" SANITIZER_WEAK_ATTRIBUTE int musl_log(const char *fmt, ...);
-
 namespace __sanitizer {
 
 void CatastrophicErrorWrite(const char *buffer, uptr length) {
@@ -71,16 +69,9 @@ void ReportFile::ReopenIfNecessary() {
     WriteToFile(kStderrFd, ErrorMsgPrefix, internal_strlen(ErrorMsgPrefix));
     WriteToFile(kStderrFd, full_path, internal_strlen(full_path));
     char errmsg[100];
-    internal_snprintf(errmsg, sizeof(errmsg), " (reason: %d)", err);
+    internal_snprintf(errmsg, sizeof(errmsg), " (reason: %d)\n", err);
     WriteToFile(kStderrFd, errmsg, internal_strlen(errmsg));
-#if SANITIZER_OHOS // OHOS_LOCAL
-    if (&musl_log) {
-      musl_log("%{public}s %{public}s %{public}s\n", ErrorMsgPrefix, full_path, errmsg);
-    }
-    internal__exit(common_flags()->exitcode);
-#else
     Die();
-#endif
   }
   fd_pid = pid;
 }
@@ -93,10 +84,12 @@ static void RecursiveCreateParentDirs(char *path) {
     if (!IsPathSeparator(path[i]))
       continue;
     path[i] = '\0';
-    if (common_flags()->check_log_path_on_init && !DirExists(path) && !CreateDir(path)) { // OHOS_LOCAL
+    if (!DirExists(path) && !CreateDir(path)) {
       const char *ErrorMsgPrefix = "ERROR: Can't create directory: ";
       WriteToFile(kStderrFd, ErrorMsgPrefix, internal_strlen(ErrorMsgPrefix));
       WriteToFile(kStderrFd, path, internal_strlen(path));
+      const char *ErrorMsgSuffix = "\n";
+      WriteToFile(kStderrFd, ErrorMsgSuffix, internal_strlen(ErrorMsgSuffix));
       Die();
     }
     path[i] = save;

@@ -9,7 +9,6 @@
 // <algorithm>
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // template<permutable I, sentinel_for<I> S, class Proj = identity,
 //          indirect_unary_predicate<projected<I, Proj>> Pred>
@@ -26,7 +25,6 @@
 #include <ranges>
 
 #include "almost_satisfies_types.h"
-#include "boolean_testable.h"
 #include "test_iterators.h"
 
 struct FalsePredicate {
@@ -86,7 +84,7 @@ constexpr void test(Data<N, M> d) {
 
     assert(base(ret.begin()) == input.data() + M);
     assert(base(ret.end()) == input.data() + N);
-    assert(std::ranges::equal(base(input.begin()), base(ret.begin()), d.expected.begin(), d.expected.end()));
+    assert(std::ranges::equal(input.data(), base(ret.begin()), d.expected.begin(), d.expected.end()));
   }
 }
 
@@ -195,20 +193,6 @@ constexpr bool test() {
       auto ret = std::ranges::remove_if(a, &S::predicate, &S::identity);
       assert(ret.begin() == std::begin(a));
       assert(ret.end() == std::end(a));
-    }
-  }
-
-  {
-    // check that the implicit conversion to bool works
-    {
-      int a[]  = {1, 2, 3, 4};
-      auto ret = std::ranges::remove_if(a, a + 4, [](const int& i) { return BooleanTestable{i == 3}; });
-      assert(ret.begin() == a + 3);
-    }
-    {
-      int a[]  = {1, 2, 3, 4};
-      auto ret = std::ranges::remove_if(a, [](const int& b) { return BooleanTestable{b == 3}; });
-      assert(ret.begin() == a + 3);
     }
   }
 

@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "lldb/Host/posix/ProcessLauncherPosixFork.h"
+#include "lldb/Host/FileSystem.h"
 #include "lldb/Host/Host.h"
 #include "lldb/Host/HostProcess.h"
 #include "lldb/Host/Pipe.h"
@@ -14,15 +15,11 @@
 #include "lldb/Utility/FileSpec.h"
 #include "lldb/Utility/Log.h"
 #include "llvm/Support/Errno.h"
-#include "llvm/Support/FileSystem.h"
 
 #include <climits>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#ifdef __OHOS_FAMILY__
-#include <dirent.h>
-#endif
 
 #include <sstream>
 #include <csignal>
@@ -74,7 +71,7 @@ static void DisableASLR(int error_fd) {
 }
 
 static void DupDescriptor(int error_fd, const char *file, int fd, int flags) {
-  int target_fd = llvm::sys::RetryAfterSignal(-1, ::open, file, flags, 0666);
+  int target_fd = FileSystem::Instance().Open(file, flags, 0666);
 
   if (target_fd == -1)
     ExitWithError(error_fd, "DupDescriptor-open");
@@ -182,21 +179,8 @@ struct ForkLaunchInfo {
 
         // Don't close first three entries since they are stdin, stdout and
         // stderr.
-        #ifdef __OHOS_FAMILY__
-        //OHOS_LOCAL begin
-        //Also do not close the directory itself since it would be
-        // closed after iteration.
-        //Here iter.get_handler() would return a int_ptr type, 
-        //while dirfd() aacepts DIR* type to return the fd, so we use
-        //reinterpret_cast to cast the iter.get_handler() to DIR*.
-        int dir_fd = dirfd(reinterpret_cast<DIR*>(iter.get_handler()));
-        if (fd > 2 && !info.has_action(fd) && fd != error_fd && dir_fd != fd)
-        //OHOS_LOCAL end
-        #else
         if (fd > 2 && !info.has_action(fd) && fd != error_fd)
-        #endif
           files_to_close.push_back(fd);
-        
       }
       for (int file_to_close : files_to_close)
         close(file_to_close);
@@ -298,10 +282,19 @@ ProcessLauncherPosixFork::LaunchProcess(const ProcessLaunchInfo &launch_info,
   // parent process
 
   pipe.CloseWriteFileDescriptor();
-  char buf[1000];
-  int r = read(pipe.GetReadFileDescriptor(), buf, sizeof buf);
+  llvm::SmallString<0> buf;
+  size_t pos = 0;
+  ssize_t r = 0;
+  do {
+    pos += r;
+    buf.resize_for_overwrite(pos + 100);
+    r = llvm::sys::RetryAfterSignal(-1, read, pipe.GetReadFileDescriptor(),
+                                    buf.begin() + pos, buf.size() - pos);
+  } while (r > 0);
+  assert(r != -1);
 
-  if (r == 0)
+  buf.resize(pos);
+  if (buf.empty())
     return HostProcess(pid); // No error. We're done.
 
   error.SetErrorString(buf);

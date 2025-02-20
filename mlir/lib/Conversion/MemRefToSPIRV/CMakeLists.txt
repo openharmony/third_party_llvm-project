@@ -1,4 +1,5 @@
 add_mlir_conversion_library(MLIRMemRefToSPIRV
+  MapMemRefStorageClassPass.cpp
   MemRefToSPIRV.cpp
   MemRefToSPIRVPass.cpp
 
@@ -10,6 +11,7 @@ add_mlir_conversion_library(MLIRMemRefToSPIRV
   MLIRConversionPassIncGen
 
   LINK_LIBS PUBLIC
+  MLIRFunctionInterfaces
   MLIRIR
   MLIRMemRefDialect
   MLIRPass

@@ -1,7 +1,4 @@
 // RUN: %clang_tsan -O1 %s -o %t && %run %t 2>&1 | FileCheck %s
-// OHOS_LOCAL
-// pthread_timedjoin_np not available on OHOS musl
-// UNSUPPORTED: ohos_family
 #define _GNU_SOURCE
 #include "../test.h"
 #include <errno.h>

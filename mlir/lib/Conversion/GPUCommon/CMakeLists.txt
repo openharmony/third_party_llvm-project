@@ -1,4 +1,4 @@
-if (MLIR_ENABLE_CUDA_CONVERSIONS)
+if ("NVPTX" IN_LIST LLVM_TARGETS_TO_BUILD)
   set(NVPTX_LIBS
     NVPTXCodeGen
     NVPTXDesc
@@ -29,9 +29,10 @@ add_mlir_conversion_library(MLIRGPUToGPURuntimeTransforms
   ${NVPTX_LIBS}
 
   LINK_LIBS PUBLIC
-  MLIRArithmeticToLLVM
+  MLIRArithToLLVM
   MLIRAsyncToLLVM
   MLIRControlFlowToLLVM
+  MLIRConvertToLLVMPass
   MLIRFuncToLLVM
   MLIRGPUTransforms
   MLIRIR

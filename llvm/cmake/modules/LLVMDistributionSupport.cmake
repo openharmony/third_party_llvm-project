@@ -210,6 +210,8 @@ function(install_distribution_exports project)
                 COMPONENT ${target})
         if(NOT LLVM_ENABLE_IDE)
           add_custom_target(${target})
+          get_subproject_title(subproject_title)
+          set_target_properties(${target} PROPERTIES FOLDER "${subproject_title}/Distribution")
           add_llvm_install_targets(install-${target} COMPONENT ${target})
         endif()
       endif()
@@ -235,16 +237,6 @@ function(llvm_distribution_add_targets)
     endif()
   endif()
 
-  # OHOS_LOCAL begin
-  if (LLVM_SPLIT_LLVM_DYLIB_TARGETS)
-    foreach(target ${LLVM_TARGETS_CALLED_VIA_DYLIB})
-      if (target IN_LIST LLVM_TARGETS_TO_BUILD)
-        list(APPEND LLVM_DISTRIBUTION_COMPONENTS "LLVM${target}Target")
-      endif()
-    endforeach()
-  endif()
-  # OHOS_LOCAL end
-
   set(distributions "${LLVM_DISTRIBUTIONS}")
   if(NOT distributions)
     # CMake seemingly doesn't distinguish between an empty list and a list
@@ -253,6 +245,8 @@ function(llvm_distribution_add_targets)
     # loop.
     set(distributions "<DEFAULT>")
   endif()
+
+  get_property(LLVM_DRIVER_TOOL_SYMLINKS GLOBAL PROPERTY LLVM_DRIVER_TOOL_SYMLINKS)
 
   foreach(distribution ${distributions})
     if(distribution STREQUAL "<DEFAULT>")
@@ -268,6 +262,14 @@ function(llvm_distribution_add_targets)
     add_custom_target(${distribution_target})
     add_custom_target(install-${distribution_target})
     add_custom_target(install-${distribution_target}-stripped)
+    get_subproject_title(subproject_title)
+    set_target_properties(
+        ${distribution_target} 
+        install-${distribution_target}
+        install-${distribution_target}-stripped
+      PROPERTIES 
+        FOLDER "${subproject_title}/Distribution"
+    )
 
     foreach(target ${distribution_components})
       # Note that some distribution components may not have an actual target, but only an install-FOO target.
@@ -278,12 +280,16 @@ function(llvm_distribution_add_targets)
 
       if(TARGET install-${target})
         add_dependencies(install-${distribution_target} install-${target})
+      elseif(TARGET install-llvm-driver AND ${target} IN_LIST LLVM_DRIVER_TOOL_SYMLINKS)
+        add_dependencies(install-${distribution_target} install-llvm-driver)
       else()
         message(SEND_ERROR "Specified distribution component '${target}' doesn't have an install target")
       endif()
 
       if(TARGET install-${target}-stripped)
         add_dependencies(install-${distribution_target}-stripped install-${target}-stripped)
+      elseif(TARGET install-llvm-driver-stripped AND ${target} IN_LIST LLVM_DRIVER_TOOL_SYMLINKS)
+        add_dependencies(install-${distribution_target}-stripped install-llvm-driver-stripped)
       else()
         message(SEND_ERROR
                 "Specified distribution component '${target}' doesn't have an install-stripped target."

@@ -16,20 +16,20 @@
 #define LLVM_TARGET_CODEGENCWRAPPERS_H
 
 #include "llvm-c/TargetMachine.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/ErrorHandling.h"
+#include <optional>
 
 namespace llvm {
 
-inline Optional<CodeModel::Model> unwrap(LLVMCodeModel Model, bool &JIT) {
+inline std::optional<CodeModel::Model> unwrap(LLVMCodeModel Model, bool &JIT) {
   JIT = false;
   switch (Model) {
   case LLVMCodeModelJITDefault:
     JIT = true;
-    LLVM_FALLTHROUGH;
+    [[fallthrough]];
   case LLVMCodeModelDefault:
-    return None;
+    return std::nullopt;
   case LLVMCodeModelTiny:
     return CodeModel::Tiny;
   case LLVMCodeModelSmall:
@@ -59,37 +59,6 @@ inline LLVMCodeModel wrap(CodeModel::Model Model) {
   }
   llvm_unreachable("Bad CodeModel!");
 }
-
-#ifdef ARK_GC_SUPPORT
-inline Reloc::Model unwrap(LLVMRelocMode Model) {
-  switch (Model) {
-  case LLVMRelocDefault:
-  case LLVMRelocStatic:
-    return Reloc::Static;
-  case LLVMRelocPIC:
-    return Reloc::PIC_;
-  case LLVMRelocDynamicNoPic:
-    return Reloc::DynamicNoPIC;
-  }
-  llvm_unreachable("Invalid LLVMRelocMode!");
-}
-
-inline LLVMRelocMode unwrap(Reloc::Model Model) {
-  switch (Model) {
-  case Reloc::Static:
-    return LLVMRelocStatic;
-  case Reloc::PIC_:
-    return LLVMRelocPIC;
-  case Reloc::DynamicNoPIC:
-    return LLVMRelocDynamicNoPic;
-  case Reloc::ROPI:
-  case Reloc::RWPI:
-  case Reloc::ROPI_RWPI:
-    break;
-  }
-  llvm_unreachable("Invalid Reloc::Model!");
-}
-#endif
 } // namespace llvm
 
 #endif

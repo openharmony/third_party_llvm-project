@@ -1,7 +1,6 @@
 // Tests UAF detection where Allocate/Deallocate/Use
 // happen in separate threads.
 // RUN: %clang_hwasan %s -o %t && not %run %t 2>&1 | FileCheck %s
-// REQUIRES: stable-runtime
 
 #include <pthread.h>
 #include <stdlib.h>
@@ -28,15 +27,12 @@ void *Deallocate(void *arg) {
 void *Use(void *arg) {
   x[5] = 42;
   // CHECK: ERROR: HWAddressSanitizer: tag-mismatch on address
-  // OHOS_LOCAL
-  // CHECK: WRITE of size 1 {{.*}} in thread {{.*}}
-  // CHECK: thread-uaf.c:[[@LINE-4]]
+  // CHECK: WRITE of size 1 {{.*}} in thread T3
+  // CHECK: thread-uaf.c:[[@LINE-3]]
   // CHECK: Cause: use-after-free
-  // OHOS_LOCAL
-  // CHECK: freed by thread {{.*}} here
+  // CHECK: freed by thread T2 here
   // CHECK: in Deallocate
-  // OHOS_LOCAL
-  // CHECK: previously allocated by thread {{.*}} here:
+  // CHECK: previously allocated by thread T1 here:
   // CHECK: in Allocate
   // CHECK-DAG: Thread: T2 0x
   // CHECK-DAG: Thread: T3 0x

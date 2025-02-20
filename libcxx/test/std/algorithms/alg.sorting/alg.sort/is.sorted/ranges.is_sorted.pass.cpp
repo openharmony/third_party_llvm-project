@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // <algorithm>
 
@@ -110,13 +109,13 @@ constexpr void test_iterators() {
 
   { // check that an empty range works
     {
-      int a[] = {};
-      auto ret = std::ranges::is_sorted(Iter(a), Sent(Iter(a)));
+      std::array<int, 0> a = {};
+      auto ret             = std::ranges::is_sorted(Iter(a.data()), Sent(Iter(a.data())));
       assert(ret);
     }
     {
-      int a[] = {};
-      auto range = std::ranges::subrange(Iter(a), Sent(Iter(a)));
+      std::array<int, 0> a = {};
+      auto range           = std::ranges::subrange(Iter(a.data()), Sent(Iter(a.data())));
       auto ret = std::ranges::is_sorted(range);
       assert(ret);
     }
