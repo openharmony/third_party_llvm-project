@@ -2266,8 +2266,14 @@ void CodeGenModule::setNonAliasAttributes(GlobalDecl GD,
 
     if (const auto *CSA = D->getAttr<CodeSegAttr>())
       GO->setSection(CSA->getName());
-    else if (const auto *SA = D->getAttr<SectionAttr>())
+    // OHOS_LOCAL Begin
+    else if (const auto *SA = D->getAttr<SectionAttr>()) {
       GO->setSection(SA->getName());
+      if ("_hilog_" == SA->getName())
+        cast<llvm::GlobalVariable>(GO)->setUnnamedAddr(
+            llvm::GlobalValue::UnnamedAddr::Global);
+    }
+    // OHOS_LOCAL End
   }
 
   getTargetCodeGenInfo().setTargetAttributes(D, GO, *this);

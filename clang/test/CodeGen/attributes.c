@@ -3,6 +3,9 @@
 // CHECK: @t5 = weak{{.*}} global i32 2
 int t5 __attribute__((weak)) = 2;
 
+// CHECK: unnamed_addr
+__attribute__((section("_hilog_"))) const char hilog_string1[] = "Hello";
+
 // CHECK: @t13 ={{.*}} global %struct.s0 zeroinitializer, section "SECT"
 struct s0 { int x; };
 struct s0 t13 __attribute__((section("SECT"))) = { 0 };
