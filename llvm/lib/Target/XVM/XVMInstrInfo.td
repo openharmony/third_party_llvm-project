@@ -189,7 +189,7 @@ let isBranch = 1, hasCtrlDep = 1 in {
   def BREAK_IMM : ControFlowNoArgs<0b00001000, (outs), (ins uimm6:$imm), "break #$imm", []>;
   def CONTINUE : ControFlowNoArgs<0b00000000, (outs), (ins), "continue", []>;
   def THEN : ControFlowNoArgs<0b00000000, (outs), (ins), "(then", []>;
-  def END_THEN : ControFlowNoArgs<0b00000000, (outs), (ins), ") ;; end_then", []>;
+  def END_THEN : ControFlowNoArgs<0b00000000, (outs), (ins), ")", []>;
   def ELSE : ControFlowNoArgs<0b00000000, (outs), (ins), "(else", []>;
   def END_ELSE : ControFlowNoArgs<0b00000000, (outs), (ins), ")", []>;
   def END_IF : ControFlowNoArgs<0b00000000, (outs), (ins), ")", []>;

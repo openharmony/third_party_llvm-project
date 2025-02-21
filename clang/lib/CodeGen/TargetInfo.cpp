@@ -5538,9 +5538,14 @@ public:
         B.addAttribute("xvm-export-name", Attr->getExportName());
         Fn->addFnAttrs(B);
       } else {
-        if (FD->isStatic()) {
+        if (FD->hasBody() && FD->isStatic()) {
+          const auto *NoInlineAttrVar = FD->getAttr<NoInlineAttr>();
           llvm::Function *Fn = cast<llvm::Function>(GV);
-          Fn->addFnAttr(llvm::Attribute::AlwaysInline);
+          if (!NoInlineAttrVar) {
+            Fn->addFnAttr(llvm::Attribute::AlwaysInline);
+          } else {
+            Fn->addFnAttr(llvm::Attribute::NoInline);
+          }
         }
       }
     }

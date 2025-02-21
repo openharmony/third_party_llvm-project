@@ -27,6 +27,10 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Vectorize.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/Scalar/SimpleLoopUnswitch.h"
+#include "llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h"
+
 using namespace llvm;
 
 
@@ -43,6 +47,37 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeXVMTarget() {
   initializeXVMUpdateRefInstrForMIPass(PR);
   initializeDSELegacyPassPass(PR);
   initializeJumpThreadingPass(PR);
+
+  initializeMachineCSEPass(PR);
+  initializeCorrelatedValuePropagationPass(PR);
+  initializeInstructionCombiningPassPass(PR);
+  initializeSimpleLoopUnswitchLegacyPassPass(PR);
+  initializeAggressiveInstCombinerLegacyPassPass(PR);
+
+  initializeCallSiteSplittingLegacyPassPass(PR);
+  initializeFunctionSpecializationLegacyPassPass(PR);
+
+
+  initializeConstantMergeLegacyPassPass(PR);
+  initializeGlobalDCELegacyPassPass(PR);
+  initializeEliminateAvailableExternallyLegacyPassPass(PR);
+  initializeGVNLegacyPassPass(PR);
+
+  initializeLoopUnrollAndJamPass(PR);
+  initializeLoopUnrollPass(PR);
+
+  // initializeLoopFuseLegacyPass(PR);
+  initializeLoopDataPrefetchLegacyPassPass(PR);
+  initializeLoopDeletionLegacyPassPass(PR);
+  initializeLoopAccessLegacyAnalysisPass(PR);
+  initializeLoopInstSimplifyLegacyPassPass(PR);
+  initializeLoopInterchangeLegacyPassPass(PR);
+  initializeLoopFlattenLegacyPassPass(PR);
+  initializeLoopPredicationLegacyPassPass(PR);
+  initializeLoopRotateLegacyPassPass(PR);
+  initializeLoopStrengthReducePass(PR);
+
+  // initializeBasicBlockSectionsPass(PR);
 }
 
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeXVMTargetCalledInDylib() {
@@ -104,6 +139,35 @@ bool XVMPassConfig::addPreISel() {
   addPass(createJumpThreadingPass(-1));
   addPass(createSpeculativeExecutionPass());
   addPass(createMergedLoadStoreMotionPass());
+
+  addPass(createEarlyCSEPass());
+  addPass(createCorrelatedValuePropagationPass());
+  addPass(createInstructionCombiningPass());
+  addPass(createSimpleLoopUnswitchLegacyPass(true));
+  addPass(createAggressiveInstCombinerPass());
+  addPass(createCallSiteSplittingPass());
+  addPass(createFunctionSpecializationPass());
+
+  addPass(createConstantMergePass());
+  addPass(createGlobalDCEPass());
+  addPass(createEliminateAvailableExternallyPass());
+  addPass(createTailCallEliminationPass());
+  addPass(createGVNPass(false));
+
+  addPass(createLoopUnrollAndJamPass(3));
+  addPass(createLoopUnrollPass(3));
+
+  // addPass(createLoopFusePass());
+  addPass(createLoopDataPrefetchPass());
+  addPass(createLoopDeletionPass());
+  // addPass(createLoopAccessLegacyAnalysisPass());
+  addPass(createLoopInstSimplifyPass());
+  addPass(createLoopInterchangePass());
+  addPass(createLoopFlattenPass());
+  addPass(createLoopPredicationPass());
+  addPass(createLoopRotatePass());
+  addPass(createLoopStrengthReducePass());
+
   return false;
 }
 
@@ -137,6 +201,8 @@ void XVMPassConfig::addPreEmitPass() {
   // Sort the blocks of the CFG into topological order,
   // a prerequisite for BLOCK and LOOP markers.
   // Currently, the algorithm is from WebAssembly.
+
+  // addPass(createBasicBlockSectionsPass());
   addPass(createXVMCFGSort());
   addPass(createXVMCFGStackify());
 }

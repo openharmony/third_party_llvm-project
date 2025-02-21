@@ -715,7 +715,7 @@ SDValue XVMTargetLowering::LowerBRCOND(SDValue Op, SelectionDAG &DAG) const {
              CondV.getOpcode() == ISD::XOR || CondV.getOpcode() == ISD::Constant ||
              CondV.getOpcode() == ISD::UADDO || CondV.getOpcode() == ISD::SELECT_CC ||
              CondV.getOpcode() == ISD::UREM || CondV.getOpcode() == ISD::SRL ||
-             CondV.getOpcode() == ISD::SELECT) {
+             CondV.getOpcode() == ISD::SELECT || CondV.getOpcode() == ISD::SREM) {
     SDValue LHS = CondV;
     SDValue RHS = DAG.getConstant(0, DL, MVT::i64);
     SDValue TargetCC = DAG.getCondCode(ISD::SETNE);

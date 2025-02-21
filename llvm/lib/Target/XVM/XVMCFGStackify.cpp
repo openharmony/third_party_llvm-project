@@ -23,6 +23,7 @@
 #ifdef XVM_DYLIB_MODE
 
 #include "XVM.h"
+#include "XVM_def.h"
 #include "XVMSortRegion.h"
 #include "XVMSubtarget.h"
 #include "llvm/ADT/Statistic.h"
@@ -72,13 +73,13 @@ class XVMCFGStackify final : public MachineFunctionPass {
   void insertWithBreak(MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI);
   void insertRetBlock(MachineFunction &MF);
   void removeInFunctionRet(MachineFunction &MF);
+  void fillEndLoopMap(MachineFunction &MF);
 
   // Wrap-up
   using EndMarkerInfo =
       std::pair<const MachineBasicBlock *, const MachineInstr *>;
-  unsigned getBranchDepth(const SmallVectorImpl<EndMarkerInfo> &Stack,
-                          const std::set<const MachineBasicBlock*> *SetEndBlockLoop,
-                          const MachineBasicBlock *MBB);
+  unsigned getBranchDepth(MachineFunction &MF,
+                          const MachineBasicBlock *MBB, MachineInstr *MI);
   void rewriteDepthImmediates(MachineFunction &MF);
   void fixBackEdgesOfLoops(MachineFunction &MF);
   void fixEndsAtEndOfFunction(MachineFunction &MFunction);
@@ -120,7 +121,6 @@ class XVMCFGStackify final : public MachineFunctionPass {
   void registerScope(MachineInstr *Start, MachineInstr *Finish);
   void registerTryScope(MachineInstr *Start,
                 MachineInstr *Finish, MachineBasicBlock *EHPad);
-  void unregisterScope(MachineInstr *Start);
 
 public:
   static char ID; // typeid replacement, for identification
@@ -139,6 +139,11 @@ FunctionPass *llvm::createXVMCFGStackify() {
   return new XVMCFGStackify();
 }
 
+// Map for EndLoops to MBB number
+// Used for calculating Break Immediates
+static std::map<MachineInstr *, int> EndLoopToMBBnum;
+// Map for mapping machine instruction to current header of loop if "continue" is used
+static std::map<MachineInstr *, int> ContinueMap;
 
 // As opposed to falling through, test whether Pre has any terminators
 // explicitly branching to MBB. Note: We check to see if therey are any explicit
@@ -227,6 +232,14 @@ void ChangeBranchCondOpc(MachineInstr &MI, const XVMInstrInfo *TII) {
   }
 }
 
+static inline MachineBasicBlock *getNextBlock(MachineBasicBlock &MBB) {
+  MachineFunction::iterator I = MBB.getIterator();
+  MachineFunction::iterator E = MBB.getParent()->end();
+  if (++I == E)
+    return nullptr;
+  return &*I;
+}
+
 void XVMCFGStackify::fixBackEdgesOfLoops(MachineFunction &MF) {
   TII = MF.getSubtarget<XVMSubtarget>().getInstrInfo();
   auto &MLI = getAnalysis<MachineLoopInfo>();
@@ -241,58 +254,60 @@ void XVMCFGStackify::fixBackEdgesOfLoops(MachineFunction &MF) {
       if (MI.getNumOperands() <=0) {
         continue;
       }
-      if (TII->isUnCondBranch(&MI) && MI.getOperand(0).getMBB() == LoopHeader) {
+      if (TII->isUnCondBranch(&MI) && MI.getOperand(MO_FIRST).getMBB() == LoopHeader) {
         if (&MBB != Loop->getBottomBlock()) {
           BuildMI(MBB, MI, MI.getDebugLoc(), TII->get(XVM::CONTINUE));
+          MI.eraseFromParent();
         }
-        MI.eraseFromParent();
         break;
-      } else if (TII->isCondBranch(&MI) && MI.getOperand(0).getMBB() == LoopHeader) {
+      } else if (TII->isCondBranch(&MI) && MI.getOperand(MO_FIRST).getMBB() == LoopHeader) {
         uint32_t action_opcode = XVM::CONTINUE;
+        int BreakImmValue = getBranchDepth(MF, MI.getOperand(MO_FIRST).getMBB(), &MI);
         /* Fix Loop Exiting Fallthrough */
-        if (&MBB == Loop->getBottomBlock() &&
-            &MI == &*(--MBB.end()) &&
-            MLI.getLoopFor(MBB.getFallThrough()) != Loop) {
-          TII->negateCondBranch(&MI);
-          action_opcode = XVM::BREAK;
+        if (BreakImmValue > -1 && ContinueMap[&MI] != MI.getOperand(0).getMBB()->getNumber()) {
+          action_opcode = XVM::BREAK_IMM;
         }
+
         // Check if we need to add a break statement at the end of loop
         int LevelBreakAfterLoop = -1;
-        if (action_opcode == XVM::CONTINUE) {
-          // 1. if the last stmt of the BB is a conditional branch statement and
-          // 2. if the next BB is one of its successor and
-          // 3. if the first statements of the next BB are END_BLOCK/END_LOOP
-          //  insert a break if the above conditions are true
-          MachineBasicBlock::reverse_iterator MBBI = MBB.rbegin();
-          MachineInstr &MITmp = *MBBI;
-          if (MITmp.isTerminator() && TII->isCondBranch(&MITmp)) {
-            MachineBasicBlock *NextBB = MBB.getNextNode();
-            bool NextBBIsSucc = false;
-            for (auto *Succ : MBB.successors()) {
-              if (Succ == NextBB) {
-                NextBBIsSucc = true;
-                break;
-              }
+
+        // 1. if the last stmt of the BB is a conditional branch statement and
+        // 2. if the next BB is one of its successor and
+        // 3. if the first statements of the next BB are END_BLOCK/END_LOOP
+        //  insert a break if the above conditions are true
+        MachineBasicBlock::reverse_iterator MBBI = MBB.rbegin();
+        MachineInstr &MITmp = *MBBI;
+        if (MITmp.isTerminator() && TII->isCondBranch(&MITmp)) {
+          MachineBasicBlock *NextBB = MBB.getNextNode();
+          bool NextBBIsSucc = false;
+          for (auto *Succ : MBB.successors()) {
+            if (Succ == NextBB) {
+              NextBBIsSucc = true;
+              break;
             }
-            if (NextBBIsSucc) {
-              MachineBasicBlock::const_iterator MBBINext = NextBB->begin(), ENext = NextBB->end();
-              while (MBBINext != ENext) {
-                  MachineBasicBlock::const_iterator NMBBINext = std::next(MBBINext);
-                  const MachineInstr &MINext = *MBBINext;
-                  if (MINext.getOpcode() == XVM::END_BLOCK || MINext.getOpcode() == XVM::END_LOOP) {
-                    LevelBreakAfterLoop ++;
-                  } else {
-                    break;
-                  }
-                  MBBINext = NMBBINext;
-              }
+          }
+          if (NextBBIsSucc) {
+            MachineBasicBlock::const_iterator MBBINext = NextBB->begin(), ENext = NextBB->end();
+            while (MBBINext != ENext) {
+                MachineBasicBlock::const_iterator NMBBINext = std::next(MBBINext);
+                const MachineInstr &MINext = *MBBINext;
+                if (MINext.getOpcode() == XVM::END_BLOCK || MINext.getOpcode() == XVM::END_LOOP) {
+                  LevelBreakAfterLoop ++;
+                } else {
+                  break;
+                }
+                MBBINext = NMBBINext;
             }
           }
         }
+        
         MachineInstr *MIThen = MBB.getParent()->CreateMachineInstr(TII->get(XVM::THEN), DebugLoc());
         MBB.insertAfter(MI.getIterator(), MIThen);
         MachineInstr *MIAction = MBB.getParent()->CreateMachineInstr(TII->get(action_opcode), DebugLoc());
         MBB.insertAfter(MIThen->getIterator(), MIAction);
+        MachineInstrBuilder MIB(MF, MIAction);
+        if (BreakImmValue > -1 && action_opcode == XVM::BREAK_IMM)
+          MIB.addImm(BreakImmValue);
         MachineInstr *MIEndThen = MBB.getParent()->CreateMachineInstr(TII->get(XVM::END_THEN), DebugLoc());
         MBB.insertAfter(MIAction->getIterator(), MIEndThen);
         if (LevelBreakAfterLoop >= 0) {
@@ -323,18 +338,10 @@ void XVMCFGStackify::registerScope(MachineInstr *Begin,
   EndToBegin[End] = Begin;
 }
 
-void XVMCFGStackify::unregisterScope(MachineInstr *Begin) {
-  assert(BeginToEnd.count(Begin));
-  MachineInstr *End = BeginToEnd[Begin];
-  assert(EndToBegin.count(End));
-  BeginToEnd.erase(Begin);
-  EndToBegin.erase(End);
-}
-
 static bool isChild(const MachineInstr &MI) {
   if (MI.getNumOperands() == 0)
     return false;
-  const MachineOperand &MO = MI.getOperand(0);
+  const MachineOperand &MO = MI.getOperand(MO_FIRST);
   if (!MO.isReg() || MO.isImplicit() || !MO.isDef())
     return false;
   Register Reg = MO.getReg();
@@ -348,30 +355,60 @@ static bool isChild(const MachineInstr &MI) {
  *  Note: we may find other approach for fixing this.
 */
 unsigned XVMCFGStackify::getBranchDepth(
-    const SmallVectorImpl<EndMarkerInfo> &Stack,
-    const std::set<const MachineBasicBlock*> *SetEndBlockLoop,
-    const MachineBasicBlock *MBB) {
-  unsigned Depth = 0;
-  for (auto X : reverse(Stack)) {
-    if (X.first == MBB) {
-      std::set<const MachineBasicBlock*>::iterator I = SetEndBlockLoop->find(MBB);
-      if (I != SetEndBlockLoop->end())
-        ++Depth;
-      break;
-    }
-    ++Depth;
+    MachineFunction &MF,
+    const MachineBasicBlock *MBB,
+    MachineInstr *MI) {
+
+  int depth = -1;
+  int baseMBBnum = MI->getParent()->getNumber();
+  auto MBBI = MF.begin();
+  int targetMBBnum = MBB->getNumber();
+
+  while (MBBI->getNumber() != baseMBBnum) {
+    MBBI++;
   }
-  assert(Depth < Stack.size() && "Branch destination should be in scope");
-  return Depth;
+
+  MBBI++;
+
+  while (MBBI != MF.end()) {
+    MachineBasicBlock &CurMBB = *MBBI;
+    if (CurMBB.getNumber() == targetMBBnum) {
+      /* We are in the correct MBB, go to the first real instruction */
+      for (auto MII = CurMBB.begin(); MII != CurMBB.end(); MII++) {
+        MachineInstr &CurMI = *MII;
+        if (CurMI.getOpcode() == XVM::END_LOOP || CurMI.getOpcode() == XVM::END_BLOCK) {
+          depth++;
+        } else {
+          return depth;
+        }
+      }
+    } else {
+      /* We are not in the right MBB yet, count all the loop and block markers
+      * Additionally check if any of these end_loops lead to the correct basic block
+      */
+      for (auto MII = CurMBB.begin(); MII != CurMBB.end(); MII++) {
+        MachineInstr &CurMI = *MII;
+        if (CurMI.getOpcode() == XVM::LOOP || CurMI.getOpcode() == XVM::BLOCK) {
+          depth--;
+        } else if (CurMI.getOpcode() == XVM::END_BLOCK) {
+          depth++;
+        } else if (CurMI.getOpcode() == XVM::END_LOOP) {
+          /* Check if this ENDLOOP goes to the right MBB */
+          if (EndLoopToMBBnum[&CurMI] == targetMBBnum) {
+            return depth;
+          } else {
+            depth++;
+          }
+        }
+      }
+    }
+    MBBI++;
+  }
+
+  return depth;
 }
 
-static inline MachineBasicBlock *getNextBlock(MachineBasicBlock &MBB) {
-  MachineFunction::iterator I = MBB.getIterator();
-  MachineFunction::iterator E = MBB.getParent()->end();
-  if (++I == E)
-    return nullptr;
-  return &*I;
-}
+
 
 static inline MachineInstr *getNextInstruction(MachineInstr &MI) {
   MachineBasicBlock::iterator I = MI.getIterator();
@@ -711,66 +748,39 @@ void XVMCFGStackify::rewriteDepthImmediates(MachineFunction &MF) {
   // Now rewrite references to basic blocks to be depth immediates.
   std::map<MachineInstr *, unsigned int> CondBranchsWithDepth;
   TII = MF.getSubtarget<XVMSubtarget>().getInstrInfo();
-  SmallVector<EndMarkerInfo, INIT_SMALL_VECTOR_SCOPESS_SIZE> Stack;
-  std::set<const MachineBasicBlock*> SetEndBlockLoop;
-  SmallVector<const MachineBasicBlock *, 8> EHPadStack;
+  int TargetMBB;
+
   for (auto &MBB : reverse(MF)) {
     for (MachineInstr &MI : llvm::reverse(MBB)) {
-      switch (MI.getOpcode()) {
-      case XVM::BLOCK:
-        assert(ScopeTops[Stack.back().first->getNumber()]->getNumber() <=
-                   MBB.getNumber() &&
-               "Block/try marker should be balanced");
-        Stack.pop_back();
-        break;
-
-      case XVM::LOOP:
-        assert(Stack.back().first == &MBB && "Loop top should be balanced");
-        Stack.pop_back();
-        break;
-
-      case XVM::END_BLOCK:
-        Stack.push_back(std::make_pair(&MBB, &MI));
-        break;
-
-      case XVM::END_LOOP: {
-        Stack.push_back(std::make_pair(EndToBegin[&MI]->getParent(), &MI));
-        MachineInstr *PrevMI = MI.getPrevNode();
-        if (PrevMI != NULL) {
-          if (PrevMI->getOpcode() == XVM::END_BLOCK || PrevMI->getOpcode() == XVM::END_LOOP) {
-            SetEndBlockLoop.insert(&MBB);
+      if (MI.isTerminator()) {
+        // Rewrite MBB operands to be depth immediates.
+        SmallVector<MachineOperand, INIT_SMALL_VECTOR_MO_SIZE> Ops(MI.operands());
+        unsigned int Opcode = MI.getOpcode();
+        unsigned int Depth = 0;
+        while (MI.getNumOperands() > 0)
+          MI.removeOperand(MI.getNumOperands() - 1);
+        for (auto MO : Ops) {
+          if (MO.isMBB()) {
+            TargetMBB = MO.getMBB()->getNumber();
+            Depth = getBranchDepth(MF, MO.getMBB(), &MI);
+            MO = MachineOperand::CreateImm(Depth);
           }
+          MI.addOperand(MF, MO);
         }
-        break;
-      }
-      default:
-        if (MI.isTerminator()) {
-          // Rewrite MBB operands to be depth immediates.
-          SmallVector<MachineOperand, INIT_SMALL_VECTOR_MO_SIZE> Ops(MI.operands());
-          unsigned int Opcode = MI.getOpcode();
-          unsigned int depth = 0;
-          while (MI.getNumOperands() > 0)
-            MI.removeOperand(MI.getNumOperands() - 1);
-          for (auto MO : Ops) {
-            if (MO.isMBB()) {
-              depth = getBranchDepth(Stack, &SetEndBlockLoop, MO.getMBB());
-              MO = MachineOperand::CreateImm(depth);
-            }
-            MI.addOperand(MF, MO);
-          }
-          if (Opcode == XVM::BR) {
+        if (Opcode == XVM::BR) {
+          if (Depth == -1 && ContinueMap[&MI] == TargetMBB) {
+            MI.setDesc(TII->get(XVM::CONTINUE));
+          } else {
             MI.setDesc(TII->get(XVM::BREAK_IMM));
-          } else if (TII->isCondBranch(&MI) && !TII->isCondBranchProcessed(&MI)) {
-            /** add the following instructions: THEN, BRREAK_IMM and END_THEN */
-            CondBranchsWithDepth.insert(std::make_pair(&MI, depth));
           }
+        } else if (TII->isCondBranch(&MI) && !TII->isCondBranchProcessed(&MI)) {
+          /** add the following instructions: THEN, BRREAK_IMM and END_THEN */
+          CondBranchsWithDepth.insert(std::make_pair(&MI, Depth));
         }
-        break;
       }
     }
   }
   extendCondStmt(CondBranchsWithDepth, MF);
-  assert(Stack.empty() && "Control flow should be balanced");
 }
 
 void XVMCFGStackify::cleanupFunctionData(MachineFunction &MF) {
@@ -785,14 +795,32 @@ void XVMCFGStackify::releaseMemory() {
   EndToBegin.clear();
 }
 
+void XVMCFGStackify::fillEndLoopMap(MachineFunction &MF) {
+  std::vector<int> stack;
+  stack.push_back(-1);
+  for (auto &MBB : MF) {
+    for (MachineInstr &MI : MBB) {
+      if (MI.getOpcode() == XVM::LOOP) {
+        stack.push_back(MBB.getNumber());
+      } else if (MI.getOpcode() == XVM::END_LOOP) {
+        EndLoopToMBBnum[&MI] = EndToBegin[&MI]->getParent()->getNumber();
+        stack.pop_back();
+      } else {
+        ContinueMap[&MI] = stack.back();
+      }
+    }
+  }
+}
+
 bool XVMCFGStackify::runOnMachineFunction(MachineFunction &MF) {
   LLVM_DEBUG(dbgs() << "********** CFG Stackifying **********\n"
                        "********** Function: "
                     << MF.getName() << '\n');
   releaseMemory();
-
   // Place the BLOCK/LOOP/TRY markers to indicate the beginnings of scopes.
   placeMarkers(MF);
+
+  fillEndLoopMap(MF);
 
   // Place the continue statements for each backedge of loops.
   fixBackEdgesOfLoops(MF);
