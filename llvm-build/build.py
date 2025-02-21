@@ -854,7 +854,7 @@ class LlvmCore(BuildUtils):
                 llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
 
             if self.build_config.enable_lzma_7zip:
-                llvm_defines['LIBLZMA_LIBRARIES'] = self.merge_out_path('lzma', 'lib', self.use_platform(), f'liblzma.{self.build_config.LZMA_VERSION}.dylib')
+                llvm_defines['LIBLZMA_LIBRARIES'] = self.merge_install_dir('lzma', self.use_platform(), 'lib', f'liblzma.{self.build_config.LZMA_VERSION}.dylib')
 
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = \
@@ -2178,7 +2178,7 @@ class LlvmLibs(BuildUtils):
         self.check_call(args)
         os.chdir(cur_dir)
 
-        if not static:
+        if not (static or platform_triple.startswith("windows")):
             self.llvm_package.copy_libedit_to_llvm(platform_triple, llvm_make)
             self.llvm_package.copy_libedit_to_llvm(platform_triple, llvm_install)
 
