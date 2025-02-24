@@ -970,6 +970,12 @@ void LogMessageOnPrintf(const char *str) {
 }
 // OHOS_LOCAL end
 
+//OHOS_LOCAL begin
+#if SANITIZER_OHOS
+bool SafeToCallPrintf() { return safe_to_call_printf; }
+#endif
+// OHOS_LOCAL end
+
 #endif  // SANITIZER_LINUX
 
 #if SANITIZER_GLIBC && !SANITIZER_GO
