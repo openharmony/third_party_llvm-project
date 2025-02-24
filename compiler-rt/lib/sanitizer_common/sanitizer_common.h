@@ -229,7 +229,6 @@ bool ColorizeReports();
 void RemoveANSIEscapeSequencesFromString(char *buffer);
 void Printf(const char *format, ...) FORMAT(1, 2);
 void Report(const char *format, ...) FORMAT(1, 2);
-bool IsInPrintf();  // OHOS_LOCAL
 void SetPrintfAndReportCallback(void (*callback)(const char *));
 #define VReport(level, ...)                                              \
   do {                                                                   \
@@ -927,9 +926,19 @@ inline void LogFullErrorReport(const char *buffer) {}
 #if SANITIZER_LINUX || SANITIZER_APPLE
 void WriteOneLineToSyslog(const char *s);
 void LogMessageOnPrintf(const char *str);
+
+// OHOS_LOCAL begin
+#if SANITIZER_OHOS
+bool SafeToCallPrintf();
+#else
+inline bool SafeToCallPrintf(){ return true; }
+#endif
+// OHOS_LOCAL end
+
 #else
 inline void WriteOneLineToSyslog(const char *s) {}
 inline void LogMessageOnPrintf(const char *str) {}
+inline bool SafeToCallPrintf(){ return true; } // OHOS_LOCAL
 #endif
 
 #if SANITIZER_LINUX || SANITIZER_WIN_TRACE
