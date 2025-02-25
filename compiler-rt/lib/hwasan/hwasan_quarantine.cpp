@@ -36,7 +36,7 @@ void HeapQuarantineController::ClearHeapQuarantine(AllocatorCache *cache) {
 
 bool HeapQuarantineController::TryPutInQuarantineWithDealloc(
     uptr ptr, size_t s, u32 aid, u32 fid, AllocatorCache *cache) {
-  if (IsInPrintf())
+  if (!SafeToCallPrintf())
     return false;
   if ((flags()->heap_quarantine_max > 0) &&
       (flags()->heap_quarantine_max > s && flags()->heap_quarantine_min <= s)) {
@@ -97,6 +97,7 @@ void HeapQuarantineController::DeallocateWithHeapQuarantcheck(
             Min(heap_quarantine_list_[i].s, (size_t)flags()->max_free_fill_size);
         for (size_t j = 0; j < fill_size / sizeof(u64); j++) {
           if (ptrBeg[j] != magic) {
+            Printf("\nPotential Cause: use-after-free\n");
             Printf(
                 "ptrBeg was re-written after free %p[%zu], %p "
                 "%016llx:%016llx, freed by:\n",
@@ -104,6 +105,7 @@ void HeapQuarantineController::DeallocateWithHeapQuarantcheck(
             StackDepotGet(heap_quarantine_list_[i].free_context_id).Print();
             Printf("allocated by:\n");
             StackDepotGet(heap_quarantine_list_[i].alloc_context_id).Print();
+            Report("End Hwasan report\n");
             break;
           }
         }
