@@ -153,7 +153,6 @@ private:
   friend class SBSection;
   friend class SBTarget;
   friend class SBValue;
-  friend class SBMixedArkTSDebugger; // OHOS_LOCAL
 
   friend class lldb_private::ScriptInterpreter;
 

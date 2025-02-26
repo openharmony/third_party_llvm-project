@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -std=c++2a -emit-llvm-only -Wno-unused-value %s -verify
+// RUN: %clang_cc1 -std=c++2a -emit-llvm-only -Wno-unused-value -Wno-vla %s -verify
 
 typedef __SIZE_TYPE__ size_t;
 
@@ -8,7 +8,7 @@ consteval int f1(int i) {
   return i;
 }
 
-consteval constexpr int f2(int i) { 
+consteval constexpr int f2(int i) {
   //expected-error@-1 {{cannot combine}}
   return i;
 }
@@ -54,7 +54,7 @@ struct C {
 
 struct D {
   C c;
-  consteval D() = default; // expected-error {{cannot be consteval}}
+  consteval D() = default; // expected-error {{cannot be marked consteval}}
   consteval ~D() = default; // expected-error {{destructor cannot be declared consteval}}
 };
 
@@ -195,7 +195,7 @@ auto ptr = ret1(0);
 struct A {
   consteval int f(int) {
     // expected-note@-1+ {{declared here}}
-    return 0;    
+    return 0;
   }
 };
 
@@ -239,7 +239,7 @@ constexpr int f_c(int i) {
   int t = f(i);
 // expected-error@-1 {{is not a constant expression}}
 // expected-note@-2 {{function parameter}}
-  return f(0);  
+  return f(0);
 }
 
 consteval int f_eval(int i) {
@@ -250,14 +250,34 @@ auto l0 = [](int i) consteval {
   return f(i);
 };
 
-auto l1 = [](int i) constexpr {
-// expected-note@-1 {{declared here}}
+auto l1 = [](int i) constexpr { // expected-error{{cannot take address of immediate call operator}} \
+                                // expected-note {{declared here}}
   int t = f(i);
-// expected-error@-1 {{is not a constant expression}}
-// expected-note@-2 {{function parameter}}
-  return f(0);  
+  return f(0);
 };
 
+int(*test)(int)  = l1;
+
+}
+
+namespace consteval_lambda_in_template {
+struct S {
+    int *value;
+    constexpr S(int v) : value(new int {v}) {}
+    constexpr ~S() { delete value; }
+};
+consteval S fn() { return S(5); }
+
+template <typename T>
+void fn2() {
+    (void)[]() consteval -> int {
+      return *(fn().value);  // OK, immediate context
+    };
+}
+
+void caller() {
+    fn2<int>();
+}
 }
 
 namespace std {
@@ -648,8 +668,39 @@ template <typename T> constexpr int baz() {
 
 static_assert(bar<15>() == 15);
 static_assert(baz<int>() == sizeof(int));
-
 } // namespace value_dependent
+
+// https://github.com/llvm/llvm-project/issues/55601
+namespace issue_55601 {
+template<typename T>
+class Bar {
+  consteval static T x() { return 5; }  // expected-note {{non-constexpr constructor 'derp' cannot be used in a constant expression}}
+ public:
+  Bar() : a(x()) {} // expected-error {{call to consteval function 'issue_55601::Bar<issue_55601::derp>::x' is not a constant expression}}
+                    // expected-error@-1 {{call to consteval function 'issue_55601::derp::operator int' is not a constant expression}}
+                    // expected-note@-2 {{in call to 'x()'}}
+                    // expected-note@-3 {{non-literal type 'issue_55601::derp' cannot be used in a constant expression}}
+ private:
+  int a;
+};
+Bar<int> f;
+Bar<float> g;
+
+struct derp {
+  // Can't be used in a constant expression
+  derp(int); // expected-note {{declared here}}
+  consteval operator int() const { return 5; }
+};
+Bar<derp> a; // expected-note {{in instantiation of member function 'issue_55601::Bar<issue_55601::derp>::Bar' requested here}}
+
+struct constantDerp {
+  // Can be used in a constant expression.
+  consteval constantDerp(int) {}
+  consteval operator int() const { return 5; }
+};
+Bar<constantDerp> b;
+
+} // namespace issue_55601
 
 namespace default_argument {
 
@@ -730,7 +781,7 @@ struct S {
 };
 
 S s1; // expected-error {{call to consteval function 'NamespaceScopeConsteval::S::S' is not a constant expression}} \
-         expected-note {{subobject of type 'int' is not initialized}}
+         expected-note {{subobject 'Val' is not initialized}}
 
 template <typename Ty>
 struct T {
@@ -739,7 +790,7 @@ struct T {
 };
 
 T<int> t; // expected-error {{call to consteval function 'NamespaceScopeConsteval::T<int>::T' is not a constant expression}} \
-             expected-note {{subobject of type 'int' is not initialized}}
+             expected-note {{subobject 'Val' is not initialized}}
 
 } // namespace NamespaceScopeConsteval
 
@@ -766,6 +817,158 @@ void test() {
   static_assert(c == 8);
 }
 }
+
+namespace defaulted_special_member_template {
+template <typename T>
+struct default_ctor {
+  T data;
+  consteval default_ctor() = default; // expected-note {{non-constexpr constructor 'foo' cannot be used in a constant expression}}
+};
+
+template <typename T>
+struct copy {
+  T data;
+
+  consteval copy(const copy &) = default;            // expected-note {{non-constexpr constructor 'foo' cannot be used in a constant expression}}
+  consteval copy &operator=(const copy &) = default; // expected-note {{non-constexpr function 'operator=' cannot be used in a constant expression}}
+  copy() = default;
+};
+
+template <typename T>
+struct move {
+  T data;
+
+  consteval move(move &&) = default;            // expected-note {{non-constexpr constructor 'foo' cannot be used in a constant expression}}
+  consteval move &operator=(move &&) = default; // expected-note {{non-constexpr function 'operator=' cannot be used in a constant expression}}
+  move() = default;
+};
+
+struct foo {
+  foo() {}            // expected-note {{declared here}}
+  foo(const foo &) {} // expected-note {{declared here}}
+  foo(foo &&) {}      // expected-note {{declared here}}
+
+  foo& operator=(const foo &) { return *this; } // expected-note {{declared here}}
+  foo& operator=(foo &&) { return *this; }      // expected-note {{declared here}}
+};
+
+void func() {
+  default_ctor<foo> fail0; // expected-error {{call to consteval function 'defaulted_special_member_template::default_ctor<defaulted_special_member_template::foo>::default_ctor' is not a constant expression}} \
+                              expected-note {{in call to 'default_ctor()'}}
+
+  copy<foo> good0;
+  copy<foo> fail1{good0}; // expected-error {{call to consteval function 'defaulted_special_member_template::copy<defaulted_special_member_template::foo>::copy' is not a constant expression}} \
+                             expected-note {{in call to 'copy(good0)'}}
+  fail1 = good0;          // expected-error {{call to consteval function 'defaulted_special_member_template::copy<defaulted_special_member_template::foo>::operator=' is not a constant expression}} \
+                             expected-note {{in call to 'fail1.operator=(good0)'}}
+
+  move<foo> good1;
+  move<foo> fail2{static_cast<move<foo>&&>(good1)}; // expected-error {{call to consteval function 'defaulted_special_member_template::move<defaulted_special_member_template::foo>::move' is not a constant expression}} \
+                                                       expected-note {{in call to 'move(good1)'}}
+  fail2 = static_cast<move<foo>&&>(good1);          // expected-error {{call to consteval function 'defaulted_special_member_template::move<defaulted_special_member_template::foo>::operator=' is not a constant expression}} \
+                                                       expected-note {{in call to 'fail2.operator=(good1)'}}
+}
+} // namespace defaulted_special_member_template
+
+namespace multiple_default_constructors {
+struct Foo {
+  Foo() {} // expected-note {{declared here}}
+};
+struct Bar {
+  Bar() = default;
+};
+struct Baz {
+  consteval Baz() {}
+};
+
+template <typename T, unsigned N>
+struct S {
+  T data;
+  S() requires (N==1) = default;
+  // This cannot be used in constexpr context.
+  S() requires (N==2) {}  // expected-note {{declared here}}
+  consteval S() requires (N==3) = default;  // expected-note {{non-constexpr constructor 'Foo' cannot be used in a constant expression}}
+};
+
+void func() {
+  // Explicitly defaulted constructor.
+  S<Foo, 1> s1;
+  S<Bar, 1> s2;
+  // User provided constructor.
+  S<Foo, 2> s3;
+  S<Bar, 2> s4;
+  // Consteval explicitly defaulted constructor.
+  S<Foo, 3> s5; // expected-error {{call to consteval function 'multiple_default_constructors::S<multiple_default_constructors::Foo, 3>::S' is not a constant expression}} \
+                   expected-note {{in call to 'S()'}}
+  S<Bar, 3> s6;
+  S<Baz, 3> s7;
+}
+
+consteval int aConstevalFunction() { // expected-error {{consteval function never produces a constant expression}}
+  // Defaulted default constructors are implicitly consteval.
+  S<Bar, 1> s1;
+
+  S<Baz, 2> s4; // expected-note {{non-constexpr constructor 'S' cannot be used in a constant expression}}
+
+  S<Bar, 3> s2;
+  S<Baz, 3> s3;
+  return 0;
+}
+
+} // namespace multiple_default_constructors
+
+namespace GH50055 {
+enum E {e1=0, e2=1};
+consteval int testDefaultArgForParam(E eParam = (E)-1) {
+// expected-error@-1 {{integer value -1 is outside the valid range of values [0, 1] for the enumeration type 'E'}}
+  return (int)eParam;
+}
+
+int test() {
+  return testDefaultArgForParam() + testDefaultArgForParam((E)1);
+}
+}
+
+namespace GH51182 {
+// Nested consteval function.
+consteval int f(int v) {
+  return v;
+}
+
+template <typename T>
+consteval int g(T a) {
+  // An immediate function context.
+  int n = f(a);
+  return n;
+}
+static_assert(g(100) == 100);
+// --------------------------------------
+template <typename T>
+consteval T max(const T& a, const T& b) {
+    return (a > b) ? a : b;
+}
+template <typename T>
+consteval T mid(const T& a, const T& b, const T& c) {
+    T m = max(max(a, b), c);
+    if (m == a)
+        return max(b, c);
+    if (m == b)
+        return max(a, c);
+    return max(a, b);
+}
+static_assert(max(1,2)==2);
+static_assert(mid(1,2,3)==2);
+} // namespace GH51182
+
+// https://github.com/llvm/llvm-project/issues/56183
+namespace GH56183 {
+consteval auto Foo(auto c) { return c; }
+consteval auto Bar(auto f) { return f(); }
+void test() {
+  constexpr auto x = Foo(Bar([] { return 'a'; }));
+  static_assert(x == 'a');
+}
+}  // namespace GH56183
 
 // https://github.com/llvm/llvm-project/issues/51695
 namespace GH51695 {
@@ -835,3 +1038,197 @@ void g() {
   (void)[](int i) consteval { return i; }(0);
 }
 }  // namespace GH50455
+
+namespace GH58302 {
+struct A {
+   consteval A(){}
+   consteval operator int() { return 1;}
+};
+
+int f() {
+   int x = A{};
+}
+}
+
+namespace GH57682 {
+void test() {
+  constexpr auto l1 = []() consteval { // expected-error {{cannot take address of consteval call operator of '(lambda at}} \
+                                       // expected-note  2{{declared here}}
+        return 3;
+  };
+  constexpr int (*f1)(void) = l1; // expected-error {{constexpr variable 'f1' must be initialized by a constant expression}} \
+                                  // expected-note  {{pointer to a consteval declaration is not a constant expression}}
+
+
+  constexpr auto lstatic = []() static consteval { // expected-error {{cannot take address of consteval call operator of '(lambda at}} \
+                                       // expected-note  2{{declared here}} \
+                                       // expected-warning {{extension}}
+        return 3;
+  };
+  constexpr int (*f2)(void) = lstatic; // expected-error {{constexpr variable 'f2' must be initialized by a constant expression}} \
+                                       // expected-note  {{pointer to a consteval declaration is not a constant expression}}
+
+  int (*f3)(void) = []() consteval { return 3; };  // expected-error {{cannot take address of consteval call operator of '(lambda at}} \
+                                                   // expected-note {{declared here}}
+}
+
+consteval void consteval_test() {
+  constexpr auto l1 = []() consteval { return 3; };
+
+  int (*f1)(void) = l1;  // ok
+}
+}
+
+namespace GH60286 {
+
+struct A {
+  int i = 0;
+
+  consteval A() {}
+  A(const A&) { i = 1; }
+  consteval int f() { return i; }
+};
+
+constexpr auto B = A{A{}}.f();
+static_assert(B == 0);
+
+}
+
+namespace GH58207 {
+struct tester {
+    consteval tester(const char* name) noexcept { }
+};
+consteval const char* make_name(const char* name) { return name;}
+consteval const char* pad(int P) { return "thestring"; }
+
+int bad = 10; // expected-note 6{{declared here}}
+
+tester glob1(make_name("glob1"));
+tester glob2(make_name("glob2"));
+constexpr tester cglob(make_name("cglob"));
+tester paddedglob(make_name(pad(bad))); // expected-error {{call to consteval function 'GH58207::tester::tester' is not a constant expression}} \
+                                        // expected-note {{read of non-const variable 'bad' is not allowed in a constant expression}}
+
+constexpr tester glob3 = { make_name("glob3") };
+constexpr tester glob4 = { make_name(pad(bad)) }; // expected-error {{call to consteval function 'GH58207::tester::tester' is not a constant expression}} \
+                                                  // expected-error {{constexpr variable 'glob4' must be initialized by a constant expression}} \
+                                                  // expected-note 2{{read of non-const variable 'bad' is not allowed in a constant expression}}
+
+auto V = make_name(pad(3));
+auto V1 = make_name(pad(bad)); // expected-error {{call to consteval function 'GH58207::make_name' is not a constant expression}} \
+                               // expected-note {{read of non-const variable 'bad' is not allowed in a constant expression}}
+
+
+void foo() {
+  static tester loc1(make_name("loc1"));
+  static constexpr tester loc2(make_name("loc2"));
+  static tester paddedloc(make_name(pad(bad))); // expected-error {{call to consteval function 'GH58207::tester::tester' is not a constant expression}} \
+                                                // expected-note {{read of non-const variable 'bad' is not allowed in a constant expression}}
+}
+
+void bar() {
+  static tester paddedloc(make_name(pad(bad))); // expected-error {{call to consteval function 'GH58207::tester::tester' is not a constant expression}} \
+                                                // expected-note {{read of non-const variable 'bad' is not allowed in a constant expression}}
+}
+}
+
+namespace GH64949 {
+struct f {
+  int g; // expected-note 2{{subobject declared here}}
+  constexpr ~f() {}
+};
+class h {
+
+public:
+  consteval h(char *) {}
+  consteval operator int() const { return 1; }
+  f i;
+};
+
+void test() { (int)h{nullptr}; }
+// expected-error@-1 {{call to consteval function 'GH64949::h::h' is not a constant expression}}
+// expected-note@-2 {{subobject 'g' is not initialized}}
+
+int  test2() { return h{nullptr}; }
+// expected-error@-1 {{call to consteval function 'GH64949::h::h' is not a constant expression}}
+// expected-note@-2 {{subobject 'g' is not initialized}}
+
+
+}
+
+namespace GH65985 {
+
+int consteval operator""_foo(unsigned long long V) {
+    return 0;
+}
+int consteval operator""_bar(unsigned long long V); // expected-note 3{{here}}
+
+int consteval f() {
+  return 0;
+}
+
+int consteval g();  // expected-note {{here}}
+
+
+struct C {
+    static const int a = 1_foo;
+    static constexpr int b = 1_foo;
+    static const int c = 1_bar; // expected-error {{call to consteval function 'GH65985::operator""_bar' is not a constant expression}} \
+                                // expected-note {{undefined function 'operator""_bar' cannot be used in a constant expression}} \
+                                // expected-error {{in-class initializer for static data member is not a constant expression}}
+
+    // FIXME: remove duplicate diagnostics
+    static constexpr int d = 1_bar; // expected-error {{call to consteval function 'GH65985::operator""_bar' is not a constant expression}} \
+                                    // expected-note {{undefined function 'operator""_bar' cannot be used in a constant expression}} \
+                                    // expected-error {{constexpr variable 'd' must be initialized by a constant expression}}  \
+                                    // expected-note {{undefined function 'operator""_bar' cannot be used in a constant expression}}
+
+    static const int e = f();
+    static const int f = g(); // expected-error {{call to consteval function 'GH65985::g' is not a constant expression}} \
+                              // expected-error {{in-class initializer for static data member is not a constant expression}} \
+                              // expected-note  {{undefined function 'g' cannot be used in a constant expression}}
+};
+
+}
+
+namespace GH66562 {
+
+namespace ns
+{
+    consteval int foo(int x) { return 1; } // expected-note {{declared here}}  \
+                                           // expected-note {{passing argument to parameter 'x' here}}
+}
+
+template <class A>
+struct T {
+    static constexpr auto xx = ns::foo(A{}); // expected-error {{cannot take address of consteval function 'foo' outside of an immediate invocation}} \
+                                             // expected-error {{cannot initialize a parameter of type 'int' with an rvalue of type 'char *'}}
+};
+
+template class T<char*>; // expected-note {{in instantiation}}
+
+}
+
+namespace GH65520 {
+
+consteval int bar (int i) { if (i != 1) return 1/0; return 0; }
+// expected-note@-1{{division by zero}}
+
+void
+g ()
+{
+  int a_ok[bar(1)];
+  int a_err[bar(3)]; // expected-error {{call to consteval function 'GH65520::bar' is not a constant expression}} \
+                     // expected-note {{in call to 'bar(3)'}}
+}
+
+consteval int undefined(); // expected-note {{declared here}}
+
+consteval void immediate() {
+    int a [undefined()]; // expected-note  {{undefined function 'undefined' cannot be used in a constant expression}} \
+                         // expected-error {{call to consteval function 'GH65520::undefined' is not a constant expression}} \
+                         // expected-error {{variable of non-literal type 'int[undefined()]' cannot be defined in a constexpr function before C++23}}
+}
+
+
+}

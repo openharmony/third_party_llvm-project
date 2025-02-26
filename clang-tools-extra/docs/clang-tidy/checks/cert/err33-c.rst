@@ -5,7 +5,7 @@ cert-err33-c
 
 Warns on unused function return values. Many of the standard library functions
 return a value that indicates if the call was successful. Ignoring the returned
-value can cause unexpected behavior if an error has occured. The following
+value can cause unexpected behavior if an error has occurred. The following
 functions are checked:
 
 * aligned_alloc()
@@ -186,8 +186,11 @@ functions are checked:
 * wscanf()
 * wscanf_s()
 
-This check is an alias of check `bugprone-unused-return-value <../bugprone/unused-return-value.html>`_
+This check is an alias of check :doc:`bugprone-unused-return-value <../bugprone/unused-return-value>`
 with a fixed set of functions.
+
+Suppressing issues by casting to ``void`` is enabled by default and can be
+disabled by setting `AllowCastToVoid` option to ``false``.
 
 The check corresponds to a part of CERT C Coding Standard rule `ERR33-C.
 Detect and handle standard library errors

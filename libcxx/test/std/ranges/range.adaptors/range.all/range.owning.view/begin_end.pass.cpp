@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 
 // constexpr iterator_t<R> begin();
@@ -20,6 +19,7 @@
 #include <array>
 #include <cassert>
 #include <concepts>
+#include <memory>
 
 #include "test_iterators.h"
 #include "test_macros.h"

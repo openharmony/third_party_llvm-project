@@ -14,23 +14,53 @@
 
 namespace mlir {
 
+/// Lowering for gpu.dynamic.shared.memory to LLVM dialect. The pattern first
+/// create a 0-sized global array symbol similar as LLVM expects. It constructs
+/// a memref descriptor with these values and return it.
+struct GPUDynamicSharedMemoryOpLowering
+    : public ConvertOpToLLVMPattern<gpu::DynamicSharedMemoryOp> {
+  using ConvertOpToLLVMPattern<
+      gpu::DynamicSharedMemoryOp>::ConvertOpToLLVMPattern;
+  GPUDynamicSharedMemoryOpLowering(const LLVMTypeConverter &converter,
+                                   unsigned alignmentBit = 0)
+      : ConvertOpToLLVMPattern<gpu::DynamicSharedMemoryOp>(converter),
+        alignmentBit(alignmentBit) {}
+
+  LogicalResult
+  matchAndRewrite(gpu::DynamicSharedMemoryOp op, OpAdaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override;
+
+private:
+  // Alignment bit
+  unsigned alignmentBit;
+};
+
 struct GPUFuncOpLowering : ConvertOpToLLVMPattern<gpu::GPUFuncOp> {
-  GPUFuncOpLowering(LLVMTypeConverter &converter, unsigned allocaAddrSpace,
-                    StringAttr kernelAttributeName)
+  GPUFuncOpLowering(
+      const LLVMTypeConverter &converter, unsigned allocaAddrSpace,
+      unsigned workgroupAddrSpace, StringAttr kernelAttributeName,
+      std::optional<StringAttr> kernelBlockSizeAttributeName = std::nullopt)
       : ConvertOpToLLVMPattern<gpu::GPUFuncOp>(converter),
         allocaAddrSpace(allocaAddrSpace),
-        kernelAttributeName(kernelAttributeName) {}
+        workgroupAddrSpace(workgroupAddrSpace),
+        kernelAttributeName(kernelAttributeName),
+        kernelBlockSizeAttributeName(kernelBlockSizeAttributeName) {}
 
   LogicalResult
   matchAndRewrite(gpu::GPUFuncOp gpuFuncOp, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override;
 
 private:
-  /// The address spcae to use for `alloca`s in private memory.
+  /// The address space to use for `alloca`s in private memory.
   unsigned allocaAddrSpace;
+  /// The address space to use declaring workgroup memory.
+  unsigned workgroupAddrSpace;
 
   /// The attribute name to use instead of `gpu.kernel`.
   StringAttr kernelAttributeName;
+
+  /// The attribute name to to set block size
+  std::optional<StringAttr> kernelBlockSizeAttributeName;
 };
 
 /// The lowering of gpu.printf to a call to HIP hostcalls
@@ -49,12 +79,12 @@ struct GPUPrintfOpToHIPLowering : public ConvertOpToLLVMPattern<gpu::PrintfOp> {
 /// The lowering of gpu.printf to a call to an external printf() function
 ///
 /// This pass will add a declaration of printf() to the GPUModule if needed
-/// and seperate out the format strings into global constants. For some
+/// and separate out the format strings into global constants. For some
 /// runtimes, such as OpenCL on AMD, this is sufficient setup, as the compiler
 /// will lower printf calls to appropriate device-side code
 struct GPUPrintfOpToLLVMCallLowering
     : public ConvertOpToLLVMPattern<gpu::PrintfOp> {
-  GPUPrintfOpToLLVMCallLowering(LLVMTypeConverter &converter,
+  GPUPrintfOpToLLVMCallLowering(const LLVMTypeConverter &converter,
                                 int addressSpace = 0)
       : ConvertOpToLLVMPattern<gpu::PrintfOp>(converter),
         addressSpace(addressSpace) {}
@@ -67,17 +97,44 @@ private:
   int addressSpace;
 };
 
+/// Lowering of gpu.printf to a vprintf standard library.
+struct GPUPrintfOpToVPrintfLowering
+    : public ConvertOpToLLVMPattern<gpu::PrintfOp> {
+  using ConvertOpToLLVMPattern<gpu::PrintfOp>::ConvertOpToLLVMPattern;
+
+  LogicalResult
+  matchAndRewrite(gpu::PrintfOp gpuPrintfOp, gpu::PrintfOpAdaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override;
+};
+
 struct GPUReturnOpLowering : public ConvertOpToLLVMPattern<gpu::ReturnOp> {
   using ConvertOpToLLVMPattern<gpu::ReturnOp>::ConvertOpToLLVMPattern;
 
   LogicalResult
   matchAndRewrite(gpu::ReturnOp op, OpAdaptor adaptor,
-                  ConversionPatternRewriter &rewriter) const override {
-    rewriter.replaceOpWithNewOp<LLVM::ReturnOp>(op, adaptor.getOperands());
-    return success();
-  }
+                  ConversionPatternRewriter &rewriter) const override;
 };
 
+namespace impl {
+/// Unrolls op if it's operating on vectors.
+LogicalResult scalarizeVectorOp(Operation *op, ValueRange operands,
+                                ConversionPatternRewriter &rewriter,
+                                const LLVMTypeConverter &converter);
+} // namespace impl
+
+/// Rewriting that unrolls SourceOp to scalars if it's operating on vectors.
+template <typename SourceOp>
+struct ScalarizeVectorOpLowering : public ConvertOpToLLVMPattern<SourceOp> {
+public:
+  using ConvertOpToLLVMPattern<SourceOp>::ConvertOpToLLVMPattern;
+
+  LogicalResult
+  matchAndRewrite(SourceOp op, typename SourceOp::Adaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    return impl::scalarizeVectorOp(op, adaptor.getOperands(), rewriter,
+                                   *this->getTypeConverter());
+  }
+};
 } // namespace mlir
 
 #endif // MLIR_CONVERSION_GPUCOMMON_GPUOPSLOWERING_H_

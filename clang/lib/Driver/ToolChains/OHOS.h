@@ -23,8 +23,9 @@ public:
           const llvm::opt::ArgList &Args);
 
   bool HasNativeLLVMSupport() const override { return true; }
-  bool IsIntegratedAssemblerDefault() const override { return true; }
+
   bool IsMathErrnoDefault() const override { return false; }
+
   RuntimeLibType GetDefaultRuntimeLibType() const override {
     return ToolChain::RLT_CompilerRT;
   }
@@ -32,13 +33,9 @@ public:
     return ToolChain::CST_Libcxx;
   }
   // Not add -funwind-tables by default
-  bool IsUnwindTablesDefault(const llvm::opt::ArgList &Args) const override {
-    return false;
-  }
   bool isPICDefault() const override { return false; }
   bool isPIEDefault(const llvm::opt::ArgList &Args) const override { return true; }
   bool isPICDefaultForced() const override { return false; }
-  bool useRelaxRelocations() const override { return true; }
   UnwindLibType GetUnwindLibType(const llvm::opt::ArgList &Args) const override;
   UnwindLibType GetDefaultUnwindLibType() const override { return UNW_CompilerRT; }
 
@@ -74,7 +71,7 @@ public:
     return new tools::gnutools::Assembler(*this);
   }
 
-  virtual path_list getRuntimePaths() const override; // OHOS_LOCAL
+  path_list getRuntimePaths() const;
 
 protected:
   std::string getMultiarchTriple(const llvm::Triple &T) const;
@@ -85,7 +82,8 @@ protected:
   SanitizerMask getSupportedSanitizers() const override;
   void addProfileRTLibs(const llvm::opt::ArgList &Args,
                              llvm::opt::ArgStringList &CmdArgs) const override;
-  std::string getArchSpecificLibPath() const override;
+  path_list getArchSpecificLibPaths() const override;
+
 private:
   Multilib SelectedMultilib;
 };

@@ -12,11 +12,6 @@ set(GWP_ASAN_SOURCES
   guarded_pool_allocator.cpp
   stack_trace_compressor.cpp
 )
-# OHOS_LOCAL begin
-if(OHOS)
-list(APPEND GWP_ASAN_SOURCES gwp_asan_c_interface.cpp)
-endif()
-# OHOS_LOCAL end
 
 set(GWP_ASAN_HEADERS
   common.h
@@ -41,11 +36,6 @@ set(GWP_ASAN_HEADERS
 set(GWP_ASAN_CFLAGS ${SANITIZER_COMMON_CFLAGS} -fno-rtti -fno-exceptions
     -nostdinc++ -pthread -fno-omit-frame-pointer)
 append_list_if(COMPILER_RT_HAS_FPIC_FLAG -fPIC GWP_ASAN_CFLAGS)
-# OHOS_LOCAL begin
-if(OHOS)
-list(APPEND GWP_ASAN_CFLAGS -fno-emulated-tls)
-endif()
-# OHOS_LOCAL end
 # append_list_if(COMPILER_RT_HAS_SANITIZER_COMMON ${SANITIZER_COMMON_CFLAGS} GWP_ASAN_CFLAGS)
 
 # Remove -stdlib= which is unused when passing -nostdinc++.
@@ -68,19 +58,6 @@ set(GWP_ASAN_BACKTRACE_HEADERS
   options.h
   options.inc
 )
-# OHOS_LOCAL begin
-if(OHOS)
-  set(GWP_ASAN_BACKTRACE_SOURCES
-    optional/backtrace_ohos.cpp)
-  set(GWP_ASAN_OBJECT_LIBS
-    RTGwpAsanSegvHandler)
-else()
-  set(GWP_ASAN_BACKTRACE_SOURCES
-    optional/backtrace_linux_libc.cpp)
-  set(GWP_ASAN_OBJECT_LIBS)
-endif()
-# OHOS_LOCAL end
-
 set(GWP_ASAN_SEGV_HANDLER_HEADERS
   optional/segv_handler.h
   options.h)
@@ -88,49 +65,46 @@ set(GWP_ASAN_SEGV_HANDLER_HEADERS
 set(GWP_ASAN_OPTIONS_PARSER_CFLAGS
     ${GWP_ASAN_CFLAGS})
 
-if (COMPILER_RT_HAS_GWP_ASAN)
-  foreach(arch ${GWP_ASAN_SUPPORTED_ARCH})
-    add_compiler_rt_runtime(
-      clang_rt.gwp_asan
-      STATIC
-      ARCHS ${arch}
-      SOURCES ${GWP_ASAN_SOURCES}
-      ADDITIONAL_HEADERS ${GWP_ASAN_HEADERS}
-      CFLAGS ${GWP_ASAN_CFLAGS}
-      OBJECT_LIBS ${GWP_ASAN_OBJECT_LIBS}
-      PARENT_TARGET gwp_asan
-    )
-  endforeach()
+foreach(arch ${GWP_ASAN_SUPPORTED_ARCH})
+  add_compiler_rt_runtime(
+    clang_rt.gwp_asan
+    STATIC
+    ARCHS ${arch}
+    SOURCES ${GWP_ASAN_SOURCES}
+    ADDITIONAL_HEADERS ${GWP_ASAN_HEADERS}
+    CFLAGS ${GWP_ASAN_CFLAGS}
+    PARENT_TARGET gwp_asan
+  )
+endforeach()
 
-  add_compiler_rt_object_libraries(RTGwpAsan
-      ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
-      SOURCES ${GWP_ASAN_SOURCES}
-      ADDITIONAL_HEADERS ${GWP_ASAN_HEADERS}
-      CFLAGS ${GWP_ASAN_CFLAGS})
-  add_compiler_rt_object_libraries(RTGwpAsanOptionsParser
-      ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
-      SOURCES ${GWP_ASAN_OPTIONS_PARSER_SOURCES}
-      ADDITIONAL_HEADERS ${GWP_ASAN_OPTIONS_PARSER_HEADERS}
-      CFLAGS ${GWP_ASAN_OPTIONS_PARSER_CFLAGS})
+add_compiler_rt_object_libraries(RTGwpAsan
+    ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
+    SOURCES ${GWP_ASAN_SOURCES}
+    ADDITIONAL_HEADERS ${GWP_ASAN_HEADERS}
+    CFLAGS ${GWP_ASAN_CFLAGS})
 
-  # As above, build the pre-implemented optional backtrace support libraries.
-  add_compiler_rt_object_libraries(RTGwpAsanBacktraceLibc
-      ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
-      SOURCES ${GWP_ASAN_BACKTRACE_SOURCES}
-      ADDITIONAL_HEADERS ${GWP_ASAN_BACKTRACE_HEADERS}
-      CFLAGS ${GWP_ASAN_CFLAGS})
+add_compiler_rt_object_libraries(RTGwpAsanOptionsParser
+    ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
+    SOURCES ${GWP_ASAN_OPTIONS_PARSER_SOURCES}
+    ADDITIONAL_HEADERS ${GWP_ASAN_OPTIONS_PARSER_HEADERS}
+    CFLAGS ${GWP_ASAN_OPTIONS_PARSER_CFLAGS})
 
-  add_compiler_rt_object_libraries(RTGwpAsanSegvHandler
-      ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
-      SOURCES optional/segv_handler_posix.cpp
-      ADDITIONAL_HEADERS ${GWP_ASAN_SEGV_HANDLER_HEADERS}
-      CFLAGS ${GWP_ASAN_CFLAGS})
-  add_compiler_rt_object_libraries(RTGwpAsanBacktraceSanitizerCommon
-      ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
-      SOURCES optional/backtrace_sanitizer_common.cpp
-      ADDITIONAL_HEADERS ${GWP_ASAN_BACKTRACE_HEADERS}
-      CFLAGS ${GWP_ASAN_CFLAGS} ${SANITIZER_COMMON_CFLAGS})
-endif()
+# As above, build the pre-implemented optional backtrace support libraries.
+add_compiler_rt_object_libraries(RTGwpAsanBacktraceLibc
+    ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
+    SOURCES optional/backtrace_linux_libc.cpp
+    ADDITIONAL_HEADERS ${GWP_ASAN_BACKTRACE_HEADERS}
+    CFLAGS ${GWP_ASAN_CFLAGS})
+add_compiler_rt_object_libraries(RTGwpAsanSegvHandler
+    ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
+    SOURCES optional/segv_handler_posix.cpp
+    ADDITIONAL_HEADERS ${GWP_ASAN_SEGV_HANDLER_HEADERS}
+    CFLAGS ${GWP_ASAN_CFLAGS})
+add_compiler_rt_object_libraries(RTGwpAsanBacktraceSanitizerCommon
+    ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
+    SOURCES optional/backtrace_sanitizer_common.cpp
+    ADDITIONAL_HEADERS ${GWP_ASAN_BACKTRACE_HEADERS}
+    CFLAGS ${GWP_ASAN_CFLAGS} ${SANITIZER_COMMON_CFLAGS})
 
 if(COMPILER_RT_INCLUDE_TESTS)
   add_subdirectory(tests)

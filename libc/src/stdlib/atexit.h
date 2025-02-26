@@ -9,10 +9,13 @@
 #ifndef LLVM_LIBC_SRC_STDLIB_ATEXIT_H
 #define LLVM_LIBC_SRC_STDLIB_ATEXIT_H
 
-namespace __llvm_libc {
+#include "hdr/types/atexithandler_t.h"
+#include "src/__support/macros/config.h"
 
-int atexit(void (*function)());
+namespace LIBC_NAMESPACE_DECL {
 
-} // namespace __llvm_libc
+int atexit(__atexithandler_t);
+
+} // namespace LIBC_NAMESPACE_DECL
 
 #endif // LLVM_LIBC_SRC_STDLIB_ATEXIT_H

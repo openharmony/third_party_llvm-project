@@ -53,10 +53,6 @@ define i32 @fn2_s2() section "s2" {
 ; CHECK:        .globl fn2_s2
 ; CHECK:        fn2_s2:
 
-; Check if the "_hilog_" section is set as mergeable
-@hilog_var = global [14 x i8] c"Hello world!\0A\00", section "_hilog_"
-; CHECK: .section _hilog_,"aMS",@progbits,1,unique,1
-
 ; Values that share a section name with a function are placed in different sections without executable flag
 @rw_s1 = global i32 10, section "s1", align 4
 @ro_s2 = constant i32 10, section "s2", align 4

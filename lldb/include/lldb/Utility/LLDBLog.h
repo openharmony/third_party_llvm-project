@@ -47,12 +47,9 @@ enum class LLDBLog : Log::MaskType {
   Types = Log::ChannelFlag<28>,
   Unwind = Log::ChannelFlag<29>,
   Watchpoints = Log::ChannelFlag<30>,
-  // OHOS_LOCAL begin
-  Performance = Log::ChannelFlag<31>,
-  OnDemand = Log::ChannelFlag<32>,
-  MixedDebugger = Log::ChannelFlag<33>,
-  LLVM_MARK_AS_BITMASK_ENUM(MixedDebugger),
-  // OHOS_LOCAL end
+  OnDemand = Log::ChannelFlag<31>,
+  Source = Log::ChannelFlag<32>,
+  LLVM_MARK_AS_BITMASK_ENUM(OnDemand),
 };
 
 LLVM_ENABLE_BITMASK_ENUMS_IN_NAMESPACE();
@@ -61,8 +58,5 @@ void InitializeLldbChannel();
 
 template <> Log::Channel &LogChannelFor<LLDBLog>();
 } // namespace lldb_private
-
-// OHOS_LOCAL
-#define LLDB_PERFORMANCE_LOG(...)  LLDB_LOGF(GetLog(LLDBLog::Performance), __VA_ARGS__)
 
 #endif // LLDB_UTILITY_LLDBLOG_H

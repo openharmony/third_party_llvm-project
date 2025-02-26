@@ -56,7 +56,7 @@ public:
 
   static void SetQuiet(bool value);
 
-  static void DumpCategoryTimes(Stream *s);
+  static void DumpCategoryTimes(Stream &s);
 
   static void ResetCategoryTimes();
 
@@ -75,27 +75,6 @@ private:
   Timer(const Timer &) = delete;
   const Timer &operator=(const Timer &) = delete;
 };
-// OHOS_LOCAL begin
-namespace LLDBPerformanceTagName
-{
-  const char *const TAG_DYNAMICLOADER = "LLDB_Performance_DynamicLoader";
-  const char *const TAG_BREAKPOINTS   = "LLDB_Performance_Breakpoints";
-  const char *const TAG_CONNECTION    = "LLDB_Performance_Connection";
-  const char *const TAG_JITLOADER     = "LLDB_Performance_JITLoader";
-  const char *const TAG_GDBREMOTE     = "LLDB_Performance_GDBRemote";
-  const char *const TAG_PLATFORM      = "LLDB_Performance_Platform";
-  const char *const TAG_DEBUGGER      = "LLDB_Performance_Debugger";
-  const char *const TAG_COMMANDS      = "LLDB_Performance_Commands";
-  const char *const TAG_MODULES       = "LLDB_Performance_Modules";
-  const char *const TAG_SYMBOLS       = "LLDB_Performance_Symbols";
-  const char *const TAG_PROCESS       = "LLDB_Performance_Process";
-  const char *const TAG_TARGET        = "LLDB_Performance_Target";
-  const char *const TAG_UNWIND        = "LLDB_Performance_Unwind";
-  const char *const TAG_THREAD        = "LLDB_Performance_Thread";
-  const char *const TAG_STEP          = "LLDB_Performance_Step";
-  const char *const TAG_HDC           = "LLDB_Performance_HDC";
-}
-// OHOS_LOCAL end
 
 } // namespace lldb_private
 
@@ -107,16 +86,5 @@ namespace LLDBPerformanceTagName
 #define LLDB_SCOPED_TIMERF(...)                                                \
   static ::lldb_private::Timer::Category _cat(LLVM_PRETTY_FUNCTION);           \
   ::lldb_private::Timer _scoped_timer(_cat, __VA_ARGS__)
-
-// OHOS_LOCAL begin
-#ifdef LLDB_ENABLE_PERFORMANCE_MONITORING
-#define LLDB_MODULE_TIMER(tag)                                                                \
-  static std::string _tag_str = (llvm::Twine(tag) + llvm::Twine(LLVM_PRETTY_FUNCTION)).str(); \
-  static ::lldb_private::Timer::Category _module_cat(_tag_str.c_str());                       \
-  ::lldb_private::Timer _module_scoped_timer(_module_cat, "%s", LLVM_PRETTY_FUNCTION)
-#else
-#define LLDB_MODULE_TIMER(tag)
-#endif
-// OHOS_LOCAL end
 
 #endif // LLDB_UTILITY_TIMER_H

@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // std::views::all;
 
@@ -18,8 +17,9 @@
 #include <type_traits>
 #include <utility>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
+#include "test_range.h"
 
 int globalBuff[8];
 
@@ -82,11 +82,6 @@ struct RandomAccessRange {
 };
 template<>
 inline constexpr bool std::ranges::enable_borrowed_range<RandomAccessRange> = true;
-
-template <class View, class T>
-concept CanBePiped = requires (View&& view, T&& t) {
-  { std::forward<View>(view) | std::forward<T>(t) };
-};
 
 constexpr bool test() {
   {
@@ -151,8 +146,8 @@ constexpr bool test() {
     static_assert(!std::is_invocable_v<decltype(std::views::all)>);
     static_assert(!std::is_invocable_v<decltype(std::views::all), RandomAccessRange, RandomAccessRange>);
 
-    // `views::all(v)` is expression equivalent to `decay-copy(v)` if the decayed type 
-    // of `v` models `view`. If `v` is an lvalue-reference to a move-only view, the 
+    // `views::all(v)` is expression equivalent to `decay-copy(v)` if the decayed type
+    // of `v` models `view`. If `v` is an lvalue-reference to a move-only view, the
     // expression should be ill-formed because `v` is not copyable
     static_assert(!std::is_invocable_v<decltype(std::views::all), MoveOnlyView&>);
   }

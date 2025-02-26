@@ -6,10 +6,12 @@
 //
 //===----------------------------------------------------------------------===//
 
+// MSVC warning C4244: 'argument': conversion from 'const _Ty2' to 'T', possible loss of data
+// ADDITIONAL_COMPILE_FLAGS(cl-style-warnings): /wd4244
+
 // <algorithm>
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // template<input_iterator I, sentinel_for<I> S, class T1, class T2, class Proj = identity>
 //   requires indirectly_writable<I, const T2&> &&
@@ -136,19 +138,6 @@ constexpr bool test() {
       S a[] = {1, 2, 3, 4};
       auto ret = std::ranges::replace(a, S{1}, S{2}, &S::identity);
       assert(ret == a + 4);
-    }
-  }
-
-  { // check that the implicit conversion to bool works
-    {
-      StrictComparable<int> a[] = {1, 2, 2, 4};
-      auto ret = std::ranges::replace(std::begin(a), std::end(a), 1, 2);
-      assert(ret == std::end(a));
-    }
-    {
-      StrictComparable<int> a[] = {1, 2, 2, 4};
-      auto ret = std::ranges::replace(a, 1, 2);
-      assert(ret == std::end(a));
     }
   }
 

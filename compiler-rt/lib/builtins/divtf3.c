@@ -14,9 +14,9 @@
 #define QUAD_PRECISION
 #include "fp_lib.h"
 
-#if defined(CRT_HAS_128BIT) && defined(CRT_LDBL_128BIT)
+#if defined(CRT_HAS_TF_MODE)
 
-#define NUMBER_OF_HALF_ITERATIONS 5
+#define NUMBER_OF_HALF_ITERATIONS 4
 #define NUMBER_OF_FULL_ITERATIONS 1
 
 #include "fp_div_impl.inc"

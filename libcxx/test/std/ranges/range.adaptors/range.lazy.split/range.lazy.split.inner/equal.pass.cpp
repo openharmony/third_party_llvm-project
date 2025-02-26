@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // friend constexpr bool operator==(const inner-iterator& x, const inner-iterator& y);
 //   requires forward_range<Base>;
@@ -18,13 +17,10 @@
 
 #include <concepts>
 #include <string_view>
+
 #include "../types.h"
 
-template <class Iter>
-concept CanCallEquals = requires(const Iter& i) {
-  i == i;
-  i != i;
-};
+#include "test_range.h"
 
 constexpr bool test() {
   // When `View` is a forward range, `inner-iterator` supports both overloads of `operator==`.
@@ -57,7 +53,7 @@ constexpr bool test() {
     auto b = val.begin();
     std::same_as<std::default_sentinel_t> decltype(auto) e = val.end();
 
-    static_assert(!CanCallEquals<decltype(b)>);
+    static_assert(!weakly_equality_comparable_with<decltype(b), decltype(b)>);
 
     assert(!(b == std::default_sentinel));
     assert(b != std::default_sentinel);

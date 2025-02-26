@@ -3,15 +3,15 @@
 // RUN: %clang %flags -DTOOL -DTHIRD_TOOL -shared -fPIC %s -o %T/third_tool.so
 // RUN: %libomp-compile -DCODE
 // RUN: env OMP_TOOL_LIBRARIES=%T/non_existing_file.so:%T/first_tool.so:%T/second_tool.so:%T/third_tool.so \
-// RUN: OMP_TOOL_VERBOSE_INIT=stdout %libomp-run | FileCheck %s -DPARENTPATH=%T \
-// RUN:                                            --check-prefix=CHECK-%os --check-prefix=CHECK
+// RUN: OMP_TOOL_VERBOSE_INIT=stdout %libomp-run | FileCheck %s -DPARENTPATH=%T
 
 // REQUIRES: ompt
+// XFAIL: darwin
 
 /*
- *  This file contains code for three OMPT shared library tool to be 
- *  loaded and the code for the OpenMP executable. 
- *  No option enables code for the first shared library 
+ *  This file contains code for three OMPT shared library tool to be
+ *  loaded and the code for the OpenMP executable.
+ *  No option enables code for the first shared library
  *  (without an implementation of ompt_start_tool) during compilation
  *  -DTOOL -DSECOND_TOOL enables the code for the second tool during compilation
  *  -DTOOL -DTHIRD_TOOL enables the code for the third tool during compilation
@@ -26,14 +26,12 @@
 // CHECK-SAME: [[PARENTPATH]]/second_tool.so
 // CHECK-SAME: [[PARENTPATH]]/third_tool.so
 // CHECK-NEXT: Opening [[PARENTPATH]]/non_existing_file.so... Failed:
-// CHECK-Linux-SAME: [[PARENTPATH]]/non_existing_file.so: cannot open shared object
-// CHECK-Linux-SAME: file: No such file or directory
-// CHECK-Darwin-SAME: dlopen([[PARENTPATH]]/non_existing_file.so, 1): image not found
+// CHECK-SAME: [[PARENTPATH]]/non_existing_file.so: cannot open shared object
+// CHECK-SAME: file: No such file or directory
 // CHECK-NEXT: Opening [[PARENTPATH]]/first_tool.so... Success.
 // CHECK-NEXT: Searching for ompt_start_tool in
 // CHECK-SAME: [[PARENTPATH]]/first_tool.so... Failed:
-// CHECK-Linux-SAME: [[PARENTPATH]]/first_tool.so: undefined symbol: ompt_start_tool
-// CHECK-Darwin-SAME: dlsym({{0x[0-9a-f]+}}, ompt_start_tool): symbol not found
+// CHECK-SAME: [[PARENTPATH]]/first_tool.so: undefined symbol: ompt_start_tool
 // CHECK-NEXT: Opening [[PARENTPATH]]/second_tool.so... Success.
 // CHECK-NEXT: Searching for ompt_start_tool in
 // CHECK-SAME: [[PARENTPATH]]/second_tool.so... 0: Do not initialize tool
@@ -48,7 +46,7 @@
 
 // Check if libomp supports the callbacks for this test.
 
-// CHECK-NOT: {{^}}0: Could not register callback 
+// CHECK-NOT: {{^}}0: Could not register callback
 // CHECK: {{^}}0: Tool initialized
 // CHECK: {{^}}0: ompt_event_thread_begin
 // CHECK-DAG: {{^}}0: ompt_event_thread_begin
@@ -93,7 +91,7 @@ ompt_start_tool_result_t* ompt_start_tool(
   return NULL;
 }
 #elif defined(THIRD_TOOL)
-// The third tool has an implementation of ompt_start_tool that returns a 
+// The third tool has an implementation of ompt_start_tool that returns a
 // pointer to a valid instance of ompt_start_tool_result_t
 
 static void

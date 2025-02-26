@@ -1,10 +1,7 @@
 add_llvm_component_group(AArch64 HAS_JIT)
 
-if(BUILD_ARK_GC_SUPPORT)
-    set(LLVM_TARGET_DEFINITIONS AArch64ArkGc.td)
-else()
-    set(LLVM_TARGET_DEFINITIONS AArch64.td)
-endif(BUILD_ARK_GC_SUPPORT)
+set(LLVM_TARGET_DEFINITIONS AArch64.td)
+
 tablegen(LLVM AArch64GenAsmMatcher.inc -gen-asm-matcher)
 tablegen(LLVM AArch64GenAsmWriter.inc -gen-asm-writer)
 tablegen(LLVM AArch64GenAsmWriter1.inc -gen-asm-writer -asmwriternum=1)
@@ -14,13 +11,13 @@ tablegen(LLVM AArch64GenDisassemblerTables.inc -gen-disassembler)
 tablegen(LLVM AArch64GenFastISel.inc -gen-fast-isel)
 tablegen(LLVM AArch64GenGlobalISel.inc -gen-global-isel)
 tablegen(LLVM AArch64GenO0PreLegalizeGICombiner.inc -gen-global-isel-combiner
-              -combiners="AArch64O0PreLegalizerCombinerHelper")
+              -combiners="AArch64O0PreLegalizerCombiner")
 tablegen(LLVM AArch64GenPreLegalizeGICombiner.inc -gen-global-isel-combiner
-              -combiners="AArch64PreLegalizerCombinerHelper")
+              -combiners="AArch64PreLegalizerCombiner")
 tablegen(LLVM AArch64GenPostLegalizeGICombiner.inc -gen-global-isel-combiner
-              -combiners="AArch64PostLegalizerCombinerHelper")
+              -combiners="AArch64PostLegalizerCombiner")
 tablegen(LLVM AArch64GenPostLegalizeGILowering.inc -gen-global-isel-combiner
-              -combiners="AArch64PostLegalizerLoweringHelper")
+              -combiners="AArch64PostLegalizerLowering")
 tablegen(LLVM AArch64GenInstrInfo.inc -gen-instr-info)
 tablegen(LLVM AArch64GenMCCodeEmitter.inc -gen-emitter)
 tablegen(LLVM AArch64GenMCPseudoLowering.inc -gen-pseudo-lowering)
@@ -43,9 +40,9 @@ add_llvm_target(AArch64CodeGen
   GISel/AArch64PostLegalizerLowering.cpp
   GISel/AArch64PostSelectOptimize.cpp
   GISel/AArch64RegisterBankInfo.cpp
-  AArch64PARTS/PartsFrameLowering.cpp # OHOS_LOCAL
   AArch64A57FPLoadBalancing.cpp
   AArch64AdvSIMDScalarPass.cpp
+  AArch64Arm64ECCallLowering.cpp
   AArch64AsmPrinter.cpp
   AArch64BranchTargets.cpp
   AArch64CallingConvention.cpp
@@ -60,6 +57,7 @@ add_llvm_target(AArch64CodeGen
   AArch64FastISel.cpp
   AArch64A53Fix835769.cpp
   AArch64FrameLowering.cpp
+  AArch64GlobalsTagging.cpp
   AArch64CompressJumpTables.cpp
   AArch64ConditionOptimizer.cpp
   AArch64RedundantCopyElimination.cpp
@@ -73,13 +71,14 @@ add_llvm_target(AArch64CodeGen
   AArch64MacroFusion.cpp
   AArch64MIPeepholeOpt.cpp
   AArch64MCInstLower.cpp
+  AArch64PointerAuth.cpp
+  AArch64PostCoalescerPass.cpp
   AArch64PromoteConstant.cpp
   AArch64PBQPRegAlloc.cpp
   AArch64RegisterInfo.cpp
   AArch64SLSHardening.cpp
   AArch64SelectionDAGInfo.cpp
   AArch64SpeculationHardening.cpp
-  AArch64StackProtectorRetLowering.cpp # OHOS_LOCAL
   AArch64StackTagging.cpp
   AArch64StackTaggingPreRA.cpp
   AArch64StorePairSuppress.cpp
@@ -87,22 +86,12 @@ add_llvm_target(AArch64CodeGen
   AArch64TargetMachine.cpp
   AArch64TargetObjectFile.cpp
   AArch64TargetTransformInfo.cpp
+  SMEABIPass.cpp
   SVEIntrinsicOpts.cpp
   AArch64SIMDInstrOpt.cpp
-  # OHOS_LOCAL begin
-  AArch64PARTS/AArch64EarlyPartsCpiPass.cpp
-  AArch64PARTS/AArch64PartsCpiPass.cpp
-  AArch64PARTS/AArch64PartsDpiPass.cpp
-  # OHOS_LOCAL end
 
   DEPENDS
   intrinsics_gen
-  # OHOS_LOCAL begin
-  LLVMParts
-
-  LINK_LIBS
-  LLVMParts
-  # OHOS_LOCAL end
 
   LINK_COMPONENTS
   AArch64Desc
@@ -110,20 +99,23 @@ add_llvm_target(AArch64CodeGen
   AArch64Utils
   Analysis
   AsmPrinter
+  CFGuard
   CodeGen
+  CodeGenTypes
   Core
+  GlobalISel
   MC
   Scalar
   SelectionDAG
   Support
   Target
+  TargetParser
   TransformUtils
-  GlobalISel
-  CFGuard
+  Vectorize
 
   ADD_TO_COMPONENT
   AArch64
-)
+  )
 
 add_subdirectory(AsmParser)
 add_subdirectory(Disassembler)

@@ -81,7 +81,7 @@ static int funk(char *s) {
 void next(void);
 void foo4(void) {
   int (^xx)(const char *s) = ^(char *s) { return 1; }; // expected-error {{incompatible block pointer types initializing 'int (^)(const char *)' with an expression of type 'int (^)(char *)'}}
-  int (*yy)(const char *s) = funk; // expected-warning {{incompatible function pointer types initializing 'int (*)(const char *)' with an expression of type 'int (char *)'}}
+  int (*yy)(const char *s) = funk; // expected-error {{incompatible function pointer types initializing 'int (*)(const char *)' with an expression of type 'int (char *)'}}
 
   int (^nested)(char *s) = ^(char *str) { void (^nest)(void) = ^(void) { printf("%s\n", str); }; next(); return 1; };
 }
@@ -132,12 +132,10 @@ void foo7(void)
   int (^NN) (void)  = ^{ return cint; };
 }
 
-// rdar://11069896
 void (^blk)(void) = ^{
     return (void)0; // expected-warning {{void block literal should not return void expression}}
 };
 
-// rdar://13463504
 enum Test8 { T8_a, T8_b, T8_c };
 void test8(void) {
   extern void test8_helper(int (^)(int));

@@ -6,10 +6,12 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
+
 #ifndef SUPPORT_POISONED_HASH_HELPER_H
 #define SUPPORT_POISONED_HASH_HELPER_H
 
 #include <cassert>
+#include <cstddef>
 #include <type_traits>
 #include <utility>
 
@@ -116,7 +118,7 @@ struct ConvertibleTo {
 
 template <class Hasher, class Key, class Res = decltype(std::declval<Hasher&>()(std::declval<Key>()))>
 constexpr bool can_hash(int) {
-  return std::is_same<Res, size_t>::value;
+  return std::is_same<Res, std::size_t>::value;
 }
 template <class, class>
 constexpr bool can_hash(long) {
@@ -143,7 +145,7 @@ TEST_CONSTEXPR_CXX20 void test_hash_enabled(InputKey const& key) {
 #if TEST_STD_VER > 14
   static_assert(std::is_swappable<Hash>::value, "");
 #elif defined(_LIBCPP_VERSION)
-  static_assert(std::__is_swappable<Hash>::value, "");
+  static_assert(std::__is_swappable_v<Hash>, "");
 #endif
 
   // Hashable requirements

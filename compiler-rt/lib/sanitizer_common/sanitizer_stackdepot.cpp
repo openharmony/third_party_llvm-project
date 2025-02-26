@@ -27,7 +27,7 @@ struct StackDepotNode {
   u32 link;
   StackStore::Id store_id;
 
-  static const u32 kTabSizeLog = (SANITIZER_ANDROID || SANITIZER_OHOS) ? 16 : 20;
+  static const u32 kTabSizeLog = SANITIZER_ANDROID ? 16 : 20;
 
   typedef StackTrace args_type;
   bool eq(hash_type hash, const args_type &args) const {
@@ -215,16 +215,16 @@ StackTrace StackDepotGet(u32 id) {
   return theDepot.Get(id);
 }
 
-void StackDepotLockAll() {
-  theDepot.LockAll();
+void StackDepotLockBeforeFork() {
+  theDepot.LockBeforeFork();
   compress_thread.LockAndStop();
   stackStore.LockAll();
 }
 
-void StackDepotUnlockAll() {
+void StackDepotUnlockAfterFork(bool fork_child) {
   stackStore.UnlockAll();
   compress_thread.Unlock();
-  theDepot.UnlockAll();
+  theDepot.UnlockAfterFork(fork_child);
 }
 
 void StackDepotPrintAll() {

@@ -22,7 +22,6 @@ namespace __sanitizer {
 #if !SANITIZER_WINDOWS
 #if SANITIZER_LINUX
 void LogMessageOnPrintf(const char *str) {}
-bool SafeToCallPrintf(){ return true; } // OHOS_LOCAL
 #endif
 void WriteToSyslog(const char *buffer) {}
 void Abort() { internal__exit(1); }

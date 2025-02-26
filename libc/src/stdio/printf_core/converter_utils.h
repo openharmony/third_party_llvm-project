@@ -9,38 +9,54 @@
 #ifndef LLVM_LIBC_SRC_STDIO_PRINTF_CORE_CONVERTER_UTILS_H
 #define LLVM_LIBC_SRC_STDIO_PRINTF_CORE_CONVERTER_UTILS_H
 
-#include "src/__support/CPP/Limits.h"
+#include "src/__support/CPP/limits.h"
+#include "src/__support/macros/config.h"
 #include "src/stdio/printf_core/core_structs.h"
 
 #include <inttypes.h>
 #include <stddef.h>
 
-namespace __llvm_libc {
+namespace LIBC_NAMESPACE_DECL {
 namespace printf_core {
 
-inline uintmax_t apply_length_modifier(uintmax_t num, LengthModifier lm) {
+LIBC_INLINE uintmax_t apply_length_modifier(uintmax_t num,
+                                            LengthSpec length_spec) {
+  auto [lm, bw] = length_spec;
   switch (lm) {
   case LengthModifier::none:
-    return num & cpp::NumericLimits<unsigned int>::max();
+    return num & cpp::numeric_limits<unsigned int>::max();
   case LengthModifier::l:
-    return num & cpp::NumericLimits<unsigned long>::max();
+    return num & cpp::numeric_limits<unsigned long>::max();
   case LengthModifier::ll:
   case LengthModifier::L:
-    return num & cpp::NumericLimits<unsigned long long>::max();
+    return num & cpp::numeric_limits<unsigned long long>::max();
   case LengthModifier::h:
-    return num & cpp::NumericLimits<unsigned short>::max();
+    return num & cpp::numeric_limits<unsigned short>::max();
   case LengthModifier::hh:
-    return num & cpp::NumericLimits<unsigned char>::max();
+    return num & cpp::numeric_limits<unsigned char>::max();
   case LengthModifier::z:
-    return num & cpp::NumericLimits<size_t>::max();
+    return num & cpp::numeric_limits<size_t>::max();
   case LengthModifier::t:
     // We don't have unsigned ptrdiff so uintptr_t is used, since we need an
     // unsigned type and ptrdiff is usually the same size as a pointer.
     static_assert(sizeof(ptrdiff_t) == sizeof(uintptr_t));
-    return num & cpp::NumericLimits<uintptr_t>::max();
+    return num & cpp::numeric_limits<uintptr_t>::max();
   case LengthModifier::j:
     return num; // j is intmax, so no mask is necessary.
+  case LengthModifier::w:
+  case LengthModifier::wf: {
+    uintmax_t mask;
+    if (bw == 0) {
+      mask = 0;
+    } else if (bw < sizeof(uintmax_t) * CHAR_BIT) {
+      mask = (static_cast<uintmax_t>(1) << bw) - 1;
+    } else {
+      mask = UINTMAX_MAX;
+    }
+    return num & mask;
   }
+  }
+  __builtin_unreachable();
 }
 
 #define RET_IF_RESULT_NEGATIVE(func)                                           \
@@ -50,7 +66,10 @@ inline uintmax_t apply_length_modifier(uintmax_t num, LengthModifier lm) {
       return result;                                                           \
   }
 
+// This is used to represent which direction the number should be rounded.
+enum class RoundDirection { Up, Down, Even };
+
 } // namespace printf_core
-} // namespace __llvm_libc
+} // namespace LIBC_NAMESPACE_DECL
 
 #endif // LLVM_LIBC_SRC_STDIO_PRINTF_CORE_CONVERTER_UTILS_H

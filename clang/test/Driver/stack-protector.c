@@ -24,24 +24,6 @@
 // SSP-ALL: "-stack-protector" "3"
 // SSP-ALL-NOT: "-stack-protector-buffer-size" 
 
-// OHOS_LOCAL begin
-// RUN: %clang -fstack-protector-ret-strong -### %s 2>&1 | FileCheck %s -check-prefix=SSP-RET-STRONG
-// SSP-RET-STRONG: "-stack-protector" "4"
-// SSP-RET-STRONG-NOT: "-stack-protector-buffer-size"
-
-// RUN: %clang -fstack-protector-ret-all -### %s 2>&1 | FileCheck %s -check-prefix=SSP-RET-ALL
-// SSP-RET-ALL: "-stack-protector" "5"
-// SSP-RET-ALL-NOT: "-stack-protector-buffer-size"
-
-// RUN: %clang -target aarch64-linux-ohos -fstack-protector-ret-strong --param ssp-ret-cookie-size=10 -### %s 2>&1 | FileCheck %s -check-prefix=SSP-RET-COOKIE-STRONG
-// SSP-RET-COOKIE-STRONG: "-stack-protector" "4"
-// SSP-RET-COOKIE-STRONG: "-stack-protector-ret-cookie-size" "10"
-
-// RUN: %clang -target aarch64-linux-ohos -fstack-protector-ret-all --param ssp-ret-cookie-size=-1 -### %s 2>&1 | FileCheck %s -check-prefix=SSP-RET-COOKIE-ALL
-// SSP-RET-COOKIE-ALL: invalid integral value
-// SSP-RET-COOKIE-ALL: "-stack-protector" "5"
-// OHOS_LOCAL end
-
 // RUN: %clang -target x86_64-scei-ps4 -### %s 2>&1 | FileCheck %s -check-prefix=SSP-PS4
 // RUN: %clang -target x86_64-scei-ps4 -fstack-protector -### %s 2>&1 | FileCheck %s -check-prefix=SSP-PS4
 // SSP-PS4: "-stack-protector" "2"
@@ -61,15 +43,15 @@
 // RUN: %clang -target arm64-apple-ios8.0.0 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_IOS
 // RUN: %clang -ffreestanding -target arm64-apple-ios8.0.0 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_IOS
 // SSP_IOS: "-stack-protector" "1"
-// RUN: %clang -target x86_64-apple-darwin10 -mmacosx-version-min=10.6 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX
-// RUN: %clang -ffreestanding -target x86_64-apple-darwin10 -mmacosx-version-min=10.6 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX
+// RUN: %clang -target x86_64-apple-darwin10 -mmacos-version-min=10.6 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX
+// RUN: %clang -ffreestanding -target x86_64-apple-darwin10 -mmacos-version-min=10.6 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX
 // SSP_MACOSX: "-stack-protector" "1"
-// RUN: %clang -target x86_64-apple-darwin10 -mmacosx-version-min=10.5 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX_10_5
-// RUN: %clang -ffreestanding -target x86_64-apple-darwin10 -mmacosx-version-min=10.5 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX_10_5
+// RUN: %clang -target x86_64-apple-darwin10 -mmacos-version-min=10.5 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX_10_5
+// RUN: %clang -ffreestanding -target x86_64-apple-darwin10 -mmacos-version-min=10.5 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX_10_5
 // SSP_MACOSX_10_5: "-stack-protector" "1"
-// RUN: %clang -target x86_64-apple-darwin10 -mmacosx-version-min=10.5 -mkernel -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX_KERNEL
+// RUN: %clang -target x86_64-apple-darwin10 -mmacos-version-min=10.5 -mkernel -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX_KERNEL
 // SSP_MACOSX_KERNEL-NOT: "-stack-protector"
-// RUN: %clang -target x86_64-apple-darwin10 -mmacosx-version-min=10.6 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX_10_6_KERNEL
-// RUN: %clang -ffreestanding -target x86_64-apple-darwin10 -mmacosx-version-min=10.6 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX_10_6_KERNEL
+// RUN: %clang -target x86_64-apple-darwin10 -mmacos-version-min=10.6 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX_10_6_KERNEL
+// RUN: %clang -ffreestanding -target x86_64-apple-darwin10 -mmacos-version-min=10.6 -### %s 2>&1 | FileCheck %s -check-prefix=SSP_MACOSX_10_6_KERNEL
 // SSP_MACOSX_10_6_KERNEL: "-stack-protector" "1"
 

@@ -54,10 +54,11 @@ public:
   /// the number of bytes to probe in RAX/EAX.
   /// \p InstrNum optionally contains a debug-info instruction number for the
   ///    new stack pointer.
-  void emitStackProbe(
-      MachineFunction &MF, MachineBasicBlock &MBB,
-      MachineBasicBlock::iterator MBBI, const DebugLoc &DL, bool InProlog,
-      Optional<MachineFunction::DebugInstrOperandPair> InstrNum = None) const;
+  void emitStackProbe(MachineFunction &MF, MachineBasicBlock &MBB,
+                      MachineBasicBlock::iterator MBBI, const DebugLoc &DL,
+                      bool InProlog,
+                      std::optional<MachineFunction::DebugInstrOperandPair>
+                          InstrNum = std::nullopt) const;
 
   bool stackProbeFunctionModifiesSP() const override;
 
@@ -74,11 +75,6 @@ public:
 
   /// emitProlog/emitEpilog - These methods insert prolog and epilog code into
   /// the function.
-#ifdef ARK_GC_SUPPORT
-  Triple::ArchType GetArkSupportTarget() const override;
-  int GetFixedFpPosition() const override;
-  int GetFrameReserveSize(MachineFunction &MF) const override;
-#endif
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
 
@@ -106,14 +102,6 @@ public:
                               MachineBasicBlock::iterator MI,
                               MutableArrayRef<CalleeSavedInfo> CSI,
                               const TargetRegisterInfo *TRI) const override;
-
-  // OHOS_LOCAL begin
-  bool supportsArkSpills() const override {
-    return true;
-  }
-
-  int getArkFrameAdaptationOffset(const MachineFunction &MF) const override;
-  // OHOS_LOCAL end
 
   bool hasFP(const MachineFunction &MF) const override;
   bool hasReservedCallFrame(const MachineFunction &MF) const override;
@@ -205,6 +193,8 @@ public:
 
   Register getInitialCFARegister(const MachineFunction &MF) const override;
 
+  DwarfFrameBase getDwarfFrameBase(const MachineFunction &MF) const override;
+
   /// Return true if the function has a redzone (accessible bytes past the
   /// frame of the top of stack function) as part of it's ABI.
   bool has128ByteRedZone(const MachineFunction& MF) const;
@@ -220,7 +210,7 @@ private:
   void emitStackProbeCall(
       MachineFunction &MF, MachineBasicBlock &MBB,
       MachineBasicBlock::iterator MBBI, const DebugLoc &DL, bool InProlog,
-      Optional<MachineFunction::DebugInstrOperandPair> InstrNum) const;
+      std::optional<MachineFunction::DebugInstrOperandPair> InstrNum) const;
 
   /// Emit target stack probe as an inline sequence.
   void emitStackProbeInline(MachineFunction &MF, MachineBasicBlock &MBB,
@@ -277,16 +267,6 @@ private:
   void emitCatchRetReturnValue(MachineBasicBlock &MBB,
                                MachineBasicBlock::iterator MBBI,
                                MachineInstr *CatchRet) const;
-
-  // OHOS_LOCAL begin
-  int getOffsetOfLocalArea(CallingConv::ID CC = CallingConv::C) const override;
-
-#ifdef ARK_GC_SUPPORT
-  void adjustForArkFrame(MachineFunction &MF,
-                         MachineBasicBlock &PrologueMBB) const override;
-#endif
-
-  // OHOS_LOCAL end
 };
 
 } // End llvm namespace

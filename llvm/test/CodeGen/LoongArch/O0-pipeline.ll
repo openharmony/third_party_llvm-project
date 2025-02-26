@@ -1,8 +1,8 @@
 ;; When EXPENSIVE_CHECKS are enabled, the machine verifier appears between each
 ;; pass. Ignore it with 'grep -v'.
-; RUN: llc --mtriple=loongarch32 -O0 --debug-pass=Structure %s -o /dev/null 2>&1 | \
+; RUN: llc --mtriple=loongarch32 -mattr=+d -O0 --debug-pass=Structure %s -o /dev/null 2>&1 | \
 ; RUN:   grep -v "Verify generated machine code" | FileCheck %s
-; RUN: llc --mtriple=loongarch64 -O0 --debug-pass=Structure %s -o /dev/null 2>&1 | \
+; RUN: llc --mtriple=loongarch64 -mattr=+d -O0 --debug-pass=Structure %s -o /dev/null 2>&1 | \
 ; RUN:   grep -v "Verify generated machine code" | FileCheck %s
 
 ; REQUIRES: asserts
@@ -19,6 +19,8 @@
 ; CHECK-NEXT:   ModulePass Manager
 ; CHECK-NEXT:     Pre-ISel Intrinsic Lowering
 ; CHECK-NEXT:     FunctionPass Manager
+; CHECK-NEXT:       Expand large div/rem
+; CHECK-NEXT:       Expand large fp convert
 ; CHECK-NEXT:       Expand Atomic instructions
 ; CHECK-NEXT:       Module Verifier
 ; CHECK-NEXT:       Lower Garbage Collection Instructions
@@ -26,9 +28,11 @@
 ; CHECK-NEXT:       Lower constant intrinsics
 ; CHECK-NEXT:       Remove unreachable blocks from the CFG
 ; CHECK-NEXT:       Expand vector predication intrinsics
+; CHECK-NEXT:       Instrument function entry/exit with calls to e.g. mcount() (post inlining)
 ; CHECK-NEXT:       Scalarize Masked Memory Intrinsics
 ; CHECK-NEXT:       Expand reduction intrinsics
 ; CHECK-NEXT:       Exception handling preparation
+; CHECK-NEXT:       Prepare callbr
 ; CHECK-NEXT:       Safe Stack instrumentation pass
 ; CHECK-NEXT:       Insert stack protectors
 ; CHECK-NEXT:       Module Verifier
@@ -38,6 +42,7 @@
 ; CHECK-NEXT:       Natural Loop Information
 ; CHECK-NEXT:       Post-Dominator Tree Construction
 ; CHECK-NEXT:       Branch Probability Analysis
+; CHECK-NEXT:       Assignment Tracking Analysis
 ; CHECK-NEXT:       Lazy Branch Probability Analysis
 ; CHECK-NEXT:       Lazy Block Frequency Analysis
 ; CHECK-NEXT:       LoongArch DAG->DAG Pattern Instruction Selection
@@ -61,6 +66,11 @@
 ; CHECK-NEXT:       Contiguously Lay Out Funclets
 ; CHECK-NEXT:       StackMap Liveness Analysis
 ; CHECK-NEXT:       Live DEBUG_VALUE analysis
+; CHECK-NEXT:       Machine Sanitizer Binary Metadata
+; CHECK-NEXT:       Lazy Machine Block Frequency Analysis
+; CHECK-NEXT:       Machine Optimization Remark Emitter
+; CHECK-NEXT:       Stack Frame Layout Analysis
+; CHECK-NEXT:       LoongArch pseudo instruction expansion pass
 ; CHECK-NEXT:       LoongArch atomic pseudo instruction expansion pass
 ; CHECK-NEXT:       Lazy Machine Block Frequency Analysis
 ; CHECK-NEXT:       Machine Optimization Remark Emitter

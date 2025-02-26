@@ -5,13 +5,11 @@ enum e0; // expected-note{{forward declaration of 'enum e0'}}
 struct a {
   int a : -1; // expected-error{{bit-field 'a' has negative width}}
 
-  // rdar://6081627
   int b : 33; // expected-error{{width of bit-field 'b' (33 bits) exceeds the width of its type (32 bits)}}
 
   int c : (1 + 0.25); // expected-error{{integer constant expression must have integer type}}
   int d : (int)(1 + 0.25);
 
-  // rdar://6138816
   int e : 0;  // expected-error {{bit-field 'e' has zero width}}
 
   float xx : 4;  // expected-error {{bit-field 'xx' has non-integral type}}
@@ -84,5 +82,5 @@ struct Test6 {
 };
 
 struct PR36157 {
-  int n : 1 ? 1 : implicitly_declare_function(); // expected-warning {{call to undeclared function 'implicitly_declare_function'; ISO C99 and later do not support implicit function declarations}}
+  int n : 1 ? 1 : implicitly_declare_function(); // expected-error {{call to undeclared function 'implicitly_declare_function'; ISO C99 and later do not support implicit function declarations}}
 };

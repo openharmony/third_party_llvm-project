@@ -27,7 +27,6 @@
 #include "bolt/Passes/Inliner.h"
 #include "bolt/Core/MCPlus.h"
 #include "llvm/Support/CommandLine.h"
-#include <map>
 
 #define DEBUG_TYPE "bolt-inliner"
 
@@ -250,7 +249,8 @@ Inliner::inlineCall(BinaryBasicBlock &CallerBB,
   const bool CSIsInvoke = BC.MIB->isInvoke(*CallInst);
   const bool CSIsTailCall = BC.MIB->isTailCall(*CallInst);
   const int64_t CSGNUArgsSize = BC.MIB->getGnuArgsSize(*CallInst);
-  const Optional<MCPlus::MCLandingPad> CSEHInfo = BC.MIB->getEHInfo(*CallInst);
+  const std::optional<MCPlus::MCLandingPad> CSEHInfo =
+      BC.MIB->getEHInfo(*CallInst);
 
   // Split basic block at the call site if there will be more incoming edges
   // coming from the callee.
@@ -288,12 +288,12 @@ Inliner::inlineCall(BinaryBasicBlock &CallerBB,
   // Copy basic blocks and maintain a map from their origin.
   std::unordered_map<const BinaryBasicBlock *, BinaryBasicBlock *> InlinedBBMap;
   InlinedBBMap[&Callee.front()] = FirstInlinedBB;
-  for (auto BBI = std::next(Callee.begin()); BBI != Callee.end(); ++BBI) {
+  for (const BinaryBasicBlock &BB : llvm::drop_begin(Callee)) {
     BinaryBasicBlock *InlinedBB = CallerFunction.addBasicBlock();
-    InlinedBBMap[&*BBI] = InlinedBB;
+    InlinedBBMap[&BB] = InlinedBB;
     InlinedBB->setCFIState(FirstInlinedBB->getCFIState());
     if (Callee.hasValidProfile())
-      InlinedBB->setExecutionCount(BBI->getKnownExecutionCount());
+      InlinedBB->setExecutionCount(BB.getKnownExecutionCount());
     else
       InlinedBB->setExecutionCount(FirstInlinedBBCount);
   }
@@ -355,7 +355,9 @@ Inliner::inlineCall(BinaryBasicBlock &CallerBB,
     std::vector<BinaryBasicBlock *> Successors(BB.succ_size());
     llvm::transform(BB.successors(), Successors.begin(),
                     [&InlinedBBMap](const BinaryBasicBlock *BB) {
-                      return InlinedBBMap.at(BB);
+                      auto It = InlinedBBMap.find(BB);
+                      assert(It != InlinedBBMap.end());
+                      return It->second;
                     });
 
     if (CallerFunction.hasValidProfile() && Callee.hasValidProfile())
@@ -495,11 +497,11 @@ bool Inliner::inlineCallsInFunction(BinaryFunction &Function) {
   return DidInlining;
 }
 
-void Inliner::runOnFunctions(BinaryContext &BC) {
+Error Inliner::runOnFunctions(BinaryContext &BC) {
   opts::syncOptions();
 
   if (!opts::inliningEnabled())
-    return;
+    return Error::success();
 
   bool InlinedOnce;
   unsigned NumIters = 0;
@@ -539,10 +541,11 @@ void Inliner::runOnFunctions(BinaryContext &BC) {
   } while (InlinedOnce && NumIters < opts::InlineMaxIters);
 
   if (NumInlinedCallSites)
-    outs() << "BOLT-INFO: inlined " << NumInlinedDynamicCalls << " calls at "
-           << NumInlinedCallSites << " call sites in " << NumIters
-           << " iteration(s). Change in binary size: " << TotalInlinedBytes
-           << " bytes.\n";
+    BC.outs() << "BOLT-INFO: inlined " << NumInlinedDynamicCalls << " calls at "
+              << NumInlinedCallSites << " call sites in " << NumIters
+              << " iteration(s). Change in binary size: " << TotalInlinedBytes
+              << " bytes.\n";
+  return Error::success();
 }
 
 } // namespace bolt

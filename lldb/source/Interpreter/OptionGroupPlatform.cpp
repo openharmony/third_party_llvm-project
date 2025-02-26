@@ -21,9 +21,7 @@ PlatformSP OptionGroupPlatform::CreatePlatformWithOptions(
   PlatformList &platforms = interpreter.GetDebugger().GetPlatformList();
 
   PlatformSP platform_sp;
-  Log *log = GetLog(LLDBLog::Commands);
-  LLDB_LOGF(log, "Hsu file(%s):%d OptionGroupPlatform::%s call make_selected:%d",
-            __FILE__, __LINE__, __FUNCTION__, make_selected);
+
   if (!m_platform_name.empty()) {
     platform_sp = platforms.Create(m_platform_name);
     if (!platform_sp) {
@@ -32,12 +30,9 @@ PlatformSP OptionGroupPlatform::CreatePlatformWithOptions(
           m_platform_name);
     }
     if (platform_sp) {
-      if (GetContainer()) {
-        LLDB_LOGF(log, "Platform is created inside container.");
-        platform_sp->SetContainer(true);
-      }
-      if (platform_arch.IsValid() && !platform_sp->IsCompatibleArchitecture(
-                                         arch, {}, false, &platform_arch)) {
+      if (platform_arch.IsValid() &&
+          !platform_sp->IsCompatibleArchitecture(
+              arch, {}, ArchSpec::CompatibleMatch, &platform_arch)) {
         error.SetErrorStringWithFormatv("platform '{0}' doesn't support '{1}'",
                                         platform_sp->GetPluginName(),
                                         arch.GetTriple().getTriple());
@@ -55,10 +50,10 @@ PlatformSP OptionGroupPlatform::CreatePlatformWithOptions(
     if (!m_os_version.empty())
       platform_sp->SetOSVersion(m_os_version);
 
-    if (m_sdk_sysroot)
+    if (!m_sdk_sysroot.empty())
       platform_sp->SetSDKRootDirectory(m_sdk_sysroot);
 
-    if (m_sdk_build)
+    if (!m_sdk_build.empty())
       platform_sp->SetSDKBuild(m_sdk_build);
   }
 
@@ -68,10 +63,9 @@ PlatformSP OptionGroupPlatform::CreatePlatformWithOptions(
 void OptionGroupPlatform::OptionParsingStarting(
     ExecutionContext *execution_context) {
   m_platform_name.clear();
-  m_sdk_sysroot.Clear();
-  m_sdk_build.Clear();
+  m_sdk_sysroot.clear();
+  m_sdk_build.clear();
   m_os_version = llvm::VersionTuple();
-  m_container = false;
 }
 
 static constexpr OptionDefinition g_option_table[] = {
@@ -106,9 +100,10 @@ OptionGroupPlatform::SetOptionValue(uint32_t option_idx,
     ++option_idx;
 
   const int short_option = g_option_table[option_idx].short_option;
+
   switch (short_option) {
   case 'p':
-    m_platform_name.assign(std::string(option_arg));
+    m_platform_name.assign(option_arg.str());
     break;
 
   case 'v':
@@ -118,11 +113,11 @@ OptionGroupPlatform::SetOptionValue(uint32_t option_idx,
     break;
 
   case 'b':
-    m_sdk_build.SetString(option_arg);
+    m_sdk_build.assign(option_arg.str());
     break;
 
   case 'S':
-    m_sdk_sysroot.SetString(option_arg);
+    m_sdk_sysroot.assign(option_arg.str());
     break;
 
   default:
@@ -133,25 +128,21 @@ OptionGroupPlatform::SetOptionValue(uint32_t option_idx,
 
 bool OptionGroupPlatform::PlatformMatches(
     const lldb::PlatformSP &platform_sp) const {
-  if (platform_sp) {
-    if (!m_platform_name.empty()) {
-      if (platform_sp->GetName() != m_platform_name)
-        return false;
-    }
+  if (!platform_sp)
+    return false;
 
-    if (m_sdk_build && m_sdk_build != platform_sp->GetSDKBuild())
-      return false;
+  if (!m_platform_name.empty() && platform_sp->GetName() != m_platform_name)
+    return false;
 
-    if (m_sdk_sysroot && m_sdk_sysroot != platform_sp->GetSDKRootDirectory())
-      return false;
+  if (!m_sdk_build.empty() && platform_sp->GetSDKBuild() != m_sdk_build)
+    return false;
 
-    if (!m_os_version.empty() && m_os_version != platform_sp->GetOSVersion())
-      return false;
+  if (!m_sdk_sysroot.empty() &&
+      platform_sp->GetSDKRootDirectory() != m_sdk_sysroot)
+    return false;
 
-    if (m_container != platform_sp->GetContainer())
-      return false;
+  if (!m_os_version.empty() && platform_sp->GetOSVersion() != m_os_version)
+    return false;
 
-    return true;
-  }
-  return false;
+  return true;
 }

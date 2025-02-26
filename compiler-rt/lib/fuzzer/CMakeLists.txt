@@ -59,7 +59,7 @@ CHECK_CXX_SOURCE_COMPILES("
 
 set(LIBFUZZER_CFLAGS ${COMPILER_RT_COMMON_CFLAGS})
 
-if(OS_NAME MATCHES "Linux|Fuchsia" AND
+if(OS_NAME MATCHES "Android|Linux|Fuchsia" AND
    COMPILER_RT_LIBCXX_PATH AND
    COMPILER_RT_LIBCXXABI_PATH)
   list(APPEND LIBFUZZER_CFLAGS -D_LIBCPP_ABI_VERSION=Fuzzer)
@@ -135,7 +135,7 @@ add_compiler_rt_runtime(clang_rt.fuzzer_interceptors
   CFLAGS ${LIBFUZZER_CFLAGS}
   PARENT_TARGET fuzzer)
 
-if(OS_NAME MATCHES "Linux|Fuchsia" AND
+if(OS_NAME MATCHES "Android|Linux|Fuchsia" AND
    COMPILER_RT_LIBCXX_PATH AND
    COMPILER_RT_LIBCXXABI_PATH)
   macro(partially_link_libcxx name dir arch)
@@ -147,7 +147,7 @@ if(OS_NAME MATCHES "Linux|Fuchsia" AND
     set(cxx_${arch}_merge_dir "${CMAKE_CURRENT_BINARY_DIR}/cxx_${arch}_merge.dir")
     file(MAKE_DIRECTORY ${cxx_${arch}_merge_dir})
     add_custom_command(TARGET clang_rt.${name}-${arch} POST_BUILD
-      COMMAND ${CMAKE_CXX_COMPILER} ${target_cflags} -Wl,--whole-archive "$<TARGET_LINKER_FILE:clang_rt.${name}-${arch}>" -Wl,--no-whole-archive ${dir}/lib/libc++.a -nodefaultlibs -r -o ${name}.o
+      COMMAND ${CMAKE_CXX_COMPILER} ${target_cflags} -Wl,--whole-archive "$<TARGET_LINKER_FILE:clang_rt.${name}-${arch}>" -Wl,--no-whole-archive ${dir}/lib/libc++.a -r -o ${name}.o
       COMMAND ${CMAKE_OBJCOPY} --localize-hidden ${name}.o
       COMMAND ${CMAKE_COMMAND} -E remove "$<TARGET_LINKER_FILE:clang_rt.${name}-${arch}>"
       COMMAND ${CMAKE_AR} qcs "$<TARGET_LINKER_FILE:clang_rt.${name}-${arch}>" ${name}.o
@@ -165,11 +165,11 @@ if(OS_NAME MATCHES "Linux|Fuchsia" AND
                  -DLIBCXXABI_ENABLE_EXCEPTIONS=OFF
                  -DLIBCXX_ABI_NAMESPACE=__Fuzzer
                  -DLIBCXX_ENABLE_EXCEPTIONS=OFF)
-    target_compile_options(RTfuzzer.${arch} PRIVATE -isystem "${LIBCXX_${arch}_PREFIX}/include/c++/v1") # OHOS_LOCAL
+    target_compile_options(RTfuzzer.${arch} PRIVATE -isystem ${LIBCXX_${arch}_PREFIX}/include/c++/v1)
     add_dependencies(RTfuzzer.${arch} libcxx_fuzzer_${arch}-build)
-    target_compile_options(RTfuzzer_main.${arch} PRIVATE -isystem "${LIBCXX_${arch}_PREFIX}/include/c++/v1") # OHOS_LOCAL
+    target_compile_options(RTfuzzer_main.${arch} PRIVATE -isystem ${LIBCXX_${arch}_PREFIX}/include/c++/v1)
     add_dependencies(RTfuzzer_main.${arch} libcxx_fuzzer_${arch}-build)
-    target_compile_options(RTfuzzer_interceptors.${arch} PRIVATE -isystem "${LIBCXX_${arch}_PREFIX}/include/c++/v1") # OHOS_LOCAL
+    target_compile_options(RTfuzzer_interceptors.${arch} PRIVATE -isystem ${LIBCXX_${arch}_PREFIX}/include/c++/v1)
     add_dependencies(RTfuzzer_interceptors.${arch} libcxx_fuzzer_${arch}-build)
     partially_link_libcxx(fuzzer_no_main ${LIBCXX_${arch}_PREFIX} ${arch})
     partially_link_libcxx(fuzzer_interceptors ${LIBCXX_${arch}_PREFIX} ${arch})

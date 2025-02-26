@@ -46,8 +46,6 @@ private:
   lldb::user_id_t m_breakpoint_site_id;
   bool m_auto_continue;
   bool m_reenabled_breakpoint_site;
-  bool m_handling_signal;
-  bool m_is_stale;
 
   ThreadPlanStepOverBreakpoint(const ThreadPlanStepOverBreakpoint &) = delete;
   const ThreadPlanStepOverBreakpoint &

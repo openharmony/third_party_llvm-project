@@ -18,8 +18,6 @@
 #include "gwp_asan/optional/printf.h"
 #include "gwp_asan/options.h"
 
-#include "print_backtrace_linux_libc.inc" // OHOS_LOCAL
-
 namespace {
 size_t Backtrace(uintptr_t *TraceBuffer, size_t Size) {
   static_assert(sizeof(uintptr_t) == sizeof(void *), "uintptr_t is not void*");
@@ -33,6 +31,28 @@ size_t Backtrace(uintptr_t *TraceBuffer, size_t Size) {
 GWP_ASAN_ALWAYS_INLINE size_t SegvBacktrace(uintptr_t *TraceBuffer, size_t Size,
                                             void * /*Context*/) {
   return Backtrace(TraceBuffer, Size);
+}
+
+static void PrintBacktrace(uintptr_t *Trace, size_t TraceLength,
+                           gwp_asan::Printf_t Printf) {
+  if (TraceLength == 0) {
+    Printf("  <not found (does your allocator support backtracing?)>\n\n");
+    return;
+  }
+
+  char **BacktraceSymbols =
+      backtrace_symbols(reinterpret_cast<void **>(Trace), TraceLength);
+
+  for (size_t i = 0; i < TraceLength; ++i) {
+    if (!BacktraceSymbols)
+      Printf("  #%zu %p\n", i, Trace[i]);
+    else
+      Printf("  #%zu %s\n", i, BacktraceSymbols[i]);
+  }
+
+  Printf("\n");
+  if (BacktraceSymbols)
+    free(BacktraceSymbols);
 }
 } // anonymous namespace
 

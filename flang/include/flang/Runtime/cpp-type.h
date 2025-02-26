@@ -12,8 +12,8 @@
 #define FORTRAN_RUNTIME_CPP_TYPE_H_
 
 #include "flang/Common/Fortran.h"
+#include "flang/Common/float128.h"
 #include "flang/Common/uint128.h"
-#include "flang/Runtime/float128.h"
 #include <cfloat>
 #include <complex>
 #include <cstdint>
@@ -23,14 +23,14 @@ namespace Fortran::runtime {
 
 using common::TypeCategory;
 
-template <TypeCategory CAT, int KIND> struct CppTypeForHelper {};
+template <TypeCategory CAT, int KIND> struct CppTypeForHelper {
+  using type = void;
+};
 template <TypeCategory CAT, int KIND>
 using CppTypeFor = typename CppTypeForHelper<CAT, KIND>::type;
 
-template <TypeCategory CAT, int KIND, bool SFINAE = false>
-constexpr bool HasCppTypeFor{false};
 template <TypeCategory CAT, int KIND>
-constexpr bool HasCppTypeFor<CAT, KIND, true>{
+constexpr bool HasCppTypeFor{
     !std::is_void_v<typename CppTypeForHelper<CAT, KIND>::type>};
 
 template <int KIND> struct CppTypeForHelper<TypeCategory::Integer, KIND> {

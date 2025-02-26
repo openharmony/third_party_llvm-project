@@ -2,7 +2,7 @@
 // RUN: %clang_tsan %darwin_min_target_with_tls_support %s -DBUILD_SO -fPIC -o \
 // RUN:   %t-so.so -shared
 // RUN: %run %t 2>&1 | FileCheck %s
-// XFAIL: netbsd
+// XFAIL: target={{.*netbsd.*}}
 
 // Test that tsan cleans up dynamic TLS memory between reuse.
 
@@ -32,9 +32,6 @@ void *Thread2(void *arg) {
 }
 
 int main(int argc, char *argv[]) {
-  // OHOS_LOCAL
-  dlerror(); // Clear any previous errors
-
   char path[4096];
   snprintf(path, sizeof(path), "%s-so.so", argv[0]);
 

@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdint.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
 
@@ -58,13 +59,16 @@ int main() {
   if (res < 0) {
     assert(errno == EINVAL);
   }
-
-  res = prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, (uintptr_t)p, 128, NULL);
-  if (res < 0) {
-    assert(errno == EINVAL);
-  }
-
   munmap(p, 128);
+
+  res = prctl(PR_SET_NAME, "tname");
+  if (res == 0) {
+    char name[16];
+    res = prctl(PR_GET_NAME, name);
+    if (res == 0) {
+      assert(!strcmp(name, "tname"));
+    }
+  }
 
   return 0;
 }

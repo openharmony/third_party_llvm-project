@@ -27,12 +27,12 @@
 
 # RUN: not ld.lld %t.la32.o --defsym foo16=b16+0x20000 --defsym bar16=b16+4-0x20004 --defsym foo21=b21+0x400000 --defsym bar21=b21+4-0x400004 --defsym foo26=b26+0x8000000 --defsym bar26=b26+4-0x8000004 -o /dev/null 2>&1 | FileCheck -DFILE=%t.la32.o --check-prefix=ERROR-RANGE %s
 # RUN: not ld.lld %t.la64.o --defsym foo16=b16+0x20000 --defsym bar16=b16+4-0x20004 --defsym foo21=b21+0x400000 --defsym bar21=b21+4-0x400004 --defsym foo26=b26+0x8000000 --defsym bar26=b26+4-0x8000004 -o /dev/null 2>&1 | FileCheck -DFILE=%t.la64.o --check-prefix=ERROR-RANGE %s
-# ERROR-RANGE: error: [[FILE]]:(.text+0x0): relocation R_LARCH_B16 out of range: 131072 is not in [-131072, 131071]; references foo16
-# ERROR-RANGE: error: [[FILE]]:(.text+0x4): relocation R_LARCH_B16 out of range: -131076 is not in [-131072, 131071]; references bar16
-# ERROR-RANGE: error: [[FILE]]:(.text+0x8): relocation R_LARCH_B21 out of range: 4194304 is not in [-4194304, 4194303]; references foo21
-# ERROR-RANGE: error: [[FILE]]:(.text+0xc): relocation R_LARCH_B21 out of range: -4194308 is not in [-4194304, 4194303]; references bar21
-# ERROR-RANGE: error: [[FILE]]:(.text+0x10): relocation R_LARCH_B26 out of range: 134217728 is not in [-134217728, 134217727]; references foo26
-# ERROR-RANGE: error: [[FILE]]:(.text+0x14): relocation R_LARCH_B26 out of range: -134217732 is not in [-134217728, 134217727]; references bar26
+# ERROR-RANGE: error: [[FILE]]:(.text+0x0): relocation R_LARCH_B16 out of range: 131072 is not in [-131072, 131071]; references 'foo16'
+# ERROR-RANGE: error: [[FILE]]:(.text+0x4): relocation R_LARCH_B16 out of range: -131076 is not in [-131072, 131071]; references 'bar16'
+# ERROR-RANGE: error: [[FILE]]:(.text+0x8): relocation R_LARCH_B21 out of range: 4194304 is not in [-4194304, 4194303]; references 'foo21'
+# ERROR-RANGE: error: [[FILE]]:(.text+0xc): relocation R_LARCH_B21 out of range: -4194308 is not in [-4194304, 4194303]; references 'bar21'
+# ERROR-RANGE: error: [[FILE]]:(.text+0x10): relocation R_LARCH_B26 out of range: 134217728 is not in [-134217728, 134217727]; references 'foo26'
+# ERROR-RANGE: error: [[FILE]]:(.text+0x14): relocation R_LARCH_B26 out of range: -134217732 is not in [-134217728, 134217727]; references 'bar26'
 
 # RUN: not ld.lld %t.la32.o --defsym foo16=b16+1 --defsym bar16=b16-1 --defsym foo21=b21+1 --defsym bar21=b21-1 --defsym foo26=b26+1 --defsym bar26=b26-1 -o /dev/null 2>&1 | FileCheck -DFILE=%t.la32.o --check-prefix=ERROR-ALIGN-1 %s
 # RUN: not ld.lld %t.la64.o --defsym foo16=b16+1 --defsym bar16=b16-1 --defsym foo21=b21+1 --defsym bar21=b21-1 --defsym foo26=b26+1 --defsym bar26=b26-1 -o /dev/null 2>&1 | FileCheck -DFILE=%t.la64.o --check-prefix=ERROR-ALIGN-1 %s

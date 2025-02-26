@@ -240,3 +240,24 @@ public:
   Test9(const Test9 &other) = default;
   Test9(Test9 &&other) = default;
 };
+
+
+template <typename T>
+class Test10 {
+public:
+  enum E {};
+  E e;
+
+  Test10(T &&Item, E e)
+      : e(e){}
+};
+
+// A deleted ctor cannot hide anything
+class Test11 {
+public:
+  template <typename T>
+  Test11(T&&) = delete;
+
+  Test11(const Test11 &) = default;
+  Test11(Test11 &&) = default;
+};

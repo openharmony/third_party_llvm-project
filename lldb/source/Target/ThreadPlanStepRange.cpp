@@ -22,7 +22,6 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/Stream.h"
-#include "lldb/Utility/Timer.h"     // OHOS_LOCAL
 
 using namespace lldb;
 using namespace lldb_private;
@@ -121,8 +120,9 @@ bool ThreadPlanStepRange::InRange() {
         frame->GetSymbolContext(eSymbolContextEverything));
     if (m_addr_context.line_entry.IsValid() &&
         new_context.line_entry.IsValid()) {
-      if (m_addr_context.line_entry.original_file ==
-          new_context.line_entry.original_file) {
+      if (m_addr_context.line_entry.original_file_sp->Equal(
+              *new_context.line_entry.original_file_sp,
+              SupportFile::eEqualFileSpecAndChecksumIfSet)) {
         if (m_addr_context.line_entry.line == new_context.line_entry.line) {
           m_addr_context = new_context;
           const bool include_inlined_functions =
@@ -205,13 +205,6 @@ bool ThreadPlanStepRange::InSymbol() {
     return range.ContainsLoadAddress(cur_pc, &GetTarget());
   }
   return false;
-}
-
-// TODO: Limit this function scope to OHOS targets
-bool ThreadPlanStepRange::MaybeAArch32Or64FunctionTail() {
-  const llvm::Triple &triple = GetTarget().GetArchitecture().GetTriple();
-  const bool isArm32or64 = triple.isAArch64() || triple.isARM();
-  return isArm32or64 && InSymbol() && InRange();
 }
 
 // FIXME: This should also handle inlining if we aren't going to do inlining in
@@ -408,14 +401,14 @@ bool ThreadPlanStepRange::NextRangeBreakpointExplainsStop(
     return false;
   else {
     // If we've hit the next branch breakpoint, then clear it.
-    size_t num_owners = bp_site_sp->GetNumberOfOwners();
+    size_t num_constituents = bp_site_sp->GetNumberOfConstituents();
     bool explains_stop = true;
-    // If all the owners are internal, then we are probably just stepping over
-    // this range from multiple threads, or multiple frames, so we want to
+    // If all the constituents are internal, then we are probably just stepping
+    // over this range from multiple threads, or multiple frames, so we want to
     // continue.  If one is not internal, then we should not explain the stop,
     // and let the user breakpoint handle the stop.
-    for (size_t i = 0; i < num_owners; i++) {
-      if (!bp_site_sp->GetOwnerAtIndex(i)->GetBreakpoint().IsInternal()) {
+    for (size_t i = 0; i < num_constituents; i++) {
+      if (!bp_site_sp->GetConstituentAtIndex(i)->GetBreakpoint().IsInternal()) {
         explains_stop = false;
         break;
       }
@@ -423,8 +416,8 @@ bool ThreadPlanStepRange::NextRangeBreakpointExplainsStop(
     LLDB_LOGF(log,
               "ThreadPlanStepRange::NextRangeBreakpointExplainsStop - Hit "
               "next range breakpoint which has %" PRIu64
-              " owners - explains stop: %u.",
-              (uint64_t)num_owners, explains_stop);
+              " constituents - explains stop: %u.",
+              (uint64_t)num_constituents, explains_stop);
     ClearNextBranchBreakpoint();
     return explains_stop;
   }
@@ -448,7 +441,6 @@ bool ThreadPlanStepRange::MischiefManaged() {
   // instance, when stepping over inlined code that is in the middle of the
   // current line.
 
-  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
   if (!m_no_more_plans)
     return false;
 
@@ -467,7 +459,6 @@ bool ThreadPlanStepRange::MischiefManaged() {
     LLDB_LOGF(log, "Completed step through range plan.");
     ClearNextBranchBreakpoint();
     ThreadPlan::MischiefManaged();
-    LLDB_PERFORMANCE_LOG("Completed step through range.");    // OHOS_LOCAL
     return true;
   } else {
     return false;

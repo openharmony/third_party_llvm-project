@@ -39,12 +39,6 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
     DefMips64CPU = "mips64r6";
   }
 
-  // MIPS64r6 is the default for Android MIPS64 (mips64el-linux-android).
-  if (Triple.isAndroid()) {
-    DefMips32CPU = "mips32";
-    DefMips64CPU = "mips64r6";
-  }
-
   // MIPS3 is the default for mips64*-unknown-openbsd.
   if (Triple.isOSOpenBSD())
     DefMips64CPU = "mips3";
@@ -55,13 +49,6 @@ void mips::getMipsCPUAndABI(const ArgList &Args, const llvm::Triple &Triple,
     DefMips32CPU = "mips2";
     DefMips64CPU = "mips3";
   }
-
-  // OHOS_LOCAL begin
-  // TODO: Which mips64 cpu will supported by OHOS?
-  if (Triple.isOpenHOS()) {
-    DefMips32CPU = "mips32r2";
-  }
-  // OHOS_LOCAL end
 
   if (Arg *A = Args.getLastArg(clang::driver::options::OPT_march_EQ,
                                options::OPT_mcpu_EQ))
@@ -234,6 +221,7 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   bool IsN64 = ABIName == "64";
   bool IsPIC = false;
   bool NonPIC = false;
+  bool HasNaN2008Opt = false;
 
   Arg *LastPICArg = Args.getLastArg(options::OPT_fPIC, options::OPT_fno_PIC,
                                     options::OPT_fpic, options::OPT_fno_pic,
@@ -298,9 +286,10 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
   if (Arg *A = Args.getLastArg(options::OPT_mnan_EQ)) {
     StringRef Val = StringRef(A->getValue());
     if (Val == "2008") {
-      if (mips::getIEEE754Standard(CPUName) & mips::Std2008)
+      if (mips::getIEEE754Standard(CPUName) & mips::Std2008) {
         Features.push_back("+nan2008");
-      else {
+        HasNaN2008Opt = true;
+      } else {
         Features.push_back("-nan2008");
         D.Diag(diag::warn_target_unsupported_nan2008) << CPUName;
       }
@@ -313,11 +302,7 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
       }
     } else
       D.Diag(diag::err_drv_unsupported_option_argument)
-          << A->getOption().getName() << Val;
-  // OHOS_LOCAL begin
-  } else if (Triple.isOpenHOS()) {
-      Features.push_back("+nan2008");
-  // OHOS_LOCAL end
+          << A->getSpelling() << Val;
   }
 
   if (Arg *A = Args.getLastArg(options::OPT_mabs_EQ)) {
@@ -338,8 +323,10 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
       }
     } else {
       D.Diag(diag::err_drv_unsupported_option_argument)
-          << A->getOption().getName() << Val;
+          << A->getSpelling() << Val;
     }
+  } else if (HasNaN2008Opt) {
+    Features.push_back("+abs2008");
   }
 
   AddTargetFeature(Args, Features, options::OPT_msingle_float,
@@ -354,6 +341,15 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
                    "dspr2");
   AddTargetFeature(Args, Features, options::OPT_mmsa, options::OPT_mno_msa,
                    "msa");
+  if (Arg *A = Args.getLastArg(
+          options::OPT_mstrict_align, options::OPT_mno_strict_align,
+          options::OPT_mno_unaligned_access, options::OPT_munaligned_access)) {
+    if (A->getOption().matches(options::OPT_mstrict_align) ||
+        A->getOption().matches(options::OPT_mno_unaligned_access))
+      Features.push_back(Args.MakeArgString("+strict-align"));
+    else
+      Features.push_back(Args.MakeArgString("-strict-align"));
+  }
 
   // Add the last -mfp32/-mfpxx/-mfp64, if none are given and the ABI is O32
   // pass -mfpxx, or if none are given and fp64a is default, pass fp64 and
@@ -367,17 +363,15 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
       Features.push_back("+nooddspreg");
     } else
       Features.push_back("+fp64");
-  // OHOS_LOCAL begin
-  } else if (Triple.isOpenHOS()) {
-    // Set FP64 as default in OHOS
-    Features.push_back("+fp64");
-  // OHOS_LOCAL end
   } else if (mips::shouldUseFPXX(Args, Triple, CPUName, ABIName, FloatABI)) {
     Features.push_back("+fpxx");
     Features.push_back("+nooddspreg");
   } else if (mips::isFP64ADefault(Triple, CPUName)) {
     Features.push_back("+fp64");
     Features.push_back("+nooddspreg");
+  } else if (Arg *A = Args.getLastArg(options::OPT_mmsa)) {
+    if (A->getOption().matches(options::OPT_mmsa))
+      Features.push_back("+fp64");
   }
 
   AddTargetFeature(Args, Features, options::OPT_mno_odd_spreg,
@@ -508,6 +502,13 @@ bool mips::shouldUseFPXX(const ArgList &Args, const llvm::Triple &Triple,
                                options::OPT_mdouble_float))
     if (A->getOption().matches(options::OPT_msingle_float))
       UseFPXX = false;
+  // FP64 should be used for MSA.
+  if (Arg *A = Args.getLastArg(options::OPT_mmsa))
+    if (A->getOption().matches(options::OPT_mmsa))
+      UseFPXX = llvm::StringSwitch<bool>(CPUName)
+                    .Cases("mips32r2", "mips32r3", "mips32r5", false)
+                    .Cases("mips64r2", "mips64r3", "mips64r5", false)
+                    .Default(UseFPXX);
 
   return UseFPXX;
 }

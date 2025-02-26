@@ -9,14 +9,12 @@
 #include "lldb/Target/OperatingSystem.h"
 #include "lldb/Core/PluginManager.h"
 #include "lldb/Target/Thread.h"
-#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 using namespace lldb;
 using namespace lldb_private;
 
 OperatingSystem *OperatingSystem::FindPlugin(Process *process,
                                              const char *plugin_name) {
-  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_TARGET);    // OHOS_LOCAL
   OperatingSystemCreateInstance create_callback = nullptr;
   if (plugin_name) {
     create_callback =
