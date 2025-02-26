@@ -478,6 +478,20 @@ bool llvm::isLegalToPromote(const CallBase &CB, Function *Callee,
   return true;
 }
 
+static CallBase *removeOperandBundlePtrauth(CallBase *CB)
+{
+  CallBase *CBNew = CallBase::removeOperandBundle(CB, LLVMContext::OB_ptrauth, CB->getIterator());
+  if(CBNew == CB)
+  {
+    return CB;
+  }
+  CBNew->copyMetadata(*CB);
+  CB->replaceAllUsesWith(CBNew);
+  CB->eraseFromParent();
+  return CBNew;
+}
+
+
 CallBase &llvm::promoteCall(CallBase &CB, Function *Callee,
                             CastInst **RetBitCast) {
   assert(!CB.getCalledFunction() && "Only indirect call sites can be promoted");
@@ -496,15 +510,7 @@ CallBase &llvm::promoteCall(CallBase &CB, Function *Callee,
   // additional work is required.
   if (CB.getFunctionType() == Callee->getFunctionType())
   {
-    CallBase *CBNew = CallBase::removeOperandBundle(&CB, LLVMContext::OB_ptrauth, CB.getIterator());
-
-    if(CBNew != &CB)
-    {
-      CBNew->copyMetadata(CB);
-      CB.replaceAllUsesWith(CBNew);
-      CB.eraseFromParent();
-    }
-    return *CBNew;
+    return *removeOperandBundlePtrauth(&CB);
   }
 
   // Save the return types of the call site and callee.
@@ -567,15 +573,7 @@ CallBase &llvm::promoteCall(CallBase &CB, Function *Callee,
                                         AttributeSet::get(Ctx, RAttrs),
                                         NewArgAttrs));
 
-  CallBase *CBNew = CallBase::removeOperandBundle(&CB, LLVMContext::OB_ptrauth, CB.getIterator());
-
-  if(CBNew != &CB)
-  {
-    CBNew->copyMetadata(CB);
-    CB.replaceAllUsesWith(CBNew);
-    CB.eraseFromParent();
-  }
-  return *CBNew;
+  return *removeOperandBundlePtrauth(&CB);
 }
 
 CallBase &llvm::promoteCallWithIfThenElse(CallBase &CB, Function *Callee,
