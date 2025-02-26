@@ -18,7 +18,7 @@
 using namespace lldb;
 using namespace lldb_private;
 
-#if defined(__ANDROID__)
+#ifdef __ANDROID__
 // Android does not have SUN_LEN
 #ifndef SUN_LEN
 #define SUN_LEN(ptr)                                                           \
@@ -48,7 +48,8 @@ static bool SetSockAddr(llvm::StringRef name, const size_t name_offset,
     saddr_un_len =
         offsetof(struct sockaddr_un, sun_path) + name_offset + name.size();
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) ||       \
+    defined(__OpenBSD__)
   saddr_un->sun_len = saddr_un_len;
 #endif
 

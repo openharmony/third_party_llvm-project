@@ -29,10 +29,35 @@ for adding this configuration.
 2. Install Bazel at the version indicated by [.bazelversion](./.bazelversion),
    following the official instructions, if you don't have it installed yet:
    https://docs.bazel.build/versions/main/install.html.
+   * You can also install and use
+     [bazelisk](https://github.com/bazelbuild/bazelisk) which automates
+     downloading the proper bazel version
 3. `cd utils/bazel`
-4. `bazel build --config=generic_clang @llvm-project//...` (if building on Unix
-   with Clang). `--config=generic_gcc` and `--config=msvc` are also available.
-
+4. The `bazel build` command depends on the local compiler you want to use.
+   * For **clang**, go to step 5.
+   * For **gcc** or **MSVC**, go to step 6
+5. If you are using **clang**, it is expected that lld is also available.
+   The `--config=generic_clang` flag by default sets the compiler to be `clang`
+   binary on the `PATH`.
+   ```
+   bazel build --config=generic_clang @llvm-project//...
+   ```
+   To provide a specific path to your `clang`, use the `--repo_env` Bazel flag.
+   For example:
+   ```
+   bazel build --config=generic_clang --repo_env=CC=/usr/bin/clang --repo_env=CXX=/usr/bin/clang++  @llvm-project//...
+   ```
+6. If you are using **gcc** or **MSVC**, instead of `--config=generic_clang`
+   , pass `--config=generic_gcc` or `--config=generic_msvc`, which sets the
+   compiler to be `gcc` binary on the `PATH`.
+   ```
+   bazel build --config=generic_gcc @llvm-project//...
+   ```
+   To provide a specific path to your `gcc`, use the `--repo_env` Bazel flag.
+   For example:
+   ```
+   bazel build --config=generic_gcc --repo_env=CC=/usr/bin/gcc --repo_env=CXX=/usr/bin/g++  @llvm-project//...
+   ```
 
 # Configuration
 
@@ -54,7 +79,7 @@ build --disk_cache=~/.cache/bazel-disk-cache
 
 You can instruct Bazel to use a ramdisk for its sandboxing operations via
 [--sandbox_base](https://docs.bazel.build/versions/main/command-line-reference.html#flag--sandbox_base),
-which can help avoid IO bottlenecks for the symlink stragegy used for
+which can help avoid IO bottlenecks for the symlink strategy used for
 sandboxing. This is especially important with many inputs and many cores (see
 https://github.com/bazelbuild/bazel/issues/11868):
 
@@ -75,7 +100,7 @@ configuration you'd like to use that isn't supported, please send a patch.
 
 # Continuous Testing
 
-A [Buildkite pipeline](https://buildkite.com/llvm-project/upstream-bazel-rbe)
+A [Buildkite pipeline](https://buildkite.com/llvm-project/upstream-bazel)
 runs the full Bazel build on every commit to the main branch. Notifications of
 failures are sent to the
 [llvm-bazel-alerts google group](https://groups.google.com/g/llvm-bazel-alerts),
@@ -84,17 +109,6 @@ on each failure using Buildkite's built-in notification system, so if you
 subscribe, it is highly recommended that you set up email filters or some other
 mechanism to not flood your inbox. More sophisticated notifications, e.g. only
 on status change or routed based on blamelist are TODO (contributions welcome).
-
-# Pre-merge Testing
-
-A Buildkite pipeline runs the full Bazel build as a pre-merge test using the 
-[LLVM pre-merge testing](https://github.com/google/llvm-premerge-checks/). It
-is triggered on all changes to the utils/bazel directory and when the patch
-author is a member of the
-[Bazel Phabricator project](https://reviews.llvm.org/project/members/107/). If
-you use or benefit from the Bazel build, please join the project so that you
-can help keep it green. As a bonus, it runs in under 5 minutes, much faster
-than any of the other pre-merge builds.
 
 # Usage in Downstream Projects
 

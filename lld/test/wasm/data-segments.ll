@@ -161,7 +161,7 @@
 ; DIS-EMPTY:
 ; DIS-NEXT:        end
 
-; In PIC mode __wasm_apply_data_relocs is export seperatly to __wasm_call_ctors
+; In PIC mode __wasm_apply_data_relocs is export separatly to __wasm_call_ctors
 ; PIC-DIS:     <__wasm_apply_data_relocs>:
 ; PIC-DIS-EMPTY:
 
@@ -222,7 +222,7 @@
 ; PIC-DIS-NEXT:        global.get      1
 ; PIC-DIS-NEXT:        [[PTR]].add
 ; DIS-NEXT:            i32.const       0
-; DIS-NEXT:            i32.const       10000
+; DIS-NEXT:            [[PTR]].const   10000
 ; DIS-NEXT:            memory.fill     0
 
 ; NOPIC-DIS-NEXT:      [[PTR]].const   11064

@@ -11,8 +11,8 @@
 
 #include "gtest/gtest.h"
 #include "flang/Optimizer/Builder/FIRBuilder.h"
+#include "flang/Optimizer/Dialect/Support/KindMapping.h"
 #include "flang/Optimizer/Support/InitFIR.h"
-#include "flang/Optimizer/Support/KindMapping.h"
 
 struct RuntimeCallTest : public testing::Test {
 public:
@@ -27,7 +27,7 @@ public:
     mlir::ModuleOp mod = builder.create<mlir::ModuleOp>(loc);
     mlir::func::FuncOp func =
         mlir::func::FuncOp::create(loc, "runtime_unit_tests_func",
-            builder.getFunctionType(llvm::None, llvm::None));
+            builder.getFunctionType(std::nullopt, std::nullopt));
     auto *entryBlock = func.addEntryBlock();
     mod.push_back(mod);
     builder.setInsertionPointToStart(entryBlock);
@@ -54,6 +54,15 @@ public:
 
     seqTy10 = fir::SequenceType::get(fir::SequenceType::Shape(1, 10), i32Ty);
     boxTy = fir::BoxType::get(mlir::NoneType::get(firBuilder->getContext()));
+
+    char1Ty = fir::CharacterType::getSingleton(builder.getContext(), 1);
+    char2Ty = fir::CharacterType::getSingleton(builder.getContext(), 2);
+    char4Ty = fir::CharacterType::getSingleton(builder.getContext(), 4);
+
+    logical1Ty = fir::LogicalType::get(builder.getContext(), 1);
+    logical2Ty = fir::LogicalType::get(builder.getContext(), 2);
+    logical4Ty = fir::LogicalType::get(builder.getContext(), 4);
+    logical8Ty = fir::LogicalType::get(builder.getContext(), 8);
   }
 
   mlir::MLIRContext context;
@@ -77,6 +86,13 @@ public:
   mlir::Type c16Ty;
   mlir::Type seqTy10;
   mlir::Type boxTy;
+  mlir::Type char1Ty;
+  mlir::Type char2Ty;
+  mlir::Type char4Ty;
+  mlir::Type logical1Ty;
+  mlir::Type logical2Ty;
+  mlir::Type logical4Ty;
+  mlir::Type logical8Ty;
 };
 
 /// Check that the \p op is a `fir::CallOp` operation and its name matches

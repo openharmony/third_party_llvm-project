@@ -11,12 +11,6 @@
 
 #include <vector>
 
-// OHOS_LOCAL begin
-#ifdef __OHOS__
-#include <sys/types.h>
-#endif
-// OHOS_LOCAL end
-
 int main(int argc, char **argv) {
   void *p;
   std::vector<ssize_t> sizes{1, 8, 16, 32, 1024, 32768,

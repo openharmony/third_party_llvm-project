@@ -18,6 +18,10 @@ declare <8 x i32> @llvm.vp.sdiv.v8i32(<8 x i32>, <8 x i32>, <8 x i1>, i32)
 declare <8 x i32> @llvm.vp.srem.v8i32(<8 x i32>, <8 x i32>, <8 x i1>, i32)
 declare <8 x i32> @llvm.vp.udiv.v8i32(<8 x i32>, <8 x i32>, <8 x i1>, i32)
 declare <8 x i32> @llvm.vp.urem.v8i32(<8 x i32>, <8 x i32>, <8 x i1>, i32)
+declare <8 x i32> @llvm.vp.smax.v8i32(<8 x i32>, <8 x i32>, <8 x i1>, i32)
+declare <8 x i32> @llvm.vp.smin.v8i32(<8 x i32>, <8 x i32>, <8 x i1>, i32)
+declare <8 x i32> @llvm.vp.umax.v8i32(<8 x i32>, <8 x i32>, <8 x i1>, i32)
+declare <8 x i32> @llvm.vp.umin.v8i32(<8 x i32>, <8 x i32>, <8 x i1>, i32)
 ; Bit arith
 declare <8 x i32> @llvm.vp.and.v8i32(<8 x i32>, <8 x i32>, <8 x i1>, i32)
 declare <8 x i32> @llvm.vp.xor.v8i32(<8 x i32>, <8 x i32>, <8 x i1>, i32)
@@ -37,8 +41,13 @@ declare i32 @llvm.vp.reduce.umin.v4i32(i32, <4 x i32>, <4 x i1>, i32)
 declare i32 @llvm.vp.reduce.umax.v4i32(i32, <4 x i32>, <4 x i1>, i32)
 declare float @llvm.vp.reduce.fmin.v4f32(float, <4 x float>, <4 x i1>, i32)
 declare float @llvm.vp.reduce.fmax.v4f32(float, <4 x float>, <4 x i1>, i32)
+declare float @llvm.vp.reduce.fminimum.v4f32(float, <4 x float>, <4 x i1>, i32)
+declare float @llvm.vp.reduce.fmaximum.v4f32(float, <4 x float>, <4 x i1>, i32)
 declare float @llvm.vp.reduce.fadd.v4f32(float, <4 x float>, <4 x i1>, i32)
 declare float @llvm.vp.reduce.fmul.v4f32(float, <4 x float>, <4 x i1>, i32)
+; Comparisons
+declare <8 x i1> @llvm.vp.icmp.v8i32(<8 x i32>, <8 x i32>, metadata, <8 x i1>, i32)
+declare <8 x i1> @llvm.vp.fcmp.v8f32(<8 x float>, <8 x float>, metadata, <8 x i1>, i32)
 
 ; Fixed vector test function.
 define void @test_vp_int_v8(<8 x i32> %i0, <8 x i32> %i1, <8 x i32> %i2, <8 x i32> %f3, <8 x i1> %m, i32 %n) {
@@ -49,12 +58,16 @@ define void @test_vp_int_v8(<8 x i32> %i0, <8 x i32> %i1, <8 x i32> %i2, <8 x i3
   %r4 = call <8 x i32> @llvm.vp.srem.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
   %r5 = call <8 x i32> @llvm.vp.udiv.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
   %r6 = call <8 x i32> @llvm.vp.urem.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
-  %r7 = call <8 x i32> @llvm.vp.and.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
-  %r8 = call <8 x i32> @llvm.vp.or.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
-  %r9 = call <8 x i32> @llvm.vp.xor.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
-  %rA = call <8 x i32> @llvm.vp.ashr.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
-  %rB = call <8 x i32> @llvm.vp.lshr.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
-  %rC = call <8 x i32> @llvm.vp.shl.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+  %r7 = call <8 x i32> @llvm.vp.smax.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+  %r8 = call <8 x i32> @llvm.vp.smin.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+  %r9 = call <8 x i32> @llvm.vp.umax.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+  %rA = call <8 x i32> @llvm.vp.umin.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+  %rB = call <8 x i32> @llvm.vp.and.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+  %rC = call <8 x i32> @llvm.vp.or.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+  %rD = call <8 x i32> @llvm.vp.xor.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+  %rE = call <8 x i32> @llvm.vp.ashr.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+  %rF = call <8 x i32> @llvm.vp.lshr.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+  %r10 = call <8 x i32> @llvm.vp.shl.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
   ret void
 }
 
@@ -67,6 +80,10 @@ declare <vscale x 4 x i32> @llvm.vp.sdiv.nxv4i32(<vscale x 4 x i32>, <vscale x 4
 declare <vscale x 4 x i32> @llvm.vp.srem.nxv4i32(<vscale x 4 x i32>, <vscale x 4 x i32>, <vscale x 4 x i1>, i32)
 declare <vscale x 4 x i32> @llvm.vp.udiv.nxv4i32(<vscale x 4 x i32>, <vscale x 4 x i32>, <vscale x 4 x i1>, i32)
 declare <vscale x 4 x i32> @llvm.vp.urem.nxv4i32(<vscale x 4 x i32>, <vscale x 4 x i32>, <vscale x 4 x i1>, i32)
+declare <vscale x 4 x i32> @llvm.vp.smax.nxv4i32(<vscale x 4 x i32>, <vscale x 4 x i32>, <vscale x 4 x i1>, i32)
+declare <vscale x 4 x i32> @llvm.vp.smin.nxv4i32(<vscale x 4 x i32>, <vscale x 4 x i32>, <vscale x 4 x i1>, i32)
+declare <vscale x 4 x i32> @llvm.vp.umax.nxv4i32(<vscale x 4 x i32>, <vscale x 4 x i32>, <vscale x 4 x i1>, i32)
+declare <vscale x 4 x i32> @llvm.vp.umin.nxv4i32(<vscale x 4 x i32>, <vscale x 4 x i32>, <vscale x 4 x i1>, i32)
 ; Bit arith
 declare <vscale x 4 x i32> @llvm.vp.and.nxv4i32(<vscale x 4 x i32>, <vscale x 4 x i32>, <vscale x 4 x i1>, i32)
 declare <vscale x 4 x i32> @llvm.vp.xor.nxv4i32(<vscale x 4 x i32>, <vscale x 4 x i32>, <vscale x 4 x i1>, i32)
@@ -84,12 +101,16 @@ define void @test_vp_int_vscale(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, 
   %r4 = call <vscale x 4 x i32> @llvm.vp.srem.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
   %r5 = call <vscale x 4 x i32> @llvm.vp.udiv.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
   %r6 = call <vscale x 4 x i32> @llvm.vp.urem.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
-  %r7 = call <vscale x 4 x i32> @llvm.vp.and.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
-  %r8 = call <vscale x 4 x i32> @llvm.vp.or.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
-  %r9 = call <vscale x 4 x i32> @llvm.vp.xor.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
-  %rA = call <vscale x 4 x i32> @llvm.vp.ashr.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
-  %rB = call <vscale x 4 x i32> @llvm.vp.lshr.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
-  %rC = call <vscale x 4 x i32> @llvm.vp.shl.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+  %r7 = call <vscale x 4 x i32> @llvm.vp.smax.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+  %r8 = call <vscale x 4 x i32> @llvm.vp.smin.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+  %r9 = call <vscale x 4 x i32> @llvm.vp.umax.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+  %rA = call <vscale x 4 x i32> @llvm.vp.umin.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+  %rB = call <vscale x 4 x i32> @llvm.vp.and.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+  %rC = call <vscale x 4 x i32> @llvm.vp.or.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+  %rD = call <vscale x 4 x i32> @llvm.vp.xor.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+  %rE = call <vscale x 4 x i32> @llvm.vp.ashr.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+  %rF = call <vscale x 4 x i32> @llvm.vp.lshr.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+  %r10 = call <vscale x 4 x i32> @llvm.vp.shl.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
   ret void
 }
 
@@ -114,10 +135,24 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
   %r3 = call float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
   %r4 = call nnan float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
   %r5 = call nnan ninf float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-  %r6 = call float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-  %r7 = call reassoc float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-  %r8 = call float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-  %r9 = call reassoc float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+  %r6 = call float @llvm.vp.reduce.fminimum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+  %r7 = call nnan float @llvm.vp.reduce.fminimum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+  %r8 = call nnan ninf float @llvm.vp.reduce.fminimum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+  %r9 = call float @llvm.vp.reduce.fmaximum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+  %r10 = call nnan float @llvm.vp.reduce.fmaximum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+  %r11 = call nnan ninf float @llvm.vp.reduce.fmaximum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+  %r12 = call float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+  %r13 = call reassoc float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+  %r14 = call float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+  %r15 = call reassoc float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+  ret void
+}
+
+define void @test_vp_cmp_v8(<8 x i32> %i0, <8 x i32> %i1, <8 x float> %f0, <8 x float> %f1, <8 x i1> %m, i32 %n) {
+  %r0 = call <8 x i1> @llvm.vp.icmp.v8i32(<8 x i32> %i0, <8 x i32> %i1, metadata !"eq", <8 x i1> %m, i32 %n)
+  %r1 = call <8 x i1> @llvm.vp.icmp.v8i32(<8 x i32> %i0, <8 x i32> %i1, metadata !"slt", <8 x i1> %m, i32 %n)
+  %r2 = call <8 x i1> @llvm.vp.fcmp.v8f32(<8 x float> %f0, <8 x float> %f1, metadata !"oeq", <8 x i1> %m, i32 %n)
+  %r3 = call <8 x i1> @llvm.vp.fcmp.v8f32(<8 x float> %f0, <8 x float> %f1, metadata !"ult", <8 x i1> %m, i32 %n)
   ret void
 }
 
@@ -143,7 +178,7 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; ALL-CONVERT-NEXT:  %{{.*}} = add <8 x i32> %i0, %i1
 ; ALL-CONVERT-NEXT:  %{{.*}} = sub <8 x i32> %i0, %i1
 ; ALL-CONVERT-NEXT:  %{{.*}} = mul <8 x i32> %i0, %i1
-; ALL-CONVERT-NEXT:  [[NINS:%.+]] = insertelement <8 x i32> poison, i32 %n, i32 0
+; ALL-CONVERT-NEXT:  [[NINS:%.+]] = insertelement <8 x i32> poison, i32 %n, i64 0
 ; ALL-CONVERT-NEXT:  [[NSPLAT:%.+]] = shufflevector <8 x i32> [[NINS]], <8 x i32> poison, <8 x i32> zeroinitializer
 ; ALL-CONVERT-NEXT:  [[EVLM:%.+]] = icmp ult <8 x i32> <i32 0, i32 1, i32 2, i32 3, i32 4, i32 5, i32 6, i32 7>, [[NSPLAT]]
 ; ALL-CONVERT-NEXT:  [[NEWM:%.+]] = and <8 x i1> [[EVLM]], %m
@@ -155,6 +190,10 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; ALL-CONVERT:       %{{.+}} = udiv <8 x i32> %i0, %{{.+}}
 ; ALL-CONVERT-NOT:   %{{.+}} = urem <8 x i32> %i0, %i1
 ; ALL-CONVERT:       %{{.+}} = urem <8 x i32> %i0, %{{.+}}
+; ALL-CONVERT-NEXT:  %{{.+}} = call <8 x i32> @llvm.smax.v8i32(<8 x i32> %i0, <8 x i32> %i1)
+; ALL-CONVERT-NEXT:  %{{.+}} = call <8 x i32> @llvm.smin.v8i32(<8 x i32> %i0, <8 x i32> %i1)
+; ALL-CONVERT-NEXT:  %{{.+}} = call <8 x i32> @llvm.umax.v8i32(<8 x i32> %i0, <8 x i32> %i1)
+; ALL-CONVERT-NEXT:  %{{.+}} = call <8 x i32> @llvm.umin.v8i32(<8 x i32> %i0, <8 x i32> %i1)
 ; ALL-CONVERT-NEXT:  %{{.+}} = and <8 x i32> %i0, %i1
 ; ALL-CONVERT-NEXT:  %{{.+}} = or <8 x i32> %i0, %i1
 ; ALL-CONVERT-NEXT:  %{{.+}} = xor <8 x i32> %i0, %i1
@@ -166,7 +205,7 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 
 ; Check that reductions use the correct neutral element for masked-off elements
 ; ALL-CONVERT: define void @test_vp_reduce_int_v4(i32 %start, <4 x i32> %vi, <4 x i1> %m, i32 %n) {
-; ALL-CONVERT-NEXT:  [[NINS:%.+]] = insertelement <4 x i32> poison, i32 %n, i32 0
+; ALL-CONVERT-NEXT:  [[NINS:%.+]] = insertelement <4 x i32> poison, i32 %n, i64 0
 ; ALL-CONVERT-NEXT:  [[NSPLAT:%.+]] = shufflevector <4 x i32> [[NINS]], <4 x i32> poison, <4 x i32> zeroinitializer
 ; ALL-CONVERT-NEXT:  [[EVLM:%.+]] = icmp ult <4 x i32> <i32 0, i32 1, i32 2, i32 3>, [[NSPLAT]]
 ; ALL-CONVERT-NEXT:  [[NEWM:%.+]] = and <4 x i1> [[EVLM]], %m
@@ -201,7 +240,7 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 
 ; Check that reductions use the correct neutral element for masked-off elements
 ; ALL-CONVERT: define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n) {
-; ALL-CONVERT-NEXT:  [[NINS:%.+]] = insertelement <4 x i32> poison, i32 %n, i32 0
+; ALL-CONVERT-NEXT:  [[NINS:%.+]] = insertelement <4 x i32> poison, i32 %n, i64 0
 ; ALL-CONVERT-NEXT:  [[NSPLAT:%.+]] = shufflevector <4 x i32> [[NINS]], <4 x i32> poison, <4 x i32> zeroinitializer
 ; ALL-CONVERT-NEXT:  [[EVLM:%.+]] = icmp ult <4 x i32> <i32 0, i32 1, i32 2, i32 3>, [[NSPLAT]]
 ; ALL-CONVERT-NEXT:  [[NEWM:%.+]] = and <4 x i1> [[EVLM]], %m
@@ -223,6 +262,27 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; ALL-CONVERT:  [[FMAX_NNAN_NINF:%.+]] = select <4 x i1> %{{.+}}, <4 x float> %vf, <4 x float> <float 0xC7EFFFFFE0000000, float 0xC7EFFFFFE0000000, float 0xC7EFFFFFE0000000, float 0xC7EFFFFFE0000000>
 ; ALL-CONVERT-NEXT:  [[RED:%.+]] = call nnan ninf float @llvm.vector.reduce.fmax.v4f32(<4 x float> [[FMAX_NNAN_NINF]])
 ; ALL-CONVERT-NEXT:  %{{.+}} = call nnan ninf float @llvm.maxnum.f32(float [[RED]], float %f)
+
+; ALL-CONVERT:       [[FMINIMUM:%.+]] = select <4 x i1> %{{.+}}, <4 x float> %vf, <4 x float> <float 0x7FF0000000000000, float 0x7FF0000000000000, float 0x7FF0000000000000, float 0x7FF0000000000000>
+; ALL-CONVERT-NEXT:  [[RED:%.+]] = call float @llvm.vector.reduce.fminimum.v4f32(<4 x float> [[FMINIMUM]])
+; ALL-CONVERT-NEXT:  %{{.+}} = call float @llvm.minimum.f32(float [[RED]], float %f)
+; ALL-CONVERT:       [[FMINIMUM_NNAN:%.+]] = select <4 x i1> %{{.+}}, <4 x float> %vf, <4 x float> <float 0x7FF0000000000000, float 0x7FF0000000000000, float 0x7FF0000000000000, float 0x7FF0000000000000>
+; ALL-CONVERT-NEXT:  [[RED:%.+]] = call nnan float @llvm.vector.reduce.fminimum.v4f32(<4 x float> [[FMINIMUM_NNAN]])
+; ALL-CONVERT-NEXT:  %{{.+}} = call nnan float @llvm.minimum.f32(float [[RED]], float %f)
+; ALL-CONVERT:       [[FMINIMUM_NNAN_NINF:%.+]] = select <4 x i1> %{{.+}}, <4 x float> %vf, <4 x float> <float 0x47EFFFFFE0000000, float 0x47EFFFFFE0000000, float 0x47EFFFFFE0000000, float 0x47EFFFFFE0000000>
+; ALL-CONVERT-NEXT:  [[RED:%.+]] = call nnan ninf float @llvm.vector.reduce.fminimum.v4f32(<4 x float> [[FMINIMUM_NNAN_NINF]])
+; ALL-CONVERT-NEXT:  %{{.+}} = call nnan ninf float @llvm.minimum.f32(float [[RED]], float %f)
+
+; ALL-CONVERT:  [[FMAXIMUM:%.+]] = select <4 x i1> %{{.+}}, <4 x float> %vf, <4 x float> <float 0xFFF0000000000000, float 0xFFF0000000000000, float 0xFFF0000000000000, float 0xFFF0000000000000>
+; ALL-CONVERT-NEXT:  [[RED:%.+]] = call float @llvm.vector.reduce.fmaximum.v4f32(<4 x float> [[FMAXIMUM]])
+; ALL-CONVERT-NEXT:  %{{.+}} = call float @llvm.maximum.f32(float [[RED]], float %f)
+; ALL-CONVERT:  [[FMAXIMUM_NNAN:%.+]] = select <4 x i1> %{{.+}}, <4 x float> %vf, <4 x float> <float 0xFFF0000000000000, float 0xFFF0000000000000, float 0xFFF0000000000000, float 0xFFF0000000000000>
+; ALL-CONVERT-NEXT:  [[RED:%.+]] = call nnan float @llvm.vector.reduce.fmaximum.v4f32(<4 x float> [[FMAXIMUM_NNAN]])
+; ALL-CONVERT-NEXT:  %{{.+}} = call nnan float @llvm.maximum.f32(float [[RED]], float %f)
+; ALL-CONVERT:  [[FMAXIMUM_NNAN_NINF:%.+]] = select <4 x i1> %{{.+}}, <4 x float> %vf, <4 x float> <float 0xC7EFFFFFE0000000, float 0xC7EFFFFFE0000000, float 0xC7EFFFFFE0000000, float 0xC7EFFFFFE0000000>
+; ALL-CONVERT-NEXT:  [[RED:%.+]] = call nnan ninf float @llvm.vector.reduce.fmaximum.v4f32(<4 x float> [[FMAXIMUM_NNAN_NINF]])
+; ALL-CONVERT-NEXT:  %{{.+}} = call nnan ninf float @llvm.maximum.f32(float [[RED]], float %f)
+
 ; ALL-CONVERT:  [[FADD:%.+]] = select <4 x i1> %{{.+}}, <4 x float> %vf, <4 x float> <float -0.000000e+00, float -0.000000e+00, float -0.000000e+00, float -0.000000e+00>
 ; ALL-CONVERT-NEXT:  %{{.+}} = call float @llvm.vector.reduce.fadd.v4f32(float %f, <4 x float> [[FADD]])
 ; ALL-CONVERT:  [[FADD:%.+]] = select <4 x i1> %{{.+}}, <4 x float> %vf, <4 x float> <float -0.000000e+00, float -0.000000e+00, float -0.000000e+00, float -0.000000e+00>
@@ -232,6 +292,15 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; ALL-CONVERT:  [[FMUL:%.+]] = select <4 x i1> %{{.+}}, <4 x float> %vf, <4 x float> <float 1.000000e+00, float 1.000000e+00, float 1.000000e+00, float 1.000000e+00>
 ; ALL-CONVERT-NEXT:  %{{.+}} = call reassoc float @llvm.vector.reduce.fmul.v4f32(float %f, <4 x float> [[FMUL]])
 ; ALL-CONVERT-NEXT:  ret void
+
+; Check that comparisons use the correct condition codes
+; ALL-CONVERT: define void @test_vp_cmp_v8(<8 x i32> %i0, <8 x i32> %i1, <8 x float> %f0, <8 x float> %f1, <8 x i1> %m, i32 %n) {
+; ALL-CONVERT-NEXT: %{{.+}} = icmp eq <8 x i32> %i0, %i1
+; ALL-CONVERT-NEXT: %{{.+}} = icmp slt <8 x i32> %i0, %i1
+; ALL-CONVERT-NEXT: %{{.+}} = fcmp oeq <8 x float> %f0, %f1
+; ALL-CONVERT-NEXT: %{{.+}} = fcmp ult <8 x float> %f0, %f1
+; ALL-CONVERT-NEXT: ret void
+
 
 ; All legal - don't transform anything.
 
@@ -243,12 +312,16 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; LEGAL_LEGAL-NEXT:   %r4 = call <8 x i32> @llvm.vp.srem.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
 ; LEGAL_LEGAL-NEXT:   %r5 = call <8 x i32> @llvm.vp.udiv.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
 ; LEGAL_LEGAL-NEXT:   %r6 = call <8 x i32> @llvm.vp.urem.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:   %r7 = call <8 x i32> @llvm.vp.and.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:   %r8 = call <8 x i32> @llvm.vp.or.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:   %r9 = call <8 x i32> @llvm.vp.xor.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:   %rA = call <8 x i32> @llvm.vp.ashr.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:   %rB = call <8 x i32> @llvm.vp.lshr.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:   %rC = call <8 x i32> @llvm.vp.shl.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:   %r7 = call <8 x i32> @llvm.vp.smax.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:   %r8 = call <8 x i32> @llvm.vp.smin.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:   %r9 = call <8 x i32> @llvm.vp.umax.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:   %rA = call <8 x i32> @llvm.vp.umin.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:   %rB = call <8 x i32> @llvm.vp.and.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:   %rC = call <8 x i32> @llvm.vp.or.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:   %rD = call <8 x i32> @llvm.vp.xor.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:   %rE = call <8 x i32> @llvm.vp.ashr.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:   %rF = call <8 x i32> @llvm.vp.lshr.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:   %r10 = call <8 x i32> @llvm.vp.shl.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 %n)
 ; LEGAL_LEGAL-NEXT:   ret void
 
 ; LEGAL_LEGAL:define void @test_vp_int_vscale(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i32> %i2, <vscale x 4 x i32> %f3, <vscale x 4 x i1> %m, i32 %n) {
@@ -259,12 +332,16 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; LEGAL_LEGAL-NEXT:  %r4 = call <vscale x 4 x i32> @llvm.vp.srem.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
 ; LEGAL_LEGAL-NEXT:  %r5 = call <vscale x 4 x i32> @llvm.vp.udiv.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
 ; LEGAL_LEGAL-NEXT:  %r6 = call <vscale x 4 x i32> @llvm.vp.urem.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %r7 = call <vscale x 4 x i32> @llvm.vp.and.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %r8 = call <vscale x 4 x i32> @llvm.vp.or.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %r9 = call <vscale x 4 x i32> @llvm.vp.xor.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %rA = call <vscale x 4 x i32> @llvm.vp.ashr.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %rB = call <vscale x 4 x i32> @llvm.vp.lshr.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %rC = call <vscale x 4 x i32> @llvm.vp.shl.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:  %r7 = call <vscale x 4 x i32> @llvm.vp.smax.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:  %r8 = call <vscale x 4 x i32> @llvm.vp.smin.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:  %r9 = call <vscale x 4 x i32> @llvm.vp.umax.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:  %rA = call <vscale x 4 x i32> @llvm.vp.umin.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:  %rB = call <vscale x 4 x i32> @llvm.vp.and.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:  %rC = call <vscale x 4 x i32> @llvm.vp.or.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:  %rD = call <vscale x 4 x i32> @llvm.vp.xor.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:  %rE = call <vscale x 4 x i32> @llvm.vp.ashr.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:  %rF = call <vscale x 4 x i32> @llvm.vp.lshr.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT:  %r10 = call <vscale x 4 x i32> @llvm.vp.shl.nxv4i32(<vscale x 4 x i32> %i0, <vscale x 4 x i32> %i1, <vscale x 4 x i1> %m, i32 %n)
 ; LEGAL_LEGAL-NEXT:  ret void
 
 ; LEGAL_LEGAL: define void @test_vp_reduce_int_v4(i32 %start, <4 x i32> %vi, <4 x i1> %m, i32 %n) {
@@ -280,17 +357,30 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; LEGAL_LEGAL-NEXT:  ret void
 
 ; LEGAL_LEGAL: define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n) {
-; LEGAL_LEGAL-NEXT:  %r0 = call float @llvm.vp.reduce.fmin.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %r1 = call nnan float @llvm.vp.reduce.fmin.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %r2 = call nnan ninf float @llvm.vp.reduce.fmin.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %r3 = call float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %r4 = call nnan float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %r5 = call nnan ninf float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %r6 = call float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %r7 = call reassoc float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %r8 = call float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
-; LEGAL_LEGAL-NEXT:  %r9 = call reassoc float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r0 = call float @llvm.vp.reduce.fmin.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r1 = call nnan float @llvm.vp.reduce.fmin.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r2 = call nnan ninf float @llvm.vp.reduce.fmin.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r3 = call float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r4 = call nnan float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r5 = call nnan ninf float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r6 = call float @llvm.vp.reduce.fminimum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r7 = call nnan float @llvm.vp.reduce.fminimum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r8 = call nnan ninf float @llvm.vp.reduce.fminimum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r9 = call float @llvm.vp.reduce.fmaximum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r10 = call nnan float @llvm.vp.reduce.fmaximum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r11 = call nnan ninf float @llvm.vp.reduce.fmaximum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r12 = call float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r13 = call reassoc float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r14 = call float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r15 = call reassoc float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
 ; LEGAL_LEGAL-NEXT:  ret void
+
+; LEGAL_LEGAL: define void @test_vp_cmp_v8(<8 x i32> %i0, <8 x i32> %i1, <8 x float> %f0, <8 x float> %f1, <8 x i1> %m, i32 %n) {
+; LEGAL_LEGAL-NEXT: %r0 = call <8 x i1> @llvm.vp.icmp.v8i32(<8 x i32> %i0, <8 x i32> %i1, metadata !"eq", <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r1 = call <8 x i1> @llvm.vp.icmp.v8i32(<8 x i32> %i0, <8 x i32> %i1, metadata !"slt", <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r2 = call <8 x i1> @llvm.vp.fcmp.v8f32(<8 x float> %f0, <8 x float> %f1, metadata !"oeq", <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: %r3 = call <8 x i1> @llvm.vp.fcmp.v8f32(<8 x float> %f0, <8 x float> %f1, metadata !"ult", <8 x i1> %m, i32 %n)
+; LEGAL_LEGAL-NEXT: ret void
 
 ; Drop %evl where possible else fold %evl into %mask (%evl Discard, %mask Legal)
 ;
@@ -307,7 +397,7 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; DISCARD_LEGAL-NEXT:   %r0 = call <8 x i32> @llvm.vp.add.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
 ; DISCARD_LEGAL-NEXT:   %r1 = call <8 x i32> @llvm.vp.sub.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
 ; DISCARD_LEGAL-NEXT:   %r2 = call <8 x i32> @llvm.vp.mul.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
-; DISCARD_LEGAL-NEXT:   [[NSPLATINS:%.+]] = insertelement <8 x i32> poison, i32 %n, i32 0
+; DISCARD_LEGAL-NEXT:   [[NSPLATINS:%.+]] = insertelement <8 x i32> poison, i32 %n, i64 0
 ; DISCARD_LEGAL-NEXT:   [[NSPLAT:%.+]] = shufflevector <8 x i32> [[NSPLATINS]], <8 x i32> poison, <8 x i32> zeroinitializer
 ; DISCARD_LEGAL-NEXT:   [[EVLMASK:%.+]] = icmp ult <8 x i32> <i32 0, i32 1, i32 2, i32 3, i32 4, i32 5, i32 6, i32 7>, [[NSPLAT]]
 ; DISCARD_LEGAL-NEXT:   [[NEWMASK:%.+]] = and <8 x i1> [[EVLMASK]], %m
@@ -315,12 +405,16 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; DISCARD_LEGAL-NOT:    %r4 = call <8 x i32> @llvm.vp.srem.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
 ; DISCARD_LEGAL-NOT:    %r5 = call <8 x i32> @llvm.vp.udiv.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
 ; DISCARD_LEGAL-NOT:    %r6 = call <8 x i32> @llvm.vp.urem.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
-; DISCARD_LEGAL:        %r7 = call <8 x i32> @llvm.vp.and.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
-; DISCARD_LEGAL-NEXT:   %r8 = call <8 x i32> @llvm.vp.or.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
-; DISCARD_LEGAL-NEXT:   %r9 = call <8 x i32> @llvm.vp.xor.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
-; DISCARD_LEGAL-NEXT:   %rA = call <8 x i32> @llvm.vp.ashr.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
-; DISCARD_LEGAL-NEXT:   %rB = call <8 x i32> @llvm.vp.lshr.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
-; DISCARD_LEGAL-NEXT:   %rC = call <8 x i32> @llvm.vp.shl.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
+; DISCARD_LEGAL:        %r7 = call <8 x i32> @llvm.vp.smax.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
+; DISCARD_LEGAL:        %r8 = call <8 x i32> @llvm.vp.smin.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
+; DISCARD_LEGAL:        %r9 = call <8 x i32> @llvm.vp.umax.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
+; DISCARD_LEGAL:        %rA = call <8 x i32> @llvm.vp.umin.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
+; DISCARD_LEGAL-NEXT:   %rB = call <8 x i32> @llvm.vp.and.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
+; DISCARD_LEGAL-NEXT:   %rC = call <8 x i32> @llvm.vp.or.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
+; DISCARD_LEGAL-NEXT:   %rD = call <8 x i32> @llvm.vp.xor.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
+; DISCARD_LEGAL-NEXT:   %rE = call <8 x i32> @llvm.vp.ashr.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
+; DISCARD_LEGAL-NEXT:   %rF = call <8 x i32> @llvm.vp.lshr.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
+; DISCARD_LEGAL-NEXT:   %r10 = call <8 x i32> @llvm.vp.shl.v8i32(<8 x i32> %i0, <8 x i32> %i1, <8 x i1> %m, i32 8)
 ; DISCARD_LEGAL-NEXT:   ret void
 
 ; TODO compute vscale only once and use caching.
@@ -340,7 +434,7 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; DISCARD_LEGAL:      ret void
 
 ; DISCARD_LEGAL: define void @test_vp_reduce_int_v4(i32 %start, <4 x i32> %vi, <4 x i1> %m, i32 %n) {
-; DISCARD_LEGAL-NEXT:  [[NSPLATINS:%.+]] = insertelement <4 x i32> poison, i32 %n, i32 0
+; DISCARD_LEGAL-NEXT:  [[NSPLATINS:%.+]] = insertelement <4 x i32> poison, i32 %n, i64 0
 ; DISCARD_LEGAL-NEXT:  [[NSPLAT:%.+]] = shufflevector <4 x i32> [[NSPLATINS]], <4 x i32> poison, <4 x i32> zeroinitializer
 ; DISCARD_LEGAL-NEXT:  [[EVLMASK:%.+]] = icmp ult <4 x i32> <i32 0, i32 1, i32 2, i32 3>, [[NSPLAT]]
 ; DISCARD_LEGAL-NEXT:  [[NEWMASK:%.+]] = and <4 x i1> [[EVLMASK]], %m
@@ -356,7 +450,7 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; DISCARD_LEGAL:      ret void
 
 ; DISCARD_LEGAL: define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n) {
-; DISCARD_LEGAL-NEXT:  [[NSPLATINS:%.+]] = insertelement <4 x i32> poison, i32 %n, i32 0
+; DISCARD_LEGAL-NEXT:  [[NSPLATINS:%.+]] = insertelement <4 x i32> poison, i32 %n, i64 0
 ; DISCARD_LEGAL-NEXT:  [[NSPLAT:%.+]] = shufflevector <4 x i32> [[NSPLATINS]], <4 x i32> poison, <4 x i32> zeroinitializer
 ; DISCARD_LEGAL-NEXT:  [[EVLMASK:%.+]] = icmp ult <4 x i32> <i32 0, i32 1, i32 2, i32 3>, [[NSPLAT]]
 ; DISCARD_LEGAL-NEXT:  [[NEWMASK:%.+]] = and <4 x i1> [[EVLMASK]], %m
@@ -366,11 +460,23 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; DISCARD_LEGAL-NOT:  %r3 = call float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
 ; DISCARD_LEGAL-NOT:  %r4 = call nnan float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
 ; DISCARD_LEGAL-NOT:  %r5 = call nnan ninf float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
-; DISCARD_LEGAL-NOT:  %r6 = call float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
-; DISCARD_LEGAL-NOT:  %r7 = call reassoc float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
-; DISCARD_LEGAL-NOT:  %r8 = call float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
-; DISCARD_LEGAL-NOT:  %r9 = call reassoc float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
+; DISCARD_LEGAL-NOT:  %r6 = call float @llvm.vp.reduce.fminimum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; DISCARD_LEGAL-NOT:  %r7 = call nnan float @llvm.vp.reduce.fminimum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; DISCARD_LEGAL-NOT:  %r8 = call nnan ninf float @llvm.vp.reduce.fminimum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; DISCARD_LEGAL-NOT:  %r9 = call float @llvm.vp.reduce.fmaximum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; DISCARD_LEGAL-NOT:  %r10 = call nnan float @llvm.vp.reduce.fmaximum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; DISCARD_LEGAL-NOT:  %r11 = call nnan ninf float @llvm.vp.reduce.fmaximum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; DISCARD_LEGAL-NOT:  %r12 = call float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; DISCARD_LEGAL-NOT:  %r13 = call reassoc float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; DISCARD_LEGAL-NOT:  %r14 = call float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
+; DISCARD_LEGAL-NOT:  %r15 = call reassoc float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n)
 ; DISCARD_LEGAL:      ret void
+
+; DISCARD_LEGAL: define void @test_vp_cmp_v8(<8 x i32> %i0, <8 x i32> %i1, <8 x float> %f0, <8 x float> %f1, <8 x i1> %m, i32 %n) {
+; DISCARD_LEGAL-NEXT: %r0 = call <8 x i1> @llvm.vp.icmp.v8i32(<8 x i32> %i0, <8 x i32> %i1, metadata !"eq", <8 x i1> %m, i32 8)
+; DISCARD_LEGAL-NEXT: %r1 = call <8 x i1> @llvm.vp.icmp.v8i32(<8 x i32> %i0, <8 x i32> %i1, metadata !"slt", <8 x i1> %m, i32 8)
+; DISCARD_LEGAL-NEXT: %r2 = call <8 x i1> @llvm.vp.fcmp.v8f32(<8 x float> %f0, <8 x float> %f1, metadata !"oeq", <8 x i1> %m, i32 8)
+; DISCARD_LEGAL-NEXT: %r3 = call <8 x i1> @llvm.vp.fcmp.v8f32(<8 x float> %f0, <8 x float> %f1, metadata !"ult", <8 x i1> %m, i32 8)
 
 ; Convert %evl into %mask everywhere (%evl Convert, %mask Legal)
 ;
@@ -380,7 +486,7 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; (3) All VP intrinsics have an ineffective %evl parameter.
 ;
 ; CONVERT_LEGAL: define void @test_vp_int_v8(<8 x i32> %i0, <8 x i32> %i1, <8 x i32> %i2, <8 x i32> %f3, <8 x i1> %m, i32 %n) {
-; CONVERT_LEGAL-NEXT:  [[NINS:%.+]] = insertelement <8 x i32> poison, i32 %n, i32 0
+; CONVERT_LEGAL-NEXT:  [[NINS:%.+]] = insertelement <8 x i32> poison, i32 %n, i64 0
 ; CONVERT_LEGAL-NEXT:  [[NSPLAT:%.+]] = shufflevector <8 x i32> [[NINS]], <8 x i32> poison, <8 x i32> zeroinitializer
 ; CONVERT_LEGAL-NEXT:  [[EVLM:%.+]] = icmp ult <8 x i32> <i32 0, i32 1, i32 2, i32 3, i32 4, i32 5, i32 6, i32 7>, [[NSPLAT]]
 ; CONVERT_LEGAL-NEXT:  [[NEWM:%.+]] = and <8 x i1> [[EVLM]], %m
@@ -410,7 +516,7 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; CONVERT_LEGAL:        ret void
 
 ; CONVERT_LEGAL: define void @test_vp_reduce_int_v4(i32 %start, <4 x i32> %vi, <4 x i1> %m, i32 %n) {
-; CONVERT_LEGAL-NEXT:  [[NINS:%.+]] = insertelement <4 x i32> poison, i32 %n, i32 0
+; CONVERT_LEGAL-NEXT:  [[NINS:%.+]] = insertelement <4 x i32> poison, i32 %n, i64 0
 ; CONVERT_LEGAL-NEXT:  [[NSPLAT:%.+]] = shufflevector <4 x i32> [[NINS]], <4 x i32> poison, <4 x i32> zeroinitializer
 ; CONVERT_LEGAL-NEXT:  [[EVLM:%.+]] = icmp ult <4 x i32> <i32 0, i32 1, i32 2, i32 3>, [[NSPLAT]]
 ; CONVERT_LEGAL-NEXT:  [[NEWM:%.+]] = and <4 x i1> [[EVLM]], %m
@@ -426,7 +532,7 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; CONVERT_LEGAL: ret void
 
 ; CONVERT_LEGAL: define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n) {
-; CONVERT_LEGAL-NEXT:  [[NINS:%.+]] = insertelement <4 x i32> poison, i32 %n, i32 0
+; CONVERT_LEGAL-NEXT:  [[NINS:%.+]] = insertelement <4 x i32> poison, i32 %n, i64 0
 ; CONVERT_LEGAL-NEXT:  [[NSPLAT:%.+]] = shufflevector <4 x i32> [[NINS]], <4 x i32> poison, <4 x i32> zeroinitializer
 ; CONVERT_LEGAL-NEXT:  [[EVLM:%.+]] = icmp ult <4 x i32> <i32 0, i32 1, i32 2, i32 3>, [[NSPLAT]]
 ; CONVERT_LEGAL-NEXT:  [[NEWM:%.+]] = and <4 x i1> [[EVLM]], %m
@@ -436,8 +542,26 @@ define void @test_vp_reduce_fp_v4(float %f, <4 x float> %vf, <4 x i1> %m, i32 %n
 ; CONVERT_LEGAL-NOT:   %{{.+}} = call float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
 ; CONVERT_LEGAL-NOT:   %{{.+}} = call nnan float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
 ; CONVERT_LEGAL-NOT:   %{{.+}} = call nnan ninf float @llvm.vp.reduce.fmax.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
+; CONVERT_LEGAL-NOT:   %{{.+}} = call float @llvm.vp.reduce.fminimum.v4f32(float %f, <4 x float> %vf, <4 x i1> [[NEWM]], i32 4)
+; CONVERT_LEGAL-NOT:   %{{.+}} = call nnan float @llvm.vp.reduce.fminimum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
+; CONVERT_LEGAL-NOT:   %{{.+}} = call nnan ninf float @llvm.vp.reduce.fminimum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
+; CONVERT_LEGAL-NOT:   %{{.+}} = call float @llvm.vp.reduce.fmaximum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
+; CONVERT_LEGAL-NOT:   %{{.+}} = call nnan float @llvm.vp.reduce.fmaximum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
+; CONVERT_LEGAL-NOT:   %{{.+}} = call nnan ninf float @llvm.vp.reduce.fmaximum.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
 ; CONVERT_LEGAL-NOT:   %{{.+}} = call float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
 ; CONVERT_LEGAL-NOT:   %{{.+}} = call reassoc float @llvm.vp.reduce.fadd.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
 ; CONVERT_LEGAL-NOT:   %{{.+}} = call float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
 ; CONVERT_LEGAL-NOT:   %{{.+}} = call reassoc float @llvm.vp.reduce.fmul.v4f32(float %f, <4 x float> %vf, <4 x i1> %m, i32 4)
+; CONVERT_LEGAL: ret void
+
+; CONVERT_LEGAL: define void @test_vp_cmp_v8(<8 x i32> %i0, <8 x i32> %i1, <8 x float> %f0, <8 x float> %f1, <8 x i1> %m, i32 %n) {
+; CONVERT_LEGAL-NEXT:  [[NINS:%.+]] = insertelement <8 x i32> poison, i32 %n, i64 0
+; CONVERT_LEGAL-NEXT:  [[NSPLAT:%.+]] = shufflevector <8 x i32> [[NINS]], <8 x i32> poison, <8 x i32> zeroinitializer
+; CONVERT_LEGAL-NEXT:  [[EVLM:%.+]] = icmp ult <8 x i32> <i32 0, i32 1, i32 2, i32 3, i32 4, i32 5, i32 6, i32 7>, [[NSPLAT]]
+; CONVERT_LEGAL-NEXT:  [[NEWM:%.+]] = and <8 x i1> [[EVLM]], %m
+; CONVERT_LEGAL-NEXT:  %{{.+}} = call <8 x i1> @llvm.vp.icmp.v8i32(<8 x i32> %i0, <8 x i32> %i1, metadata !"eq", <8 x i1> [[NEWM]], i32 8)
+; CONVERT_LEGAL-NOT:   %{{.+}} = call <8 x i1> @llvm.vp.icmp.v8i32(<8 x i32> %i0, <8 x i32> %i1, metadata !"eq", <8 x i1> %m, i32 %n)
+; CONVERT_LEGAL-NOT:   %{{.+}} = call <8 x i1> @llvm.vp.icmp.v8i32(<8 x i32> %i0, <8 x i32> %i1, metadata !"slt", <8 x i1> %m, i32 %n
+; CONVERT_LEGAL-NOT:   %{{.+}} = call <8 x i1> @llvm.vp.fcmp.v8f32(<8 x float> %f0, <8 x float> %f1, metadata !"oeq", <8 x i1> %m, i32 %n)
+; CONVERT_LEGAL-NOT:   %{{.+}} = call <8 x i1> @llvm.vp.fcmp.v8f32(<8 x float> %f0, <8 x float> %f1, metadata !"ult", <8 x i1> %m, i32 %n)
 ; CONVERT_LEGAL: ret void

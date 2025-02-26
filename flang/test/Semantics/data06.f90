@@ -1,4 +1,4 @@
-! RUN: %python %S/test_errors.py %s %flang_fc1
+! RUN: %python %S/test_errors.py %s %flang_fc1 -pedantic
 ! DATA statement errors
 subroutine s1
   type :: t1
@@ -41,6 +41,7 @@ subroutine s1
   data rp/rfunc/
   procedure(rfunc), pointer :: rpp
   real, target :: rt
+  !WARNING: Procedure pointer 'rpp' in a DATA statement is not standard
   !ERROR: Data object 'rt' may not be used to initialize 'rpp', which is a procedure pointer
   data rpp/rt/
   !ERROR: Initializer for 'rt' must not be a pointer

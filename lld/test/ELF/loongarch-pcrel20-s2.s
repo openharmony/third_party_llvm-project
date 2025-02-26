@@ -13,7 +13,7 @@
 # RUN:   FileCheck -DFILE=%t.la32.o --check-prefix=ERROR-RANGE %s
 # RUN: not ld.lld %t.la64.o --section-start=.text=0x20000 --section-start=.data=0x220000 -o /dev/null 2>&1 | \
 # RUN:   FileCheck -DFILE=%t.la64.o --check-prefix=ERROR-RANGE %s
-# ERROR-RANGE: error: [[FILE]]:(.text+0x0): relocation R_LARCH_PCREL20_S2 out of range: 2097152 is not in [-2097152, 2097151]
+# ERROR-RANGE: error: [[FILE]]:(.text+0x0): relocation R_LARCH_PCREL20_S2 out of range: 2097152 is not in [-2097152, 2097151]; references section '.data'
 
 # RUN: not ld.lld %t.la32.o --section-start=.text=0x20000 --section-start=.data=0x40001 -o /dev/null 2>&1 | \
 # RUN:   FileCheck -DFILE=%t.la32.o --check-prefix=ERROR-ALIGN %s

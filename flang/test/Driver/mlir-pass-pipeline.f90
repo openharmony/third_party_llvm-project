@@ -12,6 +12,37 @@ end program
 ! ALL: Pass statistics report
 
 ! ALL: Fortran::lower::VerifierPass
+! O2-NEXT: Canonicalizer
+! ALL:     Pipeline Collection : ['fir.global', 'func.func', 'omp.declare_reduction', 'omp.private']
+! ALL-NEXT:'fir.global' Pipeline
+! O2-NEXT:   SimplifyHLFIRIntrinsics
+! ALL:       InlineElementals
+! ALL-NEXT:'func.func' Pipeline
+! O2-NEXT:   SimplifyHLFIRIntrinsics
+! ALL:       InlineElementals
+! ALL-NEXT:'omp.declare_reduction' Pipeline
+! O2-NEXT:   SimplifyHLFIRIntrinsics
+! ALL:       InlineElementals
+! ALL-NEXT:'omp.private' Pipeline
+! O2-NEXT:   SimplifyHLFIRIntrinsics
+! ALL:       InlineElementals
+! O2-NEXT: Canonicalizer
+! O2-NEXT: CSE
+! O2-NEXT: (S) {{.*}} num-cse'd
+! O2-NEXT: (S) {{.*}} num-dce'd
+! O2-NEXT: Pipeline Collection : ['fir.global', 'func.func', 'omp.declare_reduction', 'omp.private']
+! O2-NEXT: 'fir.global' Pipeline
+! O2-NEXT:   OptimizedBufferization
+! O2-NEXT: 'func.func' Pipeline
+! O2-NEXT:   OptimizedBufferization
+! O2-NEXT: 'omp.declare_reduction' Pipeline
+! O2-NEXT:   OptimizedBufferization
+! O2-NEXT: 'omp.private' Pipeline
+! O2-NEXT:   OptimizedBufferization
+! ALL: LowerHLFIROrderedAssignments
+! ALL-NEXT: LowerHLFIRIntrinsics
+! ALL-NEXT: BufferizeHLFIR
+! ALL-NEXT: ConvertHLFIRtoFIR
 ! ALL-NEXT: CSE
 ! Ideally, we need an output with only the pass names, but
 ! there is currently no way to get that, so in order to
@@ -20,12 +51,20 @@ end program
 ! ALL-NEXT:   (S) 0 num-cse'd - Number of operations CSE'd
 ! ALL-NEXT:   (S) 0 num-dce'd - Number of operations DCE'd
 
+! ALL-NEXT: Pipeline Collection : ['fir.global', 'func.func', 'omp.declare_reduction', 'omp.private']
+! ALL-NEXT: 'fir.global' Pipeline
+! ALL-NEXT:   CharacterConversion
 ! ALL-NEXT: 'func.func' Pipeline
 ! ALL-NEXT:   ArrayValueCopy
+! ALL-NEXT:   CharacterConversion
+! ALL-NEXT: 'omp.declare_reduction' Pipeline
+! ALL-NEXT:   CharacterConversion
+! ALL-NEXT: 'omp.private' Pipeline
 ! ALL-NEXT:   CharacterConversion
 
 ! ALL-NEXT: Canonicalizer
 ! ALL-NEXT: SimplifyRegionLite
+!  O2-NEXT: SimplifyIntrinsics
 !  O2-NEXT: AlgebraicSimplification
 ! ALL-NEXT: CSE
 ! ALL-NEXT:   (S) 0 num-cse'd - Number of operations CSE'd
@@ -40,8 +79,23 @@ end program
 ! ALL-NEXT:   (S) 0 num-cse'd - Number of operations CSE'd
 ! ALL-NEXT:   (S) 0 num-dce'd - Number of operations DCE'd
 
-! ALL-NEXT: 'func.func' Pipeline
-! ALL-NEXT:   CFGConversion
+! ALL-NEXT: PolymorphicOpConversion
+! ALL-NEXT: AssumedRankOpConversion
+! O2-NEXT:  AddAliasTags
+
+! ALL-NEXT: Pipeline Collection : ['fir.global', 'func.func', 'omp.declare_reduction', 'omp.private']
+! ALL-NEXT:    'fir.global' Pipeline
+! ALL-NEXT:      StackReclaim
+! ALL-NEXT:      CFGConversion
+! ALL-NEXT:    'func.func' Pipeline
+! ALL-NEXT:      StackReclaim
+! ALL-NEXT:      CFGConversion
+! ALL-NEXT:   'omp.declare_reduction' Pipeline
+! ALL-NEXT:      StackReclaim
+! ALL-NEXT:      CFGConversion
+! ALL-NEXT:   'omp.private' Pipeline
+! ALL-NEXT:      StackReclaim
+! ALL-NEXT:      CFGConversion
 
 ! ALL-NEXT: SCFToControlFlow
 ! ALL-NEXT: Canonicalizer
@@ -51,8 +105,15 @@ end program
 ! ALL-NEXT:   (S) 0 num-dce'd - Number of operations DCE'd
 ! ALL-NEXT: BoxedProcedurePass
 
-! ALL-NEXT: 'func.func' Pipeline
-! ALL-NEXT:   AbstractResultOpt
+! ALL-NEXT: Pipeline Collection : ['fir.global', 'func.func', 'omp.declare_reduction', 'omp.private']
+! ALL-NEXT:   'fir.global' Pipeline
+! ALL-NEXT:    AbstractResultOpt
+! ALL-NEXT:  'func.func' Pipeline
+! ALL-NEXT:    AbstractResultOpt
+! ALL-NEXT:  'omp.declare_reduction' Pipeline
+! ALL-NEXT:    AbstractResultOpt
+! ALL-NEXT:  'omp.private' Pipeline
+! ALL-NEXT:    AbstractResultOpt
 
 ! ALL-NEXT: CodeGenRewrite
 ! ALL-NEXT:   (S) 0 num-dce'd - Number of operations eliminated

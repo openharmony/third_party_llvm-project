@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17, c++20
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // friend constexpr auto iter_move(const iterator& i) noexcept(see below);
 
@@ -21,7 +20,7 @@
 
 struct ThrowingMove {
   ThrowingMove() = default;
-  ThrowingMove(ThrowingMove&&){};
+  ThrowingMove(ThrowingMove&&) {}
 };
 
 constexpr bool test() {

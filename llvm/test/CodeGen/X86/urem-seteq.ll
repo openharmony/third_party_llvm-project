@@ -363,19 +363,13 @@ define i32 @test_urem_allones(i32 %X) nounwind {
 define void @ossfuzz34366() {
 ; X86-LABEL: ossfuzz34366:
 ; X86:       # %bb.0:
-; X86-NEXT:    movl (%eax), %eax
-; X86-NEXT:    movl %eax, %ecx
-; X86-NEXT:    andl $2147483647, %ecx # imm = 0x7FFFFFFF
-; X86-NEXT:    orl %eax, %ecx
+; X86-NEXT:    cmpl $0, (%eax)
 ; X86-NEXT:    sete (%eax)
 ; X86-NEXT:    retl
 ;
 ; X64-LABEL: ossfuzz34366:
 ; X64:       # %bb.0:
-; X64-NEXT:    movq (%rax), %rax
-; X64-NEXT:    movabsq $9223372036854775807, %rcx # imm = 0x7FFFFFFFFFFFFFFF
-; X64-NEXT:    andq %rax, %rcx
-; X64-NEXT:    orq %rax, %rcx
+; X64-NEXT:    cmpq $0, (%rax)
 ; X64-NEXT:    sete (%rax)
 ; X64-NEXT:    retq
   %L10 = load i448, ptr undef, align 4

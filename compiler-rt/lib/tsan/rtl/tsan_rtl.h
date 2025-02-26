@@ -56,8 +56,8 @@ namespace __tsan {
 
 #if !SANITIZER_GO
 struct MapUnmapCallback;
-#if defined(__mips64) || defined(__aarch64__) || defined(__loongarch__) || \
-    defined(__powerpc__)
+#  if defined(__mips64) || defined(__aarch64__) || defined(__loongarch__) || \
+      defined(__powerpc__) || SANITIZER_RISCV64
 
 struct AP32 {
   static const uptr kSpaceBeg = 0;
@@ -97,8 +97,6 @@ struct ThreadSignalContext;
 struct JmpBuf {
   uptr sp;
   int int_signal_send;
-  // Todo: We need a suitable way to restore all relevant variables after longjmp to the state before setjmp.
-  int ignore_reads_and_writes; // OHOS_LOCAL
   bool in_blocking_func;
   uptr in_signal_handler;
   uptr *shadow_stack_pos;
@@ -138,7 +136,7 @@ struct TidEpoch {
   Epoch epoch;
 };
 
-struct TidSlot {
+struct alignas(SANITIZER_CACHE_LINE_SIZE) TidSlot {
   Mutex mtx;
   Sid sid;
   atomic_uint32_t raw_epoch;
@@ -155,10 +153,10 @@ struct TidSlot {
   }
 
   TidSlot();
-} ALIGNED(SANITIZER_CACHE_LINE_SIZE);
+};
 
 // This struct is stored in TLS.
-struct ThreadState {
+struct alignas(SANITIZER_CACHE_LINE_SIZE) ThreadState {
   FastState fast_state;
   int ignore_sync;
 #if !SANITIZER_GO
@@ -194,6 +192,7 @@ struct ThreadState {
 #if !SANITIZER_GO
   Vector<JmpBuf> jmp_bufs;
   int in_symbolizer;
+  atomic_uintptr_t in_blocking_func;
   bool in_ignored_lib;
   bool is_inited;
 #endif
@@ -221,7 +220,7 @@ struct ThreadState {
 #endif
 
   atomic_uintptr_t in_signal_handler;
-  ThreadSignalContext *signal_ctx;
+  atomic_uintptr_t signal_ctx;
 
 #if !SANITIZER_GO
   StackID last_sleep_stack_id;
@@ -235,7 +234,7 @@ struct ThreadState {
   const ReportDesc *current_report;
 
   explicit ThreadState(Tid tid);
-} ALIGNED(SANITIZER_CACHE_LINE_SIZE);
+};
 
 #if !SANITIZER_GO
 #if SANITIZER_APPLE || SANITIZER_ANDROID
@@ -485,6 +484,7 @@ void MapThreadTrace(uptr addr, uptr size, const char *name);
 void DontNeedShadowFor(uptr addr, uptr size);
 void UnmapShadow(ThreadState *thr, uptr addr, uptr size);
 void InitializeShadowMemory();
+void DontDumpShadow(uptr addr, uptr size);
 void InitializeInterceptors();
 void InitializeLibIgnore();
 void InitializeDynamicAnnotations();
@@ -630,6 +630,13 @@ class SlotLocker {
   ALWAYS_INLINE
   SlotLocker(ThreadState *thr, bool recursive = false)
       : thr_(thr), locked_(recursive ? thr->slot_locked : false) {
+#if !SANITIZER_GO
+    // We are in trouble if we are here with in_blocking_func set.
+    // If in_blocking_func is set, all signals will be delivered synchronously,
+    // which means we can't lock slots since the signal handler will try
+    // to lock it recursively and deadlock.
+    DCHECK(!atomic_load(&thr->in_blocking_func, memory_order_relaxed));
+#endif
     if (!locked_)
       SlotLock(thr_);
   }
@@ -673,8 +680,9 @@ ALWAYS_INLINE
 void LazyInitialize(ThreadState *thr) {
   // If we can use .preinit_array, assume that __tsan_init
   // called from .preinit_array initializes runtime before
-  // any instrumented code.
-#if !SANITIZER_CAN_USE_PREINIT_ARRAY
+  // any instrumented code except when tsan is used as a 
+  // shared library.
+#if (!SANITIZER_CAN_USE_PREINIT_ARRAY || defined(SANITIZER_SHARED))
   if (UNLIKELY(!is_initialized))
     Initialize(thr);
 #endif

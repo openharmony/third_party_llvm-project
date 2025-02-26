@@ -2,12 +2,12 @@
 // RUN: mlir-opt %s -affine-super-vectorize="virtual-vector-size=32,256 test-fastest-varying=1,0" | FileCheck %s
 
 // Permutation maps used in vectorization.
-// CHECK-DAG: #[[$map_id1:map[0-9]+]] = affine_map<(d0) -> (d0)>
-// CHECK-DAG: #[[$map_proj_d0d1_zerod1:map[0-9]+]] = affine_map<(d0, d1) -> (0, d1)>
-// CHECK-DAG: #[[$map_proj_d0d1_d0zero:map[0-9]+]] = affine_map<(d0, d1) -> (d0, 0)>
-// VECT-DAG: #[[$map_id1:map[0-9]+]] = affine_map<(d0) -> (d0)>
-// VECT-DAG: #[[$map_proj_d0d1_zerod1:map[0-9]+]] = affine_map<(d0, d1) -> (0, d1)>
-// VECT-DAG: #[[$map_proj_d0d1_d0zero:map[0-9]+]] = affine_map<(d0, d1) -> (d0, 0)>
+// CHECK-DAG: #[[$map_id1:map[0-9]*]] = affine_map<(d0) -> (d0)>
+// CHECK-DAG: #[[$map_proj_d0d1_zerod1:map[0-9]*]] = affine_map<(d0, d1) -> (0, d1)>
+// CHECK-DAG: #[[$map_proj_d0d1_d0zero:map[0-9]*]] = affine_map<(d0, d1) -> (d0, 0)>
+// VECT-DAG: #[[$map_id1:map[0-9]*]] = affine_map<(d0) -> (d0)>
+// VECT-DAG: #[[$map_proj_d0d1_zerod1:map[0-9]*]] = affine_map<(d0, d1) -> (0, d1)>
+// VECT-DAG: #[[$map_proj_d0d1_d0zero:map[0-9]*]] = affine_map<(d0, d1) -> (d0, 0)>
 
 func.func @vec2d(%A : memref<?x?x?xf32>) {
    %c0 = arith.constant 0 : index
@@ -123,8 +123,8 @@ func.func @vectorize_matmul(%arg0: memref<?x?xf32>, %arg1: memref<?x?xf32>, %arg
   //      VECT:  affine.for %[[I2:.*]] = #[[$map_id1]](%[[C0]]) to #[[$map_id1]](%[[M]]) step 4 {
   // VECT-NEXT:    affine.for %[[I3:.*]] = #[[$map_id1]](%[[C0]]) to #[[$map_id1]](%[[N]]) step 8 {
   // VECT-NEXT:      affine.for %[[I4:.*]] = #[[$map_id1]](%[[C0]]) to #[[$map_id1]](%[[K]]) {
-  //      VECT:        %[[A:.*]] = vector.transfer_read %{{.*}}[%[[I4]], %[[I3]]], %{{.*}} {permutation_map = #[[$map_proj_d0d1_zerod1]]} : memref<?x?xf32>, vector<4x8xf32>
-  //      VECT:        %[[B:.*]] = vector.transfer_read %{{.*}}[%[[I2]], %[[I4]]], %{{.*}} {permutation_map = #[[$map_proj_d0d1_d0zero]]} : memref<?x?xf32>, vector<4x8xf32>
+  //      VECT:        %[[A:.*]] = vector.transfer_read %{{.*}}[%[[I4]], %[[I3]]], %{{.*}} {in_bounds = [true, false], permutation_map = #[[$map_proj_d0d1_zerod1]]} : memref<?x?xf32>, vector<4x8xf32>
+  //      VECT:        %[[B:.*]] = vector.transfer_read %{{.*}}[%[[I2]], %[[I4]]], %{{.*}} {in_bounds = [false, true], permutation_map = #[[$map_proj_d0d1_d0zero]]} : memref<?x?xf32>, vector<4x8xf32>
   // VECT-NEXT:        %[[C:.*]] = arith.mulf %[[B]], %[[A]] : vector<4x8xf32>
   //      VECT:        %[[D:.*]] = vector.transfer_read %{{.*}}[%[[I2]], %[[I3]]], %{{.*}} : memref<?x?xf32>, vector<4x8xf32>
   // VECT-NEXT:        %[[E:.*]] = arith.addf %[[D]], %[[C]] : vector<4x8xf32>

@@ -18,6 +18,7 @@
 // depends on _FILE_OFFSET_BITS setting.
 // To get this "true" dirent definition, we undefine _FILE_OFFSET_BITS below.
 #undef _FILE_OFFSET_BITS
+#undef _TIME_BITS
 #endif
 
 // Must go after undef _FILE_OFFSET_BITS.
@@ -69,9 +70,7 @@
 #include <malloc.h>
 #include <mntent.h>
 #include <netinet/ether.h>
-#if !SANITIZER_OHOS
 #include <sys/sysinfo.h>
-#endif
 #include <sys/vt.h>
 #include <linux/cdrom.h>
 #include <linux/fd.h>
@@ -95,13 +94,6 @@
 #if SANITIZER_LINUX
 # include <utime.h>
 # include <sys/ptrace.h>
-#    if SANITIZER_OHOS
-// Do not include asm/sigcontext.h on behalf of asm/ptrace.h
-// to avoid multiple definiton errors.
-#      define __ASM_SIGCONTEXT_H 1
-#      include <sys/user.h>
-#    endif
-
 #    if defined(__mips64) || defined(__aarch64__) || defined(__arm__) || \
         defined(__hexagon__) || defined(__loongarch__) ||SANITIZER_RISCV64
 #      include <asm/ptrace.h>
@@ -142,13 +134,6 @@ typedef struct user_fpregs elf_fpregset_t;
 
 #if SANITIZER_ANDROID
 #include <linux/mtio.h>
-#elif SANITIZER_OHOS
-#include <crypt.h>
-#include <linux/mtio.h>
-#include <mqueue.h>
-#include <sys/msg.h>
-#include <sys/shm.h>
-#include <sys/timex.h>
 #else
 #include <glob.h>
 #include <mqueue.h>
@@ -191,10 +176,6 @@ typedef struct user_fpregs elf_fpregset_t;
 #  include "sanitizer_internal_defs.h"
 #  include "sanitizer_platform_interceptors.h"
 #  include "sanitizer_platform_limits_posix.h"
-
-#if SANITIZER_INTERCEPT_CRYPT_R
-#include <crypt.h>
-#endif
 
 namespace __sanitizer {
   unsigned struct_utsname_sz = sizeof(struct utsname);
@@ -263,7 +244,23 @@ namespace __sanitizer {
   unsigned struct_sysinfo_sz = sizeof(struct sysinfo);
   unsigned __user_cap_header_struct_sz =
       sizeof(struct __user_cap_header_struct);
-  unsigned __user_cap_data_struct_sz = sizeof(struct __user_cap_data_struct);
+  unsigned __user_cap_data_struct_sz(void *hdrp) {
+    int u32s = 0;
+    if (hdrp) {
+      switch (((struct __user_cap_header_struct *)hdrp)->version) {
+      case _LINUX_CAPABILITY_VERSION_1:
+        u32s = _LINUX_CAPABILITY_U32S_1;
+        break;
+      case _LINUX_CAPABILITY_VERSION_2:
+        u32s = _LINUX_CAPABILITY_U32S_2;
+        break;
+      case _LINUX_CAPABILITY_VERSION_3:
+        u32s = _LINUX_CAPABILITY_U32S_3;
+        break;
+      }
+    }
+    return sizeof(struct __user_cap_data_struct) * u32s;
+  }
   unsigned struct_new_utsname_sz = sizeof(struct new_utsname);
   unsigned struct_old_utsname_sz = sizeof(struct old_utsname);
   unsigned struct_oldold_utsname_sz = sizeof(struct oldold_utsname);
@@ -276,7 +273,7 @@ namespace __sanitizer {
   unsigned struct_itimerspec_sz = sizeof(struct itimerspec);
 #endif // SANITIZER_LINUX
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID
+#if SANITIZER_GLIBC
   // Use pre-computed size of struct ustat to avoid <sys/ustat.h> which
   // has been removed from glibc 2.28.
 #if defined(__aarch64__) || defined(__s390x__) || defined(__mips64) ||     \
@@ -297,11 +294,7 @@ namespace __sanitizer {
   unsigned struct_ustat_sz = SIZEOF_STRUCT_USTAT;
   unsigned struct_rlimit64_sz = sizeof(struct rlimit64);
   unsigned struct_statvfs64_sz = sizeof(struct statvfs64);
-#endif // SANITIZER_LINUX && !SANITIZER_ANDROID
-
-#if SANITIZER_INTERCEPT_CRYPT_R
-  unsigned struct_crypt_data_sz = sizeof(struct crypt_data);
-#endif
+#endif // SANITIZER_GLIBC
 
 #if SANITIZER_LINUX && !SANITIZER_ANDROID
   unsigned struct_timex_sz = sizeof(struct timex);
@@ -318,6 +311,7 @@ namespace __sanitizer {
 #if SANITIZER_LINUX
   int e_tabsz = (int)E_TABSZ;
 #endif
+
 
 #if SANITIZER_LINUX && !SANITIZER_ANDROID
   unsigned struct_shminfo_sz = sizeof(struct shminfo);
@@ -539,7 +533,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
   unsigned struct_ppp_stats_sz = sizeof(struct ppp_stats);
 #endif  // SANITIZER_GLIBC
 
-#if !SANITIZER_ANDROID && !SANITIZER_APPLE && !SANITIZER_OHOS
+#if !SANITIZER_ANDROID && !SANITIZER_APPLE
   unsigned struct_sioc_sg_req_sz = sizeof(struct sioc_sg_req);
   unsigned struct_sioc_vif_req_sz = sizeof(struct sioc_vif_req);
 #endif
@@ -592,7 +586,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
   unsigned IOCTL_TIOCSPGRP = TIOCSPGRP;
   unsigned IOCTL_TIOCSTI = TIOCSTI;
   unsigned IOCTL_TIOCSWINSZ = TIOCSWINSZ;
-#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
+#if SANITIZER_LINUX && !SANITIZER_ANDROID
   unsigned IOCTL_SIOCGETSGCNT = SIOCGETSGCNT;
   unsigned IOCTL_SIOCGETVIFCNT = SIOCGETVIFCNT;
 #endif
@@ -884,7 +878,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
   unsigned IOCTL_VT_WAITACTIVE = VT_WAITACTIVE;
 #endif // SANITIZER_LINUX
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
+#if SANITIZER_LINUX && !SANITIZER_ANDROID
   unsigned IOCTL_EQL_EMANCIPATE = EQL_EMANCIPATE;
   unsigned IOCTL_EQL_ENSLAVE = EQL_ENSLAVE;
   unsigned IOCTL_EQL_GETMASTRCFG = EQL_GETMASTRCFG;
@@ -968,7 +962,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
   unsigned IOCTL_TIOCSSERIAL = TIOCSSERIAL;
 #endif // SANITIZER_LINUX && !SANITIZER_ANDROID
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
+#if SANITIZER_LINUX && !SANITIZER_ANDROID
   unsigned IOCTL_GIO_SCRNMAP = GIO_SCRNMAP;
   unsigned IOCTL_KDDISABIO = KDDISABIO;
   unsigned IOCTL_KDENABIO = KDENABIO;
@@ -1107,7 +1101,7 @@ CHECK_SIZE_AND_OFFSET(dirent, d_off);
 #endif
 CHECK_SIZE_AND_OFFSET(dirent, d_reclen);
 
-#if SANITIZER_LINUX && !SANITIZER_ANDROID
+#if SANITIZER_GLIBC
 COMPILER_CHECK(sizeof(__sanitizer_dirent64) <= sizeof(dirent64));
 CHECK_SIZE_AND_OFFSET(dirent64, d_ino);
 CHECK_SIZE_AND_OFFSET(dirent64, d_off);
@@ -1136,9 +1130,17 @@ CHECK_STRUCT_SIZE_AND_OFFSET(sigaction, sa_mask);
 // didn't exist.
 CHECK_STRUCT_SIZE_AND_OFFSET(sigaction, sa_flags);
 #endif
-#if SANITIZER_LINUX && (!SANITIZER_ANDROID || !SANITIZER_MIPS32) && \
-    !SANITIZER_OHOS
+#if SANITIZER_LINUX && (!SANITIZER_ANDROID || !SANITIZER_MIPS32)
 CHECK_STRUCT_SIZE_AND_OFFSET(sigaction, sa_restorer);
+#endif
+
+#if SANITIZER_HAS_SIGINFO
+COMPILER_CHECK(alignof(siginfo_t) == alignof(__sanitizer_siginfo));
+using __sanitizer_siginfo_t = __sanitizer_siginfo;
+CHECK_TYPE_SIZE(siginfo_t);
+CHECK_SIZE_AND_OFFSET(siginfo_t, si_signo);
+CHECK_SIZE_AND_OFFSET(siginfo_t, si_errno);
+CHECK_SIZE_AND_OFFSET(siginfo_t, si_code);
 #endif
 
 #if SANITIZER_LINUX
@@ -1231,7 +1233,7 @@ CHECK_TYPE_SIZE(clock_t);
 CHECK_TYPE_SIZE(clockid_t);
 #endif
 
-#if !SANITIZER_ANDROID && !SANITIZER_OHOS
+#if !SANITIZER_ANDROID
 CHECK_TYPE_SIZE(ifaddrs);
 CHECK_SIZE_AND_OFFSET(ifaddrs, ifa_next);
 CHECK_SIZE_AND_OFFSET(ifaddrs, ifa_name);

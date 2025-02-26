@@ -25,7 +25,6 @@
 #include <string>
 
 #include "lldb/Core/Debugger.h"
-#include "lldb/Core/StreamFile.h"
 #include "lldb/Core/ValueObjectUpdater.h"
 #include "lldb/Host/File.h"
 #include "lldb/Utility/AnsiTerminal.h"
@@ -75,6 +74,7 @@
 #include <cstdio>
 #include <cstring>
 #include <functional>
+#include <optional>
 #include <type_traits>
 
 using namespace lldb;
@@ -588,9 +588,10 @@ public:
   }
 
   Window(const char *name, const Rect &bounds)
-      : Surface(Surface::Type::Window), m_name(name), m_parent(nullptr),
-        m_subwindows(), m_delegate_sp(), m_curr_active_window_idx(UINT32_MAX),
-        m_prev_active_window_idx(UINT32_MAX), m_delete(true),
+      : Surface(Surface::Type::Window), m_name(name), m_panel(nullptr),
+        m_parent(nullptr), m_subwindows(), m_delegate_sp(),
+        m_curr_active_window_idx(UINT32_MAX),
+        m_prev_active_window_idx(UINT32_MAX), m_delete(false),
         m_needs_update(true), m_can_activate(true), m_is_subwin(false) {
     Reset(::newwin(bounds.size.height, bounds.size.width, bounds.origin.y,
                    bounds.origin.y));
@@ -3111,11 +3112,11 @@ public:
   static constexpr const char *kLoadDependentFilesExecOnly = "Executable only";
 
   std::vector<std::string> GetLoadDependentFilesChoices() {
-    std::vector<std::string> load_depentents_options;
-    load_depentents_options.push_back(kLoadDependentFilesExecOnly);
-    load_depentents_options.push_back(kLoadDependentFilesYes);
-    load_depentents_options.push_back(kLoadDependentFilesNo);
-    return load_depentents_options;
+    std::vector<std::string> load_dependents_options;
+    load_dependents_options.push_back(kLoadDependentFilesExecOnly);
+    load_dependents_options.push_back(kLoadDependentFilesYes);
+    load_dependents_options.push_back(kLoadDependentFilesNo);
+    return load_dependents_options;
   }
 
   LoadDependentFiles GetLoadDependentFiles() {
@@ -3170,20 +3171,20 @@ public:
     FileSpec core_file_spec = m_core_file_field->GetResolvedFileSpec();
 
     FileSpec core_file_directory_spec;
-    core_file_directory_spec.GetDirectory() = core_file_spec.GetDirectory();
+    core_file_directory_spec.SetDirectory(core_file_spec.GetDirectory());
     target_sp->AppendExecutableSearchPaths(core_file_directory_spec);
 
     ProcessSP process_sp(target_sp->CreateProcess(
         m_debugger.GetListener(), llvm::StringRef(), &core_file_spec, false));
 
     if (!process_sp) {
-      SetError("Unable to find process plug-in for core file!");
+      SetError("Unknown core file format!");
       return;
     }
 
     Status status = process_sp->LoadCore();
     if (status.Fail()) {
-      SetError("Can't find plug-in for core file!");
+      SetError("Unknown core file format!");
       return;
     }
   }
@@ -3499,19 +3500,19 @@ public:
 
     FileAction action;
     if (m_standard_input_field->IsSpecified()) {
-      action.Open(STDIN_FILENO, m_standard_input_field->GetFileSpec(), true,
-                  false);
-      launch_info.AppendFileAction(action);
+      if (action.Open(STDIN_FILENO, m_standard_input_field->GetFileSpec(), true,
+                      false))
+        launch_info.AppendFileAction(action);
     }
     if (m_standard_output_field->IsSpecified()) {
-      action.Open(STDOUT_FILENO, m_standard_output_field->GetFileSpec(), false,
-                  true);
-      launch_info.AppendFileAction(action);
+      if (action.Open(STDOUT_FILENO, m_standard_output_field->GetFileSpec(),
+                      false, true))
+        launch_info.AppendFileAction(action);
     }
     if (m_standard_error_field->IsSpecified()) {
-      action.Open(STDERR_FILENO, m_standard_error_field->GetFileSpec(), false,
-                  true);
-      launch_info.AppendFileAction(action);
+      if (action.Open(STDERR_FILENO, m_standard_error_field->GetFileSpec(),
+                      false, true))
+        launch_info.AppendFileAction(action);
     }
   }
 
@@ -3819,7 +3820,7 @@ protected:
 
 // This is a searcher delegate wrapper around CommandCompletions common
 // callbacks. The callbacks are only given the match string. The completion_mask
-// can be a combination of CommonCompletionTypes.
+// can be a combination of lldb::CompletionType.
 class CommonCompletionSearcherDelegate : public SearcherDelegate {
 public:
   typedef std::function<void(const std::string &)> CallbackType;
@@ -3838,7 +3839,7 @@ public:
   void UpdateMatches(const std::string &text) override {
     CompletionResult result;
     CompletionRequest request(text.c_str(), text.size(), result);
-    CommandCompletions::InvokeCommonCompletionCallbacks(
+    lldb_private::CommandCompletions::InvokeCommonCompletionCallbacks(
         m_debugger.GetCommandInterpreter(), m_completion_mask, request,
         nullptr);
     result.GetMatches(m_matches);
@@ -3850,7 +3851,7 @@ public:
 
 protected:
   Debugger &m_debugger;
-  // A compound mask from CommonCompletionTypes.
+  // A compound mask from lldb::CompletionType.
   uint32_t m_completion_mask;
   // A callback to execute once the user selects a match. The match is passed to
   // the callback as a string.
@@ -4518,9 +4519,9 @@ struct Row {
       calculated_children = true;
       ValueObjectSP valobj = value.GetSP();
       if (valobj) {
-        const size_t num_children = valobj->GetNumChildren();
+        const uint32_t num_children = valobj->GetNumChildrenIgnoringErrors();
         for (size_t i = 0; i < num_children; ++i) {
-          children.push_back(Row(valobj->GetChildAtIndex(i, true), this));
+          children.push_back(Row(valobj->GetChildAtIndex(i), this));
         }
       }
     }
@@ -5280,7 +5281,8 @@ public:
     for (size_t i = 0; i < num_threads; ++i) {
       ThreadSP thread = threads.GetThreadAtIndex(i);
       if (selected_thread->GetID() == thread->GetID()) {
-        selected_item = &root[i][thread->GetSelectedFrameIndex()];
+        selected_item =
+            &root[i][thread->GetSelectedFrameIndex(SelectMostRelevantFrame)];
         selection_index = selected_item->GetRowIndex();
         return;
       }
@@ -5722,8 +5724,8 @@ protected:
   uint32_t m_selected_row_idx = 0;
   uint32_t m_first_visible_row = 0;
   uint32_t m_num_rows = 0;
-  int m_min_x;
-  int m_min_y;
+  int m_min_x = 0;
+  int m_min_y = 0;
   int m_max_x = 0;
   int m_max_y = 0;
 
@@ -5927,7 +5929,7 @@ public:
       if (m_frame_block != frame_block) {
         m_frame_block = frame_block;
 
-        VariableList *locals = frame->GetVariableList(true);
+        VariableList *locals = frame->GetVariableList(true, nullptr);
         if (locals) {
           const DynamicValueType use_dynamic = eDynamicDontRunTarget;
           for (const VariableSP &local_sp : *locals) {
@@ -6429,7 +6431,8 @@ public:
         if (process && process->IsAlive() &&
             StateIsStoppedState(process->GetState(), true)) {
           Thread *thread = exe_ctx.GetThreadPtr();
-          uint32_t frame_idx = thread->GetSelectedFrameIndex();
+          uint32_t frame_idx =
+              thread->GetSelectedFrameIndex(SelectMostRelevantFrame);
           exe_ctx.GetThreadRef().StepOut(frame_idx);
         }
       }
@@ -6840,12 +6843,12 @@ public:
     bool set_selected_line_to_pc = false;
 
     if (update_location) {
-      const bool process_alive = process ? process->IsAlive() : false;
+      const bool process_alive = process->IsAlive();
       bool thread_changed = false;
       if (process_alive) {
         thread = exe_ctx.GetThreadPtr();
         if (thread) {
-          frame_sp = thread->GetSelectedFrame();
+          frame_sp = thread->GetSelectedFrame(SelectMostRelevantFrame);
           auto tid = thread->GetID();
           thread_changed = tid != m_tid;
           m_tid = tid;
@@ -6891,7 +6894,8 @@ public:
           if (context_changed)
             m_selected_line = m_pc_line;
 
-          if (m_file_sp && m_file_sp->GetFileSpec() == m_sc.line_entry.file) {
+          if (m_file_sp &&
+              m_file_sp->GetFileSpec() == m_sc.line_entry.GetFile()) {
             // Same file, nothing to do, we should either have the lines or
             // not (source file missing)
             if (m_selected_line >= static_cast<size_t>(m_first_visible_line)) {
@@ -6906,8 +6910,8 @@ public:
           } else {
             // File changed, set selected line to the line with the PC
             m_selected_line = m_pc_line;
-            m_file_sp =
-                m_debugger.GetSourceManager().GetFile(m_sc.line_entry.file);
+            m_file_sp = m_debugger.GetSourceManager().GetFile(
+                m_sc.line_entry.GetFile());
             if (m_file_sp) {
               const size_t num_lines = m_file_sp->GetNumLines();
               m_line_width = 1;
@@ -6997,7 +7001,7 @@ public:
             LineEntry bp_loc_line_entry;
             if (bp_loc_sp->GetAddress().CalculateSymbolContextLineEntry(
                     bp_loc_line_entry)) {
-              if (m_file_sp->GetFileSpec() == bp_loc_line_entry.file) {
+              if (m_file_sp->GetFileSpec() == bp_loc_line_entry.GetFile()) {
                 bp_lines.insert(bp_loc_line_entry.line);
               }
             }
@@ -7043,13 +7047,13 @@ public:
 
           StreamString lineStream;
 
-          llvm::Optional<size_t> column;
+          std::optional<size_t> column;
           if (is_pc_line && m_sc.line_entry.IsValid() && m_sc.line_entry.column)
             column = m_sc.line_entry.column - 1;
           m_file_sp->DisplaySourceLines(curr_line + 1, column, 0, 0,
                                         &lineStream);
           StringRef line = lineStream.GetString();
-          if (line.endswith("\n"))
+          if (line.ends_with("\n"))
             line = line.drop_back();
           bool wasWritten = window.OutputColoredStringTruncated(
               1, line, m_first_visible_column, is_pc_line);
@@ -7228,8 +7232,10 @@ public:
                   window.Printf("%*s", desc_x - window.GetCursorX(), "");
                 window.MoveCursor(window_width - stop_description_len - 15,
                                   line_y);
-                window.PrintfTruncated(1, "<<< Thread %u: %s ",
-                                       thread->GetIndexID(), stop_description);
+                if (thread)
+                  window.PrintfTruncated(1, "<<< Thread %u: %s ",
+                                         thread->GetIndexID(),
+                                         stop_description);
               }
             } else {
               window.Printf("%*s", window_width - window.GetCursorX() - 1, "");
@@ -7390,7 +7396,8 @@ public:
         if (exe_ctx.HasThreadScope() &&
             StateIsStoppedState(exe_ctx.GetProcessRef().GetState(), true)) {
           Thread *thread = exe_ctx.GetThreadPtr();
-          uint32_t frame_idx = thread->GetSelectedFrameIndex();
+          uint32_t frame_idx =
+              thread->GetSelectedFrameIndex(SelectMostRelevantFrame);
           exe_ctx.GetThreadRef().StepOut(frame_idx);
         }
       }
@@ -7429,7 +7436,8 @@ public:
           m_debugger.GetCommandInterpreter().GetExecutionContext();
       if (exe_ctx.HasThreadScope()) {
         Thread *thread = exe_ctx.GetThreadPtr();
-        uint32_t frame_idx = thread->GetSelectedFrameIndex();
+        uint32_t frame_idx =
+            thread->GetSelectedFrameIndex(SelectMostRelevantFrame);
         if (frame_idx == UINT32_MAX)
           frame_idx = 0;
         if (c == 'u' && frame_idx + 1 < thread->GetStackFrameCount())
@@ -7437,7 +7445,7 @@ public:
         else if (c == 'd' && frame_idx > 0)
           --frame_idx;
         if (thread->SetSelectedFrameByIndex(frame_idx, true))
-          exe_ctx.SetFrameSP(thread->GetSelectedFrame());
+          exe_ctx.SetFrameSP(thread->GetSelectedFrame(SelectMostRelevantFrame));
       }
     }
       return eKeyHandled;
@@ -7470,7 +7478,7 @@ public:
           LineEntry bp_loc_line_entry;
           if (bp_loc_sp->GetAddress().CalculateSymbolContextLineEntry(
                   bp_loc_line_entry)) {
-            if (m_file_sp->GetFileSpec() == bp_loc_line_entry.file &&
+            if (m_file_sp->GetFileSpec() == bp_loc_line_entry.GetFile() &&
                 m_selected_line + 1 == bp_loc_line_entry.line) {
               bool removed =
                   exe_ctx.GetTargetRef().RemoveBreakpointByID(bp_sp->GetID());

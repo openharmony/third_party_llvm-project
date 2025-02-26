@@ -13,27 +13,17 @@
 #ifndef LLVM_LIB_TARGET_AARCH64_AARCH64FRAMELOWERING_H
 #define LLVM_LIB_TARGET_AARCH64_AARCH64FRAMELOWERING_H
 
-#include "AArch64StackProtectorRetLowering.h" // OHOS_LOCAL
+#include "llvm/CodeGen/MachineOptimizationRemarkEmitter.h"
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/Support/TypeSize.h"
-#ifdef ARK_GC_SUPPORT
-#include "llvm/ADT/Triple.h"
-#endif
 
 namespace llvm {
 
-class MCCFIInstruction;
-
 class AArch64FrameLowering : public TargetFrameLowering {
 public:
-  const AArch64StackProtectorRetLowering SPRL; // OHOS_LOCAL
-
   explicit AArch64FrameLowering()
       : TargetFrameLowering(StackGrowsDown, Align(16), 0, Align(16),
-                            true /*StackRealignable*/), SPRL() {} // OHOS_LOCAL
-
-  void emitCalleeSavedFrameMoves(MachineBasicBlock &MBB,
-                                 MachineBasicBlock::iterator MBBI) const;
+                            true /*StackRealignable*/) {}
 
   void resetCFIToInitialState(MachineBasicBlock &MBB) const override;
 
@@ -45,17 +35,15 @@ public:
   /// the function.
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
-#ifdef ARK_GC_SUPPORT
-  Triple::ArchType GetArkSupportTarget() const override;
-  int GetFixedFpPosition() const override;
-#endif
 
-  const StackProtectorRetLowering *getStackProtectorRet() const override; // OHOS_LOCAL
+  bool enableCFIFixup(MachineFunction &MF) const override;
 
   bool canUseAsPrologue(const MachineBasicBlock &MBB) const override;
 
   StackOffset getFrameIndexReference(const MachineFunction &MF, int FI,
                                      Register &FrameReg) const override;
+  StackOffset getFrameIndexReferenceFromSP(const MachineFunction &MF,
+                                           int FI) const override;
   StackOffset resolveFrameIndexReference(const MachineFunction &MF, int FI,
                                          Register &FrameReg, bool PreferFP,
                                          bool ForSimm) const;
@@ -76,19 +64,6 @@ public:
 
   /// Can this function use the red zone for local allocations.
   bool canUseRedZone(const MachineFunction &MF) const;
-
-  // OHOS_LOCAL begin
-  bool supportsArkSpills() const override {
-    return true;
-  }
-
-  int getArkFrameAdaptationOffset(const MachineFunction &MF) const override;
-
-#ifdef ARK_GC_SUPPORT
-  void adjustForArkFrame(MachineFunction &MF,
-                         MachineBasicBlock &PrologueMBB) const override;
-#endif
-  // OHOS_LOCAL end
 
   bool hasFP(const MachineFunction &MF) const override;
   bool hasReservedCallFrame(const MachineFunction &MF) const override;
@@ -178,10 +153,35 @@ private:
                                   MachineBasicBlock::iterator MBBI) const;
   void emitCalleeSavedSVERestores(MachineBasicBlock &MBB,
                                   MachineBasicBlock::iterator MBBI) const;
+  void allocateStackSpace(MachineBasicBlock &MBB,
+                          MachineBasicBlock::iterator MBBI,
+                          int64_t RealignmentPadding, StackOffset AllocSize,
+                          bool NeedsWinCFI, bool *HasWinCFI, bool EmitCFI,
+                          StackOffset InitialOffset, bool FollowupAllocs) const;
+  /// Make a determination whether a Hazard slot is used and create it if
+  /// needed.
+  void determineStackHazardSlot(MachineFunction &MF,
+                                BitVector &SavedRegs) const;
 
   /// Emit target zero call-used regs.
   void emitZeroCallUsedRegs(BitVector RegsToZero,
                             MachineBasicBlock &MBB) const override;
+
+  /// Replace a StackProbe stub (if any) with the actual probe code inline
+  void inlineStackProbe(MachineFunction &MF,
+                        MachineBasicBlock &PrologueMBB) const override;
+
+  void inlineStackProbeFixed(MachineBasicBlock::iterator MBBI,
+                             Register ScratchReg, int64_t FrameSize,
+                             StackOffset CFAOffset) const;
+
+  MachineBasicBlock::iterator
+  inlineStackProbeLoopExactMultiple(MachineBasicBlock::iterator MBBI,
+                                    int64_t NegProbeSize,
+                                    Register TargetReg) const;
+
+  void emitRemarks(const MachineFunction &MF,
+                   MachineOptimizationRemarkEmitter *ORE) const override;
 };
 
 } // End llvm namespace

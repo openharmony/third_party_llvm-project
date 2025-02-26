@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // <algorithm>
 
@@ -16,6 +15,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <deque>
 
 #include "test_macros.h"
 
@@ -103,8 +103,9 @@ constexpr bool all_the_algorithms()
     (void)std::ranges::count_if(a, UnaryTrue(&copies)); assert(copies == 0);
     (void)std::ranges::copy_if(first, last, first2, UnaryTrue(&copies)); assert(copies == 0);
     (void)std::ranges::copy_if(a, first2, UnaryTrue(&copies)); assert(copies == 0);
-#if TEST_STD_VER > 20
-    //(void)std::ranges::ends_with(first, last, first2, last2, Equal(&copies)); assert(copies == 0);
+#if TEST_STD_VER >= 23
+    (void)std::ranges::ends_with(first, last, first2, last2, Equal(&copies)); assert(copies == 0);
+    (void)std::ranges::ends_with(a, b, Equal(&copies)); assert(copies == 0);
 #endif
     (void)std::ranges::equal(first, last, first2, last2, Equal(&copies)); assert(copies == 0);
     (void)std::ranges::equal(a, b, Equal(&copies)); assert(copies == 0);
@@ -118,6 +119,16 @@ constexpr bool all_the_algorithms()
     (void)std::ranges::find_if(a, UnaryTrue(&copies)); assert(copies == 0);
     (void)std::ranges::find_if_not(first, last, UnaryTrue(&copies)); assert(copies == 0);
     (void)std::ranges::find_if_not(a, UnaryTrue(&copies)); assert(copies == 0);
+#if TEST_STD_VER >= 23
+    (void)std::ranges::find_last_if(first, last, UnaryTrue(&copies));
+    assert(copies == 0);
+    (void)std::ranges::find_last_if(a, UnaryTrue(&copies));
+    assert(copies == 0);
+    (void)std::ranges::find_last_if_not(first, last, UnaryTrue(&copies));
+    assert(copies == 0);
+    (void)std::ranges::find_last_if_not(a, UnaryTrue(&copies));
+    assert(copies == 0);
+#endif
     (void)std::ranges::for_each(first, last, UnaryVoid(&copies)); assert(copies == 1); copies = 0;
     (void)std::ranges::for_each(a, UnaryVoid(&copies)); assert(copies == 1); copies = 0;
     (void)std::ranges::for_each_n(first, count, UnaryVoid(&copies)); assert(copies == 1); copies = 0;
@@ -216,7 +227,8 @@ constexpr bool all_the_algorithms()
     if (!std::is_constant_evaluated()) { (void)std::ranges::stable_sort(first, last, Less(&copies)); assert(copies == 0); }
     if (!std::is_constant_evaluated()) { (void)std::ranges::stable_sort(a, Less(&copies)); assert(copies == 0); }
 #if TEST_STD_VER > 20
-    //(void)std::ranges::starts_with(first, last, first2, last2, Equal(&copies)); assert(copies == 0);
+    (void)std::ranges::starts_with(first, last, first2, last2, Equal(&copies)); assert(copies == 0);
+    (void)std::ranges::starts_with(a, b, Equal(&copies)); assert(copies == 0);
 #endif
     (void)std::ranges::transform(first, last, first2, UnaryTransform(&copies)); assert(copies == 0);
     (void)std::ranges::transform(a, first2, UnaryTransform(&copies)); assert(copies == 0);

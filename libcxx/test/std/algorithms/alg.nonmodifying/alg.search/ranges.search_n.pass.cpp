@@ -9,7 +9,6 @@
 // <algorithm>
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: libcpp-has-no-incomplete-ranges
 
 // template<forward_iterator I, sentinel_for<I> S, class T,
 //          class Pred = ranges::equal_to, class Proj = identity>
@@ -172,17 +171,17 @@ constexpr void test_iterators() {
 
   { // range has zero length
     {
-      int a[] = {};
-      auto ret = std::ranges::search_n(Iter(a), Sent(Iter(a)), 1, 1);
-      assert(base(ret.begin()) == a);
-      assert(base(ret.end()) == a);
+      std::array<int, 0> a = {};
+      auto ret             = std::ranges::search_n(Iter(a.data()), Sent(Iter(a.data())), 1, 1);
+      assert(base(ret.begin()) == a.data());
+      assert(base(ret.end()) == a.data());
     }
     {
-      int a[] = {};
-      auto range = std::ranges::subrange(Iter(a), Sent(Iter(a)));
+      std::array<int, 0> a = {};
+      auto range           = std::ranges::subrange(Iter(a.data()), Sent(Iter(a.data())));
       auto ret = std::ranges::search_n(range, 1, 1);
-      assert(base(ret.begin()) == a);
-      assert(base(ret.end()) == a);
+      assert(base(ret.begin()) == a.data());
+      assert(base(ret.end()) == a.data());
     }
   }
 

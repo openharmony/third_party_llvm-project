@@ -5,6 +5,7 @@
 #include "hwasan_interface_internal.h"
 #include "hwasan_mapping.h"
 #include "hwasan_poisoning.h"
+#include "hwasan_thread_list.h"
 #include "sanitizer_common/sanitizer_atomic.h"
 #include "sanitizer_common/sanitizer_file.h"
 #include "sanitizer_common/sanitizer_placement_new.h"
@@ -43,13 +44,12 @@ void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
 
   static atomic_uint64_t unique_id;
   unique_id_ = atomic_fetch_add(&unique_id, 1, memory_order_relaxed);
+  if (!IsMainThread())
+    os_id_ = GetTid();
 
-// OHOS_LOCAL begin
-  if (auto sz = IsMainThread() ? flags()->heap_history_size_main_thread
-                               : flags()->heap_history_size)
-// OHOS_LOCAL end
+  if (auto sz = flags()->heap_history_size)
     heap_allocations_ = HeapAllocationsRingBuffer::New(sz);
-  trace_heap_allocation_ = true;  // OHOS_LOCAL
+
 #if !SANITIZER_FUCHSIA
   // Do not initialize the stack ring buffer just yet on Fuchsia. Threads will
   // be initialized before we enter the thread itself, so we will instead call
@@ -57,8 +57,18 @@ void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
   InitStackRingBuffer(stack_buffer_start, stack_buffer_size);
 #endif
   InitStackAndTls(state);
-  tid_ = GetTid();  // OHOS_LOCAL
-  heap_quarantine_controller()->Init(); // OHOS_LOCAL
+  dtls_ = DTLS_Get();
+  AllocatorThreadStart(allocator_cache());
+
+  if (flags()->verbose_threads) {
+    if (IsMainThread()) {
+      Printf("sizeof(Thread): %zd sizeof(HeapRB): %zd sizeof(StackRB): %zd\n",
+             sizeof(Thread), heap_allocations_->SizeInBytes(),
+             stack_allocations_->size() * sizeof(uptr));
+    }
+    Print("Creating  : ");
+  }
+  ClearShadowForThreadStackAndTLS();
 }
 
 void Thread::InitStackRingBuffer(uptr stack_buffer_start,
@@ -80,30 +90,23 @@ void Thread::InitStackRingBuffer(uptr stack_buffer_start,
     CHECK(MemIsApp(stack_bottom_));
     CHECK(MemIsApp(stack_top_ - 1));
   }
-
-  if (flags()->verbose_threads) {
-    if (IsMainThread()) {
-      Printf("sizeof(Thread): %zd sizeof(HeapRB): %zd sizeof(StackRB): %zd\n",
-             sizeof(Thread), heap_allocations_->SizeInBytes(),
-             stack_allocations_->size() * sizeof(uptr));
-    }
-    Print("Creating  : ");
-  }
 }
 
 void Thread::ClearShadowForThreadStackAndTLS() {
   if (stack_top_ != stack_bottom_)
-    TagMemory(stack_bottom_, stack_top_ - stack_bottom_, 0);
+    TagMemory(UntagAddr(stack_bottom_),
+              UntagAddr(stack_top_) - UntagAddr(stack_bottom_),
+              GetTagFromPointer(stack_top_));
   if (tls_begin_ != tls_end_)
-    TagMemory(tls_begin_, tls_end_ - tls_begin_, 0);
+    TagMemory(UntagAddr(tls_begin_),
+              UntagAddr(tls_end_) - UntagAddr(tls_begin_),
+              GetTagFromPointer(tls_begin_));
 }
 
 void Thread::Destroy() {
   if (flags()->verbose_threads)
     Print("Destroying: ");
-  // OHOS_LOCAL
-  heap_quarantine_controller()->ClearHeapQuarantine(allocator_cache());
-  AllocatorSwallowThreadLocalCache(allocator_cache());
+  AllocatorThreadFinish(allocator_cache());
   ClearShadowForThreadStackAndTLS();
   if (heap_allocations_)
     heap_allocations_->Delete();
@@ -117,17 +120,9 @@ void Thread::Destroy() {
 }
 
 void Thread::Print(const char *Prefix) {
-// OHOS_LOCAL begin
-  Printf(
-      "%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p) rb:(%zd/%u) "
-      "records(%llu/o:%llu) tid: %d\n",
-      Prefix, unique_id_, (void *)this, stack_bottom(), stack_top(),
-      stack_top() - stack_bottom(), tls_begin(), tls_end(),
-      heap_allocations() ? heap_allocations()->realsize() : 0,
-      IsMainThread() ? flags()->heap_history_size_main_thread
-                     : flags()->heap_history_size,
-      all_record_count_, all_record_count_overflow_, tid_);
-// OHOS_LOCAL end
+  Printf("%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p)\n", Prefix, unique_id_,
+         (void *)this, stack_bottom(), stack_top(),
+         stack_top() - stack_bottom(), tls_begin(), tls_end());
 }
 
 static u32 xorshift(u32 state) {
@@ -162,12 +157,67 @@ tag_t Thread::GenerateRandomTag(uptr num_bits) {
   return tag;
 }
 
-// OHOS_LOCAL begin
-bool Thread::TryPutInQuarantineWithDealloc(uptr ptr, size_t s, u32 aid,
-                                           u32 fid) {
-  return heap_quarantine_controller()->TryPutInQuarantineWithDealloc(
-      ptr, s, aid, fid, allocator_cache());
+void EnsureMainThreadIDIsCorrect() {
+  auto *t = __hwasan::GetCurrentThread();
+  if (t && (t->IsMainThread()))
+    t->set_os_id(GetTid());
 }
-// OHOS_LOCAL end
 
 } // namespace __hwasan
+
+// --- Implementation of LSan-specific functions --- {{{1
+namespace __lsan {
+
+static __hwasan::HwasanThreadList *GetHwasanThreadListLocked() {
+  auto &tl = __hwasan::hwasanThreadList();
+  tl.CheckLocked();
+  return &tl;
+}
+
+static __hwasan::Thread *GetThreadByOsIDLocked(tid_t os_id) {
+  return GetHwasanThreadListLocked()->FindThreadLocked(
+      [os_id](__hwasan::Thread *t) { return t->os_id() == os_id; });
+}
+
+void LockThreads() {
+  __hwasan::hwasanThreadList().Lock();
+  __hwasan::hwasanThreadArgRetval().Lock();
+}
+
+void UnlockThreads() {
+  __hwasan::hwasanThreadArgRetval().Unlock();
+  __hwasan::hwasanThreadList().Unlock();
+}
+
+void EnsureMainThreadIDIsCorrect() { __hwasan::EnsureMainThreadIDIsCorrect(); }
+
+bool GetThreadRangesLocked(tid_t os_id, uptr *stack_begin, uptr *stack_end,
+                           uptr *tls_begin, uptr *tls_end, uptr *cache_begin,
+                           uptr *cache_end, DTLS **dtls) {
+  auto *t = GetThreadByOsIDLocked(os_id);
+  if (!t)
+    return false;
+  *stack_begin = t->stack_bottom();
+  *stack_end = t->stack_top();
+  *tls_begin = t->tls_begin();
+  *tls_end = t->tls_end();
+  // Fixme: is this correct for HWASan.
+  *cache_begin = 0;
+  *cache_end = 0;
+  *dtls = t->dtls();
+  return true;
+}
+
+void GetAllThreadAllocatorCachesLocked(InternalMmapVector<uptr> *caches) {}
+
+void GetThreadExtraStackRangesLocked(tid_t os_id,
+                                     InternalMmapVector<Range> *ranges) {}
+void GetThreadExtraStackRangesLocked(InternalMmapVector<Range> *ranges) {}
+
+void GetAdditionalThreadContextPtrsLocked(InternalMmapVector<uptr> *ptrs) {
+  __hwasan::hwasanThreadArgRetval().GetAllPtrsLocked(ptrs);
+}
+
+void GetRunningThreadsLocked(InternalMmapVector<tid_t> *threads) {}
+
+}  // namespace __lsan

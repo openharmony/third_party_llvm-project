@@ -15,6 +15,7 @@
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/CodeGen/Register.h"
+#include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/Support/Alignment.h"
 #include <cassert>
 #include <vector>
@@ -122,16 +123,6 @@ private:
   struct StackObject {
     // The offset of this object from the stack pointer on entry to
     // the function.  This field has no meaning for a variable sized element.
-    // OHOS_LOCAL begin
-    // For ArkSpills this field represents the offset from the FP:
-    // * LLVM IR Module should have a named metadata 'ark.frame.info'
-    //   which contains frame size and offsets of caller saved registers.
-    // * During DAG generation, class StatepointLowering allocates new
-    //   StackObjects and mark them as ArkSpill, plus it sets certain SPOffset
-    //   for each StackObject according to aforementioned metadata.
-    // * Prolog/Epilog inserter checks the type of selected StackObject, for
-    //   those marked as ArkSpill straightforward lowering is used: FP+SPOffset.
-    // OHOS_LOCAL end
     int64_t SPOffset;
 
     // The size of this object on the stack. 0 means a variable sized object,
@@ -156,11 +147,6 @@ private:
     /// Slot, but is created by statepoint lowering is SelectionDAG, not the
     /// register allocator.
     bool isStatepointSpillSlot = false;
-
-    // OHOS_LOCAL begin
-    /// If true, this stack slot is used to access ArkFrame slots
-    bool isArkSpillSlot = false;
-    // OHOS_LOCAL end
 
     /// Identifier for stack memory type analagous to address space. If this is
     /// non-0, the meaning is target defined. Offsets cannot be directly
@@ -225,11 +211,6 @@ private:
   /// The list of stack objects allocated.
   std::vector<StackObject> Objects;
 
-  // OHOS_LOCAL begin
-  /// The amount of stack objects that will be pointed inside Ark's frame
-  unsigned NumArkSpills = 0;
-  // OHOS_LOCAL end
-
   /// This contains the number of fixed objects contained on
   /// the stack.  Because fixed objects are stored at a negative index in the
   /// Objects list, this is also the index to the 0th object in the list.
@@ -270,7 +251,7 @@ private:
   /// targets, this value is only used when generating debug info (via
   /// TargetRegisterInfo::getFrameIndexReference); when generating code, the
   /// corresponding adjustments are performed directly.
-  int OffsetAdjustment = 0;
+  int64_t OffsetAdjustment = 0;
 
   /// The prolog/epilog code inserter may process objects that require greater
   /// alignment than the default alignment the target provides.
@@ -292,15 +273,6 @@ private:
   /// The frame index for the stack protector.
   int StackProtectorIdx = -1;
 
-  /// OHOS_LOCAL begin
-  struct StackProtectorRet {
-    /// The register to use for stack protector & backwrad cfi calculations
-    unsigned Register = 0;
-    /// Set to true if this function needs stack-protector-ret
-    bool Needed = false;
-  } SPR;
-  /// OHOS_LOCAL end
-
   /// The frame index for the function context. Used for SjLj exceptions.
   int FunctionContextIdx = -1;
 
@@ -308,7 +280,7 @@ private:
   /// setup/destroy pseudo instructions (as defined in the TargetFrameInfo
   /// class).  This information is important for frame pointer elimination.
   /// It is only valid during and after prolog/epilog code insertion.
-  unsigned MaxCallFrameSize = ~0u;
+  uint64_t MaxCallFrameSize = ~UINT64_C(0);
 
   /// The number of bytes of callee saved registers that the target wants to
   /// report for the current function in the CodeView S_FRAMEPROC record.
@@ -374,6 +346,8 @@ public:
 
   MachineFrameInfo(const MachineFrameInfo &) = delete;
 
+  bool isStackRealignable() const { return StackRealignable; }
+
   /// Return true if there are any stack objects in this function.
   bool hasStackObjects() const { return !Objects.empty(); }
 
@@ -386,16 +360,6 @@ public:
   int getStackProtectorIndex() const { return StackProtectorIdx; }
   void setStackProtectorIndex(int I) { StackProtectorIdx = I; }
   bool hasStackProtectorIndex() const { return StackProtectorIdx != -1; }
-
-  /// OHOS_LOCAL begin
-  /// Get / Set stack protector ret calculation register
-  unsigned getStackProtectorRetRegister() const { return SPR.Register; }
-  void setStackProtectorRetRegister(unsigned I) { SPR.Register = I; }
-  bool hasStackProtectorRetRegister() const { return SPR.Register != 0; }
-  /// Get / Set if this frame needs backward cfi protect.
-  void setStackProtectorRetNeeded(bool I) { SPR.Needed = I; }
-  bool getStackProtectorRetNeeded() const { return SPR.Needed; }
-  /// OHOS_LOCAL end
 
   /// Return the index for the function context object.
   /// This object is used for SjLj exceptions.
@@ -452,8 +416,6 @@ public:
 
   /// Return the number of objects.
   unsigned getNumObjects() const { return Objects.size(); }
-
-  unsigned getNumArkSpills() const { return NumArkSpills; }  // OHOS_LOCAL
 
   /// Map a frame index into the local object block
   void mapLocalFrameObject(int ObjectIndex, int64_t Offset) {
@@ -527,14 +489,21 @@ public:
     return Objects[ObjectIdx + NumFixedObjects].Alignment;
   }
 
+  /// Should this stack ID be considered in MaxAlignment.
+  bool contributesToMaxAlignment(uint8_t StackID) {
+    return StackID == TargetStackID::Default ||
+           StackID == TargetStackID::ScalableVector;
+  }
+
   /// setObjectAlignment - Change the alignment of the specified stack object.
   void setObjectAlignment(int ObjectIdx, Align Alignment) {
     assert(unsigned(ObjectIdx + NumFixedObjects) < Objects.size() &&
            "Invalid Object Idx!");
     Objects[ObjectIdx + NumFixedObjects].Alignment = Alignment;
 
-    // Only ensure max alignment for the default stack.
-    if (getStackID(ObjectIdx) == 0)
+    // Only ensure max alignment for the default and scalable vector stack.
+    uint8_t StackID = getStackID(ObjectIdx);
+    if (contributesToMaxAlignment(StackID))
       ensureMaxAlignment(Alignment);
   }
 
@@ -624,10 +593,10 @@ public:
   uint64_t estimateStackSize(const MachineFunction &MF) const;
 
   /// Return the correction for frame offsets.
-  int getOffsetAdjustment() const { return OffsetAdjustment; }
+  int64_t getOffsetAdjustment() const { return OffsetAdjustment; }
 
   /// Set the correction for frame offsets.
-  void setOffsetAdjustment(int Adj) { OffsetAdjustment = Adj; }
+  void setOffsetAdjustment(int64_t Adj) { OffsetAdjustment = Adj; }
 
   /// Return the alignment in bytes that this function must be aligned to,
   /// which is greater than the default stack alignment provided by the target.
@@ -635,6 +604,12 @@ public:
 
   /// Make sure the function is at least Align bytes aligned.
   void ensureMaxAlignment(Align Alignment);
+
+  /// Return true if stack realignment is forced by function attributes or if
+  /// the stack alignment.
+  bool shouldRealignStack() const {
+    return ForcedRealign || MaxAlignment > StackAlignment;
+  }
 
   /// Return true if this function adjusts the stack -- e.g.,
   /// when calling another function. This is only valid during and after
@@ -671,20 +646,24 @@ public:
   bool hasTailCall() const { return HasTailCall; }
   void setHasTailCall(bool V = true) { HasTailCall = V; }
 
-  /// Computes the maximum size of a callframe and the AdjustsStack property.
+  /// Computes the maximum size of a callframe.
   /// This only works for targets defining
   /// TargetInstrInfo::getCallFrameSetupOpcode(), getCallFrameDestroyOpcode(),
   /// and getFrameSize().
   /// This is usually computed by the prologue epilogue inserter but some
   /// targets may call this to compute it earlier.
-  void computeMaxCallFrameSize(const MachineFunction &MF);
+  /// If FrameSDOps is passed, the frame instructions in the MF will be
+  /// inserted into it.
+  void computeMaxCallFrameSize(
+      MachineFunction &MF,
+      std::vector<MachineBasicBlock::iterator> *FrameSDOps = nullptr);
 
   /// Return the maximum size of a call frame that must be
   /// allocated for an outgoing function call.  This is only available if
   /// CallFrameSetup/Destroy pseudo instructions are used by the target, and
   /// then only during or after prolog/epilog code insertion.
   ///
-  unsigned getMaxCallFrameSize() const {
+  uint64_t getMaxCallFrameSize() const {
     // TODO: Enable this assert when targets are fixed.
     //assert(isMaxCallFrameSizeComputed() && "MaxCallFrameSize not computed yet");
     if (!isMaxCallFrameSizeComputed())
@@ -692,9 +671,9 @@ public:
     return MaxCallFrameSize;
   }
   bool isMaxCallFrameSizeComputed() const {
-    return MaxCallFrameSize != ~0u;
+    return MaxCallFrameSize != ~UINT64_C(0);
   }
-  void setMaxCallFrameSize(unsigned S) { MaxCallFrameSize = S; }
+  void setMaxCallFrameSize(uint64_t S) { MaxCallFrameSize = S; }
 
   /// Returns how many bytes of callee-saved registers the target pushed in the
   /// prologue. Only used for debug info.
@@ -730,6 +709,13 @@ public:
     return Objects[ObjectIdx+NumFixedObjects].isAliased;
   }
 
+  /// Set "maybe pointed to by an LLVM IR value" for an object.
+  void setIsAliasedObjectIndex(int ObjectIdx, bool IsAliased) {
+    assert(unsigned(ObjectIdx+NumFixedObjects) < Objects.size() &&
+           "Invalid Object Idx!");
+    Objects[ObjectIdx+NumFixedObjects].isAliased = IsAliased;
+  }
+
   /// Returns true if the specified index corresponds to an immutable object.
   bool isImmutableObjectIndex(int ObjectIdx) const {
     // Tail calling functions can clobber their function arguments.
@@ -759,14 +745,6 @@ public:
            "Invalid Object Idx!");
     return Objects[ObjectIdx+NumFixedObjects].isStatepointSpillSlot;
   }
-
-  // OHOS_LOCAL begin
-  bool isArkSpillSlotObjectIndex(int ObjectIdx) const {
-    assert(unsigned(ObjectIdx+NumFixedObjects) < Objects.size() &&
-           "Invalid Object Idx!");
-    return Objects[ObjectIdx+NumFixedObjects].isArkSpillSlot;
-  }
-  // OHOS_LOCAL end
 
   /// \see StackID
   uint8_t getStackID(int ObjectIdx) const {
@@ -803,18 +781,6 @@ public:
     Objects[ObjectIdx+NumFixedObjects].isStatepointSpillSlot = true;
     assert(isStatepointSpillSlotObjectIndex(ObjectIdx) && "inconsistent");
   }
-
-  // OHOS_LOCAL begin
-  void markAsArkSpillSlotObjectIndex(int ObjectIdx) {
-    assert(unsigned(ObjectIdx+NumFixedObjects) < Objects.size() &&
-           "Invalid Object Idx!");
-    if (!Objects[ObjectIdx+NumFixedObjects].isArkSpillSlot) {
-      NumArkSpills++;
-      Objects[ObjectIdx+NumFixedObjects].isArkSpillSlot = true;
-    }
-    assert(isArkSpillSlotObjectIndex(ObjectIdx) && "inconsistent");
-  }
-  // OHOS_LOCAL end
 
   /// Create a new statically sized stack object, returning
   /// a nonnegative identifier to represent it.

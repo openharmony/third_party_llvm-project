@@ -66,8 +66,7 @@ private:
   static llvm::orc::shared::CWrapperFunctionResult
   releaseWrapper(const char *ArgData, size_t ArgSize);
 
-// OHOS_LOCAL
-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)) || defined(_WIN32)
+#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__)) || defined(_WIN32)
   std::atomic<int> SharedMemoryCount{0};
 #endif
 

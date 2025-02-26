@@ -6,34 +6,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_LIBC_SRC_SUPPORT_CPP_UTILITY_H
-#define LLVM_LIBC_SRC_SUPPORT_CPP_UTILITY_H
+#ifndef LLVM_LIBC_SRC___SUPPORT_CPP_UTILITY_H
+#define LLVM_LIBC_SRC___SUPPORT_CPP_UTILITY_H
 
-#include "src/__support/CPP/TypeTraits.h"
+#include "src/__support/CPP/utility/declval.h"
+#include "src/__support/CPP/utility/forward.h"
+#include "src/__support/CPP/utility/in_place.h"
+#include "src/__support/CPP/utility/integer_sequence.h"
+#include "src/__support/CPP/utility/move.h"
 
-namespace __llvm_libc::cpp {
-
-template <typename T, T... Seq> struct IntegerSequence {
-  static_assert(IsIntegral<T>::Value);
-  template <T Next> using append = IntegerSequence<T, Seq..., Next>;
-};
-
-namespace internal {
-
-template <typename T, int N> struct MakeIntegerSequence {
-  using type = typename MakeIntegerSequence<T, N - 1>::type::template append<N>;
-};
-
-template <typename T> struct MakeIntegerSequence<T, -1> {
-  using type = IntegerSequence<T>;
-};
-
-} // namespace internal
-
-template <typename T, int N>
-using MakeIntegerSequence =
-    typename internal::MakeIntegerSequence<T, N - 1>::type;
-
-} // namespace __llvm_libc::cpp
-
-#endif // LLVM_LIBC_SRC_SUPPORT_CPP_UTILITY_H
+#endif // LLVM_LIBC_SRC___SUPPORT_CPP_UTILITY_H

@@ -53,7 +53,7 @@ struct A {
   virtual void f();
 };
 
-// The page size of LoongArch is 16KB, aligned to the memory page size.
+// The page size of LoongArch is 16KiB, aligned to the memory page size.
 #ifdef __loongarch__
 #  define PAGESIZE 16384
 #else

@@ -18,8 +18,6 @@
 #include "mlir/Dialect/SPIRV/Utils/LayoutUtils.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/AffineMap.h"
-#include "mlir/Support/LogicalResult.h"
-#include "llvm/ADT/SetVector.h"
 #include "llvm/Support/Debug.h"
 
 #define DEBUG_TYPE "tensor-to-spirv-pattern"
@@ -45,7 +43,7 @@ public:
   LogicalResult
   matchAndRewrite(tensor::ExtractOp extractOp, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    TensorType tensorType = extractOp.getTensor().getType().cast<TensorType>();
+    auto tensorType = cast<RankedTensorType>(extractOp.getTensor().getType());
 
     if (!tensorType.hasStaticShape())
       return rewriter.notifyMatchFailure(extractOp, "non-static tensor");
@@ -68,9 +66,13 @@ public:
 
     spirv::VariableOp varOp;
     if (adaptor.getTensor().getDefiningOp<spirv::ConstantOp>()) {
-      varOp = rewriter.create<spirv::VariableOp>(
-          loc, varType, spirv::StorageClass::Function,
-          /*initializer=*/adaptor.getTensor());
+      // We could use the initializer directly; but certain driver compilers
+      // have bugs dealing with that. So for now, use spirv.Store for
+      // initialization.
+      varOp = rewriter.create<spirv::VariableOp>(loc, varType,
+                                                 spirv::StorageClass::Function,
+                                                 /*initializer=*/nullptr);
+      rewriter.create<spirv::StoreOp>(loc, varOp, adaptor.getTensor());
     } else {
       // Need to store the value to the local variable. It's questionable
       // whether we want to support such case though.

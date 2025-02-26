@@ -8,12 +8,6 @@
 ; RUN:     | FileCheck -check-prefix=ARM_64 %s
 ; RUN: llc < %s -emulated-tls -mtriple=aarch64-apple-darwin -O3 \
 ; RUN:     | FileCheck -check-prefix=DARWIN %s
-; RUN: llc < %s -emulated-tls -mtriple=aarch64-linux-ohos -relocation-model=pic \
-; RUN:     | FileCheck -check-prefix=ARM_64 %s
-; RUN: llc < %s -emulated-tls -mtriple=aarch64-linux-ohos -relocation-model=pic -O3 \
-; RUN:     | FileCheck -check-prefix=ARM_64 %s
-; RUN: llc < %s -emulated-tls -mtriple=aarch64-linux-ohos -O3 \
-; RUN:     | FileCheck -check-prefix=ARM_64 %s
 
 ; RUN: llc < %s -mtriple=aarch64-linux-android -relocation-model=pic \
 ; RUN:     | FileCheck -check-prefix=ARM_64 %s
@@ -24,12 +18,8 @@
 ; aarch64-windows-gnu needs explicit -emulated-tls
 ; RUN: llc < %s -mtriple=aarch64-apple-darwin -O3 \
 ; RUN:     | FileCheck -check-prefix=NoEMU %s
-; RUN: llc < %s -mtriple=aarch64-linux-ohos -relocation-model=pic \
-; RUN:     | FileCheck -check-prefix=ARM_64 %s
-; RUN: llc < %s -mtriple=aarch64-linux-ohos -relocation-model=pic -O3 \
-; RUN:     | FileCheck -check-prefix=ARM_64 %s
-; RUN: llc < %s -mtriple=aarch64-linux-ohos -O3 \
-; RUN:     | FileCheck -check-prefix=ARM_64 %s
+; RUN: llc < %s -mtriple=aarch64-linux-android29 -O3 \
+; RUN:     | FileCheck -check-prefix=NoEMU %s
 
 ; NoEMU-NOT: __emutls
 
@@ -39,19 +29,19 @@
 @external_y = thread_local global i8 7, align 2
 @internal_y = internal thread_local global i64 9, align 16
 
-define i32* @get_external_x() {
+define ptr @get_external_x() {
 entry:
-  ret i32* @external_x
+  ret ptr @external_x
 }
 
-define i8* @get_external_y() {
+define ptr @get_external_y() {
 entry:
-  ret i8* @external_y
+  ret ptr @external_y
 }
 
-define i64* @get_internal_y() {
+define ptr @get_internal_y() {
 entry:
-  ret i64* @internal_y
+  ret ptr @internal_y
 }
 
 ; ARM_64-LABEL:  get_external_x:

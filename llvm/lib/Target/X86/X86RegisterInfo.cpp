@@ -158,6 +158,10 @@ X86RegisterInfo::getLargestLegalSuperClass(const TargetRegisterClass *RC,
     case X86::GR16RegClassID:
     case X86::GR32RegClassID:
     case X86::GR64RegClassID:
+    case X86::GR8_NOREX2RegClassID:
+    case X86::GR16_NOREX2RegClassID:
+    case X86::GR32_NOREX2RegClassID:
+    case X86::GR64_NOREX2RegClassID:
     case X86::RFP32RegClassID:
     case X86::RFP64RegClassID:
     case X86::RFP80RegClassID:
@@ -298,30 +302,6 @@ X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
     return CSR_NoRegs_SaveList;
 
   switch (CC) {
-  // OHOS_LOCAL begin
-  case CallingConv::ArkInt:
-    return CSR_NoRegs_SaveList;
-  case CallingConv::ArkFast0:
-    return CSR_ArkFast0_SaveList;
-  case CallingConv::ArkFast1:
-    return CSR_ArkFast1_SaveList;
-  case CallingConv::ArkFast2:
-    return CSR_ArkFast2_SaveList;
-  case CallingConv::ArkFast3:
-    return CSR_ArkFast3_SaveList;
-  case CallingConv::ArkFast4:
-    return CSR_ArkFast4_SaveList;
-  case CallingConv::ArkFast5:
-    return CSR_ArkFast5_SaveList;
-  case CallingConv::ArkFast6:
-    return CSR_ArkFast6_SaveList;
-  case CallingConv::ArkMethod:
-    return CSR_ArkMethod_SaveList;
-  case CallingConv::ArkResolver:
-    return CSR_ArkResolver_SaveList;
-  case CallingConv::ArkPlt:
-    return CSR_ArkPlt_SaveList;
-  // OHOS_LOCAL end
   case CallingConv::GHC:
   case CallingConv::HiPE:
     return CSR_NoRegs_SaveList;
@@ -330,11 +310,14 @@ X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
       return CSR_64_AllRegs_AVX_SaveList;
     return CSR_64_AllRegs_SaveList;
   case CallingConv::PreserveMost:
-    return CSR_64_RT_MostRegs_SaveList;
+    return IsWin64 ? CSR_Win64_RT_MostRegs_SaveList
+                   : CSR_64_RT_MostRegs_SaveList;
   case CallingConv::PreserveAll:
     if (HasAVX)
       return CSR_64_RT_AllRegs_AVX_SaveList;
     return CSR_64_RT_AllRegs_SaveList;
+  case CallingConv::PreserveNone:
+    return CSR_64_NoneRegs_SaveList;
   case CallingConv::CXX_FAST_TLS:
     if (Is64Bit)
       return MF->getInfo<X86MachineFunctionInfo>()->isSplitCSR() ?
@@ -353,8 +336,6 @@ X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
       return CSR_64_Intel_OCL_BI_SaveList;
     break;
   }
-  case CallingConv::HHVM:
-    return CSR_64_HHVM_SaveList;
   case CallingConv::X86_RegCall:
     if (Is64Bit) {
       if (IsWin64) {
@@ -445,30 +426,6 @@ X86RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
   bool HasAVX512 = Subtarget.hasAVX512();
 
   switch (CC) {
-  // OHOS_LOCAL begin
-  case CallingConv::ArkInt:
-    return CSR_NoRegs_RegMask;
-  case CallingConv::ArkFast0:
-    return CSR_ArkFast0_RegMask;
-  case CallingConv::ArkFast1:
-    return CSR_ArkFast1_RegMask;
-  case CallingConv::ArkFast2:
-    return CSR_ArkFast2_RegMask;
-  case CallingConv::ArkFast3:
-    return CSR_ArkFast3_RegMask;
-  case CallingConv::ArkFast4:
-    return CSR_ArkFast4_RegMask;
-  case CallingConv::ArkFast5:
-    return CSR_ArkFast5_RegMask;
-  case CallingConv::ArkFast6:
-    return CSR_ArkFast6_RegMask;
-  case CallingConv::ArkMethod:
-    return CSR_ArkMethod_RegMask;
-  case CallingConv::ArkResolver:
-    return CSR_ArkResolver_RegMask;
-  case CallingConv::ArkPlt:
-    return CSR_ArkPlt_RegMask;
-  // OHOS_LOCAL end
   case CallingConv::GHC:
   case CallingConv::HiPE:
     return CSR_NoRegs_RegMask;
@@ -477,11 +434,13 @@ X86RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
       return CSR_64_AllRegs_AVX_RegMask;
     return CSR_64_AllRegs_RegMask;
   case CallingConv::PreserveMost:
-    return CSR_64_RT_MostRegs_RegMask;
+    return IsWin64 ? CSR_Win64_RT_MostRegs_RegMask : CSR_64_RT_MostRegs_RegMask;
   case CallingConv::PreserveAll:
     if (HasAVX)
       return CSR_64_RT_AllRegs_AVX_RegMask;
     return CSR_64_RT_AllRegs_RegMask;
+  case CallingConv::PreserveNone:
+    return CSR_64_NoneRegs_RegMask;
   case CallingConv::CXX_FAST_TLS:
     if (Is64Bit)
       return CSR_64_TLS_Darwin_RegMask;
@@ -499,8 +458,6 @@ X86RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
       return CSR_64_Intel_OCL_BI_RegMask;
     break;
   }
-  case CallingConv::HHVM:
-    return CSR_64_HHVM_RegMask;
   case CallingConv::X86_RegCall:
     if (Is64Bit) {
       if (IsWin64) {
@@ -596,16 +553,6 @@ BitVector X86RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   // Set the Shadow Stack Pointer as reserved.
   Reserved.set(X86::SSP);
 
-  // OHOS_LOCAL begin
-  // Set r# as reserved register if we need it
-  if (Is64Bit) {
-    for (auto Reg : MF.getSubtarget<X86Subtarget>().getRRegReservation()) {
-      for (const MCPhysReg &SubReg : subregs_inclusive(Reg))
-        Reserved.set(SubReg);
-    }
-  }
-  // OHOS_LOCAL end
-
   // Set the instruction pointer register and its aliases as reserved.
   for (const MCPhysReg &SubReg : subregs_inclusive(X86::RIP))
     Reserved.set(SubReg);
@@ -615,12 +562,6 @@ BitVector X86RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     for (const MCPhysReg &SubReg : subregs_inclusive(X86::RBP))
       Reserved.set(SubReg);
   }
-#ifdef ARK_GC_SUPPORT
-  if (MF.getFunction().getCallingConv() == CallingConv::GHC) {
-    for (const MCPhysReg &SubReg : subregs_inclusive(X86::RBP))
-      Reserved.set(SubReg);
-  }
-#endif
 
   // Set the base-pointer register and its aliases as reserved if needed.
   if (hasBasePointer(MF)) {
@@ -672,16 +613,58 @@ BitVector X86RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     }
   }
   if (!Is64Bit || !MF.getSubtarget<X86Subtarget>().hasAVX512()) {
-    for (unsigned n = 16; n != 32; ++n) {
-      for (MCRegAliasIterator AI(X86::XMM0 + n, this, true); AI.isValid(); ++AI)
+    for (unsigned n = 0; n != 16; ++n) {
+      for (MCRegAliasIterator AI(X86::XMM16 + n, this, true); AI.isValid();
+           ++AI)
         Reserved.set(*AI);
     }
+  }
+
+  // Reserve the extended general purpose registers.
+  if (!Is64Bit || !MF.getSubtarget<X86Subtarget>().hasEGPR())
+    Reserved.set(X86::R16, X86::R31WH + 1);
+
+  if (MF.getFunction().getCallingConv() == CallingConv::GRAAL) {
+    for (MCRegAliasIterator AI(X86::R14, this, true); AI.isValid(); ++AI)
+      Reserved.set(*AI);
+    for (MCRegAliasIterator AI(X86::R15, this, true); AI.isValid(); ++AI)
+      Reserved.set(*AI);
   }
 
   assert(checkAllSuperRegsMarked(Reserved,
                                  {X86::SIL, X86::DIL, X86::BPL, X86::SPL,
                                   X86::SIH, X86::DIH, X86::BPH, X86::SPH}));
   return Reserved;
+}
+
+unsigned X86RegisterInfo::getNumSupportedRegs(const MachineFunction &MF) const {
+  // All existing Intel CPUs that support AMX support AVX512 and all existing
+  // Intel CPUs that support APX support AMX. AVX512 implies AVX.
+  //
+  // We enumerate the registers in X86GenRegisterInfo.inc in this order:
+  //
+  // Registers before AVX512,
+  // AVX512 registers (X/YMM16-31, ZMM0-31, K registers)
+  // AMX registers (TMM)
+  // APX registers (R16-R31)
+  //
+  // and try to return the minimum number of registers supported by the target.
+  static_assert((X86::R15WH + 1 == X86::YMM0) && (X86::YMM15 + 1 == X86::K0) &&
+                    (X86::K6_K7 + 1 == X86::TMMCFG) &&
+                    (X86::TMM7 + 1 == X86::R16) &&
+                    (X86::R31WH + 1 == X86::NUM_TARGET_REGS),
+                "Register number may be incorrect");
+
+  const X86Subtarget &ST = MF.getSubtarget<X86Subtarget>();
+  if (ST.hasEGPR())
+    return X86::NUM_TARGET_REGS;
+  if (ST.hasAMXTILE())
+    return X86::TMM7 + 1;
+  if (ST.hasAVX512())
+    return X86::K6_K7 + 1;
+  if (ST.hasAVX())
+    return X86::YMM15 + 1;
+  return X86::R15WH + 1;
 }
 
 bool X86RegisterInfo::isArgumentRegister(const MachineFunction &MF,
@@ -770,6 +753,11 @@ static bool CantUseSP(const MachineFrameInfo &MFI) {
 
 bool X86RegisterInfo::hasBasePointer(const MachineFunction &MF) const {
   const X86MachineFunctionInfo *X86FI = MF.getInfo<X86MachineFunctionInfo>();
+  // We have a virtual register to reference argument, and don't need base
+  // pointer.
+  if (X86FI->getStackPtrSaveMI() != nullptr)
+    return false;
+
   if (X86FI->hasPreallocatedCall())
     return true;
 
@@ -804,6 +792,13 @@ bool X86RegisterInfo::canRealignStack(const MachineFunction &MF) const {
   if (CantUseSP(MFI))
     return MRI->canReserveReg(BasePtr);
   return true;
+}
+
+bool X86RegisterInfo::shouldRealignStack(const MachineFunction &MF) const {
+  if (TargetRegisterInfo::shouldRealignStack(MF))
+    return true;
+
+  return !Is64Bit && MF.getFunction().getCallingConv() == CallingConv::X86_INTR;
 }
 
 // tryOptimizeLEAtoMOV - helper function that tries to replace a LEA instruction
@@ -846,14 +841,52 @@ static bool isFuncletReturnInstr(MachineInstr &MI) {
   llvm_unreachable("impossible");
 }
 
-void
+void X86RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
+                                          unsigned FIOperandNum,
+                                          Register BaseReg,
+                                          int FIOffset) const {
+  MachineInstr &MI = *II;
+  unsigned Opc = MI.getOpcode();
+  if (Opc == TargetOpcode::LOCAL_ESCAPE) {
+    MachineOperand &FI = MI.getOperand(FIOperandNum);
+    FI.ChangeToImmediate(FIOffset);
+    return;
+  }
+
+  MI.getOperand(FIOperandNum).ChangeToRegister(BaseReg, false);
+
+  // The frame index format for stackmaps and patchpoints is different from the
+  // X86 format. It only has a FI and an offset.
+  if (Opc == TargetOpcode::STACKMAP || Opc == TargetOpcode::PATCHPOINT) {
+    assert(BasePtr == FramePtr && "Expected the FP as base register");
+    int64_t Offset = MI.getOperand(FIOperandNum + 1).getImm() + FIOffset;
+    MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
+    return;
+  }
+
+  if (MI.getOperand(FIOperandNum + 3).isImm()) {
+    // Offset is a 32-bit integer.
+    int Imm = (int)(MI.getOperand(FIOperandNum + 3).getImm());
+    int Offset = FIOffset + Imm;
+    assert((!Is64Bit || isInt<32>((long long)FIOffset + Imm)) &&
+           "Requesting 64-bit offset in 32-bit immediate!");
+    if (Offset != 0)
+      MI.getOperand(FIOperandNum + 3).ChangeToImmediate(Offset);
+  } else {
+    // Offset is symbolic. This is extremely rare.
+    uint64_t Offset =
+        FIOffset + (uint64_t)MI.getOperand(FIOperandNum + 3).getOffset();
+    MI.getOperand(FIOperandNum + 3).setOffset(Offset);
+  }
+}
+
+bool
 X86RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                      int SPAdj, unsigned FIOperandNum,
                                      RegScavenger *RS) const {
   MachineInstr &MI = *II;
   MachineBasicBlock &MBB = *MI.getParent();
   MachineFunction &MF = *MBB.getParent();
-  const MachineFrameInfo &MFI = MF.getFrameInfo(); // OHOS_LOCAL
   MachineBasicBlock::iterator MBBI = MBB.getFirstTerminator();
   bool IsEHFuncletEpilogue = MBBI == MBB.end() ? false
                                                : isFuncletReturnInstr(*MBBI);
@@ -884,7 +917,7 @@ X86RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   if (Opc == TargetOpcode::LOCAL_ESCAPE) {
     MachineOperand &FI = MI.getOperand(FIOperandNum);
     FI.ChangeToImmediate(FIOffset);
-    return;
+    return false;
   }
 
   // For LEA64_32r when BasePtr is 32-bits (X32) we can use full-size 64-bit
@@ -907,28 +940,11 @@ X86RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   if (Opc == TargetOpcode::STACKMAP || Opc == TargetOpcode::PATCHPOINT) {
     assert(BasePtr == FramePtr && "Expected the FP as base register");
     int64_t Offset = MI.getOperand(FIOperandNum + 1).getImm() + FIOffset;
-    // OHOS_LOCAL begin
-    if (MFI.isArkSpillSlotObjectIndex(FrameIndex)) {
-      assert(TFI->supportsArkSpills());
-      auto Adaptation = TFI->getArkFrameAdaptationOffset(MF);
-      Offset = MFI.getObjectOffset(FrameIndex) + Adaptation;
-    }
-    // OHOS_LOCAL end
     MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
-    return;
+    return false;
   }
 
   if (MI.getOperand(FIOperandNum+3).isImm()) {
-    // OHOS_LOCAL begin
-    if (MFI.isArkSpillSlotObjectIndex(FrameIndex)) {
-      assert(BasePtr == FramePtr && "Expected the FP as base register");
-      assert(TFI->supportsArkSpills());
-      auto Adaptation = TFI->getArkFrameAdaptationOffset(MF);
-      int64_t Offset = MFI.getObjectOffset(FrameIndex) + Adaptation;
-      MI.getOperand(FIOperandNum + 3).ChangeToImmediate(Offset);
-      return;
-    }
-    // OHOS_LOCAL end
     // Offset is a 32-bit integer.
     int Imm = (int)(MI.getOperand(FIOperandNum + 3).getImm());
     int Offset = FIOffset + Imm;
@@ -942,6 +958,7 @@ X86RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
       (uint64_t)MI.getOperand(FIOperandNum+3).getOffset();
     MI.getOperand(FIOperandNum + 3).setOffset(Offset);
   }
+  return false;
 }
 
 unsigned X86RegisterInfo::findDeadCallerSavedReg(
@@ -973,8 +990,7 @@ unsigned X86RegisterInfo::findDeadCallerSavedReg(
   case X86::EH_RETURN:
   case X86::EH_RETURN64: {
     SmallSet<uint16_t, 8> Uses;
-    for (unsigned I = 0, E = MBBI->getNumOperands(); I != E; ++I) {
-      MachineOperand &MO = MBBI->getOperand(I);
+    for (MachineOperand &MO : MBBI->operands()) {
       if (!MO.isReg() || MO.isDef())
         continue;
       Register Reg = MO.getReg();
@@ -1043,6 +1059,9 @@ static ShapeT getTileShape(Register VirtReg, VirtRegMap *VRM,
   case X86::PTDPBUUDV:
   case X86::PTILEZEROV:
   case X86::PTDPBF16PSV:
+  case X86::PTDPFP16PSV:
+  case X86::PTCMMIMFP16PSV:
+  case X86::PTCMMRLFP16PSV:
     MachineOperand &MO1 = MI->getOperand(1);
     MachineOperand &MO2 = MI->getOperand(2);
     ShapeT Shape(&MO1, &MO2, MRI);
@@ -1062,7 +1081,8 @@ bool X86RegisterInfo::getRegAllocationHints(Register VirtReg,
   bool BaseImplRetVal = TargetRegisterInfo::getRegAllocationHints(
       VirtReg, Order, Hints, MF, VRM, Matrix);
 
-  if (RC.getID() != X86::TILERegClassID)
+  unsigned ID = RC.getID();
+  if (ID != X86::TILERegClassID)
     return BaseImplRetVal;
 
   ShapeT VirtShape = getTileShape(VirtReg, const_cast<VirtRegMap *>(VRM), MRI);

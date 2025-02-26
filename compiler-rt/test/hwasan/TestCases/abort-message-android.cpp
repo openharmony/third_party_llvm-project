@@ -1,7 +1,6 @@
 // RUN: %clangxx_hwasan -DERR=1 %s -o %t && not %run %t 2>&1 | FileCheck %s
 // RUN: %clangxx_hwasan -DERR=2 %s -o %t && not %run %t 2>&1 | FileCheck %s
-// OHOS_LOCAL
-// REQUIRES: android && !ohos_family
+// REQUIRES: android
 
 #include <stdlib.h>
 #include <stdio.h>

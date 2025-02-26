@@ -1,9 +1,10 @@
 if (APPLE AND LLVM_ENABLE_LOCAL_SUBMODULE_VISIBILITY)
   # The arpa/inet.h header used in the files here is providing a miscompiled
-  # htonl function on macOS <= 10.15 when local submodule visibility is active.
-  # Disabling modules in this directory until this is is fixed.
-  # See rdar://problem/62886385
-  remove_module_flags()
+  # htonl function on macOS < 14 when local submodule visibility is active.
+  if (CMAKE_OSX_DEPLOYMENT_TARGET VERSION_LESS 14.0)
+    # Disabling modules in this directory.
+    remove_module_flags()
+  endif()
 endif()
 
 macro(add_host_subdirectory group)
@@ -12,6 +13,7 @@ macro(add_host_subdirectory group)
 endmacro()
 
 add_host_subdirectory(common
+  common/Alarm.cpp
   common/FileAction.cpp
   common/FileCache.cpp
   common/File.cpp
@@ -24,7 +26,7 @@ add_host_subdirectory(common
   common/HostThread.cpp
   common/LockFileBase.cpp
   common/LZMA.cpp
-  common/MainLoop.cpp
+  common/MainLoopBase.cpp
   common/MonitoringProcessLauncher.cpp
   common/NativeProcessProtocol.cpp
   common/NativeRegisterContext.cpp
@@ -35,6 +37,7 @@ add_host_subdirectory(common
   common/ProcessLaunchInfo.cpp
   common/ProcessRunLock.cpp
   common/PseudoTerminal.cpp
+  common/StreamFile.cpp
   common/SocketAddress.cpp
   common/Socket.cpp
   common/TCPSocket.cpp
@@ -42,6 +45,7 @@ add_host_subdirectory(common
   common/ThreadLauncher.cpp
   common/UDPSocket.cpp
   common/XML.cpp
+  common/ZipFileResolver.cpp
   )
 
 if (LLDB_ENABLE_LIBEDIT)
@@ -63,6 +67,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Windows")
     windows/HostProcessWindows.cpp
     windows/HostThreadWindows.cpp
     windows/LockFileWindows.cpp
+    windows/MainLoopWindows.cpp
     windows/PipeWindows.cpp
     windows/ProcessLauncherWindows.cpp
     windows/ProcessRunLock.cpp
@@ -75,6 +80,7 @@ else()
     posix/HostProcessPosix.cpp
     posix/HostThreadPosix.cpp
     posix/LockFilePosix.cpp
+    posix/MainLoopPosix.cpp
     posix/PipePosix.cpp
     posix/ProcessLauncherPosixFork.cpp
     )
@@ -96,7 +102,7 @@ else()
     endif()
 
 
-  elseif (CMAKE_SYSTEM_NAME MATCHES "Linux|Android|OHOS")
+  elseif (CMAKE_SYSTEM_NAME MATCHES "Linux|Android")
     add_host_subdirectory(linux
       linux/AbstractSocket.cpp
       linux/Host.cpp
@@ -108,11 +114,6 @@ else()
       add_host_subdirectory(android
         android/HostInfoAndroid.cpp
         android/LibcGlue.cpp
-        )
-    endif()
-    if (CMAKE_SYSTEM_NAME MATCHES "OHOS")
-      add_host_subdirectory(ohos
-        ohos/HostInfoOHOS.cpp
         )
     endif()
   elseif (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
@@ -162,7 +163,7 @@ if (LLDB_ENABLE_LIBEDIT)
   endif()
 endif()
 
-add_lldb_library(lldbHost
+add_lldb_library(lldbHost NO_PLUGIN_DEPENDENCIES
   ${HOST_SOURCES}
 
   LINK_LIBS

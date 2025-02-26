@@ -19,9 +19,9 @@
 #include <sys/wait.h>
 #endif
 #include <fstream>
+#include <optional>
 
 #include "llvm/Support/FileSystem.h"
-#include "llvm/Support/FileUtilities.h"
 #include "llvm/Support/WithColor.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -33,7 +33,6 @@
 #include "lldb/Host/HostGetOpt.h"
 #include "lldb/Host/OptionParser.h"
 #include "lldb/Host/common/TCPSocket.h"
-#include "lldb/Host/Config.h" //OHOS_LOCAL
 #include "lldb/Utility/FileSpec.h"
 #include "lldb/Utility/Status.h"
 
@@ -48,13 +47,11 @@ using namespace llvm;
 static int g_debug = 0;
 static int g_verbose = 0;
 static int g_server = 0;
-static int g_timeout_sec = 300;
 
 static struct option g_long_options[] = {
     {"debug", no_argument, &g_debug, 1},
     {"verbose", no_argument, &g_verbose, 1},
     {"log-file", required_argument, nullptr, 'l'},
-    {"gdbserver-log-file", required_argument, nullptr, 'g'}, // OHOS_LOCAL
     {"log-channels", required_argument, nullptr, 'c'},
     {"listen", required_argument, nullptr, 'L'},
     {"port-offset", required_argument, nullptr, 'p'},
@@ -85,29 +82,13 @@ static void signal_handler(int signo) {
     llvm::errs() << "SIGHUP received, exiting lldb-server...\n";
     abort();
     break;
-  // OHOS_LOCAL begin
-  #if LLDB_ENABLE_TIMEOUT
-  case SIGALRM:
-    llvm::errs() << llvm::formatv(
-        "In non-server mode with a timeout of {0}s. "
-        "SIGALRM received because of timeout, exiting lldb-server...\n",
-        g_timeout_sec);
-    exit(-1);
-    break;
-    #endif
-    // OHOS_LOCAL end
   }
 }
 #endif
 
 static void display_usage(const char *progname, const char *subcommand) {
-  fprintf(stderr, "Usage:\n  %s %s [--log-file log-file-name] "
-                  // OHOS_LOCAL begin
-#if defined(__OHOS_FAMILY__)
-                  "[--gdbserver-log-file log-file-name] "
-#endif
-                  "[--log-channels log-channel-list] [--port-file port-file-path] --server "
-                  // OHOS_LOCAL end
+  fprintf(stderr, "Usage:\n  %s %s [--log-file log-file-name] [--log-channels "
+                  "log-channel-list] [--port-file port-file-path] --server "
                   "--listen port\n",
           progname, subcommand);
   exit(0);
@@ -119,40 +100,17 @@ static Status save_socket_id_to_file(const std::string &socket_id,
   Status error(llvm::sys::fs::create_directory(temp_file_spec.GetPath()));
   if (error.Fail())
     return Status("Failed to create directory %s: %s",
-                  temp_file_spec.GetCString(), error.AsCString());
-
-  llvm::SmallString<64> temp_file_path;
-  temp_file_spec.AppendPathComponent("port-file.%%%%%%");
-  temp_file_path = temp_file_spec.GetPath();
+                  temp_file_spec.GetPath().c_str(), error.AsCString());
 
   Status status;
-  if (auto Err =
-          handleErrors(llvm::writeFileAtomically(
-                           temp_file_path, file_spec.GetPath(), socket_id),
-                       [&status, &file_spec](const AtomicFileWriteError &E) {
-                         std::string ErrorMsgBuffer;
-                         llvm::raw_string_ostream S(ErrorMsgBuffer);
-                         E.log(S);
-
-                         switch (E.Error) {
-                         case atomic_write_error::failed_to_create_uniq_file:
-                           status = Status("Failed to create temp file: %s",
-                                           ErrorMsgBuffer.c_str());
-                           break;
-                         case atomic_write_error::output_stream_error:
-                           status = Status("Failed to write to port file.");
-                           break;
-                         case atomic_write_error::failed_to_rename_temp_file:
-                           status = Status("Failed to rename file %s to %s: %s",
-                                           ErrorMsgBuffer.c_str(),
-                                           file_spec.GetPath().c_str(),
-                                           ErrorMsgBuffer.c_str());
-                           break;
-                         }
-                       })) {
-    return Status("Failed to atomically write file %s",
-                  file_spec.GetPath().c_str());
-  }
+  if (auto Err = llvm::writeToOutput(file_spec.GetPath(),
+                                     [&socket_id](llvm::raw_ostream &OS) {
+                                       OS << socket_id;
+                                       return llvm::Error::success();
+                                     }))
+    return Status("Failed to atomically write file %s: %s",
+                  file_spec.GetPath().c_str(),
+                  llvm::toString(std::move(Err)).c_str());
   return status;
 }
 
@@ -165,17 +123,13 @@ int main_platform(int argc, char *argv[]) {
 #if !defined(_WIN32)
   signal(SIGPIPE, SIG_IGN);
   signal(SIGHUP, signal_handler);
-  // OHOS_LOCAL
-  #if LLDB_ENABLE_TIMEOUT
-  signal(SIGALRM, signal_handler);
-  #endif
 #endif
   int long_option_index = 0;
   Status error;
   std::string listen_host_port;
   int ch;
 
-  std::string log_file, gdbserver_log_file; // OHOS_LOCAL
+  std::string log_file;
   StringRef
       log_channels; // e.g. "lldb process threads:gdb-remote default:linux all"
 
@@ -212,13 +166,6 @@ int main_platform(int argc, char *argv[]) {
       if (optarg && optarg[0])
         log_file.assign(optarg);
       break;
-
-    // OHOS_LOCAL begin
-    case 'g': // Set gdbserver Log File
-      if (optarg && optarg[0])
-        gdbserver_log_file.assign(optarg);
-      break;
-    // OHOS_LOCAL end
 
     case 'c': // Log Channels
       if (optarg && optarg[0])
@@ -280,22 +227,6 @@ int main_platform(int argc, char *argv[]) {
   if (!LLDBServerUtilities::SetupLogging(log_file, log_channels, 0))
     return -1;
 
-  // OHOS_LOCAL begin
-  // The environment variable LLDB_DEBUGSERVER_LOG_FILE is not set
-  // but --gdbserver-log-file is option when starting the lldb-server platform
-#if defined(__OHOS_FAMILY__)
-  if (!getenv("LLDB_DEBUGSERVER_LOG_FILE") && !gdbserver_log_file.empty()) {
-      setenv("LLDB_DEBUGSERVER_LOG_FILE", gdbserver_log_file.c_str(), true);
-  }
-
-  // The environment variable LLDB_SERVER_LOG_CHANNELS is not set
-  // but --log-channels is option when starting the lldb-server platform
-  if (!getenv("LLDB_SERVER_LOG_CHANNELS") && !log_channels.empty()) {
-    setenv("LLDB_SERVER_LOG_CHANNELS", log_channels.str().c_str(), true);
-  }
-#endif
-  // OHOS_LOCAL end
-
   // Make a port map for a port range that was specified.
   if (min_gdbserver_port && min_gdbserver_port < max_gdbserver_port) {
     gdbserver_portmap = GDBRemoteCommunicationServerPlatform::PortMap(
@@ -351,56 +282,53 @@ int main_platform(int argc, char *argv[]) {
     }
   }
 
+  GDBRemoteCommunicationServerPlatform platform(
+      acceptor_up->GetSocketProtocol(), acceptor_up->GetSocketScheme());
+  if (port_offset > 0)
+    platform.SetPortOffset(port_offset);
+
   do {
-    GDBRemoteCommunicationServerPlatform platform(
-        acceptor_up->GetSocketProtocol(), acceptor_up->GetSocketScheme());
-
-    if (port_offset > 0)
-      platform.SetPortOffset(port_offset);
-
-    if (!gdbserver_portmap.empty()) {
-      platform.SetPortMap(std::move(gdbserver_portmap));
-    }
-
     const bool children_inherit_accept_socket = true;
     Connection *conn = nullptr;
-
-    // OHOS_LOCAL begin
-#if !defined(_WIN32) && LLDB_ENABLE_TIMEOUT
-    char *lldb_server_listimeout = getenv("LLDB_SERVER_LISTIMEOUT");
-    if (!g_server && lldb_server_listimeout != nullptr) {
-      if (!llvm::to_integer(lldb_server_listimeout, g_timeout_sec) ||
-          g_timeout_sec <= 0) {
-        WithColor::error() << "Invalid environment variable: "
-                           << "LLDB_SERVER_LISTIMEOUT="
-                           << lldb_server_listimeout << "\n";
-        exit(0);
-      }
-      alarm(g_timeout_sec);
-    }
-#endif
-    // OHOS_LOCAL end
-
     error = acceptor_up->Accept(children_inherit_accept_socket, conn);
     if (error.Fail()) {
       WithColor::error() << error.AsCString() << '\n';
       exit(socket_error);
     }
-
-    // OHOS_LOCAL begin
-#if !defined(_WIN32) && LLDB_ENABLE_TIMEOUT
-    alarm(0);
-#endif
-    // OHOS_LOCAL end
-
     printf("Connection established.\n");
+
     if (g_server) {
       // Collect child zombie processes.
 #if !defined(_WIN32)
-      while (waitpid(-1, nullptr, WNOHANG) > 0)
-        ;
+      ::pid_t waitResult;
+      while ((waitResult = waitpid(-1, nullptr, WNOHANG)) > 0) {
+        // waitResult is the child pid
+        gdbserver_portmap.FreePortForProcess(waitResult);
+      }
 #endif
-      if (fork()) {
+      // TODO: Clean up portmap for Windows when children die
+      // See https://github.com/llvm/llvm-project/issues/90923
+
+      // After collecting zombie ports, get the next available
+      GDBRemoteCommunicationServerPlatform::PortMap portmap_for_child;
+      llvm::Expected<uint16_t> available_port =
+          gdbserver_portmap.GetNextAvailablePort();
+      if (available_port) {
+        // GetNextAvailablePort() may return 0 if gdbserver_portmap is empty.
+        if (*available_port)
+          portmap_for_child.AllowPort(*available_port);
+      } else {
+        llvm::consumeError(available_port.takeError());
+        fprintf(stderr,
+                "no available gdbserver port for connection - dropping...\n");
+        delete conn;
+        continue;
+      }
+      platform.SetPortMap(std::move(portmap_for_child));
+
+      auto childPid = fork();
+      if (childPid) {
+        gdbserver_portmap.AssociatePortWithProcess(*available_port, childPid);
         // Parent doesn't need a connection to the lldb client
         delete conn;
 
@@ -416,13 +344,17 @@ int main_platform(int argc, char *argv[]) {
       // If not running as a server, this process will not accept
       // connections while a connection is active.
       acceptor_up.reset();
+
+      // When not running in server mode, use all available ports
+      platform.SetPortMap(std::move(gdbserver_portmap));
     }
+
     platform.SetConnection(std::unique_ptr<Connection>(conn));
 
     if (platform.IsConnected()) {
       if (inferior_arguments.GetArgumentCount() > 0) {
         lldb::pid_t pid = LLDB_INVALID_PROCESS_ID;
-        llvm::Optional<uint16_t> port = 0;
+        std::optional<uint16_t> port;
         std::string socket_name;
         Status error = platform.LaunchGDBServer(inferior_arguments,
                                                 "", // hostname
@@ -436,7 +368,7 @@ int main_platform(int argc, char *argv[]) {
       bool interrupt = false;
       bool done = false;
       while (!interrupt && !done) {
-        if (platform.GetPacketAndSendResponse(llvm::None, error, interrupt,
+        if (platform.GetPacketAndSendResponse(std::nullopt, error, interrupt,
                                               done) !=
             GDBRemoteCommunication::PacketResult::Success)
           break;

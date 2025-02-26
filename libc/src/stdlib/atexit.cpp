@@ -7,43 +7,33 @@
 //===----------------------------------------------------------------------===//
 
 #include "src/stdlib/atexit.h"
-#include "src/__support/CPP/blockstore.h"
+#include "hdr/types/atexithandler_t.h"
 #include "src/__support/common.h"
-#include "src/__support/threads/mutex.h"
+#include "src/__support/macros/config.h"
+#include "src/stdlib/exit_handler.h"
 
-namespace __llvm_libc {
+namespace LIBC_NAMESPACE_DECL {
 
-namespace {
+constinit ExitCallbackList atexit_callbacks;
+Mutex handler_list_mtx(false, false, false, false);
 
-Mutex handler_list_mtx(false, false, false);
+extern "C" {
 
-using AtExitCallback = void(void);
-using ExitCallbackList = cpp::ReverseOrderBlockStore<AtExitCallback *, 32>;
-constinit ExitCallbackList exit_callbacks;
-
-} // namespace
-
-namespace internal {
-
-void call_exit_callbacks() {
-  handler_list_mtx.lock();
-  while (!exit_callbacks.empty()) {
-    auto *callback = exit_callbacks.back();
-    exit_callbacks.pop_back();
-    handler_list_mtx.unlock();
-    callback();
-    handler_list_mtx.lock();
-  }
-  ExitCallbackList::destroy(&exit_callbacks);
+int __cxa_atexit(AtExitCallback *callback, void *payload, void *) {
+  return add_atexit_unit(atexit_callbacks, {callback, payload});
 }
 
-} // namespace internal
-
-LLVM_LIBC_FUNCTION(int, atexit, (AtExitCallback * callback)) {
-  handler_list_mtx.lock();
-  exit_callbacks.push_back(callback);
-  handler_list_mtx.unlock();
-  return 0;
+void __cxa_finalize(void *dso) {
+  if (!dso)
+    call_exit_callbacks(atexit_callbacks);
 }
 
-} // namespace __llvm_libc
+} // extern "C"
+
+LLVM_LIBC_FUNCTION(int, atexit, (__atexithandler_t callback)) {
+  return add_atexit_unit(
+      atexit_callbacks,
+      {&stdc_at_exit_func, reinterpret_cast<void *>(callback)});
+}
+
+} // namespace LIBC_NAMESPACE_DECL

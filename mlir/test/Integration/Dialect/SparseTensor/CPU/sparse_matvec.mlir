@@ -1,26 +1,51 @@
-// RUN: mlir-opt %s --sparse-compiler | \
-// RUN: TENSOR0="%mlir_integration_test_dir/data/wide.mtx" \
-// RUN: mlir-cpu-runner \
-// RUN:  -e entry -entry-point-result=void  \
-// RUN:  -shared-libs=%mlir_integration_test_dir/libmlir_c_runner_utils%shlibext | \
-// RUN: FileCheck %s
+//--------------------------------------------------------------------------------------------------
+// WHEN CREATING A NEW TEST, PLEASE JUST COPY & PASTE WITHOUT EDITS.
 //
-// Do the same run, but now with SIMDization as well. This should not change the outcome.
+// Set-up that's shared across all tests in this directory. In principle, this
+// config could be moved to lit.local.cfg. However, there are downstream users that
+//  do not use these LIT config files. Hence why this is kept inline.
 //
-// RUN: mlir-opt %s \
-// RUN:   --sparse-compiler="vectorization-strategy=2 vl=16 enable-simd-index32" | \
-// RUN: TENSOR0="%mlir_integration_test_dir/data/wide.mtx" \
-// RUN: mlir-cpu-runner \
-// RUN:  -e entry -entry-point-result=void  \
-// RUN:  -shared-libs=%mlir_integration_test_dir/libmlir_c_runner_utils%shlibext | \
-// RUN: FileCheck %s
+// DEFINE: %{sparsifier_opts} = enable-runtime-library=true
+// DEFINE: %{sparsifier_opts_sve} = enable-arm-sve=true %{sparsifier_opts}
+// DEFINE: %{compile} = mlir-opt %s --sparsifier="%{sparsifier_opts}"
+// DEFINE: %{compile_sve} = mlir-opt %s --sparsifier="%{sparsifier_opts_sve}"
+// DEFINE: %{run_libs} = -shared-libs=%mlir_c_runner_utils,%mlir_runner_utils
+// DEFINE: %{run_opts} = -e main -entry-point-result=void
+// DEFINE: %{run} = mlir-cpu-runner %{run_opts} %{run_libs}
+// DEFINE: %{run_sve} = %mcr_aarch64_cmd --march=aarch64 --mattr="+sve" %{run_opts} %{run_libs}
+//
+// DEFINE: %{env} =
+//--------------------------------------------------------------------------------------------------
 
-!Filename = !llvm.ptr<i8>
+// REDEFINE: %{env} = TENSOR0="%mlir_src_dir/test/Integration/data/wide.mtx"
+// RUN: %{compile} | env %{env} %{run} | FileCheck %s
+//
+// Do the same run, but now with direct IR generation.
+// REDEFINE: %{sparsifier_opts} = enable-runtime-library=false
+// RUN: %{compile} | env %{env} %{run} | FileCheck %s
+//
+// Do the same run, but now with parallelization strategy.
+// REDEFINE: %{sparsifier_opts} = enable-runtime-library=true parallelization-strategy=any-storage-any-loop
+// RUN: %{compile} | env %{env} %{run} | FileCheck %s
+//
+// Do the same run, but now with direct IR generation and parallelization strategy.
+// REDEFINE: %{sparsifier_opts} = enable-runtime-library=false parallelization-strategy=any-storage-any-loop
+// RUN: %{compile} | env %{env} %{run} | FileCheck %s
+//
+// Do the same run, but now with direct IR generation and vectorization.
+// REDEFINE: %{sparsifier_opts} = enable-runtime-library=false vl=2 reassociate-fp-reductions=true enable-index-optimizations=true
+// RUN: %{compile} | env %{env} %{run} | FileCheck %s
+//
+// Do the same run, but now with direct IR generation and, if available, VLA
+// vectorization.
+// RUN: %if mlir_arm_sve_tests %{ %{compile_sve} | env %{env} %{run_sve} | FileCheck %s %}
+
+!Filename = !llvm.ptr
 
 #SparseMatrix = #sparse_tensor.encoding<{
-  dimLevelType = [ "dense", "compressed" ],
-  pointerBitWidth = 8,
-  indexBitWidth = 8
+  map = (d0, d1) -> (d0 : dense, d1 : compressed),
+  posWidth = 8,
+  crdWidth = 8
 }>
 
 #matvec = {
@@ -46,7 +71,7 @@ module {
   func.func @kernel_matvec(%arga: tensor<?x?xi32, #SparseMatrix>,
                            %argb: tensor<?xi32>,
                            %argx: tensor<?xi32>)
-		      -> tensor<?xi32> {
+                               -> tensor<?xi32> {
     %0 = linalg.generic #matvec
       ins(%arga, %argb: tensor<?x?xi32, #SparseMatrix>, tensor<?xi32>)
       outs(%argx: tensor<?xi32>) {
@@ -63,7 +88,7 @@ module {
   //
   // Main driver that reads matrix from file and calls the sparse kernel.
   //
-  func.func @entry() {
+  func.func @main() {
     %i0 = arith.constant 0 : i32
     %c0 = arith.constant 0 : index
     %c1 = arith.constant 1 : index
@@ -75,18 +100,17 @@ module {
     %a = sparse_tensor.new %fileName : !Filename to tensor<?x?xi32, #SparseMatrix>
 
     // Initialize dense vectors.
-    %init_256 = bufferization.alloc_tensor(%c256) : tensor<?xi32>
-    %b = scf.for %i = %c0 to %c256 step %c1 iter_args(%t = %init_256) -> tensor<?xi32> {
+    %b = tensor.generate %c256 {
+    ^bb0(%i : index):
       %k = arith.addi %i, %c1 : index
       %j = arith.index_cast %k : index to i32
-      %t2 = tensor.insert %j into %t[%i] : tensor<?xi32>
-      scf.yield %t2 : tensor<?xi32>
-    }
-    %init_4 = bufferization.alloc_tensor(%c4) : tensor<?xi32>
-    %x = scf.for %i = %c0 to %c4 step %c1 iter_args(%t = %init_4) -> tensor<?xi32> {
-      %t2 = tensor.insert %i0 into %t[%i] : tensor<?xi32>
-      scf.yield %t2 : tensor<?xi32>
-    }
+      tensor.yield %j : i32
+    } : tensor<?xi32>
+
+    %x = tensor.generate %c4 {
+      ^bb0(%i : index):
+        tensor.yield %i0 : i32
+    } : tensor<?xi32>
 
     // Call kernel.
     %0 = call @kernel_matvec(%a, %b, %x)
@@ -101,6 +125,8 @@ module {
 
     // Release the resources.
     bufferization.dealloc_tensor %a : tensor<?x?xi32, #SparseMatrix>
+    bufferization.dealloc_tensor %b : tensor<?xi32>
+    bufferization.dealloc_tensor %0 : tensor<?xi32>
 
     return
   }

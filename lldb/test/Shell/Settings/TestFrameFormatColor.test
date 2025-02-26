@@ -9,7 +9,4 @@ c
 q
 
 # Check the ASCII escape code
-# OHOS_LOCAL FIXME: when python is using libreadline5, "enable-meta-key" cannot be disabled,
-# and its control sequence fails the TestFrameFormatNoColor.test test.
-# Temporarily modified the test to only match color-related ANSI escape sequences
-# CHECK: [{{[0-9]}}
+# CHECK: 

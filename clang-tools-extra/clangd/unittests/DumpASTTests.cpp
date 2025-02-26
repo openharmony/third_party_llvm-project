@@ -121,7 +121,8 @@ declaration: Var - root
         expression: DeclRef - operator+
       expression: MaterializeTemporary - lvalue
         expression: CXXTemporaryObject - Foo
-          type: Record - Foo
+          type: Elaborated
+            type: Record - Foo
       expression: IntegerLiteral - 42
       )"},
       {R"cpp(
@@ -183,6 +184,17 @@ TEST(DumpASTTests, Arcana) {
   EXPECT_THAT(Node.arcana, testing::EndsWith(" 'int'"));
   ASSERT_THAT(Node.children, SizeIs(1)) << "Expected one child typeloc";
   EXPECT_THAT(Node.children.front().arcana, testing::StartsWith("QualType "));
+}
+
+TEST(DumpASTTests, UnbalancedBraces) {
+  // Test that we don't crash while trying to compute a source range for the
+  // node whose ending brace is missing, and also that the source range is
+  // not empty.
+  Annotations Case("/*error-ok*/ $func[[int main() {]]");
+  ParsedAST AST = TestTU::withCode(Case.code()).build();
+  auto Node = dumpAST(DynTypedNode::create(findDecl(AST, "main")),
+                      AST.getTokens(), AST.getASTContext());
+  ASSERT_EQ(Node.range, Case.range("func"));
 }
 
 } // namespace

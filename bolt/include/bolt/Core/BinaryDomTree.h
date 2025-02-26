@@ -14,12 +14,12 @@
 #ifndef BOLT_CORE_BINARY_DOMTREE_H
 #define BOLT_CORE_BINARY_DOMTREE_H
 
-#include "llvm/Support/GenericDomTreeConstruction.h"
+#include "bolt/Core/BinaryBasicBlock.h"
+#include "llvm/IR/Dominators.h"
 
 namespace llvm {
 namespace bolt {
 
-class BinaryBasicBlock;
 using BinaryDomTreeNode = DomTreeNodeBase<BinaryBasicBlock>;
 using BinaryDominatorTree = DomTreeBase<BinaryBasicBlock>;
 

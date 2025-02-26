@@ -3,11 +3,7 @@
 // RUN: %deflake %run %t 1 | FileCheck %s
 
 // The pthread_mutex_lock interceptor assumes incompatible internals w/ NetBSD
-// XFAIL: netbsd
-
-// OHOS_LOCAL
-// musl seems to not return error when calling pthread_mutex_lock with a destroyed mutex
-// UNSUPPORTED: ohos_family
+// XFAIL: target={{.*netbsd.*}}
 
 #include <pthread.h>
 #include <stdio.h>

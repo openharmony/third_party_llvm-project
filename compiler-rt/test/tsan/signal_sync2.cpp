@@ -2,7 +2,7 @@
 // UNSUPPORTED: darwin
 // Fails episodically on powerpc bots:
 // https://lab.llvm.org/buildbot/#/builders/121/builds/13391
-// UNSUPPORTED: powerpc64, powerpc64le
+// UNSUPPORTED: target=powerpc64{{.*}}
 #include "test.h"
 #include <errno.h>
 #include <signal.h>
@@ -13,21 +13,13 @@
 
 const int kSignalCount = 500;
 
-// OHOS_LOCAL begin
-pthread_t main_tid;
-int process_signals;
-// OHOS_LOCAL end
+__thread int process_signals;
 int signals_handled;
 int done;
 int ready[kSignalCount];
 long long data[kSignalCount];
 
 static void handler(int sig) {
-  // OHOS_LOCAL begin
-  // avoid using possibly emulated TLS in signal handlers
-  if (pthread_self() == main_tid)
-    return;
-  // OHOS_LOCAL end
   if (!__atomic_load_n(&process_signals, __ATOMIC_RELAXED))
     return;
   int pos = signals_handled++;
@@ -47,8 +39,6 @@ static void* thr(void *p) {
 }
 
 int main() {
-  main_tid = pthread_self(); // OHOS_LOCAL
-
   struct sigaction act = {};
   act.sa_handler = handler;
   if (sigaction(SIGPROF, &act, 0)) {
