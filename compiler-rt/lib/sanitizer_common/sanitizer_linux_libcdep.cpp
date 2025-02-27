@@ -905,6 +905,7 @@ static bool ShouldLogAfterPrintf() {
 }
 
 extern "C" SANITIZER_WEAK_ATTRIBUTE int musl_log(const char *fmt, ...);
+extern "C" SANITIZER_WEAK_ATTRIBUTE int ohos_dfx_log(const char *s, const char *p);
 void WriteOneLineToSyslog(const char *s) {
   if (&musl_log) {
     musl_log(s);
@@ -926,13 +927,30 @@ void WriteOneLineToSyslog(const char *s) { syslog(LOG_INFO, "%s", s); }
 void SetAbortMessage(const char *str) {}
 #endif  // SANITIZER_ANDROID
 
-void LogMessageOnPrintf(const char *str) {
+#if SANITIZER_OHOS
+static thread_local bool safe_to_call_printf = true; // OHOS_LOCAL
+@@ -1097,7 +1097,7 @@ void LogMessageOnPrintf(const char *str) {
+    //  disk. The ohos_dfx_log may perform dynamic memory allocation, potentiallt
+    //  leading to the sanitizer triggering a recursive call.
+    safe_to_call_printf = false;
+    ohos_dfx_log(str);
+    ohos_dfx_log(str, common_flags()->log_path);
+    safe_to_call_printf = true;
+  }
+#endif
   if (common_flags()->log_to_syslog && ShouldLogAfterPrintf())
     WriteToSyslog(str);
 }
 // OHOS_LOCAL end
 
+//OHOS_LOCAL begin
+#if SANITIZER_OHOS
+bool SafeToCallPrintf() { return safe_to_call_printf; }
+#endif
+// OHOS_LOCAL end
+
 #endif  // SANITIZER_LINUX
+
 
 #if SANITIZER_GLIBC && !SANITIZER_GO
 // glibc crashes when using clock_gettime from a preinit_array function as the
