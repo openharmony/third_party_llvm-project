@@ -419,9 +419,11 @@ static void AsanInitInternal() {
 
   __asan_option_detect_stack_use_after_return =
       flags()->detect_stack_use_after_return;
-
+// OHOS_LOCAL Begin
+#if !SANITIZER_OHOS
   __sanitizer::InitializePlatformEarly();
-
+#endif
+// OHOS_LOCAL End
   // Setup internal allocator callback.
   SetLowLevelAllocateMinAlignment(ASAN_SHADOW_GRANULARITY);
   SetLowLevelAllocateCallback(OnLowLevelAllocate);
