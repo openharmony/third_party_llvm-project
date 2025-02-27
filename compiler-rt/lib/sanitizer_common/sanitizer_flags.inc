@@ -275,3 +275,8 @@ COMMON_FLAG(bool, detect_write_exec, false,
 COMMON_FLAG(bool, test_only_emulate_no_memorymap, false,
             "TEST ONLY fail to read memory mappings to emulate sanitized "
             "\"init\"")
+
+// OHOS_LOCAL begin
+COMMON_FLAG(bool, run_on_tw, false,
+            "If true, no abort.")
+// OHOS_LOCAL end

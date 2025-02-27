@@ -250,6 +250,12 @@ void HandleDeadlySignal(void *siginfo, void *context, u32 tid,
   ScopedErrorReportLock rl;
   SignalContext sig(siginfo, context);
   ReportDeadlySignal(sig, tid, unwind, unwind_context);
+// OHOS_LOCAL begin
+  if (!common_flags()->run_on_tw) {
+    Report("ABORTING\n");
+    Die();
+  }
+// OHOS_LOCAL end
 }
 
 #endif  // !SANITIZER_FUCHSIA && !SANITIZER_GO
