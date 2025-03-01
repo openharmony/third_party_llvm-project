@@ -9,27 +9,27 @@
 // Note: We should compile the tool without -fopenmp as other tools developer
 //      would do. Otherwise this test may pass for the wrong reasons on Darwin.
 
-// RUN: %clang %flags -DTOOL -shared -fPIC %s -o %T/tool.so
+// RUN: %clang %flags -DTOOL -shared -fPIC %s -o %T/libtool.so %send-libtool
 
 // 2. "introducing a dynamically-linked library that includes the tool’s 
 //    definition of ompt_start_tool into the application’s address space"
 
 // 2.1 Link with tool during compilation
 
-// RUN: %libomp-compile -DCODE %no-as-needed-flag %T/tool.so && \
-// RUN:    env OMP_TOOL_VERBOSE_INIT=stdout %libomp-run | FileCheck %s \
+// RUN: %libomp-compile -DCODE -L%T %no-as-needed-flag -ltool && \
+// RUN:    env OMP_TOOL_VERBOSE_INIT=stdout LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%tool-path %libomp-run | FileCheck %s \
 // RUN:    --check-prefixes CHECK,ADDRSPACE 
 
 // 2.2 Link with tool during compilation, but AFTER the runtime
 
-// RUN: %libomp-compile -DCODE -lomp %no-as-needed-flag %T/tool.so && \
-// RUN:    env OMP_TOOL_VERBOSE_INIT=stdout %libomp-run | FileCheck %s \
+// RUN: %libomp-compile -DCODE -L%T -lomp %no-as-needed-flag -ltool && \
+// RUN:    env OMP_TOOL_VERBOSE_INIT=stdout LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%tool-path %libomp-run | FileCheck %s \
 // RUN:    --check-prefixes CHECK,ADDRSPACE
 
 // 2.3 Inject tool via the dynamic loader
 
 // RUN: %libomp-compile -DCODE && env OMP_TOOL_VERBOSE_INIT=stdout \
-// RUN:    %preload-tool %libomp-run | FileCheck %s \
+// RUN:    env LD_PRELOAD=%tool-path/libtool.so %libomp-run | FileCheck %s \
 // RUN:    --check-prefixes CHECK,ADDRSPACE
 
 // 3. "providing the name of a dynamically-linked library appropriate for the
@@ -39,37 +39,36 @@
 // 3.1 OMP_TOOL_VERBOSE_INIT not set 
 
 // RUN: %libomp-compile -DCODE && \
-// RUN:    env OMP_TOOL_LIBRARIES=%T/tool.so %libomp-run | FileCheck %s
+// RUN:    env OMP_TOOL_LIBRARIES=%tool-path/libtool.so %libomp-run | FileCheck %s
 
 // 3.2 OMP_TOOL_VERBOSE_INIT disabled
 
-// RUN: env OMP_TOOL_LIBRARIES=%T/tool.so OMP_TOOL_VERBOSE_INIT=disabled \
+// RUN: env OMP_TOOL_LIBRARIES=%tool-path/libtool.so OMP_TOOL_VERBOSE_INIT=disabled \
 // RUN:    %libomp-run | FileCheck %s
 
 // 3.3 OMP_TOOL_VERBOSE_INIT to stdout
 
-// RUN: %libomp-compile -DCODE && env OMP_TOOL_LIBRARIES=%T/tool.so \
+// RUN: %libomp-compile -DCODE && env OMP_TOOL_LIBRARIES=%tool-path/libtool.so \
 // RUN:    OMP_TOOL_VERBOSE_INIT=stdout %libomp-run | \
-// RUN:    FileCheck %s -DPARENTPATH=%T --check-prefixes CHECK,TOOLLIB
+// RUN:    FileCheck %s -DPARENTPATH=%tool-path --check-prefixes CHECK,TOOLLIB
 
 // 3.4 OMP_TOOL_VERBOSE_INIT to stderr, check merged stdout and stderr
 
-// RUN: env OMP_TOOL_LIBRARIES=%T/tool.so OMP_TOOL_VERBOSE_INIT=stderr \
-// RUN:    %libomp-run 2>&1 | \
-// RUN:    FileCheck %s -DPARENTPATH=%T --check-prefixes CHECK,TOOLLIB
+// RUN: env OMP_TOOL_LIBRARIES=%tool-path/libtool.so OMP_TOOL_VERBOSE_INIT=stderr \
+// RUN:    %libomp-run %redirect2to1 | \
+// RUN:    FileCheck %s -DPARENTPATH=%tool-path --check-prefixes CHECK,TOOLLIB
 
 // 3.5 OMP_TOOL_VERBOSE_INIT to stderr, check just stderr
 
-// RUN: env OMP_TOOL_LIBRARIES=%T/tool.so OMP_TOOL_VERBOSE_INIT=stderr \
-// RUN:    %libomp-run 2>&1 >/dev/null | \
-// RUN:    FileCheck %s -DPARENTPATH=%T --check-prefixes TOOLLIB
+// RUN: env OMP_TOOL_LIBRARIES=%tool-path/libtool.so OMP_TOOL_VERBOSE_INIT=stderr \
+// RUN:    %libomp-run %redirect2to1 %redirect1tonull | \
+// RUN:    FileCheck %s -DPARENTPATH=%tool-path --check-prefixes TOOLLIB
 
 // 3.6 OMP_TOOL_VERBOSE_INIT to file "init.log"
 
-// RUN: env OMP_TOOL_LIBRARIES=%T/tool.so OMP_TOOL_VERBOSE_INIT=%T/init.log \
-// RUN:    %libomp-run | FileCheck %s && cat %T/init.log | \
-// RUN:    FileCheck %s -DPARENTPATH=%T --check-prefixes TOOLLIB
-
+// RUN: env OMP_TOOL_LIBRARIES=%tool-path/libtool.so OMP_TOOL_VERBOSE_INIT=%tool-path/init.log \
+// RUN:    %libomp-run | FileCheck %s %recv-log && cat %T/init.log | \
+// RUN:    FileCheck %s -DPARENTPATH=%tool-path --check-prefixes TOOLLIB
 
 // REQUIRES: ompt
 
@@ -91,10 +90,10 @@
 // TOOLLIB: ----- START LOGGING OF TOOL REGISTRATION -----
 // TOOLLIB-NEXT: Search for OMP tool in current address space... Failed.
 // TOOLLIB-NEXT: Searching tool libraries...
-// TOOLLIB-NEXT: OMP_TOOL_LIBRARIES = [[PARENTPATH]]/tool.so
-// TOOLLIB-NEXT: Opening [[PARENTPATH]]/tool.so... Success.
+// TOOLLIB-NEXT: OMP_TOOL_LIBRARIES = [[PARENTPATH]]/libtool.so
+// TOOLLIB-NEXT: Opening [[PARENTPATH]]/libtool.so... Success.
 // TOOLLIB-NEXT: Searching for ompt_start_tool in
-// TOOLLIB-SAME: [[PARENTPATH]]/tool.so... Success.
+// TOOLLIB-SAME: [[PARENTPATH]]/libtool.so... Success.
 // TOOLLIB-NEXT: Tool was started and is using the OMPT interface.
 // TOOLLIB-NEXT: ----- END LOGGING OF TOOL REGISTRATION -----
 
