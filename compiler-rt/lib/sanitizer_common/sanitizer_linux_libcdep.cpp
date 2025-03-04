@@ -1063,7 +1063,7 @@ static bool ShouldLogAfterPrintf() {
 }
 
 extern "C" SANITIZER_WEAK_ATTRIBUTE int musl_log(const char *fmt, ...);
-extern "C" SANITIZER_WEAK_ATTRIBUTE int ohos_dfx_log(const char *s);
+extern "C" SANITIZER_WEAK_ATTRIBUTE int ohos_dfx_log(const char *s, const char *p);
 void WriteOneLineToSyslog(const char *s) {
   if (&musl_log) {
     musl_log(s);
@@ -1097,7 +1097,7 @@ void LogMessageOnPrintf(const char *str) {
     //  disk. The ohos_dfx_log may perform dynamic memory allocation, potentiallt
     //  leading to the sanitizer triggering a recursive call.
     safe_to_call_printf = false;
-    ohos_dfx_log(str);
+    ohos_dfx_log(str, common_flags()->log_path);
     safe_to_call_printf = true;
   }
 #endif
