@@ -123,7 +123,45 @@ HWASAN_FLAG(int, heap_quarantine_thread_max_count, 128,
 HWASAN_FLAG(int, heap_quarantine_min, 0,
             "The freed heap size should be larger than the minimum size before "
             "it is placed into the heap quarantine.")
-HWASAN_FLAG(int, heap_quarantine_max, 0,
-            "The freed heap size should be smaller than the maximum size before "
-            "it is placed into the heap quarantine.")
+HWASAN_FLAG(
+    int, heap_quarantine_max, 0,
+    "The freed heap size should be smaller than the maximum size before "
+    "it is placed into the heap quarantine.")
+
+// Default minimum configuration
+HWASAN_FLAG(bool, allow_user_segv_handler, true,
+            "Deprecated. True has no effect, use handle_sigbus=1. If false, "
+            "handle_*=1 will be upgraded to handle_*=2.")
+HWASAN_FLAG(int, detect_odr_violation, 0,
+            "Default does not detect single defined rule (ODR) violations.")
+HWASAN_FLAG(bool, alloc_dealloc_mismatch, false,
+            "Report errors on malloc/delete, new/free, new/delete[], etc.")
+HWASAN_FLAG(bool, allocator_may_return_null, true,
+            "If true, the allocator does not crash and returns nullptr when "
+            "out of memory.")
+HWASAN_FLAG(bool, detect_container_overflow, false,
+            "If false, disabling out-of-bounds detection. See "
+            "https://github.com/google/sanitizers/wiki/"
+            "AddressSanitizerContainerOverflow")
+HWASAN_FLAG(bool, detect_leaks, false, "Disable memory leak detection.")
+HWASAN_FLAG(
+    int, report_globals, 0,
+    "Controls the way to handle globals (0 - don't detect buffer overflow on "
+    "globals, 1 - detect buffer overflow, 2 - print data about registered "
+    "globals).")
+HWASAN_FLAG(bool, allow_user_poisoning, true,
+            "If set, user may manually mark memory regions as poisoned or "
+            "unpoisoned.")
+HWASAN_FLAG(bool, log_exe_name, true,
+            "If set true, mention name of executable when reporting error and "
+            "append executable name to logs (as in \"log_path.exe_name.pid\").")
+HWASAN_FLAG(bool, detect_stack_use_after_return, false,
+            "Disables stack-use-after-return checking at run-time.")
+HWASAN_FLAG(int, print_module_map, 2,
+            "Print the process module map where supported (0 - don't print, "
+            "1 - print only once before process exits, 2 - print after each "
+            "report).")
+HWASAN_FLAG(bool, intercept_send, false,
+            "If set true, uses custom wrappers for send* functions "
+            "to find more errors.")
 // OHOS_LOCAL end

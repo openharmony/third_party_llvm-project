@@ -96,6 +96,14 @@ static void InitializeFlags() {
     cf.handle_sigill = kHandleSignalNo;
     cf.handle_sigfpe = kHandleSignalNo;
 #endif
+
+// OHOS_LOCAL begin
+#if SANITIZER_OHOS
+    cf.handle_segv = kHandleSignalNo;
+    cf.handle_sigbus = kHandleSignalNo;
+    cf.handle_abort = kHandleSignalNo;
+#endif
+// OHOS_LOCAL end
     OverrideCommonFlags(cf);
   }
 
