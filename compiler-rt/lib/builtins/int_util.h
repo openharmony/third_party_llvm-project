@@ -40,6 +40,9 @@ NORETURN void __compilerrt_abort_impl(const char *file, int line,
 #define REPEAT_4_TIMES(code_to_repeat)                                         \
   REPEAT_3_TIMES(code_to_repeat)                                               \
   code_to_repeat
+#define REPEAT_5_TIMES(code_to_repeat)                                         \
+  REPEAT_4_TIMES(code_to_repeat)                                               \
+  code_to_repeat
 
 #define REPEAT_N_TIMES_(N, code_to_repeat) REPEAT_##N##_TIMES(code_to_repeat)
 #define REPEAT_N_TIMES(N, code_to_repeat) REPEAT_N_TIMES_(N, code_to_repeat)
