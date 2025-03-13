@@ -25,7 +25,7 @@ do
 done
 
 
-ndk_dir=$(ls ${SOURCE_DIR}/lib/|more |grep ohos |grep -v mipsel |grep -v riscv |awk '{print $NF}')
+ndk_dir=$(ls ${SOURCE_DIR}/lib/|more |grep ohos |grep -v mipsel |grep -v riscv |grep -v arm|grep -v loongarch64|awk '{print $NF}')
 
 for i in $ndk_dir
 do
@@ -33,8 +33,8 @@ do
 	find ${OUT_DIR}/lib/$i -name 'libc++.so' -type f -exec bash -c 'echo "INPUT(-lc++_shared)" > $1'  _ {}  \;
 done
 
-cp -rfp ${SOURCE_DIR}/lib   ${OUT_DIR}
-cp -rfp ${SOURCE_DIR}/include  ${OUT_DIR}
+cp -rfp ${SOURCE_DIR}/lib/*   ${OUT_DIR}
+cp -rfp ${SOURCE_DIR}/include/*  ${OUT_DIR}
 
 function strip_dir() {
     for file in `ls $1`
