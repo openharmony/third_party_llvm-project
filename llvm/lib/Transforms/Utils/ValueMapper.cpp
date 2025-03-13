@@ -516,6 +516,11 @@ Value *Mapper::mapValue(const Value *V) {
     if (auto *GEPO = dyn_cast<GEPOperator>(C))
       NewSrcTy = TypeMapper->remapType(GEPO->getSourceElementType());
 
+
+  if (const auto *PAC = dyn_cast<ConstantPtrAuth>(C)) {
+    return getVM()[PAC] = ConstantPtrAuth::get(Ops[0], dyn_cast<ConstantInt>(Ops[1]), dyn_cast<ConstantInt>(Ops[2]), Ops[3]);
+  }
+
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(C))
     return getVM()[V] = CE->getWithOperands(Ops, NewTy, false, NewSrcTy);
   if (isa<ConstantArray>(C))
