@@ -27,9 +27,6 @@ struct __sanitizer_struct_mallinfo {
 
 #elif SANITIZER_LINUX || SANITIZER_APPLE || SANITIZER_FUCHSIA
 
-struct __sanitizer_struct_mallinfo {
-  int v[10];
-};
 
 struct __sanitizer_struct_mallinfo2 {
   uptr v[10];

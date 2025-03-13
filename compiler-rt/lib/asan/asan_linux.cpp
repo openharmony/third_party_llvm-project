@@ -217,7 +217,6 @@ void SignContextStack(void *context) {
   ucp->uc_stack.ss_flags = HashContextStack(*ucp);
 }
 
-#if !SANITIZER_ANDROID && !SANITIZER_OHOS
 void ReadContextStack(void *context, uptr *stack, uptr *ssize) {
   const ucontext_t *ucp = reinterpret_cast<const ucontext_t *>(context);
   if (HashContextStack(*ucp) == ucp->uc_stack.ss_flags) {
