@@ -3028,6 +3028,129 @@ ASTContext::getASTObjCImplementationLayout(
   return getObjCLayout(D->getClassInterface(), D);
 }
 
+bool ASTContext::isPointerToFunction(QualType &type, int &level)
+{
+  QualType 	t = type.getCanonicalType();
+  for(level = 0; t->isPointerType(); level++, t = t->getPointeeType());
+  return level > 0 && t->isFunctionType();
+}
+ 
+bool ASTContext::addNopacFunctionDecl(FunctionDecl *FD)
+{
+  // llvm::outs() << "  - function declaration \n";
+  QualType t = FD->getType();
+  bool hasNopac;
+  auto rt = getNopacQualType(t, hasNopac);
+ 
+  if(!hasNopac)
+  {
+    return false;
+  }
+ 
+  FD->setType(rt);
+ 
+  for(auto param : FD->parameters())
+  {
+    auto t = param->getType();
+    bool _hasNopac;
+    auto t2 = getNopacQualType(t, _hasNopac);
+    if(_hasNopac)
+    {
+      param->setType(t2);
+    }
+  }
+  return true;
+}
+ 
+bool ASTContext::AddNopacTypedefNameDecl(TypedefNameDecl *D)
+{
+  // TypeAliasDecl
+  // TypedefDecl
+  // llvm::outs() << "  - TypedefDecl or TypeAliasDecl: " << D->getName() << "\n";
+ 
+  bool hasNopac;
+ 
+  auto oldType = D->getUnderlyingType();
+  auto newType = getNopacQualType(oldType, hasNopac);
+ 
+  if(hasNopac)
+  {
+    if (D->isModed()) {
+      // llvm::outs() << "  - moded\n";
+      D->setModedTypeSourceInfo(D->getTypeSourceInfo(), newType);
+    }
+    else {
+      // llvm::outs() << "  - not moded\n";
+      D->setTypeSourceInfo(CreateTypeSourceInfo(newType));
+    }
+  }
+ 
+  return hasNopac;
+}
+ 
+ 
+QualType ASTContext::getNopacQualType(const QualType &type, bool &hasNopac) const 
+{
+  hasNopac = false;
+  // return type;
+ 
+  QualifierCollector Quals;
+  const Type *TypeNode = Quals.strip(type);
+ 
+  if (type.isNull())
+  {
+    return type;
+  }
+ 
+  if(TypeNode->isFunctionNoProtoType())
+  {
+    auto newtype = adjustType(type, [&](QualType orig) {
+      const FunctionNoProtoType *F = orig->castAs<FunctionNoProtoType>();
+      QualType newReturnType = getNopacQualType(F->getReturnType(), hasNopac);
+      QualType rt = getFunctionNoProtoType(newReturnType, F->getExtInfo());
+      return rt;
+    } );
+ 
+    return newtype;
+  }
+  else if (TypeNode->isFunctionProtoType())
+  {
+    auto newtype = adjustType(type, [&](QualType orig) {
+      const FunctionProtoType *FPT = orig->castAs<FunctionProtoType>();
+      QualType newReturnType = getNopacQualType(FPT->getReturnType(), hasNopac);
+      auto paramTypes = FPT->getParamTypes();
+      std::vector<QualType> types;
+      for(const QualType &pt : paramTypes)
+      {
+        bool _hasNopac;
+        types.push_back(getNopacQualType(pt, _hasNopac));
+        hasNopac = hasNopac | _hasNopac;
+      }
+      ArrayRef<QualType> newParamTypes = types;
+      QualType rt = getFunctionType(newReturnType, newParamTypes, FPT->getExtProtoInfo());
+      return rt;
+    } );
+ 
+    return newtype;
+  }
+  else if(TypeNode->isPointerType()) {
+    //llvm::outs() << "  - isPointerType \n";
+    const PointerType *ptype = TypeNode->getAs<PointerType>();
+    auto t = getNopacQualType(ptype->getPointeeType(), hasNopac);
+    if(ptype->isFunctionPointerType())
+    {
+      //llvm::outs() << "  - isFunctionPointerType \n";
+      hasNopac = true;
+      Quals.addNopac();
+    }
+    auto rt = getQualifiedType(getPointerType(t), Quals);
+    //llvm::outs() << "  - isPointerType end\n";
+    return rt;
+  }
+ 
+  return type;
+}
+
 static auto getCanonicalTemplateArguments(const ASTContext &C,
                                           ArrayRef<TemplateArgument> Args,
                                           bool &AnyNonCanonArgs) {
@@ -3518,6 +3641,50 @@ QualType ASTContext::getCountAttributedType(
   CountAttributedTypes.InsertNode(CATy, InsertPos);
 
   return QualType(CATy, 0);
+}
+
+QualType
+ASTContext::adjustType(QualType Orig,
+                       llvm::function_ref<QualType(QualType)> Adjust) const {
+  switch (Orig->getTypeClass()) {
+  case Type::Attributed: {
+    const auto *AT = cast<AttributedType>(Orig);
+    return getAttributedType(AT->getAttrKind(),
+                             adjustType(AT->getModifiedType(), Adjust),
+                             adjustType(AT->getEquivalentType(), Adjust));
+  }
+
+  case Type::BTFTagAttributed: {
+    const auto *BTFT = dyn_cast<BTFTagAttributedType>(Orig);
+    return getBTFTagAttributedType(BTFT->getAttr(),
+                                   adjustType(BTFT->getWrappedType(), Adjust));
+  }
+
+  case Type::Elaborated: {
+    const auto *ET = cast<ElaboratedType>(Orig);
+    return getElaboratedType(ET->getKeyword(), ET->getQualifier(),
+                             adjustType(ET->getNamedType(), Adjust));
+  }
+
+  case Type::Paren:
+    return getParenType(
+        adjustType(cast<ParenType>(Orig)->getInnerType(), Adjust));
+
+  case Type::Adjusted: {
+    const auto *AT = cast<AdjustedType>(Orig);
+    return getAdjustedType(AT->getOriginalType(),
+                           adjustType(AT->getAdjustedType(), Adjust));
+  }
+
+  case Type::MacroQualified: {
+    const auto *MQT = cast<MacroQualifiedType>(Orig);
+    return getMacroQualifiedType(adjustType(MQT->getUnderlyingType(), Adjust),
+                                 MQT->getMacroIdentifier());
+  }
+
+  default:
+    return Adjust(Orig);
+  }
 }
 
 const FunctionType *ASTContext::adjustFunctionType(const FunctionType *T,
@@ -5208,7 +5375,7 @@ QualType ASTContext::getAttributedType(attr::Kind attrKind,
 }
 
 QualType ASTContext::getBTFTagAttributedType(const BTFTypeTagAttr *BTFAttr,
-                                             QualType Wrapped) {
+                                             QualType Wrapped) const {
   llvm::FoldingSetNodeID ID;
   BTFTagAttributedType::Profile(ID, Wrapped, BTFAttr);
 

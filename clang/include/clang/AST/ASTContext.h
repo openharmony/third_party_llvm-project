@@ -252,7 +252,7 @@ class ASTContext : public RefCountedBase<ASTContext> {
   mutable llvm::FoldingSet<BitIntType> BitIntTypes;
   mutable llvm::ContextualFoldingSet<DependentBitIntType, ASTContext &>
       DependentBitIntTypes;
-  llvm::FoldingSet<BTFTagAttributedType> BTFTagAttributedTypes;
+  mutable llvm::FoldingSet<BTFTagAttributedType> BTFTagAttributedTypes;
 
   mutable llvm::FoldingSet<CountAttributedType> CountAttributedTypes;
 
@@ -1341,6 +1341,12 @@ public:
   /// calling T.withConst().
   QualType getConstType(QualType T) const { return T.withConst(); }
 
+  /// Rebuild a type, preserving any existing type sugar. For function types,
+  /// you probably want to just use \c adjustFunctionResultType and friends
+  /// instead.
+  QualType adjustType(QualType OldType,
+                      llvm::function_ref<QualType(QualType)> Adjust) const;
+
   /// Change the ExtInfo on a function type.
   const FunctionType *adjustFunctionType(const FunctionType *Fn,
                                          FunctionType::ExtInfo EInfo);
@@ -1616,6 +1622,12 @@ public:
 
   QualType adjustStringLiteralBaseType(QualType StrLTy) const;
 
+  QualType getNopacQualType(const QualType &type, bool &hasNopac) const;
+
+  static bool isPointerToFunction(QualType &type, int &level);
+  bool addNopacFunctionDecl(FunctionDecl *FD);
+  bool AddNopacTypedefNameDecl(TypedefNameDecl *D);
+
 private:
   /// Return a normal function type with a typed argument list.
   QualType getFunctionTypeInternal(QualType ResultTy, ArrayRef<QualType> Args,
@@ -1666,7 +1678,7 @@ public:
                              QualType equivalentType) const;
 
   QualType getBTFTagAttributedType(const BTFTypeTagAttr *BTFAttr,
-                                   QualType Wrapped);
+                                   QualType Wrapped) const;
 
   QualType
   getSubstTemplateTypeParmType(QualType Replacement, Decl *AssociatedDecl,

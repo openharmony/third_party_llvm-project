@@ -7100,6 +7100,40 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
   case ParsedAttr::AT_VTablePointerAuthentication:
     handleVTablePointerAuthentication(S, D, AL);
     break;
+
+  case ParsedAttr::AT_Nopac:
+    // llvm::outs() << "add nopac decl\n";
+    handleSimpleAttribute<NopacAttr>(S, D, AL);
+    {
+      bool hasNopac;
+      if(FunctionDecl *FD = D->getAsFunction())
+      {
+        S.Context.addNopacFunctionDecl(FD);
+      }
+      else if(TypedefNameDecl *TND = dyn_cast<TypedefNameDecl> (D))
+      {
+        S.Context.AddNopacTypedefNameDecl(TND);
+      }
+      else if(VarDecl *VD = dyn_cast<VarDecl> (D))
+      {
+        auto t = VD->getType();
+        auto t2 = S.Context.getNopacQualType(t, hasNopac);
+        if(hasNopac)
+        {
+          VD->setType(t2);
+        }
+      }
+      else if(FieldDecl *FD = dyn_cast<FieldDecl> (D))
+      {
+        auto t = FD->getType();
+        auto t2 = S.Context.getNopacQualType(t, hasNopac);
+        if(hasNopac)
+        {
+          FD->setType(t2);
+        }
+      }
+    }
+    break;
   }
 }
 

@@ -8492,6 +8492,47 @@ static void HandleHLSLParamModifierAttr(QualType &CurType,
     CurType = S.getASTContext().getLValueReferenceType(CurType);
 }
 
+static void HandleNopacTypeAttribute(QualType &type, ParsedAttr &attr,
+                                     TypeProcessingState &state) {
+  /*
+  auto funproto = type->getAs<FunctionProtoType>();
+ 
+  if (!type->isFunctionPointerType() && !(funproto && funproto->isVariadic()) &&
+      !type->isMemberFunctionPointerType() &&
+      !type->isInstantiationDependentType()) {
+    //S.Diag(attr.getLoc(), diag::err_attribute_function_pointers_only) << attr;
+    attr.setInvalid();
+    return;
+  }
+ 
+  if (attr.getNumArgs() > 0) {
+    S.Diag(attr.getLoc(), diag::err_attribute_wrong_number_arguments)
+        << attr << 0;
+    attr.setInvalid();
+    return;
+  }
+  */
+ 
+  // llvm::outs() << "  - HandleNopacTypeAttribute: " << type << "\n";
+ 
+  Sema &S = state.getSema();
+  int level;
+  if(!S.Context.isPointerToFunction(type, level))
+  {
+    return;
+  }
+ 
+  bool hasNopac;
+  auto type2 = S.Context.getNopacQualType(type, hasNopac);
+  if(hasNopac)
+  {
+    type = type2;
+  }
+ 
+  // llvm::outs() << "  - HandleNopacTypeAttribute end\n";
+ 
+}
+
 static void processTypeAttrs(TypeProcessingState &state, QualType &type,
                              TypeAttrLocation TAL,
                              const ParsedAttributesView &attrs,
@@ -8557,6 +8598,11 @@ static void processTypeAttrs(TypeProcessingState &state, QualType &type,
             << attr << attr.isRegularKeywordAttribute();
         attr.setUsedAsTypeAttr();
       }
+      break;
+    case ParsedAttr::AT_Nopac:
+      // llvm::outs() << "add nopac type\n";
+      HandleNopacTypeAttribute(type, attr, state);
+      attr.setUsedAsTypeAttr();
       break;
 
     case ParsedAttr::UnknownAttribute:

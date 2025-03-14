@@ -2023,6 +2023,9 @@ void TypePrinter::printAttributedAfter(const AttributedType *T,
   case attr::ArmMveStrictPolymorphism:
     OS << "__clang_arm_mve_strict_polymorphism";
     break;
+  case attr::Nopac:
+    OS << "nopac";
+    break;
 
   // Nothing to print for this attribute.
   case attr::HLSLParamModifier:
@@ -2432,6 +2435,9 @@ bool Qualifiers::isEmptyWhenPrinted(const PrintingPolicy &Policy) const {
   if (getCVRQualifiers())
     return false;
 
+  if (hasNopac())
+    return false;
+
   if (getAddressSpace() != LangAS::Default)
     return false;
 
@@ -2506,6 +2512,12 @@ void Qualifiers::print(raw_ostream &OS, const PrintingPolicy& Policy,
       OS << ' ';
     OS << "__unaligned";
     addSpace = true;
+  }
+  if(hasNopac()) {
+    if (addSpace)
+      OS << ' ';
+    addSpace = true;
+    OS << "__attribute__((nopac))";
   }
   auto ASStr = getAddrSpaceAsString(getAddressSpace());
   if (!ASStr.empty()) {
