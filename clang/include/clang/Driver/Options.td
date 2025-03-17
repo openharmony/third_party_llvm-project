@@ -4263,6 +4263,12 @@ defm ptrauth_function_pointer_type_discrimination : OptInCC1FFlag<"ptrauth-funct
   "Enable type discrimination on C function pointers">;
 defm ptrauth_indirect_gotos : OptInCC1FFlag<"ptrauth-indirect-gotos",
   "Enable signing and authentication of indirect goto targets">;
+defm ptrauth_cxx_function_pointer_zero_discrimination : OptInCC1FFlag<"ptrauth-cxx-function-pointer-zero-discrimination",
+  "Enable zero discrimination on CXX function pointers">;
+defm ptrauth_cxx_virtual_function_pointer_zero_discrimination : OptInCC1FFlag<"ptrauth-cxx-virtual-function-pointer-zero-discrimination",
+  "Enable zero discrimination on CXX virtual function pointers">;
+defm ptrauth_init_fini_zero_discrimination : OptInCC1FFlag<"ptrauth-init-fini-zero-discrimination",
+  "Enable zero discrimination of function pointers in init/fini arrays">;
 }
 
 def fenable_matrix : Flag<["-"], "fenable-matrix">, Group<f_Group>,

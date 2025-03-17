@@ -117,6 +117,9 @@ FEATURE(ptrauth_member_function_pointer_type_discrimination, LangOpts.PointerAut
 FEATURE(ptrauth_init_fini, LangOpts.PointerAuthInitFini)
 FEATURE(ptrauth_function_pointer_type_discrimination, LangOpts.PointerAuthFunctionTypeDiscrimination)
 FEATURE(ptrauth_indirect_gotos, LangOpts.PointerAuthIndirectGotos)
+FEATURE(ptrauth_cxx_function_pointer_zero_discrimination, LangOpts.PointerAuthCxxFunctionPointerZeroDiscrimination)
+FEATURE(ptrauth_cxx_virtual_function_pointer_zero_discrimination, LangOpts.PointerAuthCxxVirtualFunctionPointerZeroDiscrimination)
+FEATURE(ptrauth_init_fini_zero_discrimination, LangOpts.PointerAuthInitFiniZeroDiscrimination)
 EXTENSION(swiftcc,
   PP.getTargetInfo().checkCallingConvention(CC_Swift) ==
   clang::TargetInfo::CCCR_OK)
