@@ -463,6 +463,29 @@ bool AArch64CallLowering::lowerReturn(MachineIRBuilder &MIRBuilder,
                                             MIRBuilder, CC, F.isVarArg());
   }
 
+  // OHOS_LOCAL begin
+  MachineFunction &MF = MIRBuilder.getMF();
+  const Function &F = MF.getFunction();
+   if (MF.getTarget().getTargetTriple().isOpenHOS()) {
+    LLVM_DEBUG(dbgs() << "Checking for struct return attribute in lowerReturn\n");
+    if (F.hasStructRetAttr()) {
+      LLVM_DEBUG(dbgs() << "lowerReturn has struct return attribute\n");
+      AArch64FunctionInfo *FuncInfo = MF.getInfo<AArch64FunctionInfo>();
+      MachineRegisterInfo &MRI = MF.getRegInfo();
+      OutgoingArgHandler Handler(MIRBuilder, MRI, MIB);
+      Register SRetReg = FuncInfo->getSRetReturnReg();
+      unsigned RetValReg = AArch64::X0;
+      if (MRI.isPhysRegUsed(RetValReg)) {
+        LLVM_DEBUG(dbgs() << "Register x0 is already used.\n");
+      }
+      Handler.assignValueToReg(SRetReg, RetValReg, 
+          CCValAssign::getReg(0, MVT::getIntegerVT(64), RetValReg, 
+          MVT::getIntegerVT(64), CCValAssign::LocInfo::Full));
+    } else {
+      LLVM_DEBUG(dbgs() << "lowerReturn does not have struct return attribute\n");
+    }
+  }
+  // OHOS_LOCAL end
   if (SwiftErrorVReg) {
     MIB.addUse(AArch64::X21, RegState::Implicit);
     MIRBuilder.buildCopy(AArch64::X21, SwiftErrorVReg);
@@ -659,6 +682,27 @@ bool AArch64CallLowering::lowerFormalArguments(
 
   handleMustTailForwardedRegisters(MIRBuilder, AssignFn);
 
+  // OHOS_LOCAL begin
+  if (MF.getTarget().getTargetTriple().isOpenHOS()) {
+    LLVM_DEBUG(dbgs() << "Checking for struct return attribute in lowerFormalArguments\n");
+    if (F.hasStructRetAttr()) {
+      LLVM_DEBUG(dbgs() << "lowerFormalArguments has struct return attribute\n");
+      for (unsigned i = 0; i < SplitArgs.size(); ++i) {
+        if (SplitArgs[i].Flags[0].isSRet()) {
+          Register Reg = MF.getRegInfo().createVirtualRegister(&AArch64::GPR64RegClass);
+          FuncInfo->setSRetReturnReg(Reg);
+          for (unsigned Part = 0; Part < SplitArgs[i].Flags.size(); ++Part) {
+            MIRBuilder.buildCopy(Reg, SplitArgs[i].Regs[Part]);
+          }
+        } else {
+          LLVM_DEBUG(dbgs() << "lowerFormalArguments does not have struct return attribute\n");
+        }
+      }
+    } else {
+      LLVM_DEBUG(dbgs() << "lowerFormalArguments does not have struct return attribute\n");
+    }
+  }
+  // OHOS_LOCAL end
   // Move back to the end of the basic block.
   MIRBuilder.setMBB(MBB);
 
