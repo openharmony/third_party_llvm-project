@@ -1503,14 +1503,25 @@ void CompilerInvocation::setDefaultPointerAuthOptions(
         PointerAuthSchema(Key::ASDA, false, Discrimination::None);
   }
 
+
   if (LangOpts.PointerAuthCalls || LangOpts.VirtualFunctionPointerAuthCallOnly) {
-    Opts.CXXVirtualFunctionPointers = Opts.CXXVirtualVariadicFunctionPointers =
-        PointerAuthSchema(Key::ASIA, true, Discrimination::Decl);
+    if (LangOpts.PointerAuthCxxVirtualFunctionPointerZeroDiscrimination) {
+      Opts.CXXVirtualFunctionPointers = Opts.CXXVirtualVariadicFunctionPointers =
+          PointerAuthSchema(Key::ASIA, false, Discrimination::None);
+    } else {
+      Opts.CXXVirtualFunctionPointers = Opts.CXXVirtualVariadicFunctionPointers =
+          PointerAuthSchema(Key::ASIA, true, Discrimination::Decl);
+    }
   }
 
   if (LangOpts.PointerAuthCalls || LangOpts.MemberFunctionPointerAuthCallOnly) {
-    Opts.CXXMemberFunctionPointers =
-        PointerAuthSchema(Key::ASIA, false, Discrimination::Type);
+    if (LangOpts.PointerAuthCxxFunctionPointerZeroDiscrimination) {
+      Opts.CXXMemberFunctionPointers =
+          PointerAuthSchema(Key::ASIA, false, Discrimination::None);
+    } else {
+      Opts.CXXMemberFunctionPointers =
+          PointerAuthSchema(Key::ASIA, false, Discrimination::Type);
+    }
   }
   Opts.ReturnAddresses = LangOpts.PointerAuthReturns;
   Opts.AuthTraps = LangOpts.PointerAuthAuthTraps;
@@ -3451,6 +3462,12 @@ static void GeneratePointerAuthArgs(const LangOptions &Opts,
     GenerateArg(Consumer, OPT_fptrauth_init_fini);
   if (Opts.PointerAuthFunctionTypeDiscrimination)
     GenerateArg(Consumer, OPT_fptrauth_function_pointer_type_discrimination);
+  if (Opts.PointerAuthCxxFunctionPointerZeroDiscrimination)
+    GenerateArg(Consumer, OPT_fptrauth_cxx_function_pointer_zero_discrimination);
+  if (Opts.PointerAuthCxxVirtualFunctionPointerZeroDiscrimination)
+    GenerateArg(Consumer, OPT_fptrauth_cxx_virtual_function_pointer_zero_discrimination);
+  if (Opts.PointerAuthInitFiniZeroDiscrimination)
+    GenerateArg(Consumer, OPT_fptrauth_init_fini_zero_discrimination);
 }
 
 static void ParsePointerAuthArgs(LangOptions &Opts, ArgList &Args,
@@ -3474,6 +3491,12 @@ static void ParsePointerAuthArgs(LangOptions &Opts, ArgList &Args,
   Opts.PointerAuthInitFini = Args.hasArg(OPT_fptrauth_init_fini);
   Opts.PointerAuthFunctionTypeDiscrimination =
       Args.hasArg(OPT_fptrauth_function_pointer_type_discrimination);
+  Opts.PointerAuthCxxFunctionPointerZeroDiscrimination =
+      Args.hasArg(OPT_fptrauth_cxx_function_pointer_zero_discrimination);
+  Opts.PointerAuthCxxVirtualFunctionPointerZeroDiscrimination =
+      Args.hasArg(OPT_fptrauth_cxx_virtual_function_pointer_zero_discrimination);
+  Opts.PointerAuthInitFiniZeroDiscrimination =
+      Args.hasArg(OPT_fptrauth_init_fini_zero_discrimination);
 }
 
 /// Check if input file kind and language standard are compatible.

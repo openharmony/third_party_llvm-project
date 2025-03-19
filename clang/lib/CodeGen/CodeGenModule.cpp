@@ -1227,6 +1227,7 @@ void CodeGenModule::Release() {
       static_assert(AARCH64_PAUTH_PLATFORM_LLVM_LINUX_VERSION_INITFINI ==
                         AARCH64_PAUTH_PLATFORM_LLVM_LINUX_VERSION_LAST,
                     "Update when new enum items are defined");
+      //viorel todo: add PointerAuthCxxFunctionPointerZeroDiscrimination | PointerAuthCxxVirtualFunctionPointerZeroDiscrimination | PointerAuthInitFiniZeroDiscrimination
       if (PAuthABIVersion != 0) {
         getModule().addModuleFlag(llvm::Module::Error,
                                   "aarch64-elf-pauthabi-platform",

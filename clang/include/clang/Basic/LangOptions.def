@@ -177,7 +177,10 @@ LANGOPT(PointerAuthTypeInfoVTPtrDiscrimination, 1, 0, "incorporate type and addr
 LANGOPT(PointerAuthInitFini, 1, 0, "sign function pointers in init/fini arrays")
 BENIGN_LANGOPT(PointerAuthFunctionTypeDiscrimination, 1, 0,
                "Use type discrimination when signing function pointers")
-
+LANGOPT(PointerAuthCxxFunctionPointerZeroDiscrimination, 1, 0, "Enable zero discrimination on CXX function pointers")
+LANGOPT(PointerAuthCxxVirtualFunctionPointerZeroDiscrimination, 1, 0, "Enable zero discrimination on CXX virtual function pointers")
+LANGOPT(PointerAuthInitFiniZeroDiscrimination, 1, 0, "Enable zero discrimination of function pointers in init/fini arrays")
+ 
 LANGOPT(DoubleSquareBracketAttributes, 1, 0, "'[[]]' attributes extension for all language standard modes")
 LANGOPT(ExperimentalLateParseAttributes, 1, 0, "experimental late parsing of attributes")
 

@@ -1882,6 +1882,15 @@ void Clang::AddAArch64TargetArgs(const ArgList &Args,
 
   Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_indirect_gotos,
                     options::OPT_fno_ptrauth_indirect_gotos);
+  Args.addOptInFlag(
+      CmdArgs, options::OPT_fptrauth_cxx_function_pointer_zero_discrimination,
+      options::OPT_fno_ptrauth_cxx_function_pointer_zero_discrimination);
+  Args.addOptInFlag(
+      CmdArgs, options::OPT_fptrauth_cxx_virtual_function_pointer_zero_discrimination,
+      options::OPT_fno_ptrauth_cxx_virtual_function_pointer_zero_discrimination);
+  Args.addOptInFlag(
+      CmdArgs, options::OPT_fptrauth_init_fini_zero_discrimination,
+      options::OPT_fno_ptrauth_init_fini_zero_discrimination);
 }
 
 void Clang::AddLoongArchTargetArgs(const ArgList &Args,
