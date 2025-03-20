@@ -36,12 +36,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-// OHOS_LOCAL begin
-#if SANITIZER_OHOS
-#include <sigchain.h>
-#endif
-// OHOS_LOCAL end
-
 #if SANITIZER_FREEBSD
 // The MAP_NORESERVE define has been removed in FreeBSD 11.x, and even before
 // that, it was never implemented.  So just define it to zero.
@@ -197,6 +191,15 @@ void UnsetAlternateSignalStack() {
   UnmapOrDie(oldstack.ss_sp, oldstack.ss_size);
 }
 
+#if SANITIZER_OHOS
+struct signal_chain_action {
+  bool (*sca_sigaction)(int, siginfo_t*, void*);
+  sigset_t sca_mask;
+  int sca_flags;
+};
+extern "C" SANITIZER_WEAK_ATTRIBUTE
+void add_special_signal_handler(int signo, struct signal_chain_action* sa);
+#endif
 static void MaybeInstallSigaction(int signum,
                                   SignalHandlerType handler) {
 #if !SANITIZER_OHOS
@@ -216,7 +219,7 @@ static void MaybeInstallSigaction(int signum,
   HandleSignalMode mode = GetHandleSignalMode(signum);
 
   if (mode == kHandleSignalNo) return;
-  if (mode == kHandleSignalYes) {
+  if (mode == kHandleSignalYes || !(&add_special_signal_handler)) {
     struct sigaction sigact;
     internal_memset(&sigact, 0, sizeof(sigact));
     sigact.sa_sigaction = (sa_sigaction_t)handler;
