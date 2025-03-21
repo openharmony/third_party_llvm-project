@@ -414,16 +414,16 @@ static void AsanInitInternal() {
   AddDieCallback(AsanDie);
   SetCheckUnwindCallback(CheckUnwind);
   SetPrintfAndReportCallback(AppendToErrorMessageBuffer);
-
-  __sanitizer_set_report_path(common_flags()->log_path);
-
-  __asan_option_detect_stack_use_after_return =
-      flags()->detect_stack_use_after_return;
 // OHOS_LOCAL Begin
 #if !SANITIZER_OHOS
-  __sanitizer::InitializePlatformEarly();
+  __sanitizer_set_report_path(common_flags()->log_path);
 #endif
 // OHOS_LOCAL End
+  __asan_option_detect_stack_use_after_return =
+      flags()->detect_stack_use_after_return;
+
+  __sanitizer::InitializePlatformEarly();
+
   // Setup internal allocator callback.
   SetLowLevelAllocateMinAlignment(ASAN_SHADOW_GRANULARITY);
   SetLowLevelAllocateCallback(OnLowLevelAllocate);
