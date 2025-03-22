@@ -98,6 +98,10 @@ if (COMPILER_RT_HAS_GWP_ASAN)
       ADDITIONAL_HEADERS ${GWP_ASAN_HEADERS}
       CFLAGS ${GWP_ASAN_CFLAGS}
       OBJECT_LIBS ${GWP_ASAN_OBJECT_LIBS}
+                  # OHOS_LOCAL begin
+                  RTSanitizerCommon
+                  RTSanitizerCommonLibc
+                  # OHOS_LOCAL end
       PARENT_TARGET gwp_asan
     )
   endforeach()

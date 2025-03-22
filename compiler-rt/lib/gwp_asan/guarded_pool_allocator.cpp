@@ -10,6 +10,9 @@
 
 #include "gwp_asan/options.h"
 #include "gwp_asan/utilities.h"
+// OHOS_LOCAL begin
+#include "sanitizer_common/sanitizer_common.h"
+// OHOS_LOCAL end
 
 #include <assert.h>
 #include <stddef.h>
@@ -71,6 +74,11 @@ void GuardedPoolAllocator::init(const options::Options &Opts) {
                         0};
 
   State.MaxSimultaneousAllocations = Opts.MaxSimultaneousAllocations;
+  // OHOS_LOCAL begin
+  #if defined (__OHOS__)
+  MUSL_LOG("[gwp_asan]: SlotLength %{public}d, SampleRate %{public}d", Opts.MaxSimultaneousAllocations, Opts.SampleRate);
+  #endif
+  // OHOS_LOCAL end
 
   const size_t PageSize = getPlatformPageSize();
   // getPageAddr() and roundUpTo() assume the page size to be a power of 2.
@@ -352,21 +360,42 @@ AllocationMetadata *GuardedPoolAllocator::addrToMetadata(uintptr_t Ptr) const {
 }
 
 size_t GuardedPoolAllocator::reserveSlot() {
+  // OHOS_LOCAL begin
+  #if defined (__OHOS__)
+  accumulatePersistInterval(NumSampledAllocations - FreeSlotsLength);    
+  #endif
+  // OHOS_LOCAL end
   // Avoid potential reuse of a slot before we have made at least a single
   // allocation in each slot. Helps with our use-after-free detection.
-  if (NumSampledAllocations < State.MaxSimultaneousAllocations)
+  if (NumSampledAllocations < State.MaxSimultaneousAllocations) {
+    // OHOS_LOCAL begin
+    #if defined (__OHOS__)
+    ++ReserveCounter;
+    #endif
+    // OHOS_LOCAL end
     return NumSampledAllocations++;
+  }
 
   if (FreeSlotsLength == 0)
     return kInvalidSlotID;
 
   size_t ReservedIndex = getRandomUnsigned32() % FreeSlotsLength;
   size_t SlotIndex = FreeSlots[ReservedIndex];
+  // OHOS_LOCAL begin
+  #if defined (__OHOS__)
+  ++ReserveCounter;
+  #endif
+  // OHOS_LOCAL end
   FreeSlots[ReservedIndex] = FreeSlots[--FreeSlotsLength];
   return SlotIndex;
 }
 
 void GuardedPoolAllocator::freeSlot(size_t SlotIndex) {
+  // OHOS_LOCAL begin
+  #if defined (__OHOS__)
+  accumulatePersistInterval(NumSampledAllocations - FreeSlotsLength);
+  #endif
+  // OHOS_LOCAL end
   assert(FreeSlotsLength < State.MaxSimultaneousAllocations);
   FreeSlots[FreeSlotsLength++] = SlotIndex;
 }
@@ -379,4 +408,21 @@ uint32_t GuardedPoolAllocator::getRandomUnsigned32() {
   getThreadLocals()->RandomState = RandomState;
   return RandomState;
 }
+
+// OHOS_LOCAL begin
+// The reservedSlotsLength represents the number of slots currently in use by GWP_ASan,
+// while PersistInterval denotes the total accumulated duration of persistent allocations,
+// when NumSampledAllocations == 0, it indicates that timing has not yet been initiated,
+// requiring us to initialize the timestamp to mark the starting point. 
+void GuardedPoolAllocator::accumulatePersistInterval(size_t reservedSlotsLength) {
+  assert(reservedSlotsLength >= 0);
+  size_t curTime = __sanitizer::NanoTime() / 1000;
+  if (NumSampledAllocations == 0) {
+    PreTime = curTime;
+    return;
+  }
+  PersistInterval += (curTime - PreTime) * reservedSlotsLength;
+  PreTime = curTime;
+};
+// OHOS_LOCAL end
 } // namespace gwp_asan
