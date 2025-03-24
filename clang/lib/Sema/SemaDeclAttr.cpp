@@ -6131,7 +6131,7 @@ static void handleVTablePointerAuthentication(Sema &S, Decl *D,
       AL.setInvalid();
     }
     if (KeyType == VTablePointerAuthenticationAttr::DefaultKey &&
-        !S.getLangOpts().PointerAuthCalls) {
+        !S.getLangOpts().PointerAuthCalls && !S.getLangOpts().VTablePointerAuthOnly) {
       S.Diag(AL.getLoc(), diag::err_no_default_vtable_pointer_auth) << 0;
       AL.setInvalid();
     }
@@ -6154,7 +6154,7 @@ static void handleVTablePointerAuthentication(Sema &S, Decl *D,
       }
       if (AddressDiversityMode ==
               VTablePointerAuthenticationAttr::DefaultAddressDiscrimination &&
-          !S.getLangOpts().PointerAuthCalls) {
+          !S.getLangOpts().PointerAuthCalls && !S.getLangOpts().VTablePointerAuthOnly) {
         S.Diag(IL->Loc, diag::err_no_default_vtable_pointer_auth) << 1;
         AL.setInvalid();
       }
@@ -6175,7 +6175,7 @@ static void handleVTablePointerAuthentication(Sema &S, Decl *D,
         AL.setInvalid();
       }
       if (ED == VTablePointerAuthenticationAttr::DefaultExtraDiscrimination &&
-          !S.getLangOpts().PointerAuthCalls) {
+          !S.getLangOpts().PointerAuthCalls && !S.getLangOpts().VTablePointerAuthOnly) {
         S.Diag(AL.getLoc(), diag::err_no_default_vtable_pointer_auth) << 2;
         AL.setInvalid();
       }

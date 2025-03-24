@@ -4246,6 +4246,10 @@ defm strict_return : BoolFOption<"strict-return",
 let Flags = [TargetSpecific] in {
 defm ptrauth_intrinsics : OptInCC1FFlag<"ptrauth-intrinsics", "Enable pointer authentication intrinsics">;
 defm ptrauth_calls : OptInCC1FFlag<"ptrauth-calls", "Enable signing and authentication of all indirect calls">;
+defm ptrauth_icall : OptInCC1FFlag<"ptrauth-icall", "Enable signing and authentication of indirect function calls only">;
+defm ptrauth_vcall : OptInCC1FFlag<"ptrauth-vcall", "Enable signing and authentication of virtual function calls only">;
+defm ptrauth_mfcall : OptInCC1FFlag<"ptrauth-mfcall", "Enable signing and authentication of member function calls only">;
+defm ptrauth_vptr : OptInCC1FFlag<"ptrauth-vptr", "Enable signing and authentication of vtable pointer only">;
 defm ptrauth_returns : OptInCC1FFlag<"ptrauth-returns", "Enable signing and authentication of return addresses">;
 defm ptrauth_auth_traps : OptInCC1FFlag<"ptrauth-auth-traps", "Enable traps on authentication failures">;
 defm ptrauth_vtable_pointer_address_discrimination :

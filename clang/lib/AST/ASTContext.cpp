@@ -14400,7 +14400,7 @@ bool ASTContext::useAbbreviatedThunkName(GlobalDecl VirtualMethodDecl,
   auto *Method = cast<CXXMethodDecl>(VirtualMethodDecl.getDecl());
   assert(Method->isVirtual());
   bool DefaultIncludesPointerAuth =
-      LangOpts.PointerAuthCalls || LangOpts.PointerAuthIntrinsics;
+      LangOpts.PointerAuthCalls || LangOpts.VirtualFunctionPointerAuthCallOnly || LangOpts.PointerAuthIntrinsics;
 
   if (!DefaultIncludesPointerAuth)
     return true;

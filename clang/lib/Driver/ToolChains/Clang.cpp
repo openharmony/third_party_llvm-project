@@ -1498,6 +1498,22 @@ static void handlePAuthABI(const ArgList &DriverArgs, ArgStringList &CC1Args) {
                          options::OPT_fno_ptrauth_calls))
     CC1Args.push_back("-fptrauth-calls");
 
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_icall,
+                         options::OPT_fno_ptrauth_icall))
+    CC1Args.push_back("-fptrauth-icall");
+
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_vcall,
+                         options::OPT_fno_ptrauth_vcall))
+    CC1Args.push_back("-fptrauth-vcall");
+
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_mfcall,
+                         options::OPT_fno_ptrauth_mfcall))
+    CC1Args.push_back("-fptrauth-mfcall");
+
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_vptr,
+                         options::OPT_fno_ptrauth_vptr))
+    CC1Args.push_back("-fptrauth-vptr");
+
   if (!DriverArgs.hasArg(options::OPT_fptrauth_returns,
                          options::OPT_fno_ptrauth_returns))
     CC1Args.push_back("-fptrauth-returns");
@@ -1837,6 +1853,14 @@ void Clang::AddAArch64TargetArgs(const ArgList &Args,
                     options::OPT_fno_ptrauth_intrinsics);
   Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_calls,
                     options::OPT_fno_ptrauth_calls);
+  Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_icall,
+                    options::OPT_fno_ptrauth_icall);
+  Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_vcall,
+                    options::OPT_fno_ptrauth_vcall);
+  Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_mfcall,
+                    options::OPT_fno_ptrauth_mfcall);
+  Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_vptr,
+                    options::OPT_fno_ptrauth_vptr);
   Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_returns,
                     options::OPT_fno_ptrauth_returns);
   Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_auth_traps,

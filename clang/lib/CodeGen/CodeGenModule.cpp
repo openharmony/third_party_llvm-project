@@ -1210,7 +1210,9 @@ void CodeGenModule::Release() {
       uint64_t PAuthABIVersion =
           (LangOpts.PointerAuthIntrinsics
            << AARCH64_PAUTH_PLATFORM_LLVM_LINUX_VERSION_INTRINSICS) |
-          (LangOpts.PointerAuthCalls
+          ((LangOpts.PointerAuthCalls | LangOpts.IndirectPointerAuthCallOnly | 
+	    LangOpts.VirtualFunctionPointerAuthCallOnly | LangOpts.MemberFunctionPointerAuthCallOnly |
+	    LangOpts.VTablePointerAuthOnly)
            << AARCH64_PAUTH_PLATFORM_LLVM_LINUX_VERSION_CALLS) |
           (LangOpts.PointerAuthReturns
            << AARCH64_PAUTH_PLATFORM_LLVM_LINUX_VERSION_RETURNS) |

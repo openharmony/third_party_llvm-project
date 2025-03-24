@@ -164,6 +164,10 @@ LANGOPT(ExperimentalLibrary, 1, 0, "enable unstable and experimental library fea
 
 LANGOPT(PointerAuthIntrinsics, 1, 0, "pointer authentication intrinsics")
 LANGOPT(PointerAuthCalls  , 1, 0, "function pointer authentication")
+LANGOPT(IndirectPointerAuthCallOnly, 1, 0, "indirect function pointer authentication only")
+LANGOPT(VirtualFunctionPointerAuthCallOnly, 1, 0, "virtual function pointer authentication only")
+LANGOPT(MemberFunctionPointerAuthCallOnly, 1, 0, "member function pointer authentication only")
+LANGOPT(VTablePointerAuthOnly, 1, 0, "virtual table pointer authentication only")
 LANGOPT(PointerAuthReturns, 1, 0, "return pointer authentication")
 LANGOPT(PointerAuthIndirectGotos, 1, 0, "indirect gotos pointer authentication")
 LANGOPT(PointerAuthAuthTraps, 1, 0, "pointer authentication failure traps")
