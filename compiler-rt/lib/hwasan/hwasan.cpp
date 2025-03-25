@@ -98,10 +98,16 @@ static void InitializeFlags() {
 #endif
 
 // OHOS_LOCAL begin
+// Default minimum hwasan configuration
 #if SANITIZER_OHOS
     cf.handle_segv = kHandleSignalNo;
     cf.handle_sigbus = kHandleSignalNo;
     cf.handle_abort = kHandleSignalNo;
+    cf.allocator_may_return_null = true;
+    cf.log_exe_name = true;
+    cf.detect_leaks = false;
+    cf.print_module_map = 2;
+    cf.intercept_send = false;
 #endif
 // OHOS_LOCAL end
     OverrideCommonFlags(cf);
