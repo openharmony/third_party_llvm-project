@@ -5483,7 +5483,12 @@ void CodeGenModule::EmitGlobalVarDefinition(const VarDecl *D,
         Init = llvm::UndefValue::get(getTypes().ConvertType(T));
       }
     } else {
-      Init = Initializer;
+        const auto *CPA = dyn_cast<llvm::ConstantPtrAuth>(Initializer);
+        if (CPA && D->hasAttr<NopacAttr>()) {
+          Init = CPA->getPointer();
+        } else {
+          Init = Initializer;
+        }
       // We don't need an initializer, so remove the entry for the delayed
       // initializer position (just in case this entry was delayed) if we
       // also don't need to register a destructor.
