@@ -2151,7 +2151,7 @@ class LlvmLibs(BuildUtils):
         os.chdir(self.build_config.LLVM_BUILD_DIR)
         self.check_call(cmd)
 
-        if not static:
+        if not (static or platform_triple.startswith("windows")):
             self.llvm_package.copy_lzma_to_llvm(platform_triple, llvm_make)
             self.llvm_package.copy_lzma_to_llvm(platform_triple, llvm_install)
 
@@ -2894,8 +2894,6 @@ class LlvmPackage(BuildUtils):
             shlib_ext = [f'.{self.build_config.LZMA_VERSION}.dylib']
         if self.host_is_linux():
             shlib_ext = ['.so']
-        if platform_triple.startswith("windows"):
-            shlib_ext = ['.dll']
         lzma_file = [self.merge_install_dir('lzma', platform_triple, 'lib',
                                            f'liblzma{ext}') for ext in shlib_ext]
 
