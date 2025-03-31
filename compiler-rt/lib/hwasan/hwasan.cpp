@@ -70,6 +70,10 @@ static void RegisterHwasanFlags(FlagParser *parser, Flags *f) {
 #undef HWASAN_FLAG
 }
 
+#define APPEND_BOOL_FLAG_CONETENT(defalutFlags, flags, S, param) \
+  defalutFlags.append(#S " is ");                                \
+  defalutFlags.append(flags->S == param ? "true. " : "false. ");
+
 static void InitializeFlags() {
   SetCommonFlagsDefaults();
   {
@@ -104,9 +108,9 @@ static void InitializeFlags() {
     cf.handle_sigbus = kHandleSignalNo;
     cf.handle_abort = kHandleSignalNo;
     cf.allocator_may_return_null = true;
+    cf.allow_user_segv_handler = true;
     cf.log_exe_name = true;
-    cf.detect_leaks = false;
-    cf.print_module_map = 2;
+    cf.print_module_map = 1;
     cf.intercept_send = false;
 #endif
 // OHOS_LOCAL end
@@ -143,6 +147,31 @@ static void InitializeFlags() {
 #endif
 
   InitializeCommonFlags();
+
+  // OHOS_LOCAL begin
+#if SANITIZER_OHOS
+  if (common_flags()->verbose_format_important_flags) {
+    InternalScopedString defalutFlags;
+    APPEND_BOOL_FLAG_CONETENT(defalutFlags, common_flags(),
+                              allocator_may_return_null, true);
+    APPEND_BOOL_FLAG_CONETENT(defalutFlags, common_flags(), handle_abort,
+                              kHandleSignalYes);
+    APPEND_BOOL_FLAG_CONETENT(defalutFlags, common_flags(), log_exe_name, true);
+    APPEND_BOOL_FLAG_CONETENT(defalutFlags, common_flags(), handle_segv,
+                              kHandleSignalYes);
+    defalutFlags.append("print_module_map is ");
+    defalutFlags.append("%d. ", common_flags()->print_module_map);
+    APPEND_BOOL_FLAG_CONETENT(defalutFlags, common_flags(), handle_sigbus,
+                              kHandleSignalYes);
+    APPEND_BOOL_FLAG_CONETENT(defalutFlags, common_flags(), intercept_send,
+                              true);
+    APPEND_BOOL_FLAG_CONETENT(defalutFlags, common_flags(),
+                              allow_user_segv_handler, true);
+    APPEND_BOOL_FLAG_CONETENT(defalutFlags, flags(), halt_on_error, true);
+    Printf("The important option for hwasan is %s\n", defalutFlags.data());
+  }
+#endif
+  // OHOS_LOCAL end
 
   if (Verbosity()) ReportUnrecognizedFlags();
 
@@ -203,7 +232,7 @@ void HwasanAtExit() {
   if (__hwasan::ShouldPrintQuarantineDwillTime())
     hwasanThreadList().PrintfAverageQuarantineTime();
   // OHOS_LOCAL end
-  if (common_flags()->print_module_map)
+  if (common_flags()->print_module_map > 1)
     DumpProcessMap();
   if (flags()->print_stats && (flags()->atexit || hwasan_report_count > 0))
     ReportStats();

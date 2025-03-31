@@ -279,4 +279,6 @@ COMMON_FLAG(bool, test_only_emulate_no_memorymap, false,
 // OHOS_LOCAL begin
 COMMON_FLAG(bool, run_on_tw, false,
             "If true, no abort.")
+COMMON_FLAG(bool, verbose_format_important_flags, false,
+            "Prints the important options of hwasan.")
 // OHOS_LOCAL end

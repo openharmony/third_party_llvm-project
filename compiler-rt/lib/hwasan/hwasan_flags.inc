@@ -130,27 +130,4 @@ HWASAN_FLAG(
 
 HWASAN_FLAG(bool, enable_heap_quarantine_debug, false,
             "Enable Hwasan Quarantine Debug Mode.")
-
-// Default minimum configuration
-HWASAN_FLAG(bool, allow_user_segv_handler, true,
-            "Deprecated. True has no effect, use handle_sigbus=1. If false, "
-            "handle_*=1 will be upgraded to handle_*=2.")
-HWASAN_FLAG(int, detect_odr_violation, 0,
-            "Default does not detect single defined rule (ODR) violations.")
-HWASAN_FLAG(bool, alloc_dealloc_mismatch, false,
-            "Report errors on malloc/delete, new/free, new/delete[], etc.")
-HWASAN_FLAG(bool, detect_container_overflow, false,
-            "If false, disabling out-of-bounds detection. See "
-            "https://github.com/google/sanitizers/wiki/"
-            "AddressSanitizerContainerOverflow")
-HWASAN_FLAG(
-    int, report_globals, 0,
-    "Controls the way to handle globals (0 - don't detect buffer overflow on "
-    "globals, 1 - detect buffer overflow, 2 - print data about registered "
-    "globals).")
-HWASAN_FLAG(bool, allow_user_poisoning, true,
-            "If set, user may manually mark memory regions as poisoned or "
-            "unpoisoned.")
-HWASAN_FLAG(bool, detect_stack_use_after_return, false,
-            "Disables stack-use-after-return checking at run-time.")
 // OHOS_LOCAL end
