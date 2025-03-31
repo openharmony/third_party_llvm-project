@@ -1479,7 +1479,9 @@ void ItaniumCXXABI::emitThrow(CodeGenFunction &CGF, const CXXThrowExpr *E) {
 
       CXXDestructorDecl *DtorD = Record->getDestructor();
       Dtor = CGM.getAddrOfCXXStructor(GlobalDecl(DtorD, Dtor_Complete));
+#ifdef NO_NOPAC_HACK
       Dtor = CGM.getFunctionPointer(Dtor, DtorTy);
+#endif // NO_NOPAC_HACK
     }
   }
   if (!Dtor) Dtor = llvm::Constant::getNullValue(CGM.Int8PtrTy);
