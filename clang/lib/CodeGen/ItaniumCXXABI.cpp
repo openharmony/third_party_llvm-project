@@ -2872,10 +2872,18 @@ static void emitGlobalDtorWithCXAAtExit(CodeGenFunction &CGF,
   const auto &Context = CGF.CGM.getContext();
   FunctionProtoType::ExtProtoInfo EPI(Context.getDefaultCallingConvention(
       /*IsVariadic=*/false, /*IsCXXMethod=*/false));
+#ifdef NO_NOPAC_HACK
   QualType fnType =
       Context.getFunctionType(Context.VoidTy, {Context.VoidPtrTy}, EPI);
+#endif // NO_NOPAC_HACK
   llvm::Constant *dtorCallee = cast<llvm::Constant>(dtor.getCallee());
+
+#ifdef NO_NOPAC_HACK
+  // This is a temporary solution to avoid signing dtors in __cxa_atexit, it
+  // should eventually instead check the underlying method declaration for the
+  // nopac attribtue
   dtorCallee = CGF.CGM.getFunctionPointer(dtorCallee, fnType);
+#endif // NO_NOPAC_HACK
 
   if (!addr)
     // addr is null when we are trying to register a dtor annotated with
