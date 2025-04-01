@@ -1473,9 +1473,11 @@ void ItaniumCXXABI::emitThrow(CodeGenFunction &CGF, const CXXThrowExpr *E) {
       // __cxa_throw is declared to take its destructor as void (*)(void *). We
       // must match that if function pointers can be authenticated with a
       // discriminator based on their type.
+#ifdef NO_NOPAC_HACK
       const ASTContext &Ctx = getContext();
       QualType DtorTy = Ctx.getFunctionType(Ctx.VoidTy, {Ctx.VoidPtrTy},
                                             FunctionProtoType::ExtProtoInfo());
+#endif // NO_NOPAC_HACK
 
       CXXDestructorDecl *DtorD = Record->getDestructor();
       Dtor = CGM.getAddrOfCXXStructor(GlobalDecl(DtorD, Dtor_Complete));
