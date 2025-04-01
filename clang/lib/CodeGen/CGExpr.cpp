@@ -2012,6 +2012,14 @@ llvm::Value *CodeGenFunction::EmitLoadOfScalar(Address Addr, bool Volatile,
                         llvm::MDNode::get(getLLVMContext(), std::nullopt));
     }
 
+  if (Ty->isFunctionPointerType()) {
+   if (Ty.getQualifiers().hasNopac()) {
+     auto NoPacAuthInfo = CGPointerAuthInfo();
+     auto FuncPAI = CGM.getPointerAuthInfoForType(Ty.getUnqualifiedType());
+     return emitPointerAuthResign(EmitFromMemory(Load, Ty), Ty, NoPacAuthInfo, FuncPAI, false);
+   }
+  }
+
   return EmitFromMemory(Load, Ty);
 }
 
@@ -2033,6 +2041,13 @@ llvm::Value *CodeGenFunction::EmitToMemory(llvm::Value *Value, QualType Ty) {
     Value = emitBoolVecConversion(Value, MemNumElems, "insertvec");
     // <P x i1> --> iP.
     Value = Builder.CreateBitCast(Value, StoreTy);
+  }
+  if (Ty->isFunctionPointerType()) {
+   if (Ty.getQualifiers().hasNopac()) {
+     auto NoPacAuthInfo = CGPointerAuthInfo();
+     auto FuncPAI = CGM.getPointerAuthInfoForType(Ty.getUnqualifiedType());
+     Value = emitPointerAuthResign(Value, Ty, FuncPAI, NoPacAuthInfo, false);
+   }
   }
 
   return Value;
