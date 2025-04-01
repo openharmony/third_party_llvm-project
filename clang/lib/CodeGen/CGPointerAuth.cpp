@@ -365,10 +365,10 @@ llvm::Constant *CodeGenModule::getFunctionPointer(GlobalDecl GD,
   return getFunctionPointer(getRawFunctionPointer(GD, Ty), FuncType);
 }
 
-CGPointerAuthInfo CodeGenModule::getMemberFunctionPointerAuthInfo(QualType FT) {
+CGPointerAuthInfo CodeGenModule::getMemberFunctionPointerAuthInfo(QualType FT, bool NoPac) {
   assert(FT->getAs<MemberPointerType>() && "MemberPointerType expected");
   const auto &Schema = getCodeGenOpts().PointerAuth.CXXMemberFunctionPointers;
-  if (!Schema)
+  if (!Schema || NoPac)
     return CGPointerAuthInfo();
 
   assert(!Schema.isAddressDiscriminated() &&
@@ -382,8 +382,9 @@ CGPointerAuthInfo CodeGenModule::getMemberFunctionPointerAuthInfo(QualType FT) {
 }
 
 llvm::Constant *CodeGenModule::getMemberFunctionPointer(llvm::Constant *Pointer,
-                                                        QualType FT) {
-  if (CGPointerAuthInfo PointerAuth = getMemberFunctionPointerAuthInfo(FT))
+                                                        QualType FT,
+                                                        bool NoPac) {
+  if (CGPointerAuthInfo PointerAuth = getMemberFunctionPointerAuthInfo(FT, NoPac))
     return getConstantSignedPointer(
         Pointer, PointerAuth.getKey(), nullptr,
         cast_or_null<llvm::ConstantInt>(PointerAuth.getDiscriminator()));
@@ -392,11 +393,12 @@ llvm::Constant *CodeGenModule::getMemberFunctionPointer(llvm::Constant *Pointer,
 }
 
 llvm::Constant *CodeGenModule::getMemberFunctionPointer(const FunctionDecl *FD,
-                                                        llvm::Type *Ty) {
+                                                        llvm::Type *Ty,
+                                                        bool NoPac) {
   QualType FT = FD->getType();
   FT = getContext().getMemberPointerType(
       FT, cast<CXXMethodDecl>(FD)->getParent()->getTypeForDecl());
-  return getMemberFunctionPointer(getRawFunctionPointer(FD, Ty), FT);
+  return getMemberFunctionPointer(getRawFunctionPointer(FD, Ty), FT, NoPac);
 }
 
 std::optional<PointerAuthQualifier>

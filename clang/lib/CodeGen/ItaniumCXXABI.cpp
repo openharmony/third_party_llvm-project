@@ -849,8 +849,9 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
       llvm::PHINode *DiscriminatorPHI = Builder.CreatePHI(CGF.IntPtrTy, 2);
       DiscriminatorPHI->addIncoming(llvm::ConstantInt::get(CGF.IntPtrTy, 0),
                                     FnVirtual);
+      const bool NoPac = RD->hasAttr<NopacAttr>();
       const auto &AuthInfo =
-          CGM.getMemberFunctionPointerAuthInfo(QualType(MPT, 0));
+          CGM.getMemberFunctionPointerAuthInfo(QualType(MPT, 0), NoPac);
       assert(Schema.getKey() == AuthInfo.getKey() &&
              "Keys for virtual and non-virtual member functions must match");
       auto *NonVirtualDiscriminator = AuthInfo.getDiscriminator();
@@ -935,12 +936,21 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
   CGBuilderTy &Builder = CGF.Builder;
   QualType DstType = E->getType();
 
+
+  const MemberPointerType *destTy =
+    E->getType()->castAs<MemberPointerType>();
+
+  assert(destTy != nullptr && "destTy is nullptr");
+  auto *RD = destTy->getMostRecentCXXRecordDecl();
+  assert(RD != nullptr && "RD is nullptr");
+  const bool NoPac = RD->hasAttr<NopacAttr>();
+
   if (DstType->isMemberFunctionPointerType()) {
     if (const auto &NewAuthInfo =
-            CGM.getMemberFunctionPointerAuthInfo(DstType)) {
+            CGM.getMemberFunctionPointerAuthInfo(DstType, NoPac)) {
       QualType SrcType = E->getSubExpr()->getType();
       assert(SrcType->isMemberFunctionPointerType());
-      const auto &CurAuthInfo = CGM.getMemberFunctionPointerAuthInfo(SrcType);
+      const auto &CurAuthInfo = CGM.getMemberFunctionPointerAuthInfo(SrcType, NoPac);
       llvm::Value *MemFnPtr = Builder.CreateExtractValue(src, 0, "memptr.ptr");
       llvm::Type *OrigTy = MemFnPtr->getType();
 
@@ -983,9 +993,6 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
 
   bool isDerivedToBase = (E->getCastKind() == CK_DerivedToBaseMemberPointer);
 
-  const MemberPointerType *destTy =
-    E->getType()->castAs<MemberPointerType>();
-
   // For member data pointers, this is just a matter of adding the
   // offset if the source is non-null.
   if (destTy->isMemberDataPointer()) {
@@ -1020,7 +1027,8 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
 
 static llvm::Constant *
 pointerAuthResignMemberFunctionPointer(llvm::Constant *Src, QualType DestType,
-                                       QualType SrcType, CodeGenModule &CGM) {
+                                       QualType SrcType, CodeGenModule &CGM,
+                                       bool DstNoPac, bool SrcNoPac) {
   assert(DestType->isMemberFunctionPointerType() &&
          SrcType->isMemberFunctionPointerType() &&
          "member function pointers expected");
@@ -1040,8 +1048,11 @@ pointerAuthResignMemberFunctionPointer(llvm::Constant *Src, QualType DestType,
     return Src;
   }
 
-  llvm::Constant *ConstPtr = pointerAuthResignConstant(
-      cast<llvm::User>(MemFnPtr)->getOperand(0), CurAuthInfo, NewAuthInfo, CGM);
+  llvm::Constant *ConstPtr = DstNoPac
+    ? dyn_cast<llvm::Constant>(cast<llvm::User>(MemFnPtr)->getOperand(0))
+    : pointerAuthResignConstant(cast<llvm::User>(MemFnPtr)->getOperand(0),
+                                CurAuthInfo, NewAuthInfo, CGM);
+  assert(ConstPtr != nullptr && "ConstPtr is nullptr");
   ConstPtr = llvm::ConstantExpr::getPtrToInt(ConstPtr, MemFnPtr->getType());
   return ConstantFoldInsertValueInstruction(Src, ConstPtr, 0);
 }
@@ -1053,11 +1064,17 @@ ItaniumCXXABI::EmitMemberPointerConversion(const CastExpr *E,
          E->getCastKind() == CK_BaseToDerivedMemberPointer ||
          E->getCastKind() == CK_ReinterpretMemberPointer);
 
+  const MemberPointerType *destTy =
+    E->getType()->castAs<MemberPointerType>();
+  assert(destTy != nullptr && "destTy is nullptr");
+  auto *RD = destTy->getMostRecentCXXRecordDecl();
+  assert(RD != nullptr && "RD is nullptr");
+  const bool NoPac = RD->hasAttr<NopacAttr>();
   QualType DstType = E->getType();
 
   if (DstType->isMemberFunctionPointerType())
     src = pointerAuthResignMemberFunctionPointer(
-        src, DstType, E->getSubExpr()->getType(), CGM);
+        src, DstType, E->getSubExpr()->getType(), CGM, NoPac, NoPac);
 
   // Under Itanium, reinterprets don't require any additional processing.
   if (E->getCastKind() == CK_ReinterpretMemberPointer) return src;
@@ -1067,9 +1084,6 @@ ItaniumCXXABI::EmitMemberPointerConversion(const CastExpr *E,
   if (!adj) return src;
 
   bool isDerivedToBase = (E->getCastKind() == CK_DerivedToBaseMemberPointer);
-
-  const MemberPointerType *destTy =
-    E->getType()->castAs<MemberPointerType>();
 
   // For member data pointers, this is just a matter of adding the
   // offset if the source is non-null.
@@ -1205,7 +1219,8 @@ llvm::Constant *ItaniumCXXABI::BuildMemberPointer(const CXXMethodDecl *MD,
       // function type is incomplete.
       Ty = CGM.PtrDiffTy;
     }
-    llvm::Constant *addr = CGM.getMemberFunctionPointer(MD, Ty);
+    const bool NoPac = MD->getParent()->hasAttr<NopacAttr>();
+    llvm::Constant *addr = CGM.getMemberFunctionPointer(MD, Ty, NoPac);
 
     MemPtr[0] = llvm::ConstantExpr::getPtrToInt(addr, CGM.PtrDiffTy);
     MemPtr[1] = llvm::ConstantInt::get(CGM.PtrDiffTy,
@@ -1229,7 +1244,9 @@ llvm::Constant *ItaniumCXXABI::EmitMemberPointer(const APValue &MP,
     llvm::Constant *Src = BuildMemberPointer(MD, ThisAdjustment);
     QualType SrcType = getContext().getMemberPointerType(
         MD->getType(), MD->getParent()->getTypeForDecl());
-    return pointerAuthResignMemberFunctionPointer(Src, MPType, SrcType, CGM);
+    const bool NoPac = MD->getParent()->hasAttr<NopacAttr>();
+    return pointerAuthResignMemberFunctionPointer(Src, MPType, SrcType, CGM,
+                                                  NoPac, NoPac);
   }
 
   CharUnits FieldOffset =
@@ -5135,7 +5152,8 @@ ItaniumCXXABI::getSignedVirtualMemberFunctionPointer(const CXXMethodDecl *MD) {
   llvm::Constant *thunk = getOrCreateVirtualFunctionPointerThunk(origMD);
   QualType funcType = CGM.getContext().getMemberPointerType(
       MD->getType(), MD->getParent()->getTypeForDecl());
-  return CGM.getMemberFunctionPointer(thunk, funcType);
+  const bool NoPac = MD->getParent()->hasAttr<NopacAttr>();
+  return CGM.getMemberFunctionPointer(thunk, funcType, NoPac);
 }
 
 void WebAssemblyCXXABI::emitBeginCatch(CodeGenFunction &CGF,
