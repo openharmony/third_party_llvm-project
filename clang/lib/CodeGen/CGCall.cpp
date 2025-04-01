@@ -5008,6 +5008,15 @@ static unsigned getMaxVectorWidth(const llvm::Type *Ty) {
   return MaxVectorWidth;
 }
 
+static bool isNoPacFunction(const FunctionDecl *FD) {
+ if (FD->hasAttr<NopacAttr>()) return true;
+
+ for (auto *PD: FD->parameters())
+  if (PD->hasAttr<NopacAttr>()) return true;
+
+ return false;
+}
+
 RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
                                  const CGCallee &Callee,
                                  ReturnValueSlot ReturnValue,
@@ -5129,6 +5138,9 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
 
     bool ArgHasMaybeUndefAttr =
         IsArgumentMaybeUndef(TargetDecl, CallInfo.getNumRequiredArgs(), ArgNo);
+
+    const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(TargetDecl);
+    bool nopac = FD && isNoPacFunction(FD);
 
     switch (ArgInfo.getKind()) {
     case ABIArgInfo::InAlloca: {
@@ -5324,6 +5336,13 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
 
         if (ArgHasMaybeUndefAttr)
           V = Builder.CreateFreeze(V);
+
+        if (nopac) {
+          auto NoPacAuthInfo = CGPointerAuthInfo();
+          auto FuncPAI = CGM.getPointerAuthInfoForType(I->Ty.getUnqualifiedType());
+          V = emitPointerAuthResign(V, I->Ty, FuncPAI, NoPacAuthInfo, false);
+        }
+
         IRCallArgs[FirstIRArg] = V;
         break;
       }
