@@ -73,8 +73,7 @@ CodeGenModule::getPointerAuthDeclDiscriminator(GlobalDecl Declaration) {
 /// function type.
 CGPointerAuthInfo CodeGenModule::getFunctionPointerAuthInfo(QualType T) {
   const auto &Schema = getCodeGenOpts().PointerAuth.FunctionPointers;
-
-  if (!Schema || T.getQualifiers().hasNopac())
+  if (!Schema)
     return CGPointerAuthInfo();
 
   assert(!Schema.isAddressDiscriminated() &&

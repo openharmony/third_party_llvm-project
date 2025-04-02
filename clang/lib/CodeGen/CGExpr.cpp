@@ -5601,20 +5601,12 @@ CGCallee CodeGenFunction::EmitCallee(const Expr *E) {
   assert(functionType->isFunctionType());
 
   GlobalDecl GD;
-  bool nopac = false;
   if (const auto *VD =
-          dyn_cast_or_null<VarDecl>(E->getReferencedDeclOfCallee())) {
+          dyn_cast_or_null<VarDecl>(E->getReferencedDeclOfCallee()))
     GD = GlobalDecl(VD);
-    nopac = VD->hasAttr<NopacAttr>();
-  }
-
-  if (auto *CAP = dyn_cast<llvm::ConstantPtrAuth>(calleePtr)) {
-    if (nopac)
-      calleePtr = CAP->getPointer();
-  }
 
   CGCalleeInfo calleeInfo(functionType->getAs<FunctionProtoType>(), GD);
-  CGPointerAuthInfo pointerAuth = nopac ? CGPointerAuthInfo() : CGM.getFunctionPointerAuthInfo(functionType);
+  CGPointerAuthInfo pointerAuth = CGM.getFunctionPointerAuthInfo(functionType);
   CGCallee callee(calleeInfo, calleePtr, pointerAuth);
   return callee;
 }
