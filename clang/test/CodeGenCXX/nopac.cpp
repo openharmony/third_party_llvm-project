@@ -2,9 +2,12 @@
 
 void f(void);
 auto __attribute__((nopac)) &f_ref = f;
+// CHECK-NOT: @f_ref = constant ptr ptrauth (ptr @f(), i32 0, i64 18983), align 8
+// CHECK: @f_ref = constant ptr @_Z1fv, align 8
 
 // CHECK: define {{(dso_local )?}}void @_Z1gv(
-// CHECK: call void @_Z1fv
+// CHECK-NOT: call void @_Z1fv
+// CHECK: call void ptrauth (ptr @_Z1fv, i32 0)() [ "ptrauth"(i32 0, i64 0) ]
 
 void g() { f_ref(); }
 
