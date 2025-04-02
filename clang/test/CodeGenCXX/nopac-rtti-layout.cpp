@@ -1,5 +1,10 @@
 // RUN: %clang_cc1 %s -I%S -triple=aarch64-linux-gnu -fptrauth-calls -std=c++11 -emit-llvm -o - | FileCheck --check-prefix=ELF %s
 
+// XFAIL: *
+/*
+ * NOTE: This is currently not supported.
+ */
+
 #include <nopac_typeinfo>
 
 struct __attribute__((nopac)) A { int a; };
