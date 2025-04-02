@@ -5011,6 +5011,8 @@ static unsigned getMaxVectorWidth(const llvm::Type *Ty) {
 static bool isNoPacFunction(const FunctionDecl *FD) {
  if (FD->hasAttr<NopacAttr>()) return true;
 
+ if (FD->getReturnType().getQualifiers().hasNopac()) return true;
+
  for (auto *PD: FD->parameters())
   if (PD->hasAttr<NopacAttr>()) return true;
 
@@ -5945,6 +5947,12 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
             llvm::Value *V = CI;
             if (V->getType() != RetIRTy)
               V = Builder.CreateBitCast(V, RetIRTy);
+            const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(TargetDecl);
+            if (FD && isNoPacFunction(FD)) {
+              auto NoPacAuthInfo = CGPointerAuthInfo();
+              auto FuncPAI = CGM.getPointerAuthInfoForType(RetTy.getUnqualifiedType());
+              V = emitPointerAuthResign(V, RetTy,  NoPacAuthInfo, FuncPAI, false);
+            }
             return RValue::get(V);
           }
           }
