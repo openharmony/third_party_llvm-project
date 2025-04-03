@@ -110,26 +110,26 @@ void no_ptrauth_indirect_gotos() {}
 #endif
 
 #if __has_feature(fptrauth_cxx_function_pointer_zero_discrimination)
-// FUNC: has_fptrauth_cxx_function_pointer_zero_discrimination
+// FZERODISC: has_fptrauth_cxx_function_pointer_zero_discrimination
 void has_fptrauth_cxx_function_pointer_zero_discrimination() {}
 #else
-// NOFUNC: no_fptrauth_cxx_function_pointer_zero_discrimination
+// NOFZERODISC: no_fptrauth_cxx_function_pointer_zero_discrimination
 void no_fptrauth_cxx_function_pointer_zero_discrimination() {}
 #endif
 
 
 #if __has_feature(fptrauth_cxx_virtual_function_pointer_zero_discrimination)
-// FUNC: has_fptrauth_cxx_virtual_function_pointer_zero_discrimination
+// VFZERODISC: has_fptrauth_cxx_virtual_function_pointer_zero_discrimination
 void has_fptrauth_cxx_virtual_function_pointer_zero_discrimination() {}
 #else
-// NOFUNC: no_fptrauth_cxx_virtual_function_pointer_zero_discrimination
+// NOVFZERODISC: no_fptrauth_cxx_virtual_function_pointer_zero_discrimination
 void no_fptrauth_cxx_virtual_function_pointer_zero_discrimination() {}
 #endif
 
 #if __has_feature(fptrauth_init_fini_zero_discrimination)
-// FUNC: has_fptrauth_init_fini_zero_discrimination
+// INFIZERODISC: has_fptrauth_init_fini_zero_discrimination
 void has_fptrauth_init_fini_zero_discrimination() {}
 #else
-// NOFUNC: no_fptrauth_init_fini_zero_discrimination
+// NOINFIZERODISC: no_fptrauth_init_fini_zero_discrimination
 void no_fptrauth_init_fini_zero_discrimination() {}
 #endif
