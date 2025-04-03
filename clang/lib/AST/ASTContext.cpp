@@ -11221,6 +11221,16 @@ QualType ASTContext::mergeTypes(QualType LHS, QualType RHS, bool OfBlockPointer,
   // If the qualifiers are different, the types aren't compatible... mostly.
   Qualifiers LQuals = LHSCan.getLocalQualifiers();
   Qualifiers RQuals = RHSCan.getLocalQualifiers();
+
+  if (LQuals.hasNopac() && !RQuals.hasNopac()) {
+    bool hasNopac;
+    return mergeTypes(LHS, getNopacQualType(RHS, hasNopac));
+  } else if (!LQuals.hasNopac() && RQuals.hasNopac()) {
+    bool hasNopac;
+    return mergeTypes(getNopacQualType(LHS, hasNopac), RHS);
+  }
+
+
   if (LQuals != RQuals) {
     // If any of these qualifiers are different, we have a type
     // mismatch.
