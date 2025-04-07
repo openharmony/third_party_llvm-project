@@ -16,7 +16,7 @@
 #include "sanitizer_common.h"
 #include "sanitizer_stacktrace.h"
 
-#if SANITIZER_ANDROID || SANITIZER_OHOS
+#if SANITIZER_ANDROID
 #include <dlfcn.h>  // for dlopen()
 #endif
 

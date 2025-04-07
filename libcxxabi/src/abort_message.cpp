@@ -11,7 +11,7 @@
 #include <stdarg.h>
 #include "abort_message.h"
 
-#if defined(__BIONIC__) && !defined(__OHOS__)
+#ifdef __BIONIC__
 #   include <android/api-level.h>
 #   if __ANDROID_API__ >= 21
 #       include <syslog.h>
@@ -52,7 +52,7 @@ void abort_message(const char* format, ...)
     va_end(list);
 
     CRSetCrashLogMessage(buffer);
-#elif defined(__BIONIC__) && !defined(__OHOS__)
+#elif defined(__BIONIC__)
     char* buffer;
     va_list list;
     va_start(list, format);

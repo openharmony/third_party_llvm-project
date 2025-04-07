@@ -135,7 +135,7 @@ inline void ReleaseMemoryPagesToOSAndZeroFill(uptr beg, uptr end) {
   ReleaseMemoryPagesToOS(beg, end);
 }
 
-#if SANITIZER_ANDROID || SANITIZER_OHOS
+#  if SANITIZER_ANDROID
 
 #    if defined(__aarch64__)
 #      define __get_tls()                           \
