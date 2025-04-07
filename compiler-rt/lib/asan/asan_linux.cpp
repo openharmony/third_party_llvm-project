@@ -45,8 +45,7 @@
 #    include <link.h>
 #  endif
 
-#  if SANITIZER_ANDROID || SANITIZER_FREEBSD || SANITIZER_SOLARIS|| \
-    SANITIZER_OHOS
+#  if SANITIZER_ANDROID || SANITIZER_FREEBSD || SANITIZER_SOLARIS
 #    include <ucontext.h>
 #  elif SANITIZER_NETBSD
 #    include <link_elf.h>
@@ -108,7 +107,7 @@ void FlushUnneededASanShadowMemory(uptr p, uptr size) {
   ReleaseMemoryPagesToOS(MemToShadow(p), MemToShadow(p + size));
 }
 
-#  if SANITIZER_ANDROID || SANITIZER_OHOS
+#  if SANITIZER_ANDROID
 // FIXME: should we do anything for Android?
 void AsanCheckDynamicRTPrereqs() {}
 void AsanCheckIncompatibleRT() {}
@@ -217,7 +216,6 @@ void SignContextStack(void *context) {
   ucp->uc_stack.ss_flags = HashContextStack(*ucp);
 }
 
-#if !SANITIZER_ANDROID && !SANITIZER_OHOS
 void ReadContextStack(void *context, uptr *stack, uptr *ssize) {
   const ucontext_t *ucp = reinterpret_cast<const ucontext_t *>(context);
   if (HashContextStack(*ucp) == ucp->uc_stack.ss_flags) {

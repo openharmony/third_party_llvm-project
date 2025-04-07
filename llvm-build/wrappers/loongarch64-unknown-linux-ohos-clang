@@ -1,9 +1,0 @@
-#!/bin/sh
-
-SOURCE=$(dirname -- "$( readlink -f -- "$0"; )")
-
-exec $SOURCE/clang \
-  -target loongarch64-linux-ohos \
-  --sysroot=$SOURCE/../../sysroot \
-  -D__MUSL__ \
-  "$@"
