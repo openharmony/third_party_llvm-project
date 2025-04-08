@@ -1539,6 +1539,12 @@ static void handlePAuthABI(const ArgList &DriverArgs, ArgStringList &CC1Args) {
   if (!DriverArgs.hasArg(options::OPT_fptrauth_init_fini,
                          options::OPT_fno_ptrauth_init_fini))
     CC1Args.push_back("-fptrauth-init-fini");
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_nopac_atexit,
+                         options::OPT_fno_ptrauth_nopac_atexit))
+    CC1Args.push_back("-fptrauth-nopac-atexit");
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_nopac_throw,
+                         options::OPT_fno_ptrauth_nopac_throw))
+    CC1Args.push_back("-fptrauth-nopac-throw");
 }
 
 static void CollectARMPACBTIOptions(const ToolChain &TC, const ArgList &Args,
@@ -1891,6 +1897,12 @@ void Clang::AddAArch64TargetArgs(const ArgList &Args,
   Args.addOptInFlag(
       CmdArgs, options::OPT_fptrauth_init_fini_zero_discrimination,
       options::OPT_fno_ptrauth_init_fini_zero_discrimination);
+  Args.addOptInFlag(
+      CmdArgs, options::OPT_fptrauth_nopac_atexit,
+      options::OPT_fno_ptrauth_nopac_atexit);
+  Args.addOptInFlag(
+      CmdArgs, options::OPT_fptrauth_nopac_throw,
+      options::OPT_fno_ptrauth_nopac_throw);
 }
 
 void Clang::AddLoongArchTargetArgs(const ArgList &Args,

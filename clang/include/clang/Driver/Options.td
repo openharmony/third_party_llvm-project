@@ -4275,6 +4275,8 @@ defm ptrauth_cxx_virtual_function_pointer_zero_discrimination : OptInCC1FFlag<"p
   "Enable zero discrimination on CXX virtual function pointers">;
 defm ptrauth_init_fini_zero_discrimination : OptInCC1FFlag<"ptrauth-init-fini-zero-discrimination",
   "Enable zero discrimination of function pointers in init/fini arrays">;
+defm ptrauth_nopac_atexit : OptInCC1FFlag<"ptrauth-nopac-atexit", "Enable NoPac for atexit function pointers">;
+defm ptrauth_nopac_throw : OptInCC1FFlag<"ptrauth-nopac-trow", "Enable NoPac for destructor pointers on throw">;  
 }
 
 def fenable_matrix : Flag<["-"], "fenable-matrix">, Group<f_Group>,

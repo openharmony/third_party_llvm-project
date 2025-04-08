@@ -3468,6 +3468,10 @@ static void GeneratePointerAuthArgs(const LangOptions &Opts,
     GenerateArg(Consumer, OPT_fptrauth_cxx_virtual_function_pointer_zero_discrimination);
   if (Opts.PointerAuthInitFiniZeroDiscrimination)
     GenerateArg(Consumer, OPT_fptrauth_init_fini_zero_discrimination);
+  if (Opts.PointerAuthNoPacAtexit)
+    GenerateArg(Consumer, OPT_fptrauth_nopac_atexit);
+  if (Opts.PointerAuthNoPacThrow)
+    GenerateArg(Consumer, OPT_fptrauth_nopac_throw);
 }
 
 static void ParsePointerAuthArgs(LangOptions &Opts, ArgList &Args,
@@ -3497,6 +3501,10 @@ static void ParsePointerAuthArgs(LangOptions &Opts, ArgList &Args,
       Args.hasArg(OPT_fptrauth_cxx_virtual_function_pointer_zero_discrimination);
   Opts.PointerAuthInitFiniZeroDiscrimination =
       Args.hasArg(OPT_fptrauth_init_fini_zero_discrimination);
+  Opts.PointerAuthNoPacAtexit =
+      Args.hasArg(OPT_fptrauth_nopac_atexit);
+  Opts.PointerAuthNoPacAtexit =
+      Args.hasArg(OPT_fptrauth_nopac_throw);
 }
 
 /// Check if input file kind and language standard are compatible.

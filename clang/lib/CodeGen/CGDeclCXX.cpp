@@ -267,13 +267,14 @@ llvm::Constant *CodeGenFunction::createAtExitStub(const VarDecl &VD,
   // Get a proper function pointer.
   FunctionProtoType::ExtProtoInfo EPI(getContext().getDefaultCallingConvention(
       /*IsVariadic=*/false, /*IsCXXMethod=*/false));
-#ifdef NO_NOPAC_HACK
-  QualType fnType = getContext().getFunctionType(getContext().VoidTy,
-                                                 {getContext().VoidPtrTy}, EPI);
 
-  return CGM.getFunctionPointer(fn, fnType);
-#endif // NO_NOPAC_HACK
-  return fn;
+  if (getLangOpts().PointerAuthNoPacAtexit) {
+    return fn;
+  } else {
+    QualType fnType = getContext().getFunctionType(getContext().VoidTy,
+                                                  {getContext().VoidPtrTy}, EPI);
+    return CGM.getFunctionPointer(fn, fnType);
+  }
 }
 
 /// Create a stub function, suitable for being passed to __pt_atexit_np,

@@ -1490,17 +1490,15 @@ void ItaniumCXXABI::emitThrow(CodeGenFunction &CGF, const CXXThrowExpr *E) {
       // __cxa_throw is declared to take its destructor as void (*)(void *). We
       // must match that if function pointers can be authenticated with a
       // discriminator based on their type.
-#ifdef NO_NOPAC_HACK
-      const ASTContext &Ctx = getContext();
-      QualType DtorTy = Ctx.getFunctionType(Ctx.VoidTy, {Ctx.VoidPtrTy},
-                                            FunctionProtoType::ExtProtoInfo());
-#endif // NO_NOPAC_HACK
 
       CXXDestructorDecl *DtorD = Record->getDestructor();
       Dtor = CGM.getAddrOfCXXStructor(GlobalDecl(DtorD, Dtor_Complete));
-#ifdef NO_NOPAC_HACK
-      Dtor = CGM.getFunctionPointer(Dtor, DtorTy);
-#endif // NO_NOPAC_HACK
+      if (!CGM.getLangOpts().PointerAuthNoPacAtexit) {
+        const ASTContext &Ctx = getContext();
+        QualType DtorTy = Ctx.getFunctionType(Ctx.VoidTy, {Ctx.VoidPtrTy},
+                                              FunctionProtoType::ExtProtoInfo());
+        Dtor = CGM.getFunctionPointer(Dtor, DtorTy);
+      }
     }
   }
   if (!Dtor) Dtor = llvm::Constant::getNullValue(CGM.Int8PtrTy);
@@ -2893,19 +2891,12 @@ static void emitGlobalDtorWithCXAAtExit(CodeGenFunction &CGF,
   const auto &Context = CGF.CGM.getContext();
   FunctionProtoType::ExtProtoInfo EPI(Context.getDefaultCallingConvention(
       /*IsVariadic=*/false, /*IsCXXMethod=*/false));
-#ifdef NO_NOPAC_HACK
-  QualType fnType =
-      Context.getFunctionType(Context.VoidTy, {Context.VoidPtrTy}, EPI);
-#endif // NO_NOPAC_HACK
   llvm::Constant *dtorCallee = cast<llvm::Constant>(dtor.getCallee());
-
-#ifdef NO_NOPAC_HACK
-  // This is a temporary solution to avoid signing dtors in __cxa_atexit, it
-  // should eventually instead check the underlying method declaration for the
-  // nopac attribtue
-  dtorCallee = CGF.CGM.getFunctionPointer(dtorCallee, fnType);
-#endif // NO_NOPAC_HACK
-
+  if (!CGF.CGM.getLangOpts().PointerAuthNoPacAtexit) {
+    QualType fnType =
+        Context.getFunctionType(Context.VoidTy, {Context.VoidPtrTy}, EPI);
+    dtorCallee = CGF.CGM.getFunctionPointer(dtorCallee, fnType);
+  }
   if (!addr)
     // addr is null when we are trying to register a dtor annotated with
     // __attribute__((destructor)) in a constructor function. Using null here is

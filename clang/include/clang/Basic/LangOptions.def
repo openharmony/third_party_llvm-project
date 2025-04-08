@@ -180,7 +180,10 @@ BENIGN_LANGOPT(PointerAuthFunctionTypeDiscrimination, 1, 0,
 LANGOPT(PointerAuthCxxFunctionPointerZeroDiscrimination, 1, 0, "Enable zero discrimination on CXX function pointers")
 LANGOPT(PointerAuthCxxVirtualFunctionPointerZeroDiscrimination, 1, 0, "Enable zero discrimination on CXX virtual function pointers")
 LANGOPT(PointerAuthInitFiniZeroDiscrimination, 1, 0, "Enable zero discrimination of function pointers in init/fini arrays")
- 
+
+LANGOPT(PointerAuthNoPacAtexit, 1, 0, "Enable NoPac for atexit function pointers")
+LANGOPT(PointerAuthNoPacThrow, 1, 0, "Enable NoPac for function pointers to throw")
+
 LANGOPT(DoubleSquareBracketAttributes, 1, 0, "'[[]]' attributes extension for all language standard modes")
 LANGOPT(ExperimentalLateParseAttributes, 1, 0, "experimental late parsing of attributes")
 
