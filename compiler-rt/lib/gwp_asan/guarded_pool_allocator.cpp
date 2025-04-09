@@ -58,6 +58,10 @@ void GuardedPoolAllocator::init(const options::Options &Opts) {
 
   SingletonPtr = this;
   Backtrace = Opts.Backtrace;
+  // OHOS_LOCAL begin
+  MinSampleSize = Opts.MinSampleSize;
+  WhiteListPath = Opts.WhiteListPath;
+  // OHOS_LOCAL end
 
   State.VersionMagic = {{AllocatorVersionMagic::kAllocatorVersionMagic[0],
                          AllocatorVersionMagic::kAllocatorVersionMagic[1],
@@ -220,9 +224,11 @@ void *GuardedPoolAllocator::allocate(size_t Size, size_t Alignment) {
   if (Alignment == 0)
     Alignment = alignof(max_align_t);
 
+  // OHOS_LOCAL begin
   if (!isPowerOfTwo(Alignment) || Alignment > State.maximumAllocationSize() ||
-      Size > State.maximumAllocationSize())
+      Size > State.maximumAllocationSize() || Size < MinSampleSize)
     return nullptr;
+  // OHOS_LOCAL end
 
   size_t BackingSize = getRequiredBackingSize(Size, Alignment, State.PageSize);
   if (BackingSize > State.maximumAllocationSize())
