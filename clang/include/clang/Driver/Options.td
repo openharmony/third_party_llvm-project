@@ -4243,6 +4243,12 @@ defm strict_return : BoolFOption<"strict-return",
             " of a non-void function as unreachable">,
   PosFlag<SetTrue>>;
 
+defm use_nopac_attribute : BoolFOption<"use-nopac-attribute",
+  LangOpts<"UseNopacAttribute">, DefaultTrue,
+  PosFlag<SetTrue, [], [ClangOption, CC1Option],
+          "Use nopac attribute">,
+  NegFlag<SetFalse, [], [ClangOption, CC1Option]>>;
+
 let Flags = [TargetSpecific] in {
 defm ptrauth_intrinsics : OptInCC1FFlag<"ptrauth-intrinsics", "Enable pointer authentication intrinsics">;
 defm ptrauth_calls : OptInCC1FFlag<"ptrauth-calls", "Enable signing and authentication of all indirect calls">;

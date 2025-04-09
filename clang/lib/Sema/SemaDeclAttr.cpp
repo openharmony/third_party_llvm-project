@@ -7102,7 +7102,10 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
     break;
 
   case ParsedAttr::AT_Nopac:
-    // llvm::outs() << "add nopac decl\n";
+    if(!S.getLangOpts().UseNopacAttribute)
+    {
+      break;
+    }
     handleSimpleAttribute<NopacAttr>(S, D, AL);
     {
       bool hasNopac;

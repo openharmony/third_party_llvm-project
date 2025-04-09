@@ -8600,7 +8600,10 @@ static void processTypeAttrs(TypeProcessingState &state, QualType &type,
       }
       break;
     case ParsedAttr::AT_Nopac:
-      // llvm::outs() << "add nopac type\n";
+      if(!state.getSema().getLangOpts().UseNopacAttribute)
+      {
+        break;
+      }
       HandleNopacTypeAttribute(type, attr, state);
       attr.setUsedAsTypeAttr();
       break;

@@ -4013,6 +4013,9 @@ bool CompilerInvocation::ParseLangArgs(LangOptions &Opts, ArgList &Args,
         Diags.Report(diag::err_arc_unsupported_on_runtime);
     }
 
+    if (Args.hasArg(OPT_fno_use_nopac_attribute))
+      Opts.UseNopacAttribute = 0;
+
     // ObjCWeakRuntime tracks whether the runtime supports __weak, not
     // whether the feature is actually enabled.  This is predominantly
     // determined by -fobjc-runtime, but we allow it to be overridden

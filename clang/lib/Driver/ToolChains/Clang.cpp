@@ -6636,6 +6636,9 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   Args.AddLastArg(CmdArgs, options::OPT_fraw_string_literals,
                   options::OPT_fno_raw_string_literals);
 
+  Args.AddLastArg(CmdArgs, options::OPT_fuse_nopac_attribute,
+    options::OPT_fno_use_nopac_attribute);
+
   if (Args.hasFlag(options::OPT_femulated_tls, options::OPT_fno_emulated_tls,
                    Triple.hasDefaultEmulatedTLS()))
     CmdArgs.push_back("-femulated-tls");
