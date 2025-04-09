@@ -1498,6 +1498,8 @@ enum {
   PT_OPENBSD_SYSCALLS = 0x65a3dbe9,  // System call sites.
   PT_OPENBSD_BOOTDATA = 0x65a41be6,  // Section for boot arguments.
 
+  PT_OHOS_CFI_MODIFIER = 0x6833FC30,  // CFI modifier section.
+
   // ARM program header types.
   PT_ARM_ARCHEXT = 0x70000000, // Platform architecture compatibility info
   // These all contain stack unwind tables.

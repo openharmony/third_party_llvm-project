@@ -1658,6 +1658,7 @@ unsigned ScriptParser::readPhdrType() {
                      .Case("PT_OPENBSD_SYSCALLS", PT_OPENBSD_SYSCALLS)
                      .Case("PT_OPENBSD_WXNEEDED", PT_OPENBSD_WXNEEDED)
                      .Case("PT_OPENBSD_BOOTDATA", PT_OPENBSD_BOOTDATA)
+                     .Case("PT_OHOS_CFI_MODIFIER", PT_OHOS_CFI_MODIFIER)
                      .Default(-1);
 
   if (ret == (unsigned)-1) {
