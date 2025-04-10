@@ -2737,7 +2737,7 @@ void CodeGenFunction::EmitParmDecl(const VarDecl &D, ParamValue Arg,
     }
   }
 
-  if (isNopac) {
+  if (isNopac && Ty.getUnqualifiedType()->isSignableType()) {
     auto NoPacAuthInfo = CGPointerAuthInfo();
     auto FuncPAI = CGM.getPointerAuthInfoForType(Ty.getUnqualifiedType());
     ArgVal = emitPointerAuthResign(ArgVal, Ty, NoPacAuthInfo, FuncPAI, false);

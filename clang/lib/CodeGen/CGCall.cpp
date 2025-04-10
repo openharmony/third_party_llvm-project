@@ -5339,7 +5339,7 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
         if (ArgHasMaybeUndefAttr)
           V = Builder.CreateFreeze(V);
 
-        if (nopac) {
+        if (nopac && I->Ty.getUnqualifiedType()->isSignableType()) {
           auto NoPacAuthInfo = CGPointerAuthInfo();
           auto FuncPAI = CGM.getPointerAuthInfoForType(I->Ty.getUnqualifiedType());
           V = emitPointerAuthResign(V, I->Ty, FuncPAI, NoPacAuthInfo, false);
