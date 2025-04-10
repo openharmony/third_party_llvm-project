@@ -5948,7 +5948,7 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
             if (V->getType() != RetIRTy)
               V = Builder.CreateBitCast(V, RetIRTy);
             const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(TargetDecl);
-            if (FD && isNoPacFunction(FD)) {
+            if (FD && isNoPacFunction(FD) && RetTy.getUnqualifiedType()->isSignableType()) {
               auto NoPacAuthInfo = CGPointerAuthInfo();
               auto FuncPAI = CGM.getPointerAuthInfoForType(RetTy.getUnqualifiedType());
               V = emitPointerAuthResign(V, RetTy,  NoPacAuthInfo, FuncPAI, false);
