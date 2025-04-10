@@ -527,6 +527,12 @@ def FeatureTLBIW : ExtensionWithMArch<"tlbiw", "TLBIW", "FEAT_TLBIW",
 //  Other Features
 //===----------------------------------------------------------------------===//
 
+def FeaturePAuthHintOnly : ExtensionWithMArch<"pauth-hint-only", "PAuthHintOnly", "FEAT_PAuthHintOnly",
+  "Only use Pointer Authentication instructions in the HINT space", [FeaturePAuth]>;
+
+//def FeaturePAuthHintOnly : SubtargetFeature<"pauth-hint-only", "UsePAuthHintOnly", "true",
+//  "Only use Pointer Authentication instructions in the HINT space", [FeaturePAuth]>;
+
 def FeatureOutlineAtomics : SubtargetFeature<"outline-atomics", "OutlineAtomics", "true",
   "Enable out of line atomics to support LSE instructions">;
 

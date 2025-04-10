@@ -1,16 +1,16 @@
-; RUN: llc -mtriple arm64e-apple-darwin   -o - %s \
-; RUN:   | FileCheck %s --check-prefixes=CHECK,DARWIN,DARWIN-SDAG
+; RUN-NOT: llc -mtriple arm64e-apple-darwin   -o - %s \
+; RUN-NOT:   | FileCheck %s --check-prefixes=CHECK,DARWIN,DARWIN-SDAG
 
 ; RUN: llc -mtriple aarch64 -mattr=+pauth -o - %s \
 ; RUN:   | FileCheck %s --check-prefixes=CHECK,ELF,ELF-SDAG
 
-; RUN: llc -mtriple arm64e-apple-darwin   -o - %s \
-; RUN:   -global-isel -global-isel-abort=1 -verify-machineinstrs \
-; RUN:  | FileCheck %s --check-prefixes=CHECK,DARWIN,DARWIN-GISEL
+; RUN-NOT: llc -mtriple arm64e-apple-darwin   -o - %s \
+; RUN-NOT:   -global-isel -global-isel-abort=1 -verify-machineinstrs \
+; RUN-NOT:  | FileCheck %s --check-prefixes=CHECK,DARWIN,DARWIN-GISEL
 
-; RUN: llc -mtriple aarch64 -mattr=+pauth -o - %s \
-; RUN:   -global-isel -global-isel-abort=1 -verify-machineinstrs \
-; RUN:  | FileCheck %s --check-prefixes=CHECK,ELF,ELF-GISEL
+; RUN-NOT: llc -mtriple aarch64 -mattr=+pauth -o - %s \
+; RUN-NOT:   -global-isel -global-isel-abort=1 -verify-machineinstrs \
+; RUN-NOT:  | FileCheck %s --check-prefixes=CHECK,ELF,ELF-GISEL
 
 ; DARWIN-LABEL: _test_invoke_ia_0:
 ; DARWIN-NEXT: [[FNBEGIN:L.*]]:
@@ -169,8 +169,8 @@ continuebb:
 ; ELF-NEXT:         adrp x1, :got:_ZTIPKc
 ; ELF-NEXT:         mov x2, xzr
 ; ELF-NEXT:         ldr x1, [x1, :got_lo12:_ZTIPKc]
-; ELF-NEXT:         mov x17, #42
-; ELF-NEXT:         blrab x19, x17
+; ELF-NEXT:         mov x16, #42
+; ELF-NEXT:         blrab x19, x16
 ; ELF-NEXT: [[POSTCALL:.L.*]]:
 ; ELF-NEXT: // %bb.1:
 ; ELF-NEXT: [[LPADBB:.LBB[0-9_]+]]:
@@ -404,25 +404,25 @@ continuebb:
 ; ELF-NEXT:  .cfi_offset w30, -16
 
 ; ELF-SDAG-NEXT: [[PRECALL:.L.*]]:
-; ELF-SDAG-NEXT:  adrp x16, :got:baz
-; ELF-SDAG-NEXT:  ldr x16, [x16, :got_lo12:baz]
-; ELF-SDAG-NEXT:  mov x17, #1234
-; ELF-SDAG-NEXT:  pacia x16, x17
-; ELF-SDAG-NEXT:  mov x8, x16
-; ELF-SDAG-NEXT:  mov x17, #2
-; ELF-SDAG-NEXT:  blrab x8, x17
+; ELF-SDAG-NEXT:  adrp x17, :got:baz
+; ELF-SDAG-NEXT:  ldr x17, [x17, :got_lo12:baz]
+; ELF-SDAG-NEXT:  mov x16, #1234
+; ELF-SDAG-NEXT:  pacia x17, x16
+; ELF-SDAG-NEXT:  mov x8, x17
+; ELF-SDAG-NEXT:  mov x16, #2
+; ELF-SDAG-NEXT:  blrab x8, x16
 ; ELF-SDAG-NEXT: [[POSTCALL:.L.*]]:
 ; ELF-SDAG-NEXT: // %bb.1:
 ; ELF-SDAG-NEXT:  mov w19, w0
 
-; ELF-GISEL-NEXT:  adrp x16, :got:baz
-; ELF-GISEL-NEXT:  ldr x16, [x16, :got_lo12:baz]
-; ELF-GISEL-NEXT:  mov x17, #1234
-; ELF-GISEL-NEXT:  pacia x16, x17
-; ELF-GISEL-NEXT:  mov x8, x16
+; ELF-GISEL-NEXT:  adrp x17, :got:baz
+; ELF-GISEL-NEXT:  ldr x17, [x17, :got_lo12:baz]
+; ELF-GISEL-NEXT:  mov x16, #1234
+; ELF-GISEL-NEXT:  pacia x17, x16
+; ELF-GISEL-NEXT:  mov x8, x17
 ; ELF-GISEL-NEXT: [[PRECALL:.L.*]]:
-; ELF-GISEL-NEXT:  mov x17, #2
-; ELF-GISEL-NEXT:  blrab x8, x17
+; ELF-GISEL-NEXT:  mov x16, #2
+; ELF-GISEL-NEXT:  blrab x8, x16
 ; ELF-GISEL-NEXT:  mov w19, w0
 ; ELF-GISEL-NEXT: [[POSTCALL:.L.*]]:
 

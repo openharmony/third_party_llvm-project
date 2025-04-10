@@ -10860,7 +10860,11 @@ SDValue AArch64TargetLowering::LowerBRIND(SDValue Op, SelectionDAG &DAG) const {
   SDValue Key = DAG.getTargetConstant(AArch64PACKey::IA, DL, MVT::i32);
   SDValue AddrDisc = DAG.getRegister(AArch64::XZR, MVT::i64);
 
-  SDNode *BrA = DAG.getMachineNode(AArch64::BRA, DL, MVT::Other,
+ unsigned int Opcode = AArch64::BRA;
+ if (Subtarget->hasPAuthHintOnly())
+   Opcode = AArch64::BRAHintOnly;
+
+  SDNode *BrA = DAG.getMachineNode(Opcode, DL, MVT::Other,
                                    {Dest, Key, Disc, AddrDisc, Chain});
   return SDValue(BrA, 0);
 }
@@ -10903,7 +10907,7 @@ SDValue AArch64TargetLowering::LowerBlockAddress(SDValue Op,
     SDNode *MOV =
         DAG.getMachineNode(AArch64::MOVaddrPAC, DL, {MVT::Other, MVT::Glue},
                            {TargetBA, Key, AddrDisc, Disc});
-    return DAG.getCopyFromReg(SDValue(MOV, 0), DL, AArch64::X16, MVT::i64,
+    return DAG.getCopyFromReg(SDValue(MOV, 0), DL, AArch64::X17, MVT::i64,
                               SDValue(MOV, 1));
   }
 

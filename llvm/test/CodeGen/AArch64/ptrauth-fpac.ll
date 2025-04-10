@@ -9,9 +9,9 @@ target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128"
 define i64 @test_auth_ia(i64 %arg, i64 %arg1) {
 ; ALL-LABEL: test_auth_ia:
 ; ALL:       %bb.0:
-; ALL-NEXT:    mov x16, x0
-; ALL-NEXT:    autia x16, x1
-; ALL-NEXT:    mov x0, x16
+; ALL-NEXT:    mov x17, x0
+; ALL-NEXT:    autia x17, x1
+; ALL-NEXT:    mov x0, x17
 ; ALL-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 0, i64 %arg1)
   ret i64 %tmp
@@ -20,9 +20,9 @@ define i64 @test_auth_ia(i64 %arg, i64 %arg1) {
 define i64 @test_auth_ia_zero(i64 %arg) {
 ; ALL-LABEL: test_auth_ia_zero:
 ; ALL:       %bb.0:
-; ALL-NEXT:    mov x16, x0
-; ALL-NEXT:    autiza x16
-; ALL-NEXT:    mov x0, x16
+; ALL-NEXT:    mov x17, x0
+; ALL-NEXT:    autiza x17
+; ALL-NEXT:    mov x0, x17
 ; ALL-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 0, i64 0)
   ret i64 %tmp
@@ -31,9 +31,9 @@ define i64 @test_auth_ia_zero(i64 %arg) {
 define i64 @test_auth_ib(i64 %arg, i64 %arg1) {
 ; ALL-LABEL: test_auth_ib:
 ; ALL:       %bb.0:
-; ALL-NEXT:    mov x16, x0
-; ALL-NEXT:    autib x16, x1
-; ALL-NEXT:    mov x0, x16
+; ALL-NEXT:    mov x17, x0
+; ALL-NEXT:    autib x17, x1
+; ALL-NEXT:    mov x0, x17
 ; ALL-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 1, i64 %arg1)
   ret i64 %tmp
@@ -42,9 +42,9 @@ define i64 @test_auth_ib(i64 %arg, i64 %arg1) {
 define i64 @test_auth_ib_zero(i64 %arg) {
 ; ALL-LABEL: test_auth_ib_zero:
 ; ALL:       %bb.0:
-; ALL-NEXT:    mov x16, x0
-; ALL-NEXT:    autizb x16
-; ALL-NEXT:    mov x0, x16
+; ALL-NEXT:    mov x17, x0
+; ALL-NEXT:    autizb x17
+; ALL-NEXT:    mov x0, x17
 ; ALL-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 1, i64 0)
   ret i64 %tmp
@@ -53,9 +53,9 @@ define i64 @test_auth_ib_zero(i64 %arg) {
 define i64 @test_auth_da(i64 %arg, i64 %arg1) {
 ; ALL-LABEL: test_auth_da:
 ; ALL:       %bb.0:
-; ALL-NEXT:    mov x16, x0
-; ALL-NEXT:    autda x16, x1
-; ALL-NEXT:    mov x0, x16
+; ALL-NEXT:    mov x17, x0
+; ALL-NEXT:    autda x17, x1
+; ALL-NEXT:    mov x0, x17
 ; ALL-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 2, i64 %arg1)
   ret i64 %tmp
@@ -64,9 +64,9 @@ define i64 @test_auth_da(i64 %arg, i64 %arg1) {
 define i64 @test_auth_da_zero(i64 %arg) {
 ; ALL-LABEL: test_auth_da_zero:
 ; ALL:       %bb.0:
-; ALL-NEXT:    mov x16, x0
-; ALL-NEXT:    autdza x16
-; ALL-NEXT:    mov x0, x16
+; ALL-NEXT:    mov x17, x0
+; ALL-NEXT:    autdza x17
+; ALL-NEXT:    mov x0, x17
 ; ALL-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 2, i64 0)
   ret i64 %tmp
@@ -75,9 +75,9 @@ define i64 @test_auth_da_zero(i64 %arg) {
 define i64 @test_auth_db(i64 %arg, i64 %arg1) {
 ; ALL-LABEL: test_auth_db:
 ; ALL:       %bb.0:
-; ALL-NEXT:    mov x16, x0
-; ALL-NEXT:    autdb x16, x1
-; ALL-NEXT:    mov x0, x16
+; ALL-NEXT:    mov x17, x0
+; ALL-NEXT:    autdb x17, x1
+; ALL-NEXT:    mov x0, x17
 ; ALL-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 3, i64 %arg1)
   ret i64 %tmp
@@ -86,9 +86,9 @@ define i64 @test_auth_db(i64 %arg, i64 %arg1) {
 define i64 @test_auth_db_zero(i64 %arg) {
 ; ALL-LABEL: test_auth_db_zero:
 ; ALL:       %bb.0:
-; ALL-NEXT:    mov x16, x0
-; ALL-NEXT:    autdzb x16
-; ALL-NEXT:    mov x0, x16
+; ALL-NEXT:    mov x17, x0
+; ALL-NEXT:    autdzb x17
+; ALL-NEXT:    mov x0, x17
 ; ALL-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 3, i64 0)
   ret i64 %tmp
@@ -99,26 +99,26 @@ define i64 @test_auth_db_zero(i64 %arg) {
 define i64 @test_resign_ia_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_ia_ia:
 ; NOFPAC:       %bb.0:
-; NOFPAC-NEXT:    mov x16, x0
-; NOFPAC-NEXT:    autia x16, x1
-; NOFPAC-NEXT:    mov x17, x16
-; NOFPAC-NEXT:    xpaci x17
-; NOFPAC-NEXT:    cmp x16, x17
-; NOFPAC-NEXT:    b.eq [[L]]auth_success_0
+; NOFPAC-NEXT:    mov x17, x0
+; NOFPAC-NEXT:    autia x17, x1
 ; NOFPAC-NEXT:    mov x16, x17
+; NOFPAC-NEXT:    xpaci x16
+; NOFPAC-NEXT:    cmp x17, x16
+; NOFPAC-NEXT:    b.eq [[L]]auth_success_0
+; NOFPAC-NEXT:    mov x17, x16
 ; NOFPAC-NEXT:    b [[L]]resign_end_0
 ; NOFPAC-NEXT:  Lauth_success_0:
-; NOFPAC-NEXT:    pacia x16, x2
+; NOFPAC-NEXT:    pacia x17, x2
 ; NOFPAC-NEXT:  Lresign_end_0:
-; NOFPAC-NEXT:    mov x0, x16
+; NOFPAC-NEXT:    mov x0, x17
 ; NOFPAC-NEXT:    ret
 ;
 ; FPAC-LABEL: test_resign_ia_ia:
 ; FPAC:       %bb.0:
-; FPAC-NEXT:    mov x16, x0
-; FPAC-NEXT:    autia x16, x1
-; FPAC-NEXT:    pacia x16, x2
-; FPAC-NEXT:    mov x0, x16
+; FPAC-NEXT:    mov x17, x0
+; FPAC-NEXT:    autia x17, x1
+; FPAC-NEXT:    pacia x17, x2
+; FPAC-NEXT:    mov x0, x17
 ; FPAC-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 0, i64 %arg1, i32 0, i64 %arg2)
   ret i64 %tmp
@@ -127,26 +127,26 @@ define i64 @test_resign_ia_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 define i64 @test_resign_ib_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_ib_ia:
 ; NOFPAC:       %bb.0:
-; NOFPAC-NEXT:    mov x16, x0
-; NOFPAC-NEXT:    autib x16, x1
-; NOFPAC-NEXT:    mov x17, x16
-; NOFPAC-NEXT:    xpaci x17
-; NOFPAC-NEXT:    cmp x16, x17
-; NOFPAC-NEXT:    b.eq [[L]]auth_success_1
+; NOFPAC-NEXT:    mov x17, x0
+; NOFPAC-NEXT:    autib x17, x1
 ; NOFPAC-NEXT:    mov x16, x17
+; NOFPAC-NEXT:    xpaci x16
+; NOFPAC-NEXT:    cmp x17, x16
+; NOFPAC-NEXT:    b.eq [[L]]auth_success_1
+; NOFPAC-NEXT:    mov x17, x16
 ; NOFPAC-NEXT:    b [[L]]resign_end_1
 ; NOFPAC-NEXT:  Lauth_success_1:
-; NOFPAC-NEXT:    pacia x16, x2
+; NOFPAC-NEXT:    pacia x17, x2
 ; NOFPAC-NEXT:  Lresign_end_1:
-; NOFPAC-NEXT:    mov x0, x16
+; NOFPAC-NEXT:    mov x0, x17
 ; NOFPAC-NEXT:    ret
 ;
 ; FPAC-LABEL: test_resign_ib_ia:
 ; FPAC:       %bb.0:
-; FPAC-NEXT:    mov x16, x0
-; FPAC-NEXT:    autib x16, x1
-; FPAC-NEXT:    pacia x16, x2
-; FPAC-NEXT:    mov x0, x16
+; FPAC-NEXT:    mov x17, x0
+; FPAC-NEXT:    autib x17, x1
+; FPAC-NEXT:    pacia x17, x2
+; FPAC-NEXT:    mov x0, x17
 ; FPAC-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 1, i64 %arg1, i32 0, i64 %arg2)
   ret i64 %tmp
@@ -155,26 +155,26 @@ define i64 @test_resign_ib_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 define i64 @test_resign_da_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_da_ia:
 ; NOFPAC:       %bb.0:
-; NOFPAC-NEXT:    mov x16, x0
-; NOFPAC-NEXT:    autda x16, x1
-; NOFPAC-NEXT:    mov x17, x16
-; NOFPAC-NEXT:    xpacd x17
-; NOFPAC-NEXT:    cmp x16, x17
-; NOFPAC-NEXT:    b.eq [[L]]auth_success_2
+; NOFPAC-NEXT:    mov x17, x0
+; NOFPAC-NEXT:    autda x17, x1
 ; NOFPAC-NEXT:    mov x16, x17
+; NOFPAC-NEXT:    xpacd x16
+; NOFPAC-NEXT:    cmp x17, x16
+; NOFPAC-NEXT:    b.eq [[L]]auth_success_2
+; NOFPAC-NEXT:    mov x17, x16
 ; NOFPAC-NEXT:    b [[L]]resign_end_2
 ; NOFPAC-NEXT:  Lauth_success_2:
-; NOFPAC-NEXT:    pacia x16, x2
+; NOFPAC-NEXT:    pacia x17, x2
 ; NOFPAC-NEXT:  Lresign_end_2:
-; NOFPAC-NEXT:    mov x0, x16
+; NOFPAC-NEXT:    mov x0, x17
 ; NOFPAC-NEXT:    ret
 ;
 ; FPAC-LABEL: test_resign_da_ia:
 ; FPAC:       %bb.0:
-; FPAC-NEXT:    mov x16, x0
-; FPAC-NEXT:    autda x16, x1
-; FPAC-NEXT:    pacia x16, x2
-; FPAC-NEXT:    mov x0, x16
+; FPAC-NEXT:    mov x17, x0
+; FPAC-NEXT:    autda x17, x1
+; FPAC-NEXT:    pacia x17, x2
+; FPAC-NEXT:    mov x0, x17
 ; FPAC-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %arg1, i32 0, i64 %arg2)
   ret i64 %tmp
@@ -183,26 +183,26 @@ define i64 @test_resign_da_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 define i64 @test_resign_db_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_db_ia:
 ; NOFPAC:       %bb.0:
-; NOFPAC-NEXT:    mov x16, x0
-; NOFPAC-NEXT:    autdb x16, x1
-; NOFPAC-NEXT:    mov x17, x16
-; NOFPAC-NEXT:    xpacd x17
-; NOFPAC-NEXT:    cmp x16, x17
-; NOFPAC-NEXT:    b.eq [[L]]auth_success_3
+; NOFPAC-NEXT:    mov x17, x0
+; NOFPAC-NEXT:    autdb x17, x1
 ; NOFPAC-NEXT:    mov x16, x17
+; NOFPAC-NEXT:    xpacd x16
+; NOFPAC-NEXT:    cmp x17, x16
+; NOFPAC-NEXT:    b.eq [[L]]auth_success_3
+; NOFPAC-NEXT:    mov x17, x16
 ; NOFPAC-NEXT:    b [[L]]resign_end_3
 ; NOFPAC-NEXT:  Lauth_success_3:
-; NOFPAC-NEXT:    pacia x16, x2
+; NOFPAC-NEXT:    pacia x17, x2
 ; NOFPAC-NEXT:  Lresign_end_3:
-; NOFPAC-NEXT:    mov x0, x16
+; NOFPAC-NEXT:    mov x0, x17
 ; NOFPAC-NEXT:    ret
 ;
 ; FPAC-LABEL: test_resign_db_ia:
 ; FPAC:       %bb.0:
-; FPAC-NEXT:    mov x16, x0
-; FPAC-NEXT:    autdb x16, x1
-; FPAC-NEXT:    pacia x16, x2
-; FPAC-NEXT:    mov x0, x16
+; FPAC-NEXT:    mov x17, x0
+; FPAC-NEXT:    autdb x17, x1
+; FPAC-NEXT:    pacia x17, x2
+; FPAC-NEXT:    mov x0, x17
 ; FPAC-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 3, i64 %arg1, i32 0, i64 %arg2)
   ret i64 %tmp
@@ -211,26 +211,26 @@ define i64 @test_resign_db_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 define i64 @test_resign_db_ib(i64 %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_db_ib:
 ; NOFPAC:       %bb.0:
-; NOFPAC-NEXT:    mov x16, x0
-; NOFPAC-NEXT:    autdb x16, x1
-; NOFPAC-NEXT:    mov x17, x16
-; NOFPAC-NEXT:    xpacd x17
-; NOFPAC-NEXT:    cmp x16, x17
-; NOFPAC-NEXT:    b.eq [[L]]auth_success_4
+; NOFPAC-NEXT:    mov x17, x0
+; NOFPAC-NEXT:    autdb x17, x1
 ; NOFPAC-NEXT:    mov x16, x17
+; NOFPAC-NEXT:    xpacd x16
+; NOFPAC-NEXT:    cmp x17, x16
+; NOFPAC-NEXT:    b.eq [[L]]auth_success_4
+; NOFPAC-NEXT:    mov x17, x16
 ; NOFPAC-NEXT:    b [[L]]resign_end_4
 ; NOFPAC-NEXT:  Lauth_success_4:
-; NOFPAC-NEXT:    pacib x16, x2
+; NOFPAC-NEXT:    pacib x17, x2
 ; NOFPAC-NEXT:  Lresign_end_4:
-; NOFPAC-NEXT:    mov x0, x16
+; NOFPAC-NEXT:    mov x0, x17
 ; NOFPAC-NEXT:    ret
 ;
 ; FPAC-LABEL: test_resign_db_ib:
 ; FPAC:       %bb.0:
-; FPAC-NEXT:    mov x16, x0
-; FPAC-NEXT:    autdb x16, x1
-; FPAC-NEXT:    pacib x16, x2
-; FPAC-NEXT:    mov x0, x16
+; FPAC-NEXT:    mov x17, x0
+; FPAC-NEXT:    autdb x17, x1
+; FPAC-NEXT:    pacib x17, x2
+; FPAC-NEXT:    mov x0, x17
 ; FPAC-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 3, i64 %arg1, i32 1, i64 %arg2)
   ret i64 %tmp
@@ -239,26 +239,26 @@ define i64 @test_resign_db_ib(i64 %arg, i64 %arg1, i64 %arg2) {
 define i64 @test_resign_db_da(i64 %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_db_da:
 ; NOFPAC:       %bb.0:
-; NOFPAC-NEXT:    mov x16, x0
-; NOFPAC-NEXT:    autdb x16, x1
-; NOFPAC-NEXT:    mov x17, x16
-; NOFPAC-NEXT:    xpacd x17
-; NOFPAC-NEXT:    cmp x16, x17
-; NOFPAC-NEXT:    b.eq [[L]]auth_success_5
+; NOFPAC-NEXT:    mov x17, x0
+; NOFPAC-NEXT:    autdb x17, x1
 ; NOFPAC-NEXT:    mov x16, x17
+; NOFPAC-NEXT:    xpacd x16
+; NOFPAC-NEXT:    cmp x17, x16
+; NOFPAC-NEXT:    b.eq [[L]]auth_success_5
+; NOFPAC-NEXT:    mov x17, x16
 ; NOFPAC-NEXT:    b [[L]]resign_end_5
 ; NOFPAC-NEXT:  Lauth_success_5:
-; NOFPAC-NEXT:    pacda x16, x2
+; NOFPAC-NEXT:    pacda x17, x2
 ; NOFPAC-NEXT:  Lresign_end_5:
-; NOFPAC-NEXT:    mov x0, x16
+; NOFPAC-NEXT:    mov x0, x17
 ; NOFPAC-NEXT:    ret
 ;
 ; FPAC-LABEL: test_resign_db_da:
 ; FPAC:       %bb.0:
-; FPAC-NEXT:    mov x16, x0
-; FPAC-NEXT:    autdb x16, x1
-; FPAC-NEXT:    pacda x16, x2
-; FPAC-NEXT:    mov x0, x16
+; FPAC-NEXT:    mov x17, x0
+; FPAC-NEXT:    autdb x17, x1
+; FPAC-NEXT:    pacda x17, x2
+; FPAC-NEXT:    mov x0, x17
 ; FPAC-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 3, i64 %arg1, i32 2, i64 %arg2)
   ret i64 %tmp
@@ -267,26 +267,26 @@ define i64 @test_resign_db_da(i64 %arg, i64 %arg1, i64 %arg2) {
 define i64 @test_resign_db_db(i64 %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_db_db:
 ; NOFPAC:       %bb.0:
-; NOFPAC-NEXT:    mov x16, x0
-; NOFPAC-NEXT:    autdb x16, x1
-; NOFPAC-NEXT:    mov x17, x16
-; NOFPAC-NEXT:    xpacd x17
-; NOFPAC-NEXT:    cmp x16, x17
-; NOFPAC-NEXT:    b.eq [[L]]auth_success_6
+; NOFPAC-NEXT:    mov x17, x0
+; NOFPAC-NEXT:    autdb x17, x1
 ; NOFPAC-NEXT:    mov x16, x17
+; NOFPAC-NEXT:    xpacd x16
+; NOFPAC-NEXT:    cmp x17, x16
+; NOFPAC-NEXT:    b.eq [[L]]auth_success_6
+; NOFPAC-NEXT:    mov x17, x16
 ; NOFPAC-NEXT:    b [[L]]resign_end_6
 ; NOFPAC-NEXT:  Lauth_success_6:
-; NOFPAC-NEXT:    pacdb x16, x2
+; NOFPAC-NEXT:    pacdb x17, x2
 ; NOFPAC-NEXT:  Lresign_end_6:
-; NOFPAC-NEXT:    mov x0, x16
+; NOFPAC-NEXT:    mov x0, x17
 ; NOFPAC-NEXT:    ret
 ;
 ; FPAC-LABEL: test_resign_db_db:
 ; FPAC:       %bb.0:
-; FPAC-NEXT:    mov x16, x0
-; FPAC-NEXT:    autdb x16, x1
-; FPAC-NEXT:    pacdb x16, x2
-; FPAC-NEXT:    mov x0, x16
+; FPAC-NEXT:    mov x17, x0
+; FPAC-NEXT:    autdb x17, x1
+; FPAC-NEXT:    pacdb x17, x2
+; FPAC-NEXT:    mov x0, x17
 ; FPAC-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 3, i64 %arg1, i32 3, i64 %arg2)
   ret i64 %tmp
@@ -295,26 +295,26 @@ define i64 @test_resign_db_db(i64 %arg, i64 %arg1, i64 %arg2) {
 define i64 @test_resign_iza_db(i64 %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_iza_db:
 ; NOFPAC:       %bb.0:
-; NOFPAC-NEXT:    mov x16, x0
-; NOFPAC-NEXT:    autiza x16
-; NOFPAC-NEXT:    mov x17, x16
-; NOFPAC-NEXT:    xpaci x17
-; NOFPAC-NEXT:    cmp x16, x17
-; NOFPAC-NEXT:    b.eq [[L]]auth_success_7
+; NOFPAC-NEXT:    mov x17, x0
+; NOFPAC-NEXT:    autiza x17
 ; NOFPAC-NEXT:    mov x16, x17
+; NOFPAC-NEXT:    xpaci x16
+; NOFPAC-NEXT:    cmp x17, x16
+; NOFPAC-NEXT:    b.eq [[L]]auth_success_7
+; NOFPAC-NEXT:    mov x17, x16
 ; NOFPAC-NEXT:    b [[L]]resign_end_7
 ; NOFPAC-NEXT:  Lauth_success_7:
-; NOFPAC-NEXT:    pacdb x16, x2
+; NOFPAC-NEXT:    pacdb x17, x2
 ; NOFPAC-NEXT:  Lresign_end_7:
-; NOFPAC-NEXT:    mov x0, x16
+; NOFPAC-NEXT:    mov x0, x17
 ; NOFPAC-NEXT:    ret
 ;
 ; FPAC-LABEL: test_resign_iza_db:
 ; FPAC:       %bb.0:
-; FPAC-NEXT:    mov x16, x0
-; FPAC-NEXT:    autiza x16
-; FPAC-NEXT:    pacdb x16, x2
-; FPAC-NEXT:    mov x0, x16
+; FPAC-NEXT:    mov x17, x0
+; FPAC-NEXT:    autiza x17
+; FPAC-NEXT:    pacdb x17, x2
+; FPAC-NEXT:    mov x0, x17
 ; FPAC-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 0, i64 0, i32 3, i64 %arg2)
   ret i64 %tmp
@@ -323,26 +323,26 @@ define i64 @test_resign_iza_db(i64 %arg, i64 %arg1, i64 %arg2) {
 define i64 @test_resign_da_dzb(i64 %arg, i64 %arg1, i64 %arg2) {
 ; NOFPAC-LABEL: test_resign_da_dzb:
 ; NOFPAC:       %bb.0:
-; NOFPAC-NEXT:    mov x16, x0
-; NOFPAC-NEXT:    autda x16, x1
-; NOFPAC-NEXT:    mov x17, x16
-; NOFPAC-NEXT:    xpacd x17
-; NOFPAC-NEXT:    cmp x16, x17
-; NOFPAC-NEXT:    b.eq [[L]]auth_success_8
+; NOFPAC-NEXT:    mov x17, x0
+; NOFPAC-NEXT:    autda x17, x1
 ; NOFPAC-NEXT:    mov x16, x17
+; NOFPAC-NEXT:    xpacd x16
+; NOFPAC-NEXT:    cmp x17, x16
+; NOFPAC-NEXT:    b.eq [[L]]auth_success_8
+; NOFPAC-NEXT:    mov x17, x16
 ; NOFPAC-NEXT:    b [[L]]resign_end_8
 ; NOFPAC-NEXT:  Lauth_success_8:
-; NOFPAC-NEXT:    pacdzb x16
+; NOFPAC-NEXT:    pacdzb x17
 ; NOFPAC-NEXT:  Lresign_end_8:
-; NOFPAC-NEXT:    mov x0, x16
+; NOFPAC-NEXT:    mov x0, x17
 ; NOFPAC-NEXT:    ret
 ;
 ; FPAC-LABEL: test_resign_da_dzb:
 ; FPAC:       %bb.0:
-; FPAC-NEXT:    mov x16, x0
-; FPAC-NEXT:    autda x16, x1
-; FPAC-NEXT:    pacdzb x16
-; FPAC-NEXT:    mov x0, x16
+; FPAC-NEXT:    mov x17, x0
+; FPAC-NEXT:    autda x17, x1
+; FPAC-NEXT:    pacdzb x17
+; FPAC-NEXT:    mov x0, x17
 ; FPAC-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.resign(i64 %arg, i32 2, i64 %arg1, i32 3, i64 0)
   ret i64 %tmp
@@ -351,22 +351,22 @@ define i64 @test_resign_da_dzb(i64 %arg, i64 %arg1, i64 %arg2) {
 define i64 @test_auth_trap_attribute(i64 %arg, i64 %arg1) "ptrauth-auth-traps" {
 ; NOFPAC-LABEL: test_auth_trap_attribute:
 ; NOFPAC:       %bb.0:
-; NOFPAC-NEXT:    mov x16, x0
-; NOFPAC-NEXT:    autia x16, x1
-; NOFPAC-NEXT:    mov x17, x16
-; NOFPAC-NEXT:    xpaci x17
-; NOFPAC-NEXT:    cmp x16, x17
+; NOFPAC-NEXT:    mov x17, x0
+; NOFPAC-NEXT:    autia x17, x1
+; NOFPAC-NEXT:    mov x16, x17
+; NOFPAC-NEXT:    xpaci x16
+; NOFPAC-NEXT:    cmp x17, x16
 ; NOFPAC-NEXT:    b.eq [[L]]auth_success_9
 ; NOFPAC-NEXT:    brk #0xc470
 ; NOFPAC-NEXT:  Lauth_success_9:
-; NOFPAC-NEXT:    mov x0, x16
+; NOFPAC-NEXT:    mov x0, x17
 ; NOFPAC-NEXT:    ret
 ;
 ; FPAC-LABEL: test_auth_trap_attribute:
 ; FPAC:       %bb.0:
-; FPAC-NEXT:    mov x16, x0
-; FPAC-NEXT:    autia x16, x1
-; FPAC-NEXT:    mov x0, x16
+; FPAC-NEXT:    mov x17, x0
+; FPAC-NEXT:    autia x17, x1
+; FPAC-NEXT:    mov x0, x17
 ; FPAC-NEXT:    ret
   %tmp = call i64 @llvm.ptrauth.auth(i64 %arg, i32 0, i64 %arg1)
   ret i64 %tmp
