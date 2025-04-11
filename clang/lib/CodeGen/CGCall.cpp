@@ -5009,14 +5009,7 @@ static unsigned getMaxVectorWidth(const llvm::Type *Ty) {
 }
 
 static bool isNoPacFunction(const FunctionDecl *FD) {
- if (FD->hasAttr<NopacAttr>()) return true;
-
- if (FD->getReturnType().getQualifiers().hasNopac()) return true;
-
- for (auto *PD: FD->parameters())
-  if (PD->hasAttr<NopacAttr>()) return true;
-
- return false;
+  return FD->isNoPac();
 }
 
 RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,

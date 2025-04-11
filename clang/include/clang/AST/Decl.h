@@ -1985,6 +1985,8 @@ public:
     void setDeletedMessage(StringLiteral *Message);
   };
 
+  bool isNoPac() const;
+
 private:
   /// A new[]'d array of pointers to VarDecls for the formal
   /// parameters of this function.  This is null if a prototype or if there are

@@ -5399,6 +5399,17 @@ FunctionDecl::Create(ASTContext &C, DeclContext *DC, SourceLocation StartLoc,
   return New;
 }
 
+bool FunctionDecl::isNoPac() const {
+  if (hasAttr<NopacAttr>()) return true;
+
+  if (getReturnType().getQualifiers().hasNopac()) return true;
+
+  for (auto *PD: parameters())
+    if (PD->hasAttr<NopacAttr>()) return true;
+
+  return false;
+}
+
 FunctionDecl *FunctionDecl::CreateDeserialized(ASTContext &C, GlobalDeclID ID) {
   return new (C, ID) FunctionDecl(
       Function, C, nullptr, SourceLocation(), DeclarationNameInfo(), QualType(),
