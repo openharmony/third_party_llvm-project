@@ -842,14 +842,14 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
   CalleePtr->addIncoming(NonVirtualFn, FnNonVirtual);
 
   CGPointerAuthInfo PointerAuth;
-  bool NoPac = MPT->getClass()->getAsCXXRecordDecl()->hasAttr<NopacAttr>();
+  bool NoPac = MPT->getClass()->getAsCXXRecordDecl()->isNoPac();
   if (!NoPac) {
     if (const auto &Schema =
             CGM.getCodeGenOpts().PointerAuth.CXXMemberFunctionPointers) {
       llvm::PHINode *DiscriminatorPHI = Builder.CreatePHI(CGF.IntPtrTy, 2);
       DiscriminatorPHI->addIncoming(llvm::ConstantInt::get(CGF.IntPtrTy, 0),
                                     FnVirtual);
-      const bool NoPac = RD->hasAttr<NopacAttr>();
+      const bool NoPac = RD->isNoPac();
       const auto &AuthInfo =
           CGM.getMemberFunctionPointerAuthInfo(QualType(MPT, 0), NoPac);
       assert(Schema.getKey() == AuthInfo.getKey() &&
@@ -943,7 +943,7 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
   assert(destTy != nullptr && "destTy is nullptr");
   auto *RD = destTy->getMostRecentCXXRecordDecl();
   assert(RD != nullptr && "RD is nullptr");
-  const bool NoPac = RD->hasAttr<NopacAttr>();
+  const bool NoPac = RD->isNoPac();
 
   if (DstType->isMemberFunctionPointerType()) {
     if (const auto &NewAuthInfo =
@@ -1069,7 +1069,7 @@ ItaniumCXXABI::EmitMemberPointerConversion(const CastExpr *E,
   assert(destTy != nullptr && "destTy is nullptr");
   auto *RD = destTy->getMostRecentCXXRecordDecl();
   assert(RD != nullptr && "RD is nullptr");
-  const bool NoPac = RD->hasAttr<NopacAttr>();
+  const bool NoPac = RD->isNoPac();
   QualType DstType = E->getType();
 
   if (DstType->isMemberFunctionPointerType())
@@ -1188,7 +1188,7 @@ llvm::Constant *ItaniumCXXABI::BuildMemberPointer(const CXXMethodDecl *MD,
       const auto &Schema =
           CGM.getCodeGenOpts().PointerAuth.CXXMemberFunctionPointers;
       auto *RD = MD->getParent();
-      bool NoPac = RD->hasAttr<NopacAttr>();
+      bool NoPac = RD->isNoPac();
       if (Schema && !NoPac)
         MemPtr[0] = llvm::ConstantExpr::getPtrToInt(
             getSignedVirtualMemberFunctionPointer(MD), CGM.PtrDiffTy);
@@ -1219,7 +1219,7 @@ llvm::Constant *ItaniumCXXABI::BuildMemberPointer(const CXXMethodDecl *MD,
       // function type is incomplete.
       Ty = CGM.PtrDiffTy;
     }
-    const bool NoPac = MD->getParent()->hasAttr<NopacAttr>();
+    const bool NoPac = MD->getParent()->isNoPac();
     llvm::Constant *addr = CGM.getMemberFunctionPointer(MD, Ty, NoPac);
 
     MemPtr[0] = llvm::ConstantExpr::getPtrToInt(addr, CGM.PtrDiffTy);
@@ -1244,7 +1244,7 @@ llvm::Constant *ItaniumCXXABI::EmitMemberPointer(const APValue &MP,
     llvm::Constant *Src = BuildMemberPointer(MD, ThisAdjustment);
     QualType SrcType = getContext().getMemberPointerType(
         MD->getType(), MD->getParent()->getTypeForDecl());
-    const bool NoPac = MD->getParent()->hasAttr<NopacAttr>();
+    const bool NoPac = MD->getParent()->isNoPac();
     return pointerAuthResignMemberFunctionPointer(Src, MPType, SrcType, CGM,
                                                   NoPac, NoPac);
   }
@@ -2150,7 +2150,7 @@ llvm::Value *ItaniumCXXABI::getVTableAddressPointInStructorWithVTT(
       CGF.Builder.CreateAlignedLoad(CGF.GlobalsVoidPtrTy, VTT,
                                     CGF.getPointerAlign());
 
-  bool NoPac = VTableClass->hasAttr<NopacAttr>();
+  bool NoPac = VTableClass->isNoPac();
   // Sanity check: Base classes should also be NoPac if the derived class is.
   // NoPac |= Base.getBase()->hasAttr<NopacAttr>();
   if (NoPac)
@@ -2219,7 +2219,7 @@ CGCallee ItaniumCXXABI::getVirtualFunctionPointer(CodeGenFunction &CGF,
   auto &Schema = CGM.getCodeGenOpts().PointerAuth.CXXVirtualFunctionPointers;
   auto *RD = MethodDecl->getParent();
 
-  bool nopac = RD->hasAttr<NopacAttr>();
+  bool nopac = RD->isNoPac();
 
   if ((!Schema || nopac) && CGF.ShouldEmitVTableTypeCheckedLoad(MethodDecl->getParent())) {
     VFunc = CGF.EmitVTableTypeCheckedLoad(
@@ -5143,7 +5143,7 @@ ItaniumCXXABI::getSignedVirtualMemberFunctionPointer(const CXXMethodDecl *MD) {
   llvm::Constant *thunk = getOrCreateVirtualFunctionPointerThunk(origMD);
   QualType funcType = CGM.getContext().getMemberPointerType(
       MD->getType(), MD->getParent()->getTypeForDecl());
-  const bool NoPac = MD->getParent()->hasAttr<NopacAttr>();
+  const bool NoPac = MD->getParent()->isNoPac();
   return CGM.getMemberFunctionPointer(thunk, funcType, NoPac);
 }
 

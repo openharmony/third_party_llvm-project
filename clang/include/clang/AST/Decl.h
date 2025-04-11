@@ -1109,6 +1109,8 @@ public:
 
   static VarDecl *CreateDeserialized(ASTContext &C, GlobalDeclID ID);
 
+  bool isNoPac() const;
+
   SourceRange getSourceRange() const override LLVM_READONLY;
 
   /// Returns the storage class as written in the source. For the

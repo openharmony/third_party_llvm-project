@@ -90,7 +90,7 @@ CodeGenVTables::EmitVTTDefinition(llvm::GlobalVariable *VTT,
      llvm::Constant *Init = llvm::ConstantExpr::getGetElementPtr(
          VTable->getValueType(), VTable, Idxs, /*InBounds=*/true, InRange);
 
-     if (!RD->hasAttr<NopacAttr>())
+     if (!RD->isNoPac())
        if (const auto &Schema =
                CGM.getCodeGenOpts().PointerAuth.CXXVTTVTablePointers)
          Init = CGM.getConstantSignedPointer(Init, Schema, nullptr, GlobalDecl(),

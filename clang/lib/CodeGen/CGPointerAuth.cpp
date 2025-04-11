@@ -404,7 +404,7 @@ llvm::Constant *CodeGenModule::getMemberFunctionPointer(const FunctionDecl *FD,
 std::optional<PointerAuthQualifier>
 CodeGenModule::computeVTPointerAuthentication(const CXXRecordDecl *ThisClass) {
   auto DefaultAuthentication = getCodeGenOpts().PointerAuth.CXXVTablePointers;
-  if (!DefaultAuthentication || ThisClass->hasAttr<NopacAttr>())
+  if (!DefaultAuthentication || ThisClass->isNoPac())
     return std::nullopt;
   const CXXRecordDecl *PrimaryBase =
       Context.baseForVTableAuthentication(ThisClass);
@@ -483,27 +483,12 @@ CodeGenModule::getVTablePointerAuthentication(const CXXRecordDecl *Record) {
   return Authentication;
 }
 
-static bool isNoPacClass(const CXXRecordDecl *Record) {
-
-  if(Record->hasAttr<NopacAttr>())
-    return true;
-
-  if(const ClassTemplateSpecializationDecl *A = dyn_cast<const ClassTemplateSpecializationDecl>(Record))
-  {
-    ClassTemplateDecl *T = 	A->getSpecializedTemplate();
-    return T && T->hasAttr<NopacAttr>();
-  }
-  return false;
- }
-
 std::optional<CGPointerAuthInfo>
 CodeGenModule::getVTablePointerAuthInfo(CodeGenFunction *CGF,
                                         const CXXRecordDecl *Record,
                                         llvm::Value *StorageAddress) {
   // viorel: changed the test to include possible template instantiation.
-  // bool NoPac = Record->hasAttr<NopacAttr>();
-  bool NoPac = isNoPacClass(Record);
-
+  bool NoPac = Record->isNoPac();
   if (NoPac)
     return std::nullopt;
 

@@ -2583,7 +2583,7 @@ void CodeGenFunction::EmitParmDecl(const VarDecl &D, ParamValue Arg,
     Arg.getAnyValue()->setName(D.getName());
 
   QualType Ty = D.getType();
-  bool isNopac = D.hasAttr<NopacAttr>() || Ty.getQualifiers().hasNopac();
+  bool isNopac = D.isNoPac();
 
   // Use better IR generation for certain implicit parameters.
   if (auto IPD = dyn_cast<ImplicitParamDecl>(&D)) {

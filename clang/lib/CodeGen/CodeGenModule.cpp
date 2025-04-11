@@ -5484,7 +5484,7 @@ void CodeGenModule::EmitGlobalVarDefinition(const VarDecl *D,
       }
     } else {
         const auto *CPA = dyn_cast<llvm::ConstantPtrAuth>(Initializer);
-        if (CPA && D->hasAttr<NopacAttr>()) {
+        if (CPA && D->isNoPac()) {
           Init = CPA->getPointer();
         } else {
           Init = Initializer;

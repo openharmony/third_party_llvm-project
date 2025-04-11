@@ -742,7 +742,7 @@ static bool isInNoPacClass(GlobalDecl &GD) {
   if (!MD)
 	return false;
   const CXXRecordDecl *RD = MD->getParent();
-  return RD->hasAttr<NopacAttr>();
+  return RD->isNoPac();
 }
 
 void CodeGenVTables::addVTableComponent(ConstantArrayBuilder &builder,
