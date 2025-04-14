@@ -4,13 +4,6 @@
 // RUN: %clang_cc1                                                -triple aarch64-linux-gnu -fptrauth-calls -fcxx-exceptions -emit-llvm %s -o - | FileCheck %s --check-prefix=CHECK
 // RUN: %clang_cc1 -fptrauth-function-pointer-type-discrimination -triple aarch64-linux-gnu -fptrauth-calls -fcxx-exceptions -emit-llvm %s -o - | FileCheck %s --check-prefix=CHECKDISC
 
-// XFAIL: *
-
-/*
- * NOTE: This is currently disabled because the NoPac feature unconditionally disables passing
- *       signed pointers to the unwinder.
-*/
-
 class Foo {
  public:
   ~Foo() {

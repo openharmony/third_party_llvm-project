@@ -24,13 +24,6 @@
 // RUN:   -fptrauth-function-pointer-type-discrimination -fno-use-cxa-atexit \
 // RUN:  | FileCheck %s --check-prefixes=ATEXIT_DISC,ATEXIT_DISC_ELF
 
-// XFAIL: *
-
-/*
- * NOTE: This is currently disabled because the NoPac feature unconditionally disbles
- *       passing signed pointers to __cxa_atexit or atexit.
-*/
-
 class Foo {
  public:
   ~Foo() {

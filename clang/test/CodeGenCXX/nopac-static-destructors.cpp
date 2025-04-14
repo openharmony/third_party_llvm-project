@@ -20,13 +20,13 @@ class __attribute__((nopac)) Foo {
 Foo global;
 
 // CXAATEXIT: define internal void @__cxx_global_var_init()
-// CXAATEXIT:   call i32 @__cxa_atexit(ptr @_ZN3FooD1Ev, ptr @global, ptr @__dso_handle)
+// CXAATEXIT:   call i32 @__cxa_atexit(ptr ptrauth (ptr @_ZN3FooD1Ev, i32 0), ptr @global, ptr @__dso_handle)
 
 // CXAATEXIT_DISC: define internal void @__cxx_global_var_init()
-// CXAATEXIT_DISC:   call i32 @__cxa_atexit(ptr @_ZN3FooD1Ev, ptr @global, ptr @__dso_handle)
+// CXAATEXIT_DISC:   call i32 @__cxa_atexit(ptr ptrauth (ptr @_ZN3FooD1Ev, i32 0, i64 10942), ptr @global, ptr @__dso_handle)
 
 // ATEXIT: define internal void @__cxx_global_var_init()
-// ATEXIT:   %{{.*}} = call i32 @atexit(ptr @__dtor_global)
+// ATEXIT:   %{{.*}} = call i32 @atexit(ptr ptrauth (ptr @__dtor_global, i32 0))
 
 // ATEXIT_DARWIN: define internal void @__dtor_global() {{.*}} section "__TEXT,__StaticInit,regular,pure_instructions" {
 // ATEXIT_ELF:    define internal void @__dtor_global() {{.*}} section ".text.startup" {
@@ -34,7 +34,7 @@ Foo global;
 // ATEXIT_ELF:      call void @_ZN3FooD1Ev(ptr @global)
 
 // ATEXIT_DISC: define internal void @__cxx_global_var_init()
-// ATEXIT_DISC:   %{{.*}} = call i32 @atexit(ptr @__dtor_global)
+// ATEXIT_DISC:   %{{.*}} = call i32 @atexit(ptr ptrauth (ptr @__dtor_global, i32 0, i64 10942))
 
 
 // ATEXIT_DISC_DARWIN: define internal void @__dtor_global() {{.*}} section "__TEXT,__StaticInit,regular,pure_instructions" {
