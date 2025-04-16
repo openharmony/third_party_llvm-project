@@ -9,9 +9,14 @@
 
 // CHECK-LABEL: @foo() #[[#ATTR:]]
 
-// CHECK-NOT:  attributes #[[#ATTR]] = { {{.*}} "sign-return-address"
-// CHECK-NOT:  attributes #[[#ATTR]] = { {{.*}} "sign-return-address-key"
 // CHECK-NOT:  attributes #[[#ATTR]] = { {{.*}} "branch-target-enforcement"
+
+// NONE-NOT:  attributes #[[#ATTR]] = { {{.*}} "sign-return-address"
+// NONE-NOT:  attributes #[[#ATTR]] = { {{.*}} "sign-return-address-key"
+
+// ALL:   attributes #[[#ATTR]] = { {{.*}} "sign-return-address"="all"
+// PART:  attributes #[[#ATTR]] = { {{.*}} "sign-return-address"="non-leaf"
+
 
 // Check module attributes
 

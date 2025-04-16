@@ -156,6 +156,13 @@ bool AArch64TargetInfo::validateBranchProtection(StringRef Spec, StringRef,
   else
     BPI.SignKey = LangOptions::SignReturnAddressKeyKind::BKey;
 
+  BPI.SignType =
+      llvm::StringSwitch<LangOptions::SignReturnAddressTypeKind>(PBP.Type)
+          .Case("pac-ret", LangOptions::SignReturnAddressTypeKind::PacRet)
+          .Case("pac-ret-strong",
+                LangOptions::SignReturnAddressTypeKind::PacRetStrong)
+          .Default(LangOptions::SignReturnAddressTypeKind::None);
+
   BPI.BranchTargetEnforcement = PBP.BranchTargetEnforcement;
   return true;
 }
