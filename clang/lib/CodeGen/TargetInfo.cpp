@@ -12361,6 +12361,27 @@ TargetCodeGenInfo::createEnqueuedBlockKernel(CodeGenFunction &CGF,
   return F;
 }
 
+void TargetCodeGenInfo::initBranchProtectionFnAttributes(
+    const TargetInfo::BranchProtectionInfo &BPI, llvm::AttrBuilder &FuncAttrs) {
+  if (BPI.SignReturnAddr == LangOptions::SignReturnAddressScopeKind::None)
+    return;
+  switch (BPI.SignType) {
+  case LangOptions::SignReturnAddressTypeKind::PacRet: {
+    FuncAttrs.addAttribute("sign-return-address", BPI.getSignReturnAddrStr());
+    FuncAttrs.addAttribute("sign-return-address-key", BPI.getSignKeyStr());
+    return;
+  }
+  case clang::LangOptions::SignReturnAddressTypeKind::PacRetStrong: {
+    std::string values =
+        std::string(BPI.getSignReturnAddrStr()) + ";" + BPI.getSignKeyStr();
+    FuncAttrs.addAttribute("sign-return-address-strong", values);
+    return;
+  };
+  default:
+    return;
+  }
+}
+
 /// Create an OpenCL kernel for an enqueued block.
 ///
 /// The type of the first argument (the block literal) is the struct type

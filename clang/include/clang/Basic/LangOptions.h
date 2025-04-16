@@ -324,6 +324,12 @@ public:
     All
   };
 
+  enum class SignReturnAddressTypeKind {
+    None,
+    PacRet,
+    PacRetStrong
+  };
+
   enum class SignReturnAddressKeyKind {
     /// Return address signing uses APIA key.
     AKey,
@@ -563,9 +569,24 @@ public:
     return getSignReturnAddressScope() != SignReturnAddressScopeKind::None;
   }
 
+  /// Check if return address type signing is enabled.
+  bool hasSignReturnAddressType() const {
+    return getSignReturnAddressType() != SignReturnAddressTypeKind::None;
+  }
+
   /// Check if return address signing uses AKey.
   bool isSignReturnAddressWithAKey() const {
     return getSignReturnAddressKey() == SignReturnAddressKeyKind::AKey;
+  }
+
+  /// Check if return address signing uses PacRetStrong.
+  bool isSignReturnAddressTypePacRetStrong() const {
+    return getSignReturnAddressType() == SignReturnAddressTypeKind::PacRetStrong;
+  }
+
+  /// Check if return address signing uses PacRet.
+  bool isSignReturnAddressTypePacRet() const {
+    return getSignReturnAddressType() == SignReturnAddressTypeKind::PacRet;
   }
 
   /// Check if leaf functions are also signed.

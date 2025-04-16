@@ -410,6 +410,12 @@ bool ARMTargetInfo::validateBranchProtection(StringRef Spec, StringRef Arch,
     Err = "b-key";
   BPI.SignKey = LangOptions::SignReturnAddressKeyKind::AKey;
 
+  BPI.SignType =
+      llvm::StringSwitch<LangOptions::SignReturnAddressTypeKind>(PBP.Type)
+          .Case("pac-ret", LangOptions::SignReturnAddressTypeKind::PacRet)
+          .Case("pac-ret-strong",
+                LangOptions::SignReturnAddressTypeKind::PacRetStrong)
+          .Default(LangOptions::SignReturnAddressTypeKind::None);
   BPI.BranchTargetEnforcement = PBP.BranchTargetEnforcement;
   return true;
 }

@@ -434,6 +434,8 @@ ENUM_LANGOPT(SignReturnAddressScope, SignReturnAddressScopeKind, 2, SignReturnAd
              "Scope of return address signing")
 ENUM_LANGOPT(SignReturnAddressKey, SignReturnAddressKeyKind, 1, SignReturnAddressKeyKind::AKey,
              "Key used for return address signing")
+ENUM_LANGOPT(SignReturnAddressType, SignReturnAddressTypeKind, 2,
+             SignReturnAddressTypeKind::None, "Type of return address signing")
 LANGOPT(BranchTargetEnforcement, 1, 0, "Branch-target enforcement enabled")
 
 LANGOPT(SpeculativeLoadHardening, 1, 0, "Speculative load hardening enabled")

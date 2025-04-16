@@ -1977,6 +1977,8 @@ void CodeGenModule::getDefaultFunctionAttributes(StringRef Name,
     std::tie(Var, Value) = Attr.split('=');
     FuncAttrs.addAttribute(Var, Value);
   }
+    TargetInfo::BranchProtectionInfo BPI(LangOpts);
+    TargetCodeGenInfo::initBranchProtectionFnAttributes(BPI, FuncAttrs);
 }
 
 void CodeGenModule::addDefaultFunctionDefinitionAttributes(llvm::Function &F) {
