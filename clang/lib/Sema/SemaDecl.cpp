@@ -3325,6 +3325,28 @@ static bool EquivalentArrayTypes(QualType Old, QualType New,
   return Old == New;
 }
 
+static bool isFuncPtr(QualType T) {
+  return (T->isFunctionPointerType() || T->isMemberFunctionPointerType());
+}
+
+static bool areMergeableNoPac(QualType OldType, QualType NewType) {
+  if (isFuncPtr(OldType) && isFuncPtr(NewType)) {
+    return (OldType.getQualifiers().hasNopac() || NewType.getQualifiers().hasNopac());
+  }
+
+  if (OldType->getAs<PointerType>() &&
+    NewType->getAs<PointerType>()) {
+
+  QualType OldTypePointee = OldType->getPointeeType();
+  QualType NewTypePointee = NewType->getPointeeType();
+  if (OldTypePointee->isAnyPointerType() &&
+    NewTypePointee->isAnyPointerType())
+    return areMergeableNoPac(OldType->getPointeeType(),
+      NewType->getPointeeType());
+  }
+  return false;
+}
+
 static void mergeParamDeclTypes(ParmVarDecl *NewParam,
                                 const ParmVarDecl *OldParam,
                                 Sema &S) {
@@ -3349,6 +3371,10 @@ static void mergeParamDeclTypes(ParmVarDecl *NewParam,
                          NewT, NewT);
       NewParam->setType(NewT);
     }
+  }
+  if (areMergeableNoPac(OldParam->getType(), NewParam->getType())) {
+    bool hasNopac;
+    NewParam->setType(S.Context.getNopacQualType(NewParam->getType(), hasNopac));
   }
   const auto *OldParamDT = dyn_cast<DecayedType>(OldParam->getType());
   const auto *NewParamDT = dyn_cast<DecayedType>(NewParam->getType());
