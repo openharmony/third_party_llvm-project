@@ -692,17 +692,11 @@ class BuildUtils(object):
     def merge_build_dir(self, name, platform_triple, *args):
         return self.merge_out_path('third_party', name, 'build', platform_triple, *args)
 
-    def merge_ncurses_install_dir(self, platform_triple, *args):
-        return self.merge_out_path('third_party', 'ncurses', 'install', platform_triple, *args)
-
     def get_ncurses_dependence_libs(self, platform_triple):
         ncurses_libs = ['libncurses', 'libpanel', 'libform']
         if self.use_platform() != platform_triple:
             ncurses_libs.append('libtinfo')
         return ncurses_libs
-
-    def merge_ncurses_build_dir(self, platform_triple, *args):
-        return self.merge_out_path('third_party', 'ncurses', 'build', platform_triple, *args)
 
     def get_libxml2_version(self):
         version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'libxml2.spec')
@@ -739,12 +733,6 @@ class BuildUtils(object):
                     return version_match.group(1)
 
         return None
-
-    def merge_libedit_install_dir(self, platform_triple, *args):
-        return self.merge_out_path('third_party', 'libedit', 'install', platform_triple, *args)
-
-    def merge_libedit_build_dir(self, platform_triple, *args):
-        return self.merge_out_path('third_party', 'libedit', 'build', platform_triple, *args)
 
     def merge_python_install_dir(self, platform_triple, *args):
         return self.merge_out_path('third_party', 'python', 'install', platform_triple, *args)
@@ -846,7 +834,8 @@ class LlvmCore(BuildUtils):
             llvm_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.dylib'
             if self.build_config.build_ncurses:
                 ncurses_libs = ';'.join([
-                    self.merge_ncurses_install_dir(
+                    self.merge_install_dir(
+                        'ncurses',
                         self.use_platform(),
                         'lib',
                         f'{lib_name}.6.dylib') for lib_name in self.get_ncurses_dependence_libs(self.use_platform())])
@@ -858,7 +847,7 @@ class LlvmCore(BuildUtils):
 
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = \
-                    self.merge_libedit_install_dir(self.use_platform(), 'lib', 'libedit.0.dylib')
+                    self.merge_install_dir('libedit', self.use_platform(), 'lib', 'libedit.0.dylib')
 
             if self.build_config.build_libxml2:
                 llvm_defines['LIBXML2_LIBRARIES'] = \
@@ -890,7 +879,8 @@ class LlvmCore(BuildUtils):
             if self.build_config.build_ncurses and ncurses_version is not None:
                 ncurses_libs = ";".join(
                     [
-                        self.merge_ncurses_install_dir(
+                        self.merge_install_dir(
+                            'ncurses',
                             self.use_platform(),
                             "lib",
                             f"{lib_name}.so.{ncurses_version}",
@@ -908,7 +898,7 @@ class LlvmCore(BuildUtils):
 
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = \
-                    self.merge_libedit_install_dir(self.use_platform(), 'lib', 'libedit.so.0.0.68')
+                    self.merge_install_dir('libedit', self.use_platform(), 'lib', 'libedit.so.0.0.75')
 
             if not build_instrumented and not no_lto and not debug_build:
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
@@ -956,7 +946,7 @@ class LlvmCore(BuildUtils):
 
         if self.build_config.build_ncurses and self.get_ncurses_version() is not None:
             llvm_defines['LLDB_ENABLE_CURSES'] = 'ON'
-            llvm_defines['CURSES_INCLUDE_DIRS'] = self.merge_ncurses_install_dir(self.use_platform(), 'include')
+            llvm_defines['CURSES_INCLUDE_DIRS'] = self.merge_install_dir('ncurses', self.use_platform(), 'include')
 
         if self.build_config.enable_lzma_7zip:
             llvm_defines['LLDB_ENABLE_LZMA'] = 'ON'
@@ -965,7 +955,7 @@ class LlvmCore(BuildUtils):
 
         if self.build_config.build_libedit:
             llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
-            llvm_defines['LibEdit_INCLUDE_DIRS'] = self.merge_libedit_install_dir(self.use_platform(), 'include')
+            llvm_defines['LibEdit_INCLUDE_DIRS'] = self.merge_install_dir('libedit', self.use_platform(), 'include')
 
         if self.build_config.build_libxml2:
             llvm_defines['LLDB_ENABLE_LIBXML2'] = 'ON'
@@ -1980,7 +1970,7 @@ class LlvmLibs(BuildUtils):
             if self.build_config.build_ncurses:
                 self.build_ncurses(None, llvm_install, llvm_triple, True)
                 lldb_defines['LLDB_ENABLE_CURSES'] = 'ON'
-                ncurses_install_path = self.merge_ncurses_install_dir(llvm_triple)
+                ncurses_install_path = self.merge_install_dir('ncurses', llvm_triple)
                 lldb_defines['CURSES_INCLUDE_DIRS'] = os.path.join(ncurses_install_path, 'include')
                 lldb_defines['CURSES_HAVE_NCURSES_CURSES_H'] = 'ON'
                 ncurses_lib_path = os.path.join(ncurses_install_path, 'lib')
@@ -1994,7 +1984,7 @@ class LlvmLibs(BuildUtils):
             if self.build_config.build_libedit:
                 self.build_libedit(None, llvm_install, llvm_triple, True)
                 lldb_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
-                libedit_install_path = self.merge_libedit_install_dir(llvm_triple)
+                libedit_install_path = self.merge_install_dir('libedit', llvm_triple)
                 lldb_defines['LibEdit_INCLUDE_DIRS'] = os.path.join(libedit_install_path, 'include')
                 lldb_defines['LibEdit_LIBRARIES'] = os.path.join(libedit_install_path, 'lib', 'libedit.a')
 
@@ -2078,8 +2068,8 @@ class LlvmLibs(BuildUtils):
         self.logger().info('Building ncurses.')
 
         libncurses_src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'ncurses'))
-        libncurses_install_path = self.merge_ncurses_install_dir(platform_triple)
-        libncurses_build_path = self.merge_ncurses_build_dir(platform_triple)
+        libncurses_install_path = self.merge_install_dir('ncurses', platform_triple)
+        libncurses_build_path = self.merge_build_dir('ncurses', platform_triple)
         prebuilts_path = os.path.join(self.buildtools_path)
 
         self.check_rm_tree(libncurses_build_path)
@@ -2093,12 +2083,11 @@ class LlvmLibs(BuildUtils):
 
         ncurses_version = self.get_ncurses_version()
         if ncurses_version is not None:
-            libncurses_untar_path = self.merge_out_path('third_party', 'ncurses', 'ncurses-' + ncurses_version)
             args = ['./build_ncurses.sh', libncurses_src_dir, libncurses_build_path, libncurses_install_path,
-                    prebuilts_path, clang_version, ncurses_version, platform_triple, libncurses_untar_path]
+                    prebuilts_path, clang_version, ncurses_version, platform_triple]
             if static:
                 args.append('static')
-                args.append(self.merge_ncurses_install_dir(self.use_platform()))
+                args.append(self.merge_install_dir('ncurses', self.use_platform()))
             self.check_call(args)
             os.chdir(cur_dir)
 
@@ -2159,8 +2148,8 @@ class LlvmLibs(BuildUtils):
         self.logger().info('Building libedit')
 
         libedit_src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libedit'))
-        libedit_build_path = self.merge_libedit_build_dir(platform_triple)
-        libedit_install_path = self.merge_libedit_install_dir(platform_triple)
+        libedit_build_path = self.merge_build_dir('libedit', platform_triple)
+        libedit_install_path = self.merge_install_dir('libedit', platform_triple)
         prebuilts_path = os.path.join(self.buildtools_path)
 
         self.check_rm_tree(libedit_build_path)
@@ -2168,13 +2157,12 @@ class LlvmLibs(BuildUtils):
         self.check_rm_tree(libedit_install_path)
         self.rm_cmake_cache(libedit_install_path)
 
-        libncurses_path = self.merge_ncurses_install_dir(platform_triple)
+        libncurses_path = self.merge_install_dir('ncurses', platform_triple)
 
         cur_dir = os.getcwd()
         os.chdir(self.build_config.LLVM_BUILD_DIR)
         clang_version = self.build_config.CLANG_VERSION
-        libedit_untar_path = self.merge_out_path('third_party', 'libedit', 'libedit-' + self.get_libedit_version())
-        args = ['./build_libedit.sh', libedit_src_dir, libedit_build_path , libedit_install_path, libncurses_path, prebuilts_path, clang_version, platform_triple, libedit_untar_path]
+        args = ['./build_libedit.sh', libedit_src_dir, libedit_build_path , libedit_install_path, libncurses_path, prebuilts_path, clang_version, platform_triple]
         self.check_call(args)
         os.chdir(cur_dir)
 
@@ -2807,7 +2795,7 @@ class LlvmPackage(BuildUtils):
         lib_dst_path = os.path.join(install_dir, 'lib')
 
         lib_names = self.get_ncurses_dependence_libs(platform_triple)
-        lib_srcs = [self.merge_ncurses_install_dir(platform_triple, 'lib',
+        lib_srcs = [self.merge_install_dir('ncurses', platform_triple, 'lib',
                                                    f'{name}{shlib_ext}') for name in lib_names]
         lib_dsts = [os.path.join(install_dir, 'lib',
                                  f'{name}{shlib_ext}') for name in lib_names]
@@ -2816,7 +2804,7 @@ class LlvmPackage(BuildUtils):
             os.makedirs(lib_dst_path)
 
         for lib_file in lib_srcs:
-            self.update_lib_id_link(self.merge_ncurses_install_dir(platform_triple, 'lib'), lib_file)
+            self.update_lib_id_link(self.merge_install_dir('ncurses', platform_triple, 'lib'), lib_file)
 
         # Clear historical libraries
         for lib in lib_dsts:
@@ -2834,7 +2822,7 @@ class LlvmPackage(BuildUtils):
         if self.host_is_linux():
             shlib_ext = '.so.0'
 
-        libedit_lib_path = self.merge_libedit_install_dir(platform_triple, 'lib')
+        libedit_lib_path = self.merge_install_dir('libedit', platform_triple, 'lib')
         libedit_src = os.path.join(libedit_lib_path, 'libedit%s' % shlib_ext)
 
         lib_dst_path = os.path.join(install_dir, 'lib')
