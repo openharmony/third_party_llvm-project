@@ -247,3 +247,13 @@ PreservedAnalyses AddDiscriminatorsPass::run(Function &F,
   // FIXME: should be all()
   return PreservedAnalyses::none();
 }
+
+static cl::opt<int> PaccLimit(
+    "PACCLIMIT", cl::Hidden,
+    cl::desc("Use this option to configure the entry limit in the section of .cfi.modifier.ro"),
+    cl::init(-1)
+);
+
+int llvm::getPaccLimit() {
+    return PaccLimit;
+}
