@@ -298,6 +298,12 @@ void HwasanTagMismatch(uptr addr, uptr pc, uptr frame, uptr access_info,
     ai.size = 1 << (access_info & 0xf);
 
   HandleTagMismatch(ai, pc, frame, nullptr, registers_frame);
+  // OHOS_LOCAL begin
+  bool fatal = flags()->halt_on_error || !ai.recover;
+  if (fatal) {
+    __builtin_unreachable();
+  }
+  // OHOS_LOCAL end
 }
 
 Thread *GetCurrentThread() {
