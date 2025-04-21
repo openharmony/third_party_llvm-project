@@ -16,6 +16,7 @@
 #include "hwasan_quarantine.h"
 
 #include "hwasan_allocator.h"
+#include "hwasan_thread.h"
 #include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_stackdepot.h"
 namespace __hwasan {
@@ -60,6 +61,13 @@ bool HeapQuarantineController::TryPutInQuarantineWithDealloc(
 
 void HeapQuarantineController::PutInQuarantineWithDealloc(
     uptr ptr, size_t s, u32 aid, u32 fid, AllocatorCache *cache) {
+  if (flags()->enable_heap_quarantine_debug) {
+    size_t current_time_point = NanoTime() / 1000;
+    count++;
+    persist_interval +=
+        heap_quarantine_tail_ * (current_time_point - pre_time_point);
+    pre_time_point = current_time_point;
+  }
   if (UNLIKELY(heap_quarantine_tail_ >=
                flags()->heap_quarantine_thread_max_count)) {
     // free 1/3 heap_quarantine_list
@@ -113,6 +121,14 @@ void HeapQuarantineController::DeallocateWithHeapQuarantcheck(
     }
     SimpleThreadDeallocate((void *)ptrBeg, cache);
   }
+}
+
+void HeapQuarantineController::consumeQuarantineStayTimeAndCount(
+    size_t &staytime, size_t &staycount) {
+  staytime += persist_interval;
+  staycount += count;
+  persist_interval = 0;
+  count = 0;
 }
 
 }  // namespace __hwasan

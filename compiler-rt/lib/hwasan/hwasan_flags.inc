@@ -128,6 +128,9 @@ HWASAN_FLAG(
     "The freed heap size should be smaller than the maximum size before "
     "it is placed into the heap quarantine.")
 
+HWASAN_FLAG(bool, enable_heap_quarantine_debug, false,
+            "Enable Hwasan Quarantine Debug Mode.")
+
 // Default minimum configuration
 HWASAN_FLAG(bool, allow_user_segv_handler, true,
             "Deprecated. True has no effect, use handle_sigbus=1. If false, "

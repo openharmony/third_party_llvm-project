@@ -29,6 +29,11 @@
 #  error Unsupported platform
 #endif
 
+// OHOS_LOCAL begin
+// The current setting is temporarily configured to 100,000 and will be adjusted in subsequent updates.
+#define PRINT_COUNTER 100000
+// OHOS_LOCAL end
+
 namespace __hwasan {
 
 struct Metadata {
@@ -135,6 +140,13 @@ inline bool InTaggableRegion(uptr addr) {
 #endif
   return true;
 }
+// OHOS_LOCAL begin
+__attribute__((always_inline)) static bool ShouldPrintQuarantineDwillTime() {
+  return flags()->heap_quarantine_max > 0 &&
+         flags()->enable_heap_quarantine_debug &&
+         flags()->heap_quarantine_thread_max_count > 0;
+}
+// OHOS_LOCAL end
 
 } // namespace __hwasan
 

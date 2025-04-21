@@ -96,6 +96,8 @@ class Thread {
   }
 
   bool TryPutInQuarantineWithDealloc(uptr ptr, size_t s, u32 aid, u32 fid);
+
+  void GetQuarantineStayTimeAndCount(size_t &staytime, size_t &staycount);
 // OHOS_LOCAL end
 
  private:
