@@ -263,14 +263,14 @@ class OHOSToolchainBuilder:
                 self._build_utils.merge_packages_path(tarball_name),
                 self._build_config.ARCHIVE_EXTENSION,
             )
-            bin_dir = os.path.join(package_path,ohos-{self._platform}-install)
-            sript_bins = ['git-clang-format', 'scan-build','scav-ciew']
+            bin_dir = os.path.join(self._llvm_path, "bin")
+            sript_bins = ['git-clang-format', 'scan-build','scan-view', 'scan-build-py', 'llvm-locstats', 'llvm-lit', 'intercept-build', 'analyze-build', 'lldb-python']
             for binfile_name in os.listdir(bin_dir):
                 binary = os.path.join(bin_dir, binfile_name)
                 if not os.path.isfile(binary):
-                    comtinue
-                if binfile_name not in sript_bins and self.build_config.strip:
-                    self.check_call(['eu-strip', binary])
+                    continue
+                if binfile_name not in sript_bins and self._build_config.strip:
+                    self._build_utils.check_call(['eu-strip', binary])
             self._build_utils.logger().info("Packaging %s", package_path)
             args = [
                 "tar",
