@@ -48,6 +48,7 @@
 #include "hwasan_flags.h"
 #include "hwasan_thread.h"
 
+#include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_placement_new.h"
 
 namespace __hwasan {
@@ -194,6 +195,11 @@ class HwasanThreadList {
   void ReleaseThread(Thread *t) {
     AddFreedRingBuffer(t);  // OHOS_LOCAL
     RemoveThreadStats(t);
+    // OHOS_LOCAL begin
+    if (__hwasan::ShouldPrintQuarantineDwillTime())
+      t->GetQuarantineStayTimeAndCount(quarantine_stay_time_,
+                                       quarantine_stay_count_);
+    // OHOS_LOCAL end
     t->Destroy();
     DontNeedThread(t);
     RemoveThreadFromLiveList(t);
@@ -272,6 +278,20 @@ class HwasanThreadList {
   bool AllowTracingHeapAllocation() { return trace_heap_allocation_; }
 // OHOS_LOCAL end
 
+  // OHOS_LOCAL begin
+  size_t AddCount() { return ++deallocate_count_; }
+  void PrintfAverageQuarantineTime() {
+    if (!SafeToCallPrintf())
+      return;
+    VisitAllLiveThreads([&](Thread *t) {
+      t->GetQuarantineStayTimeAndCount(quarantine_stay_time_,
+                                       quarantine_stay_count_);
+    });
+    Printf("[hwasan]: AvgDuration %d us\n",
+           quarantine_stay_time_ / quarantine_stay_count_);
+  }
+  // OHOS_LOCAL end
+
  private:
   Thread *AllocThread() {
     SpinMutexLock l(&free_space_mutex_);
@@ -302,6 +322,9 @@ class HwasanThreadList {
   u64 freed_rb_count_;
   u64 freed_rb_count_overflow_;
   bool trace_heap_allocation_;
+  size_t deallocate_count_{0};
+  size_t quarantine_stay_count_{0};
+  size_t quarantine_stay_time_{0};
 // OHOS_LOCAL end
 
   ThreadStats stats_;

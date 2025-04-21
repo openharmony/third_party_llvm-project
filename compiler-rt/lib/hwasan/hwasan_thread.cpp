@@ -168,6 +168,12 @@ bool Thread::TryPutInQuarantineWithDealloc(uptr ptr, size_t s, u32 aid,
   return heap_quarantine_controller()->TryPutInQuarantineWithDealloc(
       ptr, s, aid, fid, allocator_cache());
 }
+
+void Thread::GetQuarantineStayTimeAndCount(size_t &staytime,
+                                           size_t &staycount) {
+  heap_quarantine_controller()->consumeQuarantineStayTimeAndCount(staytime,
+                                                                  staycount);
+}
 // OHOS_LOCAL end
 
 } // namespace __hwasan
