@@ -265,7 +265,7 @@ class OHOSToolchainBuilder:
             )
             bin_dir = os.path.join(package_path,ohos-{self._platform}-install)
             sript_bins = ['git-clang-format', 'scan-build','scav-ciew']
-            for binfile_name in os.listdir(bin_dir)
+            for binfile_name in os.listdir(bin_dir):
                 binary = os.path.join(bin_dir, binfile_name)
                 if not os.path.isfile(binary):
                     comtinue
