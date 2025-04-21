@@ -28,6 +28,9 @@ class HeapQuarantineController {
  private:
   u32 heap_quarantine_tail_;
   HeapQuarantine *heap_quarantine_list_;
+  size_t count{0};
+  size_t persist_interval{0};
+  size_t pre_time_point{0};
   void PutInQuarantineWithDealloc(uptr ptr, size_t s, u32 aid, u32 fid,
                                   AllocatorCache *cache);
   void DeallocateWithHeapQuarantcheck(u32 free_count, AllocatorCache *cache);
@@ -42,6 +45,8 @@ class HeapQuarantineController {
 
   bool TryPutInQuarantineWithDealloc(uptr ptr, size_t s, u32 aid, u32 fid,
                                      AllocatorCache *cache);
+
+  void consumeQuarantineStayTimeAndCount(size_t &staytime, size_t &staycount);
 };
 
 }  // namespace __hwasan

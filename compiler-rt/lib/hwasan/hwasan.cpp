@@ -199,6 +199,10 @@ void UpdateMemoryUsage() {}
 #endif
 
 void HwasanAtExit() {
+  // OHOS_LOCAL begin
+  if (__hwasan::ShouldPrintQuarantineDwillTime())
+    hwasanThreadList().PrintfAverageQuarantineTime();
+  // OHOS_LOCAL end
   if (common_flags()->print_module_map)
     DumpProcessMap();
   if (flags()->print_stats && (flags()->atexit || hwasan_report_count > 0))
