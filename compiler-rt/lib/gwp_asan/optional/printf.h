@@ -29,5 +29,10 @@ namespace gwp_asan {
 // library's printf(). Notably, it returns 'void' rather than 'int'.
 typedef void (*Printf_t)(const char *Format, ...);
 
+// OHOS_LOCAL begin
+#if defined(__OHOS__)
+inline Printf_t Printf = nullptr;
+#endif
+// OHOS_LOCAL end
 } // namespace gwp_asan
 #endif // GWP_ASAN_OPTIONAL_PRINTF_H_

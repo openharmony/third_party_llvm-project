@@ -6,6 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// OHOS_LOCAL begin
+#include "gwp_asan/optional/printf.h"
+// OHOS_LOCAL end
 #include <features.h> // IWYU pragma: keep (for __BIONIC__ macro)
 
 #ifdef __BIONIC__
@@ -23,6 +26,13 @@ void die(const char *Message) {
     android_set_abort_message(Message);
   abort();
 #else  // __BIONIC__
+// OHOS_LOCAL begin
+#if defined(__OHOS__)
+  Printf("GWP-ASan has a check error\n");
+  Printf("%s\n", Message);
+  Printf("*** End GWP-ASan report ***\n");
+  #endif
+// OHOS_LOCAL end
   fprintf(stderr, "%s", Message);
   __builtin_trap();
 #endif // __BIONIC__
