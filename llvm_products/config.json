@@ -1,0 +1,13 @@
+{
+    "product_name": "",
+    "ohos_version": "OpenHarmony 1.0",
+    "version": "3.0",
+    "type": "small",
+    "device_company": "ohos",
+    "board": "",
+    "kernel_type": "liteos_a",
+    "kernel_version": "3.0.0",
+    "subsystems": [],
+    "third_party_dir": "//third_party",
+    "product_adapter_dir": ""
+}

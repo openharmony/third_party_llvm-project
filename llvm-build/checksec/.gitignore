@@ -1,0 +1,6 @@
+*-log
+check.txt
+failed_list.txt
+checksec/
+checksec.sh/
+

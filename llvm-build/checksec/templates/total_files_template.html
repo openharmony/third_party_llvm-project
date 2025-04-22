@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <meta http-equiv="Content-Script-Type" content="text/javascript">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta http-equiv="cache-control" content="no-cache, must-revalidate">
+  <meta http-equiv="expires" content="0">
+  <title></title>
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/font-awesome.min.css" type="text/css" rel="stylesheet">
+  <script src="jquery.min.js"></script>
+  <script src="bootstrap.bundle.min.js"></script>
+</head>
+<style>
+  .collapsed .fa-angle-up::before{content: "\f107"}
+</style>
+<body>
+  <script>
+    $(function(){
+      $('[data-toggle="tooltip"]').tooltip()
+    })
+  </script>  
+  <div class="view-container" style="padding: 2% 10% 0 10%;">
+    <div>
+      <h2>Total Files</h2>
+      <a href="javascript:history.back(-1)">Back</a>
+    </div>
+    <div style="width: 100%; padding: 25px 1% 0 1%;">
+      <div class="accordion" id="accordionExample">
+        {% for found_file in total_file_info %}
+          <div class="card">
+            <div class="card-header collapsed" id="headingOne" type="button" data-toggle="collapse" data-target="#collapsec{{loop.index}}" aria-expanded="false" aria-controls="collapsec{{loop.index}}">
+              <span class="text-left" style="float:left;">
+                {{found_file.filename}}
+              </span>
+              <i class="fa fa-angle-up"style="float:right; font-size: 24px;"></i>
+            </div>
+            <div id="collapsec{{loop.index}}" class="collapse" aria-labelledby="headingc{{loop.index}}">
+              <table class="table table-borderless table-sm" style="margin-bottom: 0">
+                <thead>
+                  <tr>
+                    <th scope="row" style="font-weight: normal; width: 8%; text-align: center;">relro</th>
+                    <th scope="row" style="font-weight: normal; width: 8%; text-align: center;">canary</th>
+                    <th scope="row" style="font-weight: normal; width: 8%; text-align: center;">nx</th>
+                    <th scope="row" style="font-weight: normal; width: 8%; text-align: center;">pie</th>
+                    <th scope="row" style="font-weight: normal; width: 8%; text-align: center;">clangcfi</th>
+                    <th scope="row" style="font-weight: normal; width: 8%; text-align: center;">safestack</th>
+                    <th scope="row" style="font-weight: normal; width: 8%; text-align: center;">rpath</th>
+                    <th scope="row" style="font-weight: normal; width: 8%; text-align: center;">symbols</th>
+                    <th scope="row" style="font-weight: normal; width: 8%; text-align: center;">fortify</th>
+                    <th scope="row" style="font-weight: normal; width: 8%; text-align: center;">fortified</th>
+                    <th scope="row" style="font-weight: normal; width: 8%; text-align: center;">fortify-able</th>
+                    <th scope="row" style="font-weight: normal; width: 8%; text-align: center;">file size</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row" style="font-weight: normal;font-weight: bold; width: 8%; text-align: center;">{{found_file.relro}}</th>
+                    <th scope="row" style="font-weight: normal;font-weight: bold; width: 8%; text-align: center;">{{found_file.canary}}</th>
+                    <th scope="row" style="font-weight: normal;font-weight: bold; width: 8%; text-align: center;">{{found_file.nx}}</th>
+                    <th scope="row" style="font-weight: normal;font-weight: bold; width: 8%; text-align: center;">{{found_file.pie}}</th>
+                    <th scope="row" style="font-weight: normal;font-weight: bold; width: 8%; text-align: center;">{{found_file.clangcfi}}</th>
+                    <th scope="row" style="font-weight: normal;font-weight: bold; width: 8%; text-align: center;">{{found_file.safestack}}</th>
+                    <th scope="row" style="font-weight: normal;font-weight: bold; width: 8%; text-align: center;">{{found_file.rpath}}</th>
+                    <th scope="row" style="font-weight: normal;font-weight: bold; width: 8%; text-align: center;">{{found_file.symbols}}</th>
+                    <th scope="row" style="font-weight: normal;font-weight: bold; width: 8%; text-align: center;">{{found_file.fortify_source}}</th>
+                    <th scope="row" style="font-weight: normal;font-weight: bold; width: 8%; text-align: center;">{{found_file.fortified}}</th>
+                    <th scope="row" style="font-weight: normal;font-weight: bold; width: 8%; text-align: center;">{{found_file.fortify_able}}</th>
+                    <th scope="row" style="font-weight: normal;font-weight: bold; width: 8%; text-align: center;">{{found_file.file_single_size}}</th>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
