@@ -250,7 +250,12 @@ void HwasanTagMismatch(uptr addr, uptr access_info, uptr *registers_frame,
 
   HandleTagMismatch(ai, (uptr)__builtin_return_address(0),
                     (uptr)__builtin_frame_address(0), nullptr, registers_frame);
-  __builtin_unreachable();
+  // OHOS_LOCAL begin
+  bool fatal = flags()->halt_on_error || !ai.recover;
+  if (fatal) {
+    __builtin_unreachable();
+  }
+  // OHOS_LOCAL end
 }
 
 Thread *GetCurrentThread() {
