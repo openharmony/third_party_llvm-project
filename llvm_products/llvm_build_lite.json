@@ -1,0 +1,22 @@
+{
+    "product_name": "llvm_build_lite",
+    "device_company": "ohos",
+    "target_cpu": "arm",
+    "board": "llvm_build",
+    "board_path": "toolchain/llvm-project/board-config",
+    "type": "small",
+    "kernel_type": "liteos_a",
+    "version": "3.0",
+    "subsystems": [
+      {
+        "subsystem": "thirdparty",
+        "components": [
+          {
+            "component": "musl",
+            "features": []
+          }
+        ]
+      }
+    ]
+  }
+  
