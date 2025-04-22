@@ -1848,9 +1848,6 @@ static inline unsigned getAUTHintOpc(AArch64PACKey::ID Key) {
 void AArch64AsmPrinter::emitPtrauthStrip(const MachineInstr *MI) {
   unsigned ValReg = MI->getOperand(0).getReg();
 
-  assert(PACDiscReg != AArch64::X16);
-  assert(STI->hasPAuthHintOnly());
-
   EmitToStreamer(*OutStreamer,
                  MCInstBuilder(AArch64::ORRXrs)
                        .addReg(AArch64::X16)
@@ -2331,6 +2328,25 @@ AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
     report_fatal_error("AArch64 PAC Key ID '" + Twine(KeyID) +
                        "' out of range [0, " +
                        Twine((unsigned)AArch64PACKey::LAST) + "]");
+
+  // Convert DA/DB to IA/IB if hint-only option is on, since only
+  // autia1716/autib1716 is used and it will failed for DA/DB.
+  auto sti = Ctx.getSubtargetInfo();
+  auto STI = static_cast<const AArch64Subtarget *>(sti);
+  assert(STI && "Unable to create subtarget info");
+
+  if (STI && STI->hasPAuthHintOnly()) {
+    switch ((AArch64PACKey::ID)(KeyID)) {
+    case AArch64PACKey::DA:
+      KeyID = AArch64PACKey::IA;
+      break;
+    case AArch64PACKey::DB:
+      KeyID = AArch64PACKey::IB;
+      break;
+    default:
+      break;
+    }
+  }
 
   uint64_t Disc = CPA.getDiscriminator()->getZExtValue();
   if (!isUInt<16>(Disc))
