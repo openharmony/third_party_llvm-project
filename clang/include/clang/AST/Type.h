@@ -1030,6 +1030,10 @@ public:
     return getTypePtr();
   }
 
+  bool hasNopac() const {
+    return getQualifiers().hasNopac();
+  }
+
   bool isCanonical() const;
   bool isCanonicalAsParam() const;
 

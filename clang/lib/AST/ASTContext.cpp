@@ -3061,7 +3061,7 @@ bool ASTContext::addNopacFunctionDecl(FunctionDecl *FD)
   }
   return true;
 }
- 
+
 bool ASTContext::AddNopacTypedefNameDecl(TypedefNameDecl *D)
 {
   // TypeAliasDecl
@@ -3088,7 +3088,52 @@ bool ASTContext::AddNopacTypedefNameDecl(TypedefNameDecl *D)
   return hasNopac;
 }
  
+QualType ASTContext::removeNopacQualType(QualType T) const {
+  if (T->isFunctionPointerType() || T->isMemberFunctionPointerType()) {
+    if (!T.hasNopac())
+      return T;
+    QualifierCollector Quals;
+    const Type *TypeNode = Quals.strip(T);
+    Quals.removeNopac();
  
+    // Removal of the NoPac can mean there are no longer any
+    // non-fast qualifiers, so creating an ExtQualType isn't possible (asserts)
+    // or required.
+    if (Quals.hasNonFastQualifiers())
+      return getExtQualType(TypeNode, Quals);
+    return QualType(TypeNode, Quals.getFastQualifiers());
+  } else if (const PointerType *Ptr = T->getAs<PointerType>()) {
+    QualType Pointee = Ptr->getPointeeType();
+    if (Pointee->isPointerType()) {
+      return getPointerType(removeNopacQualType(Pointee));
+    }
+  }
+  return T;
+}
+ 
+bool ASTContext::hasSameFunctionTypeIgnoringNopac(QualType T, QualType U) const {
+  return hasSameType(T, U) ||
+         hasSameType(getFunctionTypeWithoutNopac(T),
+                     getFunctionTypeWithoutNopac(U));
+}
+ 
+QualType ASTContext::getFunctionTypeWithoutNopac(QualType T) const {
+  if (const auto *Proto = T->getAs<FunctionProtoType>()) {
+    QualType RetTy = removeNopacQualType(Proto->getReturnType());
+    SmallVector<QualType, 16> Args(Proto->param_types());
+    for (unsigned i = 0, n = Args.size(); i != n; ++i)
+      Args[i] = removeNopacQualType(Args[i]);
+    return getFunctionType(RetTy, Args, Proto->getExtProtoInfo());
+  }
+ 
+  if (const FunctionNoProtoType *Proto = T->getAs<FunctionNoProtoType>()) {
+    QualType RetTy = removeNopacQualType(Proto->getReturnType());
+    return getFunctionNoProtoType(RetTy, Proto->getExtInfo());
+  }
+ 
+  return T;
+}
+
 QualType ASTContext::getNopacQualType(const QualType &type, bool &hasNopac) const 
 {
   hasNopac = false;

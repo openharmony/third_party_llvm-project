@@ -1623,6 +1623,10 @@ public:
   QualType adjustStringLiteralBaseType(QualType StrLTy) const;
 
   QualType getNopacQualType(const QualType &type, bool &hasNopac) const;
+  QualType removeNopacQualType(QualType T) const;
+ 
+  bool hasSameFunctionTypeIgnoringNopac(QualType T, QualType U) const;
+  QualType getFunctionTypeWithoutNopac(QualType T) const;
 
   static bool isPointerToFunction(QualType &type, int &level);
   bool addNopacFunctionDecl(FunctionDecl *FD);

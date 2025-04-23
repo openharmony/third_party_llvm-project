@@ -3329,22 +3329,20 @@ static bool isFuncPtr(QualType T) {
   return (T->isFunctionPointerType() || T->isMemberFunctionPointerType());
 }
 
+// viorel todo: check references also.
 static bool areMergeableNoPac(QualType OldType, QualType NewType) {
+ 
+  if(!OldType->isPointerType() || !OldType->isPointerType()) {
+    return false;
+  }
   if (isFuncPtr(OldType) && isFuncPtr(NewType)) {
     return (OldType.getQualifiers().hasNopac() || NewType.getQualifiers().hasNopac());
   }
-
-  if (OldType->getAs<PointerType>() &&
-    NewType->getAs<PointerType>()) {
-
+ 
   QualType OldTypePointee = OldType->getPointeeType();
   QualType NewTypePointee = NewType->getPointeeType();
-  if (OldTypePointee->isAnyPointerType() &&
-    NewTypePointee->isAnyPointerType())
-    return areMergeableNoPac(OldType->getPointeeType(),
-      NewType->getPointeeType());
-  }
-  return false;
+ 
+  return areMergeableNoPac(OldTypePointee, NewTypePointee);
 }
 
 static void mergeParamDeclTypes(ParmVarDecl *NewParam,
@@ -3895,6 +3893,9 @@ bool Sema::MergeFunctionDecl(FunctionDecl *New, NamedDecl *&OldD, Scope *S,
     //   use that placeholder, not a deduced type.
     QualType OldDeclaredReturnType = Old->getDeclaredReturnType();
     QualType NewDeclaredReturnType = New->getDeclaredReturnType();
+
+    OldDeclaredReturnType = Context.removeNopacQualType(OldDeclaredReturnType);
+    NewDeclaredReturnType = Context.removeNopacQualType(NewDeclaredReturnType);
     if (!Context.hasSameType(OldDeclaredReturnType, NewDeclaredReturnType) &&
         canFullyTypeCheckRedeclaration(New, Old, NewDeclaredReturnType,
                                        OldDeclaredReturnType)) {
@@ -4075,12 +4076,15 @@ bool Sema::MergeFunctionDecl(FunctionDecl *New, NamedDecl *&OldD, Scope *S,
       }
     }
 
+    OldQTypeForComparison = Context.removeNopacQualType(OldQTypeForComparison);
+
     // If the function types are compatible, merge the declarations. Ignore the
     // exception specifier because it was already checked above in
     // CheckEquivalentExceptionSpec, and we don't want follow-on diagnostics
     // about incompatible types under -fms-compatibility.
     if (Context.hasSameFunctionTypeIgnoringExceptionSpec(OldQTypeForComparison,
-                                                         NewQType))
+                                                         NewQType) ||
+        Context.hasSameFunctionTypeIgnoringNopac(OldQTypeForComparison, NewQType))
       return MergeCompatibleFunctionDecls(New, Old, S, MergeTypeWithOld);
 
     // If the types are imprecise (due to dependent constructs in friends or
