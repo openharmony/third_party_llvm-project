@@ -388,6 +388,10 @@ SanitizerMask OHOS::getSupportedSanitizers() const {
   Res |= SanitizerKind::Vptr;
   Res |= SanitizerKind::SafeStack;
   Res |= SanitizerKind::Scudo;
+  Res |= SanitizerKind::KernelAddress;
+  Res |= SanitizerKind::KernelMemory;
+  // OHOS_LOCAL
+  Res |= SanitizerKind::HWAddress;
   // TODO: kASAN for liteos ??
   // TODO: Support TSAN and HWASAN and update mask.
   return Res;
