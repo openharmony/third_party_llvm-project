@@ -1458,6 +1458,8 @@ class LlvmLibs(BuildUtils):
             self.sysroot_composer.build_musl_header(arch, target)
             if target.endswith(self.build_config.OPENHOS_SFX):
                 self.sysroot_composer.install_linux_headers(arch, target)
+            # 创建软连接
+            self.create_link(llvm_install)
         if self.build_config.build_libs_with_hb:
             self.run_hb_build_libs('crts_first_time')
         else:
@@ -1737,6 +1739,35 @@ class LlvmLibs(BuildUtils):
                           env=dict(self.build_config.ORIG_ENV),
                           target=None,
                           install=True)
+
+
+    def create_link(self, llvm_install):
+        src_dir = os.path.join(llvm_install, 'lib', 'clang', '19.1.7', 'lib')
+        dst_dir = os.path.join(llvm_install, 'lib', 'clang', '19', 'lib')
+        
+        src_aarch64_dir = os.path.join(src_dir, "aarch64-unknown-linux-ohos")
+        src_x86_dir = os.path.join(src_dir, "x86_64-unknown-linux-ohos")
+        
+        dst_aarch64_19_1_7_dir = os.path.join(src_dir, "aarch64-linux-ohos")
+        dst_x86_19_1_7_dir = os.path.join(src_dir, "x86_64-linux-ohos")
+        
+        dst_aarch64_19_dir = os.path.join(dst_dir, "aarch64-linux-ohos")
+        dst_x86_19_dir = os.path.join(dst_dir, "x86_64-linux-ohos")
+        
+        prefix_path = os.path.join("..", "..", "19.1.7", "lib")
+    
+        if os.path.exists(src_aarch64_dir) and not os.path.exists(dst_aarch64_19_1_7_dir):
+            os.symlink(os.path.basename(src_aarch64_dir), dst_aarch64_19_1_7_dir)
+            
+        if os.path.exists(src_aarch64_dir) and not os.path.exists(dst_aarch64_19_dir):
+            os.symlink(os.path.join(prefix_path, os.path.basename(src_aarch64_dir)), dst_aarch64_19_dir)
+            
+        if os.path.exists(src_x86_dir) and not os.path.exists(dst_x86_19_1_7_dir):
+            os.symlink(os.path.basename(src_x86_dir), dst_x86_19_1_7_dir)
+            
+        if os.path.exists(src_x86_dir) and not os.path.exists(dst_x86_19_dir):    
+            os.symlink(os.path.join(prefix_path, os.path.basename(src_x86_dir)), dst_x86_19_dir)
+
 
     def build_crts(self,
                    llvm_install,
