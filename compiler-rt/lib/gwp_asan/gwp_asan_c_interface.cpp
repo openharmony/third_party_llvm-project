@@ -7,6 +7,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "gwp_asan/guarded_pool_allocator.h"
+// OHOS_LOCAL begin
+#include "gwp_asan/optional/printf.h"
+// OHOS_LOCAL end
 #include "gwp_asan/optional/segv_handler.h"
 
 #include <sigchain.h>
@@ -35,6 +38,11 @@ void init_gwp_asan(void *init_options)
 {
     gwp_asan::options::Options opts;
     gwp_asan_option *input_opts = reinterpret_cast<gwp_asan_option*>(init_options);
+// OHOS_LOCAL begin
+    #if defined(__OHOS__)
+    gwp_asan::Printf = input_opts->gwp_asan_printf;
+    #endif
+// OHOS_LOCAL end
     opts.help = input_opts->help;
     opts.Enabled = input_opts->enable;
     opts.MaxSimultaneousAllocations = input_opts->max_simultaneous_allocations;
