@@ -3331,8 +3331,7 @@ static bool isFuncPtr(QualType T) {
 
 // viorel todo: check references also.
 static bool areMergeableNoPac(QualType OldType, QualType NewType) {
- 
-  if(!OldType->isPointerType() || !OldType->isPointerType()) {
+  if(!OldType->isPointerType() || !NewType->isPointerType()) {
     return false;
   }
   if (isFuncPtr(OldType) && isFuncPtr(NewType)) {
