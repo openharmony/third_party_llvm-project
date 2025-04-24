@@ -1593,10 +1593,16 @@ class LlvmLibs(BuildUtils):
 
             if precompilation:
                 self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
+                #创建软连接
+                self.create_link(llvm_install)
                 continue
             # libunwind is added to linker command line by OHOS toolchain, so we have to use two step build
             self.build_runtimes(llvm_install, "libunwind", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
+            #创建软连接
+            self.create_link(llvm_install)
             self.build_runtimes(llvm_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
+            #创建软连接
+            self.create_link(llvm_install)
 
             self.build_runtimes(libcxx_ndk_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple,
                                     arch, multilib_suffix, defines, True)
@@ -1605,19 +1611,19 @@ class LlvmLibs(BuildUtils):
                                 first_time=False)
 
             if llvm_triple in arch_list:
-                if self.build_config.need_lldb_tools and has_lldb_tools and llvm_triple not in seen_arch_list:
-                    self.build_lldb_tools(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags,
-                                                   defines)
-                    seen_arch_list.append(llvm_triple)
+                #if self.build_config.need_lldb_tools and has_lldb_tools and llvm_triple not in seen_arch_list:
+                #    self.build_lldb_tools(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags,
+                #                                   defines)
+                #    seen_arch_list.append(llvm_triple)
                 if llvm_triple in omp_list:
                     self.build_libomp(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines, 'TRUE')
                     self.build_libomp(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines, 'FALSE')
                 continue
 
             self.build_libz(arch, llvm_triple, cflags, ldflags, defines)
-            if self.build_config.need_lldb_tools and has_lldb_tools and llvm_triple not in seen_arch_list:
-                self.build_lldb_tools(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags, defines)
-                seen_arch_list.append(llvm_triple)
+            #if self.build_config.need_lldb_tools and has_lldb_tools and llvm_triple not in seen_arch_list:
+            #    self.build_lldb_tools(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags, defines)
+            #    seen_arch_list.append(llvm_triple)
 
     def build_libs_by_type(self, compiler_path, llvm_install, llvm_build, libs_type, is_first_time, is_ndk_install):
         configs_list, cc, cxx, ar, llvm_config = self.libs_argument(compiler_path)
@@ -1650,19 +1656,29 @@ class LlvmLibs(BuildUtils):
             if libs_type == 'crts':
                 if is_first_time:
                     self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
+                    #创建软连接
+                    self.create_link(llvm_install)
                 else:
                     self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines,
                                     first_time=False)
+                    #创建软连接
+                    self.create_link(llvm_install)             
             elif libs_type == 'runtimes':
                 if is_first_time:
                     self.build_runtimes(llvm_install, "libunwind", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
+                    #创建软连接
+                    self.create_link(llvm_install)
                 elif is_ndk_install:
                     libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
                     self.check_create_dir(libcxx_ndk_install)
                     self.build_runtimes(libcxx_ndk_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple,
                                     arch, multilib_suffix, defines, True)
+                    #创建软连接
+                    self.create_link(llvm_install)
                 else:
                     self.build_runtimes(llvm_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
+                    #创建软连接
+                    self.create_link(llvm_install)
 
     def build_runtimes(self,
                        llvm_install,
@@ -1767,6 +1783,16 @@ class LlvmLibs(BuildUtils):
             
         if os.path.exists(src_x86_dir) and not os.path.exists(dst_x86_19_dir):    
             os.symlink(os.path.join(prefix_path, os.path.basename(src_x86_dir)), dst_x86_19_dir)
+
+        lib_aarch64_src_dir = os.path.join(llvm_install, 'lib', 'aarch64-unknown-linux-ohos')
+        lib_aarch64_dst_dir = os.path.join(llvm_install, 'lib', 'aarch64-linux-ohos')
+        if os.path.exists(lib_aarch64_src_dir) and not os.path.exists(lib_aarch64_dst_dir):    
+            os.symlink(os.path.basename(lib_aarch64_src_dir), lib_aarch64_dst_dir)
+        
+        lib_x86_64_src_dir = os.path.join(llvm_install, 'lib', 'x86_64-unknown-linux-ohos')
+        lib_x86_64_dst_dir = os.path.join(llvm_install, 'lib', 'x86_64-linux-ohos')
+        if os.path.exists(lib_x86_64_src_dir) and not os.path.exists(lib_x86_64_dst_dir):    
+            os.symlink(os.path.basename(lib_x86_64_src_dir), lib_x86_64_dst_dir)      
 
 
     def build_crts(self,
@@ -2668,10 +2694,10 @@ class LlvmPackage(BuildUtils):
             'ld64.lld%s' % ext,
             'lld%s' % ext,
             'lld-link%s' % ext,
-            'lldb%s' % ext,
-            'lldb-argdumper%s' % ext,
-            'lldb-server%s' % ext,
-            'lldb-vscode%s' % ext,
+            #'lldb%s' % ext,
+            #'lldb-argdumper%s' % ext,
+            #'lldb-server%s' % ext,
+            #'lldb-vscode%s' % ext,
             ]
         necessary_bin_files.extend(necessary_bin_file)
 
@@ -2996,7 +3022,7 @@ class LlvmPackage(BuildUtils):
         self.strip_install_file(bin_dir, necessary_bin_files, script_bins, host)
 
         # Strip lldb-server
-        self.strip_lldb_server(host, install_dir)
+        #self.strip_lldb_server(host, install_dir)
 
         # Copy lldb script
         lldb_script_file = 'lldb.cmd' if host.startswith('windows') else 'lldb.sh'
