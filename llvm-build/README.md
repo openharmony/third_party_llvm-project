@@ -99,7 +99,6 @@ build.py options：
     compiler-rt
     libcxx
 --enable-check-abi      # Check libc++_shared.so ABI. If the ABI was changed then interrupt a build process and report an error.
---separate-libs         # Separate the cross compilation library (compiler-rt and libcxx) in Linux.
 ```
 </br>
 
