@@ -281,12 +281,12 @@ std::string OHOS::computeSysRoot() const {
   std::string SysRoot =
       !getDriver().SysRoot.empty()
           ? getDriver().SysRoot
-          : makePath({getDriver().Dir, "..", "..", "sysroot"});
-  if (!llvm::sys::fs::exists(SysRoot))
+          : makePath({getDriver().getInstalledDir(), "..", "..", "sysroot"});
+  if (!getVFS().exists(SysRoot))
     return std::string();
 
   std::string ArchRoot = makePath({SysRoot, getMultiarchTriple(getTriple())});
-  return llvm::sys::fs::exists(ArchRoot) ? ArchRoot : SysRoot;
+  return getVFS().exists(ArchRoot) ? ArchRoot : SysRoot;
 }
 
 ToolChain::path_list OHOS::getRuntimePaths() const {

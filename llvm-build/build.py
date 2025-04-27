@@ -102,8 +102,11 @@ class BuildConfig():
         self.MINGW_TRIPLE = 'x86_64-windows-gnu'
         self.build_libs_with_hb = self.build_libs_flags == 'OH' or self.build_libs_flags == 'BOTH'
 
-        self.ARCHIVE_EXTENSION = '.tar.' + self.compression_format
-        self.ARCHIVE_OPTION = '-c' + ('j' if self.compression_format == "bz2" else 'z')
+        #self.ARCHIVE_EXTENSION = '.tar.' + self.compression_format
+        #self.ARCHIVE_OPTION = '-c' + ('j' if self.compression_format == "bz2" else 'z')
+        self.ARCHIVE_EXTENSION = '.tar.gz'
+        self.ARCHIVE_OPTION = '-cvz'
+
         self.LIBXML2_VERSION = None
         self.NCURSES_VERSION = None
         self.LIBEDIT_VERSION = None
@@ -1703,6 +1706,8 @@ class LlvmLibs(BuildUtils):
         rt_cflags.append('-fstack-protector-strong')
         rt_cflags.append('-funwind-tables')
         rt_cflags.append('-fno-omit-frame-pointer')
+        if llvm_triple == 'aarch64-linux-ohos' or llvm_triple == 'aarch64-unknown-linux-ohos':
+            rt_cflags.append('-mbranch-protection=bti')
 
         rt_defines = defines.copy()
         rt_defines['OHOS'] = '1'
@@ -1809,12 +1814,15 @@ class LlvmLibs(BuildUtils):
 
         suffix = '-' + multilib_suffix if multilib_suffix else ''
         crt_path = self.merge_out_path('lib', 'clangrt-%s%s' % (llvm_triple, suffix))
-        crt_install = os.path.join(llvm_install, 'lib', 'clang', self.build_config.VERSION)
+        crt_install = os.path.join(llvm_install, 'lib', 'clang', '19')
 
         crt_extra_flags = []
         if not self.build_config.target_debug:
             # Remove absolute paths from compiler-rt debug info emitted with -gline-tables-only
             crt_extra_flags = ['-ffile-prefix-map=%s=.' % self.build_config.REPOROOT_DIR]
+
+        if llvm_triple == 'aarch64-linux-ohos' or llvm_triple == 'aarch64-unknown-linux-ohos':
+            cflags.append('-mbranch-protection=bti')
 
         crt_defines = defines.copy()
         crt_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(ldflags)
@@ -1992,7 +2000,7 @@ class LlvmLibs(BuildUtils):
         self.logger().info('Building lldb for %s', arch)
 
         lldb_path = self.merge_out_path('lib', 'lldb-server-%s' % llvm_triple)
-        crt_install = os.path.join(llvm_install, 'lib', 'clang', self.build_config.VERSION)
+        crt_install = os.path.join(llvm_install, 'lib', 'clang', '19')
         out_dir = os.path.join(lldb_path, 'bin')
 
         lldb_ldflags = list(ldflags)
@@ -2464,6 +2472,26 @@ class LlvmPackage(BuildUtils):
     def __init__(self, build_config):
         super(LlvmPackage, self).__init__(build_config)
 
+    def move_libcxx(self, llvm_install, libcxx_install_dir):
+        src_aarch64_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'aarch64-unknown-linux-ohos', 'libc++_shared.so')
+        src_aarch64_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'aarch64-unknown-linux-ohos', 'libc++_static.a')
+        src_x86_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'x86_64-unknown-linux-ohos', 'libc++_shared.so')
+        src_x86_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'x86_64-unknown-linux-ohos', 'libc++_static.a')
+
+        dst_aarch64_dir = os.path.join(llvm_install, 'lib', 'aarch64-unknown-linux-ohos')
+        dst_x86_dir = os.path.join(llvm_install, 'lib', 'x86_64-unknown-linux-ohos')
+        if os.path.exists(src_aarch64_cxx_shared_dir) and os.path.exists(dst_aarch64_dir):
+            shutil.copy2(src_aarch64_cxx_shared_dir, dst_aarch64_dir)
+            
+        if os.path.exists(src_aarch64_cxx_static_dir) and os.path.exists(dst_aarch64_dir):
+            shutil.copy2(src_aarch64_cxx_static_dir, dst_aarch64_dir)
+        
+        if os.path.exists(src_x86_cxx_shared_dir) and os.path.exists(dst_x86_dir):
+            shutil.copy2(src_x86_cxx_shared_dir, dst_x86_dir)
+             
+        if os.path.exists(src_x86_cxx_static_dir) and os.path.exists(dst_x86_dir):
+            shutil.copy2(src_x86_cxx_static_dir, dst_x86_dir)
+
     def copy_lldb_tools_to_llvm_install(self, tools, lldb_path, crt_install, llvm_triple):
         dst_dir = os.path.join(crt_install, 'bin', llvm_triple)
         self.check_create_dir(dst_dir)
@@ -2487,7 +2515,8 @@ class LlvmPackage(BuildUtils):
 
             #Package libcxx-ndk
             for host in hosts_list:
-                tarball_name = 'libcxx-ndk-%s-%s' % (self.build_config.build_name, host)
+                #tarball_name = 'libcxx-ndk-%s-%s' % (self.build_config.build_name, host)
+                tarball_name = 'libcxx-ndk-%s' % (host)
                 package_path = '%s%s' % (self.merge_packages_path(tarball_name), self.build_config.ARCHIVE_EXTENSION)
                 self.logger().info('Packaging %s', package_path)
                 args = ['tar', self.build_config.ARCHIVE_OPTION, '-h', '-C', self.build_config.OUT_PATH, '-f', package_path, 'libcxx-ndk']
@@ -2812,7 +2841,8 @@ class LlvmPackage(BuildUtils):
 
         # Package ohos NDK
         if os.path.exists(self.merge_out_path('sysroot')):
-            tarball_ndk_name = 'ohos-sysroot-%s' % self.build_config.build_name
+            #tarball_ndk_name = 'ohos-sysroot-%s' % self.build_config.build_name
+            tarball_ndk_name = 'ohos-sysroot'
             package_ndk_path = '%s%s' % (self.merge_packages_path(tarball_ndk_name), self.build_config.ARCHIVE_EXTENSION)
             self.logger().info('Packaging %s', package_ndk_path)
             args = ['tar', self.build_config.ARCHIVE_OPTION, '-h', '-C', self.build_config.OUT_PATH, '-f', package_ndk_path, 'sysroot']
@@ -2973,7 +3003,8 @@ class LlvmPackage(BuildUtils):
     def package_operation(self, build_dir, host):
 
         self.logger().info('Packaging for other environments.')
-        package_name = 'clang-%s' % self.build_config.build_name
+        #package_name = 'clang-%s' % self.build_config.build_name
+        package_name = 'llvm'
         self.set_clang_version(build_dir)
 
         if host.startswith('windows'):
@@ -3089,6 +3120,7 @@ def main():
                    not build_config.build_only and ('windows' not in args.no_build)
 
     llvm_install = build_utils.merge_out_path('llvm-install')
+    libcxx_ndk_install = build_utils.merge_out_path('libcxx-ndk')
     llvm_make = build_utils.merge_out_path('llvm_make')
     windows64_install = build_utils.merge_out_path('windows-x86_64-install')
     llvm_path = llvm_install if not build_config.build_only else \
@@ -3252,6 +3284,8 @@ def main():
 
     if build_config.build_gtest_libs:
         llvm_libs.build_gtest(llvm_path, llvm_install)
+
+    llvm_package.move_libcxx(llvm_install, libcxx_ndk_install)
 
     if build_config.do_package:
         if build_utils.host_is_linux():
