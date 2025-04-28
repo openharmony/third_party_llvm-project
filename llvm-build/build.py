@@ -1763,6 +1763,32 @@ class LlvmLibs(BuildUtils):
 
 
     def create_link(self, llvm_install):
+        dst_dir = os.path.join(llvm_install, 'lib', 'clang', '19', 'lib')
+
+        src_aarch64_dir = os.path.join(dst_dir, "aarch64-unknown-linux-ohos")
+        src_x86_dir = os.path.join(dst_dir, "x86_64-unknown-linux-ohos")
+        
+        dst_aarch64_dir = os.path.join(dst_dir, "aarch64-linux-ohos")
+        dst_x86_dir = os.path.join(dst_dir, "x86_64-linux-ohos")
+
+        if os.path.exists(src_aarch64_dir) and not os.path.exists(dst_aarch64_dir):
+            os.symlink(os.path.basename(src_aarch64_dir), dst_aarch64_dir)
+
+        if os.path.exists(src_x86_dir) and not os.path.exists(dst_x86_dir):
+            os.symlink(os.path.basename(src_x86_dir), dst_x86_dir)
+
+        lib_aarch64_src_dir = os.path.join(llvm_install, 'lib', 'aarch64-unknown-linux-ohos')
+        lib_aarch64_dst_dir = os.path.join(llvm_install, 'lib', 'aarch64-linux-ohos')
+        if os.path.exists(lib_aarch64_src_dir) and not os.path.exists(lib_aarch64_dst_dir):    
+            os.symlink(os.path.basename(lib_aarch64_src_dir), lib_aarch64_dst_dir)
+        
+        lib_x86_64_src_dir = os.path.join(llvm_install, 'lib', 'x86_64-unknown-linux-ohos')
+        lib_x86_64_dst_dir = os.path.join(llvm_install, 'lib', 'x86_64-linux-ohos')
+        if os.path.exists(lib_x86_64_src_dir) and not os.path.exists(lib_x86_64_dst_dir):    
+            os.symlink(os.path.basename(lib_x86_64_src_dir), lib_x86_64_dst_dir)      
+
+
+    def create_link2(self, llvm_install):
         src_dir = os.path.join(llvm_install, 'lib', 'clang', '19.1.7', 'lib')
         dst_dir = os.path.join(llvm_install, 'lib', 'clang', '19', 'lib')
         
