@@ -1546,8 +1546,8 @@ void CodeGenFunction::EmitReturnStmt(const ReturnStmt &S) {
     case TEK_Scalar: {
       llvm::Value *Ret = EmitScalarExpr(RV);
       if (FnRetTy->isFunctionPointerType()) {
-        assert(dyn_cast<FunctionDecl>(CurFuncDecl) != nullptr);
-        if (cast<FunctionDecl>(CurFuncDecl)->isNoPac()) {
+        auto FN = dyn_cast<FunctionDecl>(CurCodeDecl);
+        if(FnRetTy.getQualifiers().hasNopac() || (FN && FN->isNoPac())) {
           auto NoPacAuthInfo = CGPointerAuthInfo();
           auto FuncPAI = CGM.getPointerAuthInfoForType(FnRetTy.getUnqualifiedType());
           Ret = emitPointerAuthResign(Ret, FnRetTy, FuncPAI, NoPacAuthInfo, false);
