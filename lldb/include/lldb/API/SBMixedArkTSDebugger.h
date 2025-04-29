@@ -44,6 +44,8 @@ public:
   ///     An lldb::SBData object which contain the raw cstring of ArkTS backtrace.
   lldb::SBData GetBackTrace(SBError &er);
 
+  lldb::SBData OperateDebugMessage(const char *message, SBError &er);
+
 private:
   lldb_private::MixedArkTSDebugger* m_opaque_ptr;
 };

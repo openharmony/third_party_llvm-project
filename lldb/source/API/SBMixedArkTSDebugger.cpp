@@ -52,3 +52,9 @@ lldb::SBData SBMixedArkTSDebugger::GetBackTrace(SBError &er) {
 
   return SBData(m_opaque_ptr->GetCurrentThreadBackTrace(er.ref()));
 }
+
+lldb::SBData SBMixedArkTSDebugger::OperateDebugMessage(const char *message, SBError &er) {
+  LLDB_INSTRUMENT_VA(this, er);
+
+  return SBData(m_opaque_ptr->GetCurrentThreadOperateDebugMessageResult(message, er.ref()));
+}

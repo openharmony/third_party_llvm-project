@@ -35,6 +35,8 @@ public:
   SBMixedArkTSDebugger(const lldb::TargetSP &taraget_sp);
 
   lldb::SBData GetBackTrace(SBError &er);
+
+  lldb::SBData OperateDebugMessage(const char *message, SBError &er);
 };
 
 } // namespace lldb
