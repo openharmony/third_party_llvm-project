@@ -1677,12 +1677,41 @@ void AddUnalignedAccessWarning(ArgStringList &CmdArgs) {
 }
 }
 
+static Arg *GetHighestPriorityOfARMPACArg(const ArgList &Args, bool isAArch64) {
+  Arg *A = nullptr;
+  bool hasPacRet = false;
+  std::vector<Arg *> filteredArgs;
+  if (isAArch64) {
+    for (auto *arg : Args.filtered(options::OPT_msign_return_address_EQ,
+                                   options::OPT_mbranch_protection_EQ)) {
+      filteredArgs.push_back(arg);
+    }
+  } else {
+    for (auto *arg : Args.filtered(options::OPT_mbranch_protection_EQ)) {
+      filteredArgs.push_back(arg);
+    }
+  }
+  for (auto *arg : filteredArgs) {
+    arg->claim();
+    StringRef value = arg->getValue();
+    if (value.contains("pac-ret")) {
+      if (!value.contains("pac-ret-strong")) {
+        hasPacRet = true;
+        A = arg;
+      } else if (!hasPacRet) {
+        A = arg;
+      }
+    } else {
+      hasPacRet = false;
+      A = arg;
+    }
+  }
+  return A;
+}
+
 static void CollectARMPACBTIOptions(const ToolChain &TC, const ArgList &Args,
                                     ArgStringList &CmdArgs, bool isAArch64) {
-  const Arg *A = isAArch64
-                     ? Args.getLastArg(options::OPT_msign_return_address_EQ,
-                                       options::OPT_mbranch_protection_EQ)
-                     : Args.getLastArg(options::OPT_mbranch_protection_EQ);
+  const Arg *A = GetHighestPriorityOfARMPACArg(Args, isAArch64);
   if (!A)
     return;
 
@@ -1692,7 +1721,7 @@ static void CollectARMPACBTIOptions(const ToolChain &TC, const ArgList &Args,
     D.Diag(diag::warn_incompatible_branch_protection_option)
         << Triple.getArchName();
 
-  StringRef Scope, Key;
+  StringRef Scope, Key, Type;
   bool IndirectBranches;
 
   if (A->getOption().matches(options::OPT_msign_return_address_EQ)) {
@@ -1713,11 +1742,14 @@ static void CollectARMPACBTIOptions(const ToolChain &TC, const ArgList &Args,
           << "b-key" << A->getAsString(Args);
     Scope = PBP.Scope;
     Key = PBP.Key;
+    Type = PBP.Type;
     IndirectBranches = PBP.BranchTargetEnforcement;
   }
-
   CmdArgs.push_back(
       Args.MakeArgString(Twine("-msign-return-address=") + Scope));
+  if (!Type.equals("none"))
+    CmdArgs.push_back(
+        Args.MakeArgString(Twine("-msign-return-address-type=") + Type));
   if (!Scope.equals("none"))
     CmdArgs.push_back(
         Args.MakeArgString(Twine("-msign-return-address-key=") + Key));
