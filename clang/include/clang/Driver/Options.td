@@ -4275,6 +4275,15 @@ defm ptrauth_cxx_virtual_function_pointer_zero_discrimination : OptInCC1FFlag<"p
   "Enable zero discrimination on CXX virtual function pointers">;
 defm ptrauth_init_fini_zero_discrimination : OptInCC1FFlag<"ptrauth-init-fini-zero-discrimination",
   "Enable zero discrimination of function pointers in init/fini arrays">;
+
+defm ptrauth_mangle_class : OptInCC1FFlag<"ptrauth-mangle-class",
+  "Add PAC_ prefix to class names compiled with pointer authentication">;
+defm ptrauth_mangle_func : OptInCC1FFlag<"ptrauth-mangle-func",
+  "Add PAC_ prefix to functions and variables with types conaining pointer to functions when compiled with pointer authentication">;
+defm ptrauth_mangle_cxxabi : OptInCC1FFlag<"ptrauth-mangle-cxxabi",
+  "Add PAC_ prefix to cxxabi classes. This is needed when libcxx is compiled with pointer authentication.">;
+
+
 defm ptrauth_nopac_atexit : OptInCC1FFlag<"ptrauth-nopac-atexit", "Enable NoPac for atexit function pointers">;
 defm ptrauth_nopac_throw : OptInCC1FFlag<"ptrauth-nopac-trow", "Enable NoPac for destructor pointers on throw">;  
 }

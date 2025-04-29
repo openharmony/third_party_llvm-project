@@ -1545,6 +1545,30 @@ static void handlePAuthABI(const ArgList &DriverArgs, ArgStringList &CC1Args) {
   if (!DriverArgs.hasArg(options::OPT_fptrauth_nopac_throw,
                          options::OPT_fno_ptrauth_nopac_throw))
     CC1Args.push_back("-fptrauth-nopac-throw");
+
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_cxx_function_pointer_zero_discrimination,
+      options::OPT_fno_ptrauth_cxx_function_pointer_zero_discrimination))
+    CC1Args.push_back("-fptrauth-cxx-function-pointer-zero-discrimination");
+
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_cxx_virtual_function_pointer_zero_discrimination,
+      options::OPT_fno_ptrauth_cxx_virtual_function_pointer_zero_discrimination))
+    CC1Args.push_back("-fptrauth-cxx-virtual-function-pointer-zero-discrimination");
+
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_init_fini_zero_discrimination,
+      options::OPT_fno_ptrauth_init_fini_zero_discrimination))
+    CC1Args.push_back("-fptrauth-init-fini-zero-discrimination");
+
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_mangle_class,
+      options::OPT_fno_ptrauth_mangle_class))
+    CC1Args.push_back("-fptrauth-mangle-class");
+
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_mangle_func,
+      options::OPT_fno_ptrauth_mangle_func))
+    CC1Args.push_back("-fptrauth-mangle-func");
+
+  if (!DriverArgs.hasArg(options::OPT_fptrauth_mangle_cxxabi,
+      options::OPT_fno_ptrauth_mangle_func))
+    CC1Args.push_back("-fptrauth-mangle-cxxabi");
 }
 
 static void CollectARMPACBTIOptions(const ToolChain &TC, const ArgList &Args,
@@ -1897,6 +1921,17 @@ void Clang::AddAArch64TargetArgs(const ArgList &Args,
   Args.addOptInFlag(
       CmdArgs, options::OPT_fptrauth_init_fini_zero_discrimination,
       options::OPT_fno_ptrauth_init_fini_zero_discrimination);
+  Args.addOptInFlag(
+      CmdArgs, options::OPT_fptrauth_mangle_class,
+      options::OPT_fno_ptrauth_mangle_class);
+  Args.addOptInFlag(
+      CmdArgs, options::OPT_fptrauth_mangle_func,
+      options::OPT_fno_ptrauth_mangle_func);
+  Args.addOptInFlag(
+      CmdArgs, options::OPT_fptrauth_mangle_cxxabi,
+      options::OPT_fno_ptrauth_mangle_cxxabi);
+
+        
   Args.addOptInFlag(
       CmdArgs, options::OPT_fptrauth_nopac_atexit,
       options::OPT_fno_ptrauth_nopac_atexit);

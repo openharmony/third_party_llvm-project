@@ -3034,7 +3034,16 @@ bool ASTContext::isPointerToFunction(QualType &type, int &level)
   for(level = 0; t->isPointerType(); level++, t = t->getPointeeType());
   return level > 0 && t->isFunctionType();
 }
- 
+
+bool ASTContext::isFunctionDeclPtr2Fun(const FunctionDecl *FD) 
+{
+  // llvm::outs() << "  - function declaration \n";
+  QualType t = FD->getType();
+  bool hasNopac;
+  getNopacQualType(t, hasNopac);
+  return hasNopac;
+}
+
 bool ASTContext::addNopacFunctionDecl(FunctionDecl *FD)
 {
   // llvm::outs() << "  - function declaration \n";

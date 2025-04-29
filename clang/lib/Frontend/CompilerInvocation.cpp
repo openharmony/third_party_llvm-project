@@ -3468,6 +3468,14 @@ static void GeneratePointerAuthArgs(const LangOptions &Opts,
     GenerateArg(Consumer, OPT_fptrauth_cxx_virtual_function_pointer_zero_discrimination);
   if (Opts.PointerAuthInitFiniZeroDiscrimination)
     GenerateArg(Consumer, OPT_fptrauth_init_fini_zero_discrimination);
+
+  if (Opts.PointerAuthMangleClass)
+    GenerateArg(Consumer, OPT_fptrauth_mangle_class);
+  if (Opts.PointerAuthMangleFunc)
+    GenerateArg(Consumer, OPT_fptrauth_mangle_func);
+  if (Opts.PointerAuthMangleCxxabi)
+    GenerateArg(Consumer, OPT_fptrauth_mangle_cxxabi);
+
   if (Opts.PointerAuthNoPacAtexit)
     GenerateArg(Consumer, OPT_fptrauth_nopac_atexit);
   if (Opts.PointerAuthNoPacThrow)
@@ -3501,6 +3509,12 @@ static void ParsePointerAuthArgs(LangOptions &Opts, ArgList &Args,
       Args.hasArg(OPT_fptrauth_cxx_virtual_function_pointer_zero_discrimination);
   Opts.PointerAuthInitFiniZeroDiscrimination =
       Args.hasArg(OPT_fptrauth_init_fini_zero_discrimination);
+
+  Opts.PointerAuthMangleClass = Args.hasArg(OPT_fptrauth_mangle_class);
+  Opts.PointerAuthMangleFunc = Args.hasArg(OPT_fptrauth_mangle_func);
+  Opts.PointerAuthMangleCxxabi = Args.hasArg(OPT_fptrauth_mangle_cxxabi);
+
+
   Opts.PointerAuthNoPacAtexit =
       Args.hasArg(OPT_fptrauth_nopac_atexit);
   Opts.PointerAuthNoPacAtexit =

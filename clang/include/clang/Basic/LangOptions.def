@@ -181,6 +181,10 @@ LANGOPT(PointerAuthCxxFunctionPointerZeroDiscrimination, 1, 0, "Enable zero disc
 LANGOPT(PointerAuthCxxVirtualFunctionPointerZeroDiscrimination, 1, 0, "Enable zero discrimination on CXX virtual function pointers")
 LANGOPT(PointerAuthInitFiniZeroDiscrimination, 1, 0, "Enable zero discrimination of function pointers in init/fini arrays")
 
+LANGOPT(PointerAuthMangleClass, 1, 0, "Add PAC_ prefix to class names compiled with pointer authentication")
+LANGOPT(PointerAuthMangleFunc, 1, 0, "Add PAC_ prefix to functions and variables with types conaining pointer to functions when compiled with pointer authentication")
+LANGOPT(PointerAuthMangleCxxabi, 1, 0, "Add PAC_ prefix to cxxabi classes. This is needed when libcxx is compiled with pointer authentication")
+
 LANGOPT(PointerAuthNoPacAtexit, 1, 0, "Enable NoPac for atexit function pointers")
 LANGOPT(PointerAuthNoPacThrow, 1, 0, "Enable NoPac for function pointers to throw")
 

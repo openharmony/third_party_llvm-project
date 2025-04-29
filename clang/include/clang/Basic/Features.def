@@ -120,6 +120,11 @@ FEATURE(ptrauth_indirect_gotos, LangOpts.PointerAuthIndirectGotos)
 FEATURE(ptrauth_cxx_function_pointer_zero_discrimination, LangOpts.PointerAuthCxxFunctionPointerZeroDiscrimination)
 FEATURE(ptrauth_cxx_virtual_function_pointer_zero_discrimination, LangOpts.PointerAuthCxxVirtualFunctionPointerZeroDiscrimination)
 FEATURE(ptrauth_init_fini_zero_discrimination, LangOpts.PointerAuthInitFiniZeroDiscrimination)
+
+FEATURE(ptrauth_mangle_class, LangOpts.PointerAuthMangleClass)
+FEATURE(ptrauth_mangle_func, LangOpts.PointerAuthMangleFunc)
+FEATURE(ptrauth_mangle_cxxabi, LangOpts.PointerAuthMangleCxxabi)
+
 FEATURE(ptrauth_nopac_atexit, LangOpts.PointerAuthNoPacAtexit)
 FEATURE(ptrauth_nopac_throw, LangOpts.PointerAuthNoPacThrow)
 

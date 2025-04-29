@@ -1631,6 +1631,7 @@ public:
   static bool isPointerToFunction(QualType &type, int &level);
   bool addNopacFunctionDecl(FunctionDecl *FD);
   bool AddNopacTypedefNameDecl(TypedefNameDecl *D);
+  bool isFunctionDeclPtr2Fun(const FunctionDecl *FD);
 
 private:
   /// Return a normal function type with a typed argument list.

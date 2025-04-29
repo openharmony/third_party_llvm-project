@@ -1864,6 +1864,25 @@ static std::string getMangledNameImpl(CodeGenModule &CGM, GlobalDecl GD,
                GD.getKernelReferenceKind() == KernelReferenceKind::Stub) {
       Out << "__device_stub__" << II->getName();
     } else {
+
+      auto &ctx = GD.getDecl()->getASTContext();
+      auto &langOptions = CGM.getLangOpts();
+      bool isPac = langOptions.PointerAuthMangleFunc && FD && ctx.isFunctionDeclPtr2Fun(FD) && !FD->isNoPac();
+      isPac = isPac
+        && II->getName().str() != "__cxa_throw"
+        && II->getName().str() != "__cxa_atexit"
+        && II->getName().str() != "dl_iterate_phdr"
+        && II->getName().str() != "pthread_key_create"
+        && II->getName().str() != "pthread_once"
+        && II->getName().str() != "__clone"
+        //&& II->getName().str() != ""
+        //&& II->getName().str() != ""
+        ;
+
+      if(isPac)
+      {
+        Out << "PAC_";
+      }
       Out << II->getName();
     }
   }

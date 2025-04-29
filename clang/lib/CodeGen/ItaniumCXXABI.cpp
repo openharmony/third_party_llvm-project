@@ -3854,15 +3854,18 @@ static bool CanUseSingleInheritance(const CXXRecordDecl *RD) {
 
 void ItaniumRTTIBuilder::BuildVTablePointer(const Type *Ty,
                                             llvm::Constant *StorageAddress) {
+  bool mangleCxxabi = CGM.getContext().getLangOpts().PointerAuthMangleCxxabi;
+
   // abi::__class_type_info.
-  static const char * const ClassTypeInfo =
-    "_ZTVN10__cxxabiv117__class_type_infoE";
+  const char * ClassTypeInfo =
+    mangleCxxabi ? "_ZTVN10__cxxabiv121PAC___class_type_infoE" : "_ZTVN10__cxxabiv117__class_type_infoE";
   // abi::__si_class_type_info.
-  static const char * const SIClassTypeInfo =
-    "_ZTVN10__cxxabiv120__si_class_type_infoE";
+  const char * SIClassTypeInfo =
+    mangleCxxabi ? "_ZTVN10__cxxabiv124PAC___si_class_type_infoE" : "_ZTVN10__cxxabiv120__si_class_type_infoE";
   // abi::__vmi_class_type_info.
-  static const char * const VMIClassTypeInfo =
-    "_ZTVN10__cxxabiv121__vmi_class_type_infoE";
+  const char * VMIClassTypeInfo =
+    mangleCxxabi ? "_ZTVN10__cxxabiv125PAC___vmi_class_type_infoE" : "_ZTVN10__cxxabiv121__vmi_class_type_infoE";
+    
 
   const char *VTableName = nullptr;
 
@@ -3900,25 +3903,25 @@ void ItaniumRTTIBuilder::BuildVTablePointer(const Type *Ty,
   // FIXME: GCC treats block pointers as fundamental types?!
   case Type::BlockPointer:
     // abi::__fundamental_type_info.
-    VTableName = "_ZTVN10__cxxabiv123__fundamental_type_infoE";
+    VTableName = mangleCxxabi ? "_ZTVN10__cxxabiv127PAC___fundamental_type_infoE" : "_ZTVN10__cxxabiv123__fundamental_type_infoE";
     break;
 
   case Type::ConstantArray:
   case Type::IncompleteArray:
   case Type::VariableArray:
     // abi::__array_type_info.
-    VTableName = "_ZTVN10__cxxabiv117__array_type_infoE";
+    VTableName = mangleCxxabi ? "_ZTVN10__cxxabiv121PAC___array_type_infoE" : "_ZTVN10__cxxabiv117__array_type_infoE";
     break;
 
   case Type::FunctionNoProto:
   case Type::FunctionProto:
     // abi::__function_type_info.
-    VTableName = "_ZTVN10__cxxabiv120__function_type_infoE";
+    VTableName = mangleCxxabi ? "_ZTVN10__cxxabiv124PAC___function_type_infoE": "_ZTVN10__cxxabiv120__function_type_infoE";
     break;
 
   case Type::Enum:
     // abi::__enum_type_info.
-    VTableName = "_ZTVN10__cxxabiv116__enum_type_infoE";
+    VTableName = mangleCxxabi ? "_ZTVN10__cxxabiv120PAC___enum_type_infoE" : "_ZTVN10__cxxabiv116__enum_type_infoE";
     break;
 
   case Type::Record: {
@@ -3960,12 +3963,12 @@ void ItaniumRTTIBuilder::BuildVTablePointer(const Type *Ty,
   case Type::ObjCObjectPointer:
   case Type::Pointer:
     // abi::__pointer_type_info.
-    VTableName = "_ZTVN10__cxxabiv119__pointer_type_infoE";
+    VTableName = mangleCxxabi ? "_ZTVN10__cxxabiv123PAC___pointer_type_infoE" : "_ZTVN10__cxxabiv119__pointer_type_infoE";
     break;
 
   case Type::MemberPointer:
     // abi::__pointer_to_member_type_info.
-    VTableName = "_ZTVN10__cxxabiv129__pointer_to_member_type_infoE";
+    VTableName = mangleCxxabi ? "_ZTVN10__cxxabiv133PAC___pointer_to_member_type_infoE" : "_ZTVN10__cxxabiv129__pointer_to_member_type_infoE";
     break;
   }
 

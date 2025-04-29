@@ -1656,9 +1656,27 @@ static void handleIFuncAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
 }
 
 static void handleAliasAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
+
   StringRef Str;
   if (!S.checkStringLiteralArgumentAttr(AL, 0, Str))
     return;
+
+  auto FD = dyn_cast<FunctionDecl>(D);
+  // todo: unify this with the test from getMangledNameImpl
+  bool isPac = S.getLangOpts().PointerAuthMangleFunc && FD && S.Context.isFunctionDeclPtr2Fun(FD) && !FD->isNoPac();
+  isPac = isPac
+    && Str.str() != "__cxa_throw"
+    && Str.str() != "__cxa_atexit"
+    && Str.str() != "dl_iterate_phdr"
+    && Str.str() != "pthread_key_create"
+    && Str.str() != "pthread_once"
+    && Str.str() != "__clone"
+    ;
+  if(isPac)
+  {
+    auto s = new std::string("PAC_" + Str.str());
+    Str = s->c_str();
+  }
 
   if (S.Context.getTargetInfo().getTriple().isOSDarwin()) {
     S.Diag(AL.getLoc(), diag::err_alias_not_supported_on_darwin);

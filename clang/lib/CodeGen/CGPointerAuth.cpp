@@ -487,7 +487,6 @@ std::optional<CGPointerAuthInfo>
 CodeGenModule::getVTablePointerAuthInfo(CodeGenFunction *CGF,
                                         const CXXRecordDecl *Record,
                                         llvm::Value *StorageAddress) {
-  // viorel: changed the test to include possible template instantiation.
   bool NoPac = Record->isNoPac();
   if (NoPac)
     return std::nullopt;
