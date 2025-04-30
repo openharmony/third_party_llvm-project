@@ -2291,6 +2291,8 @@ bool DevirtModule::run() {
 
     // The rest of the code is only necessary when exporting or during regular
     // LTO, so we are done.
+    for (auto *CI : CallsWithPtrAuthBundleRemoved)
+      CI->eraseFromParent();
     return true;
   }
 
