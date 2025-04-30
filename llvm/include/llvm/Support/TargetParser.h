@@ -184,7 +184,6 @@ namespace ARM {
 struct ParsedBranchProtection {
   StringRef Scope;
   StringRef Key;
-  StringRef Type;
   bool BranchTargetEnforcement;
 };
 

@@ -3538,13 +3538,6 @@ void CompilerInvocation::GenerateLangArgs(const LangOptions &Opts,
       LangOptions::SignReturnAddressKeyKind::BKey)
     GenerateArg(Args, OPT_msign_return_address_key_EQ, "b_key", SA);
 
-  if (Opts.getSignReturnAddressType() ==
-      LangOptions::SignReturnAddressTypeKind::PacRet)
-    GenerateArg(Args, OPT_msign_return_address_type_EQ, "pac_ret", SA);
-  else if (Opts.getSignReturnAddressType() ==
-           LangOptions::SignReturnAddressTypeKind::PacRetStrong)
-    GenerateArg(Args, OPT_msign_return_address_type_EQ, "pac_ret_strong", SA);
-
   if (Opts.CXXABI)
     GenerateArg(Args, OPT_fcxx_abi_EQ, TargetCXXABI::getSpelling(*Opts.CXXABI),
                 SA);
@@ -4059,21 +4052,6 @@ bool CompilerInvocation::ParseLangArgs(LangOptions &Opts, ArgList &Args,
         else
           Diags.Report(diag::err_drv_invalid_value)
               << A->getAsString(Args) << SignKey;
-      }
-    }
-
-    if (Arg *A = Args.getLastArg(OPT_msign_return_address_type_EQ)) {
-      StringRef SignType = A->getValue();
-      if (!SignScope.empty() && !SignType.empty()) {
-        if (SignType.equals_insensitive("pac_ret"))
-          Opts.setSignReturnAddressType(
-              LangOptions::SignReturnAddressTypeKind::PacRet);
-        else if (SignType.equals_insensitive("pac_ret_strong"))
-          Opts.setSignReturnAddressType(
-              LangOptions::SignReturnAddressTypeKind::PacRetStrong);
-        else
-          Diags.Report(diag::err_drv_invalid_value)
-              << A->getAsString(Args) << SignType;
       }
     }
   }

@@ -5564,8 +5564,6 @@ def fwarn_stack_size_EQ
 // don't have to parse the parameter twice.
 def msign_return_address_key_EQ : Joined<["-"], "msign-return-address-key=">,
     Values<"a_key,b_key">;
-def msign_return_address_type_EQ : Joined<["-"], "msign-return-address-type=">,
-    Values<"none,pac_ret,pac_ret_strong">;
 def mbranch_target_enforce : Flag<["-"], "mbranch-target-enforce">,
   MarshallingInfoFlag<LangOpts<"BranchTargetEnforcement">>;
 def fno_dllexport_inlines : Flag<["-"], "fno-dllexport-inlines">,
