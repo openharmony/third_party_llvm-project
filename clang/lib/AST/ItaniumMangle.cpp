@@ -1486,19 +1486,32 @@ void CXXNameMangler::mangleUnqualifiedName(
   auto &ctx = GD.getDecl()->getASTContext();
   auto &langOptions = ctx.getLangOpts();
 
-  if(langOptions.PointerAuthCalls)
+  bool pauth_class = langOptions.PointerAuthCalls
+    || langOptions.VirtualFunctionPointerAuthCallOnly
+    || langOptions.MemberFunctionPointerAuthCallOnly
+    || langOptions.VTablePointerAuthOnly;
+  bool pauth_func = langOptions.PointerAuthCalls
+    || langOptions.IndirectPointerAuthCallOnly
+    || langOptions.VirtualFunctionPointerAuthCallOnly
+    || langOptions.MemberFunctionPointerAuthCallOnly;
+
+  if (pauth_class)
   {
-    if(const CXXRecordDecl *A = dyn_cast<const CXXRecordDecl>(GD.getDecl()))
+    if (const CXXRecordDecl *A = dyn_cast<const CXXRecordDecl>(GD.getDecl()))
     {
       // todo: if class info is signed, then we must mangle also the name of non polymorphic classes.
-      isPac = langOptions.PointerAuthMangleClass && (!A->hasDefinition() || A->isPolymorphic()) && !A->isNoPac();
-    }
-    else if(const FunctionDecl *A = dyn_cast<const FunctionDecl>(GD.getDecl()))
-    {
-      isPac = langOptions.PointerAuthMangleFunc && ctx.isFunctionDeclPtr2Fun(A) && !A->isNoPac();
+      isPac = langOptions.PointerAuthMangleClass
+        && (!A->hasDefinition() || A->isPolymorphic()) && !A->isNoPac();
     }
   }
-
+  if (pauth_func)
+  {
+    if (const FunctionDecl *A = dyn_cast<const FunctionDecl>(GD.getDecl()))
+    {
+      isPac = langOptions.PointerAuthMangleFunc
+        && ctx.isFunctionDeclPtr2Fun(A) && !A->isNoPac();
+    }
+  }
 
   unsigned Arity = KnownArity;
   switch (Name.getNameKind()) {
