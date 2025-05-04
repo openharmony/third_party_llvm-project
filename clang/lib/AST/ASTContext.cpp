@@ -3143,6 +3143,37 @@ QualType ASTContext::getFunctionTypeWithoutNopac(QualType T) const {
   return T;
 }
 
+bool ASTContext::hasNopacRec(const QualType &type) const
+{
+  if (type.isNull()) {
+    return false;
+  }
+  if (type.getQualifiers().hasNopac()) {
+    return true;
+  }
+  if (type->isFunctionNoProtoType()) {
+    const FunctionNoProtoType *F = type.getTypePtr()->castAs<FunctionNoProtoType>();
+    if(hasNopacRec(F->getReturnType())) {
+      return true;
+    }
+    return false;
+  } else if (type->isFunctionProtoType()) {
+    const FunctionProtoType *FPT = type.getTypePtr()->castAs<FunctionProtoType>();
+    if(hasNopacRec(FPT->getReturnType()))  {
+      return true;
+    }
+    for(auto t : FPT->param_types()) {
+      if(hasNopacRec(t)) {
+        return true;
+      }
+    }
+  } else if(type->isPointerType() && type->isReferenceType()) {
+    auto t = type->getPointeeType();
+    return hasNopacRec(t);
+  }
+  return false;
+}
+
 QualType ASTContext::getNopacQualType(const QualType &type, bool &hasNopac) const 
 {
   hasNopac = false;

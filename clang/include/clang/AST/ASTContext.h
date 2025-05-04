@@ -1622,6 +1622,7 @@ public:
 
   QualType adjustStringLiteralBaseType(QualType StrLTy) const;
 
+  bool hasNopacRec(const QualType &type) const;
   QualType getNopacQualType(const QualType &type, bool &hasNopac) const;
   QualType removeNopacQualType(QualType T) const;
  
