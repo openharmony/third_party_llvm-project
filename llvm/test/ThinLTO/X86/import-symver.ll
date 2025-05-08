@@ -8,6 +8,8 @@
 ; RUN: llvm-lto -thinlto-action=import -exported-symbol=main -import-instr-limit=0 %t1.bc -thinlto-index=%t3.index.bc
 ; RUN: llvm-dis %t1.bc.thinlto.imported.bc -o - | FileCheck --check-prefix=NOIMPORT %s
 
+; When @foo gets imported, the symver must be imported as @ rather than @@.
+; IMPORT: module asm ".symver foo, foo@FOO_1.2.3"
 ; When @bar gets imported, the symver must be imported too.
 ; IMPORT: module asm ".symver bar, bar@BAR_1.2.3"
 ; IMPORT: declare dso_local i32 @bar()

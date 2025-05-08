@@ -30,6 +30,11 @@
 #include <utility>
 using namespace llvm;
 
+static cl::opt<bool> ReplaceImportedSymverAsDeclare(
+    "replace-imported-symver-as-declare",
+    cl::desc("Replace imported symver as declare"), cl::init(true),
+    cl::Hidden);
+
 //===----------------------------------------------------------------------===//
 // TypeMap implementation.
 //===----------------------------------------------------------------------===//
@@ -1622,7 +1627,15 @@ Error IRLinker::run() {
         SmallString<256> S(".symver ");
         S += Name;
         S += ", ";
-        S += Alias;
+        auto Pos = Alias.find("@@");
+        if (ReplaceImportedSymverAsDeclare &&
+            (Pos != StringRef::npos && !Alias.startswith("@@@"))) {
+          S += Alias.substr(0, Pos);
+          S += '@';
+          S += Alias.substr(Pos + 2);
+        } else {
+          S += Alias;
+        }
         DstM.appendModuleInlineAsm(S);
       }
     });
