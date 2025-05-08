@@ -1309,75 +1309,12 @@ public:
     return true;
   }
 
-  class BranchProtectionInfo {
-  public:
-    BranchProtectionInfo()
-        : SignReturnAddr(LangOptions::SignReturnAddressScopeKind::None),
-          SignKey(LangOptions::SignReturnAddressKeyKind::AKey),
-          SignType(LangOptions::SignReturnAddressTypeKind::None),
-          BranchTargetEnforcement(false) {}
-
-    BranchProtectionInfo(const LangOptions &LangOpts) {
-      SignReturnAddr =
-          LangOpts.hasSignReturnAddress()
-              ? (LangOpts.isSignReturnAddressScopeAll()
-                     ? LangOptions::SignReturnAddressScopeKind::All
-                     : LangOptions::SignReturnAddressScopeKind::NonLeaf)
-              : LangOptions::SignReturnAddressScopeKind::None;
-      SignKey = LangOpts.isSignReturnAddressWithAKey()
-                    ? LangOptions::SignReturnAddressKeyKind::AKey
-                    : LangOptions::SignReturnAddressKeyKind::BKey;
-
-      SignType =
-          LangOpts.hasSignReturnAddressType()
-              ? (LangOpts.isSignReturnAddressTypePacRetStrong()
-                     ? LangOptions::SignReturnAddressTypeKind::PacRetStrong
-                     : LangOptions::SignReturnAddressTypeKind::PacRet)
-              : LangOptions::SignReturnAddressTypeKind::None;
-      BranchTargetEnforcement = LangOpts.BranchTargetEnforcement;
-    }
-
-    const char *getSignReturnAddrStr() const {
-      switch (SignReturnAddr) {
-      case LangOptions::SignReturnAddressScopeKind::None:
-        return "none";
-      case LangOptions::SignReturnAddressScopeKind::NonLeaf:
-        return "non-leaf";
-      case LangOptions::SignReturnAddressScopeKind::All:
-        return "all";
-      default:
-        llvm_unreachable("Unexpected SignReturnAddressScopeKind");
-      }
-    }
-
-    const char *getSignKeyStr() const {
-      switch (SignKey) {
-      case LangOptions::SignReturnAddressKeyKind::AKey:
-        return "a_key";
-      case LangOptions::SignReturnAddressKeyKind::BKey:
-        return "b_key";
-      default:
-        llvm_unreachable("Unexpected SignReturnAddressKeyKind");
-      }
-    }
-
-    const char *getSignTypeStr() const {
-      switch (SignType) {
-      case LangOptions::SignReturnAddressTypeKind::None:
-        return "none";
-      case LangOptions::SignReturnAddressTypeKind::PacRet:
-        return "pac_ret";
-      case LangOptions::SignReturnAddressTypeKind::PacRetStrong:
-        return "pac_ret_strong";
-      default:
-        llvm_unreachable("Unexpected SignReturnAddressTypeKind");
-      }
-    }
-
-    LangOptions::SignReturnAddressScopeKind SignReturnAddr;
-    LangOptions::SignReturnAddressKeyKind SignKey;
-    LangOptions::SignReturnAddressTypeKind SignType;
-    bool BranchTargetEnforcement;
+  struct BranchProtectionInfo {
+    LangOptions::SignReturnAddressScopeKind SignReturnAddr =
+        LangOptions::SignReturnAddressScopeKind::None;
+    LangOptions::SignReturnAddressKeyKind SignKey =
+        LangOptions::SignReturnAddressKeyKind::AKey;
+    bool BranchTargetEnforcement = false;
   };
 
   /// Determine if the Architecture in this TargetInfo supports branch
