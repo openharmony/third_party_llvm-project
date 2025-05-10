@@ -48,34 +48,34 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeXVMTarget() {
   initializeDSELegacyPassPass(PR);
   initializeJumpThreadingPass(PR);
 
-  initializeMachineCSEPass(PR);
-  initializeCorrelatedValuePropagationPass(PR);
-  initializeInstructionCombiningPassPass(PR);
-  initializeSimpleLoopUnswitchLegacyPassPass(PR);
-  initializeAggressiveInstCombinerLegacyPassPass(PR);
+  // initializeMachineCSEPass(PR);
+  // initializeCorrelatedValuePropagationPass(PR);
+  // initializeInstructionCombiningPassPass(PR);
+  // initializeSimpleLoopUnswitchLegacyPassPass(PR);
+  // initializeAggressiveInstCombinerLegacyPassPass(PR);
 
-  initializeCallSiteSplittingLegacyPassPass(PR);
-  initializeFunctionSpecializationLegacyPassPass(PR);
+  // initializeCallSiteSplittingLegacyPassPass(PR);
+  // initializeFunctionSpecializationLegacyPassPass(PR);
 
 
-  initializeConstantMergeLegacyPassPass(PR);
-  initializeGlobalDCELegacyPassPass(PR);
-  initializeEliminateAvailableExternallyLegacyPassPass(PR);
-  initializeGVNLegacyPassPass(PR);
+  // initializeConstantMergeLegacyPassPass(PR);
+  // initializeGlobalDCELegacyPassPass(PR);
+  // initializeEliminateAvailableExternallyLegacyPassPass(PR);
+  // initializeGVNLegacyPassPass(PR);
 
-  initializeLoopUnrollAndJamPass(PR);
-  initializeLoopUnrollPass(PR);
+  // initializeLoopUnrollAndJamPass(PR);
+  // initializeLoopUnrollPass(PR);
 
-  // initializeLoopFuseLegacyPass(PR);
-  initializeLoopDataPrefetchLegacyPassPass(PR);
-  initializeLoopDeletionLegacyPassPass(PR);
-  initializeLoopAccessLegacyAnalysisPass(PR);
-  initializeLoopInstSimplifyLegacyPassPass(PR);
-  initializeLoopInterchangeLegacyPassPass(PR);
-  initializeLoopFlattenLegacyPassPass(PR);
-  initializeLoopPredicationLegacyPassPass(PR);
-  initializeLoopRotateLegacyPassPass(PR);
-  initializeLoopStrengthReducePass(PR);
+  // // initializeLoopFuseLegacyPass(PR);
+  // initializeLoopDataPrefetchLegacyPassPass(PR);
+  // initializeLoopDeletionLegacyPassPass(PR);
+  // initializeLoopAccessLegacyAnalysisPass(PR);
+  // initializeLoopInstSimplifyLegacyPassPass(PR);
+  // initializeLoopInterchangeLegacyPassPass(PR);
+  // initializeLoopFlattenLegacyPassPass(PR);
+  // initializeLoopPredicationLegacyPassPass(PR);
+  // initializeLoopRotateLegacyPassPass(PR);
+  // initializeLoopStrengthReducePass(PR);
 
   // initializeBasicBlockSectionsPass(PR);
 }
@@ -140,33 +140,33 @@ bool XVMPassConfig::addPreISel() {
   addPass(createSpeculativeExecutionPass());
   addPass(createMergedLoadStoreMotionPass());
 
-  addPass(createEarlyCSEPass());
-  addPass(createCorrelatedValuePropagationPass());
-  addPass(createInstructionCombiningPass());
-  addPass(createSimpleLoopUnswitchLegacyPass(true));
-  addPass(createAggressiveInstCombinerPass());
-  addPass(createCallSiteSplittingPass());
-  addPass(createFunctionSpecializationPass());
+  // addPass(createEarlyCSEPass());
+  // addPass(createCorrelatedValuePropagationPass());
+  // addPass(createInstructionCombiningPass());
+  // addPass(createSimpleLoopUnswitchLegacyPass(true));
+  // addPass(createAggressiveInstCombinerPass());
+  // addPass(createCallSiteSplittingPass());
+  // addPass(createFunctionSpecializationPass());
 
-  addPass(createConstantMergePass());
-  addPass(createGlobalDCEPass());
-  addPass(createEliminateAvailableExternallyPass());
-  addPass(createTailCallEliminationPass());
-  addPass(createGVNPass(false));
+  // addPass(createConstantMergePass());
+  // addPass(createGlobalDCEPass());
+  // addPass(createEliminateAvailableExternallyPass());
+  // addPass(createTailCallEliminationPass());
+  // addPass(createGVNPass(false));
 
-  addPass(createLoopUnrollAndJamPass(3));
-  addPass(createLoopUnrollPass(3));
+  // addPass(createLoopUnrollAndJamPass(3));
+  // addPass(createLoopUnrollPass(3));
 
-  // addPass(createLoopFusePass());
-  addPass(createLoopDataPrefetchPass());
-  addPass(createLoopDeletionPass());
-  // addPass(createLoopAccessLegacyAnalysisPass());
-  addPass(createLoopInstSimplifyPass());
-  addPass(createLoopInterchangePass());
-  addPass(createLoopFlattenPass());
-  addPass(createLoopPredicationPass());
-  addPass(createLoopRotatePass());
-  addPass(createLoopStrengthReducePass());
+  // // addPass(createLoopFusePass());
+  // addPass(createLoopDataPrefetchPass());
+  // addPass(createLoopDeletionPass());
+  // // addPass(createLoopAccessLegacyAnalysisPass());
+  // addPass(createLoopInstSimplifyPass());
+  // addPass(createLoopInterchangePass());
+  // addPass(createLoopFlattenPass());
+  // addPass(createLoopPredicationPass());
+  // addPass(createLoopRotatePass());
+  // addPass(createLoopStrengthReducePass());
 
   return false;
 }
