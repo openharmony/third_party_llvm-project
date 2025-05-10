@@ -197,6 +197,11 @@ private:
 
   gwp_asan::AllocatorState State;
 
+  // OHOS_LOCAL begin
+  uint32_t MinSampleSize{0};
+  const char *WhiteListPath = "";
+  // OHOS_LOCAL end
+
   // A mutex to protect the guarded slot and metadata pool for this class.
   Mutex PoolMutex;
   // Some unwinders can grab the libdl lock. In order to provide atfork
