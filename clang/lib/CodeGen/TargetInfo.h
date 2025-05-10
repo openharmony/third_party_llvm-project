@@ -363,6 +363,10 @@ public:
     // DO NOTHING by default.
     return false;
   }
+  // Add the Branch Protection Attributes of the FuncAttrs.
+  static void
+  initBranchProtectionFnAttributes(const TargetInfo::BranchProtectionInfo &BPI,
+                                   llvm::AttrBuilder &FuncAttrs);
 };
 
 } // namespace CodeGen

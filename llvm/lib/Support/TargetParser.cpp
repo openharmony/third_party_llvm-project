@@ -351,7 +351,7 @@ bool getCPUFeaturesExceptStdExt(CPUKind Kind,
 // an erroneous part of the spec.
 bool ARM::parseBranchProtection(StringRef Spec, ParsedBranchProtection &PBP,
                                 StringRef &Err) {
-  PBP = {"none", "a_key", false};
+  PBP = {"none", "a_key", "none",false};
   if (Spec == "none")
     return true; // defaults are ok
 
@@ -369,7 +369,8 @@ bool ARM::parseBranchProtection(StringRef Spec, ParsedBranchProtection &PBP,
       PBP.BranchTargetEnforcement = true;
       continue;
     }
-    if (Opt == "pac-ret") {
+    if (Opt == "pac-ret" || Opt == "pac-ret-strong") {
+      PBP.Type = Opt == "pac-ret" ? "pac_ret" : "pac_ret_strong";
       PBP.Scope = "non-leaf";
       for (; I + 1 != E; ++I) {
         StringRef PACOpt = Opts[I + 1].trim();
