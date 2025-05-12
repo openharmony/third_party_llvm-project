@@ -21,6 +21,18 @@
 #include <stdint.h>
 // IWYU pragma: no_include <__stddef_max_align_t.h>
 
+// OHOS_LOCAL begin
+#if defined (__OHOS__)
+#define PRINT_COUNTER 100000
+#define MUSL_LOG(fmt,...)                \
+   if(&musl_log) {                       \
+     musl_log(fmt, __VA_ARGS__);         \
+   };                                    \
+
+extern "C" GWP_ASAN_WEAK int musl_log(const char *fmt, ...);
+#endif
+// OHOS_LOCAL end
+
 namespace gwp_asan {
 // This class is the primary implementation of the allocator portion of GWP-
 // ASan. It is the sole owner of the pool of sequentially allocated guarded
@@ -77,6 +89,16 @@ public:
 
   // Return whether the allocation should be randomly chosen for sampling.
   GWP_ASAN_ALWAYS_INLINE bool shouldSample() {
+    // OHOS_LOCAL begin
+    #if defined (__OHOS__)
+    Nmalloc++;
+    if( Nmalloc % PRINT_COUNTER == 0 ) {
+      MUSL_LOG("[gwp_asan]: AvgDuration %{public}u us, FreeSlotsLength %{public}d\n",
+               PersistInterval / ReserveCounter, FreeSlotsLength);
+      Nmalloc = 0;
+    }
+    #endif
+    // OHOS_LOCAL end
     // NextSampleCounter == 0 means we "should regenerate the counter".
     //                   == 1 means we "should sample this allocation".
     // AdjustedSampleRatePlusOne is designed to intentionally underflow. This
@@ -195,6 +217,10 @@ private:
   // Install a pthread_atfork handler.
   void installAtFork();
 
+  // OHOS_LOCAL begin
+  void accumulatePersistInterval(size_t reservedSlotsLength);
+  // OHOS_LOCAL end
+
   gwp_asan::AllocatorState State;
 
   // OHOS_LOCAL begin
@@ -235,6 +261,12 @@ private:
   // GWP-ASan is disabled, we wish to never spend wasted cycles recalculating
   // the sample rate.
   uint32_t AdjustedSampleRatePlusOne = 0;
+  // OHOS_LOCAL begin
+  size_t Nmalloc{0};
+  size_t PersistInterval{0};
+  size_t PreTime{0};
+  size_t ReserveCounter{0};
+  // OHOS_LOCAL end
 
   // Additional platform specific data structure for the guarded pool mapping.
   PlatformSpecificMapData GuardedPagePoolPlatformData = {};
