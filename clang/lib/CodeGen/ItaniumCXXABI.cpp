@@ -1187,9 +1187,10 @@ llvm::Constant *ItaniumCXXABI::BuildMemberPointer(const CXXMethodDecl *MD,
       // be valid.
       const auto &Schema =
           CGM.getCodeGenOpts().PointerAuth.CXXMemberFunctionPointers;
+      const auto &vfuncSchema = CGM.getCodeGenOpts().PointerAuth.CXXVirtualFunctionPointers;
       auto *RD = MD->getParent();
       bool NoPac = RD->isNoPac();
-      if (Schema && !NoPac)
+      if ((Schema || vfuncSchema)  && !NoPac)
         MemPtr[0] = llvm::ConstantExpr::getPtrToInt(
             getSignedVirtualMemberFunctionPointer(MD), CGM.PtrDiffTy);
       else
@@ -1197,7 +1198,7 @@ llvm::Constant *ItaniumCXXABI::BuildMemberPointer(const CXXMethodDecl *MD,
       // Don't set the LSB of adj to 1 if pointer authentication for member
       // function pointers is enabled.
       MemPtr[1] = llvm::ConstantInt::get(
-          CGM.PtrDiffTy, 2 * ThisAdjustment.getQuantity() + (!Schema || NoPac));
+          CGM.PtrDiffTy, 2 * ThisAdjustment.getQuantity() + (!(Schema || vfuncSchema) || NoPac));
     } else {
       // Itanium C++ ABI 2.3:
       //   For a virtual function, [the pointer field] is 1 plus the
