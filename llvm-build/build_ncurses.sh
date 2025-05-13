@@ -11,8 +11,7 @@ PREBUILT_PATH=$4
 CLANG_VERSION=$5
 NCURSES_VERSION=$6
 TARGET=$7
-NCURSES_UNTAR_PATH=$8
-IS_STATIC=$9
+IS_STATIC=$8
 
 SPECFILE="${NCURSES_SRC_DIR}/ncurses.spec"
 
@@ -41,13 +40,8 @@ esac
 CC_PATH=${PREBUILT_PATH}/clang/ohos/${host_platform}-${host_cpu}/clang-${CLANG_VERSION}/bin/clang
 CXX_PATH=${PREBUILT_PATH}/clang/ohos/${host_platform}-${host_cpu}/clang-${CLANG_VERSION}/bin/clang++
 
-ncurses_package=${NCURSES_SRC_DIR}/ncurses-${NCURSES_VERSION}.tar.gz
-if [ -e ${ncurses_package} ]; then
-    if [ ! -b ${NCURSES_UNTAR_PATH} ]; then
-        mkdir -p ${NCURSES_UNTAR_PATH}
-    fi
-    tar -xvzf ${ncurses_package} --strip-components 1 -C ${NCURSES_UNTAR_PATH}
-    cd ${NCURSES_UNTAR_PATH}
+if [ -d ${NCURSES_SRC_DIR} ]; then
+    cd ${NCURSES_SRC_DIR}
 
     # Get the list of patch files for ncurses.spec
     # The format in the ncurses.spec is as follows:
@@ -61,7 +55,7 @@ if [ -e ${ncurses_package} ]; then
         patch -Np1 < ${NCURSES_SRC_DIR}/$patch
     done
 
-    if [ ! -b ${NCURSES_BUILD_PATH} ]; then
+    if [ ! -d ${NCURSES_BUILD_PATH} ]; then
         mkdir -p ${NCURSES_BUILD_PATH}
     fi
     cd ${NCURSES_BUILD_PATH}
@@ -77,10 +71,11 @@ if [ -e ${ncurses_package} ]; then
             export CPPFLAGS="$CPPFALGS -I${SDKROOT}/usr/include -I${SDKROOT}/usr/include/i368"
             export CFLAGS="$CFLAGS -isysroot${SDKROOT} $flags $stack_flags"
 
-            ${NCURSES_UNTAR_PATH}/configure \
+            ${NCURSES_SRC_DIR}/configure \
                 --with-shared \
-                --with-default-terminfo-dir=/usr/lib/terminfo:/lib/terminfo:/usr/share/terminfo \
+                --with-terminfo-dirs=${NCURSES_INSTALL_PATH}/share/terminfo:/usr/lib/terminfo:/lib/terminfo:/usr/share/terminfo \
                 --disable-mixed-case \
+                --disable-widec \
                 --prefix=${NCURSES_INSTALL_PATH} \
                 CC=${CC_PATH} \
                 CXX=${CXX_PATH}
@@ -89,10 +84,12 @@ if [ -e ${ncurses_package} ]; then
         if [ "${host_platform}" == "linux" ]; then
             export LDFLAGS="-Wl,-rpath,\$$ORIGIN/../lib $got_ldflags"
             export CFLAGS="$CFLAGS $stack_flags"
-            ${NCURSES_UNTAR_PATH}/configure \
+            ${NCURSES_SRC_DIR}/configure \
                 --with-shared \
-                --with-default-terminfo-dir=/usr/lib/terminfo:/lib/terminfo:/usr/share/terminfo \
+                --disable-widec \
                 --prefix=${NCURSES_INSTALL_PATH} \
+                --datadir=${NCURSES_INSTALL_PATH}/share \
+                --with-terminfo-dirs=${NCURSES_INSTALL_PATH}/share/terminfo:/usr/lib/terminfo:/lib/terminfo:/usr/share/terminfo \
                 CC=${CC_PATH} \
                 CXX=${CXX_PATH}
             make -j$(nproc --all) install | tee build_ncurses.log
@@ -106,24 +103,28 @@ if [ -e ${ncurses_package} ]; then
         C_FLAGS="$C_FLAGS $stack_flags"
         export LDFLAGS="$LDFLAGS $got_ldflags"
         if [[ ${IS_STATIC} == "static" ]]; then
-            NCURSES_HOST_INSTALL_PATH=${10}
+            NCURSES_HOST_INSTALL_PATH=${9}
             export LD_LIBRARY_PATH="${NCURSES_HOST_INSTALL_PATH}/lib:$LD_LIBRARY_PATH"
             EXTRA_ARGS="--with-fallbacks=linux,vt100,xterm \
                         --with-tic-path=${NCURSES_HOST_INSTALL_PATH}/bin/tic \
                         --with-infocmp-path=${NCURSES_HOST_INSTALL_PATH}/bin/infocmp"
         fi
-        ${NCURSES_UNTAR_PATH}/configure \
+        ${NCURSES_SRC_DIR}/configure \
             --host="${TARGET}" \
             --with-shared \
             --prefix=${NCURSES_INSTALL_PATH} \
             --with-termlib \
             --without-manpages \
             --with-strip-program="${PREBUILT_PATH}/../out/llvm-install/bin/llvm-strip" \
+            --disable-widec \
             ${EXTRA_ARGS} \
             CC=${PREBUILT_PATH}/../out/llvm-install/bin/clang \
             CXX=${PREBUILT_PATH}/../out/llvm-install/bin/clang++ \
             CFLAGS="${C_FLAGS}"
         make -j$(nproc --all) install | tee build_ncurses_${TARGET}.log
     fi
+    cd ${NCURSES_SRC_DIR}
+    git reset --hard HEAD
+    git clean -df
 fi
 

@@ -11,15 +11,8 @@ NCURSES_PATH=$4
 PREBUILT_PATH=$5
 CLANG_VERSION=$6
 TARGET=$7
-LIBEDIT_UNTAR_PATH=$8
 
-# Get version and date form libedit.spec (Compatible with Linux and Mac)
-# The format in the libedit.spec is as follows:
-# Version:	3.1
-# %global _date 20210910
 SPECFILE="${LIBEDIT_SRC_DIR}/libedit.spec"
-LIBEDIT_VERSION=$(grep -E '^Version:*' ${SPECFILE} | awk '{print $2}')
-DATE=$(grep -E '^%global _date' ${SPECFILE} | sed 's/^.*\(20[0-9]\{6\}\).*$/\1/')
 
 case $(uname -s) in
     Linux)
@@ -46,23 +39,22 @@ esac
 CC_PATH=${PREBUILT_PATH}/clang/ohos/${host_platform}-${host_cpu}/clang-${CLANG_VERSION}/bin/clang
 CXX_PATH=${PREBUILT_PATH}/clang/ohos/${host_platform}-${host_cpu}/clang-${CLANG_VERSION}/bin/clang++
 
-libedit_package=${LIBEDIT_SRC_DIR}/libedit-${DATE}-${LIBEDIT_VERSION}.tar.gz
-if [ -e ${libedit_package} ]; then
-    if [ ! -b ${LIBEDIT_UNTAR_PATH} ]; then
-        mkdir -p ${LIBEDIT_UNTAR_PATH}
-    fi
-    tar -xzvf ${libedit_package} --strip-components 1 -C ${LIBEDIT_UNTAR_PATH}
-    cd ${LIBEDIT_UNTAR_PATH}
+if [ -d ${LIBEDIT_SRC_DIR} ]; then
+    cd ${LIBEDIT_SRC_DIR}
 
-    if [ ! -b ${LIBEDIT_BUILD_PATH} ]; then
+    if [ "${host_platform}" = "linux" ]; then
+        autoreconf -vfi
+        patches=($(grep -E '^Patch[0-9]+:' "${SPECFILE}" | sed 's/^[^:]*: *//'))
+        # Apply patches in order
+        for patch in "${patches[@]}"
+        do
+            patch -Np1 < ${LIBEDIT_SRC_DIR}/$patch
+        done
+    fi
+
+    if [ ! -d ${LIBEDIT_BUILD_PATH} ]; then
         mkdir -p ${LIBEDIT_BUILD_PATH}
     fi
-    patches=($(grep -E '^Patch[0-9]+:' "${SPECFILE}" | sed 's/^[^:]*: *//'))
-    # Apply patches in order
-    for patch in "${patches[@]}"
-    do
-        patch -Np1 < ${LIBEDIT_SRC_DIR}/$patch
-    done
 
     # build libedit
     cd ${LIBEDIT_BUILD_PATH}
@@ -86,7 +78,7 @@ if [ -e ${libedit_package} ]; then
             export CFLAGS="$CFLAGS $ncuses_flags $stack_flags"
         fi
 
-        ${LIBEDIT_UNTAR_PATH}/configure \
+        ${LIBEDIT_SRC_DIR}/configure \
             --prefix=${LIBEDIT_INSTALL_PATH} \
             CC=${CC_PATH} \
             CXX=${CXX_PATH}
@@ -97,7 +89,7 @@ if [ -e ${libedit_package} ]; then
             C_FLAGS="$C_FLAGS -march=armv7-a -mfloat-abi=soft"
         fi
         C_FLAGS="$C_FLAGS $stack_flags"
-        ${LIBEDIT_UNTAR_PATH}/configure \
+        ${LIBEDIT_SRC_DIR}/configure \
             --prefix=${LIBEDIT_INSTALL_PATH} \
             --host="${TARGET}" \
             CC="${PREBUILT_PATH}/../out/llvm-install/bin/clang --target=${TARGET}" \
@@ -106,6 +98,7 @@ if [ -e ${libedit_package} ]; then
 
         make -j$(nproc --all) install | tee build_libedit_${TARGET}.log
     fi
+    cd ${LIBEDIT_SRC_DIR}
+    git reset --hard HEAD
+    git clean -df
 fi
-
-
