@@ -90,6 +90,13 @@ static cl::opt<bool> ClInstrumentWithCalls(
     cl::desc("instrument reads and writes with callbacks"), cl::Hidden,
     cl::init(false));
 
+//OHOS_LOCAL begin
+static cl::opt<bool> ClInstrumentWithoutTLS(
+    "hwasan-instrument-without-TLS",
+    cl::desc("instrument without hwasan_tls"), cl::Hidden,
+    cl::init(false));
+//OHOS_LOCAL end
+
 static cl::opt<bool> ClInstrumentReads("hwasan-instrument-reads",
                                        cl::desc("instrument read instructions"),
                                        cl::Hidden, cl::init(true));
@@ -613,7 +620,9 @@ void HWAddressSanitizer::initializeModule() {
       instrumentPersonalityFunctions();
   }
 
-  if (!TargetTriple.isAndroid()) {
+  // OHOS_LOCAL begin
+  if (!(TargetTriple.isAndroid() || (TargetTriple.isOHOSFamily() &&
+      ClInstrumentWithoutTLS))) {
     Constant *C = M.getOrInsertGlobal("__hwasan_tls", IntptrTy, [&] {
       auto *GV = new GlobalVariable(M, IntptrTy, /*isConstant=*/false,
                                     GlobalValue::ExternalLinkage, nullptr,
@@ -1116,15 +1125,23 @@ Value *HWAddressSanitizer::untagPointer(IRBuilder<> &IRB, Value *PtrLong) {
 
 Value *HWAddressSanitizer::getHwasanThreadSlotPtr(IRBuilder<> &IRB, Type *Ty) {
   Module *M = IRB.GetInsertBlock()->getParent()->getParent();
-  if (TargetTriple.isAArch64() && TargetTriple.isAndroid()) {
+  // OHOS_LOCAL begin
+  if (TargetTriple.isAArch64() &&
+      (TargetTriple.isAndroid() || (TargetTriple.isOHOSFamily() &&
+       ClInstrumentWithoutTLS))) {
     // Android provides a fixed TLS slot for sanitizers. See TLS_SLOT_SANITIZER
     // in Bionic's libc/private/bionic_tls.h.
+    // For OHOS, in order to support hwasan with emulated-tls, we are provides
+    // a fixed TLS slot for sanitizers. It is 144 byte below the TP.
+    // hwasan_tls in the pthread struct in Musl's src/internal/pthread_impl.h
     Function *ThreadPointerFunc =
         Intrinsic::getDeclaration(M, Intrinsic::thread_pointer);
     Value *SlotPtr = IRB.CreatePointerCast(
         IRB.CreateConstGEP1_32(IRB.getInt8Ty(),
-                               IRB.CreateCall(ThreadPointerFunc), 0x30),
+                               IRB.CreateCall(ThreadPointerFunc),
+                               TargetTriple.isAndroid()? 0x30 : -0x90),
         Ty->getPointerTo(0));
+    // OHOS_LOCAL end
     return SlotPtr;
   }
   if (ThreadPtrGlobal)

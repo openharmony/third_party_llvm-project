@@ -295,11 +295,20 @@ void HwasanTSDInit() {}
 void HwasanTSDThreadInit() {}
 #  endif
 
+// OHOS_LOCAL begin
 #  if SANITIZER_ANDROID
 uptr *GetCurrentThreadLongPtr() { return (uptr *)get_android_tls_ptr(); }
+#  elif SANITIZER_OHOS
+// For compatibility reason, we support hwasan_tls at the same time
+uptr *GetCurrentThreadLongPtr() { return &__hwasan_tls; }
+// Musl doesn't support libc using Tls variables now,
+// so musl puts hwasan_tls on the pthread, this interface can return the
+// corresponding address.
+uptr *GetCurrentThreadLongPtrWithoutTls() { return (uptr *)get_ohos_tls_ptr(); }
 #  else
 uptr *GetCurrentThreadLongPtr() { return &__hwasan_tls; }
-#  endif
+#  endif // SANITIZER_ANDROID || SANITIZER_OHOS
+// OHOS_LOCAL end
 
 #  if SANITIZER_ANDROID
 void AndroidTestTlsSlot() {
