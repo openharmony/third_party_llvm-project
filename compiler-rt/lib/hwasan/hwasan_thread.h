@@ -147,6 +147,9 @@ class Thread {
 
 Thread *GetCurrentThread();
 uptr *GetCurrentThreadLongPtr();
+// OHOS_LOCAL begin
+uptr *GetCurrentThreadLongPtrWithoutTls();
+// OHOS_LOCAL end
 
 struct ScopedTaggingDisabler {
   ScopedTaggingDisabler() { GetCurrentThread()->DisableTagging(); }
