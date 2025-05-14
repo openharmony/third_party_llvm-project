@@ -168,16 +168,27 @@ inline void ReleaseMemoryPagesToOSAndZeroFill(uptr beg, uptr end) {
 #error "Unsupported architecture."
 #endif
 
+#if SANITIZER_ANDROID
 // The Android Bionic team has allocated a TLS slot for sanitizers starting
 // with Q, given that Android currently doesn't support ELF TLS. It is used to
 // store sanitizer thread specific data.
 static const int TLS_SLOT_SANITIZER = 6;
+#elif SANITIZER_OHOS
+static const int TLS_SLOT_SANITIZER = 18; // OHOS_LOCAL
+#endif // SANITIZER_ANDROID
 
 ALWAYS_INLINE uptr *get_android_tls_ptr() {
   return reinterpret_cast<uptr *>(&__get_tls()[TLS_SLOT_SANITIZER]);
 }
 
-#endif  // SANITIZER_ANDROID
+// OHOS_LOCAL begin
+#if SANITIZER_OHOS
+ALWAYS_INLINE uptr *get_ohos_tls_ptr() {
+  return reinterpret_cast<uptr *>(__get_tls() - TLS_SLOT_SANITIZER);
+}
+#endif // SANITIZER_OHOS
+// OHOS_LOCAL end
+#endif  // SANITIZER_ANDROID || SANITIZER_OHOS
 
 }  // namespace __sanitizer
 
