@@ -128,18 +128,17 @@ class CrossToolchainBuilder:
             lldb_defines["LLDB_ENABLE_CURSES"] = "ON"
             lldb_defines["CURSES_INCLUDE_DIRS"] = ";".join(
                 [
-                    self._build_utils.merge_install_dir(
-                        "ncurses", self._llvm_triple, "include"
+                    self._build_utils.merge_ncurses_install_dir(
+                        self._llvm_triple, "include"
                     ),
-                    self._build_utils.merge_install_dir(
-                        "ncurses", self._llvm_triple, "include", "ncurses"
+                    self._build_utils.merge_ncurses_install_dir(
+                        self._llvm_triple, "include", "ncurses"
                     ),
                 ]
             )
             ncurses_libs = []
             for library in self._build_utils.get_ncurses_dependence_libs(self._llvm_triple):
-                library_path = self._build_utils.merge_install_dir(
-                    "ncurses",
+                library_path = self._build_utils.merge_ncurses_install_dir(
                     self._llvm_triple,
                     "lib",
                     f"{library}.so.%s" % self._build_utils.get_ncurses_version(),
@@ -168,13 +167,13 @@ class CrossToolchainBuilder:
         if self._build_config.build_libedit:
             lldb_defines["LLDB_ENABLE_LIBEDIT"] = "ON"
             lldb_defines["LibEdit_INCLUDE_DIRS"] = (
-                self._build_utils.merge_install_dir(
-                    "libedit", self._llvm_triple, "include"
+                self._build_utils.merge_libedit_install_dir(
+                    self._llvm_triple, "include"
                 )
             )
             lldb_defines["LibEdit_LIBRARIES"] = (
-                self._build_utils.merge_install_dir(
-                    "libedit", self._llvm_triple, "lib", "libedit.so.0.0.75"
+                self._build_utils.merge_libedit_install_dir(
+                    self._llvm_triple, "lib", "libedit.so.0.0.68"
                 )
             )
 
