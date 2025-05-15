@@ -36,6 +36,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/syscall.h>
+#include <sys/uio.h>
 #include <unistd.h>
 #define _LIBUNWIND_CHECK_LINUX_SIGRETURN 1
 #endif
@@ -2711,12 +2712,20 @@ bool UnwindCursor<A, R>::setInfoForSigReturn(Registers_arm64 &) {
   // [1] https://github.com/torvalds/linux/blob/master/arch/arm64/kernel/vdso/sigreturn.S
   const pint_t pc = static_cast<pint_t>(this->getReg(UNW_REG_IP));
   // The PC might contain an invalid address if the unwind info is bad, so
-  // directly accessing it could cause a SIGSEGV.
-  if (!isReadableAddr(pc))
-    return false;
-  auto *instructions = reinterpret_cast<const uint32_t *>(pc);
+  // directly accessing it could cause a segfault. Use process_vm_readv to read
+  // the memory safely instead. process_vm_readv was added in Linux 3.2, and
+  // AArch64 supported was added in Linux 3.7, so the syscall is guaranteed to
+  // be present. Unfortunately, there are Linux AArch64 environments where the
+  // libc wrapper for the syscall might not be present (e.g. Android 5), so call
+  // the syscall directly instead.
+  uint32_t instructions[2];
+  struct iovec local_iov = {&instructions, sizeof instructions};
+  struct iovec remote_iov = {reinterpret_cast<void *>(pc), sizeof instructions};
+  long bytesRead =
+      syscall(SYS_process_vm_readv, getpid(), &local_iov, 1, &remote_iov, 1, 0);
   // Look for instructions: mov x8, #0x8b; svc #0x0
-  if (instructions[0] != 0xd2801168 || instructions[1] != 0xd4000001)
+  if (bytesRead != sizeof instructions || instructions[0] != 0xd2801168 ||
+      instructions[1] != 0xd4000001)
     return false;
 
   _info = {};
