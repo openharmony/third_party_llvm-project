@@ -1,4 +1,4 @@
-# REQUIRES: !lzma
+# REQUIRES: !lzma && !lzma-7zip
 
 # This test checks that a warning is printed when we're trying
 # to decompress a .gnu_debugdata section when no LZMA support was compiled in.
