@@ -12,8 +12,6 @@ PREBUILT_PATH=$5
 CLANG_VERSION=$6
 TARGET=$7
 
-SPECFILE="${LIBEDIT_SRC_DIR}/libedit.spec"
-
 case $(uname -s) in
     Linux)
 
@@ -41,15 +39,11 @@ CXX_PATH=${PREBUILT_PATH}/clang/ohos/${host_platform}-${host_cpu}/clang-${CLANG_
 
 if [ -d ${LIBEDIT_SRC_DIR} ]; then
     cd ${LIBEDIT_SRC_DIR}
+    cp -p config.sub config.sub.bak
 
     if [ "${host_platform}" = "linux" ]; then
         autoreconf -vfi
-        patches=($(grep -E '^Patch[0-9]+:' "${SPECFILE}" | sed 's/^[^:]*: *//'))
-        # Apply patches in order
-        for patch in "${patches[@]}"
-        do
-            patch -Np1 < ${LIBEDIT_SRC_DIR}/$patch
-        done
+        mv -f config.sub.bak config.sub
     fi
 
     if [ ! -d ${LIBEDIT_BUILD_PATH} ]; then
