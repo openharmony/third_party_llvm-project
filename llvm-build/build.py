@@ -89,7 +89,7 @@ class BuildConfig():
         self.separate_libs = args.separate_libs
 
         #self.TARGETS = 'AArch64;ARM;BPF;Mips;RISCV;X86;LoongArch'
-        self.TARGETS = 'AArch64;X86'
+        self.TARGETS = 'AArch64;X86;ARM'
         self.ORIG_ENV = dict(os.environ)
         self.VERSION = None # autodetected
 
@@ -1463,6 +1463,9 @@ class LlvmLibs(BuildUtils):
                 self.sysroot_composer.install_linux_headers(arch, target)
             # 创建软连接
             self.create_link(llvm_install)
+            # 创建软连接
+            self.copy_unwind(llvm_install)
+
         if self.build_config.build_libs_with_hb:
             self.run_hb_build_libs('crts_first_time')
         else:
@@ -1528,19 +1531,19 @@ class LlvmLibs(BuildUtils):
 
     def libs_argument(self, llvm_install):
         configs_list = [
-            #('arm', self.liteos_triple('arm'), '-march=armv7-a -mfloat-abi=soft', ''),
-            #('arm', self.liteos_triple('arm'), '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=soft', 'a7_soft'),
-            #('arm', self.liteos_triple('arm'),
-            # '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4', 'a7_softfp_neon-vfpv4'),
-            #('arm', self.liteos_triple('arm'),
-            # '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=hard -mfpu=neon-vfpv4', 'a7_hard_neon-vfpv4'),
+            ('arm', self.liteos_triple('arm'), '-march=armv7-a -mfloat-abi=soft', ''),
+            ('arm', self.liteos_triple('arm'), '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=soft', 'a7_soft'),
+            ('arm', self.liteos_triple('arm'),
+             '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4', 'a7_softfp_neon-vfpv4'),
+            ('arm', self.liteos_triple('arm'),
+             '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=hard -mfpu=neon-vfpv4', 'a7_hard_neon-vfpv4'),
 
-            #('arm', self.open_ohos_triple('arm'), '-march=armv7-a -mfloat-abi=soft', ''),
-            #('arm', self.open_ohos_triple('arm'), '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=soft', 'a7_soft'),
-            #('arm', self.open_ohos_triple('arm'),
-            # '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4', 'a7_softfp_neon-vfpv4'),
-            #('arm', self.open_ohos_triple('arm'),
-            # '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=hard -mfpu=neon-vfpv4', 'a7_hard_neon-vfpv4'),
+            ('arm', self.open_ohos_triple('arm'), '-march=armv7-a -mfloat-abi=soft', ''),
+            ('arm', self.open_ohos_triple('arm'), '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=soft', 'a7_soft'),
+            ('arm', self.open_ohos_triple('arm'),
+             '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=softfp -mfpu=neon-vfpv4', 'a7_softfp_neon-vfpv4'),
+            ('arm', self.open_ohos_triple('arm'),
+             '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=hard -mfpu=neon-vfpv4', 'a7_hard_neon-vfpv4'),
             ('aarch64', self.open_ohos_triple('aarch64'), '', ''),
             #('riscv64', self.open_ohos_triple('riscv64'), '', ''),
             #('mipsel', self.open_ohos_triple('mipsel'), '', ''),
@@ -1582,15 +1585,16 @@ class LlvmLibs(BuildUtils):
 
             llvm_path = self.merge_out_path('llvm_make')
             arch_list = [
-                         #self.liteos_triple('arm'), self.open_ohos_triple('arm'),
+                         self.liteos_triple('arm'), 
+                         self.open_ohos_triple('arm'),
                          self.open_ohos_triple('aarch64'), 
                          #self.open_ohos_triple('riscv64'),
                          #self.open_ohos_triple('mipsel'), 
                          self.open_ohos_triple('x86_64')
                          #self.open_ohos_triple('loongarch64')
                          ]
-            #omp_list = [self.open_ohos_triple("aarch64"), self.open_ohos_triple("arm"), self.open_ohos_triple('x86_64')]
-            omp_list = [self.open_ohos_triple("aarch64"), self.open_ohos_triple('x86_64')]
+            #omp_list = [self.open_ohos_triple("aarch64"), self.open_ohos_triple('x86_64')]
+            omp_list = [self.open_ohos_triple("aarch64"), self.open_ohos_triple('x86_64'), self.open_ohos_triple("arm")]
             libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
             self.check_create_dir(libcxx_ndk_install)
 
@@ -1598,14 +1602,23 @@ class LlvmLibs(BuildUtils):
                 self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
                 #创建软连接
                 self.create_link(llvm_install)
+                self.copy_unwind(llvm_install)
                 continue
+
             # libunwind is added to linker command line by OHOS toolchain, so we have to use two step build
             self.build_runtimes(llvm_install, "libunwind", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
+
             #创建软连接
             self.create_link(llvm_install)
+            #拷贝libunwind库
+            self.copy_unwind(llvm_install)
+
+
             self.build_runtimes(llvm_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
             #创建软连接
             self.create_link(llvm_install)
+            #拷贝libunwind库
+            self.copy_unwind(llvm_install)
 
             self.build_runtimes(libcxx_ndk_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple,
                                     arch, multilib_suffix, defines, True)
@@ -1661,16 +1674,19 @@ class LlvmLibs(BuildUtils):
                     self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
                     #创建软连接
                     self.create_link(llvm_install)
+                    self.copy_unwind(llvm_install)
                 else:
                     self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines,
                                     first_time=False)
                     #创建软连接
-                    self.create_link(llvm_install)             
+                    self.create_link(llvm_install)
+                    self.copy_unwind(llvm_install)
             elif libs_type == 'runtimes':
                 if is_first_time:
                     self.build_runtimes(llvm_install, "libunwind", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
                     #创建软连接
                     self.create_link(llvm_install)
+                    self.copy_unwind(llvm_install)
                 elif is_ndk_install:
                     libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
                     self.check_create_dir(libcxx_ndk_install)
@@ -1678,10 +1694,12 @@ class LlvmLibs(BuildUtils):
                                     arch, multilib_suffix, defines, True)
                     #创建软连接
                     self.create_link(llvm_install)
+                    self.copy_unwind(llvm_install)
                 else:
                     self.build_runtimes(llvm_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
                     #创建软连接
                     self.create_link(llvm_install)
+                    self.copy_unwind(llvm_install)
 
     def build_runtimes(self,
                        llvm_install,
@@ -1762,18 +1780,69 @@ class LlvmLibs(BuildUtils):
                           install=True)
 
 
+    def copy_unwind(self, llvm_install):
+        parent_dir = os.path.dirname(os.path.abspath(llvm_install))
+        src_dir = os.path.join(parent_dir, 'lib')
+        dst_liteos_dir = os.path.join(llvm_install, 'lib', "arm-unknown-liteos-ohos")
+
+        src_a7_soft_liteos_dir = os.path.join(src_dir, 
+            "libunwind-libcxxabi-libcxx-arm-liteos-ohos-a7_soft", 'lib', 'arm-unknown-liteos-ohos', 'libunwind.a')
+        dst_a7_soft_liteos_dir = os.path.join(dst_liteos_dir, "a7_soft")
+        if os.path.exists(src_a7_soft_liteos_dir) and os.path.exists(dst_a7_soft_liteos_dir):
+            shutil.copy2(src_a7_soft_liteos_dir, dst_a7_soft_liteos_dir)
+
+        src_a7_hard_neon_vfpv4_liteos_dir = os.path.join(src_dir, 
+            "libunwind-libcxxabi-libcxx-arm-liteos-ohos-a7_hard_neon-vfpv4", 'lib', 'arm-unknown-liteos-ohos', 'libunwind.a')
+        dst_a7_hard_neon_vfpv4_liteos_dir = os.path.join(dst_liteos_dir, "a7_hard_neon-vfpv4")
+        if os.path.exists(src_a7_hard_neon_vfpv4_liteos_dir) and os.path.exists(dst_a7_hard_neon_vfpv4_liteos_dir):
+            shutil.copy2(src_a7_hard_neon_vfpv4_liteos_dir, dst_a7_hard_neon_vfpv4_liteos_dir)
+
+        src_a7_softfp_neon_vfpv4_liteos_dir = os.path.join(src_dir, 
+            "libunwind-libcxxabi-libcxx-arm-liteos-ohos-a7_softfp_neon-vfpv4", 'lib', 'arm-unknown-liteos-ohos', 'libunwind.a')
+        dst_a7_softfp_neon_vfpv4_liteos_dir = os.path.join(dst_liteos_dir, "a7_softfp_neon-vfpv4")
+        if os.path.exists(src_a7_softfp_neon_vfpv4_liteos_dir) and os.path.exists(dst_a7_softfp_neon_vfpv4_liteos_dir):
+            shutil.copy2(src_a7_softfp_neon_vfpv4_liteos_dir, dst_a7_softfp_neon_vfpv4_liteos_dir)
+
+        dst_linux_dir = os.path.join(llvm_install, 'lib', "arm-unknown-linux-ohos")
+        src_a7_soft_linux_dir = os.path.join(src_dir, 
+            "libunwind-libcxxabi-libcxx-arm-linux-ohos-a7_soft", 'lib', 'arm-unknown-linux-ohos', 'libunwind.a')
+        dst_a7_soft_linux_dir = os.path.join(dst_linux_dir, "a7_soft")
+        if os.path.exists(src_a7_soft_linux_dir) and os.path.exists(dst_a7_soft_linux_dir):
+            shutil.copy2(src_a7_soft_linux_dir, dst_a7_soft_linux_dir)
+
+        src_a7_hard_neon_vfpv4_linux_dir = os.path.join(src_dir, 
+            "libunwind-libcxxabi-libcxx-arm-linux-ohos-a7_hard_neon-vfpv4", 'lib', 'arm-unknown-linux-ohos', 'libunwind.a')
+        dst_a7_hard_neon_vfpv4_linux_dir = os.path.join(dst_linux_dir, "a7_hard_neon-vfpv4")
+        if os.path.exists(src_a7_hard_neon_vfpv4_linux_dir) and os.path.exists(dst_a7_hard_neon_vfpv4_linux_dir):
+            shutil.copy2(src_a7_hard_neon_vfpv4_linux_dir, dst_a7_hard_neon_vfpv4_linux_dir)
+
+        src_a7_softfp_neon_vfpv4_linux_dir = os.path.join(src_dir, 
+            "libunwind-libcxxabi-libcxx-arm-linux-ohos-a7_softfp_neon-vfpv4", 'lib', 'arm-unknown-linux-ohos', 'libunwind.a')
+        dst_a7_softfp_neon_vfpv4_linux_dir = os.path.join(dst_linux_dir, "a7_softfp_neon-vfpv4")
+        if os.path.exists(src_a7_softfp_neon_vfpv4_linux_dir) and os.path.exists(dst_a7_softfp_neon_vfpv4_linux_dir):
+            shutil.copy2(src_a7_softfp_neon_vfpv4_linux_dir, dst_a7_softfp_neon_vfpv4_linux_dir)
+
+
     def create_link(self, llvm_install):
         dst_dir = os.path.join(llvm_install, 'lib', 'clang', '19', 'lib')
-
-        src_aarch64_dir = os.path.join(dst_dir, "aarch64-unknown-linux-ohos")
-        src_x86_dir = os.path.join(dst_dir, "x86_64-unknown-linux-ohos")
         
+        src_aarch64_dir = os.path.join(dst_dir, "aarch64-unknown-linux-ohos")
         dst_aarch64_dir = os.path.join(dst_dir, "aarch64-linux-ohos")
-        dst_x86_dir = os.path.join(dst_dir, "x86_64-linux-ohos")
-
         if os.path.exists(src_aarch64_dir) and not os.path.exists(dst_aarch64_dir):
             os.symlink(os.path.basename(src_aarch64_dir), dst_aarch64_dir)
+            
+        src_arm_dir = os.path.join(dst_dir, "arm-unknown-linux-ohos")
+        dst_arm_dir = os.path.join(dst_dir, "arm-linux-ohos")
+        if os.path.exists(src_arm_dir) and not os.path.exists(dst_arm_dir):
+            os.symlink(os.path.basename(src_arm_dir), dst_arm_dir)
+            
+        src_arm_liteos_dir = os.path.join(dst_dir, "arm-unknown-liteos-ohos")
+        dst_arm_liteos_dir = os.path.join(dst_dir, "arm-liteos-ohos")
+        if os.path.exists(src_arm_liteos_dir) and not os.path.exists(dst_arm_liteos_dir):
+            os.symlink(os.path.basename(src_arm_liteos_dir), dst_arm_liteos_dir)
 
+        src_x86_dir = os.path.join(dst_dir, "x86_64-unknown-linux-ohos")
+        dst_x86_dir = os.path.join(dst_dir, "x86_64-linux-ohos")
         if os.path.exists(src_x86_dir) and not os.path.exists(dst_x86_dir):
             os.symlink(os.path.basename(src_x86_dir), dst_x86_dir)
 
@@ -1786,6 +1855,16 @@ class LlvmLibs(BuildUtils):
         lib_x86_64_dst_dir = os.path.join(llvm_install, 'lib', 'x86_64-linux-ohos')
         if os.path.exists(lib_x86_64_src_dir) and not os.path.exists(lib_x86_64_dst_dir):    
             os.symlink(os.path.basename(lib_x86_64_src_dir), lib_x86_64_dst_dir)      
+
+        lib_arm_src_dir = os.path.join(llvm_install, 'lib', 'arm-unknown-linux-ohos')
+        lib_arm_dst_dir = os.path.join(llvm_install, 'lib', 'arm-linux-ohos')
+        if os.path.exists(lib_arm_src_dir) and not os.path.exists(lib_arm_dst_dir):
+            os.symlink(os.path.basename(lib_arm_src_dir), lib_arm_dst_dir)
+        
+        lib_arm_liteos_src_dir = os.path.join(llvm_install, 'lib', 'arm-unknown-liteos-ohos')
+        lib_arm_liteos_dst_dir = os.path.join(llvm_install, 'lib', 'arm-liteos-ohos')
+        if os.path.exists(lib_arm_liteos_src_dir) and not os.path.exists(lib_arm_liteos_dst_dir):
+            os.symlink(os.path.basename(lib_arm_liteos_src_dir), lib_arm_liteos_dst_dir)
 
 
     def create_link2(self, llvm_install):
@@ -3124,7 +3203,7 @@ class LlvmPackage(BuildUtils):
         # Separate compiler-rt and libcxx in Linux
         if host.startswith('linux') and self.build_config.separate_libs:
             arch_list = [
-                         #self.liteos_triple('arm'), self.open_ohos_triple('arm'),
+                         self.liteos_triple('arm'), self.open_ohos_triple('arm'),
                          self.open_ohos_triple('aarch64'), 
                          #self.open_ohos_triple('riscv64'),
                          #self.open_ohos_triple('mipsel'), 
@@ -3183,9 +3262,9 @@ def main():
         os.path.join(build_config.buildtools_path, 'clang', 'ohos', 'linux-x86_64', f'clang-{build_config.CLANG_VERSION}')
 
     configs = []
-    #if not build_config.no_build_arm:
-    #    configs.append(('arm', build_utils.liteos_triple('arm')))
-    #    configs.append(('arm', build_utils.open_ohos_triple('arm')))
+    if not build_config.no_build_arm:
+        configs.append(('arm', build_utils.liteos_triple('arm')))
+        configs.append(('arm', build_utils.open_ohos_triple('arm')))
 
     if not build_config.no_build_aarch64:
         configs.append(('arm64', build_utils.open_ohos_triple('aarch64')))
