@@ -62,30 +62,34 @@ fi
 
 # == test c++_shared ==
 # build the test
-BUILD_PATH_SHARED=/tmp/libcxx_patch_c++_shared_$(($RANDOM + $(date +%s)))
-echo "Testing OHOS_STL=c++_shared..."
-$CMAKE -DOHOS_STL=c++_shared -DCMAKE_TOOLCHAIN_FILE=$INSTALL_PATH/build/cmake/ohos.toolchain.cmake -B $BUILD_PATH_SHARED -S $SCRIPT_PATH/../test > /dev/null
-$CMAKE --build $BUILD_PATH_SHARED > /dev/null
-# check the shared library using readelf
-$READELF -d $BUILD_PATH_SHARED/test | grep libc++_shared.so
-if [ $? -ne 0 ]; then
-    echo "Error:    Test failed: The libc++_shared.so is not linked."
-    exit 1
-fi
+ARCH_LIST=("arm64-v8a" "x86_64")
+for ARCH in "${ARCH_LIST[@]}"; do
+    BUILD_PATH_SHARED=/tmp/libcxx_patch_c++_shared_$(($RANDOM + $(date +%s)))
+    echo "Testing OHOS_STL=c++_shared with OHOS_ARCH=${ARCH}..."
+    $CMAKE -DOHOS_STL=c++_shared -DCMAKE_TOOLCHAIN_FILE=$INSTALL_PATH/build/cmake/ohos.toolchain.cmake -DOHOS_ARCH=$ARCH -B $BUILD_PATH_SHARED -S $SCRIPT_PATH/../test > /dev/null
+    $CMAKE --build $BUILD_PATH_SHARED > /dev/null
+    # check the shared library using readelf
+    $READELF -d $BUILD_PATH_SHARED/test | grep libc++_shared.so
+    if [ $? -ne 0 ]; then
+        echo "Error:    Test failed: The libc++_shared.so is not linked for OHOS_ARCH=${ARCH}."
+        exit 1
+    fi
+done
 
 # == test system ==
 # build the test
-
-BUILD_PATH_SYSTEM=/tmp/libcxx_patch_c++_system_$(($RANDOM + $(date +%s)))
-echo "Testing OHOS_STL=system..."
-$CMAKE -DOHOS_STL=system -DCMAKE_TOOLCHAIN_FILE=$INSTALL_PATH/build/cmake/ohos.toolchain.cmake -B $BUILD_PATH_SYSTEM -S $SCRIPT_PATH/../test > /dev/null
-$CMAKE --build $BUILD_PATH_SYSTEM > /dev/null
-# check the shared library using readelf
-$READELF -d $BUILD_PATH_SYSTEM/test | grep libc++.so
-if [ $? -ne 0 ]; then
-    echo "Error:    Test failed: The libc++.so is not linked."
-    exit 1
-fi
+for ARCH in "${ARCH_LIST[@]}"; do
+    BUILD_PATH_SYSTEM=/tmp/libcxx_patch_c++_system_$(($RANDOM + $(date +%s)))
+    echo "Testing OHOS_STL=system with OHOS_ARCH=${ARCH}..."
+    $CMAKE -DOHOS_STL=system -DCMAKE_TOOLCHAIN_FILE=$INSTALL_PATH/build/cmake/ohos.toolchain.cmake -DOHOS_ARCH=$ARCH -B $BUILD_PATH_SYSTEM -S $SCRIPT_PATH/../test > /dev/null
+    $CMAKE --build $BUILD_PATH_SYSTEM > /dev/null
+    # check the shared library using readelf
+    $READELF -d $BUILD_PATH_SYSTEM/test | grep libc++.so
+    if [ $? -ne 0 ]; then
+        echo "Error:    Test failed: The libc++.so is not linked for OHOS_ARCH=${ARCH}."
+        exit 1
+    fi
+done
 
 echo "All tests passed."
 echo "Patch installed successfully."
