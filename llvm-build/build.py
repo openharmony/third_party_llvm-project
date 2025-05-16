@@ -2517,6 +2517,36 @@ class LlvmPackage(BuildUtils):
              
         if os.path.exists(src_x86_cxx_static_dir) and os.path.exists(dst_x86_dir):
             shutil.copy2(src_x86_cxx_static_dir, dst_x86_dir)
+        
+        #libcxx-ndk/include/libcxx-ohos/include/c++/v1/__config_site
+        src_libcxx_dir = os.path.join(libcxx_install_dir, 'include', 'libcxx-ohos', 'include', 'c++', 'v1', '__config_site')
+        #llvm-install/include/c++/v1/__config_site
+        dst_libcxx_dir = os.path.join(llvm_install, 'include', 'c++', 'v1')
+        if os.path.exists(src_libcxx_dir) and os.path.exists(dst_libcxx_dir):
+            shutil.copy2(src_libcxx_dir, dst_libcxx_dir)
+        #llvm-install/include/libcxx-ohos/include/c++/v1/__config_site
+        dst_libcxx_dir2 = os.path.join(llvm_install, 'include', 'libcxx-ohos', 'include', 'c++', 'v1')
+        if os.path.exists(src_libcxx_dir) and os.path.exists(dst_libcxx_dir2):
+            shutil.copy2(src_libcxx_dir, dst_libcxx_dir2)
+
+
+    def modify_libcxx(self, llvm_install, libcxx_install_dir):
+        src_lib_dir = os.path.join(llvm_install, 'lib')
+        
+        for root, dirs, files in os.walk(src_lib_dir):
+            for file in files:
+                if file == 'libc++.a':
+                    libcpp_path = os.path.join(root, file)
+                    # 写入内容到输出文件
+                    with open(libcpp_path, 'w') as f:
+                        f.write("INPUT(-lc++_static -lc++abi)\n")
+                
+                if file == 'libc++.so':
+                    libcpp_path = os.path.join(root, file)
+                    # 写入内容到输出文件
+                    with open(libcpp_path, 'w') as f:
+                        f.write("INPUT(-lc++_shared)\n")
+
 
     def copy_lldb_tools_to_llvm_install(self, tools, lldb_path, crt_install, llvm_triple):
         dst_dir = os.path.join(crt_install, 'bin', llvm_triple)
@@ -3312,6 +3342,8 @@ def main():
         llvm_libs.build_gtest(llvm_path, llvm_install)
 
     llvm_package.move_libcxx(llvm_install, libcxx_ndk_install)
+    
+    llvm_package.modify_libcxx(llvm_install, libcxx_ndk_install)
 
     if build_config.do_package:
         if build_utils.host_is_linux():
