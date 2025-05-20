@@ -709,20 +709,19 @@ class BuildUtils(object):
         return self.merge_out_path('third_party', 'ncurses', 'build', platform_triple, *args)
 
     def get_libxml2_version(self):
-        version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'libxml2.spec')
-        if os.path.isfile(version_file):
-            pattern = r'Version:\s+(\d+\.\d+\.\d+)'
-            with open(version_file, 'r') as file:
-                lines = file.readlines()
-                VERSION = ''
-                for line in lines:
-                    if 'Version: ' in line:
-                        VERSION = re.search(pattern, line).group(1)
-                    if VERSION != '':
-                        return VERSION
-                return None
-
-        return None
+        #version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'libxml2.spec')
+        #if os.path.isfile(version_file):
+        #    pattern = r'Version:\s+(\d+\.\d+\.\d+)'
+        #    with open(version_file, 'r') as file:
+        #        lines = file.readlines()
+        #        VERSION = ''
+        #        for line in lines:
+        #            if 'Version: ' in line:
+        #                VERSION = re.search(pattern, line).group(1)
+        #            if VERSION != '':
+        #                return VERSION
+        #        return None
+        return '2.14.0'
 
     def merge_libxml2_install_dir(self, platform_triple, *args):
         return self.merge_out_path('third_party', 'libxml2', 'install', platform_triple, *args)
