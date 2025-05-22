@@ -933,6 +933,10 @@ _LIBCPP_BEGIN_NAMESPACE_STD _LIBCPP_END_NAMESPACE_STD
 #      if _LIBCPP_GLIBC_PREREQ(2, 30)
 #        define _LIBCPP_HAS_COND_CLOCKWAIT
 #      endif
+#    elif defined(__OHOS_FAMILY__) // OHOS_LOCAL
+#      if defined(_LIBCPP_HAS_MUSL_LIBC)
+#        define _LIBCPP_HAS_COND_CLOCKWAIT
+#      endif
 #    endif
 #  endif
 
