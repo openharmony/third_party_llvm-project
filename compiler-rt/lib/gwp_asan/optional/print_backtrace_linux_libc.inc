@@ -1,3 +1,5 @@
+#ifndef PRINT_BACKTRACE_LINUX_LIBC
+#define PRINT_BACKTRACE_LINUX_LIBC
 //===-- print_backtrace_linux_libc.inc --------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -41,3 +43,4 @@ void PrintBacktrace(uintptr_t *Trace, size_t TraceLength,
     free(BacktraceSymbols);
 }
 } // anonymous namespace
+#endif
