@@ -546,6 +546,35 @@ class BuildUtils(object):
         self.logger().info('copytree %s %s', src_dir, dst_dir)
         shutil.copytree(src_dir, dst_dir, symlinks=True)
 
+    def check_copy_file_and_symlinks(self, src_dir, dst_dir):
+        self.check_rm_tree(dst_dir)
+        """Copy only .so/.dylib files and their symlinks from src_dir to dst_dir."""
+        self.logger().info('Copying library files from  %s to %s', src_dir, dst_dir)
+
+        def ignore_func(dirname, filenames):
+            ignored = set()
+            for filename in filenames:
+                full_path = os.path.join(dirname, filename)
+                # Always ignore directories
+                if os.path.isdir(full_path):
+                    ignored.add(filename)
+                    continue
+
+                # Check file type based on OS
+                if self.host_is_linux():
+                    if not (full_path.endswith('.so') or os.path.islink(full_path)):
+                        ignored.add(full_path)
+                elif self.host_is_darwin():
+                    if not (full_path.endswith('.dylib') or os.path.islink(full_path)):
+                        ignored.add(full_path)
+            return ignored
+
+        try:
+            shutil.copytree(src_dir, dst_dir, ignore=ignore_func, symlinks=True)
+        except Exception as e:
+            self.logger().error('Failed to copy libraries: %s', str(e))
+            raise
+
     def check_copy_file(self, src_file, dst_file):
         if os.path.exists(src_file):
             """Proxy for shutil.copy2 with logging and dry-run support."""
@@ -692,14 +721,14 @@ class BuildUtils(object):
         return ncurses_libs
 
     def get_libxml2_version(self):
-        version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'libxml2.spec')
+        version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'README.OpenSource')
         if os.path.isfile(version_file):
-            pattern = r'Version:\s+(\d+\.\d+\.\d+)'
+            pattern = r'"Version Number"\s*:\s*"(\d+\.\d+\.\d+)"'
             with open(version_file, 'r') as file:
                 lines = file.readlines()
                 VERSION = ''
                 for line in lines:
-                    if 'Version: ' in line:
+                    if 'Version Number' in line:
                         VERSION = re.search(pattern, line).group(1)
                     if VERSION != '':
                         return VERSION
@@ -2866,7 +2895,7 @@ class LlvmPackage(BuildUtils):
             if os.path.isfile(libxml2_dst):
                 os.remove(libxml2_dst)
 
-            self.check_copy_file(libxml2_src, lib_dst_path)
+            self.check_copy_file_and_symlinks(lib_path, lib_dst_path)
 
     def copy_lzma_to_llvm(self, platform_triple, install_dir):
         self.logger().info('copy_lzma_to_llvm install_dir is %s', install_dir)
