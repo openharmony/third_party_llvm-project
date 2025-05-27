@@ -3035,6 +3035,12 @@ def main():
     if not build_config.no_build_loongarch64:
         configs.append(('loongarch64', build_utils.open_ohos_triple('loongarch64')))
 
+    build_config.LIBXML2_VERSION = build_utils.get_libxml2_version()
+    if build_config.LIBXML2_VERSION is None:
+        raise Exception('LIBXML2 version information not found, please check if the libxml2.spec file exists')
+    if build_config.build_libxml2:
+        llvm_libs.build_libxml2(build_utils.use_platform(), llvm_make, llvm_install)
+
     build_config.NCURSES_VERSION = build_utils.get_ncurses_version()
     if build_config.NCURSES_VERSION is None:
         raise Exception('NCURSES version information not found, please check if the ncurses.spec file exists')
@@ -3052,12 +3058,6 @@ def main():
         raise Exception('LIBEDIT version information not found, please check if the libedit.spec file exists')
     if build_config.build_libedit:
         llvm_libs.build_libedit(llvm_make, llvm_install, build_utils.use_platform())
-
-    build_config.LIBXML2_VERSION = build_utils.get_libxml2_version()
-    if build_config.LIBXML2_VERSION is None:
-        raise Exception('LIBXML2 version information not found, please check if the libxml2.spec file exists')
-    if build_config.build_libxml2:
-        llvm_libs.build_libxml2(build_utils.use_platform(), llvm_make, llvm_install)
 
     if build_config.do_build and need_host and (build_config.build_only_llvm or not build_config.build_only):
         llvm_core.llvm_compile(
