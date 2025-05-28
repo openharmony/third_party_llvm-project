@@ -41,6 +41,7 @@
 // CHECK-NEXT:     memtag              FEAT_MTE, FEAT_MTE2                                    Enable Memory Tagging Extension
 // CHECK-NEXT:     simd                FEAT_AdvSIMD                                           Enable Advanced SIMD instructions
 // CHECK-NEXT:     pauth               FEAT_PAuth                                             Enable Armv8.3-A Pointer Authentication extension
+// CHECK-NEXT:     pauth-hint-only     FEAT_PAuthHintOnly                                     Only use Pointer Authentication instructions in the HINT space
 // CHECK-NEXT:     pauth-lr            FEAT_PAuth_LR                                          Enable Armv9.5-A PAC enhancements
 // CHECK-NEXT:     pmuv3               FEAT_PMUv3                                             Enable Armv8.0-A PMUv3 Performance Monitors extension
 // CHECK-NEXT:     predres             FEAT_SPECRES                                           Enable Armv8.5-A execution and data prediction invalidation instructions

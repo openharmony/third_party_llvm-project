@@ -4285,7 +4285,7 @@ defm ptrauth_mangle_cxxabi : OptInCC1FFlag<"ptrauth-mangle-cxxabi",
 
 
 defm ptrauth_nopac_atexit : OptInCC1FFlag<"ptrauth-nopac-atexit", "Enable NoPac for atexit function pointers">;
-defm ptrauth_nopac_throw : OptInCC1FFlag<"ptrauth-nopac-trow", "Enable NoPac for destructor pointers on throw">;  
+defm ptrauth_nopac_throw : OptInCC1FFlag<"ptrauth-nopac-throw", "Enable NoPac for destructor pointers on throw">;  
 }
 
 def fenable_matrix : Flag<["-"], "fenable-matrix">, Group<f_Group>,
