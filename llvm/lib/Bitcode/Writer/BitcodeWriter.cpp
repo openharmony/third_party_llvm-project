@@ -634,6 +634,10 @@ static uint64_t getAttrKindEncoding(Attribute::AttrKind Kind) {
     return bitc::ATTR_KIND_COLD;
   case Attribute::DisableSanitizerInstrumentation:
     return bitc::ATTR_KIND_DISABLE_SANITIZER_INSTRUMENTATION;
+  // OHOS_LOCAL begin
+  case Attribute::GWPSanitizeSpecific:
+    return bitc::ATTR_KIND_FUNCTION_INSTRUMENT_WITH_GWP_SANITIZER;
+  // OHOS_LOCAL end
   case Attribute::FnRetThunkExtern:
     return bitc::ATTR_KIND_FNRETTHUNK_EXTERN;
   case Attribute::Hot:

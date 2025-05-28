@@ -927,6 +927,9 @@ Function *CodeExtractor::constructFunction(const ValueSet &inputs,
       case Attribute::AlwaysInline:
       case Attribute::Cold:
       case Attribute::DisableSanitizerInstrumentation:
+      // OHOS_LOCAL begin
+      case Attribute::GWPSanitizeSpecific:
+      // OHOS_LOCAL end
       case Attribute::FnRetThunkExtern:
       case Attribute::Hot:
       case Attribute::NoRecurse:

@@ -429,8 +429,10 @@ SanitizerMask OHOS::getSupportedSanitizers() const {
   Res |= SanitizerKind::Scudo;
   Res |= SanitizerKind::KernelAddress;
   Res |= SanitizerKind::KernelMemory;
-  // OHOS_LOCAL
+  // OHOS_LOCAL begin
   Res |= SanitizerKind::HWAddress;
+  Res |= SanitizerKind::GWPAsan;
+  // OHOS_LOCAL end
   // TODO: Support TSAN and HWASAN and update mask.
   if (IsAArch64 || IsX86_64 || IsLoongArch64) // OHOS_LOCAL
     Res |= SanitizerKind::Thread;

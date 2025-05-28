@@ -105,6 +105,14 @@ public:
     // class must be valid when zero-initialised, and we wish to sample as
     // infrequently as possible when this is the case, hence we underflow to
     // UINT32_MAX.
+    // OHOS_LOCAL begin
+    // If the RandomState is calculated from getRandomUnsigned32, the value
+    // of RandomState will never be 1, so we use RandomState == 1 to force
+    // GWP_ASAN sample.
+    if (GWP_ASAN_UNLIKELY(getThreadLocals()->RandomState == 1))
+      return true;
+    // OHOS_LOCAL end
+
     if (GWP_ASAN_UNLIKELY(getThreadLocals()->NextSampleCounter == 0))
       getThreadLocals()->NextSampleCounter =
           ((getRandomUnsigned32() % (AdjustedSampleRatePlusOne - 1)) + 1) &
@@ -113,6 +121,23 @@ public:
     return GWP_ASAN_UNLIKELY(--getThreadLocals()->NextSampleCounter == 0);
   }
 
+  // OHOS_LOCAL begin
+  // Force the allocation to do sample according to the function attribute.
+  void forceSampleByFuncAttr() {
+    getThreadLocals()->RandomState = 1;
+  }
+
+  // Unforce the allocation to do sample when out the fucntion scope with
+  // attribute.
+  void unforceSampleByFuncAttr() {
+    // Initialised to a magic constant so that an uninitialised GWP-ASan won't
+    // regenerate its sample counter for as long as possible. The xorshift32()
+    // algorithm used below results in getRandomUnsigned32(0xacd979ce) ==
+    // 0xfffffffe.
+    getThreadLocals()->RandomState = 0xacd979ce;
+  }
+  // OHOS_LOCAL end
+ 
   // Returns whether the provided pointer is a current sampled allocation that
   // is owned by this pool.
   GWP_ASAN_ALWAYS_INLINE bool pointerIsMine(const void *Ptr) const {

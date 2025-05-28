@@ -483,6 +483,13 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
                      SanitizerKind::Address | SanitizerKind::HWAddress |
                          SanitizerKind::Leak | SanitizerKind::Thread |
                          SanitizerKind::Memory | SanitizerKind::KernelAddress),
+      // OHOS_LOCAL begin
+      std::make_pair(SanitizerKind::GWPAsan,
+                     SanitizerKind::Address | SanitizerKind::HWAddress |
+                         SanitizerKind::Leak | SanitizerKind::Thread |
+                         SanitizerKind::Memory | SanitizerKind::KernelAddress |
+                         SanitizerKind::Scudo | SanitizerKind::KernelHWAddress),
+      // OHOS_LOCAL end
       std::make_pair(SanitizerKind::SafeStack,
                      (TC.getTriple().isOSFuchsia() ? SanitizerMask()
                                                    : SanitizerKind::Leak) |
@@ -498,7 +505,8 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
                      SanitizerKind::Address | SanitizerKind::HWAddress |
                          SanitizerKind::Leak | SanitizerKind::Thread |
                          SanitizerKind::Memory | SanitizerKind::KernelAddress |
-                         SanitizerKind::Scudo | SanitizerKind::SafeStack),
+                         SanitizerKind::Scudo | SanitizerKind::SafeStack |
+                         SanitizerKind::GWPAsan), // OHOS_LOCAL
       std::make_pair(SanitizerKind::MemTag,
                      SanitizerKind::Address | SanitizerKind::KernelAddress |
                          SanitizerKind::HWAddress |

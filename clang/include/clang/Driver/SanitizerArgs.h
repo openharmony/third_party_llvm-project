@@ -99,6 +99,9 @@ public:
   bool needsCfiDiagRt() const;
   bool needsStatsRt() const { return Stats; }
   bool needsScudoRt() const { return Sanitizers.has(SanitizerKind::Scudo); }
+  // OHOS_LOCAL begin
+  bool needsGWPAsanRt() const {return Sanitizers.has(SanitizerKind::GWPAsan);}
+  // OHOS_LOCAL end
 
   bool hasMemTag() const {
     return hasMemtagHeap() || hasMemtagStack() || hasMemtagGlobals();

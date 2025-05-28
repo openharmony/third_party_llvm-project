@@ -74,6 +74,9 @@
 #include "llvm/Transforms/Instrumentation/MemorySanitizer.h"
 #include "llvm/Transforms/Instrumentation/SanitizerCoverage.h"
 #include "llvm/Transforms/Instrumentation/ThreadSanitizer.h"
+// OHOS_LOCAL begin
+#include "llvm/Transforms/Instrumentation/GWPAddressSanitizer.h"
+// OHOS_LOCAL end
 #include "llvm/Transforms/ObjCARC.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/EarlyCSE.h"
@@ -664,6 +667,13 @@ static void addSanitizers(const Triple &TargetTriple,
       MPM.addPass(ModuleThreadSanitizerPass());
       MPM.addPass(createModuleToFunctionPassAdaptor(ThreadSanitizerPass()));
     }
+
+    // OHOS_LOCAL begin
+    if (LangOpts.Sanitize.has(SanitizerKind::GWPAsan)) {
+      MPM.addPass(ModuleGWPAddressSanitizerPass());
+      MPM.addPass(createModuleToFunctionPassAdaptor(GWPAddressSanitizerPass()));
+    }
+    // OHOS_LOCAL end
 
     auto ASanPass = [&](SanitizerMask Mask, bool CompileKernel) {
       if (LangOpts.Sanitize.has(Mask)) {

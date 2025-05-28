@@ -537,6 +537,14 @@ bool CodeGenFunction::ShouldSkipSanitizerInstrumentation() {
   return CurFuncDecl->hasAttr<DisableSanitizerInstrumentationAttr>();
 }
 
+// OHOS_LOCAL begin
+bool CodeGenFunction::ShouldInstrumentFunctionWithGWPAsan() {
+  if (!CurFuncDecl)
+    return false;
+  return CurFuncDecl->hasAttr<GWPSanitizeSpecificAttr>();
+}
+// OHOS_LOCAL end
+
 /// ShouldXRayInstrument - Return true if the current function should be
 /// instrumented with XRay nop sleds.
 bool CodeGenFunction::ShouldXRayInstrumentFunction() const {
@@ -751,6 +759,10 @@ void CodeGenFunction::StartFunction(GlobalDecl GD, QualType RetTy,
 
   if (ShouldSkipSanitizerInstrumentation()) {
     CurFn->addFnAttr(llvm::Attribute::DisableSanitizerInstrumentation);
+  // OHOS_LOCAL begin
+  } else if (ShouldInstrumentFunctionWithGWPAsan()) {
+    CurFn->addFnAttr(llvm::Attribute::GWPSanitizeSpecific);
+  // OHOS_LOCAL end
   } else {
     // Apply sanitizer attributes to the function.
     if (SanOpts.hasOneOf(SanitizerKind::Address | SanitizerKind::KernelAddress))
