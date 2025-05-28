@@ -76,8 +76,8 @@ define i32 @test_indirectbr() #0 {
 ; ELF-NEXT:    pacia x17, x16
 ; ELF-NEXT:    mov x1, x17
 ; ELF-NEXT:    bl dummy_choose
-; ELF-NEXT:    mov x16, #34947 // =0x8883
-; ELF-NEXT:    braa x0, x16
+; ELF-NEXT:    mov x17, #34947 // =0x8883
+; ELF-NEXT:    braa x0, x17
 ; ELF-NEXT:  .Ltmp0: // Block address taken
 ; ELF-NEXT:  .LBB0_1: // %bb1
 ; ELF-NEXT:    mov w0, #1 // =0x1
@@ -165,8 +165,8 @@ define i32 @test_indirectbr_2() #0 {
 ; ELF-NEXT:    pacia x17, x16
 ; ELF-NEXT:    mov x1, x17
 ; ELF-NEXT:    bl dummy_choose
-; ELF-NEXT:    mov x16, #40224 // =0x9d20
-; ELF-NEXT:    braa x0, x16
+; ELF-NEXT:    mov x17, #40224 // =0x9d20
+; ELF-NEXT:    braa x0, x17
 ; ELF-NEXT:  .Ltmp2: // Block address taken
 ; ELF-NEXT:  .LBB2_1: // %bb1
 ; ELF-NEXT:    mov w0, #1 // =0x1

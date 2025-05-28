@@ -174,7 +174,7 @@ define i64 @test_resign_ia_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; ELF-NOFPAC-NEXT:    autia x17, x1
 ; ELF-NOFPAC-NEXT:    mov x16, x17
 ; ELF-NOFPAC-NEXT:    xpaci x16
-; ELF-NOFPAC-NEXT:    cmp x17, x16
+; ELF-NOFPAC-NEXT:    cmp x16, x17
 ; ELF-NOFPAC-NEXT:    b.eq [[L]]auth_success_0
 ; ELF-NOFPAC-NEXT:    mov x17, x16
 ; ELF-NOFPAC-NEXT:    b [[L]]resign_end_0
@@ -200,7 +200,7 @@ define i64 @test_resign_ia_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; HINT-NOFPAC-NEXT:    mov x30, x17
 ; HINT-NOFPAC-NEXT:    xpaclri
 ; HINT-NOFPAC-NEXT:    mov x16, x30
-; HINT-NOFPAC-NEXT:    cmp x17, x16
+; HINT-NOFPAC-NEXT:    cmp x16, x17
 ; HINT-NOFPAC-NEXT:    b.eq [[L]]auth_success_0
 ; HINT-NOFPAC-NEXT:    mov x17, x16
 ; HINT-NOFPAC-NEXT:    b [[L]]resign_end_0
@@ -231,7 +231,7 @@ define i64 @test_resign_ib_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; ELF-NOFPAC-NEXT:    autib x17, x1
 ; ELF-NOFPAC-NEXT:    mov x16, x17
 ; ELF-NOFPAC-NEXT:    xpaci x16
-; ELF-NOFPAC-NEXT:    cmp x17, x16
+; ELF-NOFPAC-NEXT:    cmp x16, x17
 ; ELF-NOFPAC-NEXT:    b.eq [[L]]auth_success_1
 ; ELF-NOFPAC-NEXT:    mov x17, x16
 ; ELF-NOFPAC-NEXT:    b [[L]]resign_end_1
@@ -257,7 +257,7 @@ define i64 @test_resign_ib_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; HINT-NOFPAC-NEXT:    mov x30, x17
 ; HINT-NOFPAC-NEXT:    xpaclri
 ; HINT-NOFPAC-NEXT:    mov x16, x30
-; HINT-NOFPAC-NEXT:    cmp x17, x16
+; HINT-NOFPAC-NEXT:    cmp x16, x17
 ; HINT-NOFPAC-NEXT:    b.eq [[L]]auth_success_1
 ; HINT-NOFPAC-NEXT:    mov x17, x16
 ; HINT-NOFPAC-NEXT:    b [[L]]resign_end_1
@@ -288,7 +288,7 @@ define i64 @test_resign_da_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; ELF-NOFPAC-NEXT:    autda x17, x1
 ; ELF-NOFPAC-NEXT:    mov x16, x17
 ; ELF-NOFPAC-NEXT:    xpacd x16
-; ELF-NOFPAC-NEXT:    cmp x17, x16
+; ELF-NOFPAC-NEXT:    cmp x16, x17
 ; ELF-NOFPAC-NEXT:    b.eq [[L]]auth_success_2
 ; ELF-NOFPAC-NEXT:    mov x17, x16
 ; ELF-NOFPAC-NEXT:    b [[L]]resign_end_2
@@ -314,7 +314,7 @@ define i64 @test_resign_da_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; HINT-NOFPAC-NEXT:    mov x30, x17
 ; HINT-NOFPAC-NEXT:    xpaclri
 ; HINT-NOFPAC-NEXT:    mov x16, x30
-; HINT-NOFPAC-NEXT:    cmp x17, x16
+; HINT-NOFPAC-NEXT:    cmp x16, x17
 ; HINT-NOFPAC-NEXT:    b.eq [[L]]auth_success_2
 ; HINT-NOFPAC-NEXT:    mov x17, x16
 ; HINT-NOFPAC-NEXT:    b [[L]]resign_end_2
@@ -345,7 +345,7 @@ define i64 @test_resign_db_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; ELF-NOFPAC-NEXT:    autdb x17, x1
 ; ELF-NOFPAC-NEXT:    mov x16, x17
 ; ELF-NOFPAC-NEXT:    xpacd x16
-; ELF-NOFPAC-NEXT:    cmp x17, x16
+; ELF-NOFPAC-NEXT:    cmp x16, x17
 ; ELF-NOFPAC-NEXT:    b.eq [[L]]auth_success_3
 ; ELF-NOFPAC-NEXT:    mov x17, x16
 ; ELF-NOFPAC-NEXT:    b [[L]]resign_end_3
@@ -371,7 +371,7 @@ define i64 @test_resign_db_ia(i64 %arg, i64 %arg1, i64 %arg2) {
 ; HINT-NOFPAC-NEXT:    mov x30, x17
 ; HINT-NOFPAC-NEXT:    xpaclri
 ; HINT-NOFPAC-NEXT:    mov x16, x30
-; HINT-NOFPAC-NEXT:    cmp x17, x16
+; HINT-NOFPAC-NEXT:    cmp x16, x17
 ; HINT-NOFPAC-NEXT:    b.eq [[L]]auth_success_3
 ; HINT-NOFPAC-NEXT:    mov x17, x16
 ; HINT-NOFPAC-NEXT:    b [[L]]resign_end_3
@@ -402,7 +402,7 @@ define i64 @test_resign_db_ib(i64 %arg, i64 %arg1, i64 %arg2) {
 ; ELF-NOFPAC-NEXT:    autdb x17, x1
 ; ELF-NOFPAC-NEXT:    mov x16, x17
 ; ELF-NOFPAC-NEXT:    xpacd x16
-; ELF-NOFPAC-NEXT:    cmp x17, x16
+; ELF-NOFPAC-NEXT:    cmp x16, x17
 ; ELF-NOFPAC-NEXT:    b.eq [[L]]auth_success_4
 ; ELF-NOFPAC-NEXT:    mov x17, x16
 ; ELF-NOFPAC-NEXT:    b [[L]]resign_end_4
@@ -428,7 +428,7 @@ define i64 @test_resign_db_ib(i64 %arg, i64 %arg1, i64 %arg2) {
 ; HINT-NOFPAC-NEXT:    mov x30, x17
 ; HINT-NOFPAC-NEXT:    xpaclri
 ; HINT-NOFPAC-NEXT:    mov x16, x30
-; HINT-NOFPAC-NEXT:    cmp x17, x16
+; HINT-NOFPAC-NEXT:    cmp x16, x17
 ; HINT-NOFPAC-NEXT:    b.eq [[L]]auth_success_4
 ; HINT-NOFPAC-NEXT:    mov x17, x16
 ; HINT-NOFPAC-NEXT:    b [[L]]resign_end_4
@@ -459,7 +459,7 @@ define i64 @test_resign_db_da(i64 %arg, i64 %arg1, i64 %arg2) {
 ; ELF-NOFPAC-NEXT:    autdb x17, x1
 ; ELF-NOFPAC-NEXT:    mov x16, x17
 ; ELF-NOFPAC-NEXT:    xpacd x16
-; ELF-NOFPAC-NEXT:    cmp x17, x16
+; ELF-NOFPAC-NEXT:    cmp x16, x17
 ; ELF-NOFPAC-NEXT:    b.eq [[L]]auth_success_5
 ; ELF-NOFPAC-NEXT:    mov x17, x16
 ; ELF-NOFPAC-NEXT:    b [[L]]resign_end_5
@@ -485,7 +485,7 @@ define i64 @test_resign_db_da(i64 %arg, i64 %arg1, i64 %arg2) {
 ; HINT-NOFPAC-NEXT:    mov x30, x17
 ; HINT-NOFPAC-NEXT:    xpaclri
 ; HINT-NOFPAC-NEXT:    mov x16, x30
-; HINT-NOFPAC-NEXT:    cmp x17, x16
+; HINT-NOFPAC-NEXT:    cmp x16, x17
 ; HINT-NOFPAC-NEXT:    b.eq [[L]]auth_success_5
 ; HINT-NOFPAC-NEXT:    mov x17, x16
 ; HINT-NOFPAC-NEXT:    b [[L]]resign_end_5
@@ -516,7 +516,7 @@ define i64 @test_resign_db_db(i64 %arg, i64 %arg1, i64 %arg2) {
 ; ELF-NOFPAC-NEXT:    autdb x17, x1
 ; ELF-NOFPAC-NEXT:    mov x16, x17
 ; ELF-NOFPAC-NEXT:    xpacd x16
-; ELF-NOFPAC-NEXT:    cmp x17, x16
+; ELF-NOFPAC-NEXT:    cmp x16, x17
 ; ELF-NOFPAC-NEXT:    b.eq [[L]]auth_success_6
 ; ELF-NOFPAC-NEXT:    mov x17, x16
 ; ELF-NOFPAC-NEXT:    b [[L]]resign_end_6
@@ -542,7 +542,7 @@ define i64 @test_resign_db_db(i64 %arg, i64 %arg1, i64 %arg2) {
 ; HINT-NOFPAC-NEXT:    mov x30, x17
 ; HINT-NOFPAC-NEXT:    xpaclri
 ; HINT-NOFPAC-NEXT:    mov x16, x30
-; HINT-NOFPAC-NEXT:    cmp x17, x16
+; HINT-NOFPAC-NEXT:    cmp x16, x17
 ; HINT-NOFPAC-NEXT:    b.eq [[L]]auth_success_6
 ; HINT-NOFPAC-NEXT:    mov x17, x16
 ; HINT-NOFPAC-NEXT:    b [[L]]resign_end_6
@@ -573,7 +573,7 @@ define i64 @test_resign_iza_db(i64 %arg, i64 %arg1, i64 %arg2) {
 ; ELF-NOFPAC-NEXT:    autiza x17
 ; ELF-NOFPAC-NEXT:    mov x16, x17
 ; ELF-NOFPAC-NEXT:    xpaci x16
-; ELF-NOFPAC-NEXT:    cmp x17, x16
+; ELF-NOFPAC-NEXT:    cmp x16, x17
 ; ELF-NOFPAC-NEXT:    b.eq [[L]]auth_success_7
 ; ELF-NOFPAC-NEXT:    mov x17, x16
 ; ELF-NOFPAC-NEXT:    b [[L]]resign_end_7
@@ -599,7 +599,7 @@ define i64 @test_resign_iza_db(i64 %arg, i64 %arg1, i64 %arg2) {
 ; HINT-NOFPAC-NEXT:    mov x30, x17
 ; HINT-NOFPAC-NEXT:    xpaclri
 ; HINT-NOFPAC-NEXT:    mov x16, x30
-; HINT-NOFPAC-NEXT:    cmp x17, x16
+; HINT-NOFPAC-NEXT:    cmp x16, x17
 ; HINT-NOFPAC-NEXT:    b.eq [[L]]auth_success_7
 ; HINT-NOFPAC-NEXT:    mov x17, x16
 ; HINT-NOFPAC-NEXT:    b [[L]]resign_end_7
@@ -630,7 +630,7 @@ define i64 @test_resign_da_dzb(i64 %arg, i64 %arg1, i64 %arg2) {
 ; ELF-NOFPAC-NEXT:    autda x17, x1
 ; ELF-NOFPAC-NEXT:    mov x16, x17
 ; ELF-NOFPAC-NEXT:    xpacd x16
-; ELF-NOFPAC-NEXT:    cmp x17, x16
+; ELF-NOFPAC-NEXT:    cmp x16, x17
 ; ELF-NOFPAC-NEXT:    b.eq [[L]]auth_success_8
 ; ELF-NOFPAC-NEXT:    mov x17, x16
 ; ELF-NOFPAC-NEXT:    b [[L]]resign_end_8
@@ -656,7 +656,7 @@ define i64 @test_resign_da_dzb(i64 %arg, i64 %arg1, i64 %arg2) {
 ; HINT-NOFPAC-NEXT:    mov x30, x17
 ; HINT-NOFPAC-NEXT:    xpaclri
 ; HINT-NOFPAC-NEXT:    mov x16, x30
-; HINT-NOFPAC-NEXT:    cmp x17, x16
+; HINT-NOFPAC-NEXT:    cmp x16, x17
 ; HINT-NOFPAC-NEXT:    b.eq [[L]]auth_success_8
 ; HINT-NOFPAC-NEXT:    mov x17, x16
 ; HINT-NOFPAC-NEXT:    b [[L]]resign_end_8
@@ -687,7 +687,7 @@ define i64 @test_auth_trap_attribute(i64 %arg, i64 %arg1) "ptrauth-auth-traps" {
 ; ELF-NOFPAC-NEXT:    autia x17, x1
 ; ELF-NOFPAC-NEXT:    mov x16, x17
 ; ELF-NOFPAC-NEXT:    xpaci x16
-; ELF-NOFPAC-NEXT:    cmp x17, x16
+; ELF-NOFPAC-NEXT:    cmp x16, x17
 ; ELF-NOFPAC-NEXT:    b.eq [[L]]auth_success_9
 ; ELF-NOFPAC-NEXT:    brk #0xc470
 ; ELF-NOFPAC-NEXT:  Lauth_success_9:
@@ -709,7 +709,7 @@ define i64 @test_auth_trap_attribute(i64 %arg, i64 %arg1) "ptrauth-auth-traps" {
 ; HINT-NOFPAC-NEXT:    mov x30, x17
 ; HINT-NOFPAC-NEXT:    xpaclri
 ; HINT-NOFPAC-NEXT:    mov x16, x30
-; HINT-NOFPAC-NEXT:    cmp x17, x16
+; HINT-NOFPAC-NEXT:    cmp x16, x17
 ; HINT-NOFPAC-NEXT:    b.eq [[L]]auth_success_9
 ; HINT-NOFPAC-NEXT:    brk #0xc470
 ; HINT-NOFPAC-NEXT:  Lauth_success_9:

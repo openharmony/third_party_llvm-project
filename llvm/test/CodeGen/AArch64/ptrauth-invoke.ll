@@ -169,8 +169,8 @@ continuebb:
 ; ELF-NEXT:         adrp x1, :got:_ZTIPKc
 ; ELF-NEXT:         mov x2, xzr
 ; ELF-NEXT:         ldr x1, [x1, :got_lo12:_ZTIPKc]
-; ELF-NEXT:         mov x16, #42
-; ELF-NEXT:         blrab x19, x16
+; ELF-NEXT:         mov x17, #42
+; ELF-NEXT:         blrab x19, x17
 ; ELF-NEXT: [[POSTCALL:.L.*]]:
 ; ELF-NEXT: // %bb.1:
 ; ELF-NEXT: [[LPADBB:.LBB[0-9_]+]]:
@@ -409,8 +409,8 @@ continuebb:
 ; ELF-SDAG-NEXT:  mov x16, #1234
 ; ELF-SDAG-NEXT:  pacia x17, x16
 ; ELF-SDAG-NEXT:  mov x8, x17
-; ELF-SDAG-NEXT:  mov x16, #2
-; ELF-SDAG-NEXT:  blrab x8, x16
+; ELF-SDAG-NEXT:  mov x17, #2
+; ELF-SDAG-NEXT:  blrab x8, x17
 ; ELF-SDAG-NEXT: [[POSTCALL:.L.*]]:
 ; ELF-SDAG-NEXT: // %bb.1:
 ; ELF-SDAG-NEXT:  mov w19, w0
