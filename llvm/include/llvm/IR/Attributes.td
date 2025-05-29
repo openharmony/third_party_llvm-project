@@ -99,6 +99,10 @@ def DereferenceableOrNull : IntAttr<"dereferenceable_or_null",
 /// Do not instrument function with sanitizers.
 def DisableSanitizerInstrumentation: EnumAttr<"disable_sanitizer_instrumentation", [FnAttr]>;
 
+// OHOS_LOCAL begin
+def GWPSanitizeSpecific : EnumAttr<"sanitize_with_gwp", [FnAttr]>;
+// OHOS_LOCAL end
+
 /// Provide pointer element type to intrinsic.
 def ElementType : TypeAttr<"elementtype", [ParamAttr]>;
 

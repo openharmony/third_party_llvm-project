@@ -692,7 +692,8 @@ enum AttributeKindCodes {
   /// OHOS_LOCAL begin
   ATTR_KIND_STACK_PROTECT_RET_REQ = 85,
   ATTR_KIND_STACK_PROTECT_RET_STRONG = 86,
-  /// OHOS_LOCAL end
+  ATTR_KIND_FUNCTION_INSTRUMENT_WITH_GWP_SANITIZER = 87,
+  // OHOS_LOCAL end
 };
 
 enum ComdatSelectionKindCodes {

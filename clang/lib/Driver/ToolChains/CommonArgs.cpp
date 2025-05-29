@@ -911,6 +911,10 @@ collectSanitizerRuntimes(const ToolChain &TC, const ArgList &Args,
       else
         SharedRuntimes.push_back("scudo");
     }
+    // OHOS_LOCAL begin
+    if (SanArgs.needsGWPAsanRt() && SanArgs.linkRuntimes())
+      SharedRuntimes.push_back("gwp_asan");       
+    // OHOS_LOCAL end
     if (SanArgs.needsTsanRt() && SanArgs.linkRuntimes())
       SharedRuntimes.push_back("tsan");
     if (SanArgs.needsHwasanRt() && SanArgs.linkRuntimes()) {
@@ -1016,6 +1020,11 @@ collectSanitizerRuntimes(const ToolChain &TC, const ArgList &Args,
         StaticRuntimes.push_back("scudo_cxx");
     }
   }
+  // OHOS_LOCAL begin
+  if (!SanArgs.needsSharedRt() && SanArgs.needsGWPAsanRt() &&
+      SanArgs.linkRuntimes())
+    StaticRuntimes.push_back("gwp_asan");
+  // OHOS_LOCAL end
 }
 
 // Should be called before we add system libraries (C++ ABI, libstdc++/libc++,

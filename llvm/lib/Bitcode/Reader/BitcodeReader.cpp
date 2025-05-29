@@ -1853,6 +1853,10 @@ static Attribute::AttrKind getAttrFromCode(uint64_t Code) {
     return Attribute::Convergent;
   case bitc::ATTR_KIND_DISABLE_SANITIZER_INSTRUMENTATION:
     return Attribute::DisableSanitizerInstrumentation;
+  // OHOS_LOCAL begin
+  case bitc::ATTR_KIND_FUNCTION_INSTRUMENT_WITH_GWP_SANITIZER:
+    return Attribute::GWPSanitizeSpecific;
+  // OHOS_LOCAL end
   case bitc::ATTR_KIND_ELEMENTTYPE:
     return Attribute::ElementType;
   case bitc::ATTR_KIND_FNRETTHUNK_EXTERN:

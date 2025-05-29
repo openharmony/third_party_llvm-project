@@ -11,6 +11,7 @@
 #include "gwp_asan/optional/printf.h"
 // OHOS_LOCAL end
 #include "gwp_asan/optional/segv_handler.h"
+#include "sanitizer_common/sanitizer_internal_defs.h" // OHOS_LOCAL
 
 #include <sigchain.h>
 #include <signal.h>
@@ -84,6 +85,18 @@ bool gwp_asan_should_sample()
 {
     return guarded_poll_alloctor.shouldSample();
 }
+
+// OHOS_LOCAL begin
+SANITIZER_INTERFACE_ATTRIBUTE void gwp_asan_force_sample_by_funcattr()
+{
+    return guarded_poll_alloctor.forceSampleByFuncAttr();
+}
+
+SANITIZER_INTERFACE_ATTRIBUTE void gwp_asan_unforce_sample_by_funcattr()
+{
+    return guarded_poll_alloctor.unforceSampleByFuncAttr();
+}
+// OHOS_LOCAL end
 
 bool gwp_asan_pointer_is_mine(void *mem)
 {

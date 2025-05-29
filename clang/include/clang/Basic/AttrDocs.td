@@ -2839,6 +2839,16 @@ on the tool may still insert instrumentation to prevent false positive reports.
   }];
 }
 
+// OHOS_LOCAL begin
+def GWPSanitizeSpecificDocs : Documentation {
+  let Category = DocCatFunction;
+  let Content = [{
+Use the ``sanitize_with_gwp`` attribute on a function, Objective-C method, to
+specify that heap memory in this function should be checked by GWP sanitizer.
+  }];
+}
+// OHOS_LOCAL end
+
 def NoSanitizeAddressDocs : Documentation {
   let Category = DocCatFunction;
   // This function has multiple distinct spellings, and so it requires a custom

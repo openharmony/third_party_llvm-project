@@ -122,6 +122,9 @@ MODULE_PASS("dfsan", DataFlowSanitizerPass())
 MODULE_PASS("msan-module", ModuleMemorySanitizerPass({}))
 MODULE_PASS("module-inline", ModuleInlinerPass())
 MODULE_PASS("tsan-module", ModuleThreadSanitizerPass())
+// OHOS_LOCAL begin
+MODULE_PASS("gwpasan-module", ModuleGWPAddressSanitizerPass())
+// OHOS_LOCAL end
 MODULE_PASS("sancov-module", ModuleSanitizerCoveragePass())
 MODULE_PASS("memprof-module", ModuleMemProfilerPass())
 MODULE_PASS("poison-checking", PoisonCheckingPass())
@@ -382,6 +385,9 @@ FUNCTION_PASS("tlshoist", TLSVariableHoistPass())
 FUNCTION_PASS("transform-warning", WarnMissedTransformationsPass())
 FUNCTION_PASS("tsan", ThreadSanitizerPass())
 FUNCTION_PASS("memprof", MemProfilerPass())
+// OHOS_LOCAL begin
+FUNCTION_PASS("gwp_asan", GWPAddressSanitizerPass())
+// OHOS_LOCAL end
 #undef FUNCTION_PASS
 
 #ifndef FUNCTION_PASS_WITH_PARAMS
