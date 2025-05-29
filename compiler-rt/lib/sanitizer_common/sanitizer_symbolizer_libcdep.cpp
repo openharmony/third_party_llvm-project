@@ -198,6 +198,26 @@ static const LoadedModule *SearchForModule(const ListOfModules &modules,
   return nullptr;
 }
 
+// OHOS_LOCAL begin
+#if defined (__OHOS__)
+const LoadedModule *Symbolizer::FindLibraryByName(const char *name) {
+  for (uptr i = 0; i < modules_.size(); i++) {
+    if (internal_strstr(modules_[i].full_name(), name) != nullptr) {
+      return &modules_[i];
+    }
+  }
+  if (fallback_modules_.size()) {
+    for (uptr i = 0; i < fallback_modules_.size(); i++) {
+      if (internal_strstr(fallback_modules_[i].full_name(), name) != nullptr) {
+        return &fallback_modules_[i];
+      }
+    }
+  }
+  return nullptr;
+}
+#endif
+// OHOS_LOCAL end
+
 const LoadedModule *Symbolizer::FindModuleForAddress(uptr address) {
   bool modules_were_reloaded = false;
   if (!modules_fresh_) {

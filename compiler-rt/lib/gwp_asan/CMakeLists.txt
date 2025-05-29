@@ -101,6 +101,7 @@ if (COMPILER_RT_HAS_GWP_ASAN)
                   # OHOS_LOCAL begin
                   RTSanitizerCommon
                   RTSanitizerCommonLibc
+                  RTSanitizerCommonSymbolizer
                   # OHOS_LOCAL end
       PARENT_TARGET gwp_asan
     )

@@ -17,6 +17,11 @@
 #include "gwp_asan/platform_specific/guarded_pool_allocator_posix.h" // IWYU pragma: keep
 #include "gwp_asan/platform_specific/guarded_pool_allocator_tls.h"
 
+namespace __sanitizer {
+  class LoadedModule;
+  class Symbolizer;
+} // namespace __sanitizer
+
 #include <stddef.h>
 #include <stdint.h>
 // IWYU pragma: no_include <__stddef_max_align_t.h>
@@ -90,14 +95,20 @@ public:
   // Return whether the allocation should be randomly chosen for sampling.
   GWP_ASAN_ALWAYS_INLINE bool shouldSample() {
     // OHOS_LOCAL begin
-    #if defined (__OHOS__)
+#if defined (__OHOS__)
     Nmalloc++;
     if( Nmalloc % PRINT_COUNTER == 0 ) {
       MUSL_LOG("[gwp_asan]: AvgDuration %{public}u us, FreeSlotsLength %{public}d\n",
                PersistInterval / ReserveCounter, FreeSlotsLength);
       Nmalloc = 0;
     }
-    #endif
+    // If the RandomState is calculated from getRandomUnsigned32, the value
+    // of RandomState will never be 1, so we use RandomState == 1 to force
+    // GWP_ASAN sample.
+    if (GWP_ASAN_UNLIKELY(checkLib() || getThreadLocals()->RandomState == 1)) {
+      return true;
+    }
+#endif
     // OHOS_LOCAL end
     // NextSampleCounter == 0 means we "should regenerate the counter".
     //                   == 1 means we "should sample this allocation".
@@ -105,13 +116,6 @@ public:
     // class must be valid when zero-initialised, and we wish to sample as
     // infrequently as possible when this is the case, hence we underflow to
     // UINT32_MAX.
-    // OHOS_LOCAL begin
-    // If the RandomState is calculated from getRandomUnsigned32, the value
-    // of RandomState will never be 1, so we use RandomState == 1 to force
-    // GWP_ASAN sample.
-    if (GWP_ASAN_UNLIKELY(getThreadLocals()->RandomState == 1))
-      return true;
-    // OHOS_LOCAL end
 
     if (GWP_ASAN_UNLIKELY(getThreadLocals()->NextSampleCounter == 0))
       getThreadLocals()->NextSampleCounter =
@@ -244,6 +248,11 @@ private:
 
   // OHOS_LOCAL begin
   void accumulatePersistInterval(size_t reservedSlotsLength);
+#if defined (__OHOS__)
+  bool checkLib();
+  void findmodule();
+  void parseWhiteList();
+#endif
   // OHOS_LOCAL end
 
   gwp_asan::AllocatorState State;
@@ -255,6 +264,12 @@ private:
 
   // A mutex to protect the guarded slot and metadata pool for this class.
   Mutex PoolMutex;
+// OHOS_LOCAL begin
+#if defined (__OHOS__)
+  // A mutex to protect the find library.
+  Mutex FindModMutex;
+#endif
+// OHOS_LOCAL end
   // Some unwinders can grab the libdl lock. In order to provide atfork
   // protection, we need to ensure that we allow an unwinding thread to release
   // the libdl lock before forking.
@@ -287,10 +302,20 @@ private:
   // the sample rate.
   uint32_t AdjustedSampleRatePlusOne = 0;
   // OHOS_LOCAL begin
+  // The Count that GWP_ASan tracks the malloc and prints upon reaching PRINT_COUNT.
   size_t Nmalloc{0};
   size_t PersistInterval{0};
   size_t PreTime{0};
   size_t ReserveCounter{0};
+#if defined (__OHOS__)
+  __sanitizer::Symbolizer *Symbolizer = nullptr;
+  // Pointer to an array of modules.
+  const __sanitizer::LoadedModule **Modules = nullptr; 
+  uint8_t ModuleLength{0};
+  // Pointer to an array of LibraryPath.
+  char **LibraryPath = nullptr;
+  uint8_t LibraryPathLength{0};
+#endif
   // OHOS_LOCAL end
 
   // Additional platform specific data structure for the guarded pool mapping.
