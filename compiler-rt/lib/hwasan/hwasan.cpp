@@ -72,7 +72,7 @@ static void RegisterHwasanFlags(FlagParser *parser, Flags *f) {
 
 #define APPEND_BOOL_FLAG_CONETENT(defalutFlags, flags, S, param) \
   defalutFlags.append(#S " is ");                                \
-  defalutFlags.append(flags->S == param ? "true. " : "false. ");
+  defalutFlags.append(flags->S == param ? "true. " : "false. ")
 
 static void InitializeFlags() {
   SetCommonFlagsDefaults();

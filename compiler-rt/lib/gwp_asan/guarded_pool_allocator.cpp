@@ -79,7 +79,8 @@ void GuardedPoolAllocator::init(const options::Options &Opts) {
   State.MaxSimultaneousAllocations = Opts.MaxSimultaneousAllocations;
   // OHOS_LOCAL begin
   #if defined (__OHOS__)
-  MUSL_LOG("[gwp_asan]: SlotLength %{public}d, SampleRate %{public}d", Opts.MaxSimultaneousAllocations, Opts.SampleRate);
+  MUSL_LOG("[gwp_asan]: SlotLength %{public}d, SampleRate %{public}d",
+           Opts.MaxSimultaneousAllocations, Opts.SampleRate);
   #endif
   // OHOS_LOCAL end
 

@@ -32,7 +32,7 @@ namespace __sanitizer {
 #define MUSL_LOG(fmt,...)                \
    if(&musl_log) {                       \
      musl_log(fmt, __VA_ARGS__);         \
-   };                                    \
+   }
 
 extern "C" GWP_ASAN_WEAK int musl_log(const char *fmt, ...);
 #endif
