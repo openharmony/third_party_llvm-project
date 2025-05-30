@@ -40,8 +40,8 @@ int main() {
 #ifdef FREE
   // FREE: READ of size 1 at
   // FREE: is located 0 bytes inside of 10-byte region
-  // FREE: freed by thread T0 here:
-  // FREE: previously allocated here:
+  // FREE: freed by thread {{.*}} here:
+  // FREE: previously allocated by thread {{.*}} here:
   char volatile y = p[0];
 #endif
 

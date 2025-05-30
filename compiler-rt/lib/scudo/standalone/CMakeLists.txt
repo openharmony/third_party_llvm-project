@@ -135,7 +135,7 @@ if (COMPILER_RT_HAS_GWP_ASAN)
   add_dependencies(scudo_standalone gwp_asan)
   list(APPEND SCUDO_OBJECT_LIBS
        RTGwpAsan RTGwpAsanBacktraceLibc RTGwpAsanSegvHandler
-       RTGwpAsanOptionsParser)
+       RTGwpAsanOptionsParser RTSanitizerCommon RTSanitizerCommonLibc)
 
   append_list_if(COMPILER_RT_HAS_OMIT_FRAME_POINTER_FLAG -fno-omit-frame-pointer
                                                          -mno-omit-leaf-frame-pointer
