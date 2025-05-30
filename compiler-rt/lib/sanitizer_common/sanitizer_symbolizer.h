@@ -152,6 +152,13 @@ class Symbolizer final {
   void RefreshModules();
   const LoadedModule *FindModuleForAddress(uptr address);
 
+// OHOS_LOCAL begin
+#if defined (__OHOS__)
+  const LoadedModule *FindLibraryByName(const char *name);
+  
+  const bool GetModulesFresh() { return modules_fresh_; };
+#endif
+// OHOS_LOCAL end
   void InvalidateModuleList();
 
  private:
