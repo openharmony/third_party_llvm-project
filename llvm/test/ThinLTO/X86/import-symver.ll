@@ -9,10 +9,10 @@
 ; RUN: llvm-dis %t1.bc.thinlto.imported.bc -o - | FileCheck --check-prefix=NOIMPORT %s
 
 ; When @foo gets imported, the symver must be imported as @ rather than @@.
-; IMPORT: module asm ".symver foo, foo@FOO_1.2.3"
+; IMPORT-DAG: module asm ".symver foo, foo@FOO_1.2.3"
 ; When @bar gets imported, the symver must be imported too.
-; IMPORT: module asm ".symver bar, bar@BAR_1.2.3"
-; IMPORT: declare dso_local i32 @bar()
+; IMPORT-DAG: module asm ".symver bar, bar@BAR_1.2.3"
+; IMPORT-DAG: declare dso_local i32 @bar()
 
 ; When @bar isn't imported, the symver is also not imported.
 ; NOIMPORT-NOT: module asm
