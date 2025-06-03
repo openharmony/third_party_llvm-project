@@ -145,4 +145,224 @@ body: |
   bool ret = funcPass->runOnMachineFunction(*MF);
   ASSERT_TRUE(ret);
 }
+
+// Verify that the phi part branch address has been optimized to an address constant, 
+// and expect to add autia instructions to compensate for other branches.
+TEST(EarlyPartsCpi, PhiBlrBranchOptimized) {
+  std::unique_ptr<LLVMTargetMachine> TM = createTargetMachine();
+  ASSERT_TRUE(TM);
+
+  MachineModuleInfo MMI(TM.get());
+  SmallString<5000> S;
+  StringRef MIRString = Twine(R"MIR(
+--- |
+  define i32 @pac_test(ptr nocapture noundef readonly %0, i64 noundef %1, ptr nocapture noundef readonly %2, ptr noundef %3) {
+    unreachable
+  }
+...
+---
+name: pac_test
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $x0, $x1, $x2, $x3
+    successors: %bb.1
+    %59:gpr64 = COPY $x3
+    %58:gpr64 = COPY $x2
+    %57:gpr64 = COPY $x1
+    %56:gpr64common = COPY $x0
+    %62:gpr32all = COPY $wzr
+    %60:gpr32all = COPY %62:gpr32all
+    B %bb.1
+
+  bb.1:
+    ; predecessors: %bb.0
+    successors: %bb.2, %bb.3
+    %99:gpr32 = MOVi32imm 22545
+    %100:gpr64sp = SUBREG_TO_REG 0, killed %99:gpr32, %subreg.sub_32
+    %101:gpr64 = PARTS_AUTCALL %58:gpr64, killed %100:gpr64sp
+    ADJCALLSTACKDOWN 0, 0, implicit-def dead $sp, implicit $sp
+    $x0 = COPY %57:gpr64
+    $x1 = COPY %59:gpr64
+    BLR killed %101:gpr64
+    ADJCALLSTACKUP 0, 0, implicit-def dead $sp, implicit $sp
+    CBNZX %57:gpr64, %bb.3
+    B %bb.2
+
+  bb.2:
+    ; predecessors: %bb.1
+    successors: %bb.4
+    %131:gpr32 = MOVi32imm 22545
+    %132:gpr64sp = SUBREG_TO_REG 0, killed %131:gpr32, %subreg.sub_32
+    %133:gpr64 = PARTS_AUTCALL %58:gpr64, killed %132:gpr64sp
+    %31:gpr64 = COPY %133:gpr64
+    B %bb.4
+
+  bb.3:
+    ; predecessors: %bb.1
+    successors: %bb.4
+    %125:gpr32 = MOVi32imm 22545
+    %126:gpr64sp = SUBREG_TO_REG 0, killed %125:gpr32, %subreg.sub_32
+    %127:gpr64common = MOVaddr target-flags(aarch64-page) @pac_test, target-flags(aarch64-pageoff, aarch64-nc) @pac_test
+    %32:gpr64 = COPY %127:gpr64common
+    ADJCALLSTACKDOWN 0, 0, implicit-def dead $sp, implicit $sp
+    $x0 = COPY %57:gpr64
+    $x1 = COPY %59:gpr64
+    BLR %127:gpr64common
+    ADJCALLSTACKUP 0, 0, implicit-def dead $sp, implicit $sp
+    B %bb.4
+
+  bb.4:
+    ; predecessors: %bb.2, %bb.3
+    successors: %bb.5
+    %35:gpr64 = PHI %31:gpr64, %bb.2, %32:gpr64, %bb.3
+    B %bb.5
+
+  bb.5:
+    ; predecessors: %bb.4
+    ADJCALLSTACKDOWN 0, 0, implicit-def dead $sp, implicit $sp
+    $x0 = COPY %57:gpr64
+    $x1 = COPY %59:gpr64
+    BLR %35:gpr64
+    ADJCALLSTACKUP 0, 0, implicit-def dead $sp, implicit $sp
+    RET_ReallyLR implicit $w0
+)MIR").toNullTerminatedStringRef(S);;
+
+  LLVMContext Context;
+  std::unique_ptr<MIRParser> MIR;
+  std::unique_ptr<Module> M = parseMIR(Context, MIR, *TM, MIRString, "pac_test", MMI);
+  ASSERT_TRUE(M);
+
+  Function *F = M->getFunction("pac_test");
+  auto *MF = MMI.getMachineFunction(*F);
+  ASSERT_TRUE(MF);
+  std::unique_ptr<AArch64EarlyPartsCpiPass> funcPass(new AArch64EarlyPartsCpiPass());
+  ASSERT_TRUE(funcPass);
+
+  bool ret = funcPass->runOnMachineFunction(*MF);
+  ASSERT_TRUE(ret);
+}
+
+// Verify the same function pointer for multiple phi and multiple blr jumps, 
+// and some branch addresses have been optimized.
+TEST(EarlyPartsCpi, PhiMultiBlr) {
+  std::unique_ptr<LLVMTargetMachine> TM = createTargetMachine();
+  ASSERT_TRUE(TM);
+
+  MachineModuleInfo MMI(TM.get());
+  SmallString<5000> S;
+  StringRef MIRString = Twine(R"MIR(
+--- |
+  define i32 @pac_test(ptr nocapture noundef readonly %0, i64 noundef %1, ptr nocapture noundef readonly %2, ptr noundef %3) {
+    unreachable
+  }
+...
+---
+name: pac_test
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $x0, $x1, $x2, $x3
+    successors: %bb.1
+    %59:gpr64 = COPY $x3
+    %58:gpr64 = COPY $x2
+    %57:gpr64 = COPY $x1
+    %56:gpr64common = COPY $x0
+    %62:gpr32all = COPY $wzr
+    %60:gpr32all = COPY %62:gpr32all
+    B %bb.1
+
+  bb.1:
+    ; predecessors: %bb.0
+    successors: %bb.2, %bb.3, %bb.4
+    %99:gpr32 = MOVi32imm 22545
+    %100:gpr64sp = SUBREG_TO_REG 0, killed %99:gpr32, %subreg.sub_32
+    %101:gpr64 = PARTS_AUTCALL %58:gpr64, killed %100:gpr64sp
+    ADJCALLSTACKDOWN 0, 0, implicit-def dead $sp, implicit $sp
+    $x0 = COPY %57:gpr64
+    $x1 = COPY %59:gpr64
+    BLR killed %101:gpr64
+    ADJCALLSTACKUP 0, 0, implicit-def dead $sp, implicit $sp
+    CBNZX %59:gpr64, %bb.3
+    CBNZX %57:gpr64, %bb.4
+    B %bb.2
+
+  bb.2:
+    ; predecessors: %bb.1
+    successors: %bb.5, %bb.6
+    %131:gpr32 = MOVi32imm 22545
+    %132:gpr64sp = SUBREG_TO_REG 0, killed %131:gpr32, %subreg.sub_32
+    %133:gpr64 = PARTS_AUTCALL %58:gpr64, killed %132:gpr64sp
+    %31:gpr64 = COPY %133:gpr64
+    CBNZX %31:gpr64, %bb.6
+    B %bb.5
+
+  bb.3:
+    ; predecessors: %bb.1
+    successors: %bb.6
+    %141:gpr32 = MOVi32imm 22545
+    %142:gpr64sp = SUBREG_TO_REG 0, killed %141:gpr32, %subreg.sub_32
+    %143:gpr64 = PARTS_AUTCALL %58:gpr64, killed %142:gpr64sp
+    %41:gpr64 = COPY %143:gpr64
+    B %bb.6
+
+  bb.4:
+    ; predecessors: %bb.1
+    successors: %bb.5
+    %125:gpr32 = MOVi32imm 22545
+    %126:gpr64sp = SUBREG_TO_REG 0, killed %125:gpr32, %subreg.sub_32
+    %127:gpr64common = MOVaddr target-flags(aarch64-page) @pac_test, target-flags(aarch64-pageoff, aarch64-nc) @pac_test
+    %32:gpr64 = COPY %127:gpr64common
+    ADJCALLSTACKDOWN 0, 0, implicit-def dead $sp, implicit $sp
+    $x0 = COPY %57:gpr64
+    $x1 = COPY %59:gpr64
+    BLR %127:gpr64common
+    ADJCALLSTACKUP 0, 0, implicit-def dead $sp, implicit $sp
+    B %bb.5
+
+  bb.5:
+    ; predecessors: %bb.2, %bb.4
+    successors: %bb.7
+    %35:gpr64 = PHI %31:gpr64, %bb.2, %32:gpr64, %bb.4
+    B %bb.7
+  
+  bb.6:
+    ; predecessors: %bb.2, %bb.3
+    successors: %bb.8
+    %40:gpr64 = PHI %31:gpr64, %bb.2, %41:gpr64, %bb.3
+    B %bb.8
+
+  bb.7:
+    ; predecessors: %bb.5
+    ADJCALLSTACKDOWN 0, 0, implicit-def dead $sp, implicit $sp
+    $x0 = COPY %57:gpr64
+    $x1 = COPY %59:gpr64
+    BLR %35:gpr64
+    ADJCALLSTACKUP 0, 0, implicit-def dead $sp, implicit $sp
+    RET_ReallyLR implicit $w0
+
+  bb.8:
+    ; predecessors: %bb.6
+    ADJCALLSTACKDOWN 0, 0, implicit-def dead $sp, implicit $sp
+    $x0 = COPY %57:gpr64
+    $x1 = COPY %59:gpr64
+    BLR %40:gpr64
+    ADJCALLSTACKUP 0, 0, implicit-def dead $sp, implicit $sp
+    RET_ReallyLR implicit $w0
+)MIR").toNullTerminatedStringRef(S);;
+
+  LLVMContext Context;
+  std::unique_ptr<MIRParser> MIR;
+  std::unique_ptr<Module> M = parseMIR(Context, MIR, *TM, MIRString, "pac_test", MMI);
+  ASSERT_TRUE(M);
+
+  Function *F = M->getFunction("pac_test");
+  auto *MF = MMI.getMachineFunction(*F);
+  ASSERT_TRUE(MF);
+  std::unique_ptr<AArch64EarlyPartsCpiPass> funcPass(new AArch64EarlyPartsCpiPass());
+  ASSERT_TRUE(funcPass);
+
+  bool ret = funcPass->runOnMachineFunction(*MF);
+  ASSERT_TRUE(ret);
+}
 }
