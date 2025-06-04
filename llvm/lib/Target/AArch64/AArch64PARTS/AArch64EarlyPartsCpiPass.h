@@ -12,6 +12,7 @@
 
 #include "AArch64.h"
 #include "AArch64Subtarget.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/IR/Module.h"
@@ -33,11 +34,13 @@ private:
     const AArch64Subtarget *STI = nullptr;
     const AArch64InstrInfo *TII = nullptr;
     inline bool handleInstruction(MachineFunction &MF, MachineBasicBlock &MBB, MachineBasicBlock::instr_iterator &MIi);
+    inline bool getAllAutCalls(MachineInstr *PhiMi, MachineRegisterInfo *MRI, SmallVector<MachineInstr *> &AutCallVec) const;
+    inline void insertAuthenticateInstr(MachineRegisterInfo *MRI, MachineInstr *AutCall, MachineInstr *PhiMi);
     inline void findIndirectCallMachineInstr(MachineFunction &MF, MachineBasicBlock &MBB,
         MachineInstr *MIptr, SmallVector<MachineInstr*> &IndCallVec);
     void triggerCompilationErrorOrphanAUTCALL(MachineBasicBlock &MBB);
     inline bool isIndirectCall(const MachineInstr &MI) const;
-    inline bool isPartsAUTCALLIntrinsic(unsigned Opcode);
+    inline bool isPartsAUTCALLIntrinsic(unsigned Opcode) const;
     inline const MCInstrDesc &getIndirectCallAuth(MachineInstr *MI_indcall);
     inline void replaceBranchByAuthenticatedBranch(MachineBasicBlock &MBB, MachineInstr *MI_indcall, MachineInstr &MI);
     inline void insertCOPYInstr(MachineBasicBlock &MBB, MachineInstr *MI_indcall, MachineInstr &MI);

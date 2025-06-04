@@ -70,6 +70,29 @@ inline bool AArch64EarlyPartsCpiPass::handleInstruction(MachineFunction &MF, Mac
     }
     auto &MI = *MIi--;
     for (auto &MI_indcall : IndCallVec) {
+        // processed items will not be processed again.
+        if (isIndirectAutCall(*MI_indcall)) {
+            continue;
+        }
+        MachineRegisterInfo *MRI = &MF.getRegInfo();
+        MachineInstr *PhiMi = MRI->getVRegDef(MI_indcall->getOperand(0).getReg());
+        if (PhiMi->isPHI()) {
+            SmallVector<MachineInstr*> AutCallVec;
+            // When some branches of the phi instruction are optimized to 
+            // constant function addresses, no signature is generated, 
+            // resulting in the inability to generate blraa instructions
+            // after the phi instruction.
+            if (!getAllAutCalls(PhiMi, MRI, AutCallVec)) {
+                for (auto &AutCall : AutCallVec) {
+                    // Remove variables that are not optimized to 
+                    // constant function addresses, 
+                    // verify and remove signatures with autia.
+                    insertAuthenticateInstr(MRI, AutCall, PhiMi);
+                    ++StatAutcall;
+                }
+                continue;
+            }
+        }
         replaceBranchByAuthenticatedBranch(MBB, MI_indcall, MI);
     }
     // insert a copy instruction, same dest register as MI, keep subsequent instructions do not need to modified
@@ -79,7 +102,45 @@ inline bool AArch64EarlyPartsCpiPass::handleInstruction(MachineFunction &MF, Mac
     return true;
 }
 
-inline bool AArch64EarlyPartsCpiPass::isPartsAUTCALLIntrinsic(unsigned Opcode) {
+inline bool AArch64EarlyPartsCpiPass::getAllAutCalls(
+    MachineInstr *PhiMi, MachineRegisterInfo *MRI, SmallVector<MachineInstr *> &AutCallVec) const {
+    bool ret = true;
+    for (unsigned i = 1, e = PhiMi->getNumOperands(); i < e; i += 2) {
+        MachineOperand &MO = PhiMi->getOperand(i);
+        MachineInstr *CopyMi = MRI->getVRegDef(MO.getReg());
+        MachineInstr *AutCall = CopyMi->isCopy() ? MRI->getVRegDef(CopyMi->getOperand(1).getReg()) : CopyMi;
+        if (!isPartsAUTCALLIntrinsic(AutCall->getOpcode())) {
+            ret = false;
+            continue;
+        }
+
+        AutCallVec.push_back(AutCall);
+    }
+    return ret;
+}
+
+inline void AArch64EarlyPartsCpiPass::insertAuthenticateInstr(
+    MachineRegisterInfo *MRI, MachineInstr *AutCall, MachineInstr *PhiMi) {
+    unsigned NewDestReg = MRI->createVirtualRegister(&AArch64::GPR64spRegClass);
+    auto BMI = BuildMI(
+        *AutCall->getParent(), *AutCall, AutCall->getDebugLoc(), TII->get(AArch64::AUTIA));
+    BMI.addDef(NewDestReg);
+    auto &Op1 = AutCall->getOperand(1);
+    BMI.addReg(Op1.getReg(), getRegState(Op1) & ~RegState::Kill);
+    auto &Op2 = AutCall->getOperand(2);
+    BMI.addReg(Op2.getReg(), getRegState(Op2) & ~RegState::Kill);
+    // Correct the register referenced by the phi instruction
+    for (unsigned i = 1; i < PhiMi->getNumOperands(); i += 2) {
+        MachineOperand &MO = PhiMi->getOperand(i);
+        MachineInstr *CopyMi = MRI->getVRegDef(MO.getReg());
+        MachineInstr *Tmp = CopyMi->isCopy() ? MRI->getVRegDef(CopyMi->getOperand(1).getReg()) : CopyMi;
+        if (MO.isReg() && AutCall->getOperand(0).getReg() == Tmp->getOperand(0).getReg()) {
+            MO.setReg(NewDestReg);
+        }
+    }
+}
+
+inline bool AArch64EarlyPartsCpiPass::isPartsAUTCALLIntrinsic(unsigned Opcode) const {
     switch (Opcode) {
         case AArch64::PARTS_AUTCALL:
             return true;
