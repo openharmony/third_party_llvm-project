@@ -48,6 +48,8 @@ public:
 
   virtual DataExtractorSP GetCurrentThreadBackTrace(Status &error) = 0;
 
+  virtual DataExtractorSP GetCurrentThreadOperateDebugMessageResult(const char *message, Status &error) = 0;
+
 protected:
   TargetSP m_target_sp;
 

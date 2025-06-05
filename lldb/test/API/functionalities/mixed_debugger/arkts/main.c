@@ -15,9 +15,14 @@
 
 static int var = 5;
 const char *bt = "This is a ArkTS backtrace";
+const char *msg = "This is a ArkTS operate debug message result";
 
 const char *GetJsBacktrace() {
     return bt;
+}
+
+const char *OperateJsDebugMessage(const char *message) {
+    return msg;
 }
 
 int main ()

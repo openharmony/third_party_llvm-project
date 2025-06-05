@@ -30,6 +30,8 @@ public:
   ~MixedArkTSDebugger() {};
 
   DataExtractorSP GetCurrentThreadBackTrace(Status &error) override;
+
+  DataExtractorSP GetCurrentThreadOperateDebugMessageResult(const char *message, Status &error) override;
 };
 
 } // namespace lldb_private
