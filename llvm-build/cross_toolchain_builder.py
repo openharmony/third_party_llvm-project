@@ -124,6 +124,23 @@ class CrossToolchainBuilder:
         if self._build_config.lldb_timeout:
             lldb_defines["LLDB_ENABLE_TIMEOUT"] = "True"
         # Optional Dependencies
+        if self._build_config.build_libxml2:
+            self._build_config.LIBXML2_VERSION = self._build_utils.get_libxml2_version()
+
+            lldb_defines["LLDB_ENABLE_LIBXML2"] = "ON"
+            lldb_defines["LIBXML2_INCLUDE_DIR"] = (
+                self._build_utils.merge_libxml2_install_dir(
+                    self._llvm_triple, "include", "libxml2"
+                )
+            )
+            lldb_defines["LIBXML2_LIBRARY"] = (
+                self._build_utils.merge_libxml2_install_dir(
+                    self._llvm_triple,
+                    "lib",
+                    "libxml2.so.%s" % self._build_utils.get_libxml2_version(),
+                )
+            )
+
         if self._build_config.build_ncurses:
             lldb_defines["LLDB_ENABLE_CURSES"] = "ON"
             lldb_defines["CURSES_INCLUDE_DIRS"] = ";".join(
@@ -147,23 +164,6 @@ class CrossToolchainBuilder:
                 ncurses_libs.append(library_path)
             lldb_defines["CURSES_LIBRARIES"] = ";".join(ncurses_libs)
             lldb_defines["PANEL_LIBRARIES"] = ";".join(ncurses_libs)
-
-        if self._build_config.build_libxml2:
-            self._build_config.LIBXML2_VERSION = self._build_utils.get_libxml2_version()
-
-            lldb_defines["LLDB_ENABLE_LIBXML2"] = "ON"
-            lldb_defines["LIBXML2_INCLUDE_DIR"] = (
-                self._build_utils.merge_libxml2_install_dir(
-                    self._llvm_triple, "include", "libxml2"
-                )
-            )
-            lldb_defines["LIBXML2_LIBRARY"] = (
-                self._build_utils.merge_libxml2_install_dir(
-                    self._llvm_triple,
-                    "lib",
-                    "libxml2.so.%s" % self._build_utils.get_libxml2_version(),
-                )
-            )
 
         if self._build_config.build_libedit:
             lldb_defines["LLDB_ENABLE_LIBEDIT"] = "ON"
