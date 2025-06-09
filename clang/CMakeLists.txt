@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.20.0)
 set(LLVM_SUBPROJECT_TITLE "Clang")
+enable_testing()
 
 if(NOT DEFINED LLVM_COMMON_CMAKE_UTILS)
   set(LLVM_COMMON_CMAKE_UTILS ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
@@ -925,10 +926,21 @@ if (CLANG_BOLT AND NOT LLVM_BUILD_INSTRUMENTED)
   )
 endif()
 
+add_custom_target(cr-check-all COMMAND ${CMAKE_CTEST_COMMAND} -V)
+
+function(cr_add_test name testprog)
+    add_custom_target(
+        ${name} COMMAND ${testprog} ${ARGN}
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    add_dependencies(cr-check-all ${name})
+endfunction(cr_add_test)
+
 if (LLVM_ADD_NATIVE_VISUALIZERS_TO_SOLUTION)
   add_subdirectory(utils/ClangVisualizers)
 endif()
 add_subdirectory(utils/hmaptool)
+add_subdirectory(blink_gc_plugin)
+add_subdirectory(raw_ptr_plugin)
 
 if(CLANG_BUILT_STANDALONE)
   llvm_distribution_add_targets()
