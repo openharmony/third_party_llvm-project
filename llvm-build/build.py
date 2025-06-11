@@ -2578,24 +2578,85 @@ class LlvmPackage(BuildUtils):
 
     def move_libcxx(self, llvm_install, libcxx_install_dir):
         src_aarch64_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'aarch64-unknown-linux-ohos', 'libc++_shared.so')
-        src_aarch64_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'aarch64-unknown-linux-ohos', 'libc++_static.a')
-        src_x86_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'x86_64-unknown-linux-ohos', 'libc++_shared.so')
-        src_x86_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'x86_64-unknown-linux-ohos', 'libc++_static.a')
-
         dst_aarch64_dir = os.path.join(llvm_install, 'lib', 'aarch64-unknown-linux-ohos')
-        dst_x86_dir = os.path.join(llvm_install, 'lib', 'x86_64-unknown-linux-ohos')
         if os.path.exists(src_aarch64_cxx_shared_dir) and os.path.exists(dst_aarch64_dir):
             shutil.copy2(src_aarch64_cxx_shared_dir, dst_aarch64_dir)
-            
+        src_aarch64_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'aarch64-unknown-linux-ohos', 'libc++_static.a')
         if os.path.exists(src_aarch64_cxx_static_dir) and os.path.exists(dst_aarch64_dir):
             shutil.copy2(src_aarch64_cxx_static_dir, dst_aarch64_dir)
         
+        src_x86_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'x86_64-unknown-linux-ohos', 'libc++_shared.so')
+        dst_x86_dir = os.path.join(llvm_install, 'lib', 'x86_64-unknown-linux-ohos')
         if os.path.exists(src_x86_cxx_shared_dir) and os.path.exists(dst_x86_dir):
             shutil.copy2(src_x86_cxx_shared_dir, dst_x86_dir)
-             
+        src_x86_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'x86_64-unknown-linux-ohos', 'libc++_static.a')
         if os.path.exists(src_x86_cxx_static_dir) and os.path.exists(dst_x86_dir):
             shutil.copy2(src_x86_cxx_static_dir, dst_x86_dir)
         
+        src_arm_linux_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-linux-ohos', 'libc++_shared.so')
+        dst_arm_linux_dir = os.path.join(llvm_install, 'lib', 'arm-unknown-linux-ohos')
+        if os.path.exists(src_arm_linux_cxx_shared_dir) and os.path.exists(dst_arm_linux_dir):
+            shutil.copy2(src_arm_linux_cxx_shared_dir, dst_arm_linux_dir)
+        src_arm_linux_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-linux-ohos', 'libc++_static.a')
+        if os.path.exists(src_arm_linux_cxx_static_dir) and os.path.exists(dst_arm_linux_dir):
+            shutil.copy2(src_arm_linux_cxx_static_dir, dst_arm_linux_dir)\
+        
+        src_arm_linux_a7_hard_neon_vfpv4_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-linux-ohos', 'a7_hard_neon-vfpv4', 'libc++_shared.so')
+        dst_arm_linux_a7_hard_neon_vfpv4_dir = os.path.join(llvm_install, 'lib', 'arm-unknown-linux-ohos', 'a7_hard_neon-vfpv4')
+        if os.path.exists(src_arm_linux_a7_hard_neon_vfpv4_cxx_shared_dir) and os.path.exists(dst_arm_linux_a7_hard_neon_vfpv4_dir):
+            shutil.copy2(src_arm_linux_a7_hard_neon_vfpv4_cxx_shared_dir, dst_arm_linux_a7_hard_neon_vfpv4_dir)
+        src_arm_linux_a7_hard_neon_vfpv4_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-linux-ohos', 'a7_hard_neon-vfpv4', 'libc++_static.a')
+        if os.path.exists(src_arm_linux_a7_hard_neon_vfpv4_cxx_static_dir) and os.path.exists(dst_arm_linux_a7_hard_neon_vfpv4_dir):
+            shutil.copy2(src_arm_linux_a7_hard_neon_vfpv4_cxx_static_dir, dst_arm_linux_a7_hard_neon_vfpv4_dir)
+
+        src_arm_linux_a7_softfp_neon_vfpv4_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-linux-ohos', 'a7_softfp_neon-vfpv4', 'libc++_shared.so')
+        dst_arm_linux_a7_softfp_neon_vfpv4_dir = os.path.join(llvm_install, 'lib', 'arm-unknown-linux-ohos', 'a7_softfp_neon-vfpv4')
+        if os.path.exists(src_arm_linux_a7_softfp_neon_vfpv4_cxx_shared_dir) and os.path.exists(dst_arm_linux_a7_softfp_neon_vfpv4_dir):
+            shutil.copy2(src_arm_linux_a7_softfp_neon_vfpv4_cxx_shared_dir, dst_arm_linux_a7_softfp_neon_vfpv4_dir)
+        src_arm_linux_a7_softfp_neon_vfpv4_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-linux-ohos', 'a7_softfp_neon-vfpv4', 'libc++_static.a')
+        if os.path.exists(src_arm_linux_a7_softfp_neon_vfpv4_cxx_static_dir) and os.path.exists(dst_arm_linux_a7_softfp_neon_vfpv4_dir):
+            shutil.copy2(src_arm_linux_a7_softfp_neon_vfpv4_cxx_static_dir, dst_arm_linux_a7_softfp_neon_vfpv4_dir)
+
+        src_arm_linux_a7_soft_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-linux-ohos', 'a7_soft', 'libc++_shared.so')
+        dst_arm_linux_a7_soft_dir = os.path.join(llvm_install, 'lib', 'arm-unknown-linux-ohos', 'a7_soft')
+        if os.path.exists(src_arm_linux_a7_soft_cxx_shared_dir) and os.path.exists(dst_arm_linux_a7_soft_dir):
+            shutil.copy2(src_arm_linux_a7_soft_cxx_shared_dir, dst_arm_linux_a7_soft_dir)
+        src_arm_linux_a7_soft_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-linux-ohos', 'a7_soft', 'libc++_static.a')
+        if os.path.exists(src_arm_linux_a7_soft_cxx_static_dir) and os.path.exists(dst_arm_linux_a7_soft_dir):
+            shutil.copy2(src_arm_linux_a7_soft_cxx_static_dir, dst_arm_linux_a7_soft_dir)
+        
+        src_arm_liteos_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-liteos-ohos', 'libc++_shared.so')
+        dst_arm_liteos_dir = os.path.join(llvm_install, 'lib', 'arm-unknown-liteos-ohos')
+        if os.path.exists(src_arm_liteos_cxx_shared_dir) and os.path.exists(dst_arm_liteos_dir):
+            shutil.copy2(src_arm_liteos_cxx_shared_dir, dst_arm_liteos_dir)
+        src_arm_liteos_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-liteos-ohos', 'libc++_static.a')
+        if os.path.exists(src_arm_liteos_cxx_static_dir) and os.path.exists(dst_arm_liteos_dir):
+            shutil.copy2(src_arm_liteos_cxx_static_dir, dst_arm_liteos_dir)
+        
+        src_arm_liteos_a7_hard_neon_vfpv4_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-liteos-ohos', 'a7_hard_neon-vfpv4', 'libc++_shared.so')
+        dst_arm_liteos_a7_hard_neon_vfpv4_dir = os.path.join(llvm_install, 'lib', 'arm-unknown-liteos-ohos', 'a7_hard_neon-vfpv4')
+        if os.path.exists(src_arm_liteos_a7_hard_neon_vfpv4_cxx_shared_dir) and os.path.exists(dst_arm_liteos_a7_hard_neon_vfpv4_dir):
+            shutil.copy2(src_arm_liteos_a7_hard_neon_vfpv4_cxx_shared_dir, dst_arm_liteos_a7_hard_neon_vfpv4_dir)
+        src_arm_liteos_a7_hard_neon_vfpv4_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-liteos-ohos', 'a7_hard_neon-vfpv4', 'libc++_static.a')
+        if os.path.exists(src_arm_liteos_a7_hard_neon_vfpv4_cxx_static_dir) and os.path.exists(dst_arm_liteos_a7_hard_neon_vfpv4_dir):
+            shutil.copy2(src_arm_liteos_a7_hard_neon_vfpv4_cxx_static_dir, dst_arm_liteos_a7_hard_neon_vfpv4_dir)
+
+        src_arm_liteos_a7_softfp_neon_vfpv4_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-liteos-ohos', 'a7_softfp_neon-vfpv4', 'libc++_shared.so')
+        dst_arm_liteos_a7_softfp_neon_vfpv4_dir = os.path.join(llvm_install, 'lib', 'arm-unknown-liteos-ohos', 'a7_softfp_neon-vfpv4')
+        if os.path.exists(src_arm_liteos_a7_softfp_neon_vfpv4_cxx_shared_dir) and os.path.exists(dst_arm_liteos_a7_softfp_neon_vfpv4_dir):
+            shutil.copy2(src_arm_liteos_a7_softfp_neon_vfpv4_cxx_shared_dir, dst_arm_liteos_a7_softfp_neon_vfpv4_dir)
+        src_arm_liteos_a7_softfp_neon_vfpv4_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-liteos-ohos', 'a7_softfp_neon-vfpv4', 'libc++_static.a')
+        if os.path.exists(src_arm_liteos_a7_softfp_neon_vfpv4_cxx_static_dir) and os.path.exists(dst_arm_liteos_a7_softfp_neon_vfpv4_dir):
+            shutil.copy2(src_arm_liteos_a7_softfp_neon_vfpv4_cxx_static_dir, dst_arm_liteos_a7_softfp_neon_vfpv4_dir)
+
+        src_arm_liteos_a7_soft_cxx_shared_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-liteos-ohos', 'a7_soft', 'libc++_shared.so')
+        dst_arm_liteos_a7_soft_dir = os.path.join(llvm_install, 'lib', 'arm-unknown-liteos-ohos', 'a7_soft')
+        if os.path.exists(src_arm_liteos_a7_soft_cxx_shared_dir) and os.path.exists(dst_arm_liteos_a7_soft_dir):
+            shutil.copy2(src_arm_liteos_a7_soft_cxx_shared_dir, dst_arm_liteos_a7_soft_dir)
+        src_arm_liteos_a7_soft_cxx_static_dir = os.path.join(libcxx_install_dir, 'lib', 'arm-unknown-liteos-ohos', 'a7_soft', 'libc++_static.a')
+        if os.path.exists(src_arm_liteos_a7_soft_cxx_static_dir) and os.path.exists(dst_arm_liteos_a7_soft_dir):
+            shutil.copy2(src_arm_liteos_a7_soft_cxx_static_dir, dst_arm_liteos_a7_soft_dir)
+
         #libcxx-ndk/include/libcxx-ohos/include/c++/v1/__config_site
         src_libcxx_dir = os.path.join(libcxx_install_dir, 'include', 'libcxx-ohos', 'include', 'c++', 'v1', '__config_site')
         #llvm-install/include/c++/v1/__config_site
