@@ -817,6 +817,8 @@ class LlvmCore(BuildUtils):
 
         # First of all build compiler-rt because it's needed to be built before libunwind and etc.
         if not self.build_config.build_only and not 'windows-x86_64' in build_dir:
+            # Whether to build compiler-rt before other targets
+           # due to XVM do not need compiler-rt
             if need_compiler_rt:
                 self.invoke_ninja(out_path=build_dir,
                                 env=env,
