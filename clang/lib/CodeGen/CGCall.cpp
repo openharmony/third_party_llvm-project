@@ -5008,6 +5008,10 @@ static unsigned getMaxVectorWidth(const llvm::Type *Ty) {
   return MaxVectorWidth;
 }
 
+static bool isNoPacFunction(const FunctionDecl *FD) {
+  return FD->isNoPac();
+}
+
 RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
                                  const CGCallee &Callee,
                                  ReturnValueSlot ReturnValue,
@@ -5129,6 +5133,9 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
 
     bool ArgHasMaybeUndefAttr =
         IsArgumentMaybeUndef(TargetDecl, CallInfo.getNumRequiredArgs(), ArgNo);
+
+    const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(TargetDecl);
+    bool nopac = FD && isNoPacFunction(FD);
 
     switch (ArgInfo.getKind()) {
     case ABIArgInfo::InAlloca: {
@@ -5324,6 +5331,13 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
 
         if (ArgHasMaybeUndefAttr)
           V = Builder.CreateFreeze(V);
+
+        if (nopac && I->Ty.getUnqualifiedType()->isSignableType()) {
+          auto NoPacAuthInfo = CGPointerAuthInfo();
+          auto FuncPAI = CGM.getPointerAuthInfoForType(I->Ty.getUnqualifiedType());
+          V = emitPointerAuthResign(V, I->Ty, FuncPAI, NoPacAuthInfo, false);
+        }
+
         IRCallArgs[FirstIRArg] = V;
         break;
       }
@@ -5926,6 +5940,12 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
             llvm::Value *V = CI;
             if (V->getType() != RetIRTy)
               V = Builder.CreateBitCast(V, RetIRTy);
+            const FunctionDecl *FD = dyn_cast_or_null<FunctionDecl>(TargetDecl);
+            if (FD && isNoPacFunction(FD) && RetTy.getUnqualifiedType()->isSignableType()) {
+              auto NoPacAuthInfo = CGPointerAuthInfo();
+              auto FuncPAI = CGM.getPointerAuthInfoForType(RetTy.getUnqualifiedType());
+              V = emitPointerAuthResign(V, RetTy,  NoPacAuthInfo, FuncPAI, false);
+            }
             return RValue::get(V);
           }
           }

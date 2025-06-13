@@ -51,13 +51,13 @@
 #include <atomic>
 #endif
 
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || __has_feature(ptrauth_icall) || __has_feature(ptrauth_vcall) || __has_feature(ptrauth_mfcall) || __has_feature(ptrauth_vptr)
 #include <ptrauth.h>
 #endif
 
 template <typename T>
 static inline T* strip_vtable(T* vtable) {
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || __has_feature(ptrauth_icall) || __has_feature(ptrauth_vcall) || __has_feature(ptrauth_mfcall) || __has_feature(ptrauth_vptr)
   vtable = ptrauth_strip(vtable, ptrauth_key_cxx_vtable_pointer);
 #endif
   return vtable;

@@ -75,6 +75,11 @@ isSimpleEnoughValueToCommitHelper(Constant *C,
     return true;
   }
 
+  if (isa<ConstantPtrAuth>(C)) {
+    // do not know how to process
+    return false;
+  }
+
   // We don't know exactly what relocations are allowed in constant expressions,
   // so we allow &global+constantoffset, which is safe and uniformly supported
   // across targets.

@@ -975,14 +975,17 @@ public:
                                      QualType FunctionType);
 
   llvm::Constant *getMemberFunctionPointer(const FunctionDecl *FD,
-                                           llvm::Type *Ty = nullptr);
+                                           llvm::Type *Ty = nullptr,
+                                           bool NoPac = false);
 
   llvm::Constant *getMemberFunctionPointer(llvm::Constant *Pointer,
-                                           QualType FT);
+                                           QualType FT,
+                                           bool NoPac = false);
 
   CGPointerAuthInfo getFunctionPointerAuthInfo(QualType T);
 
-  CGPointerAuthInfo getMemberFunctionPointerAuthInfo(QualType FT);
+  CGPointerAuthInfo getMemberFunctionPointerAuthInfo(QualType FT,
+                                                     bool NoPac = false);
 
   CGPointerAuthInfo getPointerAuthInfoForPointeeType(QualType type);
 

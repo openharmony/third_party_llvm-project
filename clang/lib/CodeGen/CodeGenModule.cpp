@@ -1210,7 +1210,9 @@ void CodeGenModule::Release() {
       uint64_t PAuthABIVersion =
           (LangOpts.PointerAuthIntrinsics
            << AARCH64_PAUTH_PLATFORM_LLVM_LINUX_VERSION_INTRINSICS) |
-          (LangOpts.PointerAuthCalls
+          ((LangOpts.PointerAuthCalls | LangOpts.IndirectPointerAuthCallOnly | 
+	    LangOpts.VirtualFunctionPointerAuthCallOnly | LangOpts.MemberFunctionPointerAuthCallOnly |
+	    LangOpts.VTablePointerAuthOnly)
            << AARCH64_PAUTH_PLATFORM_LLVM_LINUX_VERSION_CALLS) |
           (LangOpts.PointerAuthReturns
            << AARCH64_PAUTH_PLATFORM_LLVM_LINUX_VERSION_RETURNS) |
@@ -1225,6 +1227,7 @@ void CodeGenModule::Release() {
       static_assert(AARCH64_PAUTH_PLATFORM_LLVM_LINUX_VERSION_INITFINI ==
                         AARCH64_PAUTH_PLATFORM_LLVM_LINUX_VERSION_LAST,
                     "Update when new enum items are defined");
+      //viorel todo: add PointerAuthCxxFunctionPointerZeroDiscrimination | PointerAuthCxxVirtualFunctionPointerZeroDiscrimination | PointerAuthInitFiniZeroDiscrimination
       if (PAuthABIVersion != 0) {
         getModule().addModuleFlag(llvm::Module::Error,
                                   "aarch64-elf-pauthabi-platform",
@@ -1861,6 +1864,25 @@ static std::string getMangledNameImpl(CodeGenModule &CGM, GlobalDecl GD,
                GD.getKernelReferenceKind() == KernelReferenceKind::Stub) {
       Out << "__device_stub__" << II->getName();
     } else {
+
+      auto &ctx = GD.getDecl()->getASTContext();
+      auto &langOptions = CGM.getLangOpts();
+      bool isPac = langOptions.PointerAuthMangleFunc && FD && ctx.isFunctionDeclPtr2Fun(FD) && !FD->isNoPac();
+      isPac = isPac
+        && II->getName().str() != "__cxa_throw"
+        && II->getName().str() != "__cxa_atexit"
+        && II->getName().str() != "dl_iterate_phdr"
+        && II->getName().str() != "pthread_key_create"
+        && II->getName().str() != "pthread_once"
+        && II->getName().str() != "__clone"
+        //&& II->getName().str() != ""
+        //&& II->getName().str() != ""
+        ;
+
+      if(isPac)
+      {
+        Out << "PAC_";
+      }
       Out << II->getName();
     }
   }
@@ -5480,7 +5502,12 @@ void CodeGenModule::EmitGlobalVarDefinition(const VarDecl *D,
         Init = llvm::UndefValue::get(getTypes().ConvertType(T));
       }
     } else {
-      Init = Initializer;
+        const auto *CPA = dyn_cast<llvm::ConstantPtrAuth>(Initializer);
+        if (CPA && D->isNoPac()) {
+          Init = CPA->getPointer();
+        } else {
+          Init = Initializer;
+        }
       // We don't need an initializer, so remove the entry for the delayed
       // initializer position (just in case this entry was delayed) if we
       // also don't need to register a destructor.

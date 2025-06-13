@@ -105,6 +105,10 @@ FEATURE(dataflow_sanitizer, LangOpts.Sanitize.has(SanitizerKind::DataFlow))
 FEATURE(scudo, LangOpts.Sanitize.hasOneOf(SanitizerKind::Scudo))
 FEATURE(ptrauth_intrinsics, LangOpts.PointerAuthIntrinsics)
 FEATURE(ptrauth_calls, LangOpts.PointerAuthCalls)
+FEATURE(ptrauth_icall, LangOpts.IndirectPointerAuthCallOnly)
+FEATURE(ptrauth_vcall, LangOpts.VirtualFunctionPointerAuthCallOnly)
+FEATURE(ptrauth_mfcall, LangOpts.MemberFunctionPointerAuthCallOnly)
+FEATURE(ptrauth_vptr, LangOpts.VTablePointerAuthOnly)
 FEATURE(ptrauth_returns, LangOpts.PointerAuthReturns)
 FEATURE(ptrauth_vtable_pointer_address_discrimination, LangOpts.PointerAuthVTPtrAddressDiscrimination)
 FEATURE(ptrauth_vtable_pointer_type_discrimination, LangOpts.PointerAuthVTPtrTypeDiscrimination)
@@ -113,6 +117,17 @@ FEATURE(ptrauth_member_function_pointer_type_discrimination, LangOpts.PointerAut
 FEATURE(ptrauth_init_fini, LangOpts.PointerAuthInitFini)
 FEATURE(ptrauth_function_pointer_type_discrimination, LangOpts.PointerAuthFunctionTypeDiscrimination)
 FEATURE(ptrauth_indirect_gotos, LangOpts.PointerAuthIndirectGotos)
+FEATURE(ptrauth_cxx_function_pointer_zero_discrimination, LangOpts.PointerAuthCxxFunctionPointerZeroDiscrimination)
+FEATURE(ptrauth_cxx_virtual_function_pointer_zero_discrimination, LangOpts.PointerAuthCxxVirtualFunctionPointerZeroDiscrimination)
+FEATURE(ptrauth_init_fini_zero_discrimination, LangOpts.PointerAuthInitFiniZeroDiscrimination)
+
+FEATURE(ptrauth_mangle_class, LangOpts.PointerAuthMangleClass)
+FEATURE(ptrauth_mangle_func, LangOpts.PointerAuthMangleFunc)
+FEATURE(ptrauth_mangle_cxxabi, LangOpts.PointerAuthMangleCxxabi)
+
+FEATURE(ptrauth_nopac_atexit, LangOpts.PointerAuthNoPacAtexit)
+FEATURE(ptrauth_nopac_throw, LangOpts.PointerAuthNoPacThrow)
+
 EXTENSION(swiftcc,
   PP.getTargetInfo().checkCallingConvention(CC_Swift) ==
   clang::TargetInfo::CCCR_OK)

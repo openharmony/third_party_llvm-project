@@ -2583,6 +2583,7 @@ void CodeGenFunction::EmitParmDecl(const VarDecl &D, ParamValue Arg,
     Arg.getAnyValue()->setName(D.getName());
 
   QualType Ty = D.getType();
+  bool isNopac = D.isNoPac();
 
   // Use better IR generation for certain implicit parameters.
   if (auto IPD = dyn_cast<ImplicitParamDecl>(&D)) {
@@ -2736,6 +2737,11 @@ void CodeGenFunction::EmitParmDecl(const VarDecl &D, ParamValue Arg,
     }
   }
 
+  if (isNopac && Ty.getUnqualifiedType()->isSignableType()) {
+    auto NoPacAuthInfo = CGPointerAuthInfo();
+    auto FuncPAI = CGM.getPointerAuthInfoForType(Ty.getUnqualifiedType());
+    ArgVal = emitPointerAuthResign(ArgVal, Ty, NoPacAuthInfo, FuncPAI, false);
+  }
   // Store the initial value into the alloca.
   if (DoStore)
     EmitStoreOfScalar(ArgVal, lv, /* isInitialization */ true);

@@ -2529,6 +2529,7 @@ bool AArch64InstrInfo::isTailCallReturnInst(const MachineInstr &MI) {
   case AArch64::TCRETURNrinotx16:
   case AArch64::TCRETURNriALL:
   case AArch64::AUTH_TCRETURN:
+  case AArch64::AUTH_TCRETURN_HINT_ONLY:
   case AArch64::AUTH_TCRETURN_BTI:
     return true;
   }

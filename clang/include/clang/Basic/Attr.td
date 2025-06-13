@@ -4719,3 +4719,10 @@ def ClspvLibclcBuiltin: InheritableAttr {
   let Documentation = [ClspvLibclcBuiltinDoc];
   let SimpleHandler = 1;
 }
+
+def Nopac : DeclOrTypeAttr {
+  let Spellings = [Clang<"nopac">];
+  let Subjects = SubjectList<[Var, Function, CXXRecord, TypedefName, Record, Type, Field, FunctionLike]>;
+  let Documentation = [Undocumented];
+  // let SimpleHandler = 1;
+}

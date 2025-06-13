@@ -244,6 +244,9 @@ def GPR64noip : RegisterClass<"AArch64", [i64], 64, (sub GPR64, X16, X17, LR)> {
   let AltOrderSelect = [{ return 1; }];
 }
 
+// Retrict discriminator to be stored in x16 so we can use PACI[A|B]1716 or AUTI[A|B]1716
+def discGPRx16 : RegisterClass<"AArch64", [i64], 64, (add X16)>;
+
 // GPR register classes for post increment amount of vector load/store that
 // has alternate printing when Rm=31 and prints a constant immediate value
 // equal to the total number of bytes transferred.

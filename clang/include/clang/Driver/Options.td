@@ -4243,9 +4243,19 @@ defm strict_return : BoolFOption<"strict-return",
             " of a non-void function as unreachable">,
   PosFlag<SetTrue>>;
 
+defm use_nopac_attribute : BoolFOption<"use-nopac-attribute",
+  LangOpts<"UseNopacAttribute">, DefaultTrue,
+  PosFlag<SetTrue, [], [ClangOption, CC1Option],
+          "Use nopac attribute">,
+  NegFlag<SetFalse, [], [ClangOption, CC1Option]>>;
+
 let Flags = [TargetSpecific] in {
 defm ptrauth_intrinsics : OptInCC1FFlag<"ptrauth-intrinsics", "Enable pointer authentication intrinsics">;
 defm ptrauth_calls : OptInCC1FFlag<"ptrauth-calls", "Enable signing and authentication of all indirect calls">;
+defm ptrauth_icall : OptInCC1FFlag<"ptrauth-icall", "Enable signing and authentication of indirect function calls only">;
+defm ptrauth_vcall : OptInCC1FFlag<"ptrauth-vcall", "Enable signing and authentication of virtual function calls only">;
+defm ptrauth_mfcall : OptInCC1FFlag<"ptrauth-mfcall", "Enable signing and authentication of member function calls only">;
+defm ptrauth_vptr : OptInCC1FFlag<"ptrauth-vptr", "Enable signing and authentication of vtable pointer only">;
 defm ptrauth_returns : OptInCC1FFlag<"ptrauth-returns", "Enable signing and authentication of return addresses">;
 defm ptrauth_auth_traps : OptInCC1FFlag<"ptrauth-auth-traps", "Enable traps on authentication failures">;
 defm ptrauth_vtable_pointer_address_discrimination :
@@ -4259,6 +4269,23 @@ defm ptrauth_function_pointer_type_discrimination : OptInCC1FFlag<"ptrauth-funct
   "Enable type discrimination on C function pointers">;
 defm ptrauth_indirect_gotos : OptInCC1FFlag<"ptrauth-indirect-gotos",
   "Enable signing and authentication of indirect goto targets">;
+defm ptrauth_cxx_function_pointer_zero_discrimination : OptInCC1FFlag<"ptrauth-cxx-function-pointer-zero-discrimination",
+  "Enable zero discrimination on CXX function pointers">;
+defm ptrauth_cxx_virtual_function_pointer_zero_discrimination : OptInCC1FFlag<"ptrauth-cxx-virtual-function-pointer-zero-discrimination",
+  "Enable zero discrimination on CXX virtual function pointers">;
+defm ptrauth_init_fini_zero_discrimination : OptInCC1FFlag<"ptrauth-init-fini-zero-discrimination",
+  "Enable zero discrimination of function pointers in init/fini arrays">;
+
+defm ptrauth_mangle_class : OptInCC1FFlag<"ptrauth-mangle-class",
+  "Add PAC_ prefix to class names compiled with pointer authentication">;
+defm ptrauth_mangle_func : OptInCC1FFlag<"ptrauth-mangle-func",
+  "Add PAC_ prefix to functions and variables with types conaining pointer to functions when compiled with pointer authentication">;
+defm ptrauth_mangle_cxxabi : OptInCC1FFlag<"ptrauth-mangle-cxxabi",
+  "Add PAC_ prefix to cxxabi classes. This is needed when libcxx is compiled with pointer authentication.">;
+
+
+defm ptrauth_nopac_atexit : OptInCC1FFlag<"ptrauth-nopac-atexit", "Enable NoPac for atexit function pointers">;
+defm ptrauth_nopac_throw : OptInCC1FFlag<"ptrauth-nopac-throw", "Enable NoPac for destructor pointers on throw">;  
 }
 
 def fenable_matrix : Flag<["-"], "fenable-matrix">, Group<f_Group>,

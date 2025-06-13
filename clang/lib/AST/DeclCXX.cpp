@@ -144,6 +144,17 @@ CXXRecordDecl *CXXRecordDecl::Create(const ASTContext &C, TagKind TK,
   return R;
 }
 
+bool CXXRecordDecl::isNoPac() const {
+  if(hasAttr<NopacAttr>())
+    return true;
+  if(const ClassTemplateSpecializationDecl *A = dyn_cast<const ClassTemplateSpecializationDecl>(this))
+  {
+    ClassTemplateDecl *T = 	A->getSpecializedTemplate();
+    return T && T->hasAttr<NopacAttr>();
+  }
+  return false;
+}
+
 CXXRecordDecl *
 CXXRecordDecl::CreateLambda(const ASTContext &C, DeclContext *DC,
                             TypeSourceInfo *Info, SourceLocation Loc,

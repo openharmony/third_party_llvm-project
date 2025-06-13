@@ -1,12 +1,12 @@
-; RUN: llc -mtriple arm64e-apple-darwin   -o - %s -asm-verbose=0 \
-; RUN:   | FileCheck %s --check-prefixes=CHECK,DARWIN
+; RUN-NOT: llc -mtriple arm64e-apple-darwin   -o - %s -asm-verbose=0 \
+; RUN-NOT:   | FileCheck %s --check-prefixes=CHECK,DARWIN
 
 ; RUN: llc -mtriple aarch64 -mattr=+pauth -o - %s -asm-verbose=0 \
 ; RUN:   | FileCheck %s --check-prefixes=CHECK,ELF
 
-; RUN: llc -mtriple arm64e-apple-darwin   -o - %s -asm-verbose=0 \
-; RUN:   -global-isel -global-isel-abort=1 -verify-machineinstrs \
-; RUN:   | FileCheck %s --check-prefixes=CHECK,DARWIN
+; RUN-NOT: llc -mtriple arm64e-apple-darwin   -o - %s -asm-verbose=0 \
+; RUN-NOT:   -global-isel -global-isel-abort=1 -verify-machineinstrs \
+; RUN-NOT:   | FileCheck %s --check-prefixes=CHECK,DARWIN
 
 ; RUN: llc -mtriple aarch64 -mattr=+pauth -o - %s -asm-verbose=0 \
 ; RUN:   -global-isel -global-isel-abort=1 -verify-machineinstrs \
@@ -167,6 +167,54 @@ define i32 @test_tailcall_ib_var(ptr %arg0, ptr %arg1) #0 {
   ret i32 %tmp1
 }
 
+define void @test_tailcall_omit_mov_x16_x16(ptr %objptr) #0 {
+; CHECK-LABEL: test_tailcall_omit_mov_x16_x16:
+; CHECK-NEXT:    ldr     x17, [x0]
+; CHECK-NEXT:    mov     x16, x0
+; CHECK-NEXT:    movk    x16, #6503, lsl #48
+; CHECK-NEXT:    autda   x17, x16
+; CHECK-NEXT:    ldr     x1, [x17]
+; CHECK-NEXT:    movk    x17, #54167, lsl #48
+; CHECK-NEXT:    braa    x1, x17
+  %vtable.signed = load ptr, ptr %objptr, align 8
+  %objptr.int = ptrtoint ptr %objptr to i64
+  %vtable.discr = tail call i64 @llvm.ptrauth.blend(i64 %objptr.int, i64 6503)
+  %vtable.signed.int = ptrtoint ptr %vtable.signed to i64
+  %vtable.unsigned.int = tail call i64 @llvm.ptrauth.auth(i64 %vtable.signed.int, i32 2, i64 %vtable.discr)
+  %vtable.unsigned = inttoptr i64 %vtable.unsigned.int to ptr
+  %virt.func.signed = load ptr, ptr %vtable.unsigned, align 8
+  %virt.func.discr = tail call i64 @llvm.ptrauth.blend(i64 %vtable.unsigned.int, i64 54167)
+  tail call void %virt.func.signed(ptr %objptr) [ "ptrauth"(i32 0, i64 %virt.func.discr) ]
+  ret void
+}
+
+define i32 @test_call_omit_extra_moves(ptr %objptr) #0 {
+; CHECK-LABEL: test_call_omit_extra_moves:
+; DARWIN-NEXT:   stp     x29, x30, [sp, #-16]!
+; ELF-NEXT:      str     x30, [sp, #-16]!
+; CHECK-NEXT:    ldr     x17, [x0]
+; CHECK-NEXT:    mov     x16, x0
+; CHECK-NEXT:    movk    x16, #6503, lsl #48
+; CHECK-NEXT:    autda   x17, x16
+; CHECK-NEXT:    ldr     x8, [x17]
+; CHECK-NEXT:    movk    x17, #34646, lsl #48
+; CHECK-NEXT:    blraa   x8, x17
+; CHECK-NEXT:    mov     w0, #42
+; DARWIN-NEXT:   ldp     x29, x30, [sp], #16
+; ELF-NEXT:      ldr     x30, [sp], #16
+; CHECK-NEXT:    ret
+  %vtable.signed = load ptr, ptr %objptr
+  %objptr.int = ptrtoint ptr %objptr to i64
+  %vtable.discr = tail call i64 @llvm.ptrauth.blend(i64 %objptr.int, i64 6503)
+  %vtable.signed.int = ptrtoint ptr %vtable.signed to i64
+  %vtable.int = tail call i64 @llvm.ptrauth.auth(i64 %vtable.signed.int, i32 2, i64 %vtable.discr)
+  %vtable = inttoptr i64 %vtable.int to ptr
+  %callee.signed = load ptr, ptr %vtable
+  %callee.discr = tail call i64 @llvm.ptrauth.blend(i64 %vtable.int, i64 34646)
+  %call.result = tail call i32 %callee.signed(ptr %objptr) [ "ptrauth"(i32 0, i64 %callee.discr) ]
+  ret i32 42
+}
+
 define i32 @test_call_ia_arg(ptr %arg0, i64 %arg1) #0 {
 ; DARWIN-LABEL: test_call_ia_arg:
 ; DARWIN-NEXT:    stp x29, x30, [sp, #-16]!
@@ -312,11 +360,11 @@ define i32 @test_direct_call_mismatch() #0 {
 ;
 ; ELF-LABEL: test_direct_call_mismatch:
 ; ELF-NEXT:   str x30, [sp, #-16]!
-; ELF-NEXT:   adrp x16, :got:f
-; ELF-NEXT:   ldr x16, [x16, :got_lo12:f]
-; ELF-NEXT:   mov x17, #42
-; ELF-NEXT:   pacia x16, x17
-; ELF-NEXT:   mov x8, x16
+; ELF-NEXT:   adrp x17, :got:f
+; ELF-NEXT:   ldr x17, [x17, :got_lo12:f]
+; ELF-NEXT:   mov x16, #42
+; ELF-NEXT:   pacia x17, x16
+; ELF-NEXT:   mov x8, x17
 ; ELF-NEXT:   mov x17, #42
 ; ELF-NEXT:   blrab x8, x17
 ; ELF-NEXT:   ldr x30, [sp], #16

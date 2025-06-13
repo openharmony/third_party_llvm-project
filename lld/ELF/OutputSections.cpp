@@ -172,6 +172,10 @@ void OutputSection::commitSection(InputSection *isec) {
   if (nonAlloc)
     flags &= ~(uint64_t)SHF_ALLOC;
 
+  if (name == ".cfi.modifier.ro") {
+    flags &= (~SHF_WRITE);
+  }
+
   addralign = std::max(addralign, isec->addralign);
 
   // If this section contains a table of fixed-size entries, sh_entsize

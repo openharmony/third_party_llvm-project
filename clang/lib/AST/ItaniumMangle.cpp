@@ -524,7 +524,7 @@ private:
                           const AbiTagList *AdditionalAbiTags);
   void mangleUnscopedTemplateName(GlobalDecl GD, const DeclContext *DC,
                                   const AbiTagList *AdditionalAbiTags);
-  void mangleSourceName(const IdentifierInfo *II);
+  void mangleSourceName(const IdentifierInfo *II, bool isPac = false);
   void mangleRegCallName(const IdentifierInfo *II);
   void mangleDeviceStubName(const IdentifierInfo *II);
   void mangleSourceNameWithAbiTags(
@@ -1481,6 +1481,38 @@ void CXXNameMangler::mangleUnqualifiedName(
       Out << 'F';
   }
 
+  bool isPac = false;
+
+  auto &ctx = GD.getDecl()->getASTContext();
+  auto &langOptions = ctx.getLangOpts();
+
+  bool pauth_class = langOptions.PointerAuthCalls
+    || langOptions.VirtualFunctionPointerAuthCallOnly
+    || langOptions.MemberFunctionPointerAuthCallOnly
+    || langOptions.VTablePointerAuthOnly;
+  bool pauth_func = langOptions.PointerAuthCalls
+    || langOptions.IndirectPointerAuthCallOnly
+    || langOptions.VirtualFunctionPointerAuthCallOnly
+    || langOptions.MemberFunctionPointerAuthCallOnly;
+
+  if (pauth_class)
+  {
+    if (const CXXRecordDecl *A = dyn_cast<const CXXRecordDecl>(GD.getDecl()))
+    {
+      // todo: if class info is signed, then we must mangle also the name of non polymorphic classes.
+      isPac = langOptions.PointerAuthMangleClass
+        && (!A->hasDefinition() || A->isPolymorphic()) && !A->isNoPac();
+    }
+  }
+  if (pauth_func)
+  {
+    if (const FunctionDecl *A = dyn_cast<const FunctionDecl>(GD.getDecl()))
+    {
+      isPac = langOptions.PointerAuthMangleFunc
+        && ctx.isFunctionDeclPtr2Fun(A) && !A->isNoPac();
+    }
+  }
+
   unsigned Arity = KnownArity;
   switch (Name.getNameKind()) {
   case DeclarationName::Identifier: {
@@ -1543,11 +1575,17 @@ void CXXNameMangler::mangleUnqualifiedName(
           FD && FD->hasAttr<CUDAGlobalAttr>() &&
           GD.getKernelReferenceKind() == KernelReferenceKind::Stub;
       if (IsDeviceStub)
+      {
         mangleDeviceStubName(II);
+      }
       else if (IsRegCall)
+      {
         mangleRegCallName(II);
+      }
       else
-        mangleSourceName(II);
+      {
+        mangleSourceName(II, isPac);
+      }
 
       writeAbiTags(ND, AdditionalAbiTags);
       break;
@@ -1761,11 +1799,19 @@ void CXXNameMangler::mangleDeviceStubName(const IdentifierInfo *II) {
       << II->getName();
 }
 
-void CXXNameMangler::mangleSourceName(const IdentifierInfo *II) {
+void CXXNameMangler::mangleSourceName(const IdentifierInfo *II, bool isPac) {
   // <source-name> ::= <positive length number> <identifier>
   // <number> ::= [n] <non-negative decimal integer>
   // <identifier> ::= <unqualified source code identifier>
-  Out << II->getLength() << II->getName();
+
+  if(isPac)
+  {
+    Out << II->getLength() + 4 << "PAC_" << II->getName();
+  }
+  else
+  {
+    Out << II->getLength() << II->getName();
+  }
 }
 
 void CXXNameMangler::mangleNestedName(GlobalDecl GD,

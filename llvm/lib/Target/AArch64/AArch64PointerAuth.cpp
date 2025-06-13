@@ -186,7 +186,8 @@ void AArch64PointerAuth::authenticateLR(
       TI != MBB.end() && TI->getOpcode() == AArch64::RET;
   MCSymbol *PACSym = MFnI->getSigningInstrLabel();
 
-  if (Subtarget->hasPAuth() && TerminatorIsCombinable && !NeedsWinCFI &&
+  if (Subtarget->hasPAuth() && !Subtarget->hasPAuthHintOnly() &&
+      TerminatorIsCombinable && !NeedsWinCFI &&
       !MF.getFunction().hasFnAttribute(Attribute::ShadowCallStack)) {
     if (MFnI->branchProtectionPAuthLR() && Subtarget->hasPAuthLR()) {
       assert(PACSym && "No PAC instruction to refer to");

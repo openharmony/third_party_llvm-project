@@ -2142,6 +2142,12 @@ VarDecl *VarDecl::CreateDeserialized(ASTContext &C, GlobalDeclID ID) {
               QualType(), nullptr, SC_None);
 }
 
+bool VarDecl::isNoPac() const
+{
+  QualType Ty = getType();
+  return hasAttr<NopacAttr>() || Ty.getQualifiers().hasNopac();
+}
+
 void VarDecl::setStorageClass(StorageClass SC) {
   assert(isLegalForVariable(SC));
   VarDeclBits.SClass = SC;
@@ -5397,6 +5403,17 @@ FunctionDecl::Create(ASTContext &C, DeclContext *DC, SourceLocation StartLoc,
       isInlineSpecified, ConstexprKind, TrailingRequiresClause);
   New->setHasWrittenPrototype(hasWrittenPrototype);
   return New;
+}
+
+bool FunctionDecl::isNoPac() const {
+  if (hasAttr<NopacAttr>()) return true;
+
+  if (getReturnType().getQualifiers().hasNopac()) return true;
+
+  for (auto *PD: parameters())
+    if (PD->isNoPac()) return true;
+
+  return false;
 }
 
 FunctionDecl *FunctionDecl::CreateDeserialized(ASTContext &C, GlobalDeclID ID) {

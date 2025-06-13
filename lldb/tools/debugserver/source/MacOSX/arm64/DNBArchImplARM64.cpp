@@ -27,7 +27,7 @@
 #include <sys/sysctl.h>
 
 #undef DEBUGSERVER_IS_ARM64E
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || __has_feature(ptrauth_icall) || __has_feature(ptrauth_vcall) || __has_feature(ptrauth_mfcall) || __has_feature(ptrauth_vptr)
 #include <ptrauth.h>
 #if defined(__LP64__)
 #define DEBUGSERVER_IS_ARM64E 1
@@ -133,7 +133,7 @@ kern_return_t DNBArchMachARM64::SetPC(uint64_t value) {
   kern_return_t err = GetGPRState(false);
   if (err == KERN_SUCCESS) {
 #if defined(__LP64__)
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || __has_feature(ptrauth_icall) || __has_feature(ptrauth_vcall) || __has_feature(ptrauth_mfcall) || __has_feature(ptrauth_vptr)
     // The incoming value could be garbage.  Strip it to avoid
     // trapping when it gets resigned in the thread state.
     value = (uint64_t) ptrauth_strip((void*) value, ptrauth_key_function_pointer);
@@ -2314,7 +2314,7 @@ bool DNBArchMachARM64::SetRegisterValue(uint32_t set, uint32_t reg,
       if (reg <= gpr_pc) {
 #if defined(__LP64__)
           uint64_t signed_value = value->value.uint64;
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || __has_feature(ptrauth_icall) || __has_feature(ptrauth_vcall) || __has_feature(ptrauth_mfcall) || __has_feature(ptrauth_vptr)
           // The incoming value could be garbage.  Strip it to avoid
           // trapping when it gets resigned in the thread state.
           signed_value = (uint64_t) ptrauth_strip((void*) signed_value, ptrauth_key_function_pointer);

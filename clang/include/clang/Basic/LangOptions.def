@@ -164,6 +164,10 @@ LANGOPT(ExperimentalLibrary, 1, 0, "enable unstable and experimental library fea
 
 LANGOPT(PointerAuthIntrinsics, 1, 0, "pointer authentication intrinsics")
 LANGOPT(PointerAuthCalls  , 1, 0, "function pointer authentication")
+LANGOPT(IndirectPointerAuthCallOnly, 1, 0, "indirect function pointer authentication only")
+LANGOPT(VirtualFunctionPointerAuthCallOnly, 1, 0, "virtual function pointer authentication only")
+LANGOPT(MemberFunctionPointerAuthCallOnly, 1, 0, "member function pointer authentication only")
+LANGOPT(VTablePointerAuthOnly, 1, 0, "virtual table pointer authentication only")
 LANGOPT(PointerAuthReturns, 1, 0, "return pointer authentication")
 LANGOPT(PointerAuthIndirectGotos, 1, 0, "indirect gotos pointer authentication")
 LANGOPT(PointerAuthAuthTraps, 1, 0, "pointer authentication failure traps")
@@ -173,6 +177,16 @@ LANGOPT(PointerAuthTypeInfoVTPtrDiscrimination, 1, 0, "incorporate type and addr
 LANGOPT(PointerAuthInitFini, 1, 0, "sign function pointers in init/fini arrays")
 BENIGN_LANGOPT(PointerAuthFunctionTypeDiscrimination, 1, 0,
                "Use type discrimination when signing function pointers")
+LANGOPT(PointerAuthCxxFunctionPointerZeroDiscrimination, 1, 0, "Enable zero discrimination on CXX function pointers")
+LANGOPT(PointerAuthCxxVirtualFunctionPointerZeroDiscrimination, 1, 0, "Enable zero discrimination on CXX virtual function pointers")
+LANGOPT(PointerAuthInitFiniZeroDiscrimination, 1, 0, "Enable zero discrimination of function pointers in init/fini arrays")
+
+LANGOPT(PointerAuthMangleClass, 1, 0, "Add PAC_ prefix to class names compiled with pointer authentication")
+LANGOPT(PointerAuthMangleFunc, 1, 0, "Add PAC_ prefix to functions and variables with types conaining pointer to functions when compiled with pointer authentication")
+LANGOPT(PointerAuthMangleCxxabi, 1, 0, "Add PAC_ prefix to cxxabi classes. This is needed when libcxx is compiled with pointer authentication")
+
+LANGOPT(PointerAuthNoPacAtexit, 1, 0, "Enable NoPac for atexit function pointers")
+LANGOPT(PointerAuthNoPacThrow, 1, 0, "Enable NoPac for function pointers to throw")
 
 LANGOPT(DoubleSquareBracketAttributes, 1, 0, "'[[]]' attributes extension for all language standard modes")
 LANGOPT(ExperimentalLateParseAttributes, 1, 0, "experimental late parsing of attributes")
@@ -361,6 +375,7 @@ BENIGN_LANGOPT(CompatibilityQualifiedIdBlockParamTypeChecking, 1, 0,
 LANGOPT(ObjCDisableDirectMethodsForTesting, 1, 0,
         "Disable recognition of objc_direct methods")
 LANGOPT(CFProtectionBranch , 1, 0, "Control-Flow Branch Protection enabled")
+LANGOPT(UseNopacAttribute , 1, 0, "Use nopac attribute")
 LANGOPT(FakeAddressSpaceMap , 1, 0, "OpenCL fake address space map")
 ENUM_LANGOPT(AddressSpaceMapMangling , AddrSpaceMapMangling, 2, ASMM_Target, "OpenCL address space map mangling mode")
 LANGOPT(IncludeDefaultHeader, 1, 0, "Include default header file for OpenCL")

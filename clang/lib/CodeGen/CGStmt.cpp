@@ -1545,6 +1545,14 @@ void CodeGenFunction::EmitReturnStmt(const ReturnStmt &S) {
     switch (getEvaluationKind(RV->getType())) {
     case TEK_Scalar: {
       llvm::Value *Ret = EmitScalarExpr(RV);
+      if (FnRetTy->isFunctionPointerType()) {
+        auto FN = dyn_cast<FunctionDecl>(CurCodeDecl);
+        if(FnRetTy.getQualifiers().hasNopac() || (FN && FN->isNoPac())) {
+          auto NoPacAuthInfo = CGPointerAuthInfo();
+          auto FuncPAI = CGM.getPointerAuthInfoForType(FnRetTy.getUnqualifiedType());
+          Ret = emitPointerAuthResign(Ret, FnRetTy, FuncPAI, NoPacAuthInfo, false);
+        }
+      }
       if (CurFnInfo->getReturnInfo().getKind() == ABIArgInfo::Indirect)
         EmitStoreOfScalar(Ret, MakeAddrLValue(ReturnValue, RV->getType()),
                           /*isInit*/ true);

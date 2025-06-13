@@ -737,6 +737,14 @@ static void AddRelativeLayoutOffset(const CodeGenModule &CGM,
   builder.add(llvm::ConstantInt::get(CGM.Int32Ty, offset.getQuantity()));
 }
 
+static bool isInNoPacClass(GlobalDecl &GD) {
+  const CXXMethodDecl *MD = cast<CXXMethodDecl>(GD.getDecl());
+  if (!MD)
+	return false;
+  const CXXRecordDecl *RD = MD->getParent();
+  return RD->isNoPac();
+}
+
 void CodeGenVTables::addVTableComponent(ConstantArrayBuilder &builder,
                                         const VTableLayout &layout,
                                         unsigned componentIndex,
@@ -866,9 +874,10 @@ void CodeGenVTables::addVTableComponent(ConstantArrayBuilder &builder,
       if (FnAS != GVAS)
         fnPtr =
             llvm::ConstantExpr::getAddrSpaceCast(fnPtr, CGM.GlobalsInt8PtrTy);
-      if (const auto &Schema =
-          CGM.getCodeGenOpts().PointerAuth.CXXVirtualFunctionPointers)
-        return builder.addSignedPointer(fnPtr, Schema, GD, QualType());
+      if (!isInNoPacClass(GD))
+        if (const auto &Schema =
+            CGM.getCodeGenOpts().PointerAuth.CXXVirtualFunctionPointers)
+          return builder.addSignedPointer(fnPtr, Schema, GD, QualType());
       return builder.add(fnPtr);
     }
   }

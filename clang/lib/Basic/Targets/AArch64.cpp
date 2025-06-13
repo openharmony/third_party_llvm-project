@@ -1087,6 +1087,10 @@ bool AArch64TargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
       HasPAuthLR = true;
       HasPAuth = true;
     }
+    if (Feature == "+pauth-hint-only") {
+      HasPAuthHintOnly = true;
+      HasPAuth = true;
+    }
   }
 
   // Check features that are manually disabled by command line options.
