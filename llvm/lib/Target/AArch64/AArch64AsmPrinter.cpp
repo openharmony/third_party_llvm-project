@@ -1883,7 +1883,6 @@ void AArch64AsmPrinter::emitPtrauthStrip(const MachineInstr *MI) {
 }
 
 void AArch64AsmPrinter::emitPtrauthSign(const MachineInstr *MI) {
-  unsigned InstsEmitted = 0;
   auto PACKey = (AArch64PACKey::ID)MI->getOperand(0).getImm();
   uint64_t PACDisc = MI->getOperand(1).getImm();
   unsigned PACAddrDisc = MI->getOperand(2).getReg();
@@ -1893,7 +1892,7 @@ void AArch64AsmPrinter::emitPtrauthSign(const MachineInstr *MI) {
 
   // Compute pac discriminator into x16
   unsigned PACDiscReg =
-      emitPtrauthDiscriminator(PACDisc, PACAddrDisc, InstsEmitted);
+      emitPtrauthDiscriminator(PACDisc, PACAddrDisc, AArch64::X16, false);
 
   if (PACDiscReg != AArch64::X16)
      EmitToStreamer(*OutStreamer,
@@ -2146,7 +2145,6 @@ void AArch64AsmPrinter::emitPtrauthAuthResign(const MachineInstr *MI) {
 }
 
 void AArch64AsmPrinter::emitPtrauthBranchHintOnly(const MachineInstr *MI) {
-  unsigned InstsEmitted = 0;
   bool IsCall = MI->getOpcode() == AArch64::BLRAHintOnly;
   unsigned BrTarget = MI->getOperand(0).getReg();
 
@@ -2165,13 +2163,11 @@ void AArch64AsmPrinter::emitPtrauthBranchHintOnly(const MachineInstr *MI) {
                                        .addReg(AArch64::X16)
                                        .addImm(Disc)
                                        .addImm(/*shift=*/48));
-      ++InstsEmitted;
     } else {
       EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MOVZXi)
                                        .addReg(AArch64::X16)
                                        .addImm(Disc)
                                        .addImm(/*shift=*/0));
-      ++InstsEmitted;
     }
   } else {
     if (AddrDisc == AArch64::NoRegister) {
@@ -2180,7 +2176,6 @@ void AArch64AsmPrinter::emitPtrauthBranchHintOnly(const MachineInstr *MI) {
                                      .addReg(AArch64::XZR)
                                      .addReg(AArch64::XZR)
                                      .addImm(0));
-       ++InstsEmitted;
     }
   }
 
@@ -2188,14 +2183,12 @@ void AArch64AsmPrinter::emitPtrauthBranchHintOnly(const MachineInstr *MI) {
   unsigned AuthOpc = (Key ==  AArch64PACKey::IA) ? AArch64::AUTIA1716 : AArch64::AUTIB1716;
   AUTHInst.setOpcode(AuthOpc);
   EmitToStreamer(*OutStreamer, AUTHInst);
-  ++InstsEmitted;
 
   unsigned Opc = IsCall ? AArch64::BLR : AArch64::BR;
   MCInst BRInst;
   BRInst.setOpcode(Opc);
   BRInst.addOperand(MCOperand::createReg(BrTarget));
   EmitToStreamer(*OutStreamer, BRInst);
-  ++InstsEmitted;
 
   assert(STI->getInstrInfo()->getInstSizeInBytes(*MI) >= InstsEmitted * 4);
 }
