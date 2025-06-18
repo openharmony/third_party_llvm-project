@@ -46,25 +46,25 @@
 
 # OK1-ASM:      <_start>:
 # OK1-ASM-NEXT: adrp x0, 0x20000
-# OK1-ASM-NEXT: ldr  x0, [x0, #0x380]
+# OK1-ASM-NEXT: ldr  x0, [x0, #896]
 # OK1-ASM-NEXT: adrp x1, 0x20000
-# OK1-ASM-NEXT: add  x1, x1, #0x380
+# OK1-ASM-NEXT: add  x1, x1, #896
 # OK1-ASM-NEXT: adrp x0, 0x20000
-# OK1-ASM-NEXT: ldr  x0, [x0, #0x388]
+# OK1-ASM-NEXT: ldr  x0, [x0, #904]
 # OK1-ASM-NEXT: adrp x1, 0x20000
-# OK1-ASM-NEXT: add  x1, x1, #0x388
+# OK1-ASM-NEXT: add  x1, x1, #904
 
 # RUN: llvm-objdump -d ok2 | FileCheck %s --check-prefix=OK2-ASM
 
 # OK2-ASM:         <_start>:
 # OK2-ASM-NEXT:    adrp x0, 0x20000
-# OK2-ASM-NEXT:    ldr  x0, [x0, #0x320]
+# OK2-ASM-NEXT:    ldr  x0, [x0, #800]
 # OK2-ASM-NEXT:    adrp x1, 0x20000
-# OK2-ASM-NEXT:    add  x1, x1, #0x320
+# OK2-ASM-NEXT:    add  x1, x1, #800
 # OK2-ASM-NEXT:    adrp x0, 0x20000
-# OK2-ASM-NEXT:    ldr  x0, [x0, #0x328]
+# OK2-ASM-NEXT:    ldr  x0, [x0, #808]
 # OK2-ASM-NEXT:    adrp x1, 0x20000
-# OK2-ASM-NEXT:    add  x1, x1, #0x328
+# OK2-ASM-NEXT:    add  x1, x1, #808
 
 .globl _start
 _start:
@@ -117,13 +117,13 @@ _start:
 # RUN: llvm-objdump -d tiny1 | FileCheck %s --check-prefix=TINY1-ASM
 
 # TINY1-ASM:      <_start>:
-# TINY1-ASM-NEXT: adr x0, 0x20368
+# TINY1-ASM-NEXT: adr x0, #65752
 # TINY1-ASM-NEXT: ldr x1, 0x20370
 
 # RUN: llvm-objdump -d tiny2 | FileCheck %s --check-prefix=TINY2-ASM
 
 # TINY2-ASM:         <_start>:
-# TINY2-ASM-NEXT:    adr x0, 0x20308
+# TINY2-ASM-NEXT:    adr x0, #65736
 # TINY2-ASM-NEXT:    ldr x1, 0x20310
 
 .globl _start

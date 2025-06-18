@@ -253,7 +253,7 @@ protected:
         scriptDefined(false), needsCopy(false), needsGot(false),
         needsPlt(false), needsTlsDesc(false), needsTlsGd(false),
         needsTlsGdToIe(false), needsGotDtprel(false), needsTlsIe(false),
-        hasDirectReloc(false), needsGotAuth(false) {}
+        hasDirectReloc(false), needsGotAuth(false), needsGotNoAuth(false) {}
 
 public:
   // True if this symbol is in the Iplt sub-section of the Plt and the Igot
@@ -290,8 +290,9 @@ public:
   uint8_t needsTlsGdToIe : 1;
   uint8_t needsGotDtprel : 1;
   uint8_t needsTlsIe : 1;
-  uint8_t hasDirectReloc : 1;  
+  uint8_t hasDirectReloc : 1;
   uint8_t needsGotAuth : 1;
+  uint8_t needsGotNoAuth : 1;
 
   // A symAux index used to access GOT/PLT entry indexes. This is allocated in
   // postScanRelocations().

@@ -1470,6 +1470,8 @@ template <class ELFT, class RelTy> void RelocationScanner::scanOne(RelTy *&i) {
       if (expr == RE_AARCH64_AUTH_GOT || expr == RE_AARCH64_AUTH_GOT_PAGE_PC ||
           expr == RE_AARCH64_AUTH_GOT_PC)
         sym.needsGotAuth = true;
+      else         
+        sym.needsGotNoAuth = true;
     }
   } else if (needsPlt(expr)) {
     sym.needsPlt = true;
@@ -1671,6 +1673,12 @@ void elf::postScanRelocations() {
     sym.allocateAux();
 
     if (sym.needsGot) {
+      if (sym.needsGotAuth && sym.needsGotNoAuth) {
+        errorOrWarn("both AUTH and non-AUTH GOT entries for '" + sym.getName()
+            + "' requested, but only one type of GOT entry per symbol is "
+            + "supported");
+        return;
+      }
       if (sym.needsGotAuth)
         addGotAuthEntry(sym);
       else
