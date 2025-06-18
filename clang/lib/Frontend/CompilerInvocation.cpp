@@ -3216,11 +3216,18 @@ static void GeneratePointerAuthArgs(const LangOptions &Opts,
   CompilerInvocation::StringAllocator SA) {
   if (Opts.PointerAuthELFGOT)
     GenerateArg(Args, OPT_fptrauth_elf_got, SA);
+  // OHOS_LOCAL begin
+  if (Opts.PointerAuthFuncELFGOT)
+    GenerateArg(Args, OPT_fptrauth_elf_got_func, SA);
+  // OHOS_LOCAL end
 }
 
 static void ParsePointerAuthArgs(LangOptions &Opts, ArgList &Args,
   DiagnosticsEngine &Diags) {
   Opts.PointerAuthELFGOT = Args.hasArg(OPT_fptrauth_elf_got);
+  // OHOS_LOCAL begin
+  Opts.PointerAuthFuncELFGOT = Args.hasArg(OPT_fptrauth_elf_got_func);
+  // OHOS_LOCAL end
 }
 
 /// Check if input file kind and language standard are compatible.

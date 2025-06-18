@@ -2747,7 +2747,12 @@ bool AArch64InstructionSelector::select(MachineInstr &I) {
     }
 
     if (OpFlags & AArch64II::MO_GOT) {
-      I.setDesc(TII.get(MF.getInfo<AArch64FunctionInfo>()->hasELFSignedGOT()
+      // OHOS_LOCAL begin
+      bool IsGotAuth = MF.getInfo<AArch64FunctionInfo>()->hasELFSignedGOT() ||
+        (MF.getInfo<AArch64FunctionInfo>()->hasELFSignedGOTFunc() &&
+        GV->getValueType()->isFunctionTy());
+      // OHOS_LOCAL end
+      I.setDesc(TII.get(IsGotAuth
                             ? AArch64::LOADgotAUTH
                             : AArch64::LOADgot));
       I.getOperand(1).setTargetFlags(OpFlags);

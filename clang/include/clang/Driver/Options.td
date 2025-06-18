@@ -3074,6 +3074,9 @@ defm strict_return : BoolFOption<"strict-return",
   PosFlag<SetTrue>>;
 
 defm ptrauth_elf_got : OptInCC1FFlag<"ptrauth-elf-got", "Enable authentication of pointers from GOT (ELF only)">;
+// OHOS_LOCAL begin
+defm ptrauth_elf_got_func : OptInCC1FFlag<"ptrauth-elf-got-func", "Enable authentication of function pointers from GOT (ELF only)">;
+// OHOS_LOCAL end
 
 def fenable_matrix : Flag<["-"], "fenable-matrix">, Group<f_Group>,
     Flags<[CC1Option]>,

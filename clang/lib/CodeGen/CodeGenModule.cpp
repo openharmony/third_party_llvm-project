@@ -825,7 +825,11 @@ void CodeGenModule::Release() {
       getModule().addModuleFlag(llvm::Module::Min,
                                 "sign-return-address-with-bkey", 1);
     if (LangOpts.PointerAuthELFGOT)
-      getModule().addModuleFlag(llvm::Module::Min, "ptrauth-elf-got", 1);    
+      getModule().addModuleFlag(llvm::Module::Min, "ptrauth-elf-got", 1);
+    // OHOS_LOCAL begin
+    if (LangOpts.PointerAuthFuncELFGOT)
+      getModule().addModuleFlag(llvm::Module::Min, "ptrauth-elf-got-func", 1);
+    // OHOS_LOCAL end
   }
 
   if (!CodeGenOpts.MemoryProfileOutput.empty()) {

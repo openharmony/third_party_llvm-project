@@ -118,9 +118,14 @@ MCOperand AArch64MCInstLower::lowerSymbolOperandELF(const MachineOperand &MO,
 
   if (MO.getTargetFlags() & AArch64II::MO_GOT) {
     const MachineFunction *MF = MO.getParent()->getParent()->getParent();
-    RefFlags |= (MF->getInfo<AArch64FunctionInfo>()->hasELFSignedGOT()
+    // OHOS_LOCAL begin
+    bool IsGotAuth = MF->getInfo<AArch64FunctionInfo>()->hasELFSignedGOT() ||
+      (MF->getInfo<AArch64FunctionInfo>()->hasELFSignedGOTFunc() &&
+       MO.getGlobal()->getValueType()->isFunctionTy());
+    RefFlags |= (IsGotAuth
                      ? AArch64MCExpr::VK_GOT_AUTH
                      : AArch64MCExpr::VK_GOT);
+    // OHOS_LOCAL end
   } else if (MO.getTargetFlags() & AArch64II::MO_TLS) {
     TLSModel::Model Model;
     if (MO.isGlobal()) {

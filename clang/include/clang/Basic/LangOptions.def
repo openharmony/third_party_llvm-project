@@ -158,6 +158,9 @@ LANGOPT(RelaxedTemplateTemplateArgs, 1, 0, "C++17 relaxed matching of template t
 LANGOPT(ExperimentalLibrary, 1, 0, "enable unstable and experimental library features")
 
 LANGOPT(PointerAuthELFGOT, 1, 0, "authenticate pointers from GOT")
+// OHOS_LOCAL begin
+LANGOPT(PointerAuthFuncELFGOT, 1, 0, "authenticate function pointers from GOT")
+// OHOS_LOCAL end
 
 LANGOPT(DoubleSquareBracketAttributes, 1, 0, "'[[]]' attributes extension for all language standard modes")
 

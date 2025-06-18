@@ -593,7 +593,12 @@ void AArch64AsmPrinter::emitEndOfAsmFile(Module &M) {
     // https://github.com/ARM-software/abi-aa/blob/main/pauthabielf64/pauthabielf64.rst#default-signing-schema
     const auto *PtrAuthELFGOTFlag = mdconst::extract_or_null<ConstantInt>(
         M.getModuleFlag("ptrauth-elf-got"));
-    if (PtrAuthELFGOTFlag && PtrAuthELFGOTFlag->getZExtValue() == 1)
+    // OHOS_LOCAL begin
+    const auto *PtrAuthFuncELFGOTFlag = mdconst::extract_or_null<ConstantInt>(
+        M.getModuleFlag("ptrauth-elf-got-func"));
+    if ((PtrAuthELFGOTFlag && PtrAuthELFGOTFlag->getZExtValue() == 1) ||
+        (PtrAuthFuncELFGOTFlag && PtrAuthFuncELFGOTFlag->getZExtValue() == 1))
+    // OHOS_LOCAL end
       for (const GlobalValue &GV : M.global_values())
         if (!GV.use_empty() && isa<Function>(GV) &&
             !GV.getName().startswith("llvm."))

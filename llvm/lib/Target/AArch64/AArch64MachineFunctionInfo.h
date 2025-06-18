@@ -197,6 +197,7 @@ class AArch64FunctionInfo final : public MachineFunctionInfo {
   /// module containing the corresponding function has "ptrauth-elf-got" flag
   /// set to 1.
   bool HasELFSignedGOT = false;
+  bool HasELFSignedGOTFunc = false; // OHOS_LOCAL
 
 public:
   explicit AArch64FunctionInfo(MachineFunction &MF);
@@ -459,6 +460,7 @@ public:
 
   // OHOS_LOCAL end  
   bool hasELFSignedGOT() const { return HasELFSignedGOT; }
+  bool hasELFSignedGOTFunc() const { return HasELFSignedGOTFunc; } // OHOS_LOCAL
 private:
   // Hold the lists of LOHs.
   MILOHContainer LOHContainerSet;
