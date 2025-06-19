@@ -51,7 +51,7 @@ public:
   bool isOffsetFoldingLegal(const GlobalAddressSDNode *GA) const override;
 
   XVMTargetLowering::ConstraintType
-  getConstraintType(StringRef Constraint) const override;
+  getConstraintType(StringRef CType) const override;
 
   std::pair<unsigned, const TargetRegisterClass *>
   getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
@@ -67,7 +67,7 @@ public:
   MVT getScalarShiftAmountTy(const DataLayout &, EVT) const override;
 
 private:
-  const XVMSubtarget *Subtarget;
+  const XVMSubtarget &Subtarget;
   SDValue LowerBRCOND(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerSELECT_CC(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
@@ -88,8 +88,8 @@ private:
   static const unsigned MaxArgs;
 
   // Lower a call into CALLSEQ_START - XVMISD:CALL - CALLSEQ_END chain
-  SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
-                    SmallVectorImpl<SDValue> &InVals) const override;
+  SDValue LowerCall(TargetLowering::CallLoweringInfo &CLoweringInfo,
+                    SmallVectorImpl<SDValue> &Vals) const override;
 
   // Lower incoming arguments, copy physregs into vregs
   SDValue LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv,
@@ -98,10 +98,11 @@ private:
                                const SDLoc &DL, SelectionDAG &DAG,
                                SmallVectorImpl<SDValue> &InVals) const override;
 
-  SDValue LowerReturn(SDValue Chain, CallingConv::ID CallConv, bool IsVarArg,
+  SDValue LowerReturn(SDValue Nodes, CallingConv::ID CallConv,
+                      bool IsVarArg,
                       const SmallVectorImpl<ISD::OutputArg> &Outs,
-                      const SmallVectorImpl<SDValue> &OutVals, const SDLoc &DL,
-                      SelectionDAG &DAG) const override;
+                      const SmallVectorImpl<SDValue> &OutVals,
+                      const SDLoc &DLoc, SelectionDAG &DAGraph) const override;
 
   void ReplaceNodeResults(SDNode *N, SmallVectorImpl<SDValue> &Results,
                           SelectionDAG &DAG) const override;
@@ -131,9 +132,8 @@ private:
     return false;
   }
 
-  bool isLegalAddressingMode(const DataLayout &DL, const AddrMode &AM,
-                             Type *Ty, unsigned AS,
-                             Instruction *I = nullptr) const override;
+  bool isLegalAddressingMode(const DataLayout &DLayout, const AddrMode &AMode,
+                             Type *T, unsigned AS, Instruction *Inst = nullptr) const override;
 
   // isTruncateFree - Return true if it's free to truncate a value of
   // type Ty1 to type Ty2. e.g. On XVM at alu32 mode, it's free to truncate

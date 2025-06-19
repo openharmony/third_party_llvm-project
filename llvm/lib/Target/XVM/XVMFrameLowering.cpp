@@ -53,8 +53,7 @@ XVMFrameLowering::getOpcGlobSet(const MachineFunction &MF) {
 }
 
 void XVMFrameLowering::emitPrologue(MachineFunction &MF,
-                                    MachineBasicBlock &MBB) const
-{
+                                    MachineBasicBlock &MBB) const {
   auto &MFI = MF.getFrameInfo();
   if (!needsSP(MF)) {
     return;
@@ -74,8 +73,7 @@ void XVMFrameLowering::emitPrologue(MachineFunction &MF,
 }
 
 void XVMFrameLowering::emitEpilogue(MachineFunction &MF,
-                                    MachineBasicBlock &MBB) const
-{
+                                    MachineBasicBlock &MBB) const {
   uint64_t StackSize = MF.getFrameInfo().getStackSize();
   if (!needsSP(MF)) {
     return;
@@ -96,8 +94,7 @@ void XVMFrameLowering::emitEpilogue(MachineFunction &MF,
 
 void XVMFrameLowering::determineCalleeSaves(MachineFunction &MF,
                                             BitVector &SavedRegs,
-                                            RegScavenger *RS) const
-{
+                                            RegScavenger *RS) const {
   TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
 }
 

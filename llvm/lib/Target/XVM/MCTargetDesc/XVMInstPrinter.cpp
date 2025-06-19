@@ -20,13 +20,18 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FormattedStream.h"
+
 #define DEBUG_TYPE "asm-printer"
 #define GET_INSTRINFO_CTOR_DTOR
 
 // Include the auto-generated portion of the assembly writer.
 #include "XVMGenAsmWriter.inc"
+
 using namespace llvm;
 using namespace std;
+
+#define MIN_NUM_MO_CALL_INSTR 2
+#define MIN_NUM_MO_DATA_REF_INSTR 3
 
 void XVMInstPrinter::printInst(const MCInst *MI, uint64_t Address,
                                StringRef Annot, const MCSubtargetInfo &STI,
@@ -60,7 +65,7 @@ void XVMInstPrinter::printInst(const MCInst *MI, uint64_t Address,
 }
 
 void XVMInstPrinter::printCallInstructionImm(const MCInst *MI, raw_ostream &O) {
-  assert(MI->getNumOperands() >= 2);
+  assert(MI->getNumOperands() >= MIN_NUM_MO_CALL_INSTR);
   O << "\t";
   auto MnemonicInfo = getMnemonic(MI);
   O << MnemonicInfo.first;
@@ -81,7 +86,7 @@ void XVMInstPrinter::printMovWithFuncID(const MCInst *MI, raw_ostream &O) {
 }
 
 void XVMInstPrinter::printDataRefWithGlobalID(const MCInst *MI, raw_ostream &O) {
-  assert(MI->getNumOperands() >= 3);
+  assert(MI->getNumOperands() >= MIN_NUM_MO_DATA_REF_INSTR);
   const MCOperand &Op0 = MI->getOperand(0);
   assert(Op0.isReg());
   const MCOperand &Op1 = MI->getOperand(1);
@@ -93,7 +98,7 @@ void XVMInstPrinter::printDataRefWithGlobalID(const MCInst *MI, raw_ostream &O) 
 }
 
 void XVMInstPrinter::printCallInstructionReg(const MCInst *MI, raw_ostream &O) {
-  assert(MI->getNumOperands() >= 2);
+  assert(MI->getNumOperands() >= MIN_NUM_MO_CALL_INSTR);
   O << "\t";
   auto MnemonicInfo = getMnemonic(MI);
   O << MnemonicInfo.first;
@@ -102,79 +107,77 @@ void XVMInstPrinter::printCallInstructionReg(const MCInst *MI, raw_ostream &O) {
   O << getRegisterName(MI->getOperand(1).getReg());
 }
 
-static void printExpr(const MCExpr *Expr, raw_ostream &O) {
+static void printExpr(const MCExpr *Expression, raw_ostream &OStream) {
 #ifndef NDEBUG
-  const MCSymbolRefExpr *SRE;
+  const MCSymbolRefExpr *SRExpr;
 
-  if (const MCBinaryExpr *BE = dyn_cast<MCBinaryExpr>(Expr))
-    SRE = dyn_cast<MCSymbolRefExpr>(BE->getLHS());
+  if (const MCBinaryExpr *BExpr = dyn_cast<MCBinaryExpr>(Expression))
+    SRExpr = dyn_cast<MCSymbolRefExpr>(BExpr->getLHS());
   else
-    SRE = dyn_cast<MCSymbolRefExpr>(Expr);
-  assert(SRE && "Unexpected MCExpr type.");
+    SRExpr = dyn_cast<MCSymbolRefExpr>(Expression);
+  assert(SRExpr && "Unexpected MCExpr type.");
 
-  MCSymbolRefExpr::VariantKind Kind = SRE->getKind();
+  MCSymbolRefExpr::VariantKind VarKind = SRExpr->getKind();
 
-  assert(Kind == MCSymbolRefExpr::VK_None);
+  assert(VarKind == MCSymbolRefExpr::VK_None);
 #endif
-  O << *Expr;
+  OStream << *Expression;
 }
 
-void XVMInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
-                                  raw_ostream &O, const char *Modifier) {
-  assert((Modifier == nullptr || Modifier[0] == 0) && "No modifiers supported");
-  const MCOperand &Op = MI->getOperand(OpNo);
-  if (Op.isReg()) {
-    O << getRegisterName(Op.getReg());
-  } else if (Op.isImm()) {
-    O << formatImm((int32_t)Op.getImm());
+void XVMInstPrinter::printOperand(const MCInst *MInst, unsigned OpNum,
+                                  raw_ostream &OStream, const char *Mod) {
+  assert((Mod == nullptr || Mod[0] == 0) && "No modifiers supported");
+  const MCOperand &Oper = MInst->getOperand(OpNum);
+  if (Oper.isReg()) {
+    OStream << getRegisterName(Oper.getReg());
+  } else if (Oper.isImm()) {
+    OStream << formatImm((int32_t)Oper.getImm());
   } else {
-    assert(Op.isExpr() && "Expected an expression");
-    printExpr(Op.getExpr(), O);
+    assert(Oper.isExpr() && "Expected an expression");
+    printExpr(Oper.getExpr(), OStream);
   }
 }
 
-void XVMInstPrinter::printMemOperand(const MCInst *MI, int OpNo, raw_ostream &O,
-                                     const char *Modifier) {
-  const MCOperand &RegOp = MI->getOperand(OpNo);
-  const MCOperand &OffsetOp = MI->getOperand(OpNo + 1);
+void XVMInstPrinter::printMemOperand(const MCInst *MInst, int OpNum,
+                                     raw_ostream &OStream, const char *Mod) {
+  const MCOperand &ROp = MInst->getOperand(OpNum);
+  const MCOperand &OffOp = MInst->getOperand(OpNum + 1);
 
   // register
-  assert(RegOp.isReg() && "Register operand not a register");
-  O << getRegisterName(RegOp.getReg());
+  assert(ROp.isReg() && "Register operand not a register");
+  OStream << getRegisterName(ROp.getReg());
 
   // offset
-  if (OffsetOp.isImm()) {
-    auto Imm = OffsetOp.getImm();
-    if (Imm == 0)
-      O << ", #" << formatImm(Imm);
+  if (OffOp.isImm()) {
+    auto I = OffOp.getImm();
+    if (I == 0)
+      OStream << ", #" << formatImm(I);
     else
-      O << ", #" << formatImm(Imm);
+      OStream << ", #" << formatImm(I);
   } else {
     assert(0 && "Expected an immediate");
   }
 }
 
-void XVMInstPrinter::printImm64Operand(const MCInst *MI, unsigned OpNo,
-                                       raw_ostream &O) {
-  const MCOperand &Op = MI->getOperand(OpNo);
-  if (Op.isImm())
-    O << formatImm(Op.getImm());
-  else if (Op.isExpr())
-    printExpr(Op.getExpr(), O);
+void XVMInstPrinter::printImm64Operand(const MCInst *MInst, unsigned OpNum, raw_ostream &OStream) {
+  const MCOperand &Oper = MInst->getOperand(OpNum);
+  if (Oper.isImm())
+    OStream << formatImm(Oper.getImm());
+  else if (Oper.isExpr())
+    printExpr(Oper.getExpr(), OStream);
   else
-    O << Op;
+    OStream << Oper;
 }
 
-void XVMInstPrinter::printBrTargetOperand(const MCInst *MI, unsigned OpNo,
-                                          raw_ostream &O) {
-  const MCOperand &Op = MI->getOperand(OpNo);
-  if (Op.isImm()) {
-    int16_t Imm = Op.getImm();
-    O << ((Imm >= 0) ? "+" : "") << formatImm(Imm);
-  } else if (Op.isExpr()) {
-    printExpr(Op.getExpr(), O);
+void XVMInstPrinter::printBrTargetOperand(const MCInst *MInst, unsigned OpNum, raw_ostream &OStream) {
+  const MCOperand &Oper = MInst->getOperand(OpNum);
+  if (Oper.isImm()) {
+    int16_t I = Oper.getImm();
+    OStream << ((I >= 0) ? "+" : "") << formatImm(I);
+  } else if (Oper.isExpr()) {
+    printExpr(Oper.getExpr(), OStream);
   } else {
-    O << Op;
+    OStream << Oper;
   }
 }
 

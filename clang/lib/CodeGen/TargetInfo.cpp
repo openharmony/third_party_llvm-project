@@ -5537,6 +5537,20 @@ public:
         llvm::AttrBuilder B(GV->getContext());
         B.addAttribute("xvm-export-name", Attr->getExportName());
         Fn->addFnAttrs(B);
+      } else {
+        // If the function is static and has a body, we add the always_inline
+        // attribute to it, unless it has a noinline attribute.
+        // This is to ensure that the function is inlined when possible.
+        // This is a common pattern in XVM to optimize performance.
+        if (FD->hasBody() && FD->isStatic()) {
+          const auto *NoInlineAttrVar = FD->getAttr<NoInlineAttr>();
+          llvm::Function *Fn = cast<llvm::Function>(GV);
+          if (!NoInlineAttrVar) {
+            Fn->addFnAttr(llvm::Attribute::AlwaysInline);
+          } else {
+            Fn->addFnAttr(llvm::Attribute::NoInline);
+          }
+        }
       }
     }
   }

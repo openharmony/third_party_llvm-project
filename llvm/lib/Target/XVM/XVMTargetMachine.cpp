@@ -16,21 +16,21 @@
 #include "XVM.h"
 #include "XVMTargetTransformInfo.h"
 #include "MCTargetDesc/XVMMCAsmInfo.h"
-#include "TargetInfo/XVMTargetInfo.h"
-#include "llvm/CodeGen/Passes.h"
-#include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
-#include "llvm/CodeGen/TargetPassConfig.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/IR/PassManager.h"
 #include "llvm/MC/TargetRegistry.h"
-#include "llvm/Passes/PassBuilder.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Target/TargetOptions.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
+#include "TargetInfo/XVMTargetInfo.h"
 #include "llvm/Transforms/Scalar.h"
-#include "llvm/Transforms/Scalar/SimplifyCFG.h"
-#include "llvm/Transforms/Utils/SimplifyCFGOptions.h"
+#include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/Transforms/Utils.h"
+#include "llvm/Transforms/Scalar/DeadStoreElimination.h"
+#include "llvm/InitializePasses.h"
+#include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/Transforms/Vectorize.h"
+#include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/Scalar/SimpleLoopUnswitch.h"
+#include "llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h"
+
 using namespace llvm;
 
 
@@ -45,6 +45,39 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeXVMTarget() {
   initializeXVMCFGStackifyPass(PR);
   initializeXVMCFGStructurePass(PR);
   initializeXVMUpdateRefInstrForMIPass(PR);
+  initializeDSELegacyPassPass(PR);
+  initializeJumpThreadingPass(PR);
+
+  // initializeMachineCSEPass(PR);
+  // initializeCorrelatedValuePropagationPass(PR);
+  // initializeInstructionCombiningPassPass(PR);
+  // initializeSimpleLoopUnswitchLegacyPassPass(PR);
+  // initializeAggressiveInstCombinerLegacyPassPass(PR);
+
+  // initializeCallSiteSplittingLegacyPassPass(PR);
+  // initializeFunctionSpecializationLegacyPassPass(PR);
+
+
+  // initializeConstantMergeLegacyPassPass(PR);
+  // initializeGlobalDCELegacyPassPass(PR);
+  // initializeEliminateAvailableExternallyLegacyPassPass(PR);
+  // initializeGVNLegacyPassPass(PR);
+
+  // initializeLoopUnrollAndJamPass(PR);
+  // initializeLoopUnrollPass(PR);
+
+  // // initializeLoopFuseLegacyPass(PR);
+  // initializeLoopDataPrefetchLegacyPassPass(PR);
+  // initializeLoopDeletionLegacyPassPass(PR);
+  // initializeLoopAccessLegacyAnalysisPass(PR);
+  // initializeLoopInstSimplifyLegacyPassPass(PR);
+  // initializeLoopInterchangeLegacyPassPass(PR);
+  // initializeLoopFlattenLegacyPassPass(PR);
+  // initializeLoopPredicationLegacyPassPass(PR);
+  // initializeLoopRotateLegacyPassPass(PR);
+  // initializeLoopStrengthReducePass(PR);
+
+  // initializeBasicBlockSectionsPass(PR);
 }
 
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeXVMTargetCalledInDylib() {
@@ -62,20 +95,21 @@ static Reloc::Model getEffectiveRelocModel(Optional<Reloc::Model> RM) {
   return RM.value_or(Reloc::PIC_);
 }
 
-XVMTargetMachine::XVMTargetMachine(const Target &T, const Triple &TT,
-                                   StringRef CPU, StringRef FS,
+XVMTargetMachine::XVMTargetMachine(const Target &Target, const Triple &TTriple,
+                                   StringRef Core, StringRef FString,
                                    const TargetOptions &Options,
-                                   Optional<Reloc::Model> RM,
-                                   Optional<CodeModel::Model> CM,
-                                   CodeGenOpt::Level OL, bool JIT)
-    : LLVMTargetMachine(T, computeDataLayout(TT), TT, CPU, FS, Options,
-                        getEffectiveRelocModel(RM),
-                        getEffectiveCodeModel(CM, CodeModel::Small), OL),
-      TLOF(std::make_unique<TargetLoweringObjectFileELF>()),
-      Subtarget(TT, std::string(CPU), std::string(FS), *this) {
+                                   Optional<Reloc::Model> RelocMdl,
+                                   Optional<CodeModel::Model> CodeMdl,
+                                   CodeGenOpt::Level OptLvl, bool JustInTime)
+                                   : LLVMTargetMachine(Target, computeDataLayout(TTriple),
+                                                       TTriple, Core, FString, Options,
+                                                       getEffectiveRelocModel(RelocMdl),
+                                                       getEffectiveCodeModel(CodeMdl, CodeModel::Small),
+                                                       OptLvl),
+                                                       TLOF(std::make_unique<TargetLoweringObjectFileELF>()),
+                                   Subtarget(TTriple, std::string(Core), std::string(FString), *this) {
   initAsmInfo();
   this->Options.EmitAddrsig = false;
-
   setRequiresStructuredCFG(true);
 }
 
@@ -101,6 +135,39 @@ public:
 bool XVMPassConfig::addPreISel() {
   addPass(createFlattenCFGPass());
   addPass(createFixIrreduciblePass());
+  addPass(createDeadStoreEliminationPass());
+  addPass(createJumpThreadingPass(-1));
+  addPass(createSpeculativeExecutionPass());
+  addPass(createMergedLoadStoreMotionPass());
+
+  // addPass(createEarlyCSEPass());
+  // addPass(createCorrelatedValuePropagationPass());
+  // addPass(createInstructionCombiningPass());
+  // addPass(createSimpleLoopUnswitchLegacyPass(true));
+  // addPass(createAggressiveInstCombinerPass());
+  // addPass(createCallSiteSplittingPass());
+  // addPass(createFunctionSpecializationPass());
+
+  // addPass(createConstantMergePass());
+  // addPass(createGlobalDCEPass());
+  // addPass(createEliminateAvailableExternallyPass());
+  // addPass(createTailCallEliminationPass());
+  // addPass(createGVNPass(false));
+
+  // addPass(createLoopUnrollAndJamPass(3));
+  // addPass(createLoopUnrollPass(3));
+
+  // // addPass(createLoopFusePass());
+  // addPass(createLoopDataPrefetchPass());
+  // addPass(createLoopDeletionPass());
+  // // addPass(createLoopAccessLegacyAnalysisPass());
+  // addPass(createLoopInstSimplifyPass());
+  // addPass(createLoopInterchangePass());
+  // addPass(createLoopFlattenPass());
+  // addPass(createLoopPredicationPass());
+  // addPass(createLoopRotatePass());
+  // addPass(createLoopStrengthReducePass());
+
   return false;
 }
 
@@ -134,6 +201,8 @@ void XVMPassConfig::addPreEmitPass() {
   // Sort the blocks of the CFG into topological order,
   // a prerequisite for BLOCK and LOOP markers.
   // Currently, the algorithm is from WebAssembly.
+
+  // addPass(createBasicBlockSectionsPass());
   addPass(createXVMCFGSort());
   addPass(createXVMCFGStackify());
 }

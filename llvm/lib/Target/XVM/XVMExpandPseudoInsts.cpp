@@ -1,3 +1,15 @@
+//===-- XVMExpandPseudoInsts.cpp - XVM Pseudo Instruction Expander ----------*- C++ -*-===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------------------===//
+//
+// This file contains the XVM implementation of replacing certain Pseudoinstructions.
+//
+//===----------------------------------------------------------------------------------===//
+
 #ifdef XVM_DYLIB_MODE
 
 #include "XVM.h"
@@ -9,6 +21,9 @@
 using namespace llvm;
 
 #define XVM_EXPAND_PSEUDO_NAME "XVM pseudo instruction expansion pass"
+#define MO_FIRST  0
+#define MO_SECOND 1
+#define MO_THIRD  2
 
 namespace {
 class XVMExpandPseudo : public MachineFunctionPass {
@@ -124,8 +139,8 @@ bool XVMExpandPseudo::expandSelectCC(MachineBasicBlock &MBB,
   unsigned NewCC = getBranchOpcodeFromSelectCC(MI);
 
   BuildMI(MBB, MBBI, DL, TII->get(NewCC)).addMBB(TMBB)
-                                         .add(MI.getOperand(1))
-                                         .add(MI.getOperand(2));
+                                         .add(MI.getOperand(MO_SECOND))
+                                         .add(MI.getOperand(MO_THIRD));
   BuildMI(MBB, MBBI, DL, TII->get(XVM::BR)).addMBB(FMBB);
   MBB.addSuccessor(TMBB);
   MBB.addSuccessor(FMBB);
@@ -170,8 +185,7 @@ bool XVMExpandPseudo::expandSelectCC(MachineBasicBlock &MBB,
 INITIALIZE_PASS(XVMExpandPseudo, "xvm-expand-pseudo",
                 XVM_EXPAND_PSEUDO_NAME, false, false)
 namespace llvm {
-
-FunctionPass *createXVMExpandPseudoPass() { return new XVMExpandPseudo(); }
+  FunctionPass *createXVMExpandPseudoPass() { return new XVMExpandPseudo(); }
 }
 
 #endif
