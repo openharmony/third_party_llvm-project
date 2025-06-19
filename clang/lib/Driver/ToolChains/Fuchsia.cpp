@@ -86,7 +86,9 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("--hash-style=gnu");
   }
 
-  if (ToolChain.getArch() == llvm::Triple::aarch64) {
+  if (ToolChain.getArch() == llvm::Triple::aarch64 &&
+      Args.hasFlag(options::OPT_mfix_cortex_a53_843419,
+                   options::OPT_mno_fix_cortex_a53_843419, true)) {
     std::string CPU = getCPUName(D, Args, Triple);
     if (CPU.empty() || CPU == "generic" || CPU == "cortex-a53")
       CmdArgs.push_back("--fix-cortex-a53-843419");
