@@ -98,9 +98,6 @@ void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
   assert(Metadata && "dumpReport missing Metadata.");
   assert(Printf && "dumpReport missing Printf.");
 
-  if (!__gwp_asan_error_is_mine(State, ErrorPtr))
-    return;
-
   Printf("*** GWP-ASan detected a memory error ***\n");
   ScopedEndOfReportDecorator Decorator(Printf);
 
@@ -167,11 +164,13 @@ SegvBacktrace_t BacktraceForSignalHandler;
 // OHOS_LOCAL begin
 #if defined(__OHOS__)
 static bool sigSegvHandlerOhos(int sig, siginfo_t *info, void *ucontext) {
-  if (GPAForSignalHandler) {
+  uintptr_t ErrorPtr = reinterpret_cast<uintptr_t>(info->si_addr);
+  const gwp_asan::AllocatorState *State =
+    GPAForSignalHandler->getAllocatorState();
+    
+  if (__gwp_asan_error_is_mine(State, ErrorPtr)) {
     GPAForSignalHandler->stop();
-    dumpReport(reinterpret_cast<uintptr_t>(info->si_addr),
-               GPAForSignalHandler->getAllocatorState(),
-               GPAForSignalHandler->getMetadataRegion(),
+    dumpReport(ErrorPtr, State, GPAForSignalHandler->getMetadataRegion(),
                BacktraceForSignalHandler, PrintfForSignalHandler,
                PrintBacktraceForSignalHandler, ucontext);
   }
