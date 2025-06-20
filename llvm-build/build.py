@@ -249,8 +249,8 @@ class BuildConfig():
         parser.add_argument(
             '--build-python',
             action='store_true',
-            default=True,
-            help='Build Python (not using prebuilt one, currently effective for Windows and OHOS)')
+            default=False,
+            help='Build Python (not using prebuilt one, currently effective for OHOS)')
 
         parser.add_argument(
             '--build-ncurses',
@@ -3172,6 +3172,11 @@ def main():
             mingw_python_dir = llvm_core.get_mingw_python_dir()
             llvm_package.copy_python_to_host(mingw_python_dir, build_utils.merge_out_path('windows-x86_64'))
             llvm_package.copy_python_to_host(mingw_python_dir, windows64_install)
+        else:
+            mingw_python_dir = os.path.join(build_utils.buildtools_path, 'python3/windows-x86/3.11.4')
+            llvm_core.set_mingw_python_dir(mingw_python_dir)
+            llvm_package.copy_python_to_host(mingw_python_dir, build_utils.merge_out_path('windows-x86_64'))
+            llvm_package.copy_python_to_host(mingw_python_dir, windows64_install)
 
         if build_config.enable_lzma_7zip:
             build_utils.logger().info('build windows lzma')
@@ -3192,6 +3197,8 @@ def main():
 
         if build_config.build_python and windows_python_builder:
             llvm_package.set_mingw_python_dir(windows_python_builder.install_dir)
+        else:
+            llvm_package.set_mingw_python_dir(llvm_core.get_mingw_python_dir())
 
         if need_windows:
             llvm_package.package_operation(windows64_install, 'windows-x86_64')

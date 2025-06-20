@@ -70,6 +70,7 @@ prebuilts/cmake,cmake-${linux_platform}
 prebuilts/clang/ohos/${host_platform}-${host_cpu},linux/clang_${linux_platform}
 prebuilts/python3,python-${linux_platform}
 prebuilts/python3,python-linux-arm64
+prebuilts/python3,python-mingw-x86
 prebuilts/build-tools/${host_platform}-x86/bin,gn-${linux_platform}
 prebuilts/build-tools/${host_platform}-x86/bin,ninja-${linux_platform}
 """
