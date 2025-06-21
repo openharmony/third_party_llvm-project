@@ -13,8 +13,6 @@
 using namespace llvm;
 
 #define DEBUG_TYPE "xvm-cfg-structure"
-#define INIT_SMALL_VECTOR_MO_SIZE 4
-#define INIT_SMALL_VECTOR_LOOP_SIZE 16
 
 namespace {
 class XVMCFGStructure final : public MachineFunctionPass {
@@ -205,10 +203,10 @@ void XVMCFGStructure::fixLoops(MachineBasicBlock &MBB) {
   auto &MLI = getAnalysis<MachineLoopInfo>();
   const auto &TII = MF->getSubtarget<XVMSubtarget>().getInstrInfo();
   MachineLoop *Loop = MLI.getLoopFor(&MBB);
-  SmallVector<MachineBasicBlock *, INIT_SMALL_VECTOR_MO_SIZE> ExitingBlocks;
+  SmallVector<MachineBasicBlock *, 4> ExitingBlocks;
   auto &MPDT = getAnalysis<MachinePostDominatorTree>();
   using DomTreeT = PostDomTreeBase<MachineBasicBlock>;
-  SmallVector<DomTreeT::UpdateType, INIT_SMALL_VECTOR_LOOP_SIZE> PDTUpdates;
+  SmallVector<DomTreeT::UpdateType, 16> PDTUpdates;
 
   if (!Loop || Loop->getHeader() != &MBB) // MBB must be loop head
     return;

@@ -20,7 +20,6 @@
 #include "llvm/CodeGen/BasicTTIImpl.h"
 #include "llvm/Transforms/Utils/ScalarEvolutionExpander.h"
 
-#define TEMPLATE_INT_32 32
 namespace llvm {
 class XVMTTIImpl : public BasicTTIImplBase<XVMTTIImpl> {
   typedef BasicTTIImplBase<XVMTTIImpl> BaseT;
@@ -39,7 +38,7 @@ public:
         TLI(ST->getTargetLowering()) {}
 
   int getIntImmCost(const APInt &Imm, Type *Ty, TTI::TargetCostKind CostKind) {
-    if (Imm.getBitWidth() <= 64 && isInt<TEMPLATE_INT_32>(Imm.getSExtValue()))
+    if (Imm.getBitWidth() <= 64 && isInt<32>(Imm.getSExtValue()))
       return TTI::TCC_Free;
 
     return TTI::TCC_Basic;
@@ -57,11 +56,11 @@ public:
   }
 
   InstructionCost getArithmeticInstrCost(
-    unsigned Opcode, Type *Ty, TTI::TargetCostKind CostKind,
-    TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
-    TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
-    TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
-    TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
+      unsigned Opcode, Type *Ty, TTI::TargetCostKind CostKind,
+      TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
+      TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
+      TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
+      TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
     ArrayRef<const Value *> Args = ArrayRef<const Value *>(),
     const Instruction *CxtI = nullptr) {
       int ISD = TLI->InstructionOpcodeToISD(Opcode);

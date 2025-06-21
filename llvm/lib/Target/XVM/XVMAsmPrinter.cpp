@@ -17,7 +17,6 @@
 #include "XVMInstrInfo.h"
 #include "XVMTargetMachine.h"
 #include "XVMMCInstLower.h"
-#include "XVMErrorMsg.h"
 #include "MCTargetDesc/XVMInstPrinter.h"
 #include "TargetInfo/XVMTargetInfo.h"
 #include "llvm/Analysis/ConstantFolding.h"
@@ -26,7 +25,6 @@
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
-#include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCStreamer.h"
@@ -40,15 +38,6 @@
 using namespace llvm;
 
 #define DEBUG_TYPE "asm-printer"
-#define CHAT_LEN_IN_HEX 2
-#define REF_TYPE_LENGTH 8
-#define REF_TYPE_HEX_LENGTH 16
-#define NUM_BITS_PER_BYTE 8
-#define MAX_PTR_SIZE 8
-#define MAX_SIZE_CONSTANT_EXPRESSION 8
-#define INIT_SMALL_STR_SIZE 128
-#define NUM_MO_CTOR_DTOR 3
-#define MAX_FUNC_SIZE 32767
 
 static cl::opt<bool> XVMExportAll("xvm-export-all",
   cl::Hidden, cl::init(false),
@@ -98,18 +87,17 @@ private:
 
   void InitGlobalConstantImpl(const DataLayout &DL, const Constant *CV,
                               const Constant *BaseCV,
-                              uint64_t Offset, XVMSectionInfo* SInfo, Module *M);
+                              uint64_t Offset, XVMSectionInfo* SInfo);
   void InitGlobalConstantDataSequential(const DataLayout &DL,
-                                        const ConstantDataSequential *CDS,
-                                        XVMSectionInfo* SInfo);
+                                        const ConstantDataSequential *CDS, XVMSectionInfo* SInfo);
   void InitGlobalConstantArray(const DataLayout &DL,
                                const ConstantArray *CA,
                                const Constant *BaseCV, uint64_t Offset,
-                               XVMSectionInfo* SInfo, Module *M);
+                               XVMSectionInfo* SInfo);
   void InitGlobalConstantStruct(const DataLayout &DL,
                                 const ConstantStruct *CS,
                                 const Constant *BaseCV, uint64_t Offset,
-                                XVMSectionInfo* SInfo, Module *M);
+                                XVMSectionInfo* SInfo);
 };
 } // namespace
 
@@ -123,12 +111,13 @@ static std::map<std::string, SecSubSecIndices> DataSectionNameIndexMap;
 static std::map<int, XVMSectionInfo> DataSectionIndexInfoMap;
 
 template <typename T>
-inline std::string UnsignedIntTypeToHex(T V, size_t W = sizeof(T)*CHAT_LEN_IN_HEX) {
+inline std::string UnsignedIntTypeToHex(T V, size_t W = sizeof(T)*2)
+{
     std::stringstream SS;
     std::string RS;
     SS << std::setfill('0') << std::setw(W) << std::hex << (V|0);
-    for (unsigned Index = 0; Index < SS.str().length(); Index = Index + CHAT_LEN_IN_HEX) {
-        RS += "\\x" + SS.str().substr(Index, CHAT_LEN_IN_HEX);
+    for (unsigned Index=0; Index<SS.str().length(); Index=Index+2) {
+        RS += "\\x" + SS.str().substr(Index, 2);
     }
     return RS;
 }
@@ -136,7 +125,7 @@ inline std::string UnsignedIntTypeToHex(T V, size_t W = sizeof(T)*CHAT_LEN_IN_HE
 static inline std::string GetSymbolName(std::string InputSymName) {
   size_t Pos = InputSymName.find(".L");
   if (Pos == 0) {
-    return InputSymName.substr(strlen(".L"));
+    return InputSymName.substr(2);
   }
   return InputSymName;
 }
@@ -144,9 +133,9 @@ static inline std::string GetSymbolName(std::string InputSymName) {
 static inline uint64_t ReverseBytes(uint64_t Input, unsigned int Width) {
   uint64_t Result = 0;
   for (unsigned int i = 0; i < Width; i++) {
-    Result <<= NUM_BITS_PER_BYTE;
+    Result <<= 8;
     Result |= (Input & 0xFF);
-    Input >>= NUM_BITS_PER_BYTE;
+    Input >>= 8;
   }
   return Result;
 }
@@ -154,11 +143,10 @@ static inline uint64_t ReverseBytes(uint64_t Input, unsigned int Width) {
 #define DATA_SUB_SECTION 1
 
 #define XVM_SD_SEG_START 4
-#define XVM_REF_OFFSET_BITS 44
 static uint64_t CreateRefContent(int ToDataSecID, uint64_t ToOffset) {
   uint64_t seg_index = XVM_SD_SEG_START + ToDataSecID;
   uint64_t ReTRefData = 0;
-  ReTRefData = (seg_index & 0x00000000000FFFFF) << XVM_REF_OFFSET_BITS;
+  ReTRefData = (seg_index & 0x00000000000FFFFF) << 44;
   ReTRefData = ReTRefData | (ToOffset & 0x00000FFFFFFFFFFF);
   return ReTRefData;
 }
@@ -330,13 +318,10 @@ static inline void PatchSectionInfo(void) {
       LLVM_DEBUG(dbgs() << "Add to Buf: "
                         << UnsignedIntTypeToHex(ReverseBytes(
                             CreateRefContent(DataSectionIndex, DataSectionOffset),
-                            REF_TYPE_LENGTH), REF_TYPE_HEX_LENGTH).c_str()
-                        << " size=" << REF_TYPE_LENGTH << "\n"
-                        << " DataSectionOffset=" << DataSectionOffset
-                        << " PtrSecIndex=" << SInfo.PtrSecIndex
-                        << " patch loc="<< EachPatch.LocInByte << "\n");
-      SInfo.SecBuf.replace(EachPatch.LocInByte, REF_TYPE_LENGTH * 4, UnsignedIntTypeToHex(
-          ReverseBytes(CreateRefContent(DataSectionIndex, DataSectionOffset), REF_TYPE_LENGTH), REF_TYPE_HEX_LENGTH));
+                            8),8*2).c_str()
+                        << " size=" << 8 << "\n");
+      SInfo.SecBuf += UnsignedIntTypeToHex(
+          ReverseBytes(CreateRefContent(DataSectionIndex, DataSectionOffset), 8), 16);
     }
   }
 }
@@ -422,10 +407,9 @@ void XVMAsmPrinter::InitGlobalConstantDataSequential(
       LLVM_DEBUG(dbgs() << "Add to Buf: "
                         << UnsignedIntTypeToHex(ReverseBytes(
                             CDS->getElementAsInteger(I),
-                            ElementByteSize), ElementByteSize*CHAT_LEN_IN_HEX).c_str()
+                            ElementByteSize), ElementByteSize*2).c_str()
                         << " size=" << ElementByteSize << "\n");
-      SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(CDS->getElementAsInteger(I), ElementByteSize),
-                                            ElementByteSize*CHAT_LEN_IN_HEX);
+			SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(CDS->getElementAsInteger(I), ElementByteSize), ElementByteSize*2);
     }
   } else {
     llvm_unreachable("Should not have FP in sequential data");
@@ -437,25 +421,25 @@ void XVMAsmPrinter::InitGlobalConstantDataSequential(
   if (unsigned Padding = Size - EmittedSize) {
     LLVM_DEBUG(dbgs() << "\n------------Seq PADSIZE----------- " << Padding << "\n");
     LLVM_DEBUG(dbgs() << "Add to Buf: "
-                      << UnsignedIntTypeToHex(ReverseBytes(0, Padding), Padding*CHAT_LEN_IN_HEX).c_str()
+                      << UnsignedIntTypeToHex(ReverseBytes(0, Padding), Padding*2).c_str()
                       << " size=" << Padding << "\n");
-    SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(0, Padding), Padding*CHAT_LEN_IN_HEX);
+    SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(0, Padding), Padding*2);
   }
 }
 
 void XVMAsmPrinter::InitGlobalConstantArray(const DataLayout &DL, const ConstantArray *CA,
                                             const Constant *BaseCV, uint64_t Offset,
-                                            XVMSectionInfo* SInfo, Module *M) {
+                                            XVMSectionInfo* SInfo) {
   LLVM_DEBUG(dbgs() << "\n--------------------InitGlobalConstantArray-------------------\n");
   for (unsigned I = 0, E = CA->getNumOperands(); I != E; ++I) {
-    InitGlobalConstantImpl(DL, CA->getOperand(I), BaseCV, Offset, SInfo, M);
-    Offset += DL.getTypeAllocSize(CA->getOperand(I)->getType());
+    InitGlobalConstantImpl(DL, CA->getOperand(I), BaseCV, Offset, SInfo);
+	  Offset += DL.getTypeAllocSize(CA->getOperand(I)->getType());
   }
 }
 
 void XVMAsmPrinter::InitGlobalConstantStruct(const DataLayout &DL, const ConstantStruct *CS,
                                              const Constant *BaseCV, uint64_t Offset,
-                                             XVMSectionInfo* SInfo, Module *M) {
+                                             XVMSectionInfo* SInfo) {
   LLVM_DEBUG(dbgs() << "\n--------------------InitGlobalConstantStruct-------------------\n");
   unsigned Size = DL.getTypeAllocSize(CS->getType());
   const StructLayout *Layout = DL.getStructLayout(CS->getType());
@@ -464,7 +448,7 @@ void XVMAsmPrinter::InitGlobalConstantStruct(const DataLayout &DL, const Constan
     const Constant *Field = CS->getOperand(I);
 
     // Print the actual field value.
-    InitGlobalConstantImpl(DL, Field, BaseCV, Offset + SizeSoFar, SInfo, M);
+    InitGlobalConstantImpl(DL, Field, BaseCV, Offset + SizeSoFar, SInfo);
 
     // Check if padding is needed and insert one or more 0s.
     uint64_t FieldSize = DL.getTypeAllocSize(Field->getType());
@@ -477,9 +461,9 @@ void XVMAsmPrinter::InitGlobalConstantStruct(const DataLayout &DL, const Constan
     if (PadSize > 0) {
       LLVM_DEBUG(dbgs() << "\n------------Struct PADSIZE-----------" << PadSize << "\n");
       LLVM_DEBUG(dbgs() << "Add to Buf: "
-                        << UnsignedIntTypeToHex(ReverseBytes(0, PadSize), PadSize*CHAT_LEN_IN_HEX).c_str()
+                        << UnsignedIntTypeToHex(ReverseBytes(0, PadSize), PadSize*2).c_str()
                         << " size=" << PadSize << "\n");
-      SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(0, PadSize), PadSize*CHAT_LEN_IN_HEX);
+      SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(0, PadSize), PadSize*2);
     }
     SizeSoFar += FieldSize + PadSize;
   }
@@ -490,7 +474,7 @@ void XVMAsmPrinter::InitGlobalConstantStruct(const DataLayout &DL, const Constan
 
 void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant *CV,
                                            const Constant *BaseCV, uint64_t Offset,
-                                           XVMSectionInfo* SInfo, Module *M) {
+                                           XVMSectionInfo* SInfo) {
   LLVM_DEBUG(dbgs() << "\n--------------------InitGlobalConstantImpl "
                     << CV->getName().str().c_str()
                     << "-------------------\n");
@@ -505,7 +489,6 @@ void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant 
   if (isa<ConstantAggregateZero>(CV) || isa<UndefValue>(CV)) {
     if (SInfo->BufType == XVM_SECTION_DATA_TYPE_UNKNOWN) {
       SInfo->BufType = XVM_SECTION_DATA_TYPE_BSS;
-      SInfo->SecSize = Size;
       LLVM_DEBUG(dbgs() << "\nemit in InitGlobalConstantImpl bss "
                         << Size << " "
                         << DL.getTypeStoreSize(CV->getType()) << " "
@@ -517,36 +500,23 @@ void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant 
                       << DL.getTypeStoreSize(CV->getType()) << " "
                       << DL.getTypeAllocSize(CV->getType()).getFixedSize() << "\n");
     LLVM_DEBUG(dbgs() << "Add to Buf: "
-                      << UnsignedIntTypeToHex(ReverseBytes(0, Size), Size*CHAT_LEN_IN_HEX).c_str()
+                      << UnsignedIntTypeToHex(ReverseBytes(0, Size), Size*2).c_str()
                       << " size=" << Size << "\n");
-    SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(0, Size), Size*CHAT_LEN_IN_HEX);
+    SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(0, Size), Size*2);
     return;
   }
 
   if (const ConstantInt *CI = dyn_cast<ConstantInt>(CV)) {
     const uint64_t StoreSize = DL.getTypeStoreSize(CV->getType());
-    if (StoreSize <= MAX_PTR_SIZE) {
+    if (StoreSize <= 8) {
       SInfo->BufType = SInfo->BufType | XVM_SECTION_DATA_TYPE_NUMERIC;
       LLVM_DEBUG(dbgs() << "\nemit in InitGlobalConstantImpl int\n");
       LLVM_DEBUG(dbgs() << "Add to Buf: "
-                        << UnsignedIntTypeToHex(ReverseBytes(CI->getZExtValue(), StoreSize),
-                                                StoreSize*CHAT_LEN_IN_HEX).c_str()
+                        << UnsignedIntTypeToHex(ReverseBytes(CI->getZExtValue(), StoreSize), StoreSize*2).c_str()
                         << " size=" << StoreSize << "\n");
-      SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(CI->getZExtValue(), StoreSize), StoreSize*CHAT_LEN_IN_HEX);
+      SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(CI->getZExtValue(), StoreSize), StoreSize*2);
     } else {
-      for (Function &F1 : M->getFunctionList()) {
-        for (BasicBlock &BB : F1) {
-          for (Instruction &I : BB) {
-            DebugLoc DL = I.getDebugLoc();
-            ExportFailMsg(F1, DL, "Error: Large int globals are unsupported", (void*)&StoreSize);
-            LLVM_DEBUG(dbgs() << "XVM Error: Should not have large int global value!");
-            exit(1);
-            break;
-          }
-          break;
-        }
-        break;
-      }
+      llvm_unreachable("Should not have large int global value!");
     }
     return;
   }
@@ -558,7 +528,7 @@ void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant 
     SInfo->BufType = SInfo->BufType | XVM_SECTION_DATA_TYPE_POINTER;
     LLVM_DEBUG(dbgs() << "\nemit in InitGlobalConstantImpl nullptr\n");
     LLVM_DEBUG(dbgs() << "Add to Buf: \\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00"
-                      << " size=" << MAX_PTR_SIZE << "\n");
+                      << " size=" << 8 << "\n");
     SInfo->SecBuf += "\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00";
     return;
   }
@@ -566,25 +536,25 @@ void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant 
   if (const ConstantDataSequential *CDS = dyn_cast<ConstantDataSequential>(CV)) {
     SInfo->BufType = SInfo->BufType | XVM_SECTION_DATA_TYPE_STRING;
     return InitGlobalConstantDataSequential(DL, CDS, SInfo);
-  }
+	}
 
   if (const ConstantArray *CVA = dyn_cast<ConstantArray>(CV)) {
     SInfo->BufType = SInfo->BufType | XVM_SECTION_DATA_TYPE_ARRAY;
-    return InitGlobalConstantArray(DL, CVA, BaseCV, Offset, SInfo, M);
+    return InitGlobalConstantArray(DL, CVA, BaseCV, Offset, SInfo);
   }
 
   if (const ConstantStruct *CVS = dyn_cast<ConstantStruct>(CV)) {
     SInfo->BufType = SInfo->BufType | XVM_SECTION_DATA_TYPE_STRUCT;
-    return InitGlobalConstantStruct(DL, CVS,  BaseCV, Offset,  SInfo, M);
+    return InitGlobalConstantStruct(DL, CVS,  BaseCV, Offset,  SInfo);
   }
 
   if (const ConstantExpr *CE = dyn_cast<ConstantExpr>(CV)) {
     // Look through bitcasts, which might not be able to be MCExpr'ized (e.g. of
     // vectors).
     if (CE->getOpcode() == Instruction::BitCast)
-      return InitGlobalConstantImpl(DL, CE->getOperand(0), BaseCV, Offset,  SInfo, M);
+      return InitGlobalConstantImpl(DL, CE->getOperand(0), BaseCV, Offset,  SInfo);
 
-    if (Size > MAX_SIZE_CONSTANT_EXPRESSION) {
+    if (Size > 8) {
       // If the constant expression's size is greater than 64-bits, then we have
       // to emit the value in chunks. Try to constant fold the value and emit it
       // that way.
@@ -595,16 +565,16 @@ void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant 
   }
 
   if (const ConstantVector *V = dyn_cast<ConstantVector>(CV))
-    llvm_unreachable("Should not have vector global value!");
+		llvm_unreachable("Should not have vector global value!");
 
   LLVM_DEBUG(dbgs() << "\nemit in InitGlobalConstantImpl ptr\n");
 
-  int idx_func = GetFuncIndex(CV->getName().data());
+	int idx_func = GetFuncIndex(CV->getName().data());
   if (idx_func != -1) {
     SInfo->BufType = SInfo->BufType | XVM_SECTION_DATA_TYPE_POINTER;
-    SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(idx_func, REF_TYPE_LENGTH), REF_TYPE_HEX_LENGTH);
+    SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(idx_func, 8), 16);
     LLVM_DEBUG(dbgs() << "\nsuccess in function pointer "
-                      << UnsignedIntTypeToHex(ReverseBytes(idx_func, REF_TYPE_LENGTH), REF_TYPE_HEX_LENGTH).c_str()
+                      << UnsignedIntTypeToHex(ReverseBytes(idx_func, 8), 16).c_str()
                       << "\n");
     return;
   }
@@ -618,8 +588,6 @@ void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant 
 
     PatchInfo.SymName = CV->getName().data();
     PatchInfo.AddEnd = 0;
-    PatchInfo.LocInByte = SInfo->SecBuf.length();
-    SInfo->SecBuf += "\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00";
     SInfo->PatchListInfo.push_back(PatchInfo);
     return;
   }
@@ -647,12 +615,9 @@ void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant 
 
         PatchInfo.SymName = SymName;
         PatchInfo.AddEnd = (int)CE->getValue();
-        // Please note that if the variable is defined after, then
-        // no DataSectionIndex
-        SInfo->BufType = XVM_SECTION_DATA_TYPE_POINTER;
-        PatchInfo.LocInByte = SInfo->SecBuf.length();
-        SInfo->SecBuf += "\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00";
-        SInfo->PatchListInfo.push_back(PatchInfo);
+        if (DataSectionIndex != -1) {
+          SInfo->BufType = XVM_SECTION_DATA_TYPE_POINTER;
+        }
       }
       else {
         SRE = dyn_cast<MCSymbolRefExpr>(ME);
@@ -664,23 +629,17 @@ void XVMAsmPrinter::InitGlobalConstantImpl(const DataLayout &DL, const Constant 
         const auto &ConstA = cast<MCConstantExpr>(ME);
         const ConstantExpr *CExprA = dyn_cast<ConstantExpr>(CV);
         assert(CExprA->getOpcode() == Instruction::IntToPtr);
-        PatchInfo.LocInByte = SInfo->SecBuf.length();
         LLVM_DEBUG(dbgs() << "Add to Buf: "
-                          << UnsignedIntTypeToHex(ReverseBytes(ConstA->getValue(), REF_TYPE_LENGTH),
-                                                  REF_TYPE_HEX_LENGTH).c_str()
-                          << " size=" << MAX_PTR_SIZE << "\n");
-        SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(ConstA->getValue(), REF_TYPE_LENGTH), REF_TYPE_HEX_LENGTH);
+                          << UnsignedIntTypeToHex(ReverseBytes(ConstA->getValue(), 8), 8*2).c_str()
+                          << " size=" << 8 << "\n");
+        SInfo->SecBuf += UnsignedIntTypeToHex(ReverseBytes(ConstA->getValue(), 8), 8*2);
         return;
-      } else if (ME->getKind() == llvm::MCExpr::SymbolRef) {
-        SInfo->BufType = XVM_SECTION_DATA_TYPE_POINTER;
-        PatchInfo.LocInByte = SInfo->SecBuf.length();
-        SInfo->SecBuf += "\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00";
       }
       rso << *ME;
       PatchInfo.SymName = StrME.data();
       PatchInfo.AddEnd = 0;
-      SInfo->PatchListInfo.push_back(PatchInfo);
     }
+    SInfo->PatchListInfo.push_back(PatchInfo);
     return;
   }
   llvm_unreachable("unhandled global type!!");
@@ -718,16 +677,13 @@ void XVMAsmPrinter::InitDataSectionGlobalConstant(Module *M) {
         SInfo.SecBuf = "";
         SInfo.SecComment = GV.getName().data();
         SInfo.SymName = GV.getName().data();
-        InitGlobalConstantImpl(DL, CV, nullptr, 0, &SInfo, M);
+        InitGlobalConstantImpl(DL, CV, nullptr, 0, &SInfo);
       }
-      LLVM_DEBUG(dbgs() << "buf size is " << Size << " buf="
-                        << SInfo.SecBuf.c_str() << "\n");
+      LLVM_DEBUG(dbgs() << "buf is "
+                        << SInfo.SecBuf.c_str()
+                        << " size is " << Size << "\n");
       // ser permission
       if (GV.isConstant()) {
-        if (SInfo.BufType == XVM_SECTION_DATA_TYPE_BSS) {
-          // zero init for constant should be in the ro with init
-          SInfo.SecBuf += UnsignedIntTypeToHex(ReverseBytes(0, SInfo.SecSize), SInfo.SecSize*2);
-        }
         SInfo.Permission = XVM_SECTION_PERM_RO;
         SInfo.SecName = "rodata";
       } else {
@@ -883,7 +839,7 @@ void XVMAsmPrinter::setFunctionCallInfo(MCInst *Inst) {
 void XVMAsmPrinter::setGlobalSymbolInfo(const MachineInstr *MI, MCInst* Inst) {
   unsigned int numOps = MI->getNumOperands();
   bool hasGlobalSymbol = false;
-  for (unsigned int i = 0; i < numOps; i++)
+  for (unsigned int i=0; i<numOps; i++)
   {
     const MachineOperand& tmp = MI->getOperand(i);
     if (tmp.isGlobal()) {
@@ -916,10 +872,8 @@ void XVMAsmPrinter::setGlobalSymbolInfo(const MachineInstr *MI, MCInst* Inst) {
         SymName = GetSymbolName(SymName);
         SymIndex = GetDataIndex(SymName.c_str(), DATA_SECTION);
         if (SymIndex == -1)  {
-          const MachineFunction *F = MI->getParent()->getParent();
-          ExportFailMsg(F->getFunction(), MI->getDebugLoc(), "Error: Externs aren't supported", NULL);
-          LLVM_DEBUG(dbgs() << "XVM TODO: Add the support of non-func-global-var scenarios\n");
-          exit(1);
+          report_fatal_error(
+              "Note: Add the support of non-func-global-var scenarios\n");
         } else {
           Inst->setFlags(GLOBAL_DATAREF_FLAG_MC_INST);
           MCOperand MCOp = MCOperand::createImm(SymIndex);
@@ -948,7 +902,7 @@ void XVMAsmPrinter::emitInstruction(const MachineInstr *MI) {
 
 void XVMAsmPrinter::emitFunctionHeader() {
   const Function &F = MF->getFunction();
-  SmallString<INIT_SMALL_STR_SIZE> Str;
+  SmallString<128> Str;
   raw_svector_ostream O(Str);
   int Index = GetDefFuncIndex(F.getName().data());
   assert(Index != -1);
@@ -984,17 +938,14 @@ void XVMAsmPrinter::emitFunctionReturnVal(const Function &F, raw_ostream &O) {
   } else if (Ty->isIntegerTy()) {
     O << " i64";
   } else if (!Ty->isVoidTy()) {
-    DebugLoc DL;
-    ExportFailMsg(F, DL, "Invalid return type", NULL);
-    LLVM_DEBUG(dbgs() << "XVM Error: Invalid return type");
-    exit(1);
+    llvm_unreachable("Invalid return type");
   }
 
   O << ")";
 }
 
 void XVMAsmPrinter::emitFunctionBodyEnd() {
-  SmallString<INIT_SMALL_STR_SIZE> Str;
+  SmallString<128> Str;
   raw_svector_ostream O(Str);
   O << "\t)";
   if (MF->getFunction().hasFnAttribute("xvm-export-name"))
@@ -1021,10 +972,7 @@ void XVMAsmPrinter::emitFunctionParamList(const Function &F, raw_ostream &O) {
     } else if (Ty->isIntegerTy()) {
       O << " i64";
     } else {
-      DebugLoc DL;
-      ExportFailMsg(F, DL, "Invalid (non ref or interger) param type", NULL);
-      LLVM_DEBUG(dbgs() << "XVM Error: Invalid param type");
-      exit(1);
+      llvm_unreachable("Invalid param type");
     }
   }
 
@@ -1034,7 +982,7 @@ void XVMAsmPrinter::emitFunctionParamList(const Function &F, raw_ostream &O) {
 void XVMAsmPrinter::emitStartOfAsmFile(Module &M) {
   InitModuleMapFuncnameIndex(&M);
   InitDataSectionGlobalConstant(&M);
-  SmallString<INIT_SMALL_STR_SIZE> Str1;
+  SmallString<128> Str1;
   raw_svector_ostream O(Str1);
 
   O << "(module";
@@ -1080,7 +1028,7 @@ static void emitConstructorsDestructors(raw_svector_ostream &O, Module &M,
     return;
   }
   StructType *ETy = dyn_cast<StructType>(InitList->getType()->getElementType());
-  if (!ETy || ETy->getNumElements() != NUM_MO_CTOR_DTOR ||
+  if (!ETy || ETy->getNumElements() != 3 ||
     !ETy->getTypeAtIndex(0U)->isIntegerTy() ||
     !ETy->getTypeAtIndex(1U)->isPointerTy() ||
     !ETy->getTypeAtIndex(2U)->isPointerTy()) {
@@ -1111,7 +1059,7 @@ static void emitMetaDataSectionInfo(raw_svector_ostream &O, Module &M) {
 }
 
 void XVMAsmPrinter::emitEndOfAsmFile(Module &M) {
-  SmallString<INIT_SMALL_STR_SIZE> Str1;
+  SmallString<128> Str1;
   raw_svector_ostream O(Str1);
   emitDecls(M);
   emitDataSectionInfo(O);
@@ -1121,7 +1069,7 @@ void XVMAsmPrinter::emitEndOfAsmFile(Module &M) {
 }
 
 void XVMAsmPrinter::emitDecls(const Module &M) {
-  SmallString<INIT_SMALL_STR_SIZE> Str1;
+  SmallString<128> Str1;
   raw_svector_ostream O(Str1);
   for (const Function &F : M.getFunctionList()) {
     if (GetDefFuncIndex(F.getName().data()) == -1 &&
@@ -1173,35 +1121,12 @@ void XVMAsmPrinter::GetMIIndent(MachineFunction &MF) {
   assert (CurrentIndent == 0 && "All the indents should be paired!");
 }
 
-static void checkFunctionSize(MachineFunction &MF) {
-  int count = 0;
-
-  for (auto &MBB : MF) {
-    for (auto &MI : MBB) {
-      count++;
-    }
-  }
-
-  if (count > MAX_FUNC_SIZE) {
-    DebugLoc DL;
-    Function &F = MF.getFunction();
-    std::string ErrorMesg("Error: Function '");
-    ErrorMesg += MF.getName().str().c_str();
-    ErrorMesg += "' has ";
-    ErrorMesg += std::to_string(count);
-    ErrorMesg += " instructions. Max instructions is 32767.\n";
-    ExportFailMsg(F, DL, ErrorMesg.data(), NULL);
-    exit(1);
-  } 
-}
-
 void XVMAsmPrinter::emitGlobalVariable(const GlobalVariable *GV) {}
 
 bool XVMAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
   SetupMachineFunction(MF);
   GetMIIndent(MF);
   emitFunctionBody();
-  checkFunctionSize(MF);
   return false;
 }
 

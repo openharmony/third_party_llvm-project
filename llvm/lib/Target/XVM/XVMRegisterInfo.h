@@ -28,9 +28,9 @@ struct XVMRegisterInfo : public XVMGenRegisterInfo {
 
   BitVector getReservedRegs(const MachineFunction &MF) const override;
 
-  void eliminateFrameIndex(MachineBasicBlock::iterator MInstr, int AdjStackP,
+  void eliminateFrameIndex(MachineBasicBlock::iterator MI, int SPAdj,
                            unsigned FIOperandNum,
-                           RegScavenger *RegScav = nullptr) const override;
+                           RegScavenger *RS = nullptr) const override;
 
   Register getFrameRegister(const MachineFunction &MF) const override;
 

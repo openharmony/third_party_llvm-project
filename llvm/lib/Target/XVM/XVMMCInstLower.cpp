@@ -12,16 +12,25 @@
 //===----------------------------------------------------------------------===//
 #ifdef XVM_DYLIB_MODE
 
-#include "llvm/CodeGen/AsmPrinter.h"
 #include "XVMMCInstLower.h"
-
+#include "llvm/CodeGen/AsmPrinter.h"
+#include "llvm/CodeGen/MachineBasicBlock.h"
+#include "llvm/CodeGen/MachineInstr.h"
+#include "llvm/MC/MCAsmInfo.h"
+#include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCExpr.h"
+#include "llvm/MC/MCInst.h"
+#include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/raw_ostream.h"
 using namespace llvm;
 
-MCSymbol *XVMMCInstLower::GetGlobalAddressSymbol(const MachineOperand &MO) const {
+MCSymbol *
+XVMMCInstLower::GetGlobalAddressSymbol(const MachineOperand &MO) const {
   return Printer.getSymbol(MO.getGlobal());
 }
 
-MCSymbol *XVMMCInstLower::GetExternalSymbolSymbol(const MachineOperand &MO) const {
+MCSymbol *
+XVMMCInstLower::GetExternalSymbolSymbol(const MachineOperand &MO) const {
   return Printer.GetExternalSymbolSymbol(MO.getSymbolName());
 }
 
@@ -41,32 +50,33 @@ void XVMMCInstLower::Lower(const MachineInstr *MI, MCInst &OutMI) const {
   for (const MachineOperand &MO : MI->operands()) {
     MCOperand MCOp;
     switch (MO.getType()) {
-    case MachineOperand::MO_Immediate:
-      MCOp = MCOperand::createImm(MO.getImm());
-      break;
-    case MachineOperand::MO_GlobalAddress:
-      MCOp = LowerSymbolOperand(MO, GetGlobalAddressSymbol(MO));
-      break;
-    case MachineOperand::MO_MachineBasicBlock:
-      MCOp = MCOperand::createExpr(MCSymbolRefExpr::create(MO.getMBB()->getSymbol(), Ctx));
-      break;
-    case MachineOperand::MO_Register: // Ignore all implicit register operands.
+    default:
+      MI->print(errs());
+      llvm_unreachable("unknown operand type");
+    case MachineOperand::MO_Register:
+      // Ignore all implicit register operands.
       if (MO.isImplicit())
         continue;
       MCOp = MCOperand::createReg(MO.getReg());
+      break;
+    case MachineOperand::MO_Immediate:
+      MCOp = MCOperand::createImm(MO.getImm());
+      break;
+    case MachineOperand::MO_MachineBasicBlock:
+      MCOp = MCOperand::createExpr(
+          MCSymbolRefExpr::create(MO.getMBB()->getSymbol(), Ctx));
       break;
     case MachineOperand::MO_RegisterMask:
       continue;
     case MachineOperand::MO_ExternalSymbol:
       MCOp = LowerSymbolOperand(MO, GetExternalSymbolSymbol(MO));
       break;
-    default:
-      MI->print(errs());
-      llvm_unreachable("unknown operand type");
+    case MachineOperand::MO_GlobalAddress:
+      MCOp = LowerSymbolOperand(MO, GetGlobalAddressSymbol(MO));
+      break;
     }
 
     OutMI.addOperand(MCOp);
   }
 }
-
 #endif

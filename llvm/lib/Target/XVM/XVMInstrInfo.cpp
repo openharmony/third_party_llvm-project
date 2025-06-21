@@ -27,80 +27,73 @@
 #include "XVMGenInstrInfo.inc"
 
 using namespace llvm;
-#define NUM_MO_BRANCH_INSTR 3
-#define MO_FIRST  0
-#define MO_SECOND 1
-#define MO_THIRD  2
-#define MO_FOURTH 3
 
-#define NUM_OF_BRANCHES 2
-
-static XVM::CondCode getCondFromBranchOpc(unsigned Opc) {
+static CondCode getCondFromBranchOpc(unsigned Opc) {
   switch (Opc) {
   default:
-    return XVM::COND_INVALID;
+    return COND_INVALID;
   case XVM::BUEQ_rr:
   case XVM::BUEQ_ri:
   case XVM::BSEQ_ri:
-    return XVM::COND_EQ;
+    return COND_EQ;
   case XVM::BSNEQ_rr:
   case XVM::BSNEQ_ri:
-    return XVM::COND_NE;
+    return COND_NE;
   case XVM::BSGE_rr:
   case XVM::BSGE_ri:
-    return XVM::COND_GE;
+    return COND_GE;
   case XVM::BUGE_rr:
   case XVM::BUGE_ri:
-    return XVM::COND_UGE;
+    return COND_UGE;
   case XVM::BSLE_rr:
   case XVM::BSLE_ri:
-    return XVM::COND_LE;
+    return COND_LE;
   case XVM::BULE_rr:
   case XVM::BULE_ri:
-    return XVM::COND_ULE;
+    return COND_ULE;
   case XVM::BSGT_rr:
   case XVM::BSGT_ri:
-    return XVM::COND_GT;
+    return COND_GT;
   case XVM::BUGT_rr:
   case XVM::BUGT_ri:
-    return XVM::COND_UGT;
+    return COND_UGT;
   case XVM::BSLT_rr:
   case XVM::BSLT_ri:
-    return XVM::COND_LT;
+    return COND_LT;
   case XVM::BULT_rr:
   case XVM::BULT_ri:
-    return XVM::COND_ULT;
+    return COND_ULT;
   }
 }
 
 static unsigned getBranchOpcFromCond(ArrayRef<MachineOperand> &Cond) {
-  assert(Cond.size() == NUM_MO_BRANCH_INSTR && "Expected an operation and 2 operands!");
-  assert(Cond[MO_FIRST].isImm() && "Expected an imm for operation!");
+  assert(Cond.size() == 3 && "Expected an operation and 2 operands!");
+  assert(Cond[0].isImm() && "Expected an imm for operation!");
 
-  switch (Cond[MO_FIRST].getImm()) {
+  switch (Cond[0].getImm()) {
   default:
     //Invalid operation, bail out
     return 0;
-  case XVM::COND_EQ:
-    return Cond[MO_THIRD].isImm() ? XVM::BSEQ_ri : XVM::BUEQ_rr;
-  case XVM::COND_NE:
-    return Cond[MO_THIRD].isImm() ? XVM::BSNEQ_ri : XVM::BSNEQ_rr;
-  case XVM::COND_GE:
-    return Cond[MO_THIRD].isImm() ? XVM::BSGE_ri : XVM::BSGE_rr;
-  case XVM::COND_UGE:
-    return Cond[MO_THIRD].isImm() ? XVM::BUGE_ri : XVM::BUGE_rr;
-  case XVM::COND_LE:
-    return Cond[MO_THIRD].isImm() ? XVM::BSLE_ri : XVM::BSLE_rr;
-  case XVM::COND_ULE:
-    return Cond[MO_THIRD].isImm() ? XVM::BULE_ri : XVM::BULE_rr;
-  case XVM::COND_GT:
-    return Cond[MO_THIRD].isImm() ? XVM::BSGT_ri : XVM::BSGT_rr;
-  case XVM::COND_UGT:
-    return Cond[MO_THIRD].isImm() ? XVM::BUGT_ri : XVM::BUGT_rr;
-  case XVM::COND_LT:
-    return Cond[MO_THIRD].isImm() ? XVM::BSLT_ri : XVM::BSLT_rr;
-  case XVM::COND_ULT:
-    return Cond[MO_THIRD].isImm() ? XVM::BULT_ri : XVM::BULT_rr;
+  case COND_EQ:
+    return Cond[2].isImm() ? XVM::BSEQ_ri : XVM::BUEQ_rr;
+  case COND_NE:
+    return Cond[2].isImm() ? XVM::BSNEQ_ri : XVM::BSNEQ_rr;
+  case COND_GE:
+    return Cond[2].isImm() ? XVM::BSGE_ri : XVM::BSGE_rr;
+  case COND_UGE:
+    return Cond[2].isImm() ? XVM::BUGE_ri : XVM::BUGE_rr;
+  case COND_LE:
+    return Cond[2].isImm() ? XVM::BSLE_ri : XVM::BSLE_rr;
+  case COND_ULE:
+    return Cond[2].isImm() ? XVM::BULE_ri : XVM::BULE_rr;
+  case COND_GT:
+    return Cond[2].isImm() ? XVM::BSGT_ri : XVM::BSGT_rr;
+  case COND_UGT:
+    return Cond[2].isImm() ? XVM::BUGT_ri : XVM::BUGT_rr;
+  case COND_LT:
+    return Cond[2].isImm() ? XVM::BSLT_ri : XVM::BSLT_rr;
+  case COND_ULT:
+    return Cond[2].isImm() ? XVM::BULT_ri : XVM::BULT_rr;
   }
 }
 
@@ -121,42 +114,43 @@ void XVMInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
     return;
 }
 
-static int shiftAndGet16Bits(uint64_t num, int n) {
+static int ShiftAndGet16Bits(uint64_t num, int n) {
   return (num >> n) & 0xFFFF;
 }
 
-static inline void ReplaceImmWithMovk(MachineBasicBlock *BB,
-                                      MachineBasicBlock::iterator MI,
-                                      DebugLoc dl) {
+static inline void replace_imm_with_movk(MachineBasicBlock *BB,
+				                                 MachineBasicBlock::iterator MI,
+				                                 DebugLoc dl)
+{
     const TargetInstrInfo &TII = *BB->getParent()->getSubtarget().getInstrInfo();
-    uint64_t imm = MI->getOperand(MO_THIRD).getImm();
-    uint64_t MostSignificantBits = shiftAndGet16Bits(imm, MOST_SIGNIFICANT);
-    uint64_t UpperSignificantBits = shiftAndGet16Bits(imm, UPPER_MIDDLE);
-    uint64_t LowerSignificantBits = shiftAndGet16Bits(imm, LOWER_MIDDLE);
-    uint64_t LeastSignificantBits = shiftAndGet16Bits(imm, LEAST_SIGNIFICANT);
-    if (LeastSignificantBits) {
+    uint64_t imm = MI->getOperand(2).getImm();
+    uint64_t most_significant_bits = ShiftAndGet16Bits(imm, 48);
+    uint64_t upper_significant_bits = ShiftAndGet16Bits(imm, 32);
+    uint64_t lower_significant_bits = ShiftAndGet16Bits(imm, 16);
+    uint64_t least_significant_bits = ShiftAndGet16Bits(imm, 0);
+    if (least_significant_bits) {
       BuildMI(*BB, MI, dl, TII.get(XVM::MOVK_ri))
-        .addReg(XVM::R2, RegState::Define).addReg(XVM::R2).addImm(LeastSignificantBits).addImm(MOVK_SHIFT_0);
+        .addReg(XVM::R2, RegState::Define).addImm(0).addImm(least_significant_bits).addImm(0);
     }
-    if (LowerSignificantBits) {
+    if (lower_significant_bits) {
       BuildMI(*BB, MI, dl, TII.get(XVM::MOVK_ri))
-        .addReg(XVM::R2, RegState::Define).addReg(XVM::R2).addImm(LowerSignificantBits).addImm(MOVK_SHIFT_16);
+        .addReg(XVM::R2, RegState::Define).addImm(0).addImm(lower_significant_bits).addImm(1);
     }
-    if (UpperSignificantBits) {
+    if (upper_significant_bits) {
       BuildMI(*BB, MI, dl, TII.get(XVM::MOVK_ri))
-        .addReg(XVM::R2, RegState::Define).addReg(XVM::R2).addImm(UpperSignificantBits).addImm(MOVK_SHIFT_32);
+        .addReg(XVM::R2, RegState::Define).addImm(0).addImm(upper_significant_bits).addImm(2);
     }
-    if (MostSignificantBits) {
+    if (most_significant_bits) {
       BuildMI(*BB, MI, dl, TII.get(XVM::MOVK_ri))
-        .addReg(XVM::R2, RegState::Define).addReg(XVM::R2).addImm(MostSignificantBits).addImm(MOVK_SHIFT_48);
+        .addReg(XVM::R2, RegState::Define).addImm(0).addImm(most_significant_bits).addImm(3);
     }
 }
 
 void XVMInstrInfo::expandMEMCPY(MachineBasicBlock::iterator MI) const {
   int func_num = GetFuncIndex("memcpy");
   MachineBasicBlock *BB = MI->getParent();
-  Register DstReg = MI->getOperand(MO_FIRST).getReg();
-  Register SrcReg = MI->getOperand(MO_SECOND).getReg();
+  Register DstReg = MI->getOperand(0).getReg();
+  Register SrcReg = MI->getOperand(1).getReg();
   DebugLoc dl = MI->getDebugLoc();
 
   BuildMI(*BB, MI, dl, get(XVM::LDD))
@@ -164,9 +158,9 @@ void XVMInstrInfo::expandMEMCPY(MachineBasicBlock::iterator MI) const {
   BuildMI(*BB, MI, dl, get(XVM::LDD))
         .addReg(XVM::R1, RegState::Define).addReg(SrcReg).addImm(0);
   if (MI->getOpcode() == XVM::MEMCPY_ri) {
-    ReplaceImmWithMovk(BB, MI, dl);
+    replace_imm_with_movk(BB, MI, dl);
   } else {
-    Register CopyLen = MI->getOperand(MO_THIRD).getReg();
+    Register CopyLen = MI->getOperand(2).getReg();
     BuildMI(*BB, MI, dl, get(XVM::LDD))
           .addReg(XVM::R2, RegState::Define).addReg(CopyLen).addImm(0);
   }
@@ -178,8 +172,8 @@ void XVMInstrInfo::expandMEMCPY(MachineBasicBlock::iterator MI) const {
 void XVMInstrInfo::expandMEMMOVE(MachineBasicBlock::iterator MI) const {
   int func_num = GetFuncIndex("memmove");
   MachineBasicBlock *BB = MI->getParent();
-  Register DstReg = MI->getOperand(MO_FIRST).getReg();
-  Register SrcReg = MI->getOperand(MO_SECOND).getReg();
+  Register DstReg = MI->getOperand(0).getReg();
+  Register SrcReg = MI->getOperand(1).getReg();
   DebugLoc dl = MI->getDebugLoc();
 
   BuildMI(*BB, MI, dl, get(XVM::LDD))
@@ -187,9 +181,9 @@ void XVMInstrInfo::expandMEMMOVE(MachineBasicBlock::iterator MI) const {
   BuildMI(*BB, MI, dl, get(XVM::LDD))
         .addReg(XVM::R1, RegState::Define).addReg(SrcReg).addImm(0);
   if (MI->getOpcode() == XVM::MEMMOV_ri) {
-    ReplaceImmWithMovk(BB, MI, dl);
+    replace_imm_with_movk(BB, MI, dl);
   } else {
-    Register CopyLen = MI->getOperand(MO_THIRD).getReg();
+    Register CopyLen = MI->getOperand(2).getReg();
     BuildMI(*BB, MI, dl, get(XVM::LDD))
           .addReg(XVM::R2, RegState::Define).addReg(CopyLen).addImm(0);
   }
@@ -201,8 +195,8 @@ void XVMInstrInfo::expandMEMMOVE(MachineBasicBlock::iterator MI) const {
 void XVMInstrInfo::expandMEMSET(MachineBasicBlock::iterator MI) const {
   int func_num = GetFuncIndex("memset");
   MachineBasicBlock *BB = MI->getParent();
-  Register DstReg = MI->getOperand(MO_FIRST).getReg();
-  Register SrcReg = MI->getOperand(MO_SECOND).getReg();
+  Register DstReg = MI->getOperand(0).getReg();
+  Register SrcReg = MI->getOperand(1).getReg();
   DebugLoc dl = MI->getDebugLoc();
 
   BuildMI(*BB, MI, dl, get(XVM::LDD))
@@ -210,9 +204,9 @@ void XVMInstrInfo::expandMEMSET(MachineBasicBlock::iterator MI) const {
   BuildMI(*BB, MI, dl, get(XVM::LDD))
         .addReg(XVM::R1, RegState::Define).addReg(SrcReg).addImm(0);
   if (MI->getOpcode() == XVM::MEMSET_ri) {
-    ReplaceImmWithMovk(BB, MI, dl);
+    replace_imm_with_movk(BB, MI, dl);
   } else {
-    Register CopyLen = MI->getOperand(MO_THIRD).getReg();
+    Register CopyLen = MI->getOperand(2).getReg();
     BuildMI(*BB, MI, dl, get(XVM::LDD))
           .addReg(XVM::R2, RegState::Define).addReg(CopyLen).addImm(0);
   }
@@ -294,9 +288,9 @@ bool XVMInstrInfo::analyzeBranch(MachineBasicBlock &MBB,
       return true;
     case XVM::BR      :
       if (!HaveCond)
-        TBB = MI.getOperand(MO_FIRST).getMBB();
+        TBB = MI.getOperand(0).getMBB();
       else
-        FBB = MI.getOperand(MO_FIRST).getMBB();
+        FBB = MI.getOperand(0).getMBB();
       break;
     case XVM::BUEQ_rr  :
     case XVM::BSNEQ_rr :
@@ -322,11 +316,11 @@ bool XVMInstrInfo::analyzeBranch(MachineBasicBlock &MBB,
     case XVM::BULT_ri  :
       if (HaveCond)
         return true;
-      XVM::CondCode CC = getCondFromBranchOpc(MI.getOpcode());
+      CondCode CC = getCondFromBranchOpc(MI.getOpcode());
       Cond.push_back(MachineOperand::CreateImm(CC));
-      Cond.push_back(MI.getOperand(MO_SECOND));
-      Cond.push_back(MI.getOperand(MO_THIRD));
-      TBB = MI.getOperand(MO_FIRST).getMBB();
+      Cond.push_back(MI.getOperand(1));
+      Cond.push_back(MI.getOperand(2));
+      TBB = MI.getOperand(0).getMBB();
       HaveCond = true;
       break;
     }
@@ -351,15 +345,15 @@ unsigned XVMInstrInfo::insertBranch(MachineBasicBlock &MBB,
     return 1;
   }
 
-  assert(Cond.size() == NUM_MO_BRANCH_INSTR && "Expected 2 operands and an operation!");
+  assert(Cond.size() == 3 && "Expected 2 operands and an operation!");
 
   BuildMI(&MBB, DL, get(getBranchOpcFromCond(Cond))).addMBB(TBB)
-                                                    .add(Cond[MO_SECOND])
-                                                    .add(Cond[MO_THIRD]);
+                                                    .add(Cond[1])
+                                                    .add(Cond[2]);
   if (!FBB)
     return 1;
   BuildMI(&MBB, DL, get(XVM::BR)).addMBB(FBB);
-  return NUM_OF_BRANCHES;
+  return 2;
 }
 
 unsigned XVMInstrInfo::removeBranch(MachineBasicBlock &MBB,

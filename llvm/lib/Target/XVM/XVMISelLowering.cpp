@@ -10,6 +10,7 @@
 // selection DAG.
 //
 //===----------------------------------------------------------------------===//
+
 #ifdef XVM_DYLIB_MODE
 
 #include "XVM_def.h"
@@ -21,7 +22,16 @@
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
+#include "llvm/CodeGen/MachineFunction.h"
+#include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
+#include "llvm/CodeGen/ValueTypes.h"
 #include "llvm/IR/DiagnosticInfo.h"
+#include "llvm/IR/DiagnosticPrinter.h"
+#include "llvm/Support/Debug.h"
+#include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/raw_ostream.h"
 #include <sstream>
 #include <iostream>
 #include <iomanip>
@@ -29,22 +39,6 @@
 using namespace llvm;
 
 #define DEBUG_TYPE "xvm-lower"
-#define ALIGN_NUM_BYTES 8
-#define INIT_SMALL_VECTOR_SIZE 16
-#define INIT_SMALL_VECTOR_REGS_SIZE 6
-#define INIT_SMALL_VECTOR_OP_CHAIN_SIZE 10
-#define INIT_SMALL_VECTOR_OPS_SIZE 8
-#define INIT_SMALL_VECTOR_RETOP_SIZE 4
-
-#define NUM_BITS_PER_BYTE 8
-#define SIZE_REF_IN_BYTES 8
-#define XVM_MAX_RET_SIZE 1
-
-#define CHAIN_FIRST  0
-#define CHAIN_SECOND 1
-#define CHAIN_THIRD  2
-
-#define TEMPLATE_INT_32 32
 
 static void fail(const SDLoc &DL, SelectionDAG &DAG, const Twine &Msg) {
   MachineFunction &MF = DAG.getMachineFunction();
@@ -52,11 +46,12 @@ static void fail(const SDLoc &DL, SelectionDAG &DAG, const Twine &Msg) {
       DiagnosticInfoUnsupported(MF.getFunction(), Msg, DL.getDebugLoc()));
 }
 
-static int shiftAndGet16Bits(uint64_t num, int n) {
+static int ShiftAndGet16Bits(uint64_t num, int n) {
   return (num >> n) & 0xFFFF;
 }
 
-static bool isValidImmediateSize(int32_t imm) {
+static bool is_valid_immediate_size(int32_t imm)
+{
   return imm <= 0x3FFF && imm >= 0;
 }
 
@@ -64,7 +59,8 @@ static bool hasFP(const MachineFunction &MF) {
   return false;
 }
 
-static bool needsSPForLocalFrame(const MachineFunction &MF) {
+static bool needsSPForLocalFrame(
+    const MachineFunction &MF) {
   auto &MFI = MF.getFrameInfo();
   return MFI.getStackSize() || MFI.adjustsStack() || hasFP(MF);
 }
@@ -79,10 +75,10 @@ static unsigned getBranchOpcodeFromSelectCC(MachineInstr &MI) {
           "The instruction should be a pseudo select cc!");
   bool IsRROp = MI.getOpcode() == XVM::PseudoSelectCC_rr;
   if (!IsRROp) {
-    int64_t imm32 = MI.getOperand(MO_THIRD).getImm();
-    IsRROp = !(isValidImmediateSize(imm32));
+    int64_t imm32 = MI.getOperand(2).getImm();
+    IsRROp = !(is_valid_immediate_size(imm32));
   }
-  unsigned Cond = MI.getOperand(MO_FOURTH).getImm();
+  unsigned Cond = MI.getOperand(3).getImm();
   unsigned NewCond;
   switch (Cond) {
 #define SET_NEWCC(X, Y) \
@@ -100,14 +96,14 @@ static unsigned getBranchOpcodeFromSelectCC(MachineInstr &MI) {
   SET_NEWCC(SETLE, BSLE);
   SET_NEWCC(SETULE, BULE);
   default:
-    report_fatal_error("unimplemented select CondCode " + Twine(Cond));
+      report_fatal_error("unimplemented select CondCode " + Twine(Cond));
   }
   return NewCond;
 }
 
 XVMTargetLowering::XVMTargetLowering(const TargetMachine &TM,
                                      const XVMSubtarget &STI)
-    : TargetLowering(TM), Subtarget(STI) {
+    : TargetLowering(TM), Subtarget(&STI) {
   // Set up the register classes.
   addRegisterClass(MVT::i64, &XVM::XVMGPRRegClass);
 
@@ -122,13 +118,8 @@ XVMTargetLowering::XVMTargetLowering(const TargetMachine &TM,
   setOperationAction(ISD::SETCC, MVT::i64, Expand);
   setOperationAction(ISD::SELECT_CC, MVT::i64, Custom);
 
-  setOperationAction(ISD::SREM, MVT::i64, Expand);
-  setOperationAction(ISD::UREM, MVT::i64, Expand);
-  setOperationAction(ISD::SDIVREM, MVT::i64, Expand);
-  setOperationAction(ISD::UDIVREM, MVT::i64, Expand);
-
   setOperationAction(ISD::BR_JT, MVT::Other, Expand);
-  setOperationAction(ISD::BRIND, MVT::Other, Custom);
+  setOperationAction(ISD::BRIND, MVT::Other, Expand);
 
   setOperationAction(ISD::GlobalAddress, MVT::i64, Custom);
 
@@ -155,25 +146,6 @@ XVMTargetLowering::XVMTargetLowering(const TargetMachine &TM,
 
   setOperationAction(ISD::BSWAP, MVT::i64, Expand);
 
-  setOperationAction(ISD::BlockAddress, MVT::i64, Custom);
-
-  setOperationAction(ISD::MULHU, MVT::i64, Custom);
-  setOperationAction(ISD::MULHS, MVT::i64, Custom);
-  setOperationAction(ISD::SMUL_LOHI, MVT::i64, Custom);
-  setOperationAction(ISD::UMUL_LOHI, MVT::i64, Custom);
-
-  setOperationAction(ISD::ATOMIC_LOAD_ADD, MVT::i64, Custom);
-  setOperationAction(ISD::ATOMIC_LOAD_AND, MVT::i64, Custom);
-  setOperationAction(ISD::ATOMIC_LOAD_OR, MVT::i64, Custom);
-  setOperationAction(ISD::ATOMIC_LOAD_XOR, MVT::i64, Custom);
-  setOperationAction(ISD::ATOMIC_SWAP, MVT::i64, Custom);
-  setOperationAction(ISD::ATOMIC_CMP_SWAP_WITH_SUCCESS, MVT::i64, Custom);
-
-  setOperationAction(ISD::SREM, MVT::i64, Expand);
-  setOperationAction(ISD::UREM, MVT::i64, Expand);
-  setOperationAction(ISD::SDIVREM, MVT::i64, Expand);
-  setOperationAction(ISD::UDIVREM, MVT::i64, Expand);
-
   // Extended load operations for i1 types must be promoted
   for (MVT VT : MVT::integer_valuetypes()) {
     setLoadExtAction(ISD::EXTLOAD, VT, MVT::i1, Promote);
@@ -193,8 +165,8 @@ XVMTargetLowering::XVMTargetLowering(const TargetMachine &TM,
   setBooleanContents(ZeroOrOneBooleanContent);
 
   // Function alignments
-  setMinFunctionAlignment(Align(ALIGN_NUM_BYTES));
-  setPrefFunctionAlignment(Align(ALIGN_NUM_BYTES));
+  setMinFunctionAlignment(Align(8));
+  setPrefFunctionAlignment(Align(8));
 
   unsigned CommonMaxStores = (unsigned) 0xFFFFFFFF;
   MaxStoresPerMemset = MaxStoresPerMemsetOptSize = CommonMaxStores;
@@ -234,39 +206,50 @@ bool XVMTargetLowering::isZExtFree(EVT VT1, EVT VT2) const {
 }
 
 XVMTargetLowering::ConstraintType
-XVMTargetLowering::getConstraintType(StringRef CType) const {
-  if (CType.size() == 1)
-    if (CType[0] == 'w')
+XVMTargetLowering::getConstraintType(StringRef Constraint) const {
+  if (Constraint.size() == 1) {
+    switch (Constraint[0]) {
+    default:
+      break;
+    case 'w':
       return C_RegisterClass;
+    }
+  }
 
-  return TargetLowering::getConstraintType(CType);
+  return TargetLowering::getConstraintType(Constraint);
 }
 
 std::pair<unsigned, const TargetRegisterClass *>
 XVMTargetLowering::getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
-                                                StringRef CType, MVT VT) const {
-  if (CType.size() == 1) // GCC Constraint Letters
-    if (CType[0] == 'r') // GENERAL_REGS
+                                                StringRef Constraint,
+                                                MVT VT) const {
+  if (Constraint.size() == 1)
+    // GCC Constraint Letters
+    switch (Constraint[0]) {
+    case 'r': // GENERAL_REGS
       return std::make_pair(0U, &XVM::XVMGPRRegClass);
+    default:
+      break;
+    }
 
-  return TargetLowering::getRegForInlineAsmConstraint(TRI, CType, VT);
+  return TargetLowering::getRegForInlineAsmConstraint(TRI, Constraint, VT);
 }
 
-void XVMTargetLowering::ReplaceNodeResults(SDNode *N,
+void XVMTargetLowering::ReplaceNodeResults(SDNode *N, 
                                            SmallVectorImpl<SDValue> &Results,
                                            SelectionDAG &DAG) const {
   const char *err_msg = nullptr;
-  uint32_t Op = N->getOpcode();
-  switch (Op) {
-  case ISD::ATOMIC_LOAD_XOR:
-  case ISD::ATOMIC_LOAD_AND:
-  case ISD::ATOMIC_LOAD_OR:
-  case ISD::ATOMIC_LOAD_ADD:
-  case ISD::ATOMIC_CMP_SWAP_WITH_SUCCESS:
-  case ISD::ATOMIC_SWAP:
-    break;
+  uint32_t Opcode = N->getOpcode();
+  switch (Opcode) {
   default:
     report_fatal_error("Unhandled custom legalization");
+  case ISD::ATOMIC_LOAD_ADD:
+  case ISD::ATOMIC_LOAD_AND:
+  case ISD::ATOMIC_LOAD_OR:
+  case ISD::ATOMIC_LOAD_XOR:
+  case ISD::ATOMIC_SWAP:
+  case ISD::ATOMIC_CMP_SWAP_WITH_SUCCESS:
+    break;
   }
 
   SDLoc DL(N);
@@ -285,142 +268,108 @@ SDValue XVMTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const {
     return LowerVASTART(Op, DAG);
   case ISD::VAARG:
     return LowerVAARG(Op, DAG);
-  case ISD::DYNAMIC_STACKALLOC: {
-    SDNode *N = Op.getNode();
-    SDLoc DL(N);
-    fail(DL, DAG, "Unsupported dynamic stack allocation");
-    exit(1);
-  }
-  case ISD::BRIND: {
-    SDNode *N = Op.getNode();
-    SDLoc DL(N);
-    fail(DL, DAG, "Unsupported Indirect Branch");
-    exit(1);
-  }
-  case ISD::ATOMIC_LOAD_ADD:
-  case ISD::ATOMIC_LOAD_AND:
-  case ISD::ATOMIC_LOAD_OR:
-  case ISD::ATOMIC_LOAD_XOR:
-  case ISD::ATOMIC_SWAP:
-  case ISD::ATOMIC_CMP_SWAP_WITH_SUCCESS: {
-    SDNode *N = Op.getNode();
-    SDLoc DL(N);
-    fail(DL, DAG, "Unsupported Atomic Instructions");
-    exit(1);
-  }
-  case ISD::MULHU:
-  case ISD::MULHS:
-  case ISD::SMUL_LOHI:
-  case ISD::UMUL_LOHI: {
-    SDNode *N = Op.getNode();
-    SDLoc DL(N);
-    fail(DL, DAG, "Unsupported multiplication overflow");
-    exit(1);
-  }
-  case ISD::BlockAddress: {
-    SDNode *N = Op.getNode();
-    SDLoc DL(N);
-    fail(DL, DAG, "BlockAddress currently unsupported");
-    exit(1);
-  }
-  default: {
-    SDNode *N = Op.getNode();
-    SDLoc DL(N);
-    fail(DL, DAG, "unimplemented operand");
-    break;
-  }
+  case ISD::DYNAMIC_STACKALLOC:
+    report_fatal_error("Unsupported dynamic stack allocation");
+  default:
+    llvm_unreachable("unimplemented operand");
   }
 }
 
 // Calling Convention Implementation
 #include "XVMGenCallingConv.inc"
 
-SDValue XVMTargetLowering::LowerFormalArguments(SDValue Nodes, CallingConv::ID Call, bool IsVar,
-                                                const SmallVectorImpl<ISD::InputArg> &In, const SDLoc &DLoc,
-                                                SelectionDAG &DAGraph, SmallVectorImpl<SDValue> &Vals) const {
-  switch (Call) {
+SDValue XVMTargetLowering::LowerFormalArguments(
+    SDValue Chain, CallingConv::ID CallConv, bool IsVarArg,
+    const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &DL,
+    SelectionDAG &DAG, SmallVectorImpl<SDValue> &InVals) const {
+  switch (CallConv) {
+  default:
+    report_fatal_error("Unsupported calling convention");
   case CallingConv::C:
   case CallingConv::Fast:
     break;
-  default:
-    report_fatal_error("Calling convention unsupported");
   }
 
-  MachineFunction &MFunction = DAGraph.getMachineFunction();
-  MachineRegisterInfo &RInfo = MFunction.getRegInfo();
+  MachineFunction &MF = DAG.getMachineFunction();
+  MachineRegisterInfo &RegInfo = MF.getRegInfo();
 
-  // All incoming arguments are assigned locations.
-  SmallVector<CCValAssign, INIT_SMALL_VECTOR_SIZE> ArgLoc;
-  CCState CCInfo(Call, IsVar, MFunction, ArgLoc, *DAGraph.getContext());
-  CCInfo.AnalyzeFormalArguments(In, CC_XVM64);
-  bool doesNeedSP = needsSP(MFunction);
+  // Assign locations to all of the incoming arguments.
+  SmallVector<CCValAssign, 16> ArgLocs;
+  CCState CCInfo(CallConv, IsVarArg, MF, ArgLocs, *DAG.getContext());
+  CCInfo.AnalyzeFormalArguments(Ins, CC_XVM64);
+  bool doesNeedSP = needsSP(MF);
 
-  for (auto &LocIterator : ArgLoc) {
-    if (LocIterator.isRegLoc()) {
-      // Register passed args
-      EVT VT = LocIterator.getLocVT();
-      MVT::SimpleValueType SVT = VT.getSimpleVT().SimpleTy;
-      switch (SVT) {
-      default:
-        errs() << "LowerFormalArguments Unhandled argument type: " << VT.getEVTString() << '\n';
+  for (auto &VA : ArgLocs) {
+    if (VA.isRegLoc()) {
+      // Arguments passed in registers
+      EVT RegVT = VA.getLocVT();
+      MVT::SimpleValueType SimpleTy = RegVT.getSimpleVT().SimpleTy;
+      switch (SimpleTy) {
+      default: {
+        errs() << "LowerFormalArguments Unhandled argument type: "
+               << RegVT.getEVTString() << '\n';
         llvm_unreachable(nullptr);
+      }
       case MVT::i32:
       case MVT::i64:
-        Register VRegister = RInfo.createVirtualRegister(&XVM::XVMGPRRegClass);
-        RInfo.addLiveIn(LocIterator.getLocReg(), VRegister);
-        SDValue ArgV = DAGraph.getCopyFromReg(Nodes, DLoc, VRegister, VT);
-        //insert an assert[sz]ext tp capture a value being promoted to a wider type
-        if (LocIterator.getLocInfo() == CCValAssign::SExt)
-          ArgV = DAGraph.getNode(ISD::AssertSext, DLoc, VT, ArgV,
-                                 DAGraph.getValueType(LocIterator.getValVT()));
-        else if (LocIterator.getLocInfo() == CCValAssign::ZExt)
-          ArgV = DAGraph.getNode(ISD::AssertZext, DLoc, VT, ArgV,
-                                 DAGraph.getValueType(LocIterator.getValVT()));
+        Register VReg = RegInfo.createVirtualRegister(&XVM::XVMGPRRegClass);
+        RegInfo.addLiveIn(VA.getLocReg(), VReg);
+        SDValue ArgValue = DAG.getCopyFromReg(Chain, DL, VReg, RegVT);
 
-        if (LocIterator.getLocInfo() != CCValAssign::Full)
-          ArgV = DAGraph.getNode(ISD::TRUNCATE, DLoc, LocIterator.getValVT(), ArgV);
+        // If this is an value that has been promoted to wider types, insert an
+        // assert[sz]ext to capture this, then truncate to the right size.
+        if (VA.getLocInfo() == CCValAssign::SExt)
+          ArgValue = DAG.getNode(ISD::AssertSext, DL, RegVT, ArgValue,
+                                 DAG.getValueType(VA.getValVT()));
+        else if (VA.getLocInfo() == CCValAssign::ZExt)
+          ArgValue = DAG.getNode(ISD::AssertZext, DL, RegVT, ArgValue,
+                                 DAG.getValueType(VA.getValVT()));
 
-        Vals.push_back(ArgV);
-        break;
+        if (VA.getLocInfo() != CCValAssign::Full)
+          ArgValue = DAG.getNode(ISD::TRUNCATE, DL, VA.getValVT(), ArgValue);
+
+        InVals.push_back(ArgValue);
+
+	      break;
       }
     } else {
-      MVT LocVT = LocIterator.getLocVT();
-      MachineFrameInfo &MFI = MFunction.getFrameInfo();
-      EVT ValVT = LocIterator.getValVT();
-      // sanity check
-      assert(LocIterator.isMemLoc());
-      /* The stack pointer offset is relative to the caller stack frame.
-       * we also need to add the offset created in in callee for saving callee saved regs
-       * we do not need to consider further callee stack offset,
-       * it will be handled later in eliminateFrameIndex
-       */
-      int FI = 0;
-      if (doesNeedSP) {
-        const MCPhysReg *CSRegs = MFunction.getRegInfo().getCalleeSavedRegs();
-        unsigned CSRcounter = 0;
-        for (; CSRegs[CSRcounter]; ++CSRcounter);
-          FI = MFI.CreateFixedObject(ValVT.getSizeInBits()/NUM_BITS_PER_BYTE,
-                                     LocIterator.getLocMemOffset() + CSRcounter*SIZE_REF_IN_BYTES, true);
-      } else {
-        FI = MFI.CreateFixedObject(ValVT.getSizeInBits()/NUM_BITS_PER_BYTE,
-                                   LocIterator.getLocMemOffset(), true);
-      }
+        MVT LocVT = VA.getLocVT();
+        MachineFrameInfo &MFI = MF.getFrameInfo();
+        EVT ValVT = VA.getValVT();
+        // sanity check
+        assert(VA.isMemLoc());
+        /* The stack pointer offset is relative to the caller stack frame.
+         * we also need to add the offset created in in callee for saving callee saved regs
+         * we do not need to consider further callee stack offset,
+         * it will be handled later in eliminateFrameIndex
+         */
+        int FI = 0;
+        if (doesNeedSP) {
+          const MCPhysReg *CSRegs = MF.getRegInfo().getCalleeSavedRegs();
+          unsigned CSRcounter = 0;
+          for (; CSRegs[CSRcounter]; ++CSRcounter);
+          FI = MFI.CreateFixedObject(ValVT.getSizeInBits()/8,
+                                     VA.getLocMemOffset() + CSRcounter*8, true);
+        } else {
+          FI = MFI.CreateFixedObject(ValVT.getSizeInBits()/8,
+                                     VA.getLocMemOffset(), true);
+        }
 
-      // Create load nodes to retrieve arguments from the stack
-      SDValue FIN = DAGraph.getFrameIndex(FI, getPointerTy(DAGraph.getDataLayout()));
-      SDValue Load = DAGraph.getLoad(
-            LocVT, DLoc, Nodes, FIN,
-            MachinePointerInfo::getFixedStack(DAGraph.getMachineFunction(), FI));
-      Vals.push_back(Load);
+        // Create load nodes to retrieve arguments from the stack
+        SDValue FIN = DAG.getFrameIndex(FI, getPointerTy(DAG.getDataLayout()));
+        SDValue Load = DAG.getLoad(
+            LocVT, DL, Chain, FIN,
+            MachinePointerInfo::getFixedStack(DAG.getMachineFunction(), FI));
+        InVals.push_back(Load);
     }
   }
 
   std::vector<SDValue> OutChains;
-  if (IsVar) {
+  if (IsVarArg) {
     const TargetRegisterClass *RC = &XVM::XVMGPRRegClass;
-    MachineFrameInfo &MFI = MFunction.getFrameInfo();
-    MachineRegisterInfo &RegInfo = MFunction.getRegInfo();
-    XVMMachineFunctionInfo *XFI = MFunction.getInfo<XVMMachineFunctionInfo>();
+    MachineFrameInfo &MFI = MF.getFrameInfo();
+    MachineRegisterInfo &RegInfo = MF.getRegInfo();
+    XVMMachineFunctionInfo *XFI = MF.getInfo<XVMMachineFunctionInfo>();
 
     static const MCPhysReg ArgGPRs[] = {XVM::R0, XVM::R1, XVM::R2, XVM::R3, XVM::R4, XVM::R5};
     ArrayRef<MCPhysReg> ArgRegs = makeArrayRef(ArgGPRs);
@@ -433,12 +382,12 @@ SDValue XVMTargetLowering::LowerFormalArguments(SDValue Nodes, CallingConv::ID C
       VaArgOffset = CCInfo.getNextStackOffset();
       VaArgsSaveSize = 0;
     } else {
-      VaArgsSaveSize = SIZE_REF_IN_BYTES * (ArgRegs.size() - FirstRegIdx);
+      VaArgsSaveSize = 8 * (ArgRegs.size() - FirstRegIdx);
       VaArgOffset = -VaArgsSaveSize;
     }
 
     XFI->SetVarArgsFrameIndex(
-        MFI.CreateFixedObject(SIZE_REF_IN_BYTES, // size
+        MFI.CreateFixedObject(8, // size
                               VaArgOffset, // SPOffset
                               true)); // IsImmutable
     // Copy the registers that have not been used for var argument passing
@@ -446,10 +395,10 @@ SDValue XVMTargetLowering::LowerFormalArguments(SDValue Nodes, CallingConv::ID C
     for (unsigned I = FirstRegIdx; I < ArgRegs.size(); I++, VaArgOffset += 8) {
       const Register Reg = RegInfo.createVirtualRegister(RC);
       RegInfo.addLiveIn(ArgRegs[I], Reg);
-      SDValue ArgV = DAGraph.getCopyFromReg(Nodes, DLoc, Reg, MVT::i64);
+      SDValue ArgValue = DAG.getCopyFromReg(Chain, DL, Reg, MVT::i64);
       int FI = MFI.CreateFixedObject(8, VaArgOffset, true);
-      SDValue FrameIndex = DAGraph.getFrameIndex(FI, getPointerTy(DAGraph.getDataLayout()));
-      SDValue Store = DAGraph.getStore(Nodes, DLoc, ArgV, FrameIndex, MachinePointerInfo::getFixedStack(MFunction, FI));
+      SDValue FrameIndex = DAG.getFrameIndex(FI, getPointerTy(DAG.getDataLayout()));
+      SDValue Store = DAG.getStore(Chain, DL, ArgValue, FrameIndex, MachinePointerInfo::getFixedStack(MF, FI));
       // Init the mem operand always.
       cast<StoreSDNode>(Store.getNode())->getMemOperand()->setValue((Value*)nullptr);
       OutChains.push_back(Store);
@@ -457,219 +406,216 @@ SDValue XVMTargetLowering::LowerFormalArguments(SDValue Nodes, CallingConv::ID C
   }
 
   if (!OutChains.empty()) {
-    OutChains.push_back(Nodes);
-    Nodes = DAGraph.getNode(ISD::TokenFactor, DLoc, MVT::Other, OutChains);
+    OutChains.push_back(Chain);
+    Chain = DAG.getNode(ISD::TokenFactor, DL, MVT::Other, OutChains);
   }
 
-  return Nodes;
+  return Chain;
 }
 
-SDValue XVMTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLoweringInfo,
-                                     SmallVectorImpl<SDValue> &Vals) const {
-  auto &In = CLoweringInfo.Ins;
-  auto &Out = CLoweringInfo.Outs;
-  SDValue Nodes = CLoweringInfo.Chain;
-  auto &OutValues = CLoweringInfo.OutVals;
-  SDValue Called = CLoweringInfo.Callee;
-  bool IsVArg = CLoweringInfo.IsVarArg;
-  SelectionDAG &DAGraph = CLoweringInfo.DAG;
-  bool &IsTail = CLoweringInfo.IsTailCall;
-  CallingConv::ID CallConvention = CLoweringInfo.CallConv;
-  MachineFunction &MFunction = DAGraph.getMachineFunction();
+SDValue XVMTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
+                                     SmallVectorImpl<SDValue> &InVals) const {
+  SelectionDAG &DAG = CLI.DAG;
+  auto &Outs = CLI.Outs;
+  auto &OutVals = CLI.OutVals;
+  auto &Ins = CLI.Ins;
+  SDValue Chain = CLI.Chain;
+  SDValue Callee = CLI.Callee;
+  bool &IsTailCall = CLI.IsTailCall;
+  CallingConv::ID CallConv = CLI.CallConv;
+  bool IsVarArg = CLI.IsVarArg;
+  MachineFunction &MF = DAG.getMachineFunction();
 
   // XVM target does not support tail call optimization.
-  IsTail = false;
+  IsTailCall = false;
 
-  switch (CallConvention) {
-  case CallingConv::C:
-  case CallingConv::Fast:
-    break;
+  switch (CallConv) {
   default:
-    report_fatal_error("calling convention unsupported");
+    report_fatal_error("Unsupported calling convention");
+  case CallingConv::Fast:
+  case CallingConv::C:
+    break;
   }
-
-  const XVMRegisterInfo *TRI = Subtarget.getRegisterInfo();
-  const uint32_t *Mask = TRI->getCallPreservedMask(MFunction, CallConvention);
+  const XVMRegisterInfo *TRI = Subtarget->getRegisterInfo();
+  const uint32_t *Mask = TRI->getCallPreservedMask(MF, CallConv);
   assert(Mask && "Missing call preserved mask for calling convention");
 
   // Analyze operands of the call, assigning locations to each operand.
-  SmallVector<CCValAssign, INIT_SMALL_VECTOR_SIZE> ArgLocs;
-  CCState CCInfo(CallConvention, IsVArg, MFunction, ArgLocs, *DAGraph.getContext());
+  SmallVector<CCValAssign, 16> ArgLocs;
+  CCState CCInfo(CallConv, IsVarArg, MF, ArgLocs, *DAG.getContext());
 
-  CCInfo.AnalyzeCallOperands(Out, CC_XVM64);
+  CCInfo.AnalyzeCallOperands(Outs, CC_XVM64);
 
   unsigned NumBytes = CCInfo.getNextStackOffset();
 
-  for (auto &Arg : Out) {
+  for (auto &Arg : Outs) {
     ISD::ArgFlagsTy Flags = Arg.Flags;
     if (!Flags.isByVal())
       continue;
   }
 
-  auto PtrVT = getPointerTy(MFunction.getDataLayout());
-  Nodes = DAGraph.getCALLSEQ_START(Nodes, NumBytes, 0, CLoweringInfo.DL);
+  auto PtrVT = getPointerTy(MF.getDataLayout());
+  Chain = DAG.getCALLSEQ_START(Chain, NumBytes, 0, CLI.DL);
 
-  SmallVector<std::pair<unsigned, SDValue>, INIT_SMALL_VECTOR_REGS_SIZE> PassingRegs;
-  SmallVector<SDValue, INIT_SMALL_VECTOR_OP_CHAIN_SIZE> MemOpNodeChains;
+  SmallVector<std::pair<unsigned, SDValue>, 6> RegsToPass;
+  SmallVector<SDValue, 10> MemOpChains;
 
-  SDValue StackP = DAGraph.getCopyFromReg(Nodes, CLoweringInfo.DL, XVM::SP, PtrVT);
+  SDValue StackPtr = DAG.getCopyFromReg(Chain, CLI.DL, XVM::SP, PtrVT);
 
   // Walk arg assignments
-  for (unsigned argnum = 0, e = Out.size(); argnum != e; ++argnum) {
-    SDValue Arg = OutValues[argnum];
-    CCValAssign &CurrentArgloc = ArgLocs[argnum];
+  for (unsigned i = 0, e = Outs.size(); i != e; ++i) {
+    CCValAssign &VA = ArgLocs[i];
+    SDValue Arg = OutVals[i];
 
     // Promote the value if needed.
-    switch (CurrentArgloc.getLocInfo()) {
+    switch (VA.getLocInfo()) {
+    default:
+      llvm_unreachable("Unknown loc info");
     case CCValAssign::Full:
       break;
     case CCValAssign::SExt:
-      Arg = DAGraph.getNode(ISD::SIGN_EXTEND, CLoweringInfo.DL, CurrentArgloc.getLocVT(), Arg);
-      break;
-    case CCValAssign::AExt:
-      Arg = DAGraph.getNode(ISD::ANY_EXTEND, CLoweringInfo.DL, CurrentArgloc.getLocVT(), Arg);
+      Arg = DAG.getNode(ISD::SIGN_EXTEND, CLI.DL, VA.getLocVT(), Arg);
       break;
     case CCValAssign::ZExt:
-      Arg = DAGraph.getNode(ISD::ZERO_EXTEND, CLoweringInfo.DL, CurrentArgloc.getLocVT(), Arg);
+      Arg = DAG.getNode(ISD::ZERO_EXTEND, CLI.DL, VA.getLocVT(), Arg);
       break;
-    default:
-      llvm_unreachable("Unknown loc info");
+    case CCValAssign::AExt:
+      Arg = DAG.getNode(ISD::ANY_EXTEND, CLI.DL, VA.getLocVT(), Arg);
+      break;
     }
 
-    // Push arguments into Passingregs vector
-    if (CurrentArgloc.isRegLoc())
-      PassingRegs.push_back(std::make_pair(CurrentArgloc.getLocReg(), Arg));
+    // Push arguments into RegsToPass vector
+    if (VA.isRegLoc())
+      RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));
     else {
-      assert(CurrentArgloc.isMemLoc());
+      assert(VA.isMemLoc());
 
-      int32_t Offset = CurrentArgloc.getLocMemOffset();
-      SDValue PtrOff = DAGraph.getIntPtrConstant(Offset, CLoweringInfo.DL);
+      int32_t Offset = VA.getLocMemOffset();
+      SDValue PtrOff = DAG.getIntPtrConstant(Offset, CLI.DL);
 
-      SDValue DstAddr = DAGraph.getNode(ISD::ADD, CLoweringInfo.DL, PtrVT, StackP, PtrOff);
-      MachinePointerInfo DstInfo = MachinePointerInfo::getStack(MFunction, Offset);
+      SDValue DstAddr = DAG.getNode(ISD::ADD, CLI.DL, PtrVT, StackPtr, PtrOff);
+      MachinePointerInfo DstInfo = MachinePointerInfo::getStack(MF, Offset);
 
-      SDValue Store = DAGraph.getStore(Nodes, CLoweringInfo.DL, Arg, DstAddr, DstInfo);
-      MemOpNodeChains.push_back(Store);
+      SDValue Store = DAG.getStore(Chain, CLI.DL, Arg, DstAddr, DstInfo);
+      MemOpChains.push_back(Store);
     }
   }
 
-  if (!MemOpNodeChains.empty())
-    Nodes = DAGraph.getNode(ISD::TokenFactor, CLoweringInfo.DL, MVT::Other, MemOpNodeChains);
+  if (!MemOpChains.empty())
+    Chain = DAG.getNode(ISD::TokenFactor, CLI.DL, MVT::Other, MemOpChains);
 
-  SDValue IFlag;
+  SDValue InFlag;
 
-  // build a node dependency chain and flag operands that copy outgoing args to regs
-  // All emitted instructions have to be grouped togeher, hence IFLAG
-  for (auto &CurrentReg : PassingRegs) {
-    Nodes = DAGraph.getCopyToReg(Nodes, CLoweringInfo.DL, CurrentReg.first, CurrentReg.second, IFlag);
-    IFlag = Nodes.getValue(1);
+  // Build a sequence of copy-to-reg nodes chained together with token chain and
+  // flag operands which copy the outgoing args into registers.  The InFlag in
+  // necessary since all emitted instructions must be stuck together.
+  for (auto &Reg : RegsToPass) {
+    Chain = DAG.getCopyToReg(Chain, CLI.DL, Reg.first, Reg.second, InFlag);
+    InFlag = Chain.getValue(1);
   }
 
-  // if a GlobalAddress node is the "called" (every direct call is)
-  // change it to a TargetGlobalAddress so legalize doesnt hack it
-  // ExternelSymbol -> TargetExternelSymbol
-  if (GlobalAddressSDNode *GlblAddNode = dyn_cast<GlobalAddressSDNode>(Called)) {
-    Called = DAGraph.getTargetGlobalAddress(GlblAddNode->getGlobal(), CLoweringInfo.DL, PtrVT,
-                                            GlblAddNode->getOffset(), 0);
-  } else if (ExternalSymbolSDNode *ExtSymbNode = dyn_cast<ExternalSymbolSDNode>(Called)) {
-    Called = DAGraph.getTargetExternalSymbol(ExtSymbNode->getSymbol(), PtrVT, 0);
-    if (strcmp(ExtSymbNode->getSymbol(), "__fixsfdi") == 0) {
-      fail(CLoweringInfo.DL, DAGraph, Twine("Floats are unsupported in XVM"));
-      exit(1);
-    } else {
-      fail(CLoweringInfo.DL, DAGraph, Twine("A call to built-in function '"
-                              + StringRef(ExtSymbNode->getSymbol())
-                              + "' is not supported."));
-      exit(1);
-    }
+  // If the callee is a GlobalAddress node (quite common, every direct call is)
+  // turn it into a TargetGlobalAddress node so that legalize doesn't hack it.
+  // Likewise ExternalSymbol -> TargetExternalSymbol.
+  if (GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee)) {
+    Callee = DAG.getTargetGlobalAddress(G->getGlobal(), CLI.DL, PtrVT,
+                                        G->getOffset(), 0);
+  } else if (ExternalSymbolSDNode *E = dyn_cast<ExternalSymbolSDNode>(Callee)) {
+    Callee = DAG.getTargetExternalSymbol(E->getSymbol(), PtrVT, 0);
+    fail(CLI.DL, DAG, Twine("A call to built-in function '"
+                            + StringRef(E->getSymbol())
+                            + "' is not supported."));
   }
 
-  // Return a chain of nodes and a flag that retval copy can use.
-  SDVTList NodeTypes = DAGraph.getVTList(MVT::Other, MVT::Glue);
-  SmallVector<SDValue, INIT_SMALL_VECTOR_OPS_SIZE> Ops;
-  Ops.push_back(Nodes);
-  Ops.push_back(Called);
-  Ops.push_back(DAGraph.getRegisterMask(Mask));
+  // Returns a chain & a flag for retval copy to use.
+  SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
+  SmallVector<SDValue, 8> Ops;
+  Ops.push_back(Chain);
+  Ops.push_back(Callee);
+  Ops.push_back(DAG.getRegisterMask(Mask));
 
-  // Make argument registers line into the call by appending them to the list
-  for (auto &RegIter : PassingRegs)
-    Ops.push_back(DAGraph.getRegister(RegIter.first, RegIter.second.getValueType()));
+  // Add argument registers to the end of the list so that they are
+  // known live into the call.
+  for (auto &Reg : RegsToPass)
+    Ops.push_back(DAG.getRegister(Reg.first, Reg.second.getValueType()));
 
-  if (IFlag.getNode())
-    Ops.push_back(IFlag);
+  if (InFlag.getNode())
+    Ops.push_back(InFlag);
 
-  Nodes = DAGraph.getNode(XVMISD::CALL, CLoweringInfo.DL, NodeTypes, Ops);
-  IFlag = Nodes.getValue(1);
+  Chain = DAG.getNode(XVMISD::CALL, CLI.DL, NodeTys, Ops);
+  InFlag = Chain.getValue(1);
 
-  // CALLSEQ_END node created.
-  Nodes = DAGraph.getCALLSEQ_END(Nodes,
-                                 DAGraph.getConstant(NumBytes, CLoweringInfo.DL, PtrVT, true),
-                                 DAGraph.getConstant(0, CLoweringInfo.DL, PtrVT, true),
-                                 IFlag, CLoweringInfo.DL);
-  IFlag = Nodes.getValue(1);
+  // Create the CALLSEQ_END node.
+  Chain = DAG.getCALLSEQ_END(
+      Chain, DAG.getConstant(NumBytes, CLI.DL, PtrVT, true),
+      DAG.getConstant(0, CLI.DL, PtrVT, true), InFlag, CLI.DL);
+  InFlag = Chain.getValue(1);
 
-  // copt result values from pregs to the returned vregs
-  return LowerCallResult(Nodes, IFlag, CallConvention, IsVArg, In, CLoweringInfo.DL, DAGraph,
-                         Vals);
+  // Handle result values, copying them out of physregs into vregs that we
+  // return.
+  return LowerCallResult(Chain, InFlag, CallConv, IsVarArg, Ins, CLI.DL, DAG,
+                         InVals);
 }
 
-SDValue XVMTargetLowering::LowerReturn(SDValue Nodes, CallingConv::ID CallConv,
-                                       bool IsVarArg,
-                                       const SmallVectorImpl<ISD::OutputArg> &Outs,
-                                       const SmallVectorImpl<SDValue> &OutVals,
-                                       const SDLoc &DLoc, SelectionDAG &DAGraph) const {
+SDValue
+XVMTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
+                               bool IsVarArg,
+                               const SmallVectorImpl<ISD::OutputArg> &Outs,
+                               const SmallVectorImpl<SDValue> &OutVals,
+                               const SDLoc &DL, SelectionDAG &DAG) const {
   unsigned Opc = XVMISD::RET_FLAG;
 
   // CCValAssign - represent the assignment of the return value to a location
-  SmallVector<CCValAssign, INIT_SMALL_VECTOR_SIZE> RVLocs;
-  MachineFunction &MFunction = DAGraph.getMachineFunction();
+  SmallVector<CCValAssign, 16> RVLocs;
+  MachineFunction &MF = DAG.getMachineFunction();
 
-  // CCState - register and stack slot info.
-  CCState CCInfo(CallConv, IsVarArg, MFunction, RVLocs, *DAGraph.getContext());
+  // CCState - Info about the registers and stack slot.
+  CCState CCInfo(CallConv, IsVarArg, MF, RVLocs, *DAG.getContext());
 
-  if (MFunction.getFunction().getReturnType()->isAggregateType()) {
-    fail(DLoc, DAGraph, "only integer returns supported");
-    return DAGraph.getNode(Opc, DLoc, MVT::Other, Nodes);
+  if (MF.getFunction().getReturnType()->isAggregateType()) {
+    fail(DL, DAG, "only integer returns supported");
+    return DAG.getNode(Opc, DL, MVT::Other, Chain);
   }
 
-  // return value analysis
+  // Analize return values.
   CCInfo.AnalyzeReturn(Outs, RetCC_XVM64);
 
-  SDValue IFlag;
-  SmallVector<SDValue, INIT_SMALL_VECTOR_RETOP_SIZE> RetOps(1, Nodes);
+  SDValue Flag;
+  SmallVector<SDValue, 4> RetOps(1, Chain);
 
-  // insert our results into the output reg.
-  for (unsigned counter = 0; counter != RVLocs.size(); ++counter) {
-    CCValAssign &ValIter = RVLocs[counter];
-    assert(ValIter.isRegLoc() && "Can only return in registers!");
+  // Copy the result values into the output registers.
+  for (unsigned i = 0; i != RVLocs.size(); ++i) {
+    CCValAssign &VA = RVLocs[i];
+    assert(VA.isRegLoc() && "Can only return in registers!");
 
-    Nodes = DAGraph.getCopyToReg(Nodes, DLoc, ValIter.getLocReg(), OutVals[counter], IFlag);
+    Chain = DAG.getCopyToReg(Chain, DL, VA.getLocReg(), OutVals[i], Flag);
 
     // Guarantee that all emitted copies are stuck together,
     // avoiding something bad.
-    IFlag = Nodes.getValue(1);
-    RetOps.push_back(DAGraph.getRegister(ValIter.getLocReg(), ValIter.getLocVT()));
+    Flag = Chain.getValue(1);
+    RetOps.push_back(DAG.getRegister(VA.getLocReg(), VA.getLocVT()));
   }
 
-  RetOps[0] = Nodes; // Update chain.
+  RetOps[0] = Chain; // Update chain.
 
   // Add the flag if we have it.
-  if (IFlag.getNode())
-    RetOps.push_back(IFlag);
+  if (Flag.getNode())
+    RetOps.push_back(Flag);
 
-  return DAGraph.getNode(Opc, DLoc, MVT::Other, RetOps);
+  return DAG.getNode(Opc, DL, MVT::Other, RetOps);
 }
 
 SDValue XVMTargetLowering::LowerCallResult(
     SDValue Chain, SDValue InFlag, CallingConv::ID CallConv, bool IsVarArg,
     const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &DL,
     SelectionDAG &DAG, SmallVectorImpl<SDValue> &InVals) const {
+
   MachineFunction &MF = DAG.getMachineFunction();
   // Assign locations to each value returned by this call.
-  SmallVector<CCValAssign, INIT_SMALL_VECTOR_SIZE> RVLocs;
+  SmallVector<CCValAssign, 16> RVLocs;
   CCState CCInfo(CallConv, IsVarArg, MF, RVLocs, *DAG.getContext());
 
-  if (Ins.size() >= XVM_MAX_RET_SIZE + 1) {
+  if (Ins.size() >= 2) {
     fail(DL, DAG, "only small returns supported");
     for (unsigned i = 0, e = Ins.size(); i != e; ++i)
       InVals.push_back(DAG.getConstant(0, DL, Ins[i].VT));
@@ -681,58 +627,58 @@ SDValue XVMTargetLowering::LowerCallResult(
   // Copy all of the result registers out of their specified physreg.
   for (auto &Val : RVLocs) {
     Chain = DAG.getCopyFromReg(Chain, DL, Val.getLocReg(),
-                               Val.getValVT(), InFlag).getValue(CHAIN_SECOND);
-    InFlag = Chain.getValue(CHAIN_THIRD);
-    InVals.push_back(Chain.getValue(CHAIN_FIRST));
+                               Val.getValVT(), InFlag).getValue(1);
+    InFlag = Chain.getValue(2);
+    InVals.push_back(Chain.getValue(0));
   }
 
   return Chain;
 }
 
 SDValue XVMTargetLowering::LowerBRCOND(SDValue Op, SelectionDAG &DAG) const {
-  SDValue CondV = Op.getOperand(MO_SECOND);
+  SDValue CondV = Op.getOperand(1);
   SDLoc DL(Op);
 
   if (CondV.getOpcode() == ISD::SETCC &&
-      CondV.getOperand(MO_FIRST).getValueType() == MVT::i64) {
-    SDValue LHS = CondV.getOperand(MO_FIRST);
-    SDValue RHS = CondV.getOperand(MO_SECOND);
+      CondV.getOperand(0).getValueType() == MVT::i64) {
+    SDValue LHS = CondV.getOperand(0);
+    SDValue RHS = CondV.getOperand(1);
 
-    SDValue TargetCC = CondV.getOperand(MO_THIRD);
+    SDValue TargetCC = CondV.getOperand(2);
 
     return DAG.getNode(XVMISD::BR_CC, DL, Op.getValueType(),
-                       Op.getOperand(MO_FIRST), LHS, RHS, TargetCC, Op.getOperand(MO_THIRD));
+                       Op.getOperand(0), LHS, RHS, TargetCC, Op.getOperand(2));
   } else if (CondV.getOpcode() == ISD::AssertZext &&
-             CondV.getOperand(MO_FIRST).getValueType() == MVT::i64) {
-    SDValue LHS = CondV.getOperand(MO_FIRST);
+             CondV.getOperand(0).getValueType() == MVT::i64) {
+    SDValue LHS = CondV.getOperand(0);
     SDValue RHS = DAG.getConstant(1, DL, MVT::i64);
 
     SDValue TargetCC = DAG.getCondCode(ISD::SETEQ);
 
     return DAG.getNode(XVMISD::BR_CC, DL, Op.getValueType(),
-                       Op.getOperand(MO_FIRST), LHS, RHS, TargetCC, Op.getOperand(MO_THIRD));
+                       Op.getOperand(0), LHS, RHS, TargetCC, Op.getOperand(2));
   } else if (CondV.getOpcode() == ISD::AND || CondV.getOpcode() == ISD::OR ||
-             CondV.getOpcode() == ISD::XOR || CondV.getOpcode() == ISD::Constant ||
-             CondV.getOpcode() == ISD::UADDO || CondV.getOpcode() == ISD::SELECT_CC ||
-             CondV.getOpcode() == ISD::UREM || CondV.getOpcode() == ISD::SRL ||
-             CondV.getOpcode() == ISD::SELECT) {
+             CondV.getOpcode() == ISD::XOR || CondV.getOpcode() == ISD::Constant) {
     SDValue LHS = CondV;
+    if (CondV.getNumOperands()>0) {
+      LHS = CondV.getOperand(0);
+    }
     SDValue RHS = DAG.getConstant(0, DL, MVT::i64);
     SDValue TargetCC = DAG.getCondCode(ISD::SETNE);
 
     return DAG.getNode(XVMISD::BR_CC, DL, Op.getValueType(),
-                       Op.getOperand(MO_FIRST), LHS, RHS, TargetCC, Op.getOperand(MO_THIRD));
+                       Op.getOperand(0), LHS, RHS, TargetCC, Op.getOperand(2));
   }
   //Note: complete the lowering for other cases later
   return Op;
 }
 
 SDValue XVMTargetLowering::LowerSELECT_CC(SDValue Op, SelectionDAG &DAG) const {
-  SDValue LHS = Op.getOperand(MO_FIRST);
-  SDValue RHS = Op.getOperand(MO_SECOND);
-  SDValue TrueV = Op.getOperand(MO_THIRD);
-  SDValue FalseV = Op.getOperand(MO_FOURTH);
-  ISD::CondCode CC = cast<CondCodeSDNode>(Op.getOperand(MO_FIFTH))->get();
+  SDValue LHS = Op.getOperand(0);
+  SDValue RHS = Op.getOperand(1);
+  SDValue TrueV = Op.getOperand(2);
+  SDValue FalseV = Op.getOperand(3);
+  ISD::CondCode CC = cast<CondCodeSDNode>(Op.getOperand(4))->get();
   SDLoc DL(Op);
 
   SDValue TargetCC = DAG.getConstant(CC, DL, LHS.getValueType());
@@ -749,7 +695,7 @@ SDValue XVMTargetLowering::LowerVASTART(SDValue Op, SelectionDAG &DAG) const {
   int VarArgsFrameIndex = MF.getInfo<XVMMachineFunctionInfo>()->GetVarArgsFrameIndex();
   SDValue FrameIndex = DAG.getFrameIndex(VarArgsFrameIndex, getPointerTy(MF.getDataLayout()));
 
-  SDValue RetSDValue = DAG.getStore(Op.getOperand(MO_FIRST), SDLoc(Op), FrameIndex, Op.getOperand(MO_SECOND),
+  SDValue RetSDValue = DAG.getStore(Op.getOperand(0), SDLoc(Op), FrameIndex, Op.getOperand(1),
                                     MachinePointerInfo()); // unsigned AddressSpace = 0, int64_t offset = 0
 
   return RetSDValue;
@@ -762,10 +708,10 @@ SDValue XVMTargetLowering::LowerVAARG(SDValue Op, SelectionDAG &DAG) const {
   SDLoc DL(Op);
   MachinePointerInfo MPI(0U, 0L);
   EVT PointerType = getPointerTy(DAG.getMachineFunction().getDataLayout());
-  SDValue LoadPointer = DAG.getLoad(PointerType, DL, Op.getOperand(MO_FIRST), Op.getOperand(MO_SECOND), MPI);
+  SDValue LoadPointer = DAG.getLoad(PointerType, DL, Op.getOperand(0), Op.getOperand(1), MPI);
   SDValue Offset = DAG.getConstant(8, DL, MVT::i64);
   SDValue AddPointer = DAG.getNode(ISD::ADD, DL, PointerType, LoadPointer, Offset);
-  SDValue StorePointer = DAG.getStore(LoadPointer.getValue(1), DL, AddPointer, Op.getOperand(MO_SECOND), MPI);
+  SDValue StorePointer = DAG.getStore(LoadPointer.getValue(1), DL, AddPointer, Op.getOperand(1), MPI);
   SDValue RetSDValue = DAG.getLoad(Op.getValueType(), DL, StorePointer, LoadPointer, MPI);
   return RetSDValue;
 }
@@ -791,16 +737,16 @@ const char *XVMTargetLowering::getTargetNodeName(unsigned Opcode) const {
   }
 }
 
-SDValue XVMTargetLowering::LowerGlobalAddress(SDValue Oper,
-                                              SelectionDAG &DAGraph) const {
-  auto NIter = cast<GlobalAddressSDNode>(Oper);
-  assert(NIter->getOffset() == 0 && "global address offset invalid");
+SDValue XVMTargetLowering::LowerGlobalAddress(SDValue Op,
+                                              SelectionDAG &DAG) const {
+  auto N = cast<GlobalAddressSDNode>(Op);
+  assert(N->getOffset() == 0 && "Invalid offset for global address");
 
-  SDLoc DLoc(Oper);
-  const GlobalValue *GlobVal = NIter->getGlobal();
-  SDValue GlobalAdd = DAGraph.getTargetGlobalAddress(GlobVal, DLoc, MVT::i64);
+  SDLoc DL(Op);
+  const GlobalValue *GV = N->getGlobal();
+  SDValue GA = DAG.getTargetGlobalAddress(GV, DL, MVT::i64);
 
-  return DAGraph.getNode(XVMISD::Wrapper, DLoc, MVT::i64, GlobalAdd);
+  return DAG.getNode(XVMISD::Wrapper, DL, MVT::i64, GA);
 }
 
 unsigned
@@ -823,54 +769,55 @@ XVMTargetLowering::EmitInstrWithCustomInserterSelectCC(MachineInstr &MI,
 
   assert((isSelectRROp || isSelectRIOp) && "Unexpected instr type to insert");
 #endif
-  // We insert a diamond control-flow pattern, to insert a SELECT instruction
-  // The incoming instruction holds the branch opcode, the true/false values,
-  // the condition code register to branch on and the dest vreg
-  const BasicBlock *LLVM_BasicB = BB->getBasicBlock();
-  MachineFunction::iterator Iter = ++BB->getIterator();
+  // To "insert" a SELECT instruction, we actually have to insert the diamond
+  // control-flow pattern.  The incoming instruction knows the destination vreg
+  // to set, the condition code register to branch on, the true/false values to
+  // select between, and a branch opcode to use.
+  const BasicBlock *LLVM_BB = BB->getBasicBlock();
+  MachineFunction::iterator I = ++BB->getIterator();
 
-  // CurrentMBBlock:
-  //  TrueValue = ...
-  //  jmp_XX r1, r2 goto Copy1MBBlock
-  //  fallthrough --> Copy0MBBlock
-  MachineBasicBlock *CurrentMBBlock = BB;
-  MachineFunction *MFunc = BB->getParent();
-  MachineBasicBlock *Copy0MBBlock = MFunc->CreateMachineBasicBlock(LLVM_BasicB);
-  MachineBasicBlock *Copy1MBBlock = MFunc->CreateMachineBasicBlock(LLVM_BasicB);
+  // ThisMBB:
+  // ...
+  //  TrueVal = ...
+  //  jmp_XX r1, r2 goto Copy1MBB
+  //  fallthrough --> Copy0MBB
+  MachineBasicBlock *ThisMBB = BB;
+  MachineFunction *F = BB->getParent();
+  MachineBasicBlock *Copy0MBB = F->CreateMachineBasicBlock(LLVM_BB);
+  MachineBasicBlock *Copy1MBB = F->CreateMachineBasicBlock(LLVM_BB);
 
-  MFunc->insert(Iter, Copy0MBBlock);
-  MFunc->insert(Iter, Copy1MBBlock);
-  // The Phi node for the select will be in the new block, transferring
-  // all successors of the current block to the new one will update the
-  // machien-CFG edges
-  Copy1MBBlock->splice(Copy1MBBlock->begin(), BB,
-                       std::next(MachineBasicBlock::iterator(MI)), BB->end());
-  Copy1MBBlock->transferSuccessorsAndUpdatePHIs(BB);
-  // Add the true/fallthrough blocks as its successors.
-  BB->addSuccessor(Copy0MBBlock);
-  BB->addSuccessor(Copy1MBBlock);
+  F->insert(I, Copy0MBB);
+  F->insert(I, Copy1MBB);
+  // Update machine-CFG edges by transferring all successors of the current
+  // block to the new block which will contain the Phi node for the select.
+  Copy1MBB->splice(Copy1MBB->begin(), BB,
+                   std::next(MachineBasicBlock::iterator(MI)), BB->end());
+  Copy1MBB->transferSuccessorsAndUpdatePHIs(BB);
+  // Next, add the true and fallthrough blocks as its successors.
+  BB->addSuccessor(Copy0MBB);
+  BB->addSuccessor(Copy1MBB);
 
-  // if Flag insert branch
+  // Insert Branch if Flag
   int NewCC = getBranchOpcodeFromSelectCC(MI);
 
-  Register LHS = MI.getOperand(MO_SECOND).getReg();
+  Register LHS = MI.getOperand(1).getReg();
   if (isSelectRROp) {
-    Register RHS = MI.getOperand(MO_THIRD).getReg();
-    BuildMI(BB, DL, TII.get(NewCC)).addMBB(Copy1MBBlock).addReg(LHS).addReg(RHS);
+    Register RHS = MI.getOperand(2).getReg();
+    BuildMI(BB, DL, TII.get(NewCC)).addMBB(Copy1MBB).addReg(LHS).addReg(RHS);
   } else {
-    int64_t imm32 = MI.getOperand(MO_THIRD).getImm();
+    int64_t imm32 = MI.getOperand(2).getImm();
     // Check before we build J*_ri instruction.
-    assert (isInt<TEMPLATE_INT_32>(imm32));
-    if (isValidImmediateSize(imm32)) {
-        BuildMI(BB, DL, TII.get(NewCC)).addMBB(Copy1MBBlock).addReg(LHS).addImm(imm32);
+    assert (isInt<32>(imm32));
+    if (is_valid_immediate_size(imm32)) {
+        BuildMI(BB, DL, TII.get(NewCC)).addMBB(Copy1MBB).addReg(LHS).addImm(imm32);
     } else {
         Register ScratchReg;
-        MachineRegisterInfo &MRI = MFunc->getRegInfo();
+        MachineRegisterInfo &MRI = F->getRegInfo();
         ScratchReg = MRI.createVirtualRegister(&XVM::XVMGPRRegClass);
-        uint64_t MostSignificantBits = shiftAndGet16Bits(imm32, MOST_SIGNIFICANT);
-        uint64_t UpperMiddleBits = shiftAndGet16Bits(imm32, UPPER_MIDDLE);
-        uint64_t LowerMiddleBits = shiftAndGet16Bits(imm32, LOWER_MIDDLE);
-        uint64_t LeastSignificantBits = shiftAndGet16Bits(imm32, LEAST_SIGNIFICANT);
+        uint64_t MostSignificantBits = ShiftAndGet16Bits(imm32, 48);
+        uint64_t UpperMiddleBits = ShiftAndGet16Bits(imm32, 32);
+        uint64_t LowerMiddleBits = ShiftAndGet16Bits(imm32, 16);
+        uint64_t LeastSignificantBits = ShiftAndGet16Bits(imm32, 0);
 
         Register VRegForMov = MRI.createVirtualRegister(&XVM::XVMGPRRegClass);
         BuildMI(BB, DL, TII.get(XVM::MOV_ri), VRegForMov).addImm(0);
@@ -878,47 +825,47 @@ XVMTargetLowering::EmitInstrWithCustomInserterSelectCC(MachineInstr &MI,
         if (LeastSignificantBits) {
           Register VRegForMovk1 = MRI.createVirtualRegister(&XVM::XVMGPRRegClass);
           BuildMI(BB, DL, TII.get(XVM::MOVK_ri), VRegForMovk1)
-              .addReg(PrevReg).addImm(LeastSignificantBits).addImm(MOVK_SHIFT_0);
+              .addReg(PrevReg).addImm(LeastSignificantBits).addImm(0);
           PrevReg = VRegForMovk1;
         }
         if (LowerMiddleBits) {
           Register VRegForMovk2 = MRI.createVirtualRegister(&XVM::XVMGPRRegClass);
           BuildMI(BB, DL, TII.get(XVM::MOVK_ri), VRegForMovk2)
-              .addReg(PrevReg).addImm(LowerMiddleBits).addImm(MOVK_SHIFT_16);
+              .addReg(PrevReg).addImm(LowerMiddleBits).addImm(0);
           PrevReg = VRegForMovk2;
         }
         if (UpperMiddleBits) {
           Register VRegForMovk3 = MRI.createVirtualRegister(&XVM::XVMGPRRegClass);
           BuildMI(BB, DL, TII.get(XVM::MOVK_ri), VRegForMovk3)
-              .addReg(PrevReg).addImm(UpperMiddleBits).addImm(MOVK_SHIFT_32);
+              .addReg(PrevReg).addImm(UpperMiddleBits).addImm(0);
           PrevReg = VRegForMovk3;
         }
         if (MostSignificantBits) {
           Register VRegForMovk4 = MRI.createVirtualRegister(&XVM::XVMGPRRegClass);
           BuildMI(BB, DL, TII.get(XVM::MOVK_ri), VRegForMovk4)
-              .addReg(PrevReg).addImm(MostSignificantBits).addImm(MOVK_SHIFT_48);
-          PrevReg = VRegForMovk4;
+              .addReg(PrevReg).addImm(MostSignificantBits).addImm(0);
         }
-        BuildMI(BB, DL, TII.get(NewCC)).addMBB(Copy1MBBlock).addReg(LHS).addReg(PrevReg);
+        BuildMI(BB, DL, TII.get(NewCC)).addMBB(Copy1MBB).addReg(LHS).addReg(PrevReg);
     }
   }
 
-  // Copy0MBBlock:
+  // Copy0MBB:
   //  %FalseValue = ...
-  //  # fallthrough to Copy1MBBlock
-  BB = Copy0MBBlock;
+  //  # fallthrough to Copy1MBB
+  BB = Copy0MBB;
 
-  // machine-CFG edges, update
-  BB->addSuccessor(Copy1MBBlock);
+  // Update machine-CFG edges
+  BB->addSuccessor(Copy1MBB);
 
-  // Copy1MBBlock:
-  //  %Result = phi [ %FalseValue, Copy0MBBlock ], [ %TrueValue, CurrentMBBlock ]
-  BB = Copy1MBBlock;
-  BuildMI(*BB, BB->begin(), DL, TII.get(XVM::PHI), MI.getOperand(MO_FIRST).getReg())
-      .addReg(MI.getOperand(MO_SIXTH).getReg())
-      .addMBB(Copy0MBBlock)
-      .addReg(MI.getOperand(MO_FIFTH).getReg())
-      .addMBB(CurrentMBBlock);
+  // Copy1MBB:
+  //  %Result = phi [ %FalseValue, Copy0MBB ], [ %TrueValue, ThisMBB ]
+  // ...
+  BB = Copy1MBB;
+  BuildMI(*BB, BB->begin(), DL, TII.get(XVM::PHI), MI.getOperand(0).getReg())
+      .addReg(MI.getOperand(5).getReg())
+      .addMBB(Copy0MBB)
+      .addReg(MI.getOperand(4).getReg())
+      .addMBB(ThisMBB);
 
   MI.eraseFromParent(); // The pseudo instruction is gone now.
   return BB;
@@ -930,11 +877,11 @@ XVMTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
   DebugLoc DL = MI.getDebugLoc();
   unsigned Opc = MI.getOpcode();
   switch (Opc) {
-  case XVM::PseudoSelectCC_rr:
-  case XVM::PseudoSelectCC_ri:
-    return EmitInstrWithCustomInserterSelectCC(MI, BB);
-  default:
-    return BB;
+    case XVM::PseudoSelectCC_rr:
+    case XVM::PseudoSelectCC_ri:
+      return EmitInstrWithCustomInserterSelectCC(MI, BB);
+    default:
+      return BB;
   }
 }
 
@@ -948,25 +895,26 @@ MVT XVMTargetLowering::getScalarShiftAmountTy(const DataLayout &DL,
   return MVT::i64;
 }
 
-bool XVMTargetLowering::isLegalAddressingMode(const DataLayout &DLayout, const AddrMode &AMode,
-                                              Type *T, unsigned AS, Instruction *Inst) const {
-  // Globals are never allowed as a base
-  bool ret = true;
-  if (AMode.BaseGV)
-    ret = false;
-  else
-    switch (AMode.Scale) {
-    case 0: // "r+i" or "i", depends on HasBaseReg.
-      break;
-    case 1:
-      if (!AMode.HasBaseReg) // "r+i", allowed
-        break;
-      ret = false; // "r+r" or "r+r+i", not allowed
-    default:
-      ret = false;
-    }
+bool XVMTargetLowering::isLegalAddressingMode(const DataLayout &DL,
+                                              const AddrMode &AM, Type *Ty,
+                                              unsigned AS,
+                                              Instruction *I) const {
+  // No global is ever allowed as a base.
+  if (AM.BaseGV)
+    return false;
 
-  return ret;
+  switch (AM.Scale) {
+  case 0: // "r+i" or just "i", depending on HasBaseReg.
+    break;
+  case 1:
+    if (!AM.HasBaseReg) // allow "r+i".
+      break;
+    return false; // disallow "r+r" or "r+r+i".
+  default:
+    return false;
+  }
+
+  return true;
 }
 
 #endif

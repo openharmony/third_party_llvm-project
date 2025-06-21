@@ -5537,11 +5537,6 @@ public:
         llvm::AttrBuilder B(GV->getContext());
         B.addAttribute("xvm-export-name", Attr->getExportName());
         Fn->addFnAttrs(B);
-      } else {
-        if (FD->isStatic()) {
-          llvm::Function *Fn = cast<llvm::Function>(GV);
-          Fn->addFnAttr(llvm::Attribute::AlwaysInline);
-        }
       }
     }
   }
