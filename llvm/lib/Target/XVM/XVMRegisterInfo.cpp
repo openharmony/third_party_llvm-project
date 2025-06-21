@@ -93,24 +93,22 @@ void XVMRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator MBBIterato
    * Therefore, we use SP+(Stacksize + FP_offset) to mimic (FP + FP_offset)
    */
   auto &MFI = MFunction.getFrameInfo();
-  int64_t StackSize = (int64_t)MFI.getStackSize();
-  int Offset = 0;
+  uint64_t StackSize = MFI.getStackSize();
 
   if (MInstr.getOpcode() == XVM::MOV_rr) {
-    Offset = MFunction.getFrameInfo().getObjectOffset(FrameIndex);
+    int Offset = MFunction.getFrameInfo().getObjectOffset(FrameIndex);
     WarnSize(Offset, MFunction, DLoc);
     Register reg = MInstr.getOperand(counter - 1).getReg();
     BuildMI(MBBlock, ++MBBIterator, DLoc, TII.get(XVM::MOV_rr), reg).addReg(XVM::SP);
-    if (StackSize + Offset > 0) {
+    if (StackSize + Offset) {
       BuildMI(MBBlock, MBBIterator, DLoc, TII.get(XVM::AddRef_ri), reg).addReg(reg).addImm(StackSize + Offset);
-    } else {
-      BuildMI(MBBlock, MBBIterator, DLoc, TII.get(XVM::SubRef_ri), reg).addReg(reg).addImm(-(StackSize + Offset));
     }
     MInstr.eraseFromParent();
     return;
   }
 
-  Offset = MFunction.getFrameInfo().getObjectOffset(FrameIndex) + MInstr.getOperand(counter + 1).getImm();
+  int Offset = MFunction.getFrameInfo().getObjectOffset(FrameIndex) +
+               MInstr.getOperand(counter + 1).getImm();
   if (!isInt<TEMPLATE_INT_32>(Offset))
     llvm_unreachable("bug in frame offset");
 
@@ -123,11 +121,7 @@ void XVMRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator MBBIterato
     //    ADD_ri <target_reg>, imm
     Register reg = MInstr.getOperand(counter - 1).getReg();
     BuildMI(MBBlock, ++MBBIterator, DLoc, TII.get(XVM::MOV_rr), reg).addReg(FrameReg);
-    if (StackSize + Offset > 0) {
-      BuildMI(MBBlock, MBBIterator, DLoc, TII.get(XVM::AddRef_ri), reg).addReg(reg).addImm(StackSize + Offset);
-    } else {
-      BuildMI(MBBlock, MBBIterator, DLoc, TII.get(XVM::SubRef_ri), reg).addReg(reg).addImm(-(StackSize + Offset));
-    }
+    BuildMI(MBBlock, MBBIterator, DLoc, TII.get(XVM::AddRef_ri), reg).addReg(reg).addImm(StackSize + Offset);
 
     // Remove FI_ri instruction
     MInstr.eraseFromParent();

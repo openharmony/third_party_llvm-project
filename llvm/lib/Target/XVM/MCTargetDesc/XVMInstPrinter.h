@@ -25,9 +25,9 @@ public:
   void printInst(const MCInst *MI, uint64_t Address, StringRef Annot,
                  const MCSubtargetInfo &STI, raw_ostream &O) override;
   void printOperand(const MCInst *MInst, unsigned OpNum, raw_ostream &OStream,
-                    const char *Mod = nullptr);
+		    const char *Mod = nullptr);
   void printMemOperand(const MCInst *MInst, int OpNum, raw_ostream &OStream,
-                       const char *Mod  = nullptr);
+		       const char *Mod  = nullptr);
   void printImm64Operand(const MCInst *MInst, unsigned OpNum, raw_ostream &OStream);
   void printBrTargetOperand(const MCInst *MInst, unsigned OpNum, raw_ostream &OStream);
 

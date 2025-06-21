@@ -51,14 +51,12 @@ public:
   StringRef getPassName() const override { return XVM_REF_DETERMINE_NAME; }
 private:
   bool scanRefInfoInMBB(MachineBasicBlock &MBB);
-  bool forceShiftRefInfoIbMBB(MachineBasicBlock &MBB);
-  bool forceAddSubRefInfoIbMBB(MachineBasicBlock &MBB);
   bool updateRefInfoBasedInMBB(MachineBasicBlock &MBB);
+
   bool checkAndUpdateOrInMBB(MachineBasicBlock &MBB);
   void updatePtrRefInMBB(MachineBasicBlock &MBB);
   void doubleCheckPhiMIWithRef(MachineBasicBlock &MBB);
   void doubleCheckRefs(MachineBasicBlock &MBB);
-  void checkAndReplaceAddWithAddRefs(MachineBasicBlock &MBB);
   bool updateRegistersOfMIInMBB(MachineBasicBlock &MBB);
   bool finalFixRefs(void);
   void FindNonRefRegInFunc(const MachineFunction &MF);
@@ -304,6 +302,17 @@ static bool updateLoadMIWithRef(MachineInstr &MI, const XVMInstrInfo *TII) {
   return false;
 }
 
+static void checkAddSubMIWithRef(MachineInstr &MI) {
+  if (MI.getOpcode() == XVM::ADD_ri || MI.getOpcode() == XVM::ADD_rr ||
+      MI.getOpcode() == XVM::SUB_ri || MI.getOpcode() == XVM::SUB_rr) {
+    assert(MI.getNumOperands() == NUM_MO_3);
+    MachineOperand &MO_def = MI.getOperand(MO_FIRST);
+    MachineOperand &MO_use = MI.getOperand(MO_SECOND);
+    setRefFlagFor2Ops(MO_def, MO_use);
+    return;
+  }
+}
+
 static void checkOrXorAndMIWithRef(MachineInstr &MI) {
   if (MI.getOpcode() == XVM::OR_ri ||
       MI.getOpcode() == XVM::XOR_ri||
@@ -391,7 +400,7 @@ static inline bool updateAddMIWithRef(MachineInstr &MI, const XVMInstrInfo *TII)
           updateAddRiWithRef(MI, TII);
         } else {
           // It may be the case there use2 is a ref while use1 is not a ref
-          MachineOperand &MO_use2 = MI.getOperand(MO_THIRD);
+          MachineOperand &MO_use2 = MI.getOperand(2);
           Register regNoUse1 = MO_use1.getReg();
           Register regNoUse2 = MO_use2.getReg();
           std::map<Register, unsigned char>::iterator ItrUse1 = MapRefRegInFunc.find(regNoUse1);
@@ -410,14 +419,13 @@ static inline bool updateAddMIWithRef(MachineInstr &MI, const XVMInstrInfo *TII)
                 MachineRegisterInfo &MRI = MF->getRegInfo();
                 MachineInstr *ReplaceMI = BuildMI(MBB, II, DL, TII->get(XVM::AddRef_rr));
 
-                MachineOperand &MO_def = MI.getOperand(MO_FIRST);
-                MachineOperand &MO_use1 = MI.getOperand(MO_SECOND);
-                MachineOperand &MO_use2 = MI.getOperand(MO_THIRD);
+                MachineOperand &MO_def = MI.getOperand(0);
+                MachineOperand &MO_use1 = MI.getOperand(1);
+                MachineOperand &MO_use2 = MI.getOperand(2);
 
                 ReplaceMI->addOperand(MO_def);
                 ReplaceMI->addOperand(MO_use2);
                 ReplaceMI->addOperand(MO_use1);
-
                 MBB.remove_instr(&MI);
                 MRI.verifyUseLists();
               } else {
@@ -558,9 +566,9 @@ static inline bool switchOperandUse1Use2(MachineBasicBlock &MBB, MachineInstr &M
         MachineRegisterInfo &MRI = MF->getRegInfo();
         MachineInstr *ReplaceMI = BuildMI(MBB, II, DL, TII->get(MI.getOpcode()));
 
-        MachineOperand &NewMO_def = MI.getOperand(MO_FIRST);
-        MachineOperand &NewMO_use1 = MI.getOperand(MO_SECOND);
-        MachineOperand &NewMO_use2 = MI.getOperand(MO_THIRD);
+        MachineOperand &NewMO_def = MI.getOperand(0);
+        MachineOperand &NewMO_use1 = MI.getOperand(1);
+        MachineOperand &NewMO_use2 = MI.getOperand(2);
 
         ReplaceMI->addOperand(NewMO_def);
         ReplaceMI->addOperand(NewMO_use2);
@@ -571,8 +579,6 @@ static inline bool switchOperandUse1Use2(MachineBasicBlock &MBB, MachineInstr &M
       }
     }
   }
-
-  return false;
 }
 
 static inline bool updateOrMIWithRef(MachineBasicBlock &MBB, MachineInstr &MI, const XVMInstrInfo *TII) {
@@ -944,15 +950,6 @@ static void checkPhiMIWithRef(MachineInstr &MI) {
   }
 }
 
-static void checkFIMIWithRef(MachineInstr &MI) {
-  if (MI.getOpcode() == XVM::FI_ri) {
-    assert(NUM_MO_3 == MI.getNumOperands());
-    MachineOperand &MO_def = MI.getOperand(MO_FIRST);
-    if (MO_def.isReg())
-      SetRegTypeForMO(MO_def, XVM_SYM_REG_REF);
-  }
-}
-
 static bool updatePhiMIWithRef(MachineInstr &MI, const XVMInstrInfo *TII) {
   /* No update for Phi*/
   return false;
@@ -1135,20 +1132,10 @@ bool XVMUpdateRefInstrForMI::runOnMachineFunction(MachineFunction &MF) {
   FindNonRefRegInFunc(MF);
 
   bool Modified = false;
-  // force the ref info for shift MIs in MBB
-  for (auto &MBB : MF) {
-    Modified |= forceShiftRefInfoIbMBB(MBB);
-  }
   // scan MBBs in MF
   for (auto &MBB : MF) {
     Modified |= scanRefInfoInMBB(MBB);
   }
-
-  // force the ref info for Add_rr MIs in MBB
-  for (auto &MBB : MF) {
-    Modified |= forceAddSubRefInfoIbMBB(MBB);
-  }
-
   // update MBBs in MF
   for (auto &MBB : MF) {
     Modified |= updateRefInfoBasedInMBB(MBB);
@@ -1164,9 +1151,6 @@ bool XVMUpdateRefInstrForMI::runOnMachineFunction(MachineFunction &MF) {
   }
   Modified |= finalFixRefs();
 
-  for (auto &MBB : MF) {
-    checkAndReplaceAddWithAddRefs(MBB);
-  }
   return Modified;
 }
 
@@ -1179,7 +1163,7 @@ bool XVMUpdateRefInstrForMI::finalFixRefs(void) {
 
     MachineOperand &MO_def = MI->getOperand(MO_FIRST);
     if (!MO_def.isReg())
-      continue;
+      return Modified;
 
     Register regNoDef = MO_def.getReg();
     std::map<Register, unsigned char>::iterator IForDef = MapRefRegInFunc.find(regNoDef);
@@ -1205,7 +1189,7 @@ bool XVMUpdateRefInstrForMI::finalFixRefs(void) {
       SetRegTypeForMO(MO_def, XVM_SYM_REG_REF);
       Modified = true;
       // Switch the use 1 with use 2 if use 2 is a ref
-      MachineOperand &MO_use2 = MI->getOperand(MO_THIRD);
+      MachineOperand &MO_use2 = MI->getOperand(2);
       Register regNoUse2 = MO_use2.getReg();
       std::map<Register, unsigned char>::iterator IForUse2 = MapRefRegInFunc.find(regNoUse2);
       if (IForUse2 != MapRefRegInFunc.end()) {
@@ -1218,9 +1202,9 @@ bool XVMUpdateRefInstrForMI::finalFixRefs(void) {
           MachineRegisterInfo &MRI = MF->getRegInfo();
           MachineInstr *ReplaceMI = BuildMI(*MBB, II, DL, TII->get(XVM::AddRef_rr));
 
-          MachineOperand &NewMO_def = MI->getOperand(MO_FIRST);
-          MachineOperand &NewMO_use1 = MI->getOperand(MO_SECOND);
-          MachineOperand &NewMO_use2 = MI->getOperand(MO_THIRD);
+          MachineOperand &NewMO_def = MI->getOperand(0);
+          MachineOperand &NewMO_use1 = MI->getOperand(1);
+          MachineOperand &NewMO_use2 = MI->getOperand(2);
 
           ReplaceMI->addOperand(NewMO_def);
           ReplaceMI->addOperand(NewMO_use2);
@@ -1272,54 +1256,6 @@ bool XVMUpdateRefInstrForMI::finalFixRefs(void) {
   }
   }
   return Modified;
-}
-
-void XVMUpdateRefInstrForMI::checkAndReplaceAddWithAddRefs(MachineBasicBlock &MBB) {
-  MachineBasicBlock::iterator MBBI = MBB.begin(), E = MBB.end();
-  int InstNumber = std::distance(MBB.begin(), MBB.end());
-  for (int i = 0; i < InstNumber; i++) {
-    MachineBasicBlock::iterator NMBBI = std::next(MBBI);
-    MachineInstr &MI = *MBBI;
-    if (MI.getNumOperands() < 2) {
-      MBBI = NMBBI;
-      continue;
-    }
-    MachineOperand &MO_def = MI.getOperand(MO_FIRST);
-    if (!MO_def.isReg()) {
-      MBBI = NMBBI;
-      continue;
-    }
-    const MachineFunction *F = MI.getParent()->getParent();
-    switch (MI.getOpcode()) {
-    case XVM::ADD_rr: {
-      MachineOperand &MO_use1 = MI.getOperand(MO_SECOND);
-      MachineOperand &MO_use2 = MI.getOperand(MO_THIRD);
-      Register regNoDef = MO_def.getReg();
-      std::map<Register, unsigned char>::iterator IForDef = MapRefRegInFunc.find(regNoDef);
-      Register regNoUse1 = MO_use1.getReg();
-      Register regNoUse2 = MO_use2.getReg();
-      std::map<Register, unsigned char>::iterator IForUse1 = MapRefRegInFunc.find(regNoUse1);
-      std::map<Register, unsigned char>::iterator IForUse2 = MapRefRegInFunc.find(regNoUse2);
-      bool DefOrUseIsRef = false;
-
-      if ((IForDef != MapRefRegInFunc.end() && IForDef->second == XVM_SYM_REG_REF &&
-           SetNonRefRegInFunc.find(regNoDef) == SetNonRefRegInFunc.end()) ||
-          (IForUse1 != MapRefRegInFunc.end() && IForUse1->second == XVM_SYM_REG_REF &&
-           SetNonRefRegInFunc.find(regNoUse1) == SetNonRefRegInFunc.end()) ||
-          (IForUse2 != MapRefRegInFunc.end() && IForUse2->second == XVM_SYM_REG_REF &&
-           SetNonRefRegInFunc.find(regNoUse2) == SetNonRefRegInFunc.end())) {
-        DefOrUseIsRef = true;
-      }
-      if (DefOrUseIsRef) {
-        MI.setDesc(TII->get(XVM::AddRef_rr));
-      }
-      break;
-    }
-    default:
-      break;
-    }
-    MBBI = NMBBI;
-  }
 }
 
 void XVMUpdateRefInstrForMI::doubleCheckRefs(MachineBasicBlock &MBB) {
@@ -1793,8 +1729,8 @@ bool XVMUpdateRefInstrForMI::scanRefInfoInMBB(MachineBasicBlock &MBB) {
     checkMovMIWithRef(MI);
     checkLoadMIWithRef(MI);
     checkStoreMIWithRef(MI);
+    checkAddSubMIWithRef(MI);
     checkPhiMIWithRef(MI);
-    checkFIMIWithRef(MI);
     R_MBBI = NMBBI;
   }
   // normal order
@@ -1807,111 +1743,8 @@ bool XVMUpdateRefInstrForMI::scanRefInfoInMBB(MachineBasicBlock &MBB) {
     checkMovMIWithRef(MI);
     checkLoadMIWithRef(MI);
     checkStoreMIWithRef(MI);
+    checkAddSubMIWithRef(MI);
     checkPhiMIWithRef(MI);
-    MBBI = NMBBI;
-  }
-  return Modified;
-}
-
-static void forceShiftMIWithRef(MachineInstr &MI) {
-  if (MI.getOpcode() == XVM::LSL_ri || MI.getOpcode() == XVM::ASR_ri) {
-    assert(MI.getNumOperands() == NUM_MO_3);
-    // Force the def and use registers are non-ref
-    MachineOperand &MO_def = MI.getOperand(MO_FIRST);
-    MachineOperand &MO_use = MI.getOperand(MO_SECOND);
-    SetRegTypeForMO(MO_def, XVM_SYM_REG_NON_REF);
-    SetRegTypeForMO(MO_use, XVM_SYM_REG_NON_REF);
-    SetNonRefRegInFunc.insert(MO_def.getReg());
-    SetNonRefRegInFunc.insert(MO_use.getReg());
-    return;
-  }
-
-  if (MI.getOpcode() == XVM::LSL_rr || MI.getOpcode() == XVM::ASR_rr) {
-    assert(MI.getNumOperands() == NUM_MO_3);
-    // Force the def and use registers are non-ref
-    MachineOperand &MO_def = MI.getOperand(MO_FIRST);
-    MachineOperand &MO_use1 = MI.getOperand(MO_SECOND);
-    MachineOperand &MO_use2 = MI.getOperand(MO_THIRD);
-    SetRegTypeForMO(MO_def, XVM_SYM_REG_NON_REF);
-    SetRegTypeForMO(MO_use1, XVM_SYM_REG_NON_REF);
-    SetRegTypeForMO(MO_use2, XVM_SYM_REG_NON_REF);
-    SetNonRefRegInFunc.insert(MO_def.getReg());
-    SetNonRefRegInFunc.insert(MO_use1.getReg());
-    SetNonRefRegInFunc.insert(MO_use2.getReg());
-    return;
-  }
-}
-
-bool XVMUpdateRefInstrForMI::forceShiftRefInfoIbMBB(MachineBasicBlock &MBB) {
-  int InstNumber = 0;
-  bool Modified = false;
-
-  // reverse order
-  MachineBasicBlock::reverse_iterator R_MBBI = MBB.rbegin();
-  InstNumber = std::distance(MBB.begin(), MBB.end());
-  for (int i = 0; i < InstNumber; i++) {
-    MachineBasicBlock::reverse_iterator NMBBI = std::next(R_MBBI);
-    MachineInstr &MI = *R_MBBI;
-    forceShiftMIWithRef(MI);
-    R_MBBI = NMBBI;
-  }
-  // normal order
-  MachineBasicBlock::iterator MBBI = MBB.begin();
-  InstNumber = std::distance(MBB.begin(), MBB.end());
-  for (int i = 0; i < InstNumber; i++) {
-    MachineBasicBlock::iterator NMBBI = std::next(MBBI);
-    MachineInstr &MI = *MBBI;
-    forceShiftMIWithRef(MI);
-    MBBI = NMBBI;
-  }
-  return Modified;
-}
-
-bool XVMUpdateRefInstrForMI::forceAddSubRefInfoIbMBB(MachineBasicBlock &MBB) {
-  int InstNumber = 0;
-  bool Modified = false;
-
-  MachineBasicBlock::iterator MBBI = MBB.begin();
-  InstNumber = std::distance(MBB.begin(), MBB.end());
-  for (int i = 0; i < InstNumber; i++) {
-    MachineBasicBlock::iterator NMBBI = std::next(MBBI);
-    MachineInstr &MI = *MBBI;
-    if (MI.getOpcode() == XVM::ADD_rr) {
-      assert(MI.getNumOperands() == NUM_MO_3);
-      // if def is ref and use1 is not ref:
-      // then use2 should be a ref
-      MachineOperand &MO_def = MI.getOperand(MO_FIRST);
-      MachineOperand &MO_use1 = MI.getOperand(MO_SECOND);
-      MachineOperand &MO_use2 = MI.getOperand(MO_THIRD);
-      Register regNoDef = MO_def.getReg();
-      Register regNo1 = MO_use1.getReg();
-      Register regNo2 = MO_use2.getReg();
-      std::map<Register, unsigned char>::iterator IDef = MapRefRegInFunc.find(regNoDef);
-      std::map<Register, unsigned char>::iterator IUse1 = MapRefRegInFunc.find(regNo1);
-      std::map<Register, unsigned char>::iterator IUse2 = MapRefRegInFunc.find(regNo2);
-
-      if (IDef != MapRefRegInFunc.end() && IDef->second == XVM_SYM_REG_REF) {
-        // now def is a ref
-        if (SetNonRefRegInFunc.find(regNo1) != SetNonRefRegInFunc.end()) {
-          // now use1 is not a ref: set use2 as a ref
-          MapRefRegInFunc[regNo2] = XVM_SYM_REG_REF;
-          // Need to Switch: will be catched in the next phases
-        }
-      } else if (IDef == MapRefRegInFunc.end() || IDef->second == XVM_SYM_REG_NON_REF) {
-        // now def is not a ref
-        if (MapRefRegInFunc[regNo1] == XVM_SYM_REG_REF || MapRefRegInFunc[regNo2] == XVM_SYM_REG_REF) {
-          // Now either use1 is ref or use2 is ref: def has to be ref
-          MapRefRegInFunc[regNoDef] = XVM_SYM_REG_REF;
-        }
-      }
-    } else if (MI.getOpcode() == XVM::ADD_ri ||
-               MI.getOpcode() == XVM::SUB_ri ||
-               MI.getOpcode() == XVM::SUB_rr) {
-      assert(MI.getNumOperands() == NUM_MO_3);
-      MachineOperand &MO_def = MI.getOperand(MO_FIRST);
-      MachineOperand &MO_use = MI.getOperand(MO_SECOND);
-      setRefFlagFor2Ops(MO_def, MO_use);
-    }
     MBBI = NMBBI;
   }
   return Modified;
@@ -1972,7 +1805,7 @@ bool XVMUpdateRefInstrForMI::updateRefInfoBasedInMBB(MachineBasicBlock &MBB) {
       continue;
     }
   }
-
+  
   return Modified;
 }
 
