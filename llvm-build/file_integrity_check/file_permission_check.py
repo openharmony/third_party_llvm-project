@@ -18,6 +18,7 @@ import stat
 import sys
 from datetime import datetime
 import logging
+import argparse
 
 class FilePermissionCheck:
     SO_PERMISSION_CHECK_MIN_ARGS_NUMBER = 3
@@ -77,49 +78,88 @@ class FilePermissionCheck:
         success = 0
 
         timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        log_file_path = "file_permissions_check_log" + timestamp + ".txt"
+        log_file_path = "file_permissions_check_log" + timestamp + ".html"
 
-        success_log = ""
-        error_log = ""
-        lack_log = ""
+        success_log = []
+        error_log = []
+        lack_log = []
+        add_log = []
+        checklist_files = set()
+
         with open(checklist_file, 'r') as ff:
             for line in ff:
+                checklist_files.add(line.split(',')[0].split('lib/', 1)[1].replace('\n', ''))
                 lib_file_path = os.path.join(directory, line.split(',')[0].split('lib/', 1)[1]).replace('\\', '/')
                 file_stat_expected = line.split(',')[1].replace('\n', '')
                 file_size_expected = line.split(',')[2].replace('\n', '')
-                file_stat_real = self.get_file_permissions(lib_file_path)
-                if file_stat_real is None:
+                try:
+                    file_stat_real = stat.filemode(os.stat(lib_file_path).st_mode)
+                    if file_stat_expected == file_stat_real:
+                        success += 1
+                        total += 1
+                        success_log.append((lib_file_path, file_stat_real))
+                    else:
+                        fail += 1
+                        total += 1
+                        error_log.append((lib_file_path, file_stat_expected, file_stat_real))
+                except FileNotFoundError:
                     lack += 1
                     total += 1
-                    lack_log += f"{lib_file_path} check failed, the file is missed, missing file size is {file_size_expected} MB.\n"
-                elif file_stat_expected == stat.filemode(os.stat(lib_file_path).st_mode):
-                    success += 1
-                    total += 1
-                    success_log += f"{lib_file_path} check succeeded.\n"
-                else:
-                    fail += 1
-                    total += 1
-                    error_log += f"{lib_file_path} check failed, expected: {file_stat_expected}, real: {stat.filemode(os.stat(lib_file_path).st_mode)}\n"
+                    lack_log.append((lib_file_path, file_size_expected))
+
+        # Check for add files in the directory
+        directory_files = set()
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                file_path = os.path.join(root, file).replace(directory, '').replace('\\', '/')[1:]
+                directory_files.add(file_path)
+                if file_path not in checklist_files:
+                    add_log.append(file_path)
 
         with open(log_file_path, 'w') as f:
-            f.write(f'llvm file permissions check complete, Success: {success}/{total}, Failed: {fail}/{total}, Lack: {lack}/{total}\n')
-            f.write(f'\n{fail}/{total} checks failed.\n')
-            f.write(error_log)
-            f.write(f'\n{lack}/{total} file missed.\n')
-            f.write(lack_log)
-            f.write(f'\n{success}/{total} checks succeed.\n')
-            f.write(success_log)
-            
-        if success == total:
+            f.write("<html><head><title>File Permissions Check</title></head><body>\n")
+            f.write(f"<h1>File Permissions Check Report</h1>\n")
+            f.write(f"<h2>Total {total} files in {directory}</h2>\n")
+            f.write(f"<h3>Success: {success}/{total}</h3>\n")
+            f.write(f"<h3>Failed: {fail}/{total}</h3>\n")
+            f.write(f"<h3>Missed: {lack}/{total}</h3>\n")
+            f.write(f"<h3>add: {len(add_log)}/{total}</h3>\n")
+
+            f.write("<h2>Failed Checks</h2>\n")
+            f.write("<table border='1'><tr><th>File</th><th>Expected</th><th>Real</th></tr>\n")
+            for lib_file_path, expected, real in error_log:
+                f.write(f"<tr><td>{lib_file_path}</td><td>{expected}</td><td>{real}</td></tr>\n")
+            f.write("</table>\n")
+
+            f.write("<h2>Missed Files</h2>\n")
+            f.write("<table border='1'><tr><th>File</th><th>Expected Size (MB)</th></tr>\n")
+            for lib_file_path, file_size_expected in lack_log:
+                f.write(f"<tr><td>{lib_file_path}</td><td>{file_size_expected}</td></tr>\n")
+            f.write("</table>\n")
+
+            f.write("<h2>add Files</h2>\n")
+            f.write("<table border='1'><tr><th>File</th></tr>\n")
+            for file_path in add_log:
+                f.write(f"<tr><td>{file_path}</td></tr>\n")
+            f.write("</table>\n")
+
+            f.write("<h2>Successful Checks</h2>\n")
+            f.write("<table border='1'><tr><th>File</th><th>Permissions</th></tr>\n")
+            for lib_file_path, permissions in success_log:
+                f.write(f"<tr><td>{lib_file_path}</td><td>{permissions}</td></tr>\n")
+            f.write("</table>\n")
+
+            f.write("</body></html>\n")
+
+        if success == total and len(add_log) == 0:
             self.logger.info(f"{directory} files permissions check passed.")
             return True
         else:
             self.logger.error(f"{directory} files permissions check failed.")
             self.logger.error(f"{fail}/{total} checks failed.\n")
-            self.logger.error(error_log)
             self.logger.error(f"{lack}/{total} file missed.\n")
-            self.logger.error(lack_log)
-            self.logger.error(f"{fail + lack}/{total} checks failed, check logs are in {os.path.join(os.getcwd(), log_file_path)}")
+            self.logger.error(f"{len(add_log)}/{total} add files found.\n")
+            self.logger.error(f"Total {fail + lack + len(add_log)}/{total} checks failed, check logs are in {os.path.join(os.getcwd(), log_file_path)}")
             return False
 
     def get_file_permissions(self, file_path: str) -> str:
@@ -146,31 +186,76 @@ class FilePermissionCheck:
 
     def cmd_handler(self) -> None:
         '''Perform parameter recognition and execute corresponding tasks.'''
-        args = sys.argv
-        if len(args) < self.SO_PERMISSION_CHECK_MIN_ARGS_NUMBER:
-            self.logger.info("Missing arguments. Correct eg: python file_permission_check.py --generate-default-list clang/lib")
+        if len(sys.argv) < self.SO_PERMISSION_CHECK_MIN_ARGS_NUMBER:
+            self.logger.info("Missing arguments. Correct example: python filepermissioncheck.py --generate-default-list clang/lib")
             return
         
-        if len(args) > 1:
-            if args[1] == '--generate-list':
-                self.file_list_generate(args[2], args[3])
-            elif args[1] == '--generate-default-list':
-                self.file_list_generate(args[2], self.DEFAULT_CLANG_FILE_PERMISSION_CHECKLIST_PATH)
-            elif args[1] == '--generate-ndk-list':
-                self.file_list_generate(args[2], self.DEFAULT_NDK_LIB_FILE_PERMISSION_CHECKLIST_PATH)
-            elif args[1] == '--file-check':
-                self.file_list_check(args[2], args[3])
-            elif args[1] == '--check-default-clang':
-                self.file_list_check(args[2], self.DEFAULT_CLANG_FILE_PERMISSION_CHECKLIST_PATH)
-            elif args[1] == '--check-default-ndk':
-                self.file_list_check(args[2], self.DEFAULT_NDK_LIB_FILE_PERMISSION_CHECKLIST_PATH)
-            elif args[1] == '--compare-between-path':
-                self.file_list_generate(args[2], self.TEMP_CLANG_FILE_PERMISSION_CHECKLIST_PATH)
-                self.file_list_check(args[3], self.TEMP_CLANG_FILE_PERMISSION_CHECKLIST_PATH)
+        parser = argparse.ArgumentParser(description='File permission check tool.')
+        parser.add_argument(
+            '--generate-list',
+            nargs=2,
+            metavar=('DIRECTORY', 'OUTPUT_FILE'),
+            help='Generate a file permission checklist for the given directory and save to the output file.')
+        
+        parser.add_argument(
+            '--generate-default-list',
+            nargs=1,
+            metavar='DIRECTORY',
+            help='Generate a default file permission checklist for the given directory.')
+        
+        parser.add_argument(
+            '--generate-ndk-list',
+            nargs=1,
+            metavar='DIRECTORY',
+            help='Generate a default NDK library file permission checklist for the given directory.')
+        
+        parser.add_argument(
+            '--file-check',
+            nargs=2,
+            metavar=('DIRECTORY', 'CHECKLIST_FILE'),
+            help='Check file permissions in the given directory based on the provided checklist file.')
+        
+        parser.add_argument(
+            '--check-default-clang',
+            nargs=1,
+            metavar='DIRECTORY',
+            help='Check file permissions in the given Clang directory based on the default checklist.')
+        parser.add_argument(
+            '--check-default-ndk',
+            nargs=1,
+            metavar='DIRECTORY',
+            help='Check file permissions in the given NDK directory based on the default checklist.')
+        
+        parser.add_argument(
+            '--compare-between-path',
+            nargs=2,
+            metavar=('SOURCE_DIRECTORY', 'TARGET_DIRECTORY'),
+            help='Generate a checklist for the source directory and check the target directory against it.')
+
+        args = parser.parse_args()
+
+        if len(vars(args)) > 1:
+            if args.generate_list:
+                self.file_list_generate(args.generate_list[0], args.generate_list[1])
+            elif args.generate_default_list:
+                self.file_list_generate(args.generate_default_list[0], self.DEFAULT_CLANG_FILE_PERMISSION_CHECKLIST_PATH)
+            elif args.generate_ndk_list:
+                self.file_list_generate(args.generate_ndk_list[0], self.DEFAULT_NDK_LIB_FILE_PERMISSION_CHECKLIST_PATH)
+            elif args.file_check:
+                self.file_list_check(args.file_check[0], args.file_check[1])
+            elif args.check_default_clang:
+                self.file_list_check(args.check_default_clang[0], self.DEFAULT_CLANG_FILE_PERMISSION_CHECKLIST_PATH)
+            elif args.check_default_ndk:
+                self.file_list_check(args.check_default_ndk[0], self.DEFAULT_NDK_LIB_FILE_PERMISSION_CHECKLIST_PATH)
+            elif args.compare_between_path:
+                self.file_list_generate(args.compare_between_path[0], self.TEMP_CLANG_FILE_PERMISSION_CHECKLIST_PATH)
+                self.file_list_check(args.compare_between_path[1], self.TEMP_CLANG_FILE_PERMISSION_CHECKLIST_PATH)
             else:
                 self.logger.info("The input arguments are incorrect. Check the input arguments by reading the README document.")
+
 def main():
     file_permission_check = FilePermissionCheck()
     file_permission_check.cmd_handler()
+
 if __name__ == '__main__':
     main()
