@@ -36,27 +36,9 @@ meaning: | reserved   X  W  R
 #define XVM_SECTION_DATA_TYPE_STRUCT      0b00100000
 #define XVM_SECTION_DATA_TYPE_BSS         0b01000000
 
-#define MOVK_SHIFT_0  0
-#define MOVK_SHIFT_16 1
-#define MOVK_SHIFT_32 2
-#define MOVK_SHIFT_48 3
-
-#define MOST_SIGNIFICANT  48
-#define UPPER_MIDDLE      32
-#define LOWER_MIDDLE      16
-#define LEAST_SIGNIFICANT  0
-
-#define MO_FIRST  0
-#define MO_SECOND 1
-#define MO_THIRD  2
-#define MO_FOURTH 3
-#define MO_FIFTH  4
-#define MO_SIXTH  5
-
 typedef struct XVMGVPatchInfo {
   std::string SymName;
   int AddEnd;
-  unsigned int LocInByte;
 } XVMGVPathInfo;
 
 typedef struct XVMSectionInfo {

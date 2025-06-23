@@ -775,7 +775,6 @@ class LlvmCore(BuildUtils):
                    build_dir,
                    install_dir,
                    build_name,
-                   need_compiler_rt,
                    build_target=None,
                    extra_defines=None,
                    extra_env=None):
@@ -817,13 +816,10 @@ class LlvmCore(BuildUtils):
 
         # First of all build compiler-rt because it's needed to be built before libunwind and etc.
         if not self.build_config.build_only and not 'windows-x86_64' in build_dir:
-            # Whether to build compiler-rt before other targets
-           # due to XVM do not need compiler-rt
-            if need_compiler_rt:
-                self.invoke_ninja(out_path=build_dir,
-                                env=env,
-                                target=["compiler-rt"],
-                                install=install)
+            self.invoke_ninja(out_path=build_dir,
+                              env=env,
+                              target=["compiler-rt"],
+                              install=install)
 
         self.invoke_ninja(out_path=build_dir,
                           env=env,
@@ -990,25 +986,22 @@ class LlvmCore(BuildUtils):
         if self.build_config.enable_monitoring:
             llvm_defines['LLDB_ENABLE_PERFORMANCE'] = 'ON'
 
-    def llvm_build_install_xvm_dylib_so(self, targets,
-                                        build_name,
+    def llvm_build_install_xvm_dylib_so(self, build_name,
                                         out_dir,
                                         build_target,
                                         llvm_extra_env,
-                                        debug_build,
-                                        llvm_defines):
+                                        debug_build):
         llvm_path = self.merge_out_path('llvm_make')
         llvm_path_dylib_so = self.merge_out_path('llvm_make_dylib_so')
         install_dir_dylib_so = self.merge_out_path('llvm-install-dylib-so')
-        llvm_defines_dylib_so = llvm_defines
+        llvm_defines_dylib_so = {}
         llvm_defines_dylib_so['LLVM_SPLIT_LLVM_DYLIB_TARGETS'] = 'ON'
         if debug_build:
             llvm_defines_dylib_so['CMAKE_BUILD_TYPE'] = 'Debug'
-        self.build_llvm(targets='AArch64;X86;XVM',
+        self.build_llvm(targets='XVM',
                         build_dir=llvm_path_dylib_so,
                         install_dir=install_dir_dylib_so,
                         build_name=build_name,
-                        need_compiler_rt=False,
                         build_target=build_target,
                         extra_defines=llvm_defines_dylib_so,
                         extra_env=llvm_extra_env)
@@ -1098,18 +1091,15 @@ class LlvmCore(BuildUtils):
                         build_dir=llvm_path,
                         install_dir=out_dir,
                         build_name=build_name,
-                        need_compiler_rt=True,
                         build_target=build_target,
                         extra_defines=llvm_defines,
                         extra_env=llvm_extra_env)
         if build_xvm:
-            self.llvm_build_install_xvm_dylib_so(target_list,
-                                                 build_name,
-                                                 out_dir,
-                                                 build_target,
-                                                 llvm_extra_env,
-                                                 debug_build,
-                                                 llvm_defines)
+            self.llvm_build_install_xvm_dylib_so(build_name,
+                                                out_dir,
+                                                build_target,
+                                                llvm_extra_env,
+                                                debug_build)
 
     def llvm_compile_windows_defines(self,
                                      windows_defines,
@@ -1202,7 +1192,7 @@ class LlvmCore(BuildUtils):
                   '-Wl,--gc-sections',
                   '-stdlib=libc++',
                   '--rtlib=compiler-rt',
-                  '-lunwind',
+                  '-lunwind', 
                   '-Wl,--dynamicbase',
                   '-Wl,--nxcompat',
                   '-lucrt',
@@ -1292,7 +1282,6 @@ class LlvmCore(BuildUtils):
                         build_dir,
                         windows64_install,
                         build_name,
-                        need_compiler_rt=True,
                         extra_defines=windows_defines,
                         extra_env=windows_extra_env)
 
@@ -2379,17 +2368,17 @@ class LlvmLibs(BuildUtils):
                 if multilib_suffix:
                     baseline_abi_file_path = self.merge_out_path(self.build_config.LLVM_BUILD_DIR,
                                              "libcxx_abidiff", llvm_triple, multilib_suffix, "libc++_shared.abi")
-                    elf_common_path = self.merge_out_path('lib',
+                    elf_common_path = self.merge_out_path('lib', 
                                       f"libunwind-libcxxabi-libcxx-ndk-{str(llvm_triple)}-{multilib_suffix}",
                                       'lib', llvm_triple, multilib_suffix)
                 else:
                     baseline_abi_file_path = self.merge_out_path(self.build_config.LLVM_BUILD_DIR,
                                              "libcxx_abidiff", llvm_triple, "libc++_shared.abi")
-                    elf_common_path = self.merge_out_path('lib',
+                    elf_common_path = self.merge_out_path('lib', 
                                       f"libunwind-libcxxabi-libcxx-ndk-{str(llvm_triple)}", 'lib', llvm_triple)
                 elf_file_path = self.merge_out_path(elf_common_path, "libc++_shared.so")
                 abi_file_path = self.merge_out_path(elf_common_path, "libc++_shared.abi")
-                header_dir = self.merge_out_path('lib',
+                header_dir = self.merge_out_path('lib', 
                              f"libunwind-libcxxabi-libcxx-ndk-{str(llvm_triple)}", 'include', "c++", "v1")
                 res = self.run_abi_check(elf_file_path, abi_file_path, baseline_abi_file_path, header_dir)
                 if res:

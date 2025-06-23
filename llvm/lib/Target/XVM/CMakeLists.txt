@@ -1,7 +1,6 @@
 
 if(XVM IN_LIST LLVM_TARGETS_CALLED_VIA_DYLIB AND LLVM_SPLIT_LLVM_DYLIB_TARGETS)
   ADD_DEFINITIONS("-DXVM_DYLIB_MODE=1")
-  file(GLOB MCInstrAnalysisFN "${CMAKE_CURRENT_SOURCE_DIR}/../../MC/MCInstrAnalysis.cpp")
 endif()
 
 add_llvm_component_group(XVM)
@@ -35,7 +34,6 @@ add_llvm_target(XVMCodeGen
   XVMExpandPseudoInsts.cpp
   XVMSelectionDAGInfo.cpp
   XVMUpdateRefInstrForMI.cpp
-  ${MCInstrAnalysisFN}
 
   LINK_COMPONENTS
   Analysis

@@ -22,10 +22,10 @@ class XVMTargetMachine : public LLVMTargetMachine {
   XVMSubtarget Subtarget;
 
 public:
-  XVMTargetMachine(const Target &Target, const Triple &TTriple,
-    StringRef Core, StringRef FString, const TargetOptions &Options,
-    Optional<Reloc::Model> RelocMdl, Optional<CodeModel::Model> CodeMdl,
-    CodeGenOpt::Level OptLvl, bool JustInTime);
+  XVMTargetMachine(const Target &T, const Triple &TT, StringRef CPU,
+                   StringRef FS, const TargetOptions &Options,
+                   Optional<Reloc::Model> RM, Optional<CodeModel::Model> CM,
+                   CodeGenOpt::Level OL, bool JIT);
 
   const XVMSubtarget *getSubtargetImpl() const { return &Subtarget; }
   const XVMSubtarget *getSubtargetImpl(const Function &) const override {

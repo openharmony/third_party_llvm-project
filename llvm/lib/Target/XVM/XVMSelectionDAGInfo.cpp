@@ -71,5 +71,4 @@ SDValue XVMSelectionDAGInfo::EmitTargetCodeForMemset(
   }
   return Op1.getValue(0);
 }
-
 #endif
