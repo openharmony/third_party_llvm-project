@@ -2459,16 +2459,12 @@ class LlvmPackage(BuildUtils):
                 '..', 'third_party', 'mingw-w64', 'mingw-w64-python',
                 self.build_config.LLDB_PY_VERSION)
             py_dll_path = os.path.join(py_root, py_dll_name)
-            py_lib_path = os.path.join(py_root, 'lib')
         else:
             py_root = mingw_python_dir
             py_dll_path = os.path.join(py_root, 'bin', py_dll_name)
-            py_lib_path = os.path.join(py_root, 'lib', py_version)
 
         bin_root = os.path.join(install_dir, 'bin')
         shutil.copyfile(py_dll_path, os.path.join(bin_root, py_dll_name))
-        self.merge_tree(py_lib_path,
-                        os.path.join(bin_root, 'python', 'lib', py_version))
 
     def copy_python_to_host(self, python_dir, install_dir):
         self.check_copy_tree(python_dir, os.path.join(install_dir, self.build_config.LLDB_PYTHON))
