@@ -180,6 +180,7 @@ public:
     eServerPacketType_vStopped,
     eServerPacketType_vCtrlC,
     eServerPacketType_vStdio,
+    eServerPacketType_qShowMem, // OHOS_LOCAL
   };
 
   ServerPacketType GetServerPacketType() const;

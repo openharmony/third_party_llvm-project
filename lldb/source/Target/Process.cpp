@@ -1967,6 +1967,29 @@ size_t Process::ReadMemory(addr_t addr, void *buf, size_t size, Status &error) {
   }
 }
 
+// OHOS_LOCAL begin
+size_t Process::ShowMemory(addr_t addr, void *buf, size_t size, Status &error) {
+  if (ABISP abi_sp = GetABI())
+    addr = abi_sp->FixAnyAddress(addr);
+  LLDB_SCOPED_TIMER();
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);
+  if (buf == nullptr || size == 0) {
+    return 0;
+  }
+  size_t bytes_read = 0;
+  uint8_t *bytes = (uint8_t *)buf;
+  while (bytes_read < size) {
+    const size_t curr_size = size - bytes_read;
+    const size_t curr_bytes_read =
+        DoShowMemory(addr + bytes_read, bytes + bytes_read, curr_size, error);
+    bytes_read += curr_bytes_read;
+    if (curr_bytes_read == curr_size || curr_bytes_read == 0)
+      break;
+  }
+  return bytes_read;
+}
+// OHOS_LOCAL end
+
 size_t Process::ReadCStringFromMemory(addr_t addr, std::string &out_str,
                                       Status &error) {
   char buf[256];

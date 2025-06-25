@@ -1448,6 +1448,43 @@ public:
   virtual size_t ReadMemory(lldb::addr_t vm_addr, void *buf, size_t size,
                             Status &error);
 
+  // OHOS_LOCAL begin
+  /// show memory without coverage of a process.
+  ///
+  /// This function will read and show memory from the current process's address space
+  /// and the memory will not be covered, showing the true status(with/without breakpoints).
+  ///
+  /// This function is not meant to be overridden by Process subclasses, the
+  /// subclasses should implement Process::DoShowMemory (lldb::addr_t vm_addr, void *buf,
+  /// size_t size, Status &error).
+  ///
+  /// \param[in] vm_addr
+  ///     A virtual load address that indicates where to start reading
+  ///     memory from.
+  ///
+  /// \param[out] buf
+  ///     A byte buffer that is at least \a size bytes long that
+  ///     will receive the memory bytes.
+  ///
+  /// \param[in] size
+  ///     The number of bytes to read.
+  ///
+  /// \param[out] error
+  ///     An error that indicates the success or failure of this
+  ///     operation. If error indicates success (error.Success()),
+  ///     then the value returned can be trusted, otherwise zero
+  ///     will be returned.
+  ///
+  /// \return
+  ///     The number of bytes that were actually read into \a buf. If
+  ///     the returned number is greater than zero, yet less than \a
+  ///     size, then this function will get called again with \a
+  ///     vm_addr, \a buf, and \a size updated appropriately. Zero is
+  ///     returned in the case of an error.
+  virtual size_t ShowMemory(lldb::addr_t vm_addr, void *buf, size_t size,
+                            Status &error);
+  // OHOS_LOCAL end
+
   /// Read of memory from a process.
   ///
   /// This function has the same semantics of ReadMemory except that it
@@ -2601,6 +2638,39 @@ protected:
   ///     Zero is returned in the case of an error.
   virtual size_t DoReadMemory(lldb::addr_t vm_addr, void *buf, size_t size,
                               Status &error) = 0;
+
+  // OHOS_LOCAL begin
+  /// Actually do the reading of memory without coverage from a process.
+  ///
+  /// Subclasses must override this function and can return fewer bytes than
+  /// requested when memory requests are too large. This class will break up
+  /// the memory requests and keep advancing the arguments along as needed.
+  ///
+  /// \param[in] vm_addr
+  ///     A virtual load address that indicates where to start reading
+  ///     memory from.
+  ///
+  /// \param[in] size
+  ///     The number of bytes to read.
+  ///
+  /// \param[out] buf
+  ///     A byte buffer that is at least \a size bytes long that
+  ///     will receive the memory bytes.
+  ///
+  /// \param[out] error
+  ///     An error that indicates the success or failure of this
+  ///     operation. If error indicates success (error.Success()),
+  ///     then the value returned can be trusted, otherwise zero
+  ///     will be returned.
+  ///
+  /// \return
+  ///     The number of bytes that were actually read into \a buf.
+  ///     Zero is returned in the case of an error.
+  virtual size_t DoShowMemory(lldb::addr_t vm_addr, void *buf, size_t size,
+                              Status &error) {
+    return 0;
+  }
+  // OHOS_LOCAL end
 
   /// DoGetMemoryRegionInfo is called by GetMemoryRegionInfo after it has
   /// removed non address bits from load_addr. Override this method in

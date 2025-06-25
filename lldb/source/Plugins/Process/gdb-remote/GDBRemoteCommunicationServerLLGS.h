@@ -189,6 +189,8 @@ protected:
 
   PacketResult Handle_interrupt(StringExtractorGDBRemote &packet);
 
+  PacketResult Handle_memory_show(StringExtractorGDBRemote &packet);// OHOS_LOCAL
+
   // Handles $m and $x packets.
   PacketResult Handle_memory_read(StringExtractorGDBRemote &packet);
 

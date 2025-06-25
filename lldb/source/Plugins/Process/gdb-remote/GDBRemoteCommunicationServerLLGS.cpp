@@ -95,6 +95,11 @@ void GDBRemoteCommunicationServerLLGS::RegisterPacketHandlers() {
   RegisterMemberFunctionHandler(
       StringExtractorGDBRemote::eServerPacketType_m,
       &GDBRemoteCommunicationServerLLGS::Handle_memory_read);
+  // OHOS_LOCAL begin
+  RegisterMemberFunctionHandler(
+      StringExtractorGDBRemote::eServerPacketType_qShowMem,
+      &GDBRemoteCommunicationServerLLGS::Handle_memory_show);
+  // OHOS_LOCAL end
   RegisterMemberFunctionHandler(StringExtractorGDBRemote::eServerPacketType_M,
                                 &GDBRemoteCommunicationServerLLGS::Handle_M);
   RegisterMemberFunctionHandler(StringExtractorGDBRemote::eServerPacketType__M,
@@ -2549,6 +2554,77 @@ GDBRemoteCommunicationServerLLGS::Handle_memory_read(
 
   return SendPacketNoLock(response.GetString());
 }
+
+// OHOS_LOCAL begin
+GDBRemoteCommunication::PacketResult
+GDBRemoteCommunicationServerLLGS::Handle_memory_show(
+    StringExtractorGDBRemote &packet) {
+  Log *log = GetLog(LLDBLog::Process);
+
+  if (!m_current_process ||
+      (m_current_process->GetID() == LLDB_INVALID_PROCESS_ID)) {
+    LLDB_LOGF(
+        log,
+        "GDBRemoteCommunicationServerLLGS::%s failed, no process available",
+        __FUNCTION__);
+    return SendErrorResponse(0x15);
+  }
+
+  //Parse out the memory address.
+  packet.SetFilePos(strlen("qShowMem"));
+  if (packet.GetBytesLeft() < 1)
+    return SendIllFormedResponse(packet, "Too short qShowMem packet");
+
+  // Read the address.  Punting on validation.
+  const lldb::addr_t read_addr = packet.GetHexMaxU64(false, 0);
+
+  // Validate comma.
+  if ((packet.GetBytesLeft() < 1) || (packet.GetChar() != ','))
+    return SendIllFormedResponse(packet, "Comma sep missing in qShowMem packet");
+
+  // Get # bytes to read.
+  if (packet.GetBytesLeft() < 1)
+    return SendIllFormedResponse(packet, "Length missing in qShowMem packet");
+
+  const uint64_t byte_count = packet.GetHexMaxU64(false, 0);
+  if (byte_count == 0) {
+    LLDB_LOGF(log,
+              "GDBRemoteCommunicationServerLLGS::%s nothing to read: "
+              "zero-length packet",
+              __FUNCTION__);
+    return SendOKResponse();
+  }
+
+  // Allocate the response buffer.
+  std::string buf(byte_count, '\0');
+  if (buf.empty())
+    return SendErrorResponse(0x78);
+
+  // Retrieve the process memory.
+  size_t bytes_read = 0;
+  Status error = m_current_process->ShowMemoryWithoutTrap(
+      read_addr, &buf[0], byte_count, bytes_read);
+  if (error.Fail()) {
+    LLDB_LOGF(log,
+              "GDBRemoteCommunicationServerLLGS::%s pid %" PRIu64
+              " mem 0x%" PRIx64 ": failed to read. Error: %s",
+              __FUNCTION__, m_current_process->GetID(), read_addr,
+              error.AsCString());
+    return SendErrorResponse(0x08);
+  }
+  if (bytes_read == 0) {
+    LLDB_LOGF(log,
+              "GDBRemoteCommunicationServerLLGS::%s pid %" PRIu64
+              " mem 0x%" PRIx64 ": read 0 of %" PRIu64 " requested bytes",
+              __FUNCTION__, m_current_process->GetID(), read_addr, byte_count);
+    return SendErrorResponse(0x08);
+  }
+  StreamGDBRemote response;
+  packet.SetFilePos(0);
+  response.PutEscapedBytes(buf.data(), byte_count);
+  return SendPacketNoLock(response.GetString());
+}
+// OHOS_LOCAL end
 
 GDBRemoteCommunication::PacketResult
 GDBRemoteCommunicationServerLLGS::Handle__M(StringExtractorGDBRemote &packet) {

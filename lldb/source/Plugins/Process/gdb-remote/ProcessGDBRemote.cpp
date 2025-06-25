@@ -2581,6 +2581,68 @@ size_t ProcessGDBRemote::DoReadMemory(addr_t addr, void *buf, size_t size,
   return 0;
 }
 
+// OHOS_LOCAL begin
+size_t ProcessGDBRemote::DoShowMemory(addr_t addr, void *buf, size_t size,
+                                      Status &error) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);
+  GetMaxMemorySize();
+  //Copy from GDBRemoteCommunicationClient::GetxPacketSupported(),
+  //here we test if qShowMem packet can be sent.
+  char packet_test[256];
+  StringExtractorGDBRemote response_test;
+  snprintf(packet_test, sizeof(packet_test), "qShowMem0,0");
+  if (m_gdb_comm.SendPacketAndWaitForResponse(packet_test, response_test) ==
+      GDBRemoteCommunication::PacketResult::Success) {
+    if (!response_test.IsOKResponse())
+      error.SetErrorStringWithFormat(
+          "failed to send packet: '%s', memory show failed", packet_test);
+  }
+  size_t max_memory_size =m_max_memory_size;
+  if (size > max_memory_size) {
+    // Keep memory read sizes down to a sane limit. This function will be
+    // called multiple times in order to complete the task by
+    // lldb_private::Process so it is ok to do this.
+    size = max_memory_size;
+  }
+  char packet[64];
+  int packet_len;
+  packet_len = ::snprintf(packet, sizeof(packet), "%s%" PRIx64 ",%" PRIx64,
+                          "qShowMem", (uint64_t)addr, (uint64_t)size);
+  assert(packet_len + 1 < (int)sizeof(packet));
+  UNUSED_IF_ASSERT_DISABLED(packet_len);
+  StringExtractorGDBRemote response;
+  if (m_gdb_comm.SendPacketAndWaitForResponse(packet, response,
+                                              GetInterruptTimeout()) ==
+      GDBRemoteCommunication::PacketResult::Success) {
+    if (response.IsNormalResponse()) {
+      error.Clear();
+      // The lower level GDBRemoteCommunication packet receive layer has
+      // already de-quoted any 0x7d character escaping that was present in
+      // the packet
+      size_t data_received_size = response.GetBytesLeft();
+      if (data_received_size > size) {
+        // Don't write past the end of BUF if the remote debug server gave us
+        // too much data for some reason.
+        data_received_size = size;
+      }
+      memcpy(buf, response.GetStringRef().data(), data_received_size);
+      return data_received_size;
+    } else if (response.IsErrorResponse())
+      error.SetErrorStringWithFormat("memory show failed for 0x%" PRIx64, addr);
+    else if (response.IsUnsupportedResponse())
+      error.SetErrorStringWithFormat(
+          "GDB server does not support showing memory");
+    else
+      error.SetErrorStringWithFormat(
+          "unexpected response to GDB server memory show packet '%s': '%s'",
+          packet, response.GetStringRef().data());
+  } else {
+    error.SetErrorStringWithFormat("failed to send packet: '%s'", packet);
+  }
+  return 0;
+}
+// OHOS_LOCAL end
+
 bool ProcessGDBRemote::SupportsMemoryTagging() {
   return m_gdb_comm.GetMemoryTaggingSupported();
 }

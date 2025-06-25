@@ -279,6 +279,10 @@ StringExtractorGDBRemote::GetServerPacketType() const {
         return eServerPacketType_qSupported;
       if (PACKET_MATCHES("qSyncThreadStateSupported"))
         return eServerPacketType_qSyncThreadStateSupported;
+      // OHOS_LOCAL begin
+      if (PACKET_STARTS_WITH("qShowMem"))
+        return eServerPacketType_qShowMem;
+      // OHOS_LOCAL end
       break;
 
     case 'T':
