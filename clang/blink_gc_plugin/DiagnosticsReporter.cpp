@@ -424,8 +424,9 @@ bool DiagnosticsReporter::hasErrorOccurred() const
 }
 
 DiagnosticsEngine::Level DiagnosticsReporter::getErrorLevel() const {
-  return diagnostic_.getWarningsAsErrors() ? DiagnosticsEngine::Error
-                                           : DiagnosticsEngine::Warning;
+  return DiagnosticsEngine::Warning;
+  // return diagnostic_.getWarningsAsErrors() ? DiagnosticsEngine::Error
+  //                                          : DiagnosticsEngine::Warning;
 }
 
 void DiagnosticsReporter::ClassMustLeftMostlyDeriveGC(

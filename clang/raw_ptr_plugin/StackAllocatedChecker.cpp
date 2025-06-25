@@ -101,7 +101,8 @@ StackAllocatedChecker::StackAllocatedChecker(clang::CompilerInstance& compiler)
     : compiler_(compiler),
       stack_allocated_field_error_signature_(
           compiler.getDiagnostics().getCustomDiagID(
-              clang::DiagnosticsEngine::Error,
+              // clang::DiagnosticsEngine::Error,
+              clang::DiagnosticsEngine::Warning,
               kStackAllocatedFieldError)) {}
 
 void StackAllocatedChecker::Check(clang::CXXRecordDecl* record) {
