@@ -6636,7 +6636,7 @@ bool AArch64InstructionSelector::selectIntrinsic(MachineInstr &I,
             MF, TII, AArch64::LR, AArch64::GPR64RegClass, I.getDebugLoc());
       }
 
-      if (STI.hasPAuth()) {
+      if (STI.hasPAuth() && !STI.hasPAuthHintOnly()) {
         MIB.buildInstr(AArch64::XPACI, {DstReg}, {MFReturnAddr});
       } else {
         MIB.buildCopy({Register(AArch64::LR)}, {MFReturnAddr});
@@ -6663,7 +6663,7 @@ bool AArch64InstructionSelector::selectIntrinsic(MachineInstr &I,
     else {
       MFI.setReturnAddressIsTaken(true);
 
-      if (STI.hasPAuth()) {
+      if (STI.hasPAuth() && !STI.hasPAuthHintOnly()) {
         Register TmpReg = MRI.createVirtualRegister(&AArch64::GPR64RegClass);
         MIB.buildInstr(AArch64::LDRXui, {TmpReg}, {FrameAddr}).addImm(1);
         MIB.buildInstr(AArch64::XPACI, {DstReg}, {TmpReg});
