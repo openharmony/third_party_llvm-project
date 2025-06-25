@@ -414,6 +414,9 @@ void GuardedPoolAllocator::freeSlot(size_t SlotIndex) {
 
 uint32_t GuardedPoolAllocator::getRandomUnsigned32() {
   uint32_t RandomState = getThreadLocals()->RandomState;
+  if (RandomState == 0) {
+    RandomState = 0xacd979ce;
+  }
   RandomState ^= RandomState << 13;
   RandomState ^= RandomState >> 17;
   RandomState ^= RandomState << 5;
