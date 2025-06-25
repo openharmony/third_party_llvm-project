@@ -2673,6 +2673,13 @@ class LlvmPackage(BuildUtils):
         src_lib_dir = os.path.join(llvm_install, 'lib')
         
         for root, dirs, files in os.walk(src_lib_dir):
+            relative_path = os.path.relpath(root, src_lib_dir)
+            parts = relative_path.split(os.sep)
+    
+            # 如果lib的下一层目录是x86_64-unknown-linux-gnu，则跳过处理
+            if len(parts) >= 1 and parts[0] == "x86_64-unknown-linux-gnu":
+                continue
+            
             for file in files:
                 if file == 'libc++.a':
                     libcpp_path = os.path.join(root, file)

@@ -44,7 +44,8 @@ class BadCastMatcher : public MatchFinder::MatchCallback {
         exclude_files_(exclude_files),
         exclude_functions_(exclude_functions) {
     error_bad_cast_signature_ = compiler_.getDiagnostics().getCustomDiagID(
-        clang::DiagnosticsEngine::Error, kBadCastDiagnostic);
+        // clang::DiagnosticsEngine::Error, kBadCastDiagnostic);
+        clang::DiagnosticsEngine::Warning, kBadCastDiagnostic);
     note_bad_cast_signature_explanation_ =
         compiler_.getDiagnostics().getCustomDiagID(
             clang::DiagnosticsEngine::Note, kBadCastDiagnosticNoteExplanation);
@@ -135,7 +136,8 @@ class RawPtrFieldMatcher : public MatchFinder::MatchCallback {
       const RawPtrAndRefExclusionsOptions& exclusion_options)
       : compiler_(compiler), exclusion_options_(exclusion_options) {
     error_need_raw_ptr_signature_ = compiler_.getDiagnostics().getCustomDiagID(
-        clang::DiagnosticsEngine::Error, kNeedRawPtrSignature);
+        // clang::DiagnosticsEngine::Error, kNeedRawPtrSignature);
+        clang::DiagnosticsEngine::Warning, kNeedRawPtrSignature);
   }
 
   void Register(MatchFinder& match_finder) {
@@ -176,7 +178,8 @@ class RawRefFieldMatcher : public MatchFinder::MatchCallback {
       const RawPtrAndRefExclusionsOptions& exclusion_options)
       : compiler_(compiler), exclusion_options_(exclusion_options) {
     error_need_raw_ref_signature_ = compiler_.getDiagnostics().getCustomDiagID(
-        clang::DiagnosticsEngine::Error, kNeedRawRefSignature);
+        // clang::DiagnosticsEngine::Error, kNeedRawRefSignature);
+        clang::DiagnosticsEngine::Warning, kNeedRawRefSignature);
   }
 
   void Register(MatchFinder& match_finder) {
@@ -216,7 +219,8 @@ class RawPtrToStackAllocatedMatcher : public MatchFinder::MatchCallback {
   explicit RawPtrToStackAllocatedMatcher(clang::CompilerInstance& compiler)
       : compiler_(compiler), stack_allocated_predicate_() {
     error_no_raw_ptr_to_stack_ = compiler_.getDiagnostics().getCustomDiagID(
-        clang::DiagnosticsEngine::Error, kNoRawPtrToStackAllocatedSignature);
+        // clang::DiagnosticsEngine::Error, kNoRawPtrToStackAllocatedSignature);
+        clang::DiagnosticsEngine::Warning, kNoRawPtrToStackAllocatedSignature);
   }
 
   void Register(MatchFinder& match_finder) {
@@ -268,11 +272,13 @@ class SpanFieldMatcher : public MatchFinder::MatchCallback {
       const RawPtrAndRefExclusionsOptions& exclusion_options)
       : compiler_(compiler), exclusion_options_(exclusion_options) {
     error_need_span_signature_ = compiler_.getDiagnostics().getCustomDiagID(
-        clang::DiagnosticsEngine::Error, kNeedRawSpanSignature);
-
+        // clang::DiagnosticsEngine::Error, kNeedRawSpanSignature);
+        clang::DiagnosticsEngine::Warning, kNeedRawSpanSignature);
+        
     error_need_container_span_signature_ =
         compiler_.getDiagnostics().getCustomDiagID(
-            clang::DiagnosticsEngine::Error, kNeedContainerSpanSignature);
+            // clang::DiagnosticsEngine::Error, kNeedContainerSpanSignature);
+            clang::DiagnosticsEngine::Warning, kNeedContainerSpanSignature);
   }
 
   void Register(MatchFinder& match_finder) {
