@@ -7202,9 +7202,9 @@ SDValue AArch64TargetLowering::getGOTAuth(NodeTy *N, SelectionDAG &DAG,
   SDValue GotAddr = getTargetNode(N, Ty, DAG, AArch64II::MO_GOT | Flags);
   bool IsGotAuth =
       DAG.getMachineFunction()
-      .getInfo<AArch64FunctionInfo>()->hasELFSignedGOT() ||
+          .getInfo<AArch64FunctionInfo>()->hasELFSignedGOT() ||
       (DAG.getMachineFunction()
-      .getInfo<AArch64FunctionInfo>()->hasELFSignedGOTFunc() &&
+          .getInfo<AArch64FunctionInfo>()->hasELFSignedGOTFunc() &&
       N->getGlobal()->getValueType()->isFunctionTy());
   if (IsGotAuth)
     return SDValue(DAG.getMachineNode(AArch64::LOADgotAUTH, DL, Ty, GotAddr),
