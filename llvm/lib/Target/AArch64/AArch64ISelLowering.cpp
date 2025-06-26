@@ -7195,15 +7195,15 @@ SDValue AArch64TargetLowering::getGOT(NodeTy *N, SelectionDAG &DAG,
 // (loadGOT sym)
 template <class NodeTy>
 SDValue AArch64TargetLowering::getGOTAuth(NodeTy *N, SelectionDAG &DAG,
-                                      unsigned Flags) const {
+                                          unsigned Flags) const {                                      
   LLVM_DEBUG(dbgs() << "AArch64TargetLowering::getGOTAuth\n");
   SDLoc DL(N);
   EVT Ty = getPointerTy(DAG.getDataLayout());
   SDValue GotAddr = getTargetNode(N, Ty, DAG, AArch64II::MO_GOT | Flags);
   bool IsGotAuth =
-    DAG.getMachineFunction()
+      DAG.getMachineFunction()
       .getInfo<AArch64FunctionInfo>()->hasELFSignedGOT() ||
-    (DAG.getMachineFunction()
+      (DAG.getMachineFunction()
       .getInfo<AArch64FunctionInfo>()->hasELFSignedGOTFunc() &&
       N->getGlobal()->getValueType()->isFunctionTy());
   if (IsGotAuth)
