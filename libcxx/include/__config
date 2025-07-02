@@ -927,14 +927,10 @@ _LIBCPP_BEGIN_NAMESPACE_STD _LIBCPP_END_NAMESPACE_STD
 #  endif   // _LIBCPP_HAS_NO_THREADS
 
 #  if defined(_LIBCPP_HAS_THREAD_API_PTHREAD)
-#    if defined(__ANDROID__) && __ANDROID_API__ >= 30
+#    if (defined(__ANDROID__) && __ANDROID_API__ >= 30) || defined(__OHOS_FAMILY__)
 #      define _LIBCPP_HAS_COND_CLOCKWAIT
 #    elif defined(_LIBCPP_GLIBC_PREREQ)
 #      if _LIBCPP_GLIBC_PREREQ(2, 30)
-#        define _LIBCPP_HAS_COND_CLOCKWAIT
-#      endif
-#    elif defined(__OHOS_FAMILY__) // OHOS_LOCAL
-#      if defined(_LIBCPP_HAS_MUSL_LIBC)
 #        define _LIBCPP_HAS_COND_CLOCKWAIT
 #      endif
 #    endif
