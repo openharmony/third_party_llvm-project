@@ -1126,8 +1126,7 @@ static void readConfigs(opt::InputArgList &args) {
   config->filterList = args::getStrings(args, OPT_filter);
   config->fini = args.getLastArgValue(OPT_fini, "_fini");
   config->fixCortexA53Errata843419 = args.hasArg(OPT_fix_cortex_a53_843419) &&
-                                     !args.hasArg(OPT_relocatable) &&
-                                     !args.hasArg(OPT_ignore_fix_cortex_a53_843419);
+                                     !args.hasArg(OPT_relocatable);
   config->fixCortexA8 =
       args.hasArg(OPT_fix_cortex_a8) && !args.hasArg(OPT_relocatable);
   config->fortranCommon =
