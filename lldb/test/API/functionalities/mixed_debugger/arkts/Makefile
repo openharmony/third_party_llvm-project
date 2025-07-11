@@ -11,6 +11,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-C_SOURCES = main.c
+LD_EXTRAS := -ldl -Wl,-rpath,'$$ORIGIN'
+
+C_SOURCES := main.c
 
 include Makefile.rules
+
+all: libarkshim.so
+
+libarkshim.so: $(SRCDIR)/arkshim.c
+	$(CC) $(CFLAGS) -fPIC -fvisibility=hidden -shared -Wl,-soname,libarkshim.so \
+		-o $@ $<
+	- strip -g $@  # 没有 strip 也不致命，加个 '-' 忽略报错
+
+clean::
+	$(RM) libarkshim.so
