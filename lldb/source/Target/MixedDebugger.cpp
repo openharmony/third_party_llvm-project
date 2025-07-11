@@ -53,35 +53,47 @@ DataExtractorSP MixedDebugger::ExecuteAction(const char* expr, Status &error) {
         return result;
       }
 
-      const size_t k_max_buf_size = 64;
-      size_t cstr_len = UINT32_MAX;
-      size_t offset = 0;
-      size_t bytes_read = 0;
-      DataExtractor data;
-      while ((bytes_read = expr_value_sp->GetPointeeData(data, offset, k_max_buf_size)) > 0) {
-        const char *cstr = data.PeekCStr(0);
-        size_t len = strnlen(cstr, k_max_buf_size);
-        if (len >= cstr_len) {
-          error.SetErrorString("[MixedDebugger::ExecuteAction] result over size");
-          result->Clear();
-          return result;
-        }
-        if (!result->Append(const_cast<char*>(cstr), len)) {
-          error.SetErrorString("[MixedDebugger::ExecuteAction] result append data failed");
-          result->Clear();
-          return result;
-        }
-        if (len < k_max_buf_size) {
-          break;
-        }
-        cstr_len -= len;
-        offset += len;
+      ValueObjectSP size_vo = expr_value_sp->GetChildAtIndex(0, true);
+      ValueObjectSP data_ptr_vo = expr_value_sp->GetChildAtIndex(1, true);
+
+      if (!data_ptr_vo || !size_vo) {
+        error.SetErrorString(
+            "[ExecuteAction] Failed to get DebugInput members");
+        LLDB_LOGF(log,
+                  "[ExecuteAction] struct members missing: data=%p, size=%p",
+                  data_ptr_vo.get(), size_vo.get());
+        return result;
       }
 
-      // Add terminator to result data
-      char te = '\0';
-      if (!result->Append(&te, 1)) {
-        error.SetErrorString("[MixedDebugger::ExecuteAction] result append terminator failed");
+      size_t payload_len = size_vo->GetValueAsUnsigned(0);
+      if (payload_len == 0 || payload_len >= UINT32_MAX) {
+        error.SetErrorString("[ExecuteAction] Invalid payload size");
+        LLDB_LOGF(log, "[ExecuteAction] Invalid payload size: %zu",
+                  payload_len);
+        return result;
+      }
+
+      DataExtractor data;
+      size_t bytes_read = data_ptr_vo->GetPointeeData(data, 0, payload_len);
+      if (bytes_read < payload_len) {
+        error.SetErrorString(
+            "[ExecuteAction] Failed to read data from pointer");
+        LLDB_LOGF(log, "[ExecuteAction] Failed to read expected payload_len");
+        return result;
+      }
+
+      if (!result->Append(const_cast<uint8_t *>(data.GetDataStart()),
+                          payload_len)) {
+        error.SetErrorString("[ExecuteAction] Failed to append result data");
+        LLDB_LOGF(log, "[ExecuteAction] Failed to append result data");
+        result->Clear();
+        return result;
+      }
+
+      char terminator = '\0';
+      if (!result->Append(&terminator, 1)) {
+        error.SetErrorString(
+            "[MixedDebugger::ExecuteAction] result append terminator failed");
         result->Clear();
         return result;
       }
@@ -89,6 +101,7 @@ DataExtractorSP MixedDebugger::ExecuteAction(const char* expr, Status &error) {
   }
   LLDB_LOGF(log,
             "[MixedDebugger::ExecuteAction] result is "
-            "%s", result->PeekCStr(0));
+            "%s",
+            result->PeekCStr(0));
   return result;
 }
