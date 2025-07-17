@@ -1387,7 +1387,11 @@ let Predicates = [HasPAuth] in {
 
   defm LDRAA  : AuthLoad<0, "ldraa", simm10Scaled>;
   defm LDRAB  : AuthLoad<1, "ldrab", simm10Scaled>;
-
+  def LOADgotAUTH : Pseudo<(outs GPR64common:$dst), (ins i64imm:$addr), []>,
+							Sched<[WriteI, ReadI]> {
+    let Defs = [X16,X17,NZCV];
+    let Size = 44;
+  }
 }
 
 // v8.3a floating point conversion for javascript

@@ -1975,6 +1975,13 @@ void Clang::AddAArch64TargetArgs(const ArgList &Args,
       CmdArgs.push_back(A->getValue());
   }
 
+  if (Args.hasArg(options::OPT_fptrauth_elf_got))
+    CmdArgs.push_back("-fptrauth-elf-got");
+  // OHOS_LOCAL begin
+  if (Args.hasArg(options::OPT_fptrauth_elf_got_func))
+    CmdArgs.push_back("-fptrauth-elf-got-func");
+  // OHOS_LOCAL end
+
   AddUnalignedAccessWarning(CmdArgs);
 }
 

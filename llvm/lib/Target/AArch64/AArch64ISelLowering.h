@@ -946,6 +946,10 @@ private:
                         unsigned Flag) const;
   template <class NodeTy>
   SDValue getGOT(NodeTy *N, SelectionDAG &DAG, unsigned Flags = 0) const;
+  // OHOS_LOCAL begin
+  template <class NodeTy>
+  SDValue getGOTAuth(NodeTy *N, SelectionDAG &DAG, unsigned Flags = 0) const;
+  // OHOS_LOCAL end
   template <class NodeTy>
   SDValue getAddrLarge(NodeTy *N, SelectionDAG &DAG, unsigned Flags = 0) const;
   template <class NodeTy>

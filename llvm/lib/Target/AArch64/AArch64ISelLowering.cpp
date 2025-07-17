@@ -7191,6 +7191,28 @@ SDValue AArch64TargetLowering::getGOT(NodeTy *N, SelectionDAG &DAG,
   return DAG.getNode(AArch64ISD::LOADgot, DL, Ty, GotAddr);
 }
 
+// OHOS_LOCAL begin
+// (loadGOT sym)
+template <class NodeTy>
+SDValue AArch64TargetLowering::getGOTAuth(NodeTy *N, SelectionDAG &DAG,
+                                          unsigned Flags) const {                                      
+  LLVM_DEBUG(dbgs() << "AArch64TargetLowering::getGOTAuth\n");
+  SDLoc DL(N);
+  EVT Ty = getPointerTy(DAG.getDataLayout());
+  SDValue GotAddr = getTargetNode(N, Ty, DAG, AArch64II::MO_GOT | Flags);
+  bool IsGotAuth =
+      DAG.getMachineFunction()
+          .getInfo<AArch64FunctionInfo>()->hasELFSignedGOT() ||
+      (DAG.getMachineFunction()
+          .getInfo<AArch64FunctionInfo>()->hasELFSignedGOTFunc() &&
+      N->getGlobal()->getValueType()->isFunctionTy());
+  if (IsGotAuth)
+    return SDValue(DAG.getMachineNode(AArch64::LOADgotAUTH, DL, Ty, GotAddr),
+                 0);
+  return DAG.getNode(AArch64ISD::LOADgot, DL, Ty, GotAddr);
+}
+// OHOS_LOCAL end
+
 // (wrapper %highest(sym), %higher(sym), %hi(sym), %lo(sym))
 template <class NodeTy>
 SDValue AArch64TargetLowering::getAddrLarge(NodeTy *N, SelectionDAG &DAG,
@@ -7245,7 +7267,7 @@ SDValue AArch64TargetLowering::LowerGlobalAddress(SDValue Op,
   // This also catches the large code model case for Darwin, and tiny code
   // model with got relocations.
   if ((OpFlags & AArch64II::MO_GOT) != 0) {
-    return getGOT(GN, DAG, OpFlags);
+    return getGOTAuth(GN, DAG, OpFlags);
   }
 
   SDValue Result;

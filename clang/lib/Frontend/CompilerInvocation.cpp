@@ -3211,6 +3211,25 @@ static bool ParseHeaderSearchArgs(HeaderSearchOptions &Opts, ArgList &Args,
   return Diags.getNumErrors() == NumErrorsBefore;
 }
 
+static void GeneratePointerAuthArgs(const LangOptions &Opts,
+  SmallVectorImpl<const char *> &Args,
+  CompilerInvocation::StringAllocator SA) {
+  if (Opts.PointerAuthELFGOT)
+    GenerateArg(Args, OPT_fptrauth_elf_got, SA);
+  // OHOS_LOCAL begin
+  if (Opts.PointerAuthFuncELFGOT)
+    GenerateArg(Args, OPT_fptrauth_elf_got_func, SA);
+  // OHOS_LOCAL end
+}
+
+static void ParsePointerAuthArgs(LangOptions &Opts, ArgList &Args,
+  DiagnosticsEngine &Diags) {
+  Opts.PointerAuthELFGOT = Args.hasArg(OPT_fptrauth_elf_got);
+  // OHOS_LOCAL begin
+  Opts.PointerAuthFuncELFGOT = Args.hasArg(OPT_fptrauth_elf_got_func);
+  // OHOS_LOCAL end
+}
+
 /// Check if input file kind and language standard are compatible.
 static bool IsInputCompatibleWithStandard(InputKind IK,
                                           const LangStandard &S) {
@@ -4486,6 +4505,7 @@ bool CompilerInvocation::CreateFromArgsImpl(
   llvm::Triple T(Res.getTargetOpts().Triple);
   ParseHeaderSearchArgs(Res.getHeaderSearchOpts(), Args, Diags,
                         Res.getFileSystemOpts().WorkingDir);
+  ParsePointerAuthArgs(LangOpts, Args, Diags);
 
   ParseLangArgs(LangOpts, Args, DashX, T, Res.getPreprocessorOpts().Includes,
                 Diags);
@@ -4682,6 +4702,7 @@ void CompilerInvocation::generateCC1CommandLine(
   GeneratePreprocessorOutputArgs(PreprocessorOutputOpts, Args, SA,
                                  FrontendOpts.ProgramAction);
   GenerateDependencyOutputArgs(DependencyOutputOpts, Args, SA);
+  GeneratePointerAuthArgs(*LangOpts, Args, SA);
 }
 
 IntrusiveRefCntPtr<llvm::vfs::FileSystem>
