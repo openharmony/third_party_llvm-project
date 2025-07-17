@@ -2325,19 +2325,19 @@ AArch64AsmPrinter::lowerConstantPtrAuth(const ConstantPtrAuth &CPA) {
   // Convert DA/DB to IA/IB if hint-only option is on, since only
   // autia1716/autib1716 is used and it will failed for DA/DB.
   auto sti = Ctx.getSubtargetInfo();
-  auto STI = static_cast<const AArch64Subtarget *>(sti);
-  assert(STI && "Unable to create subtarget info");
-
-  if (STI && STI->hasPAuthHintOnly()) {
-    switch ((AArch64PACKey::ID)(KeyID)) {
-    case AArch64PACKey::DA:
-      KeyID = AArch64PACKey::IA;
-      break;
-    case AArch64PACKey::DB:
-      KeyID = AArch64PACKey::IB;
-      break;
-    default:
-      break;
+  if (sti) {
+    const FeatureBitset &Bits = sti->getFeatureBits();
+    if (Bits[AArch64::FeaturePAuthHintOnly]) {
+      switch ((AArch64PACKey::ID)(KeyID)) {
+      case AArch64PACKey::DA:
+        KeyID = AArch64PACKey::IA;
+        break;
+      case AArch64PACKey::DB:
+        KeyID = AArch64PACKey::IB;
+        break;
+      default:
+        break;
+      }
     }
   }
 
