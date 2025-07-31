@@ -682,6 +682,8 @@ uint64_t DXILBitcodeWriter::getAttrKindEncoding(Attribute::AttrKind Kind) {
     return bitc::ATTR_KIND_S_EXT;
   case Attribute::StackAlignment:
     return bitc::ATTR_KIND_STACK_ALIGNMENT;
+  case Attribute::CfiModifier:
+    return bitc::ATTR_KIND_CFI_MODIFIER;
   case Attribute::StackProtect:
     return bitc::ATTR_KIND_STACK_PROTECT;
   case Attribute::StackProtectReq:

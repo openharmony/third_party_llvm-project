@@ -1775,8 +1775,17 @@ void RelrBaseSection::mergeRels() {
   for (const auto &v : relocsVec)
     newSize += v.size();
   relocs.reserve(newSize);
-  for (const auto &v : relocsVec)
-    llvm::append_range(relocs, v);
+
+  for (const auto &v : relocsVec) {
+    for (const auto &reloc : v) {
+      const OutputSection *relOsec = reloc.inputSec->getOutputSection();
+      if (relOsec && relOsec->name == ".cfi.modifier.ro")
+        relocsCfi.push_back(reloc);
+      else
+        relocs.push_back(reloc);
+    }
+  }
+
   relocsVec.clear();
 }
 
@@ -2121,6 +2130,22 @@ template <class ELFT> bool RelrSection<ELFT>::updateAllocSize() {
   }
 
   return relrRelocs.size() != oldSize;
+}
+
+template <class ELFT> void RelrSection<ELFT>::writeTo(uint8_t *buf) {
+  memcpy(buf, relrRelocs.data(), getSize());
+
+  for (const auto &reloc : relocsCfi) {
+    if (reloc.inputSec->relocs().size() == 1) {
+      uint64_t *ptr =
+        reinterpret_cast<uint64_t *>(Out::bufferStart + reloc.getOffset());
+      auto &rel = reloc.inputSec->relocs()[0];
+      if (rel.sym)
+        *ptr = rel.sym->getVA(rel.addend);
+      else
+        *ptr = rel.offset;
+    }
+  }
 }
 
 SymbolTableBaseSection::SymbolTableBaseSection(StringTableSection &strTabSec)

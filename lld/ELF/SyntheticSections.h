@@ -615,6 +615,7 @@ public:
            llvm::any_of(relocsVec, [](auto &v) { return !v.empty(); });
   }
   SmallVector<RelativeReloc, 0> relocs;
+  SmallVector<RelativeReloc, 0> relocsCfi;
   SmallVector<SmallVector<RelativeReloc, 0>, 0> relocsVec;
 };
 
@@ -630,9 +631,7 @@ public:
 
   bool updateAllocSize() override;
   size_t getSize() const override { return relrRelocs.size() * this->entsize; }
-  void writeTo(uint8_t *buf) override {
-    memcpy(buf, relrRelocs.data(), getSize());
-  }
+  void writeTo(uint8_t *buf) override;
 
 private:
   SmallVector<Elf_Relr, 0> relrRelocs;

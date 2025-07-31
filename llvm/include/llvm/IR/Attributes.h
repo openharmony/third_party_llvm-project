@@ -1229,6 +1229,9 @@ public:
   /// Add memory effect attribute.
   AttrBuilder &addMemoryAttr(MemoryEffects ME);
 
+  /// Add cfi modifier attribute.
+  AttrBuilder &addCfiModifierAttr(uint64_t Modifier);
+
   // Add nofpclass attribute
   AttrBuilder &addNoFPClassAttr(FPClassTest NoFPClassMask);
 
