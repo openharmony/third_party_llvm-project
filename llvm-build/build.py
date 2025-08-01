@@ -1087,7 +1087,6 @@ class LlvmCore(BuildUtils):
             target_list = self.build_config.TARGETS + ";XVM"
         else:
             target_list = self.build_config.TARGETS
-        breakpoint()
         self.build_llvm(targets=target_list,
                         build_dir=llvm_path,
                         install_dir=out_dir,
@@ -3056,7 +3055,6 @@ def main():
     if build_config.build_libedit:
         llvm_libs.build_libedit(llvm_make, llvm_install, build_utils.use_platform())
     
-    #breakpoint()
     if build_config.do_build and need_host and (build_config.build_only_llvm or not build_config.build_only):
         llvm_core.llvm_compile(
             build_config.build_name,
@@ -3086,7 +3084,6 @@ def main():
         sysroot_composer.setup_cmake_platform(llvm_install)
         llvm_libs.build_crt_libs(configs, llvm_install)
         
-        breakpoinr()
         if build_config.need_libs:
             if build_config.build_libs_with_hb:
                 llvm_libs.run_hb_build_libs('runtimes_libunwind')
@@ -3121,21 +3118,21 @@ def main():
             # return original version of clang.gni
             shutil.move(clang_gni_tmp, clang_gni)
 
-#        if "compiler-rt" in build_config.build_only_libs:
-#            # temporary hide cmake checks
-#            lib_cmake = os.path.join(build_config.REPOROOT_DIR, 'prebuilts/clang/ohos', build_utils.use_platform(),
-#                'clang-%s' % build_config.CLANG_VERSION, "lib/cmake")
-#            lib_cmake_tmp = f"{lib_cmake}_tmp"
-#            if os.path.exists(lib_cmake):
-#                shutil.move(lib_cmake, lib_cmake_tmp)
+        if "compiler-rt" in build_config.build_only_libs:
+            # temporary hide cmake checks
+            lib_cmake = os.path.join(build_config.REPOROOT_DIR, 'prebuilts/clang/ohos', build_utils.use_platform(),
+                'clang-%s' % build_config.CLANG_VERSION, "lib/cmake")
+            lib_cmake_tmp = f"{lib_cmake}_tmp"
+            if os.path.exists(lib_cmake):
+                shutil.move(lib_cmake, lib_cmake_tmp)
             # build compiler-rt
-#            assert os.path.exists(os.path.join(build_config.REPOROOT_DIR, "out", "sysroot")), "Error! Compiler-rt require musl!"
-#            for (_, target) in configs:
-#                llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'crts', True, False)
-#                llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'crts', False, False)
+            assert os.path.exists(os.path.join(build_config.REPOROOT_DIR, "out", "sysroot")), "Error! Compiler-rt require musl!"
+            for (_, target) in configs:
+                llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'crts', True, False)
+                llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'crts', False, False)
             # return original lib/cmake dir
-#            if os.path.exists(lib_cmake_tmp):
-#                shutil.move(lib_cmake_tmp, lib_cmake)
+            if os.path.exists(lib_cmake_tmp):
+                shutil.move(lib_cmake_tmp, lib_cmake)
 
         if "libcxx" in build_config.build_only_libs:
             assert os.path.exists(os.path.join(build_config.REPOROOT_DIR, "out", "sysroot")), "Error! Libcxx require musl!"
@@ -3143,7 +3140,7 @@ def main():
                 llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'runtimes', False, False)
 
     windows_python_builder = None
-
+    
     if build_config.do_build and need_windows:
         mingw.main(build_config.VERSION, build_config.buildtools_path)
         llvm_libs.build_runtimes_for_windows(build_config.enable_assertions)
@@ -3174,7 +3171,7 @@ def main():
         llvm_core.llvm_compile_for_windows(build_config.TARGETS,
                                           build_config.enable_assertions,
                                           build_config.build_name)
-
+    
     if build_config.build_gtest_libs:
         llvm_libs.build_gtest(llvm_path, llvm_install)
 
