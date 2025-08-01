@@ -26,17 +26,26 @@ import shutil
 import argparse
 import mingw
 import stat
+import json
+import sys
 
 from python_builder import MinGWPythonBuilder
 from prebuilts_clang_version import prebuilts_clang_version
+from get_ohos_flags import get_ohos_cflags, get_ohos_ldflags
+from abi_check import AbiCheck
 
 class BuildConfig():
     # Defines public methods and functions and obtains script parameters.
 
     def __init__(self):
+        self.discover_paths()
         args = self.parse_args()
+
+        assert not(args.no_build and args.build_only), "Error! --no-build and --build-only flags aren't compatible."
+
+        self.no_strip_libs = args.no_strip_libs
         self.do_build = not args.skip_build
-        self.do_package = not args.skip_package
+        self.do_package = not args.skip_package and not args.build_only
         self.build_name = args.build_name
         self.debug = args.debug
         self.target_debug = args.target_debug
@@ -45,37 +54,67 @@ class BuildConfig():
         self.build_instrumented = args.build_instrumented
         self.xunit_xml_output = args.xunit_xml_output
         self.enable_assertions = args.enable_assertions
+        self.build_gtest_libs = args.build_gtest_libs
         self.build_clean = args.build_clean
         self.need_libs = self.do_build and 'libs' not in args.no_build
-        self.need_lldb_server = self.do_build and 'lldb-server' not in args.no_build
+        self.need_lldb_server = self.do_build and 'lldb-server' not in args.no_build and not args.build_only
         self.build_python = args.build_python
+        self.build_with_debug_info = args.build_with_debug_info
+        self.buildtools_path = os.path.join(self.REPOROOT_DIR , 'prebuilts')
 
+        self.build_only = True if args.build_only else False
+        self.build_only_llvm = args.build_only["llvm"] if self.build_only else []
+        self.build_only_libs = args.build_only["libs"] if self.build_only else []
+
+        self.build_xvm = (not args.skip_build) and args.build_xvm
         self.no_build_arm = args.skip_build or args.no_build_arm
         self.no_build_aarch64 = args.skip_build or args.no_build_aarch64
         self.no_build_riscv64 = args.skip_build or args.no_build_riscv64
         self.no_build_mipsel = args.skip_build or args.no_build_mipsel
         self.no_build_x86_64 = args.skip_build or args.no_build_x86_64
+        self.no_build_loongarch64 = args.skip_build or args.no_build_loongarch64
         self.build_ncurses = args.build_ncurses
         self.build_libedit = args.build_libedit
         self.build_lldb_static = args.build_lldb_static
         self.need_lldb_tools = self.need_lldb_server or self.build_lldb_static
         self.build_libxml2 = args.build_libxml2
         self.lldb_timeout = args.lldb_timeout
+        self.enable_monitoring = args.enable_monitoring
+        self.enable_lzma_7zip = args.enable_lzma_7zip
+        self.build_libs = args.build_libs
+        self.build_libs_flags = args.build_libs_flags
+        self.adlt_debug_build = args.adlt_debug_build
+        self.compression_format = args.compression_format
+        self.enable_check_abi = args.enable_check_abi
 
-        self.discover_paths()
-
-        self.TARGETS = 'AArch64;ARM;BPF;Mips;RISCV;X86'
+        self.TARGETS = 'AArch64;ARM;BPF;Mips;RISCV;X86;LoongArch'
         self.ORIG_ENV = dict(os.environ)
         self.VERSION = None # autodetected
 
         self.OPENHOS_SFX = '-linux-ohos'
         self.LITEOS_SFX = '-liteos-ohos'
-        self.LLDB_PY_VERSION = '3.10'
+        self.LLDB_PY_VERSION = '3.11'
         self.LLDB_PYTHON = 'python3'
-        self.LLDB_PY_DETAILED_VERSION = self.LLDB_PY_VERSION + '.2'
+        self.LLDB_PY_DETAILED_VERSION = self.LLDB_PY_VERSION + '.4'
         self.CLANG_VERSION = prebuilts_clang_version
         self.MINGW_TRIPLE = 'x86_64-windows-gnu'
+        self.build_libs_with_hb = self.build_libs_flags == 'OH' or self.build_libs_flags == 'BOTH'
+
+        self.ARCHIVE_EXTENSION = '.tar.' + self.compression_format
+        self.ARCHIVE_OPTION = '-c' + ('j' if self.compression_format == "bz2" else 'z')
+        self.LIBXML2_VERSION = None
+        self.NCURSES_VERSION = None
+        self.LIBEDIT_VERSION = None
+        self.LZMA_VERSION = None
         logging.basicConfig(level=logging.INFO)
+
+        self.host_projects = args.host_build_projects
+        if 'clang' not in self.host_projects:
+            # Clang not found in the project list,
+            # but it is mandatory to build other projects/runtimes.
+            # Adding clang to project list.
+            self.host_projects.append('clang')
+        self.host_runtimes = args.host_build_runtimes
 
     def discover_paths(self):
         # Location of llvm-build directory
@@ -96,10 +135,22 @@ class BuildConfig():
     def parse_add_argument(parser):
 
         parser.add_argument(
+            '--no-strip-libs',
+            action='store_true',
+            default=False,
+            help='Strip others but not strip libs(use with --strip)')
+
+        parser.add_argument(
             '--enable-assertions',
             action='store_true',
             default=False,
             help='Apply assertions, some parameters are affected.')
+
+        parser.add_argument(
+            '--build-gtest-libs',
+            action='store_true',
+            default=False,
+            help='Build gtest libraries.')
 
         parser.add_argument(
             '--build-name',
@@ -123,6 +174,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Strip final LLVM binaries.')
+
+        parser.add_argument(
+            '--build-xvm',
+            action='store_true',
+            default=False,
+            help='Add building XVM target.')
 
         parser.add_argument(
             '--no-build-arm',
@@ -153,6 +210,12 @@ class BuildConfig():
             action='store_true',
             default=False,
             help='Omit build os target: x86_64.')
+
+        parser.add_argument(
+            '--no-build-loongarch64',
+            action='store_true',
+            default=False,
+            help='Omit build os target: loongarch64.')
 
         parser.add_argument(
             '--no-lto',
@@ -187,7 +250,7 @@ class BuildConfig():
             '--build-python',
             action='store_true',
             default=False,
-            help='Build Python (not using prebuilt one, currently effective for Windows)')
+            help='Build Python (not using prebuilt one, currently effective for OHOS)')
 
         parser.add_argument(
             '--build-ncurses',
@@ -208,10 +271,50 @@ class BuildConfig():
             help='Build libxml2 tool')
 
         parser.add_argument(
+            '--enable-lzma-7zip',
+            action='store_true',
+            default=False,
+            help='Build 7zip tool and enable LZMA compression support in LLDB')
+
+        parser.add_argument(
             '--lldb-timeout',
             action='store_true',
             default=False,
             help='Automatically exit when timeout (currently effective for lldb-server)')
+
+        parser.add_argument(
+            '--enable-monitoring',
+            action='store_true',
+            default=False,
+            help='Enable lldb performance monitoring')
+
+        compression_formats = ['bz2', 'gz']
+
+        parser.add_argument(
+            '--compression-format',
+            choices=compression_formats,
+            default='bz2',
+            help='Choose compression output format (bz2 or gz)'
+        )
+
+        parser.add_argument(
+            '--build-with-debug-info',
+            action='store_true',
+            default=False,
+            help='Append -g to build flags in build_libs')
+
+        parser.add_argument(
+            '--adlt-debug-build',
+            action='store_true',
+            default=False,
+            help='Build adlt with debug flags')
+
+        parser.add_argument(
+            '--enable-check-abi',
+            nargs='?',
+            const=True,
+            default=False,
+            help='check libc++_shared.so abi')
 
     def parse_args(self):
 
@@ -235,25 +338,85 @@ class BuildConfig():
 
         self.parse_add_argument(parser)
 
-        known_platforms = ('windows', 'libs', 'lldb-server', 'linux', 'check-api')
-        known_platforms_str = ', '.join(known_platforms)
-
         class SeparatedListByCommaAction(argparse.Action):
-            def __call__(self, parser, namespace, vals, option_string):
-                for val in vals.split(','):
-                    if val in known_platforms:
-                        continue
-                    else:
-                        error = '\'{}\' invalid.  Choose from {}'.format(val, known_platforms)
-                        raise argparse.ArgumentError(self, error)
-                setattr(namespace, self.dest, vals.split(','))
 
+            def __init__(self, choice_list, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.choice_list = choice_list
+
+            def __call__(self, parser, namespace, vals, option_string):
+                if not vals:
+                    setattr(namespace, self.dest, [])
+                    return
+                vals = vals.split(',')
+                for val in vals:
+                    if val not in self.choice_list:
+                        error = f'"{val}" is invalid.  Choose from: {self.choice_list}'
+                        raise argparse.ArgumentError(self, error)
+                setattr(namespace, self.dest, vals)
+
+        def choice_wrapper(choices):
+            return lambda *args, **kwargs: SeparatedListByCommaAction(choices, *args, **kwargs)
+
+        known_platforms = ('windows', 'libs', 'lldb-server', 'linux', 'check-api')
         parser.add_argument(
             '--no-build',
-            action=SeparatedListByCommaAction,
+            action=choice_wrapper(known_platforms),
             default=list(),
-            help='Don\'t build toolchain for specified platforms.  Choices: ' + known_platforms_str)
+            help=f"Don't build toolchain for specified platforms. Choices: {', '.join(known_platforms)}")
 
+        known_libs = ['crts_first_time', 'crts_not_first_time', 'runtimes_libunwind', 'runtimes_libcxx', 'runtimes_libcxx_ndk']
+        known_libs_flags = ['OH', 'BOTH', 'LLVM']
+
+        parser.add_argument(
+            '--build-libs',
+            choices=known_libs,
+            default=None,
+            help=argparse.SUPPRESS)
+
+        parser.add_argument(
+            '--build-libs-flags',
+            choices=known_libs_flags,
+            default="LLVM",
+            help='which kind of flags for build_crts and build_runtimes')
+
+        llvm_projects = ('clang', 'lld', 'clang-tools-extra', 'openmp', 'lldb')
+        parser.add_argument(
+            '--host-build-projects',
+            action=choice_wrapper(llvm_projects),
+            default=llvm_projects,
+            help=f'Projects to build for host. Choices: {", ".join(llvm_projects)}')
+
+        llvm_runtimes = ('libunwind', 'libcxxabi', 'libcxx', 'compiler-rt')
+        parser.add_argument(
+            '--host-build-runtimes',
+            action=choice_wrapper(llvm_runtimes),
+            default=llvm_runtimes,
+            help=f'Runtimes to build for host. Choices: {", ".join(llvm_runtimes)}')
+
+        llvm_components = ("lld", "llvm-readelf", "llvm-objdump")
+        libs_components = ("musl", "compiler-rt", "libcxx")
+
+        class SeparatedListByCommaToDictAction(argparse.Action):
+            def __call__(self, parser, namespace, vals, option_string):
+                vals_dct = {"llvm": [], "libs": []}
+                for val in vals.split(','):
+                    if val in llvm_components:
+                        vals_dct["llvm"].append(val)
+                        continue
+                    elif val in libs_components:
+                        vals_dct["libs"].append(val)
+                        continue
+                    else:
+                        error = '\'{}\' invalid.  Choose from {}, {}'.format(val, llvm_components, libs_components)
+                        raise argparse.ArgumentError(self, error)
+                setattr(namespace, self.dest, vals_dct)
+
+        parser.add_argument(
+            '--build-only',
+            action=SeparatedListByCommaToDictAction,
+            default=dict(),
+            help=f'Build only {", ".join(llvm_components)} llvm components and {", ".join(libs_components)} lib components.')
         return parser.parse_args()
 
 
@@ -288,9 +451,16 @@ class BuildUtils(object):
 
     def __init__(self, build_config):
         self.build_config = build_config
+        self.buildtools_path = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts')
 
-        self.CMAKE_BIN_DIR = os.path.abspath(
-            os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts/cmake', self.platform_prefix(), 'bin'))
+        if self.host_is_linux():
+            self.CMAKE_BIN_DIR = os.path.abspath(
+                os.path.join(self.buildtools_path, 'cmake', self.platform_prefix(), 'bin')
+            )
+        elif self.host_is_darwin():
+            self.CMAKE_BIN_DIR = os.path.abspath(
+                os.path.join(self.buildtools_path, 'cmake', 'darwin-universal', 'bin')
+            )
         self._mingw_python_dir = None
 
     def open_ohos_triple(self, arch):
@@ -300,7 +470,7 @@ class BuildUtils(object):
         return arch + self.build_config.LITEOS_SFX
 
     def set_clang_version(self, install_dir):
-        self.build_config.VERSION = self.get_clang_version(install_dir).long_version()
+        self.build_config.VERSION = self.get_clang_version(install_dir).major_version()
 
     def invoke_ninja(self,
                      out_path,
@@ -309,7 +479,7 @@ class BuildUtils(object):
                      install=True,
                      build_threads=False):
 
-        ninja_bin_path = os.path.join(self.CMAKE_BIN_DIR, 'ninja')
+        ninja_bin_path = os.path.join(self.buildtools_path, 'build-tools', self.platform_prefix(), 'bin', 'ninja')
 
         ninja_list = ['-l{}'.format(build_threads)] if build_threads else []
 
@@ -328,6 +498,9 @@ class BuildUtils(object):
         cmake_bin_path = os.path.join(self.CMAKE_BIN_DIR, 'cmake')
         flags = ['-G', 'Ninja']
         flags += ['-DCMAKE_PREFIX_PATH=%s' % self.CMAKE_BIN_DIR]
+
+        ninja_bin_path = os.path.join(self.buildtools_path, 'build-tools', self.platform_prefix(), 'bin', 'ninja')
+        flags += ['-DCMAKE_MAKE_PROGRAM=%s' % ninja_bin_path]
 
         for key in invoke_defines:
             newdef = ''.join(['-D', key, '=', invoke_defines[key]])
@@ -373,6 +546,35 @@ class BuildUtils(object):
         self.logger().info('copytree %s %s', src_dir, dst_dir)
         shutil.copytree(src_dir, dst_dir, symlinks=True)
 
+    def check_copy_file_and_symlinks(self, src_dir, dst_dir):
+        self.check_rm_tree(dst_dir)
+        """Copy only .so/.dylib files and their symlinks from src_dir to dst_dir."""
+        self.logger().info('Copying library files from  %s to %s', src_dir, dst_dir)
+
+        def ignore_func(dirname, filenames):
+            ignored = set()
+            for filename in filenames:
+                full_path = os.path.join(dirname, filename)
+                # Always ignore directories
+                if os.path.isdir(full_path):
+                    ignored.add(filename)
+                    continue
+
+                # Check file type based on OS
+                if self.host_is_linux():
+                    if not (full_path.endswith('.so') or os.path.islink(full_path)):
+                        ignored.add(full_path)
+                elif self.host_is_darwin():
+                    if not (full_path.endswith('.dylib') or os.path.islink(full_path)):
+                        ignored.add(full_path)
+            return ignored
+
+        try:
+            shutil.copytree(src_dir, dst_dir, ignore=ignore_func, symlinks=True)
+        except Exception as e:
+            self.logger().error('Failed to copy libraries: %s', str(e))
+            raise
+
     def check_copy_file(self, src_file, dst_file):
         if os.path.exists(src_file):
             """Proxy for shutil.copy2 with logging and dry-run support."""
@@ -385,6 +587,12 @@ class BuildUtils(object):
                            datetime.datetime.now().strftime("%H:%M:%S"), subprocess.list2cmdline(cmd))
 
         subprocess.check_call(cmd, *args, **kwargs)
+
+    @staticmethod
+    def force_symlink(src, dst):
+        if os.path.exists(dst):
+            os.remove(dst)
+        os.symlink(src, dst)
 
     def merge_out_path(self, *args):
         return os.path.abspath(os.path.join(self.build_config.OUT_PATH, *args))
@@ -409,6 +617,9 @@ class BuildUtils(object):
 
     def host_is_darwin(self):
         return self.use_platform().startswith('darwin-')
+
+    def host_is_linux_aarch64(self):
+        return self.use_platform() == 'linux-aarch64'
 
     def rm_cmake_cache(self, cache_dir):
         for dirpath, dirs, files in os.walk(cache_dir):
@@ -446,23 +657,26 @@ class BuildUtils(object):
             defines['LIBCXX_INCLUDE_TESTS'] = 'OFF'
             defines['Python3_LIBRARIES'] = os.path.join(self.get_python_dir(),
                 'lib', 'libpython%s.dylib' % self.build_config.LLDB_PY_VERSION)
+            defines['Python3_RPATH'] = os.path.join('@loader_path', '..', 'python3', 'lib')
         else:
             defines['Python3_LIBRARIES'] = os.path.join(self.get_python_dir(),
                 'lib', 'libpython%s.so' % self.build_config.LLDB_PY_VERSION)
+            defines['Python3_RPATH'] = os.path.join('$ORIGIN', '..', 'python3', 'lib')
 
         defines['COMPILER_RT_BUILD_XRAY'] = 'OFF'
+        defines['LIBUNWIND_USE_FRAME_HEADER_CACHE'] = 'ON'
+        defines['OPENMP_ENABLE_LIBOMPTARGET'] = 'OFF'
+        defines['LIBOMP_INSTALL_ALIASES'] = 'False'
         return defines
 
     def get_python_dir(self):
         platform_path = self.platform_prefix()
-        if (self.host_is_darwin()):
-            platform_path = "darwin-x86"
-        python_dir = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts', self.build_config.LLDB_PYTHON,
+        python_dir = os.path.join(self.buildtools_path, self.build_config.LLDB_PYTHON,
             platform_path, self.build_config.LLDB_PY_DETAILED_VERSION)
         return python_dir
 
     def get_prebuilts_dir(self, name):
-        prebuilts_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts', name))
+        prebuilts_dir = os.path.abspath(os.path.join(self.buildtools_path, name))
         return prebuilts_dir
 
     def rm_build_output(self):
@@ -474,10 +688,64 @@ class BuildUtils(object):
     def get_mingw_python_dir(self):
         return self._mingw_python_dir
 
+    def get_version(self, fileName, prog):
+        if os.path.exists(fileName):
+            with open(fileName, 'r') as file:
+                lines = file.readlines()
+            for line in lines:
+                version_match = prog.match(line)
+                if version_match:
+                    return version_match.group(1)
+        return None
+
     def get_ncurses_version(self):
         ncurses_spec = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'ncurses', 'ncurses.spec')
-        if os.path.exists(ncurses_spec):
-            with open(ncurses_spec, 'r') as file:
+        prog = re.compile(r'Version:\s*(\S+)')
+        return self.get_version(ncurses_spec, prog)
+
+    def get_lzma_version(self):
+        lzma_version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'lzma', 'C', '7zVersion.h')
+        prog = re.compile(r'#define MY_VERSION_NUMBERS "(.*?)"')
+        return self.get_version(lzma_version_file, prog)
+
+    def merge_install_dir(self, name, platform_triple, *args):
+        return self.merge_out_path('third_party', name, 'install', platform_triple, *args)
+
+    def merge_build_dir(self, name, platform_triple, *args):
+        return self.merge_out_path('third_party', name, 'build', platform_triple, *args)
+
+    def get_ncurses_dependence_libs(self, platform_triple):
+        ncurses_libs = ['libncurses', 'libpanel', 'libform']
+        if self.use_platform() != platform_triple:
+            ncurses_libs.append('libtinfo')
+        return ncurses_libs
+
+    def get_libxml2_version(self):
+        version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'README.OpenSource')
+        if os.path.isfile(version_file):
+            pattern = r'"Version Number"\s*:\s*"(\d+\.\d+\.\d+)"'
+            with open(version_file, 'r') as file:
+                lines = file.readlines()
+                VERSION = ''
+                for line in lines:
+                    if 'Version Number' in line:
+                        VERSION = re.search(pattern, line).group(1)
+                    if VERSION != '':
+                        return VERSION
+                return None
+
+        return None
+
+    def merge_libxml2_install_dir(self, platform_triple, *args):
+        return self.merge_out_path('third_party', 'libxml2', 'install', platform_triple, *args)
+
+    def merge_libxml2_build_dir(self, platform_triple, *args):
+        return self.merge_out_path('third_party', 'libxml2', 'build', platform_triple, *args)
+
+    def get_libedit_version(self):
+        libedit_spec = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libedit', 'libedit.spec')
+        if os.path.exists(libedit_spec):
+            with open(libedit_spec, 'r') as file:
                 lines = file.readlines()
 
             prog = re.compile(r'Version:\s*(\S+)')
@@ -488,27 +756,14 @@ class BuildUtils(object):
 
         return None
 
-    def get_libxml2_version(self):
-        version_file = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2', 'configure.ac')
-        if os.path.isfile(version_file):
-            with open(version_file, 'r') as file:
-                lines = file.readlines()
-                MAJOR_VERSION = ''
-                MINOR_VERSION = ''
-                MICRO_VERSION = ''
-                for line in lines:
-                    if "m4_define([MAJOR_VERSION]" in line:
-                        MAJOR_VERSION = re.findall(r'\d+', line)[1]
-                    elif "m4_define([MINOR_VERSION]" in line:
-                        MINOR_VERSION = re.findall(r'\d+', line)[1]
-                    elif "m4_define([MICRO_VERSION]" in line:
-                        MICRO_VERSION = re.findall(r'\d+', line)[1]
+    def merge_python_install_dir(self, platform_triple, *args):
+        return self.merge_out_path('third_party', 'python', 'install', platform_triple, *args)
 
-                    if  MAJOR_VERSION != '' and MINOR_VERSION != '' and MICRO_VERSION != '' :
-                        return MAJOR_VERSION+'.'+MINOR_VERSION+'.'+MICRO_VERSION
-                return None
+    def merge_python_build_dir(self, platform_triple, *args):
+        return self.merge_out_path('third_party', 'python', 'build', platform_triple, *args)
 
-        return None
+    def get_libxml2_source_path(self):
+        return self.merge_out_path('third_party', 'libxml2', ('libxml2-' + self.build_config.LIBXML2_VERSION))
 
 class LlvmCore(BuildUtils):
 
@@ -520,6 +775,7 @@ class LlvmCore(BuildUtils):
                    build_dir,
                    install_dir,
                    build_name,
+                   build_target=None,
                    extra_defines=None,
                    extra_env=None):
 
@@ -550,17 +806,45 @@ class LlvmCore(BuildUtils):
         if extra_env is not None:
             env.update(extra_env)
 
+        install = not self.build_config.build_only
         llvm_project_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm'))
-
+        
         self.invoke_cmake(llvm_project_path,
                           build_dir,
                           common_defines,
                           env=env)
 
+        # First of all build compiler-rt because it's needed to be built before libunwind and etc.
+        if not self.build_config.build_only and not 'windows-x86_64' in build_dir:
+            self.invoke_ninja(out_path=build_dir,
+                              env=env,
+                              target=["compiler-rt"],
+                              install=install)
+
         self.invoke_ninja(out_path=build_dir,
                           env=env,
-                          target=None,
-                          install=True)
+                          target=build_target,
+                          install=install)
+        if not install:
+            self.llvm_manual_install(build_dir, install_dir)
+
+    def llvm_manual_install(self, build_dir, install_dir):
+        target_dirs = ["bin", "include", "lib", "libexec", "share"]
+        for target_dir in target_dirs:
+            target_dir = f"{build_dir}/{target_dir}"
+            if not os.path.exists(target_dir):
+                continue
+            for (src_path, dirs, files) in os.walk(target_dir):
+                dst_path = src_path.replace(build_dir, install_dir)
+                for file in files:
+                    src = os.path.join(src_path, file)
+                    dst = os.path.join(dst_path, file)
+                    if file.endswith(".cpp.o") or file == "cmake_install.cmake":
+                        continue
+                    if os.path.exists(dst) and os.stat(src) == os.stat(dst):
+                        continue
+                    os.makedirs(dst_path, exist_ok=True)
+                    shutil.copy2(src, dst)
 
     def llvm_compile_darwin_defines(self, llvm_defines):
         if self.host_is_darwin():
@@ -571,19 +855,25 @@ class LlvmCore(BuildUtils):
             llvm_defines['LLVM_ENABLE_ZSTD'] = 'OFF'
             llvm_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.dylib'
             if self.build_config.build_ncurses:
-                libncurse = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libncurses.6.dylib')
-                libpanel = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libpanel.6.dylib')
-                libform = os.path.join(self.get_prebuilts_dir('ncurses'), 'lib', 'libform.6.dylib')
-                ncurses_libs = ';'.join([libncurse, libpanel, libform])
+                ncurses_libs = ';'.join([
+                    self.merge_install_dir(
+                        'ncurses',
+                        self.use_platform(),
+                        'lib',
+                        f'{lib_name}.6.dylib') for lib_name in self.get_ncurses_dependence_libs(self.use_platform())])
                 llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
                 llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
 
+            if self.build_config.enable_lzma_7zip:
+                llvm_defines['LIBLZMA_LIBRARIES'] = self.merge_install_dir('lzma', self.use_platform(), 'lib', f'liblzma.{self.build_config.LZMA_VERSION}.dylib')
+
             if self.build_config.build_libedit:
-                llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.0.dylib')
+                llvm_defines['LibEdit_LIBRARIES'] = \
+                    self.merge_install_dir('libedit', self.use_platform(), 'lib', 'libedit.0.dylib')
 
             if self.build_config.build_libxml2:
-                llvm_defines['LIBXML2_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', 'libxml2.dylib')
-
+                llvm_defines['LIBXML2_LIBRARIES'] = \
+                    self.merge_libxml2_install_dir(self.use_platform(), 'lib', f'libxml2.{self.build_config.LIBXML2_VERSION}.dylib')
 
     def llvm_compile_linux_defines(self,
                                    llvm_defines,
@@ -609,28 +899,39 @@ class LlvmCore(BuildUtils):
             llvm_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.so'
             ncurses_version = self.get_ncurses_version()
             if self.build_config.build_ncurses and ncurses_version is not None:
-                ncurses_libs = []
-                prebuilts_dir = self.get_prebuilts_dir('ncurses')
-                for library in ['libncurses', 'libpanel', 'libform']:
-                    library_path = os.path.join(prebuilts_dir, 'lib', f'{library}.so.%s' % ncurses_version)
-                    ncurses_libs.append(library_path)
-                ncurses_libs = ';'.join(ncurses_libs)
+                ncurses_libs = ";".join(
+                    [
+                        self.merge_install_dir(
+                            'ncurses',
+                            self.use_platform(),
+                            "lib",
+                            f"{lib_name}.so.{ncurses_version}",
+                        )
+                        for lib_name in self.get_ncurses_dependence_libs(
+                            self.use_platform()
+                        )
+                    ]
+                )
                 llvm_defines['CURSES_LIBRARIES'] = ncurses_libs
                 llvm_defines['PANEL_LIBRARIES'] = ncurses_libs
 
+            if self.build_config.enable_lzma_7zip:
+                llvm_defines['LIBLZMA_LIBRARIES'] = self.merge_install_dir('lzma', self.use_platform(), 'lib', 'liblzma.so')
+
             if self.build_config.build_libedit:
-                llvm_defines['LibEdit_LIBRARIES'] = os.path.join(self.get_prebuilts_dir('libedit'), 'lib', 'libedit.so.0.0.68')
+                llvm_defines['LibEdit_LIBRARIES'] = \
+                    self.merge_install_dir('libedit', self.use_platform(), 'lib', 'libedit.so.0.0.75')
 
             if not build_instrumented and not no_lto and not debug_build:
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
 
-            libxml2_version = self.get_libxml2_version()
             if self.build_config.build_libxml2:
-                llvm_defines['LIBXML2_LIBRARY'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'lib', f'libxml2.so.{libxml2_version}')
+                llvm_defines['LIBXML2_LIBRARY'] = \
+                    self.merge_libxml2_install_dir(self.use_platform(), 'lib', f'libxml2.so.{self.build_config.LIBXML2_VERSION}')
 
     def llvm_compile_llvm_defines(self, llvm_defines, llvm_root, cflags, ldflags):
-        llvm_defines['LLVM_ENABLE_PROJECTS'] = 'clang;lld;clang-tools-extra;openmp;lldb'
-        llvm_defines['LLVM_ENABLE_RUNTIMES'] = 'libunwind;libcxxabi;libcxx;compiler-rt'
+        llvm_defines['LLVM_ENABLE_PROJECTS'] = ';'.join(self.build_config.host_projects)
+        llvm_defines['LLVM_ENABLE_RUNTIMES'] = ';'.join(self.build_config.host_runtimes)
         llvm_defines['LLVM_ENABLE_BINDINGS'] = 'OFF'
         llvm_defines['CMAKE_C_COMPILER'] = os.path.join(llvm_root, 'bin', 'clang')
         llvm_defines['CMAKE_CXX_COMPILER'] = os.path.join(llvm_root, 'bin', 'clang++')
@@ -639,14 +940,14 @@ class LlvmCore(BuildUtils):
         llvm_defines['LLVM_ENABLE_LIBCXX'] = 'ON'
         llvm_defines['SANITIZER_ALLOW_CXXABI'] = 'OFF'
         llvm_defines['LIBOMP_ENABLE_SHARED'] = 'FALSE'
-        llvm_defines['OPENMP_TEST_FLAGS'] = '-Wl,-ldl'
+        llvm_defines['OPENMP_TEST_FLAGS'] = '-Wl,-ldl -fuse-ld=lld'
         llvm_defines['CLANG_BUILD_EXAMPLES'] = 'OFF'
         llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'OFF'
         llvm_defines['COMPILER_RT_BUILD_SANITIZERS'] = 'OFF'
         llvm_defines['COMPILER_RT_BUILD_MEMPROF'] = 'OFF'
         llvm_defines['CMAKE_ASM_FLAGS'] = cflags
         llvm_defines['CMAKE_C_FLAGS'] = cflags
-        llvm_defines['CMAKE_CXX_FLAGS'] = '%s -stdlib=libc++' % cflags
+        llvm_defines['CMAKE_CXX_FLAGS'] = cflags if self.host_is_linux_aarch64() else '%s -stdlib=libc++' % cflags
         llvm_defines['CMAKE_EXE_LINKER_FLAGS'] = ldflags
         llvm_defines['CMAKE_SHARED_LINKER_FLAGS'] = ldflags
         llvm_defines['CMAKE_MODULE_LINKER_FLAGS'] = ldflags
@@ -660,16 +961,65 @@ class LlvmCore(BuildUtils):
         llvm_defines['SWIG_EXECUTABLE'] = self.find_program('swig')
         llvm_defines['LLDB_ENABLE_CURSES'] = 'OFF'
 
+        #Control the security compile flags which used by LLVM_ENABLE_RUNTIMES
+        if not self.host_is_darwin():
+            llvm_defines['SECURITY_LINKER_FLAGS_FOR_RUNTIMES'] = ' -Wl,-z,relro,-z,now -Wl,-z,noexecstack'
+        llvm_defines['SECURITY_COMPILE_FLAGS_FOR_RUNTIMES'] = '-fstack-protector-strong'
+
         if self.build_config.build_ncurses and self.get_ncurses_version() is not None:
             llvm_defines['LLDB_ENABLE_CURSES'] = 'ON'
-            llvm_defines['CURSES_INCLUDE_DIRS'] = os.path.join(self.get_prebuilts_dir('ncurses'), 'include')
+            llvm_defines['CURSES_INCLUDE_DIRS'] = self.merge_install_dir('ncurses', self.use_platform(), 'include')
+
+        if self.build_config.enable_lzma_7zip:
+            llvm_defines['LLDB_ENABLE_LZMA'] = 'ON'
+            llvm_defines['LLDB_ENABLE_LZMA_7ZIP'] = 'ON'
+            llvm_defines['LIBLZMA_INCLUDE_DIRS'] = self.merge_install_dir('lzma', self.use_platform(), 'include')
+
         if self.build_config.build_libedit:
             llvm_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
-            llvm_defines['LibEdit_INCLUDE_DIRS'] = os.path.join(self.get_prebuilts_dir('libedit'), 'include')
+            llvm_defines['LibEdit_INCLUDE_DIRS'] = self.merge_install_dir('libedit', self.use_platform(), 'include')
 
         if self.build_config.build_libxml2:
             llvm_defines['LLDB_ENABLE_LIBXML2'] = 'ON'
-            llvm_defines['LIBXML2_INCLUDE_DIR'] = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform(), 'include', 'libxml2')
+            llvm_defines['LIBXML2_INCLUDE_DIR'] = self.merge_libxml2_install_dir(self.use_platform(), 'include', 'libxml2')
+
+        if self.build_config.enable_monitoring:
+            llvm_defines['LLDB_ENABLE_PERFORMANCE'] = 'ON'
+
+    def llvm_build_install_xvm_dylib_so(self, build_name,
+                                        out_dir,
+                                        build_target,
+                                        llvm_extra_env,
+                                        debug_build):
+        llvm_path = self.merge_out_path('llvm_make')
+        llvm_path_dylib_so = self.merge_out_path('llvm_make_dylib_so')
+        install_dir_dylib_so = self.merge_out_path('llvm-install-dylib-so')
+        llvm_defines_dylib_so = {}
+        llvm_defines_dylib_so['LLVM_SPLIT_LLVM_DYLIB_TARGETS'] = 'ON'
+        if debug_build:
+            llvm_defines_dylib_so['CMAKE_BUILD_TYPE'] = 'Debug'
+        self.build_llvm(targets='XVM',
+                        build_dir=llvm_path_dylib_so,
+                        install_dir=install_dir_dylib_so,
+                        build_name=build_name,
+                        build_target=build_target,
+                        extra_defines=llvm_defines_dylib_so,
+                        extra_env=llvm_extra_env)
+        build_lib_xvm_dylib_so = os.path.join(llvm_path_dylib_so, 'lib', 'LLVMXVMTarget.so')
+        build_lib_folder = os.path.join(llvm_path, 'lib')
+        if os.path.exists(build_lib_xvm_dylib_so) and os.path.exists(build_lib_folder):
+            self.check_copy_file(build_lib_xvm_dylib_so, build_lib_folder)
+        else:
+            self.logger().error('Failed to copy ' + build_lib_xvm_dylib_so + ' to ' + build_lib_folder)
+
+        build_lib_install_folder = os.path.join(out_dir, 'lib')
+        if os.path.exists(build_lib_xvm_dylib_so) and os.path.exists(build_lib_install_folder):
+            self.check_copy_file(build_lib_xvm_dylib_so, build_lib_install_folder)
+        else:
+            self.logger().error('Failed to copy ' + build_lib_xvm_dylib_so + ' to ' + build_lib_install_folder)
+        if not debug_build:
+            self.check_rm_tree(llvm_path_dylib_so)
+            self.check_rm_tree(install_dir_dylib_so)
 
     def llvm_compile(self,
                      build_name,
@@ -677,10 +1027,11 @@ class LlvmCore(BuildUtils):
                      debug_build=False,
                      no_lto=False,
                      build_instrumented=False,
-                     xunit_xml_output=None):
+                     build_target=None,
+                     xunit_xml_output=None,
+                     build_xvm=False):
 
-        llvm_clang_install = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR,
-                                                          'prebuilts/clang/ohos', self.use_platform(),
+        llvm_clang_install = os.path.abspath(os.path.join(self.buildtools_path, 'clang/ohos', self.use_platform(),
                                                           'clang-%s' % self.build_config.CLANG_VERSION))
         llvm_path = self.merge_out_path('llvm_make')
         llvm_profdata = os.path.join(llvm_clang_install, 'bin', 'llvm-profdata')
@@ -700,7 +1051,9 @@ class LlvmCore(BuildUtils):
         self.llvm_compile_linux_defines(llvm_defines, debug_build, no_lto, build_instrumented)
 
         if self.host_is_linux():
-            ldflags += ' -l:libunwind.a -l:libc++abi.a --rtlib=compiler-rt -stdlib=libc++ -static-libstdc++'
+            if not self.host_is_linux_aarch64():
+                ldflags += ' -l:libunwind.a -l:libc++abi.a --rtlib=compiler-rt -stdlib=libc++'
+            ldflags += ' -static-libstdc++'
 
         if xunit_xml_output:
             llvm_defines['LLVM_LIT_ARGS'] = "--xunit-xml-output={} -sv".format(xunit_xml_output)
@@ -715,27 +1068,39 @@ class LlvmCore(BuildUtils):
             llvm_defines['LLVM_BUILD_INSTRUMENTED'] = 'ON'
             llvm_defines['LLVM_PROFDATA'] = llvm_profdata
 
-            resource_dir = "lib/clang/10.0.1/lib/linux/libclang_rt.profile-x86_64.a"
-            ldflags += ' %s' % os.path.join(llvm_clang_install, resource_dir)
+            resource_dir = os.path.join(llvm_clang_install, 'lib', 'clang', self.build_config.CLANG_VERSION,
+                                        'lib', 'x86_64-unknown-linux-gnu', 'libclang_rt.profile.a')
+            ldflags += ' %s' % resource_dir
 
         cflags = '-fstack-protector-strong'
         if not self.host_is_darwin():
-            ldflags += ' -Wl,-z,relro,-z,now -pie'
+            ldflags += ' -Wl,-z,relro,-z,now -pie -Wl,-z,noexecstack'
             if self.build_config.strip:
                 ldflags += ' -s'
 
         self.llvm_compile_llvm_defines(llvm_defines, llvm_clang_install, cflags, ldflags)
 
-        linker_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts', 'clang',
-            'ohos', 'linux-x86_64', 'llvm', 'bin', 'ld.lld'))
+        linker_path = os.path.join(llvm_clang_install, 'bin', 'ld.lld')
         llvm_defines['CMAKE_LINKER'] = linker_path
 
-        self.build_llvm(targets=self.build_config.TARGETS,
+        if build_xvm:
+            target_list = self.build_config.TARGETS + ";XVM"
+        else:
+            target_list = self.build_config.TARGETS
+        breakpoint()
+        self.build_llvm(targets=target_list,
                         build_dir=llvm_path,
                         install_dir=out_dir,
                         build_name=build_name,
+                        build_target=build_target,
                         extra_defines=llvm_defines,
                         extra_env=llvm_extra_env)
+        if build_xvm:
+            self.llvm_build_install_xvm_dylib_so(build_name,
+                                                out_dir,
+                                                build_target,
+                                                llvm_extra_env,
+                                                debug_build)
 
     def llvm_compile_windows_defines(self,
                                      windows_defines,
@@ -743,22 +1108,33 @@ class LlvmCore(BuildUtils):
                                      cxx,
                                      windows_sysroot):
 
+        win_projects = list(self.build_config.host_projects)
+        if 'openmp' in win_projects:
+            # Currently we have build problems with
+            # windows openmp target (lack of ml.exe)
+            win_projects.remove('openmp')
+
         if self.build_config.enable_assertions:
 
             windows_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON'
 
         mingw_python_dir = self.get_mingw_python_dir()
-        py_dir = mingw_python_dir if mingw_python_dir else windows_sysroot
+        if mingw_python_dir:
+            py_dir = mingw_python_dir
+            py_lib_dir = os.path.join(py_dir, 'lib')
+            py_inc_dir = os.path.join(py_dir, 'include')
+        else:
+            raise Exception('Invalid Python information, please check if the Python tool is valid')
         windows_defines['LLDB_RELOCATABLE_PYTHON'] = 'OFF'
         windows_defines['LLDB_ENABLE_PYTHON'] = 'ON'
-        windows_defines['LLDB_PYTHON_HOME'] = 'python'
+        windows_defines['LLDB_PYTHON_HOME'] = os.path.join('..', self.build_config.LLDB_PYTHON)
         windows_defines['LLDB_PYTHON_RELATIVE_PATH'] = \
             'bin/python/lib/python%s' % (self.build_config.LLDB_PY_VERSION)
-        windows_defines['LLDB_PYTHON_EXE_RELATIVE_PATH'] = 'bin/python'
+        windows_defines['LLDB_PYTHON_EXE_RELATIVE_PATH'] = os.path.join('bin', self.build_config.LLDB_PYTHON)
         windows_defines['LLDB_PYTHON_EXT_SUFFIX'] = '.pys'
-        windows_defines['Python3_INCLUDE_DIRS'] = os.path.join(py_dir, 'include',
+        windows_defines['Python3_INCLUDE_DIRS'] = os.path.join(py_inc_dir,
             'python%s' % self.build_config.LLDB_PY_VERSION)
-        windows_defines['Python3_LIBRARIES'] = os.path.join(py_dir, 'lib', 'libpython%s.dll.a'
+        windows_defines['Python3_LIBRARIES'] = os.path.join(py_lib_dir, 'libpython%s.dll.a'
             % self.build_config.LLDB_PY_VERSION)
         windows_defines['Python3_EXECUTABLE'] = os.path.join(self.get_python_dir(), 'bin',
             self.build_config.LLDB_PYTHON)
@@ -767,13 +1143,13 @@ class LlvmCore(BuildUtils):
         windows_defines['CMAKE_C_COMPILER'] = cc
         windows_defines['CMAKE_CXX_COMPILER'] = cxx
         windows_defines['CMAKE_SYSTEM_NAME'] = 'Windows'
-        windows_defines['CMAKE_BUILD_TYPE'] = 'Release'
+        windows_defines['CMAKE_BUILD_TYPE'] = 'Debug' if self.build_config.debug else 'Release'
         windows_defines['LLVM_BUILD_RUNTIME'] = 'OFF'
         windows_defines['LLVM_TOOL_CLANG_TOOLS_EXTRA_BUILD'] = 'ON'
         windows_defines['LLVM_TOOL_OPENMP_BUILD'] = 'OFF'
         windows_defines['LLVM_INCLUDE_TESTS'] = 'OFF'
         windows_defines['LLVM_ENABLE_LIBCXX'] = 'ON'
-        windows_defines['LLVM_ENABLE_PROJECTS'] = 'clang;clang-tools-extra;lld;lldb'
+        windows_defines['LLVM_ENABLE_PROJECTS'] = ';'.join(win_projects)
         windows_defines['LLVM_BUILD_LLVM_DYLIB'] = 'OFF'
         windows_defines['CLANG_BUILD_EXAMPLES'] = 'OFF'
         windows_defines['CMAKE_SYSROOT'] = windows_sysroot
@@ -786,8 +1162,17 @@ class LlvmCore(BuildUtils):
 
         if self.build_config.build_libxml2:
             windows_defines['LLDB_ENABLE_LIBXML2'] = 'ON'
-            windows_defines['LIBXML2_INCLUDE_DIR'] = os.path.join(self.get_prebuilts_dir('libxml2'), 'windows-x86_64', 'include', 'libxml2')
-            windows_defines['LIBXML2_LIBRARY'] = os.path.join(self.get_prebuilts_dir('libxml2'), 'windows-x86_64', 'lib', 'libxml2.dll.a')
+            windows_defines['LIBXML2_INCLUDE_DIR'] = self.merge_libxml2_install_dir('windows-x86_64', 'include', 'libxml2')
+            windows_defines['LIBXML2_LIBRARY'] = self.merge_libxml2_install_dir('windows-x86_64', 'lib', 'libxml2.dll.a')
+
+        if self.build_config.enable_monitoring:
+            windows_defines['LLDB_ENABLE_PERFORMANCE'] = 'ON'
+
+        if self.build_config.enable_lzma_7zip:
+            windows_defines['LLDB_ENABLE_LZMA'] = 'ON'
+            windows_defines['LLDB_ENABLE_LZMA_7ZIP'] = 'ON'
+            windows_defines['LIBLZMA_INCLUDE_DIRS'] = self.merge_install_dir('lzma', 'windows-x86_64', 'include')
+            windows_defines['LIBLZMA_LIBRARIES'] = self.merge_install_dir('lzma', 'windows-x86_64', 'lib', 'liblzma.dll.a')
 
     def llvm_compile_windows_flags(self,
                                    windows_defines,
@@ -805,9 +1190,11 @@ class LlvmCore(BuildUtils):
         )
 
         ldflag = ['-fuse-ld=lld',
+                  '-Wl,--gc-sections',
                   '-stdlib=libc++',
                   '--rtlib=compiler-rt',
-                  '-lunwind', '-Wl,--dynamicbase',
+                  '-lunwind', 
+                  '-Wl,--dynamicbase',
                   '-Wl,--nxcompat',
                   '-lucrt',
                   '-lucrtbase',
@@ -816,8 +1203,10 @@ class LlvmCore(BuildUtils):
                   '-Wl,--high-entropy-va']
         ldflags.extend(ldflag)
 
-        cflag = ['-stdlib=libc++',
+        cflag = ['-fstack-protector-strong',
+                 '-stdlib=libc++',
                  '--target=x86_64-pc-windows-gnu',
+                 '-fdata-sections',
                  '-D_LARGEFILE_SOURCE',
                  '-D_FILE_OFFSET_BITS=64',
                  '-D_WIN32_WINNT=0x0600',
@@ -832,8 +1221,7 @@ class LlvmCore(BuildUtils):
                                    ldflags,
                                    windows_defines):
 
-
-        zlib_path = self.merge_out_path('../', 'prebuilts', 'clang', 'host', 'windows-x86', 'toolchain-prebuilts',
+        zlib_path = self.merge_out_path(self.buildtools_path, 'clang', 'host', 'windows-x86', 'toolchain-prebuilts',
                                         'zlib')
         zlib_inc = os.path.join(zlib_path, 'include')
         zlib_lib = os.path.join(zlib_path, 'lib')
@@ -848,7 +1236,6 @@ class LlvmCore(BuildUtils):
         windows_defines['CMAKE_EXE_LINKER_FLAGS'] = ' '.join(ldflags)
         windows_defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
         windows_defines['CMAKE_MODULE_LINKER_FLAGS'] = ' '.join(ldflags)
-
 
     def llvm_compile_for_windows(self,
                                  targets,
@@ -911,7 +1298,7 @@ class SysrootComposer(BuildUtils):
         # but it didn't contain these two lines, so we still need OHOS.cmake.
         ohos_cmake = 'OHOS.cmake'
         dst_dir = self.merge_out_path(
-            '../prebuilts/cmake/%s/share/cmake-3.16/Modules/Platform' % self.platform_prefix())
+            self.buildtools_path, 'cmake/%s/share/cmake-3.28/Modules/Platform' % self.platform_prefix())
         src_file = '%s/%s' % (self.build_config.LLVM_BUILD_DIR, ohos_cmake)
         if os.path.exists(os.path.join(dst_dir, ohos_cmake)):
             os.remove(os.path.join(dst_dir, ohos_cmake))
@@ -926,12 +1313,15 @@ class SysrootComposer(BuildUtils):
             self.get_python_dir(), 'bin', self.build_config.LLDB_PYTHON)
         llvm_gn_args = 'is_llvm_build=true startup_init_with_param_base=true use_thin_lto=false'
         subprocess.run([python_execute_dir, hb_build_py, 'build', '--product-name', product_name, '--target-cpu',
-                        target_cpu, '--build-target', target_name, '--gn-args', 
+                        target_cpu, '--build-target', target_name, '--gn-args',
                         gn_args, llvm_gn_args, '--deps-guard=false'],
                         shell=False, stdout=subprocess.PIPE, cwd=self.build_config.REPOROOT_DIR)
-    
+
     def build_musl_libs(self, product_name, target_cpu, target_name, ohos_lib_dir, sysroot_lib_dir,
                         ld_musl_lib, gn_args=''):
+        if (self.build_config.adlt_debug_build):
+            gn_args = f"is_debug=true ohos_extra_cflags=-O0 {gn_args}"
+
         self.run_hb_build(product_name, target_cpu, target_name, gn_args)
         libc_name = 'libc.so'
         crtplus_lib = self.merge_out_path('llvm_build', 'obj', 'out', 'llvm_build', 'obj', 'third_party', 'musl',
@@ -1023,10 +1413,9 @@ class SysrootComposer(BuildUtils):
                                      sysroot_multi_lib_dir, ld_musl_lib, gn_args)
 
         if target_cpu == 'mipsel':
-            gn_args += ' is_legacy=true musl_target_multilib=nanlegacy'
+            gn_args += ' musl_is_legacy=true musl_target_multilib=nanlegacy'
             multi_lib_dir = os.path.join(ohos_lib_dir, 'nanlegacy')
             sysroot_multi_lib_dir = os.path.join(sysroot_lib_dir, 'nanlegacy')
-            self.run_hb_build(product_name, target_cpu, target_name, gn_args)
             ld_musl_lib = os.path.join(sysroot_multi_lib_dir, 'ld-musl-{}.so.1'.format(ld_arch))
             self.build_musl_libs(product_name, target_cpu, target_name, multi_lib_dir,
                         sysroot_multi_lib_dir, ld_musl_lib, gn_args)
@@ -1038,6 +1427,8 @@ class SysrootComposer(BuildUtils):
             dir_suffix = 'x86'
         elif arch == 'mipsel':
             dir_suffix = 'mips'
+        elif arch == 'loongarch64':
+            dir_suffix = 'loongarch'
         linux_kernel_dir = os.path.join('kernel', 'linux', 'patches', 'linux-5.10')
         linux_kernel_path = os.path.join(self.build_config.OUT_PATH, '..', linux_kernel_dir)
         ohosmusl_sysroot_dst = self.merge_out_path('sysroot', target, 'usr')
@@ -1079,9 +1470,14 @@ class LlvmLibs(BuildUtils):
             self.sysroot_composer.build_musl_header(arch, target)
             if target.endswith(self.build_config.OPENHOS_SFX):
                 self.sysroot_composer.install_linux_headers(arch, target)
-            self.build_libs(llvm_install,
-                            target,
-                            precompilation=True)
+        if self.build_config.build_libs_with_hb:
+            self.run_hb_build_libs('crts_first_time')
+        else:
+            for (arch, target) in configs:
+                self.build_libs(llvm_install,
+                                    target,
+                                    precompilation=True)
+        for (arch, target) in configs:
             self.sysroot_composer.build_musl(arch, target)
 
     def build_libs_defines(self,
@@ -1117,21 +1513,27 @@ class LlvmLibs(BuildUtils):
 
         if not self.host_is_darwin():
             ldflag.append('-Wl,-z,relro,-z,now -pie')
-            if self.build_config.strip:
+            if self.build_config.strip and not self.build_config.no_strip_libs:
                 ldflag.append('-s')
-        
+
         ldflags.extend(ldflag)
 
         cflag = [
-                '-fstack-protector-strong', 
+                '-fstack-protector-strong',
                 '--target=%s' % llvm_triple,
                 '-ffunction-sections',
                 '-fdata-sections',
                 extra_flags, ]
+        if self.build_config.build_with_debug_info:
+            cflag.append('-g')
 
         cflags.extend(cflag)
 
-    def build_libs(self, llvm_install, llvm_build, precompilation=False):
+    def run_hb_build_libs(self, libs_name):
+        gn_args = 'build_libs_flags={} llvm_lib={}'.format(self.build_config.build_libs_flags, libs_name)
+        self.sysroot_composer.run_hb_build('llvm_build', 'arm', 'build_libs', gn_args)
+
+    def libs_argument(self, llvm_install):
         configs_list = [
             ('arm', self.liteos_triple('arm'), '-march=armv7-a -mfloat-abi=soft', ''),
             ('arm', self.liteos_triple('arm'), '-march=armv7-a -mcpu=cortex-a7 -mfloat-abi=soft', 'a7_soft'),
@@ -1150,12 +1552,18 @@ class LlvmLibs(BuildUtils):
             ('riscv64', self.open_ohos_triple('riscv64'), '', ''),
             ('mipsel', self.open_ohos_triple('mipsel'), '', ''),
             ('mipsel', self.open_ohos_triple('mipsel'), '-mnan=legacy', 'nanlegacy'),
-            ('x86_64', self.open_ohos_triple('x86_64'), '', ''),]
+            ('x86_64', self.open_ohos_triple('x86_64'), '', ''),
+            ('loongarch64', self.open_ohos_triple('loongarch64'), '', '')]
 
         cc = os.path.join(llvm_install, 'bin', 'clang')
         cxx = os.path.join(llvm_install, 'bin', 'clang++')
         ar = os.path.join(llvm_install, 'bin', 'llvm-ar')
         llvm_config = os.path.join(llvm_install, 'bin', 'llvm-config')
+        self.set_clang_version(llvm_install)
+        return configs_list, cc, cxx, ar, llvm_config
+
+    def build_libs(self, llvm_install, llvm_build, precompilation=False):
+        configs_list, cc, cxx, ar, llvm_config = self.libs_argument(llvm_install)
         seen_arch_list = [self.liteos_triple('arm')]
 
         self.set_clang_version(llvm_install)
@@ -1168,6 +1576,8 @@ class LlvmLibs(BuildUtils):
             defines = self.base_cmake_defines()
             ldflags = []
             cflags = []
+            if self.build_config.adlt_debug_build:
+                cflags.append("-g -gdwarf-4 -O0")
             self.logger().info('Build libs for %s', llvm_triple)
             if self.build_config.target_debug:
                 defines['CMAKE_BUILD_TYPE'] = 'Debug'
@@ -1179,7 +1589,12 @@ class LlvmLibs(BuildUtils):
             llvm_path = self.merge_out_path('llvm_make')
             arch_list = [self.liteos_triple('arm'), self.open_ohos_triple('arm'),
                          self.open_ohos_triple('aarch64'), self.open_ohos_triple('riscv64'),
-                         self.open_ohos_triple('mipsel'), self.open_ohos_triple('x86_64')]
+                         self.open_ohos_triple('mipsel'), self.open_ohos_triple('x86_64'),
+                         self.open_ohos_triple('loongarch64')]
+            omp_list = [self.open_ohos_triple("aarch64"), self.open_ohos_triple("arm"), self.open_ohos_triple('x86_64')]
+            libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
+            self.check_create_dir(libcxx_ndk_install)
+
             if precompilation:
                 self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
                 continue
@@ -1187,8 +1602,6 @@ class LlvmLibs(BuildUtils):
             self.build_runtimes(llvm_install, "libunwind", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
             self.build_runtimes(llvm_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
 
-            libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
-            self.check_create_dir(libcxx_ndk_install)
             self.build_runtimes(libcxx_ndk_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple,
                                     arch, multilib_suffix, defines, True)
 
@@ -1200,13 +1613,60 @@ class LlvmLibs(BuildUtils):
                     self.build_lldb_tools(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags,
                                                    defines)
                     seen_arch_list.append(llvm_triple)
+                if llvm_triple in omp_list:
+                    self.build_libomp(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines, 'TRUE')
+                    self.build_libomp(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines, 'FALSE')
                 continue
 
-            self.build_libomp(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
             self.build_libz(arch, llvm_triple, cflags, ldflags, defines)
             if self.build_config.need_lldb_tools and has_lldb_tools and llvm_triple not in seen_arch_list:
                 self.build_lldb_tools(llvm_install, llvm_path, arch, llvm_triple, cflags, ldflags, defines)
                 seen_arch_list.append(llvm_triple)
+
+    def build_libs_by_type(self, compiler_path, llvm_install, llvm_build, libs_type, is_first_time, is_ndk_install):
+        configs_list, cc, cxx, ar, llvm_config = self.libs_argument(compiler_path)
+
+        for (arch, llvm_triple, extra_flags, multilib_suffix) in configs_list:
+            if llvm_build != llvm_triple:
+                continue
+            defines = self.base_cmake_defines()
+            ldflags = []
+            cflags = []
+            if self.build_config.adlt_debug_build:
+                cflags.append("-g -gdwarf-4 -O0")
+            self.logger().info('Build %s libs for %s', libs_type, llvm_triple)
+            out_path = self.merge_out_path('llvm_build')
+
+            self.logger().info('Make %s libs for %s build_libs_flags: %s', libs_type, llvm_triple, self.build_config.build_libs_flags)
+            if self.build_config.target_debug:
+                defines['CMAKE_BUILD_TYPE'] = 'Debug'
+            self.build_libs_defines(llvm_triple, defines, cc, cxx, ar, llvm_config, ldflags, cflags, extra_flags)
+            if arch == 'mipsel':
+                ldflags.append('-Wl,-z,notext')
+                ldflags.append('-Wl,--no-check-dynamic-relocations')
+            if self.build_config.build_libs_flags == 'OH':
+                extra_cflags = [extra_flags, '--target=%s' % llvm_triple]
+                cflags = get_ohos_cflags(out_path, extra_cflags)
+                ldflags = get_ohos_ldflags(out_path, [])
+            if self.build_config.build_libs_flags == 'BOTH':
+                cflags = get_ohos_cflags(out_path, cflags)
+                ldflags = get_ohos_ldflags(out_path, ldflags)
+            if libs_type == 'crts':
+                if is_first_time:
+                    self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines)
+                else:
+                    self.build_crts(llvm_install, arch, llvm_triple, cflags, ldflags, multilib_suffix, defines,
+                                    first_time=False)
+            elif libs_type == 'runtimes':
+                if is_first_time:
+                    self.build_runtimes(llvm_install, "libunwind", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
+                elif is_ndk_install:
+                    libcxx_ndk_install = self.merge_out_path('libcxx-ndk')
+                    self.check_create_dir(libcxx_ndk_install)
+                    self.build_runtimes(libcxx_ndk_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple,
+                                    arch, multilib_suffix, defines, True)
+                else:
+                    self.build_runtimes(llvm_install, "libunwind;libcxxabi;libcxx", ldflags, cflags, llvm_triple, arch, multilib_suffix, defines)
 
     def build_runtimes(self,
                        llvm_install,
@@ -1270,10 +1730,10 @@ class LlvmLibs(BuildUtils):
             rt_defines['LIBUNWIND_INSTALL_LIBRARY'] = 'OFF'
         else:
             rt_defines['LIBCXX_ABI_NAMESPACE'] = '__h'
- 
+
         self.check_rm_tree(out_path)
         cmake_rt = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'runtimes'))
- 
+
         self.invoke_cmake(cmake_rt,
                           out_path,
                           rt_defines,
@@ -1330,9 +1790,10 @@ class LlvmLibs(BuildUtils):
         crt_defines['CMAKE_CROSSCOMPILING'] = 'True'
         crt_defines['SANITIZER_CXX_ABI'] = 'libcxxabi'
         crt_defines['CMAKE_TRY_COMPILE_TARGET_TYPE'] = 'STATIC_LIBRARY'
-        crt_defines['COMPILER_RT_HWASAN_WITH_INTERCEPTORS'] = 'OFF'
+        crt_defines['COMPILER_RT_HWASAN_WITH_INTERCEPTORS'] = 'ON'
         crt_defines['COMPILER_RT_BUILD_SANITIZERS'] = \
             'OFF' if llvm_triple == self.liteos_triple('arm') or first_time else 'ON'
+        crt_defines['COMPILER_RT_EXCLUDE_ATOMIC_BUILTIN'] = 'OFF'
         crt_defines['COMPILER_RT_DEFAULT_TARGET_TRIPLE'] = llvm_triple
         crt_cmake_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'compiler-rt'))
         self.rm_cmake_cache(crt_path)
@@ -1347,6 +1808,31 @@ class LlvmLibs(BuildUtils):
                           target=None,
                           install=True)
 
+        if arch == 'aarch64' and not first_time:
+            build_target = []
+            install_target = []
+            crt_extra_flags.append('-mbranch-protection=bti')
+            build_target = ['clang_rt.crtbegin-aarch64', 'clang_rt.crtend-aarch64']
+            install_target = ['install-clang_rt.crtend-aarch64', 'install-clang_rt.crtbegin-aarch64']
+            crt_flags = ' '.join(cflags + crt_extra_flags)
+            crt_defines['CMAKE_C_FLAGS'] = crt_flags
+            crt_defines['CMAKE_ASM_FLAGS'] = crt_flags
+            crt_defines['CMAKE_CXX_FLAGS'] = crt_flags
+
+            self.invoke_cmake(crt_cmake_path,
+                              crt_path,
+                              crt_defines,
+                              env=dict(self.build_config.ORIG_ENV))
+
+            self.invoke_ninja(out_path=crt_path,
+                              env=dict(self.build_config.ORIG_ENV),
+                              target=build_target,
+                              install=False)
+            self.invoke_ninja(out_path=crt_path,
+                              env=dict(self.build_config.ORIG_ENV),
+                              target=install_target,
+                              install=False)
+
     def build_libomp(self,
                      llvm_install,
                      arch,
@@ -1354,8 +1840,8 @@ class LlvmLibs(BuildUtils):
                      cflags,
                      ldflags,
                      multilib_suffix,
-                     defines):
-
+                     defines,
+                     enable_shared):
         self.logger().info('Building libomp for %s', arch)
 
         libomp_path = self.merge_out_path('lib', 'libomp-%s' % llvm_triple)
@@ -1376,7 +1862,7 @@ class LlvmLibs(BuildUtils):
         libomp_defines['OPENMP_ENABLE_LIBOMPTARGET'] = 'FALSE'
 
         libomp_defines['OPENMP_LIBDIR_SUFFIX'] = os.path.join(os.sep, llvm_triple, multilib_suffix)
-        libomp_defines['LIBOMP_ENABLE_SHARED'] = 'FALSE'
+        libomp_defines['LIBOMP_ENABLE_SHARED'] = enable_shared
         libomp_defines['CMAKE_POLICY_DEFAULT_CMP0056'] = 'NEW'
         libomp_defines['CMAKE_INSTALL_PREFIX'] = llvm_install
         libomp_defines['COMPILER_RT_USE_BUILTINS_LIBRARY'] = 'ON'
@@ -1386,13 +1872,17 @@ class LlvmLibs(BuildUtils):
         libomp_defines['CMAKE_TRY_COMPILE_TARGET_TYPE'] = 'STATIC_LIBRARY'
 
         libomp_cmake_path = os.path.join(self.build_config.LLVM_PROJECT_DIR, 'openmp')
-        self.rm_cmake_cache(libomp_path)
+        
+        if enable_shared == "TRUE":
+            libomp_path = os.path.join(libomp_path, "shared")
+        else:
+            libomp_path = os.path.join(libomp_path, "static")
 
+        self.rm_cmake_cache(libomp_path)
         self.invoke_cmake(libomp_cmake_path,
                           libomp_path,
                           libomp_defines,
                           env=dict(self.build_config.ORIG_ENV))
-
         self.invoke_ninja(out_path=libomp_path,
                           env=dict(self.build_config.ORIG_ENV),
                           target=None,
@@ -1491,11 +1981,48 @@ class LlvmLibs(BuildUtils):
         lldb_defines['LLVM_TARGET_ARCH'] = arch
         lldb_defines['LLVM_TARGETS_TO_BUILD'] = self.build_config.TARGETS
 
+        if self.build_config.enable_monitoring:
+            lldb_defines['LLDB_ENABLE_PERFORMANCE'] = 'ON'
+
         lldb_target = ['lldb-server'] if self.build_config.need_lldb_server else []
 
         if self.build_config.build_lldb_static and llvm_triple in ['aarch64-linux-ohos', 'arm-linux-ohos']:
             lldb_defines['LIBLLDB_BUILD_STATIC'] = 'ON'
             lldb_target.append('lldb')
+
+            if self.build_config.build_ncurses:
+                self.build_ncurses(None, llvm_install, llvm_triple, True)
+                lldb_defines['LLDB_ENABLE_CURSES'] = 'ON'
+                ncurses_install_path = self.merge_install_dir('ncurses', llvm_triple)
+                lldb_defines['CURSES_INCLUDE_DIRS'] = os.path.join(ncurses_install_path, 'include')
+                lldb_defines['CURSES_HAVE_NCURSES_CURSES_H'] = 'ON'
+                ncurses_lib_path = os.path.join(ncurses_install_path, 'lib')
+                ncurses_libs = []
+                for library in self.get_ncurses_dependence_libs(llvm_triple):
+                    ncurses_libs.append(os.path.join(ncurses_lib_path, f'{library}.a'))
+                ncurses_libs = ';'.join(ncurses_libs)
+                lldb_defines['CURSES_LIBRARIES'] = ncurses_libs
+                lldb_defines['PANEL_LIBRARIES'] = ncurses_libs
+
+            if self.build_config.build_libedit:
+                self.build_libedit(None, llvm_install, llvm_triple, True)
+                lldb_defines['LLDB_ENABLE_LIBEDIT'] = 'ON'
+                libedit_install_path = self.merge_install_dir('libedit', llvm_triple)
+                lldb_defines['LibEdit_INCLUDE_DIRS'] = os.path.join(libedit_install_path, 'include')
+                lldb_defines['LibEdit_LIBRARIES'] = os.path.join(libedit_install_path, 'lib', 'libedit.a')
+
+            if self.build_config.build_libxml2:
+                self.build_libxml2(llvm_triple, None, llvm_install, True)
+                lldb_defines['LLDB_ENABLE_LIBXML2'] = 'ON'
+                lldb_defines['LIBXML2_INCLUDE_DIR'] = self.merge_libxml2_install_dir(llvm_triple, 'include', 'libxml2')
+                lldb_defines['LIBXML2_LIBRARY'] = self.merge_libxml2_install_dir(llvm_triple, 'lib', 'libxml2.a')
+
+            if self.build_config.enable_lzma_7zip:
+                self.build_lzma(None, llvm_install, llvm_triple, True)
+                lldb_defines['LLDB_ENABLE_LZMA'] = 'ON'
+                lldb_defines['LLDB_ENABLE_LZMA_7ZIP'] = 'ON'
+                lldb_defines['LIBLZMA_INCLUDE_DIRS'] = self.merge_install_dir('lzma', llvm_triple, 'include')
+                lldb_defines['LIBLZMA_LIBRARIES'] = self.merge_install_dir('lzma', llvm_triple, 'lib', 'liblzma.a')
 
         if self.build_config.lldb_timeout:
             lldb_defines['LLDB_ENABLE_TIMEOUT'] = 'True'
@@ -1533,7 +2060,7 @@ class LlvmLibs(BuildUtils):
         cmake_defines['CMAKE_ASM_FLAGS'] = ' '.join(cflags)
         cmake_defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
         cmake_defines['CMAKE_CXX_FLAGS'] = ' '.join(cflags)
-        cmake_defines['CMAKE_BUILD_TYPE'] = 'Release'
+        cmake_defines['CMAKE_BUILD_TYPE'] = 'Debug' if self.build_config.target_debug else 'Release'
         cmake_defines['CMAKE_TRY_COMPILE_TARGET_TYPE'] = 'STATIC_LIBRARY'
         cmake_defines['CMAKE_INSTALL_PREFIX'] = install_dir
         cmake_defines['LLVM_CONFIG_PATH'] = os.path.join(toolchain_dir, 'bin', 'llvm-config')
@@ -1560,13 +2087,13 @@ class LlvmLibs(BuildUtils):
                           env=dict(self.build_config.ORIG_ENV),
                           install=True)
 
-    def build_ncurses(self, llvm_make, llvm_install):
+    def build_ncurses(self, llvm_make, llvm_install, platform_triple, static = False):
         self.logger().info('Building ncurses.')
 
         libncurses_src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'ncurses'))
-        libncurses_build_path = self.merge_out_path('ncurses')
-        libncurses_install_path = self.get_prebuilts_dir('ncurses')
-        prebuilts_path = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts')
+        libncurses_install_path = self.merge_install_dir('ncurses', platform_triple)
+        libncurses_build_path = self.merge_build_dir('ncurses', platform_triple)
+        prebuilts_path = os.path.join(self.buildtools_path)
 
         self.check_rm_tree(libncurses_build_path)
         self.rm_cmake_cache(libncurses_build_path)
@@ -1580,37 +2107,151 @@ class LlvmLibs(BuildUtils):
         ncurses_version = self.get_ncurses_version()
         if ncurses_version is not None:
             args = ['./build_ncurses.sh', libncurses_src_dir, libncurses_build_path, libncurses_install_path,
-                    prebuilts_path, clang_version, ncurses_version]
+                    prebuilts_path, clang_version, ncurses_version, platform_triple]
+            if static:
+                args.append('static')
+                args.append(self.merge_install_dir('ncurses', self.use_platform()))
             self.check_call(args)
             os.chdir(cur_dir)
 
-            self.llvm_package.copy_ncurses_to_llvm(llvm_make)
-            self.llvm_package.copy_ncurses_to_llvm(llvm_install)
+        if not static:
+            self.llvm_package.copy_ncurses_to_llvm(platform_triple, llvm_make)
+            self.llvm_package.copy_ncurses_to_llvm(platform_triple, llvm_install)
 
-    def build_libedit(self, llvm_make, llvm_install):
+    def build_lzma(self, llvm_make, llvm_install, platform_triple, static = False):
+        self.logger().info('Building lzma')
+        target_triple = self.use_platform()
+        liblzma_install_path = self.merge_install_dir('lzma', platform_triple)
+        liblzma_build_path = self.merge_build_dir('lzma', platform_triple)
+        asm_source_dir = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'lzma', 'Asm')
+        sysroot = ""
+        asm_arc_dir = ""
+        ar = ""
+        if not platform_triple.endswith("ohos"):
+            if platform_triple.startswith("windows"):
+                llvm_clang_prebuilts = self.merge_out_path('llvm-install', 'bin', 'clang')
+                sysroot = self.merge_out_path('mingw', self.build_config.MINGW_TRIPLE)
+                target_triple = platform_triple
+            else:
+              llvm_clang_prebuilts = os.path.abspath(os.path.join(self.buildtools_path, 'clang', 'ohos', self.use_platform(),
+                                                          'clang-%s' % self.build_config.CLANG_VERSION, 'bin', 'clang'))
+        else:
+            llvm_clang_prebuilts = self.merge_out_path('llvm-install', 'bin', 'clang')
+            sysroot = self.merge_out_path("sysroot")
+            ar = self.merge_out_path('llvm-install', 'bin', 'llvm-ar')
+            target_triple = platform_triple
+            if platform_triple.startswith("aarch64"):
+                asm_arc_dir = os.path.abspath(os.path.join(asm_source_dir, 'arm64'))
+            if platform_triple.startswith("arm"):
+                asm_arc_dir = os.path.abspath(os.path.join(asm_source_dir, 'arm'))
+
+        src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'lzma', 'C'))
+        cmd = [ 'make',
+                'install',
+                'CC=%s' % llvm_clang_prebuilts,
+                'SRC_PREFIX=%s/' % src_dir,
+                'ASM_PREFIX=%s/' % asm_arc_dir,
+                'SYSROOT=%s' % sysroot,
+                'AR=%s' % ar,
+                'TARGET_TRIPLE=%s' % target_triple,
+                'INSTALL_DIR=%s' % liblzma_install_path,
+                'BUILD_DIR=%s' % liblzma_build_path,
+                'LIB_VERSION=%s' % self.build_config.LZMA_VERSION,
+                'IS_STATIC=%s' % static,
+                '-f',
+                'MakeLiblzma']
+        os.chdir(self.build_config.LLVM_BUILD_DIR)
+        self.check_call(cmd)
+
+        if not (static or platform_triple.startswith("windows")):
+            self.llvm_package.copy_lzma_to_llvm(platform_triple, llvm_make)
+            self.llvm_package.copy_lzma_to_llvm(platform_triple, llvm_install)
+
+    def build_libedit(self, llvm_make, llvm_install, platform_triple, static = False):
         self.logger().info('Building libedit')
 
         libedit_src_dir = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libedit'))
-        libedit_build_path = self.merge_out_path('libedit')
-        libedit_install_path = self.get_prebuilts_dir('libedit')
-        prebuilts_path = os.path.join(self.build_config.REPOROOT_DIR, 'prebuilts')
+        libedit_build_path = self.merge_build_dir('libedit', platform_triple)
+        libedit_install_path = self.merge_install_dir('libedit', platform_triple)
+        prebuilts_path = os.path.join(self.buildtools_path)
 
         self.check_rm_tree(libedit_build_path)
         self.rm_cmake_cache(libedit_build_path)
         self.check_rm_tree(libedit_install_path)
         self.rm_cmake_cache(libedit_install_path)
 
-        libncurses_path = self.get_prebuilts_dir('ncurses')
+        libncurses_path = self.merge_install_dir('ncurses', platform_triple)
 
         cur_dir = os.getcwd()
         os.chdir(self.build_config.LLVM_BUILD_DIR)
         clang_version = self.build_config.CLANG_VERSION
-        args = ['./build_libedit.sh', libedit_src_dir, libedit_build_path , libedit_install_path, libncurses_path, prebuilts_path, clang_version]
+        args = ['./build_libedit.sh', libedit_src_dir, libedit_build_path , libedit_install_path, libncurses_path, prebuilts_path, clang_version, platform_triple]
         self.check_call(args)
         os.chdir(cur_dir)
 
-        self.llvm_package.copy_libedit_to_llvm(llvm_make)
-        self.llvm_package.copy_libedit_to_llvm(llvm_install)
+        if not (static or platform_triple.startswith("windows")):
+            self.llvm_package.copy_libedit_to_llvm(platform_triple, llvm_make)
+            self.llvm_package.copy_libedit_to_llvm(platform_triple, llvm_install)
+
+    def copy_gtest_to_sysroot(self, build_dir):
+        build_lib_dir = os.path.join(build_dir, 'lib')
+        self.logger().info('LlvmPackage copy_gtest_to_sysroot from %s', build_lib_dir)
+        libs = [ "libLLVMSupport.so", "libLLVMDemangle.so", "libllvm_gtest.so" ]
+        sysroot_lib_dir = self.merge_out_path('sysroot', 'aarch64-linux-ohos', 'usr', 'lib')
+
+        os.chdir(build_lib_dir)
+        for f in libs:
+            self.check_copy_file(f'{f}.15', sysroot_lib_dir)
+            os.chdir(sysroot_lib_dir)
+            self.force_symlink(f'{f}.15', f)
+            os.chdir(build_lib_dir)
+
+    def build_gtest_defines(self, llvm_install):
+        sysroot = self.merge_out_path('sysroot', 'aarch64-linux-ohos', 'usr')
+        common_flags = f'--target=aarch64-linux-ohos -B{sysroot}/lib -L{sysroot}/lib'
+        libcxx = self.merge_out_path('llvm-install', 'include', 'libcxx-ohos', 'include', 'c++', 'v1')
+        libc = os.path.join(sysroot, "include")
+
+        gtest_defines = {}
+        gtest_defines['BUILD_SHARED_LIBS'] = 'YES'
+        gtest_defines['CMAKE_BUILD_TYPE'] = 'Release'
+        gtest_defines['CMAKE_C_COMPILER'] = os.path.join(llvm_install, 'bin', 'clang')
+        gtest_defines['CMAKE_CXX_COMPILER'] = os.path.join(llvm_install, 'bin', 'clang++')
+        gtest_defines['LLVM_TABLEGEN'] = os.path.join(llvm_install, 'bin', 'llvm-tblgen')
+        gtest_defines['CMAKE_LINKER'] = os.path.join(llvm_install, 'bin', 'ld.lld')
+        gtest_defines['CMAKE_EXE_LINKER_FLAGS'] = f'{common_flags}'
+        gtest_defines['CMAKE_C_FLAGS'] = f'{common_flags} -I{libc}'
+        gtest_defines['CMAKE_CXX_FLAGS'] = f'{common_flags} -I{libcxx} -I{libc}'
+
+        return gtest_defines
+
+    def build_gtest(self, compiler_path, llvm_install):
+        gtest_defines = self.build_gtest_defines(compiler_path)
+        gtest_cmake_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm'))
+
+        gtest_build_path = self.merge_out_path('gtest')
+
+        self.rm_cmake_cache(gtest_build_path)
+
+        self.invoke_cmake(gtest_cmake_path,
+                          gtest_build_path,
+                          gtest_defines,
+                          env=dict(self.build_config.ORIG_ENV))
+
+        self.invoke_ninja(out_path=gtest_build_path,
+                          env=dict(self.build_config.ORIG_ENV),
+                          target=[ "LLVMSupport", "LLVMDemangle",  "llvm_gtest" ],
+                          install=False)
+
+        self.copy_gtest_to_sysroot(gtest_build_path)
+        shutil.copytree(
+            os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm', 'utils', 'unittest', 'googlemock', 'include', 'gmock'),
+            os.path.join(llvm_install, 'include', 'gmock'),
+            dirs_exist_ok = True)
+        shutil.copytree(
+            os.path.join(self.build_config.LLVM_PROJECT_DIR, 'llvm', 'utils', 'unittest', 'googletest', 'include', 'gtest'),
+            os.path.join(llvm_install, 'include', 'gtest'),
+            dirs_exist_ok = True)
 
     def build_libxml2_defines(self):
         libxml2_defines = {}
@@ -1622,42 +2263,64 @@ class LlvmLibs(BuildUtils):
 
         return libxml2_defines
 
-    def build_libxml2(self, llvm_make, llvm_install):
-        self.logger().info('Building libxml2')
+    def build_libxml2(self, triple, llvm_make, llvm_install, static = False):
+        self.logger().info('Building libxml2 for %s', triple)
 
-        libxml2_defines = self.build_libxml2_defines()
+        cmake_path = self.get_libxml2_source_path()
+        if not os.path.exists(cmake_path):
+            package_path = os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2')
+            untar_py = os.path.join(package_path, 'install.py')
+            untar_path = self.merge_out_path('third_party', 'libxml2')
+            self.check_create_dir(untar_path)
+            subprocess.run(['python3', untar_py, '--gen-dir', untar_path, '--source-file', package_path])
 
-        libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2'))
+        build_path = self.merge_libxml2_build_dir(triple)
+        install_path = self.merge_libxml2_install_dir(triple)
+        self.check_rm_tree(install_path)
 
-        libxml2_build_path = self.merge_out_path('libxml2')
-        libxml2_install_path = os.path.join(self.get_prebuilts_dir('libxml2'), self.use_platform())
-        libxml2_defines['CMAKE_INSTALL_PREFIX'] = libxml2_install_path
+        defines = self.build_libxml2_defines()
+        defines['CMAKE_INSTALL_PREFIX'] = install_path
+        cflags = ['-fstack-protector-strong']
+        if static:
+            defines['BUILD_SHARED_LIBS'] = 'OFF'
+        elif not self.host_is_darwin():
+            ldflags = ['-Wl,-z,relro,-z,now -Wl,-z,noexecstack']
+            defines['CMAKE_SHARED_LINKER_FLAGS'] = ' '.join(ldflags)
 
-        self.rm_cmake_cache(libxml2_build_path)
+        if triple in ['arm-linux-ohos', 'aarch64-linux-ohos', 'aarch64-linux-gnu']:
+            defines['CMAKE_C_COMPILER'] = self.merge_out_path('llvm-install','bin','clang')
+            cflags.append(f'--target={triple}')
+            if triple == 'arm-linux-ohos':
+                cflags.append('-march=armv7-a -mfloat-abi=soft')
 
-        self.invoke_cmake(libxml2_cmake_path,
-                         libxml2_build_path,
-                         libxml2_defines,
-                         env=dict(self.build_config.ORIG_ENV))
+        defines['CMAKE_C_FLAGS'] = ' '.join(cflags)
 
-        self.invoke_ninja(out_path=libxml2_build_path,
-                         env=dict(self.build_config.ORIG_ENV),
-                         target=None,
-                         install=True)
+        self.rm_cmake_cache(build_path)
 
-        self.llvm_package.copy_libxml2_to_llvm(llvm_make)
-        self.llvm_package.copy_libxml2_to_llvm(llvm_install)
+        self.invoke_cmake(cmake_path,
+                          build_path,
+                          defines,
+                          dict(self.build_config.ORIG_ENV))
+
+        self.invoke_ninja(build_path,
+                          dict(self.build_config.ORIG_ENV),
+                          None,
+                          True)
+        if not static:
+            self.llvm_package.copy_libxml2_to_llvm(triple, llvm_make)
+            self.llvm_package.copy_libxml2_to_llvm(triple, llvm_install)
 
     def build_libxml2_for_windows(self, windows64_install):
         self.logger().info('Building libxml2 for windows')
 
         windows_sysroot = self.merge_out_path('mingw', self.build_config.MINGW_TRIPLE)
         windowstool_path = self.merge_out_path('llvm-install')
-        libxml2_build_path = self.merge_out_path('libxml2-windows-build')
-        libxml2_install_path = os.path.join(self.get_prebuilts_dir('libxml2'), 'windows-x86_64')
+        libxml2_build_path = self.merge_libxml2_build_dir('windows-x86_64')
+        libxml2_install_path = self.merge_libxml2_install_dir('windows-x86_64')
 
         cflags = ['--target=x86_64-pc-windows-gnu']
         cflags.extend(('-I', os.path.join(windows_sysroot, 'include')))
+        cflags.append('-fstack-protector-strong')
 
         ldflags = ['-fuse-ld=lld',
                   '--rtlib=compiler-rt']
@@ -1681,8 +2344,7 @@ class LlvmLibs(BuildUtils):
         libxml2_defines['CMAKE_RC_FLAGS'] = ' '.join(rcflags)
         libxml2_defines['XML_INCLUDEDIR'] = os.path.join(windows_sysroot, 'include')
 
-        libxml2_cmake_path = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR, 'third_party', 'libxml2'))
-                
+        libxml2_cmake_path = self.get_libxml2_source_path()
         self.invoke_cmake(libxml2_cmake_path,
                           libxml2_build_path,
                           libxml2_defines,
@@ -1692,11 +2354,57 @@ class LlvmLibs(BuildUtils):
                           env=dict(self.build_config.ORIG_ENV),
                           target=None,
                           install=True)
-        
+
         if not os.path.exists(os.path.join(windows64_install, 'bin')):
             os.makedirs(os.path.join(windows64_install, 'bin'))
         shutil.copyfile(os.path.join(libxml2_build_path, 'libxml2.dll'), os.path.join(windows64_install, 'bin', 'libxml2.dll'))
 
+    def run_abi_checks(self, enable_check_abi, llvm_install, configs):
+        diff_dict = {}
+        for (arch, target) in configs:
+            configs_list, cc, cxx, ar, llvm_config = self.libs_argument(llvm_install)
+            for (_, llvm_triple, _, multilib_suffix) in configs_list:
+                if target != llvm_triple:
+                    continue
+                if multilib_suffix:
+                    baseline_abi_file_path = self.merge_out_path(self.build_config.LLVM_BUILD_DIR,
+                                             "libcxx_abidiff", llvm_triple, multilib_suffix, "libc++_shared.abi")
+                    elf_common_path = self.merge_out_path('lib', 
+                                      f"libunwind-libcxxabi-libcxx-ndk-{str(llvm_triple)}-{multilib_suffix}",
+                                      'lib', llvm_triple, multilib_suffix)
+                else:
+                    baseline_abi_file_path = self.merge_out_path(self.build_config.LLVM_BUILD_DIR,
+                                             "libcxx_abidiff", llvm_triple, "libc++_shared.abi")
+                    elf_common_path = self.merge_out_path('lib', 
+                                      f"libunwind-libcxxabi-libcxx-ndk-{str(llvm_triple)}", 'lib', llvm_triple)
+                elf_file_path = self.merge_out_path(elf_common_path, "libc++_shared.so")
+                abi_file_path = self.merge_out_path(elf_common_path, "libc++_shared.abi")
+                header_dir = self.merge_out_path('lib', 
+                             f"libunwind-libcxxabi-libcxx-ndk-{str(llvm_triple)}", 'include', "c++", "v1")
+                res = self.run_abi_check(elf_file_path, abi_file_path, baseline_abi_file_path, header_dir)
+                if res:
+                    diff_dict[abi_file_path] = baseline_abi_file_path
+        if len(diff_dict) > 0:
+            if enable_check_abi is True:
+                user_check = input("ABI files are different, please confirm if you want to update [Y/n] : \n")
+                if user_check.lower() == "y" or user_check.lower() == "yes":
+                    for key, value in diff_dict.items():
+                        shutil.copy2(key, value)
+                        self.logger().info('update abi file %s ', value)
+                    return True
+            else:
+                raise Exception("ABI files are different, please check it")
+        return False
+
+    def run_abi_check(self, elf_file_path, abi_file_path, baseline_abi_file_path, header_dir):
+        abi_args = argparse.Namespace()
+        abi_args.elf_file = elf_file_path
+        abi_args.abi_file = abi_file_path
+        abi_args.compare_files = [baseline_abi_file_path, abi_file_path]
+        abi_args.headers_dir = header_dir
+        abi_check = AbiCheck(abi_args)
+        abi_check.gen_abi_file()
+        return abi_check.compare_abi_files()
 
 class LlvmPackage(BuildUtils):
 
@@ -1714,7 +2422,7 @@ class LlvmPackage(BuildUtils):
     def package_libcxx(self):
         libcxx_ndk_install=self.merge_out_path('libcxx-ndk')
         libcxx_ndk_install_include=self.merge_out_path(libcxx_ndk_install, 'include', 'libcxx-ohos', 'include', 'c++', 'v1')
-        hosts_list=['linux-x86_64', 'darwin-x86_64', 'windows-x86_64', 'darwin-arm64']
+        hosts_list=['linux-x86_64', 'darwin-x86_64', 'windows-x86_64', 'darwin-arm64', 'linux-aarch64']
 
         if os.path.exists(libcxx_ndk_install):
             for headerfile in os.listdir(libcxx_ndk_install_include):
@@ -1727,9 +2435,9 @@ class LlvmPackage(BuildUtils):
             #Package libcxx-ndk
             for host in hosts_list:
                 tarball_name = 'libcxx-ndk-%s-%s' % (self.build_config.build_name, host)
-                package_path = '%s%s' % (self.merge_packages_path(tarball_name), '.tar.bz2')
+                package_path = '%s%s' % (self.merge_packages_path(tarball_name), self.build_config.ARCHIVE_EXTENSION)
                 self.logger().info('Packaging %s', package_path)
-                args = ['tar', '-chjC', self.build_config.OUT_PATH, '-f', package_path, 'libcxx-ndk']
+                args = ['tar', self.build_config.ARCHIVE_OPTION, '-h', '-C', self.build_config.OUT_PATH, '-f', package_path, 'libcxx-ndk']
                 self.check_create_dir(self.build_config.PACKAGES_PATH)
                 self.check_call(args)
 
@@ -1752,24 +2460,15 @@ class LlvmPackage(BuildUtils):
                 '..', 'third_party', 'mingw-w64', 'mingw-w64-python',
                 self.build_config.LLDB_PY_VERSION)
             py_dll_path = os.path.join(py_root, py_dll_name)
-            py_lib_path = os.path.join(py_root, 'lib')
         else:
             py_root = mingw_python_dir
             py_dll_path = os.path.join(py_root, 'bin', py_dll_name)
-            py_lib_path = os.path.join(py_root, 'lib', py_version)
 
         bin_root = os.path.join(install_dir, 'bin')
         shutil.copyfile(py_dll_path, os.path.join(bin_root, py_dll_name))
-        self.merge_tree(py_lib_path,
-                        os.path.join(bin_root, 'python', 'lib', py_version))
 
-    def copy_python_to_host(self, install_dir):
-        if(self.host_is_linux()):
-            need_file = 'libpython' + self.build_config.LLDB_PY_VERSION + '.so.1.0'
-        if(self.host_is_darwin()):
-            need_file = 'libpython' + self.build_config.LLDB_PY_VERSION + '.dylib'
-        shutil.copyfile(os.path.join(self.get_python_dir(), "lib", need_file), os.path.join(install_dir, 'lib', need_file))
-        self.check_copy_tree(self.get_python_dir(), os.path.join(install_dir, self.build_config.LLDB_PYTHON))
+    def copy_python_to_host(self, python_dir, install_dir):
+        self.check_copy_tree(python_dir, os.path.join(install_dir, self.build_config.LLDB_PYTHON))
 
     def windows_lib_files_operation(self, lib_files, lib_dir, install_dir):
 
@@ -1787,7 +2486,8 @@ class LlvmPackage(BuildUtils):
             self.install_mingw_python(install_dir)
 
 
-    def darwin_stripped_xargs(self, bin_dir, necessary_bin_files, script_bins, need_x_bins_darwin):
+    def strip_install_file(self, bin_dir, necessary_bin_files, script_bins, host):
+        
         for bin_filename in os.listdir(bin_dir):
             binary = os.path.join(bin_dir, bin_filename)
             if not os.path.isfile(binary):
@@ -1795,8 +2495,10 @@ class LlvmPackage(BuildUtils):
             if bin_filename not in necessary_bin_files:
                 os.remove(binary)
             elif bin_filename not in script_bins and self.build_config.strip:
-                if bin_filename not in need_x_bins_darwin and self.host_is_darwin():
+                if self.host_is_darwin():
                     self.check_call(['strip', '-x', binary])
+                elif host.startswith('ohos') or host.endswith('aarch64'):
+                    self.check_call(['eu-strip', binary])
                 else:
                     self.check_call(['strip', binary])
 
@@ -1818,6 +2520,66 @@ class LlvmPackage(BuildUtils):
                 if os.path.isfile(binary):
                     self.check_call([llvm_strip, binary])
 
+    def generate_notice_file(self, readme_file):
+        nf_src = ''
+        nf_dict = {
+            "software": '',
+            "license_name": '',
+            "license_content": ''
+        }
+        notice_file = ''
+        nf_src, nf_dict["license_name"], nf_dict["software"] = self.gen_license_file(readme_file)
+        if os.path.exists(nf_src):
+            notice_file = self.gen_license(nf_dict, nf_src)
+        return notice_file
+
+    def gen_license(self, nf_dict, nf_src):
+        nf_path = os.path.dirname(nf_src)
+        third_party_path = os.path.join(*nf_path.split(os.path.sep)[-2:])
+        # Retrieve NOTICE information from README.OpenSource and write it into NOTICE
+        with open(nf_src, 'rt', encoding='utf-8') as f:
+            nf_dict["license_content"] = f.read()
+        notice_file = self.merge_out_path(third_party_path, 'NOTICE')
+        with open(notice_file, 'wt', encoding='utf-8') as f:
+            f.write("Notices for software(s):\n")
+            f.write("Software: {}\n".format(nf_dict["software"]))
+            f.write("License: {}\n".format(nf_dict["license_name"]))
+            f.write("Path: {}\n".format(third_party_path))
+            f.write('-' * 60)
+            f.write("\n{}\n".format(nf_dict["license_content"]))
+        return notice_file
+
+    def gen_license_file(self, readme_file):
+        if not os.path.exists(readme_file) or os.path.isdir(readme_file):
+            return '', '', '', ''
+
+        license_file = ''
+        license_name = None
+        software_name = None
+        opensource_configdata = None
+        with open(readme_file, 'rb') as input_f:
+            opensource_config = json.load(input_f)
+        if opensource_config is None:
+            return '', '', '', ''
+        for info in opensource_config:
+            license_file = info.get('License File')
+            license_name = info.get('License')
+            software_name = '{} {}'.format(info.get('Name'),
+                                           info.get('Version Number'))
+
+        license_file_path = os.path.join(os.path.dirname(readme_file),
+                                         license_file.strip())
+        if not os.path.exists(license_file_path):
+            return '', '', '', ''
+        return license_file_path, license_name, software_name
+
+    def append_notice(self, build_flag, host, lib_name, notices):
+        if build_flag and not host.startswith('windows'):
+            lib_readme_file = os.path.abspath(os.path.join(self.build_config.REPOROOT_DIR,
+                                                            'third_party', lib_name, 'README.OpenSource'))
+            lib_notice = self.generate_notice_file(lib_readme_file)
+            with open(lib_notice) as notice_file:
+                notices.append(notice_file.read())
 
     def notice_prebuilts_file(self, host, projects, install_dir):
 
@@ -1840,9 +2602,11 @@ class LlvmPackage(BuildUtils):
             with open(mingw_license_file) as notice_file:
                 notices.append(notice_file.read())
 
+        self.append_notice(self.build_config.build_ncurses, host, 'ncurses', notices)
+        self.append_notice(self.build_config.build_ncurses, host, 'libedit', notices)
+
         with open(os.path.join(install_dir, 'NOTICE'), 'w') as notice_file:
             notice_file.write('\n'.join(notices))
-
 
     def package_clang_bin_file(self, necessary_bin_files, ext):
         necessary_bin_file = [
@@ -1860,7 +2624,7 @@ class LlvmPackage(BuildUtils):
             'opt%s' % ext,
 
             ]
-            
+
         necessary_bin_files.extend(necessary_bin_file)
 
     @staticmethod
@@ -1891,6 +2655,8 @@ class LlvmPackage(BuildUtils):
             'llvm-cov%s' % ext,
             'llvm-cxxfilt%s' % ext,
             'llvm-dis%s' % ext,
+            'llvm-dwp%s' % ext,
+            'llvm-ifs%s' % ext,
             'llvm-lib%s' % ext,
             'llvm-link%s' % ext,
             'llvm-modextract%s' % ext,
@@ -1906,6 +2672,7 @@ class LlvmPackage(BuildUtils):
             'llvm-strings%s' % ext,
             'llvm-strip%s' % ext,
             'llvm-symbolizer%s' % ext,
+            'llvm-dwarfdump%s' % ext,
             ]
         necessary_bin_files.extend(necessary_bin_file)
 
@@ -1948,9 +2715,16 @@ class LlvmPackage(BuildUtils):
             # Redefining necessary bin files for Windows.
             windows_forbidden_list_bin_files = ['clang-%s%s' % (vers_major, ext), 'scan-build%s' % ext,
                                            'scan-view%s' % ext]
-            windows_additional_bin_files = ['liblldb%s' % shlib_ext, 'libpython3.10%s' % shlib_ext]
+            windows_additional_bin_files = ['liblldb%s' % shlib_ext, 'libpython%s%s' % (self.build_config.LLDB_PY_VERSION, shlib_ext),
+                                            'libclang%s' % shlib_ext]
             if self.build_config.build_libxml2:
                 windows_additional_bin_files += ['libxml2%s' % shlib_ext]
+
+            if self.build_config.enable_lzma_7zip:
+                windows_additional_bin_files += ['liblzma%s' % shlib_ext]
+                bin_root = os.path.join(install_dir, 'bin')
+                prebuild_dir = self.merge_install_dir('lzma', 'windows-x86_64', 'lib', 'liblzma.dll')
+                shutil.copyfile(prebuild_dir, os.path.join(bin_root, 'liblzma.dll'))
 
             new_necessary_bin_files = list(set(necessary_bin_files) - set(windows_forbidden_list_bin_files))
             new_necessary_bin_files.extend(windows_additional_bin_files)
@@ -1968,9 +2742,9 @@ class LlvmPackage(BuildUtils):
     def package_up_resulting(self, package_name, host, install_host_dir):
         # Package up the resulting trimmed install/ directory.
         tarball_name = '%s-%s' % (package_name, host)
-        package_path = '%s%s' % (self.merge_packages_path(tarball_name), '.tar.bz2')
+        package_path = '%s%s' % (self.merge_packages_path(tarball_name), self.build_config.ARCHIVE_EXTENSION)
         self.logger().info('Packaging %s', package_path)
-        args = ['tar', '-cjC', install_host_dir, '-f', package_path, package_name]
+        args = ['tar', self.build_config.ARCHIVE_OPTION, '-C', install_host_dir, '-f', package_path, package_name]
         if host.startswith('windows'):
             # windows do not support symlinks,
             # replace them with file copies
@@ -1982,9 +2756,9 @@ class LlvmPackage(BuildUtils):
         # Package ohos NDK
         if os.path.exists(self.merge_out_path('sysroot')):
             tarball_ndk_name = 'ohos-sysroot-%s' % self.build_config.build_name
-            package_ndk_path = '%s%s' % (self.merge_packages_path(tarball_ndk_name), '.tar.bz2')
+            package_ndk_path = '%s%s' % (self.merge_packages_path(tarball_ndk_name), self.build_config.ARCHIVE_EXTENSION)
             self.logger().info('Packaging %s', package_ndk_path)
-            args = ['tar', '-chjC', self.build_config.OUT_PATH, '-f', package_ndk_path, 'sysroot']
+            args = ['tar', self.build_config.ARCHIVE_OPTION, '-h', '-C', self.build_config.OUT_PATH, '-f', package_ndk_path, 'sysroot']
             self.check_call(args)
 
     def get_dependency_list(self, install_dir, lib):
@@ -2029,7 +2803,7 @@ class LlvmPackage(BuildUtils):
                     if index_link != -1:
                         subprocess.check_call(["install_name_tool", "-change", dependency, "@loader_path/../lib/%s" % lib_name, lib])
 
-    def copy_ncurses_to_llvm(self, install_dir):
+    def copy_ncurses_to_llvm(self, platform_triple, install_dir):
         self.logger().info('copy_ncurses_to_llvm install_dir is %s', install_dir)
 
         if self.host_is_darwin():
@@ -2039,30 +2813,27 @@ class LlvmPackage(BuildUtils):
 
         lib_dst_path = os.path.join(install_dir, 'lib')
 
-        lib_src_path = self.merge_out_path('../prebuilts', 'ncurses', 'lib')
-        libncurses_src = os.path.join(lib_src_path, 'libncurses%s' % shlib_ext)
-        libpanel_src = os.path.join(lib_src_path, 'libpanel%s' % shlib_ext)
-        libform_src = os.path.join(lib_src_path, 'libform%s' % shlib_ext)
-
-        libncurses_dst = os.path.join(lib_dst_path, 'libncurses%s' % shlib_ext)
-        libpanel_dst = os.path.join(lib_dst_path, 'libpanel%s' % shlib_ext)
-        libform_dst =os.path.join(lib_dst_path, 'libform%s' % shlib_ext)
+        lib_names = self.get_ncurses_dependence_libs(platform_triple)
+        lib_srcs = [self.merge_install_dir('ncurses', platform_triple, 'lib',
+                                                   f'{name}{shlib_ext}') for name in lib_names]
+        lib_dsts = [os.path.join(install_dir, 'lib',
+                                 f'{name}{shlib_ext}') for name in lib_names]
 
         if not os.path.exists(lib_dst_path):
             os.makedirs(lib_dst_path)
 
-        for lib_file in (libncurses_src, libpanel_src, libform_src):
-            self.update_lib_id_link(lib_src_path, lib_file)
+        for lib_file in lib_srcs:
+            self.update_lib_id_link(self.merge_install_dir('ncurses', platform_triple, 'lib'), lib_file)
 
         # Clear historical libraries
-        for lib in (libncurses_dst, libpanel_dst, libform_dst):
+        for lib in lib_dsts:
             if os.path.exists(lib):
                 os.remove(lib)
 
-        for lib_src in (libncurses_src, libpanel_src, libform_src):
+        for lib_src in lib_srcs:
             self.check_copy_file(lib_src, lib_dst_path)
 
-    def copy_libedit_to_llvm(self, install_dir):
+    def copy_libedit_to_llvm(self, platform_triple, install_dir):
         self.logger().info('LlvmPackage copy_libedit_to_llvm install_dir is %s', install_dir)
 
         if self.host_is_darwin():
@@ -2070,7 +2841,7 @@ class LlvmPackage(BuildUtils):
         if self.host_is_linux():
             shlib_ext = '.so.0'
 
-        libedit_lib_path = self.merge_out_path('../prebuilts', 'libedit', 'lib')
+        libedit_lib_path = self.merge_install_dir('libedit', platform_triple, 'lib')
         libedit_src = os.path.join(libedit_lib_path, 'libedit%s' % shlib_ext)
 
         lib_dst_path = os.path.join(install_dir, 'lib')
@@ -2095,32 +2866,50 @@ class LlvmPackage(BuildUtils):
             st = os.stat(os.path.join(bin_dir, sh_filename))
             os.chmod(os.path.join(bin_dir, sh_filename), st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
 
-    def copy_libxml2_to_llvm(self, install_dir):
+    def copy_libxml2_to_llvm(self, platform_triple, install_dir):
         self.logger().info('LlvmPackage copy_libxml2_to_llvm install_dir is %s', install_dir)
 
         libxml2_version = self.get_libxml2_version()
-        if self.host_is_darwin():
-            shlib_ext = '.dylib'
-        if self.host_is_linux():
-            shlib_ext = f'.so.{libxml2_version}'
+        if libxml2_version is not None:
+            if self.host_is_darwin():
+                shlib_ext = f'.{libxml2_version}.dylib'
+            if self.host_is_linux():
+                shlib_ext = f'.so.{libxml2_version}'
 
-        libxml2_lib_path = self.merge_out_path('libxml2')
-        libxml2_src = os.path.join(libxml2_lib_path, 'libxml2%s' % shlib_ext)
+            lib_path = self.merge_libxml2_install_dir(platform_triple, 'lib')
+            libxml2_src = os.path.join(lib_path, 'libxml2%s' % shlib_ext)
+
+            lib_dst_path = os.path.join(install_dir, 'lib')
+
+            libxml2_dst = os.path.join(lib_dst_path, 'libxml2%s' % shlib_ext)
+
+            if not os.path.exists(lib_dst_path):
+                os.makedirs(lib_dst_path)
+
+            self.update_lib_id_link(lib_path, libxml2_src)
+
+            # Clear historical library
+            if os.path.isfile(libxml2_dst):
+                os.remove(libxml2_dst)
+
+            self.check_copy_file_and_symlinks(lib_path, lib_dst_path)
+
+    def copy_lzma_to_llvm(self, platform_triple, install_dir):
+        self.logger().info('copy_lzma_to_llvm install_dir is %s', install_dir)
+
+        if self.host_is_darwin():
+            shlib_ext = [f'.{self.build_config.LZMA_VERSION}.dylib']
+        if self.host_is_linux():
+            shlib_ext = ['.so']
+        lzma_file = [self.merge_install_dir('lzma', platform_triple, 'lib',
+                                           f'liblzma{ext}') for ext in shlib_ext]
 
         lib_dst_path = os.path.join(install_dir, 'lib')
-
-        libxml2_dst = os.path.join(lib_dst_path, 'libxml2%s' % shlib_ext)
-
         if not os.path.exists(lib_dst_path):
             os.makedirs(lib_dst_path)
 
-        self.update_lib_id_link(libxml2_lib_path, libxml2_src)
-
-        # Clear historical library
-        if os.path.isfile(libxml2_dst):
-            os.remove(libxml2_dst)
-
-        self.check_copy_file(libxml2_src, lib_dst_path)
+        for file in lzma_file:
+            self.check_copy_file(file, lib_dst_path)
 
     # Packing Operation.
 
@@ -2133,7 +2922,7 @@ class LlvmPackage(BuildUtils):
         if host.startswith('windows'):
             ext = '.exe'
             shlib_ext = '.dll'
-        elif host.startswith('linux'):
+        elif host.startswith('linux') or host.startswith('ohos'):
             ext = ''
             shlib_ext = '.so'
         else:
@@ -2155,7 +2944,7 @@ class LlvmPackage(BuildUtils):
         repo_tool = os.path.join(self.build_config.REPOROOT_DIR, '.repo', 'repo', 'repo')
         if os.path.isfile(repo_tool):
             self.logger().info('Generating manifest.')
-            subprocess.run(['python2.7', repo_tool, 'manifest', '-r', '-o', manifest], shell=False,
+            subprocess.run(['python3', repo_tool, 'manifest', '-r', '-o', manifest], shell=False,
                            stdout=subprocess.PIPE, cwd=self.build_config.REPOROOT_DIR)
         else:
             self.logger().error('Cannot generate manifest, repo tool not found.')
@@ -2171,14 +2960,13 @@ class LlvmPackage(BuildUtils):
 
         # Scripts that should not be stripped
         script_bins = ['git-clang-format', 'scan-build', 'scan-view']
-        need_x_bins_darwin = ['clang', 'clang++', 'clang-9', 'clang-cl', 'clang-cpp']
 
-        # Bin file in the list should be stripped with -x args when host=darwin
-        self.darwin_stripped_xargs(bin_dir, necessary_bin_files, script_bins, need_x_bins_darwin)
+        # Bin files should be stripped with -x args when host=darwin
+        self.strip_install_file(bin_dir, necessary_bin_files, script_bins, host)
 
         # Strip lldb-server
         self.strip_lldb_server(host, install_dir)
-        
+
         # Copy lldb script
         lldb_script_file = 'lldb.cmd' if host.startswith('windows') else 'lldb.sh'
         self.check_copy_file(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'lldb', 'scripts', lldb_script_file), os.path.join(install_dir, 'bin'))
@@ -2194,8 +2982,6 @@ class LlvmPackage(BuildUtils):
                 print('Did not find %s in %s' % (necessary_bin_file, bin_dir))
                 raise RuntimeError('Did not find %s in %s' % (necessary_bin_file, bin_dir))
 
-        cmake_dir = os.path.join(lib_dir, 'cmake')
-        self.check_rm_tree(cmake_dir)
 
         self.notice_prebuilts_file(host, self.package_license_project_tuple(), install_dir)
 
@@ -2204,9 +2990,7 @@ class LlvmPackage(BuildUtils):
         create_tar = True
         if create_tar:
             self.package_up_resulting(package_name, host, install_host_dir)
-
         return
-
 
 
 def main():
@@ -2219,12 +3003,14 @@ def main():
 
     args = build_config.parse_args()
     need_host = build_utils.host_is_darwin() or ('linux' not in args.no_build)
-    need_windows = build_utils.host_is_linux() and \
-                   ('windows' not in args.no_build)
+    need_windows = build_utils.host_is_linux() and not build_utils.host_is_linux_aarch64() and \
+                   not build_config.build_only and ('windows' not in args.no_build)
 
     llvm_install = build_utils.merge_out_path('llvm-install')
     llvm_make = build_utils.merge_out_path('llvm_make')
     windows64_install = build_utils.merge_out_path('windows-x86_64-install')
+    llvm_path = llvm_install if not build_config.build_only else \
+        os.path.join(build_config.buildtools_path, 'clang', 'ohos', 'linux-x86_64', f'clang-{build_config.CLANG_VERSION}')
 
     configs = []
     if not build_config.no_build_arm:
@@ -2243,41 +3029,123 @@ def main():
     if not build_config.no_build_x86_64:
         configs.append(('x86_64', build_utils.open_ohos_triple('x86_64')))
 
-    if build_config.build_ncurses:
-        llvm_libs.build_ncurses(llvm_make, llvm_install)
+    if not build_config.no_build_loongarch64:
+        configs.append(('loongarch64', build_utils.open_ohos_triple('loongarch64')))
 
-    if build_config.build_libedit:
-        llvm_libs.build_libedit(llvm_make, llvm_install)
-
+    build_config.LIBXML2_VERSION = build_utils.get_libxml2_version()
+    if build_config.LIBXML2_VERSION is None:
+        raise Exception('LIBXML2 version information not found, please check if the libxml2.spec file exists')
     if build_config.build_libxml2:
-        build_utils.get_libxml2_version()
-        llvm_libs.build_libxml2(llvm_make, llvm_install)
-        
-    if build_config.do_build and need_host:
+        llvm_libs.build_libxml2(build_utils.use_platform(), llvm_make, llvm_install)
+
+    build_config.NCURSES_VERSION = build_utils.get_ncurses_version()
+    if build_config.NCURSES_VERSION is None:
+        raise Exception('NCURSES version information not found, please check if the ncurses.spec file exists')
+    if build_config.build_ncurses:
+        llvm_libs.build_ncurses(llvm_make, llvm_install, build_utils.use_platform())
+
+    build_config.LZMA_VERSION = build_utils.get_lzma_version()
+    if build_config.LZMA_VERSION is None:
+        raise Exception('Lzma version information not found, please check if the 7zVersion.h file exists')
+    if build_config.enable_lzma_7zip:
+        llvm_libs.build_lzma(llvm_make, llvm_install, build_utils.use_platform())
+
+    build_config.LIBEDIT_VERSION = build_utils.get_libedit_version()
+    if build_config.LIBEDIT_VERSION is None:
+        raise Exception('LIBEDIT version information not found, please check if the libedit.spec file exists')
+    if build_config.build_libedit:
+        llvm_libs.build_libedit(llvm_make, llvm_install, build_utils.use_platform())
+    
+    #breakpoint()
+    if build_config.do_build and need_host and (build_config.build_only_llvm or not build_config.build_only):
         llvm_core.llvm_compile(
             build_config.build_name,
             llvm_install,
             build_config.debug,
             build_config.no_lto,
             build_config.build_instrumented,
-            build_config.xunit_xml_output)
-        llvm_package.copy_python_to_host(llvm_make)
-        llvm_package.copy_python_to_host(llvm_install)
+            build_config.build_only_llvm,
+            build_config.xunit_xml_output,
+            build_config.build_xvm)
+        python_dir = llvm_core.get_python_dir()
+        llvm_package.copy_python_to_host(python_dir, llvm_make)
+        llvm_package.copy_python_to_host(python_dir, llvm_install)
 
-    llvm_core.set_clang_version(llvm_install)
+    llvm_core.set_clang_version(llvm_path)
 
-    if build_config.do_build and build_utils.host_is_linux():
+    if build_config.build_libs and not build_config.build_only:
+        libs_type = 'crts' if 'crts' in build_config.build_libs else 'runtimes'
+        is_first_time = True if build_config.build_libs in ['crts_first_time', 'runtimes_libunwind'] else False
+        is_ndk_install = True if build_config.build_libs == 'runtimes_libcxx_ndk' else False
+
+        for (_, target) in configs:
+            llvm_libs.build_libs_by_type(llvm_install, target, libs_type, is_first_time, is_ndk_install)
+        return
+
+    if build_config.do_build and build_utils.host_is_linux() and not build_config.build_only:
         sysroot_composer.setup_cmake_platform(llvm_install)
         llvm_libs.build_crt_libs(configs, llvm_install)
-
+        
+        breakpoinr()
         if build_config.need_libs:
+            if build_config.build_libs_with_hb:
+                llvm_libs.run_hb_build_libs('runtimes_libunwind')
+                llvm_libs.run_hb_build_libs('runtimes_libcxx')
+                llvm_libs.run_hb_build_libs('runtimes_libcxx_ndk')
+                llvm_libs.run_hb_build_libs('crts_not_first_time')
+            else:
+                for (arch, target) in configs:
+                    llvm_libs.build_libs(llvm_install, target)
+    if build_config.enable_check_abi:
+        has_diff = llvm_libs.run_abi_checks(build_config.enable_check_abi, llvm_install, configs)
+        if has_diff:
+            print("Build is interrupted because of libCxx ABI changed")
+            return
+    
+    if build_config.build_only:
+        sysroot_composer.setup_cmake_platform(llvm_install)
+        if "musl" in build_config.build_only_libs:
+            # change compiller path to prebuilds in clang.gni file
+            clang_gni = os.path.join(build_config.REPOROOT_DIR, "build", "config", "clang", "clang.gni")
+            clang_gni_tmp = f"{clang_gni}_tmp"
+            shutil.move(clang_gni, clang_gni_tmp)
+            with open(clang_gni_tmp, 'r') as f1:
+                data = f1.read()
+            with open(clang_gni, 'w') as f2:
+                data = data.replace("//out/llvm-install", "${toolchains_dir}/${host_platform_dir}/" + f"clang-{build_config.CLANG_VERSION}")
+                f2.write(data)
+            # build musl
             for (arch, target) in configs:
-                llvm_libs.build_libs(llvm_install, target)
+                sysroot_composer.build_musl_header(arch, target)
+                sysroot_composer.build_musl(arch, target)
+            # return original version of clang.gni
+            shutil.move(clang_gni_tmp, clang_gni)
+
+#        if "compiler-rt" in build_config.build_only_libs:
+#            # temporary hide cmake checks
+#            lib_cmake = os.path.join(build_config.REPOROOT_DIR, 'prebuilts/clang/ohos', build_utils.use_platform(),
+#                'clang-%s' % build_config.CLANG_VERSION, "lib/cmake")
+#            lib_cmake_tmp = f"{lib_cmake}_tmp"
+#            if os.path.exists(lib_cmake):
+#                shutil.move(lib_cmake, lib_cmake_tmp)
+            # build compiler-rt
+#            assert os.path.exists(os.path.join(build_config.REPOROOT_DIR, "out", "sysroot")), "Error! Compiler-rt require musl!"
+#            for (_, target) in configs:
+#                llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'crts', True, False)
+#                llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'crts', False, False)
+            # return original lib/cmake dir
+#            if os.path.exists(lib_cmake_tmp):
+#                shutil.move(lib_cmake_tmp, lib_cmake)
+
+        if "libcxx" in build_config.build_only_libs:
+            assert os.path.exists(os.path.join(build_config.REPOROOT_DIR, "out", "sysroot")), "Error! Libcxx require musl!"
+            for (_, target) in configs:
+                llvm_libs.build_libs_by_type(llvm_path, llvm_install, target, 'runtimes', False, False)
 
     windows_python_builder = None
 
     if build_config.do_build and need_windows:
-        mingw.main(build_config.VERSION)
+        mingw.main(build_config.VERSION, build_config.buildtools_path)
         llvm_libs.build_runtimes_for_windows(build_config.enable_assertions)
 
         if build_config.build_libxml2:
@@ -2289,10 +3157,26 @@ def main():
             windows_python_builder.build()
             windows_python_builder.prepare_for_package()
             llvm_core.set_mingw_python_dir(windows_python_builder.install_dir)
+            mingw_python_dir = llvm_core.get_mingw_python_dir()
+            llvm_package.copy_python_to_host(mingw_python_dir, build_utils.merge_out_path('windows-x86_64'))
+            llvm_package.copy_python_to_host(mingw_python_dir, windows64_install)
+        else:
+            mingw_python_dir = os.path.join(build_utils.buildtools_path, 'python3/windows-x86/3.11.4')
+            llvm_core.set_mingw_python_dir(mingw_python_dir)
+            llvm_package.copy_python_to_host(mingw_python_dir, build_utils.merge_out_path('windows-x86_64'))
+            llvm_package.copy_python_to_host(mingw_python_dir, windows64_install)
+
+        if build_config.enable_lzma_7zip:
+            build_utils.logger().info('build windows lzma')
+            target_triple = 'windows-x86_64'
+            llvm_libs.build_lzma(build_utils.merge_out_path(target_triple), windows64_install, target_triple)
+
         llvm_core.llvm_compile_for_windows(build_config.TARGETS,
                                           build_config.enable_assertions,
                                           build_config.build_name)
 
+    if build_config.build_gtest_libs:
+        llvm_libs.build_gtest(llvm_path, llvm_install)
 
     if build_config.do_package:
         if build_utils.host_is_linux():
@@ -2301,6 +3185,8 @@ def main():
 
         if build_config.build_python and windows_python_builder:
             llvm_package.set_mingw_python_dir(windows_python_builder.install_dir)
+        else:
+            llvm_package.set_mingw_python_dir(llvm_core.get_mingw_python_dir())
 
         if need_windows:
             llvm_package.package_operation(windows64_install, 'windows-x86_64')

@@ -20,6 +20,10 @@ case $(uname -m) in
         host_cpu=x86_64
 esac
 
+linux_platform=linux-x86
+darwin_platform=darwin-x86
+download_url=https://mirrors.huaweicloud.com
+
 # sync code directory
 code_dir=$(pwd)
 
@@ -31,7 +35,7 @@ if [ ! -d "${bin_dir}" ];then
     mkdir -p "${bin_dir}"
 fi
 
-DOWNLOADER="wget -t3 -T10 -O "
+DOWNLOADER="wget -t3 -T10 -O"
 
 function download_and_archive() {
     archive_dir=$1
@@ -61,28 +65,30 @@ function download_and_archive() {
 
 copy_config="""
 """
-
-CLANG_LINUX_BUILD=clang_linux-x86_64-025192-20230330
 copy_config_linux_x86_64="""
-prebuilts/cmake,https://mirrors.huaweicloud.com/harmonyos/compiler/cmake/3.16.5/${host_platform}/cmake-${host_platform}-x86-3.16.5.tar.gz
-prebuilts/clang/ohos/${host_platform}-${host_cpu},https://mirrors.huaweicloud.com/openharmony/compiler/clang/15.0.4-025192/linux/${CLANG_LINUX_BUILD}.tar.bz2
-prebuilts/python3,https://mirrors.huaweicloud.com/harmonyos/compiler/python/3.10.2/${host_platform}/python-${host_platform}-x86-3.10.2_20230604.tar.gz
-prebuilts/build-tools/${host_platform}-x86/bin,https://repo.huaweicloud.com/openharmony/compiler/gn/2024/linux/gn-linux-x86-20230426.tar.gz
-prebuilts/build-tools/${host_platform}-x86/bin,https://repo.huaweicloud.com/openharmony/compiler/ninja/1.11.0/linux/ninja-linux-x86-1.11.0.tar.gz
+prebuilts/cmake,cmake-${linux_platform}
+prebuilts/clang/ohos/${host_platform}-${host_cpu},linux/clang_${linux_platform}
+prebuilts/python3,python-${linux_platform}
+prebuilts/python3,python-linux-arm64
+prebuilts/python3,python-mingw-x86
+prebuilts/build-tools/${host_platform}-x86/bin,gn-${linux_platform}
+prebuilts/build-tools/${host_platform}-x86/bin,ninja-${linux_platform}
 """
 
-
-CLANG_DARWIN_BUILD=clang_darwin-x86_64-8e906c-20230415
 copy_config_darwin_x86_64="""
-prebuilts/cmake,https://mirrors.huaweicloud.com/harmonyos/compiler/cmake/3.16.5/${host_platform}/cmake-${host_platform}-x86-3.16.5.tar.gz
-prebuilts/clang/ohos/${host_platform}-${host_cpu},http://mirrors.huaweicloud.com/harmonyos/compiler/clang/15.0.4-8e906c/darwin/${CLANG_DARWIN_BUILD}.tar.bz2
-prebuilts/python3,https://mirrors.huaweicloud.com/harmonyos/compiler/python/3.10.2/${host_platform}/python-${host_platform}-x86-3.10.2_20230604.tar.gz
-prebuilts/build-tools/${host_platform}-x86/bin,https://repo.huaweicloud.com/openharmony/compiler/gn/2024/darwin/gn-darwin-x86-20230425.tar.gz
-prebuilts/build-tools/${host_platform}-x86/bin,https://repo.huaweicloud.com/openharmony/compiler/ninja/1.11.0/darwin/ninja-darwin-x86-1.11.0.tar.gz
+prebuilts/cmake,cmake-darwin-universal
+prebuilts/clang/ohos/${host_platform}-${host_cpu},darwin_x86_64/clang_${darwin_platform}
+prebuilts/python3,python-${darwin_platform}
+prebuilts/build-tools/${host_platform}-x86/bin,gn-${darwin_platform}
+prebuilts/build-tools/${host_platform}-x86/bin,ninja-${darwin_platform}
 """
 
 copy_config_darwin_arm64="""
-prebuilts/python3,https://mirrors.huaweicloud.com/harmonyos/compiler/python/3.10.2/${host_platform}/python-${host_platform}-x86-3.10.2_20230604.tar.gz
+prebuilts/cmake,cmake-darwin-universal
+prebuilts/clang/ohos/${host_platform}-${host_cpu},darwin_arm64/clang_darwin-arm64
+prebuilts/python3,python-${host_platform}-${host_cpu}
+prebuilts/build-tools/${host_platform}-${host_cpu}/bin,gn-${darwin_platform}
+prebuilts/build-tools/${host_platform}-${host_cpu}/bin,ninja-darwin-arm
 """
 
 if [[ "${host_platform}" == "linux" ]]; then
@@ -109,31 +115,58 @@ fi
 
 for i in $(echo ${copy_config})
 do
-    unzip_dir=$(echo $i|awk -F ',' '{print $1}')
-    remote_url=$(echo $i|awk -F ',' '{print $2}')
-    download_and_archive "${unzip_dir}" "${remote_url}"
+  unzip_dir=$(echo $i|awk -F ',' '{print $1}')
+  keyword=$(echo $i|awk -F ',' '{print $2}')
+  url_part=$(cat ./build/prebuilts_download_config.json | sort | uniq | grep "$keyword" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//' |head -1)
+  echo $url_part
+  if [ -n "$url_part" ]; then
+    full_url="${download_url}${url_part}"
+  else
+    echo "URL not found"
+    exit 1
+  fi
+  download_and_archive "${unzip_dir}" "${full_url}"
+
 done
 
+linux_filename=$(cat ./build/prebuilts_download_config.json | sort | uniq | grep "clang_linux-x86" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
+CLANG_LINUX_BUILD=$(basename "$linux_filename" .tar.bz2)
+
+darwin_x86_filename=$(cat ./build/prebuilts_download_config.json | sort | uniq | grep "clang_darwin-x86_64" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
+CLANG_DARWIN_X86_BUILD=$(basename "$darwin_x86_filename" .tar.bz2)
+
+darwin_arm_filename=$(cat ./build/prebuilts_download_config.json | sort | uniq | grep "clang_darwin-arm64" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
+CLANG_DARWIN_ARM_BUILD=$(basename "$darwin_arm_filename" .tar.bz2)
 
 if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/${CLANG_LINUX_BUILD}" ]; then
     SET_CLANG_VERSION='15.0.4'
     mv "${code_dir}/prebuilts/clang/ohos/linux-x86_64/${CLANG_LINUX_BUILD}" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-${SET_CLANG_VERSION}"
+    ln -s "${code_dir}/prebuilts/clang/ohos/linux-x86_64/clang-${SET_CLANG_VERSION}" "${code_dir}/prebuilts/clang/ohos/linux-x86_64/llvm"
 fi
 
-if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/${CLANG_DARWIN_BUILD}" ]; then
+if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/${CLANG_DARWIN_X86_BUILD}" ]; then
     SET_CLANG_VERSION='15.0.4'
-    mv "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/${CLANG_DARWIN_BUILD}" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-${SET_CLANG_VERSION}"
+    mv "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/${CLANG_DARWIN_X86_BUILD}" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-${SET_CLANG_VERSION}"
+    ln -s "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/clang-${SET_CLANG_VERSION}" "${code_dir}/prebuilts/clang/ohos/darwin-x86_64/llvm"
+fi
+
+if [ -d "${code_dir}/prebuilts/clang/ohos/darwin-arm64/${CLANG_DARWIN_ARM_BUILD}" ]; then
+    SET_CLANG_VERSION='15.0.4'
+    mv "${code_dir}/prebuilts/clang/ohos/darwin-arm64/${CLANG_DARWIN_ARM_BUILD}" "${code_dir}/prebuilts/clang/ohos/darwin-arm64/clang-${SET_CLANG_VERSION}"
+    mv "${code_dir}/prebuilts/cmake/darwin-x86" "${code_dir}/prebuilts/cmake/darwin-arm64"
+    ln -s "${code_dir}/prebuilts/clang/ohos/darwin-arm64/clang-${SET_CLANG_VERSION}" "${code_dir}/prebuilts/clang/ohos/darwin-arm64/llvm"
 fi
 
 # try to detect version ...
-BASE_CLANG_DIR="${code_dir}/prebuilts/clang/ohos/${host_platform}-x86_64"
+BASE_CLANG_DIR="${code_dir}/prebuilts/clang/ohos/${host_platform}-${host_cpu}"
 CLANG_FOUND_VERSION=$(cd ${BASE_CLANG_DIR}; basename $(ls -d clang*/ | head -1) | sed s/clang-//)
 
 # check that pipe above didn't fail and that we have (any) clang version
-if [ ! $? == 0 ] || [ x == x${CLANG_FOUND_VERSION} ] ; then 
+if [ ! $? == 0 ] || [ x == x${CLANG_FOUND_VERSION} ] ; then
     echo "env_prepare.sh: could not detect clang version" 2>&1
     exit 1
 fi
 # ... and compare it with one in python file
 echo "prebuilts_clang_version='${CLANG_FOUND_VERSION}'" | diff -q - $(dirname $0)/prebuilts_clang_version.py || ( echo Clang versions mismatch ; exit 1 )
 exit 0
+
