@@ -1760,6 +1760,13 @@ def PacPtrTag : InheritableAttr {
   let SimpleHandler = 1;
 }
 
+def FastPacPtrTag : InheritableAttr {
+  let Spellings = [GCC<"fast_pac_protected_ptr">];
+  let Subjects = SubjectList<[Field], ErrorDiag>;
+  let Documentation = [FastPacPtrTagDocs];
+  let SimpleHandler = 1;
+}
+
 def PacExclTag : InheritableAttr {
   let Spellings = [GCC<"pac_excl">];
   let Subjects = SubjectList<[Field], ErrorDiag>;

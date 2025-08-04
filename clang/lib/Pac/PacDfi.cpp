@@ -26,6 +26,7 @@ using namespace clang;
 
 std::map<const RecordDecl*, StringRef> RecordDecl2StructName;
 std::map<RecordDecl*, std::vector<FieldDecl*>> PacPtrNameInfos;
+std::map<RecordDecl*, std::vector<FieldDecl*>> FastPacPtrNameInfos;
 std::map<RecordDecl*, std::vector<FieldDecl*>> PacFieldNameInfos;
 std::map<RecordDecl*, std::vector<FieldDecl*>> PacFieldExclNameInfos;
 std::map<RecordDecl*, std::vector<FieldDecl*>> PacFieldSeqlNameInfos;
@@ -98,6 +99,7 @@ void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &
 
     // find pac_tag attr fields, and insert new fields
     std::vector<FieldDecl*> PacPtrNames;
+    std::vector<FieldDecl*> FastPacPtrNames;
     std::vector<FieldDecl*> PacFieldNames;
     std::vector<FieldDecl*> PacFieldExclNames;
     std::vector<FieldDecl*> PacFieldSeqlNames;
@@ -147,6 +149,15 @@ void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &
                 continue;
             }
             PacPtrNames.push_back(Field);
+        } else if (Field->hasAttr<FastPacPtrTagAttr>()) {
+            // fast_pac_protected_ptr [only] support pointer type.
+            if (!ElemTy->isAnyPointerType()) {
+                Diags.Report(Field->getLocation(), 
+                    diag::warn_unsupported_pac_dfi_type) << Field->getType()
+                    << Field->getAttr<FastPacPtrTagAttr>()->getSpelling();
+                continue;
+            }
+            FastPacPtrNames.push_back(Field);
         }
     }
 
@@ -162,6 +173,9 @@ void PacDfiParseStruct(RecordDecl *TagDecl, ASTContext &Ctx, DiagnosticsEngine &
     }
     if (!PacPtrNames.empty()) {
         PacPtrNameInfos.insert(std::make_pair(TagDecl, PacPtrNames));
+    }
+    if (!FastPacPtrNames.empty()) {
+        FastPacPtrNameInfos.insert(std::make_pair(TagDecl, FastPacPtrNames));
     }
     if (!PacFieldExclNames.empty()) {
         PacFieldExclNameInfos.insert(std::make_pair(TagDecl, PacFieldExclNames));
@@ -221,27 +235,33 @@ void pacDfiCreateNameMetaData(
     }
 }
 
-void PacDfiEmitStructFieldsMetadata(llvm::Module &M, CodeGen::CodeGenModule *CGM,
-    std::function<unsigned(CodeGen::CodeGenModule&, const RecordDecl*, const FieldDecl*)> func)
+void PacDfiEmitStructFieldsMetadata(llvm::Module &M,
+  CodeGen::CodeGenModule *CGM, std::function<unsigned(CodeGen::CodeGenModule&,
+  const RecordDecl*, const FieldDecl*)> func)
 {
-    if (!llvm::PARTS::useDataFieldTag()) {
-        return;
-    }
-    // emit struct fields that need to protect with PA
-    if (!PacFieldNameInfos.empty()) {
-        pacDfiCreateNameMetaData(PacFieldNameInfos, "pa_field_info", M, CGM,
-                                 func);
-    }
-    if (!PacPtrNameInfos.empty()) {
-        pacDfiCreateNameMetaData(PacPtrNameInfos, "pa_ptr_field_info", M, CGM,
-                                 func);
-    }
-    if (!PacFieldExclNameInfos.empty()) {
-        pacDfiCreateNameMetaData(PacFieldExclNameInfos, "pa_excl_field_info", M, CGM, func);
-    }
-    if (!PacFieldSeqlNameInfos.empty()) {
-        pacDfiCreateNameMetaData(PacFieldSeqlNameInfos, "pa_seql_field_info", M, CGM, func);
-    }
+  if (!llvm::PARTS::useDataFieldTag()) {
+    return;
+  }
+  // emit struct fields that need to protect with PA
+  if (!PacFieldNameInfos.empty()) {
+    pacDfiCreateNameMetaData(PacFieldNameInfos, "pa_field_info", M, CGM, func);
+  }
+  if (!PacPtrNameInfos.empty()) {
+    pacDfiCreateNameMetaData(PacPtrNameInfos, 
+                             "pa_ptr_field_info", M, CGM, func);
+  }
+  if (!FastPacPtrNameInfos.empty()) {
+    pacDfiCreateNameMetaData(FastPacPtrNameInfos, 
+                             "fast_pa_ptr_field_info", M, CGM, func);
+  }
+  if (!PacFieldExclNameInfos.empty()) {
+    pacDfiCreateNameMetaData(PacFieldExclNameInfos, 
+                             "pa_excl_field_info", M, CGM, func);
+  }
+  if (!PacFieldSeqlNameInfos.empty()) {
+    pacDfiCreateNameMetaData(PacFieldSeqlNameInfos, 
+                             "pa_seql_field_info", M, CGM, func);
+  }
 }
 
 void PacDfiRecordDecl2StructName(const RecordDecl *RD, llvm::StructType *Entry)
