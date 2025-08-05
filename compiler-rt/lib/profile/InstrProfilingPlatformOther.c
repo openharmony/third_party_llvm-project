@@ -23,6 +23,8 @@ static const char *NamesLast = NULL;
 static char *CountersFirst = NULL;
 static char *CountersLast = NULL;
 static uint32_t *OrderFileFirst = NULL;
+static char* BitmapLast = NULL;
+static char* BitmapFirst = NULL;
 
 static const void *getMinAddr(const void *A1, const void *A2) {
   return A1 < A2 ? A1 : A2;
