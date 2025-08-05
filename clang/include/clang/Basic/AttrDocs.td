@@ -7878,6 +7878,14 @@ attribute, they default to the value ``65535``.
 }];
 }
 
+def CfiModifierDocs : Documentation {
+  let Category = DocCatFunction;
+  let Content = [{
+The ``modifier`` attribute is used to pass the discriminator value to the pass plugin.
+This attribute is added in a specific plugin. Please do not set it manually.
+}];
+}
+
 def CoroOnlyDestroyWhenCompleteDocs : Documentation {
   let Category = DocCatDecl;
   let Content = [{

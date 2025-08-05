@@ -550,6 +550,9 @@ std::string Attribute::getAsString(bool InAttrGrp) const {
         .str();
   };
 
+  if (hasAttribute(Attribute::CfiModifier))
+    return AttrWithBytesToString("cfimodifier");
+
   if (hasAttribute(Attribute::StackAlignment))
     return AttrWithBytesToString("alignstack");
 
@@ -1975,6 +1978,10 @@ AttrBuilder &AttrBuilder::addUWTableAttr(UWTableKind Kind) {
 
 AttrBuilder &AttrBuilder::addMemoryAttr(MemoryEffects ME) {
   return addRawIntAttr(Attribute::Memory, ME.toIntValue());
+}
+
+AttrBuilder &AttrBuilder::addCfiModifierAttr(uint64_t Modifier) {
+  return addRawIntAttr(Attribute::CfiModifier, Modifier);
 }
 
 AttrBuilder &AttrBuilder::addNoFPClassAttr(FPClassTest Mask) {

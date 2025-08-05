@@ -1474,6 +1474,14 @@ void CodeGenFunction::GenerateCode(GlobalDecl GD, llvm::Function *Fn,
     DebugInfo = nullptr;
   }
 
+  if (FD->hasAttr<CfiModifierAttr>()) {
+    llvm::Attribute ModifierAttr
+      = llvm::Attribute::get(Fn->getContext(),
+                             llvm::Attribute::CfiModifier,
+                             FD->getAttr<CfiModifierAttr>()->getModifier());
+    Fn->addFnAttr(ModifierAttr);
+  }
+
   // The function might not have a body if we're generating thunks for a
   // function declaration.
   SourceRange BodyRange;

@@ -1316,6 +1316,13 @@ def Constructor : InheritableAttr {
   let Documentation = [CtorDtorDocs];
 }
 
+def CfiModifier : InheritableAttr {
+  let Spellings = [GCC<"modifier">];
+  let Args = [DefaultIntArgument<"Modifier", 65535>];
+  let Subjects = SubjectList<[Function]>;
+  let Documentation = [CfiModifierDocs];
+}
+
 def CPUSpecific : InheritableAttr {
   let Spellings = [Clang<"cpu_specific">, Declspec<"cpu_specific">];
   let Args = [VariadicIdentifierArgument<"Cpus">];

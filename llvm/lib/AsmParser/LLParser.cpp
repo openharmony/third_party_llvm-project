@@ -1580,6 +1580,19 @@ bool LLParser::parseEnumAttribute(Attribute::AttrKind Attr, AttrBuilder &B,
     B.addStackAlignmentAttr(Alignment);
     return false;
   }
+  case Attribute::CfiModifier: {
+    uint64_t Value = 0;
+    if (InAttrGroup) {
+      Lex.Lex();
+      if (parseToken(lltok::equal, "expected '=' here") || parseUInt64(Value))
+        return true;
+    } else {
+      if (parseOptionalCfiModifier(Value, true))
+        return true;
+    }
+    B.addCfiModifierAttr(Value);
+    return false;
+  }
   case Attribute::AllocSize: {
     unsigned ElemSizeArg;
     std::optional<unsigned> NumElemsArg;
@@ -2377,6 +2390,32 @@ bool LLParser::parseOptionalAlignment(MaybeAlign &Alignment, bool AllowParens) {
   if (Value > Value::MaximumAlignment)
     return error(AlignLoc, "huge alignments are not supported yet");
   Alignment = Align(Value);
+  return false;
+}
+
+/// parseOptionalCfiModifier
+///   ::= /* empty */
+///   ::= 'cfimodifier' 18596
+bool LLParser::parseOptionalCfiModifier(uint64_t &Modifier, bool AllowParens) {
+  Modifier = 0;
+  if (!EatIfPresent(lltok::kw_cfimodifier))
+    return false;
+  uint64_t Value = 0;
+
+  LocTy ParenLoc = Lex.getLoc();
+  bool HaveParens = false;
+  if (AllowParens) {
+    if (EatIfPresent(lltok::lparen))
+      HaveParens = true;
+  }
+
+  if (parseUInt64(Value))
+    return true;
+
+  if (HaveParens && !EatIfPresent(lltok::rparen))
+    return error(ParenLoc, "expected ')'");
+
+  Modifier = Value;
   return false;
 }
 

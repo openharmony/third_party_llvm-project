@@ -136,6 +136,9 @@ def Memory : IntAttr<"memory", [FnAttr]>;
 /// Forbidden floating-point classes.
 def NoFPClass : IntAttr<"nofpclass", [ParamAttr, RetAttr]>;
 
+/// Save cfi modifier
+def CfiModifier : IntAttr<"cfimodifier", [FnAttr]>;
+
 /// Function must be optimized for size first.
 def MinSize : EnumAttr<"minsize", [FnAttr]>;
 

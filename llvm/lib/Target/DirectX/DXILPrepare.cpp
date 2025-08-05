@@ -72,6 +72,7 @@ constexpr bool isValidForDXIL(Attribute::AttrKind Attr) {
                        Attribute::ReturnsTwice,
                        Attribute::SExt,
                        Attribute::StackAlignment,
+                       Attribute::CfiModifier,
                        Attribute::StackProtect,
                        Attribute::StackProtectReq,
                        Attribute::StackProtectStrong,
