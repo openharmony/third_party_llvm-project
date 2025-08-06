@@ -3469,16 +3469,14 @@ void CodeGenFunction::EmitCfiCheckStub() {
       llvm::GlobalValue::WeakAnyLinkage, "__cfi_check", M);
   CGM.SetLLVMFunctionAttributes(GlobalDecl(), FI, F, /*IsThunk=*/false);
   CGM.SetLLVMFunctionAttributesForDefinition(nullptr, F);
+  F->setAlignment(llvm::Align(4096));
   // OHOS_LOCAL end
   CGM.setDSOLocal(F);
 
   llvm::BasicBlock *BB = llvm::BasicBlock::Create(Ctx, "entry", F);
-  // FIXME: consider emitting an intrinsic call like
-  // call void @llvm.cfi_check(i64 %0, i8* %1, i8* %2)
-  // which can be lowered in CrossDSOCFI pass to the actual contents of
-  // __cfi_check. This would allow inlining of __cfi_check calls.
-  llvm::CallInst::Create(
-      llvm::Intrinsic::getDeclaration(M, llvm::Intrinsic::trap), "", BB);
+  // CrossDSOCFI pass is not executed if there is no executable code.
+  SmallVector<llvm::Value*> FailArgs{F->getArg(2), F->getArg(1)};
+  llvm::CallInst::Create(M->getFunction("__cfi_check_fail"), FailArgs, "", BB);
   llvm::ReturnInst::Create(Ctx, nullptr, BB);
 }
 
