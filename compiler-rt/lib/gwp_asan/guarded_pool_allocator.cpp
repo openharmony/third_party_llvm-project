@@ -126,10 +126,12 @@ void GuardedPoolAllocator::init(const options::Options &Opts) {
     installAtFork();
 // OHOS_LOCAL begin
 #if defined (__OHOS__)
-  Symbolizer = __sanitizer::Symbolizer::GetOrInit();
-  Symbolizer->RefreshModules();
-  parseWhiteList();
-  findmodule();
+  if (WhiteListPath && __sanitizer::internal_strlen(WhiteListPath) != 0) {
+    Symbolizer = __sanitizer::Symbolizer::GetOrInit();
+    Symbolizer->RefreshModules();
+    parseWhiteList();
+    findmodule();
+  }
 #endif
 // OHOS_LOCAL end
 }
@@ -479,9 +481,6 @@ bool GuardedPoolAllocator::checkLib() {
 
 // Parse `WhiteListPath` to array.
 void GuardedPoolAllocator::parseWhiteList() {
-  if (!WhiteListPath || __sanitizer::internal_strlen(WhiteListPath) == 0)
-    return;
-
   int Num_colons = 1;
   for (const char* p = WhiteListPath; *p != '\0'; ++p) {
       if (*p == ':') ++Num_colons;
