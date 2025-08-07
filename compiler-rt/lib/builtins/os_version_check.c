@@ -316,6 +316,38 @@ int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
          (IsPreRelease && Major == __ANDROID_API_FUTURE__);
 }
 
+#elif __OHOS__
+
+#include <pthread.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+static int OHVersion;
+static int DistOsVersion;
+
+extern __attribute__((weak)) int OH_GetSdkApiVersion(void);
+extern __attribute__((weak)) int OH_GetDistributionOSApiVersion(void);
+
+static void readOHOSVersion(void) {
+  OHVersion = OH_GetSdkApiVersion();
+  DistOsVersion = OH_GetDistributionOSApiVersion();
+}
+
+int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
+  // `OH_GetSdkApiVersion()` and `OH_GetDistributionOSApiVersion()` are begining
+  // from API10. There are no longer any devices below API12 now. If there really
+  // is an API10 device (theoretically), we set the default value to 1 here.
+  if (Major < 10)
+    return 1;
+
+  // Just readOHOSVersion once When first call `__isOSVersionAtLeast`
+  static pthread_once_t once = PTHREAD_ONCE_INIT;
+  pthread_once(&once, readOHOSVersion);
+
+  return OHVersion > Major || (OHVersion == Major && DistOsVersion >= Subminor);
+}
+
 #else
 
 // Silence an empty translation unit warning.

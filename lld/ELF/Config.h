@@ -150,6 +150,7 @@ struct Configuration {
   std::vector<llvm::StringRef> symbolOrderingFile;
   std::vector<llvm::StringRef> thinLTOModulesToCompile;
   std::vector<llvm::StringRef> undefined;
+  std::vector<llvm::StringRef> weakLibrary; // OHOS_LOCAL
   std::vector<SymbolVersion> dynamicList;
   std::vector<uint8_t> buildIdVector;
   llvm::MapVector<std::pair<const InputSectionBase *, const InputSectionBase *>,

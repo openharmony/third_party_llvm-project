@@ -2429,6 +2429,7 @@ std::string ELFDumper<ELFT>::getDynamicEntry(uint64_t Type,
   case DT_ANDROID_RELASZ:
     return std::to_string(Value) + " (bytes)";
   case DT_NEEDED:
+  case DT_OHOS_WEAK_LIBRARY:   // OHOS_LOCAL
   case DT_SONAME:
   case DT_AUXILIARY:
   case DT_USED:
@@ -2440,6 +2441,9 @@ std::string ELFDumper<ELFT>::getDynamicEntry(uint64_t Type,
         {DT_AUXILIARY, "Auxiliary library"}, {DT_USED, "Not needed object"},
         {DT_FILTER, "Filter library"},       {DT_RPATH, "Library rpath"},
         {DT_RUNPATH, "Library runpath"},
+        // OHOS_LOCAL begin
+        {DT_OHOS_WEAK_LIBRARY, "Weak Library"},
+        // OHOS_LOCAL end
     };
 
     return (Twine(TagNames.at(Type)) + ": [" + getDynamicString(Value) + "]")
