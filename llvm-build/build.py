@@ -28,6 +28,7 @@ import mingw
 import stat
 import json
 import sys
+from pathlib import Path
 
 from python_builder import MinGWPythonBuilder
 from prebuilts_clang_version import prebuilts_clang_version
@@ -2694,6 +2695,69 @@ class LlvmPackage(BuildUtils):
                         f.write("INPUT(-lc++_shared)\n")
 
 
+    def replace_libcxx_v1(self, llvm_install):
+        print("****start modify libxcc v1****")
+        # ./include/c++/v1/__assertion_handler
+        assertion_handler_path_1 = Path(llvm_install,
+         'include', 'c++', 'v1', '__assertion_handler')
+        # ./include/libcxx-ohos/include/c++/v1/__assertion_handler
+        assertion_handler_path_2 = Path(llvm_install,
+         'include', 'libcxx-ohos', 'include', 'c++', 'v1', '__assertion_handler')
+        # replace text1
+        old_text1 = '#if _LIBCPP_HARDENING_MODE == _LIBCPP_HARDENING_MODE_DEBUG'
+        new_text1 = '#if _LIBCPP_HARDENING_MODE == _LIBCPP_HARDENING_MODE_EXTENSIVE'
+        # ./include/c++/v1/__verbose_abort
+        verbose_abort_path_1 = Path(llvm_install,
+         'include', 'c++', 'v1', '__verbose_abort')
+        # ./include/libcxx-ohos/include/c++/v1/__verbose_abort
+        verbose_abort_path_2 = Path(llvm_install,
+         'include', 'libcxx-ohos', 'include', 'c++', 'v1', '__verbose_abort')
+        # # replace text2
+        old_text2 = '_LIBCPP_NORETURN _LIBCPP_AVAILABILITY_VERBOSE_ABORT _LIBCPP_OVERRIDABLE_FUNC_VIS'
+        new_text2 = '_LIBCPP_AVAILABILITY_VERBOSE_ABORT _LIBCPP_OVERRIDABLE_FUNC_VIS'
+        # replace __assertion_handler
+        if assertion_handler_path_1.is_file():
+            with open(assertion_handler_path_1, 'r') as f:
+                content_assertion_handler = f.read()
+            relaced_content_assertion_handler = content_assertion_handler.replace(old_text1, new_text1)
+
+            with open(assertion_handler_path_1, 'w') as f:
+                f.write(relaced_content_assertion_handler)
+        else:
+            print("include/c++/v1/__assertion_handler not exist!")
+        if assertion_handler_path_2.is_file():
+            with open(assertion_handler_path_2, 'r') as f:
+                content_assertion_handler = f.read()
+            relaced_content_assertion_handler = content_assertion_handler.replace(old_text1, new_text1)
+
+            with open(assertion_handler_path_2, 'w') as f:
+                f.write(relaced_content_assertion_handler)
+        else:
+            print("include/libcxx-ohos/include/c++/v1/__assertion_handler not exist!")
+        # replace __verbose_abort
+        if verbose_abort_path_1.is_file():
+            with open(verbose_abort_path_1, 'r') as f:
+                content_verbose_abort = f.read()
+            relaced_content_verbose_abort = content_verbose_abort.replace(old_text2, new_text2)
+
+            with open(verbose_abort_path_1, 'w') as f:
+                f.write(relaced_content_verbose_abort)
+        else:
+            print("include/c++/v1/__verbose_abort not exist!")
+
+        if verbose_abort_path_2.is_file():
+            with open(verbose_abort_path_2, 'r') as f:
+                content_verbose_abort = f.read()
+            relaced_content_verbose_abort = content_verbose_abort.replace(old_text2, new_text2)
+
+            with open(verbose_abort_path_2, 'w') as f:
+                f.write(relaced_content_verbose_abort)
+        else:
+            print("include/libcxx-ohos/include/c++/v1/__verbose_abort not exist!")
+        
+        print("****end modify libxcc v1****")
+
+
     def copy_lldb_tools_to_llvm_install(self, tools, lldb_path, crt_install, llvm_triple):
         dst_dir = os.path.join(crt_install, 'bin', llvm_triple)
         self.check_create_dir(dst_dir)
@@ -3490,6 +3554,8 @@ def main():
     llvm_package.move_libcxx(llvm_install, libcxx_ndk_install)
     
     llvm_package.modify_libcxx(llvm_install, libcxx_ndk_install)
+
+    llvm_package.replace_libcxx_v1(llvm_install)
 
     if build_config.do_package:
         if build_utils.host_is_linux():
