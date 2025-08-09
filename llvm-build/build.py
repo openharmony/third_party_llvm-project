@@ -2698,20 +2698,20 @@ class LlvmPackage(BuildUtils):
     def replace_libcxx_v1(self, llvm_install):
         print("****start modify libxcc v1****")
         # ./include/c++/v1/__assertion_handler
-        assertion_handler_path_1 = Path(os.path.join(llvm_install,
-         'include', 'c++', 'v1', '__assertion_handler'))
+        assertion_handler_path_1 = Path(llvm_install,
+         'include', 'c++', 'v1', '__assertion_handler')
         # ./include/libcxx-ohos/include/c++/v1/__assertion_handler
-        assertion_handler_path_2 = Path(os.path.join(llvm_install,
-         'include', 'libcxx-ohos', 'include', 'c++', 'v1', '__assertion_handler'))
+        assertion_handler_path_2 = Path(llvm_install,
+         'include', 'libcxx-ohos', 'include', 'c++', 'v1', '__assertion_handler')
         # replace text1
         old_text1 = '#if _LIBCPP_HARDENING_MODE == _LIBCPP_HARDENING_MODE_DEBUG'
         new_text1 = '#if _LIBCPP_HARDENING_MODE == _LIBCPP_HARDENING_MODE_EXTENSIVE'
         # ./include/c++/v1/__verbose_abort
-        verbose_abort_path_1 = Path(os.path.join(llvm_install,
-         'include', 'c++', 'v1', '__verbose_abort'))
+        verbose_abort_path_1 = Path(llvm_install,
+         'include', 'c++', 'v1', '__verbose_abort')
         # ./include/libcxx-ohos/include/c++/v1/__verbose_abort
-        verbose_abort_path_2 = Path(os.path.join(llvm_install,
-         'include', 'libcxx-ohos', 'include', 'c++', 'v1', '__verbose_abort'))
+        verbose_abort_path_2 = Path(llvm_install,
+         'include', 'libcxx-ohos', 'include', 'c++', 'v1', '__verbose_abort')
         # # replace text2
         old_text2 = '_LIBCPP_NORETURN _LIBCPP_AVAILABILITY_VERBOSE_ABORT _LIBCPP_OVERRIDABLE_FUNC_VIS'
         new_text2 = '_LIBCPP_AVAILABILITY_VERBOSE_ABORT _LIBCPP_OVERRIDABLE_FUNC_VIS'
