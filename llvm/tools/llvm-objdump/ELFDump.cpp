@@ -14,6 +14,7 @@
 #include "ELFDump.h"
 
 #include "llvm-objdump.h"
+#include "llvm/BinaryFormat/ELF.h"
 #include "llvm/Demangle/Demangle.h"
 #include "llvm/Object/ELFObjectFile.h"
 #include "llvm/Support/Format.h"
@@ -196,7 +197,9 @@ static void printDynamicSection(const ELFFile<ELFT> &Elf, StringRef Filename) {
         ELFT::Is64Bits ? "0x%016" PRIx64 "\n" : "0x%08" PRIx64 "\n";
     if (Dyn.d_tag == ELF::DT_NEEDED || Dyn.d_tag == ELF::DT_RPATH ||
         Dyn.d_tag == ELF::DT_RUNPATH || Dyn.d_tag == ELF::DT_SONAME ||
-        Dyn.d_tag == ELF::DT_AUXILIARY || Dyn.d_tag == ELF::DT_FILTER) {
+        Dyn.d_tag == ELF::DT_AUXILIARY || Dyn.d_tag == ELF::DT_FILTER ||
+        // OHOS_LOCAL
+        Dyn.d_tag == ELF::DT_OHOS_WEAK_LIBRARY) {
       Expected<StringRef> StrTabOrErr = getDynamicStrTab(Elf);
       if (StrTabOrErr) {
         const char *Data = StrTabOrErr.get().data();

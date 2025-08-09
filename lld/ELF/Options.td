@@ -362,6 +362,8 @@ defm rosegment: BB<"rosegment",
 
 defm rpath: Eq<"rpath", "Add a DT_RUNPATH to the output">;
 
+defm weak_library: Eq<"ohos-weak-library", "Mark library and its references as weak imports">; // OHOS_LOCAL
+
 def relocatable: F<"relocatable">, HelpText<"Create relocatable object file">;
 
 defm retain_symbols_file:

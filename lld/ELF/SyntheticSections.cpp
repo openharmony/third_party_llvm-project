@@ -1416,9 +1416,20 @@ DynamicSection<ELFT>::computeContents() {
     addInt(config->enableNewDtags ? DT_RUNPATH : DT_RPATH,
            part.dynStrTab->addString(config->rpath));
 
-  for (SharedFile *file : ctx->sharedFiles)
-    if (file->isNeeded)
-      addInt(DT_NEEDED, part.dynStrTab->addString(file->soName));
+  // OHOS_LOCAL begin
+  for (SharedFile *file : ctx->sharedFiles) {
+    if (file->isNeeded) {
+      StringRef fileSoName = file->soName;
+      // If this dylib is set as weak-library, we don't place it in DT_NEEDED
+      // rather in DT_OHOS_WEAK_LIBRARY.
+      if (llvm::any_of(config->weakLibrary,
+                       [&](StringRef s) { return fileSoName.equals(s); }))
+        addInt(DT_OHOS_WEAK_LIBRARY, part.dynStrTab->addString(fileSoName));
+      else
+        addInt(DT_NEEDED, part.dynStrTab->addString(fileSoName));
+    }
+  }
+  // OHOS_LOCAL end
 
   if (isMain) {
     if (!config->soName.empty())
