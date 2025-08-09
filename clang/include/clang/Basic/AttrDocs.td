@@ -1370,6 +1370,15 @@ The ``pac_protected_ptr`` attribute asks the compiler to protect the struct poin
   }];
 }
 
+def FastPacPtrTagDocs : Documentation {
+  let Category = DocCatField;
+  let Content = [{
+The ``fast_pac_protected_ptr`` attribute asks the compiler to protect 
+the struct pointer type field with PA. Compared to the ``pac_protected_ptr``,
+it is more aggressive.
+  }];
+}
+
 def PacExclTagDocs : Documentation {
   let Category = DocCatField;
   let Content = [{
