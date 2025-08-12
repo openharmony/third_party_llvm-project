@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # NOTE: it is expected, that OHOS SDK is present on the build machine and git is installed
 
+# Example:
+#
+# bash llvm-build/llvm_prebuilts_for_ark_aot.sh \
+#     --build-dir=$PWD/../arkaotbuild \
+#     --sdk-native=$HOME/prebuilts/ohos-sdk/linux/20/native \
+#     --use-current-llvm-project
+
 set -eu
 
 function usage() {
@@ -11,6 +18,7 @@ cat << EOF
     --runtime-core-repo=<runtime core remote repo>
     --llvm-project-branch=<branch for third_party_llvm-project>
     --llvm-project-repo=<llvm project remote repo>
+    --use-current-llvm-project
 EOF
 }
 
@@ -20,6 +28,7 @@ runtime_core_branch="OpenHarmony_feature_20241108"
 runtime_core_repo="https://gitee.com/openharmony/arkcompiler_runtime_core"
 llvm_project_branch="2024_1127_llvm_ark_aot"
 llvm_repo="https://gitee.com/openharmony/third_party_llvm-project"
+skip_cloning=0
 
 while (( ${#} > 0 )); do
     opt="${1}"
@@ -37,6 +46,8 @@ while (( ${#} > 0 )); do
             llvm_project_branch="${opt#"--llvm-project-branch="}";;
         --llvm-project-repo=*)
             llvm_repo="${opt#"--llvm-project-repo="}";;
+        --use-current-llvm-project)
+            skip_cloning=1;;
         *)
             usage
             exit 1
@@ -52,15 +63,21 @@ fi
 # download arkcompiler sources
 # for prebuilts script and build_llvm.sh
 ARKCOMPILER_DIR="${build_dir}/arkcompiler_runtime_core"
-git clone --depth 1 -b "${runtime_core_branch}" "${runtime_core_repo}" "${ARKCOMPILER_DIR}"
+if [[ ! -e "${ARKCOMPILER_DIR}" ]]; then
+    git clone --depth 1 -b "${runtime_core_branch}" "${runtime_core_repo}" "${ARKCOMPILER_DIR}"
+fi
 
 # Install prebuilts
 # requires root !!!
 bash ${ARKCOMPILER_DIR}/static_core/scripts/install-deps-ubuntu --install=dev --install=arm-all
 
 # download llvm sources
-LLVM_DIR="${build_dir}/llvm-project"
-git clone --depth 1 -b "${llvm_project_branch}" "${llvm_repo}" "${LLVM_DIR}"
+if [[ $skip_cloning == 0 ]]; then
+    LLVM_DIR="${build_dir}/llvm-project"
+    git clone --depth 1 -b "${llvm_project_branch}" "${llvm_repo}" "${LLVM_DIR}"
+else
+    LLVM_DIR="$(realpath $( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )/../ )"
+fi
 
 ### Required variables
 export BUILD_DIR=${build_dir}/build
@@ -91,8 +108,8 @@ export OHOS_PREBUILTS="${build_dir}"
 # paths used in build_llvm.sh
 ohos_prebuilts_bin="${OHOS_PREBUILTS}/clang/ohos/linux-x86_64/llvm"
 mkdir -p "${ohos_prebuilts_bin}"
-ln -s "${OHOS_SDK}/llvm/bin" "${ohos_prebuilts_bin}/bin"
-ln -s "${OHOS_SDK}/llvm/lib" "${ohos_prebuilts_bin}/lib"
+ln -sf "${OHOS_SDK}/llvm/bin" "${ohos_prebuilts_bin}/"
+ln -sf "${OHOS_SDK}/llvm/lib" "${ohos_prebuilts_bin}/"
 
 ### Build tools
 export CC="${OHOS_SDK}/llvm/bin/clang"
