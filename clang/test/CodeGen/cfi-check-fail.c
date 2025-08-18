@@ -74,8 +74,8 @@ void caller(void (*f)(void)) {
 // CHECK:   ret void
 
 // OHOS_LOCAL begin
-// CHECK: define weak void @__cfi_check(i64 noundef %0, i8* noundef %1, i8* noundef %2)
+// CHECK: define weak void @__cfi_check(i64 noundef %[[TYPE:.*]], i8* noundef %[[ADDR:.*]], i8* noundef %[[DATA:.*]]) {{.*}} align 4096
 // OHOS_LOCAL end
 // CHECK-NOT: }
-// CHECK: call void @llvm.trap()
+// CHECK: call void @__cfi_check_fail(i8* %[[DATA]], i8* %[[ADDR]])
 // CHECK-NEXT: ret void
