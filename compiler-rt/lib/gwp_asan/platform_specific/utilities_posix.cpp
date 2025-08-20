@@ -7,7 +7,9 @@
 //===----------------------------------------------------------------------===//
 
 // OHOS_LOCAL begin
+#include "gwp_asan/guarded_pool_allocator.h"
 #include "gwp_asan/optional/printf.h"
+#include <errno.h>
 // OHOS_LOCAL end
 #include <features.h> // IWYU pragma: keep (for __BIONIC__ macro)
 
@@ -28,8 +30,9 @@ void die(const char *Message) {
 #else  // __BIONIC__
 // OHOS_LOCAL begin
 #if defined(__OHOS__)
+  MUSL_LOG("[gwp_asan] ErrMsg: %{public}s, Errno: %{public}d\n", Message, errno);
   Printf("GWP-ASan has a check error\n");
-  Printf("%s\n", Message);
+  Printf("ErrMsg: %s, Errno: %d\n", Message, errno);
   Printf("*** End GWP-ASan report ***\n");
   #endif
 // OHOS_LOCAL end
