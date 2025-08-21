@@ -153,7 +153,7 @@ class LlvmMingw():
         self.crt_defines['COMPILER_RT_INCLUDE_TESTS'] = 'OFF'
         self.crt_defines['CMAKE_INSTALL_PREFIX'] = self.CRT_INSTALL
         self.crt_defines['COMPILER_RT_BUILD_LIBFUZZER'] = 'OFF'
-        self.crt_defines['COMPILER_RT_USE_BUILTINS_LIBRARY'] = 'TRUE'
+        self.crt_defines['COMPILER_RT_USE_BUILTINS_LIBRARY'] = 'ON'
         self.crt_defines['CMAKE_SYSTEM_NAME'] = 'Windows'
         self.crt_defines['CMAKE_CROSSCOMPILING'] = 'True'
         self.crt_defines['CMAKE_C_COMPILER_WORKS'] = '1'
@@ -231,6 +231,11 @@ class LlvmMingw():
         libmingwex = os.path.join(mingw_lib_dir, 'libmingwex.a')
         force_symlink(libmingwex, os.path.join(mingw_lib_dir, 'libssp.a'))
         force_symlink(libmingwex, os.path.join(mingw_lib_dir, 'libssp_nonshared.a'))
+        source_dir = os.path.join(self.LLVM_ROOT, 'include/libcxx-ohos/include/c++/v1')
+        target_dir = os.path.join(self.prefix, 'x86_64-w64-mingw32/include/c++/x86_64-w64-mingw32')
+        os.makedirs(target_dir)
+        shutil.copytree(source_dir, target_dir, dirs_exist_ok=True)
+
 
 
 def main(clang_version, buildtools_path):
