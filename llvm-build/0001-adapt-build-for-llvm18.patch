@@ -1,0 +1,49 @@
+From f477dc9355d561aee79f778c44f8d899ce547d72 Mon Sep 17 00:00:00 2001
+From: Lighting Artist <wanghao636@huawei.com>
+Date: Thu, 21 Aug 2025 16:03:16 +0800
+Subject: [PATCH] adapt build for llvm18
+
+Change-Id: I9f7170779ed4b49c72949e397300ffce24633f67
+---
+ config/clang/clang.gni  | 7 +++++--
+ toolchain/toolchain.gni | 2 +-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/config/clang/clang.gni b/config/clang/clang.gni
+index 9f751da7..cebbfd1b 100755
+--- a/config/clang/clang.gni
++++ b/config/clang/clang.gni
+@@ -7,12 +7,15 @@ import("//build/toolchain/toolchain.gni")
+ declare_args() {
+   toolchains_dir = "//prebuilts/clang/ohos"
+ }
++
+ if (!is_llvm_build) {
+   default_clang_base_path = "${toolchains_dir}/${host_platform_dir}/llvm"
+   clang_lib_path = "${toolchains_dir}/${host_platform_dir}/llvm/lib/clang/${clang_version}/lib"
+ } else {
+-  default_clang_base_path = "//out/llvm-install"
+-  clang_lib_path = "//out/llvm-install/lib/clang/${clang_version}/lib"
++  #default_clang_base_path = "//out/llvm-install"
++  #clang_lib_path = "//out/llvm-install/lib/clang/${clang_version}/lib"
++  default_clang_base_path = "//prebuilts/clang/ohos/linux-x86_64/clang-15.0.4"
++  clang_lib_path = "//prebuilts/clang/ohos/linux-x86_64/clang-15.0.4/lib/clang/15.0.4/lib"
+ }
+ 
+ if (target_cpu == "arm") {
+diff --git a/toolchain/toolchain.gni b/toolchain/toolchain.gni
+index cfdca34c..dc6e1e65 100755
+--- a/toolchain/toolchain.gni
++++ b/toolchain/toolchain.gni
+@@ -51,7 +51,7 @@ hermetic_xcode_path =
+ declare_args() {
+   if (is_clang) {
+     # Clang compiler version. Clang files are placed at version-dependent paths.
+-    clang_version = "15.0.4"
++    clang_version = "18"
+   }
+   use_custom_clang = true
+ }
+-- 
+2.17.1
+

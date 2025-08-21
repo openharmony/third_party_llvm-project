@@ -1,0 +1,40 @@
+From ac0a981741d18f32a716d7d32c26880e7b438520 Mon Sep 17 00:00:00 2001
+From: Lighting Artist <wanghao636@huawei.com>
+Date: Thu, 21 Aug 2025 16:02:10 +0800
+Subject: [PATCH] adapt musl for llvm18
+
+Change-Id: Idaedfc7cc92c2fc9fe263972abdbd3e8b0da5e87
+---
+ musl_config.gni         | 2 +-
+ src/time/gettimeofday.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/musl_config.gni b/musl_config.gni
+index 379fa63e..e238b32e 100644
+--- a/musl_config.gni
++++ b/musl_config.gni
+@@ -42,7 +42,7 @@ declare_args() {
+ 
+ declare_args() {
+   if (is_llvm_build) {
+-    runtime_lib_path = "//out/llvm-install/lib/clang/15.0.4/lib"
++    runtime_lib_path = "//out/llvm-install/lib/clang/18.1.8/lib"
+   } else {
+     if (host_cpu == "arm64") {
+       runtime_lib_path =
+diff --git a/src/time/gettimeofday.c b/src/time/gettimeofday.c
+index c307080f..cc1860f6 100644
+--- a/src/time/gettimeofday.c
++++ b/src/time/gettimeofday.c
+@@ -17,7 +17,7 @@ static int gtd_init(struct timeval *tv, void *tz)
+ 	__get_vdso_info();
+ 	void *p = __get_vdso_addr(VDSO_GTD_VER, VDSO_GTD_SYM);
+ 	int (*f)(struct timeval *, void *) =
+-		(int (*)(struct timval *, void *))p;
++		(int (*)(struct timeval *, void *))p;
+ 	a_cas_p(&vdso_gtd, (void *)gtd_init, p);
+ 	return f ? f(tv, tz) : -ENOSYS;
+ }
+-- 
+2.17.1
+
