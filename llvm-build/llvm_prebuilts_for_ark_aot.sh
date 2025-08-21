@@ -6,18 +6,22 @@
 # bash llvm-build/llvm_prebuilts_for_ark_aot.sh \
 #     --build-dir=$PWD/../arkaotbuild \
 #     --sdk-native=$HOME/prebuilts/ohos-sdk/linux/20/native \
+#     --clang-toolchain=$HOME/prebuilts/clang/ohos/linux-x86_64/llvm \
 #     --use-current-llvm-project
 
 set -eu
 
 function usage() {
 cat << EOF
-    ${0} --build-dir=<path_to_build_dir> --sdk-native=<path_to_sdk_native> [other]
-    other opts might be:
+    ${0} --build-dir=<path_to_build_dir> --sdk-native=<path_to_sdk_native>
+
+    Other options:
+
     --runtime-core-branch=<branch for arkcompiler_runtime_core>
     --runtime-core-repo=<runtime core remote repo>
     --llvm-project-branch=<branch for third_party_llvm-project>
     --llvm-project-repo=<llvm project remote repo>
+    --clang-toolchain=<path_to_alternative_Clang_installation>
     --use-current-llvm-project
 EOF
 }
@@ -46,6 +50,8 @@ while (( ${#} > 0 )); do
             llvm_project_branch="${opt#"--llvm-project-branch="}";;
         --llvm-project-repo=*)
             llvm_repo="${opt#"--llvm-project-repo="}";;
+        --clang-toolchain=*)
+            clang_toolchain="${opt#"--clang-toolchain="}";;
         --use-current-llvm-project)
             skip_cloning=1;;
         *)
@@ -82,6 +88,7 @@ fi
 ### Required variables
 export BUILD_DIR=${build_dir}/build
 export LLVM_SOURCES="${LLVM_DIR}/llvm"
+export LLVM_EXTRA_CMAKE_FLAGS=""
 export VERSION="15.0.4-ark18"
 export PACKAGE_VERSION="${VERSION}" # must match REQUIRED_LLVM_VERSION in libllvmbackend/CMakeLists.txt
 
@@ -108,13 +115,25 @@ export OHOS_PREBUILTS="${build_dir}"
 # paths used in build_llvm.sh
 ohos_prebuilts_bin="${OHOS_PREBUILTS}/clang/ohos/linux-x86_64/llvm"
 mkdir -p "${ohos_prebuilts_bin}"
-ln -sf "${OHOS_SDK}/llvm/bin" "${ohos_prebuilts_bin}/"
-ln -sf "${OHOS_SDK}/llvm/lib" "${ohos_prebuilts_bin}/"
 
-### Build tools
-export CC="${OHOS_SDK}/llvm/bin/clang"
-export CXX="${OHOS_SDK}/llvm/bin/clang++"
-export STRIP="${OHOS_SDK}/llvm/bin/llvm-strip"
+# If an alternative Clang toolchain is provided, use it instead of the one
+# shipped with the SDK. To ensure C++ ABI compatibility, the same toolchain
+# must be used to build libLLVM and libllvmbackend.
+if [[ -n "${clang_toolchain}" ]]; then
+  ln -sf "${clang_toolchain}/bin" "${ohos_prebuilts_bin}/"
+  ln -sf "${clang_toolchain}/lib" "${ohos_prebuilts_bin}/"
+  ### Build tools
+  export CC="${clang_toolchain}/bin/clang"
+  export CXX="${clang_toolchain}/bin/clang++"
+  export STRIP="${clang_toolchain}/bin/llvm-strip"
+else
+  ln -sf "${OHOS_SDK}/llvm/bin" "${ohos_prebuilts_bin}/"
+  ln -sf "${OHOS_SDK}/llvm/lib" "${ohos_prebuilts_bin}/"
+  ### Build tools
+  export CC="${OHOS_SDK}/llvm/bin/clang"
+  export CXX="${OHOS_SDK}/llvm/bin/clang++"
+  export STRIP="${OHOS_SDK}/llvm/bin/llvm-strip"
+fi
 export OPTIMIZE_DEBUG=false
 
 bash -x "${ARKCOMPILER_DIR}/static_core/scripts/llvm/build_llvm.sh"
