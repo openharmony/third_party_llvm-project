@@ -12,21 +12,34 @@
 // limitations under the License.
 
 #include <stdio.h>
+#include <dlfcn.h>
+#include <unistd.h>
+#include <libgen.h>
+#include <limits.h>
 
 static int var = 5;
-const char *bt = "This is a ArkTS backtrace";
-const char *msg = "This is a ArkTS operate debug message result";
 
-const char *GetJsBacktrace() {
-    return bt;
-}
+int main(void) {
+    printf("%p is %d\n", (void*)&var, var); 
 
-const char *OperateJsDebugMessage(const char *message) {
-    return msg;
-}
+    char exe[PATH_MAX] = {0};
+    ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe)-1);
+    if (n > 0) exe[n] = '\0'; else return 1;
 
-int main ()
-{
-    printf ("%p is %d\n", &var, var); // break on this line
+    char tmp[PATH_MAX] = {0};
+    snprintf(tmp, sizeof(tmp), "%s", exe);
+    char *dir = dirname(tmp);
+
+    char so_path[PATH_MAX] = {0};
+    snprintf(so_path, sizeof(so_path), "%s/libarkshim.so", dir);
+
+    void *h = dlopen(so_path, RTLD_LAZY);
+    if (!h) {
+        fprintf(stderr, "dlopen error: %s\n", dlerror());
+    } else {
+        fprintf(stderr, "[DBG] dlopen OK\n"); // break on this line
+    }
+
+    for (volatile int i = 0; i < 1; ++i) {}
     return ++var;
 }
