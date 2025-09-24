@@ -1799,7 +1799,7 @@ LLDB 支持运行 Python 代码。目前，该功能已在 OpenHarmony 发布的
 1. 执行单行 Python 代码
 
 ```
-script print("Hello OpenHarmony!")
+(lldb) script print("Hello OpenHarmony!")
 ```
 
 2. 执行 `script` 命令进入 Python shell，然后执行 Python 代码
@@ -1825,8 +1825,8 @@ print(f"PATH='{env_path_value}'")
 OpenHarmony NDK 提供了辅助脚本，简化了调试流程，输入以下指令即可完成 `lldb-server` 的启动和连接：
 
 ```
-script import lldb_python
-script lldb_python.main()
+(lldb) script import lldb_python
+(lldb) script lldb_python.main()
 ```
 
 ### 5.2.1 查看参数
@@ -1834,7 +1834,7 @@ script lldb_python.main()
 查看脚本使用的 `lldb-server` 启动和连接参数：
 
 ```
-script lldb_python.show_server_configs()
+(lldb) script lldb_python.show_server_configs()
 ```
 
 ### 5.2.2 修改参数
@@ -1842,7 +1842,7 @@ script lldb_python.show_server_configs()
 修改启动和连接参数：
 
 ```
-script lldb_python.set_server_config("tcp-listen-port", 8080)
+(lldb) script lldb_python.set_server_config("tcp-listen-port", 8080)
 ```
 
 目前支持下列参数：
