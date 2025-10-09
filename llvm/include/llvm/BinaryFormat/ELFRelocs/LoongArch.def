@@ -118,3 +118,9 @@ ELF_RELOC(R_LARCH_SUB6,        106)
 ELF_RELOC(R_LARCH_ADD_ULEB128, 107)
 ELF_RELOC(R_LARCH_SUB_ULEB128, 108)
 ELF_RELOC(R_LARCH_64_PCREL,    109)
+
+// Relocs added in ELF for the LoongArch™ Architecture v20231102, part of the
+// v2.20 LoongArch ABI specs.
+//
+// Spec addition: https://github.com/loongson/la-abi-specs/pull/4
+ELF_RELOC(R_LARCH_CALL36, 110)

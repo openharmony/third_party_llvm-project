@@ -36,6 +36,8 @@ private:
   /// insertIndirectBranch.
   int BranchRelaxationSpillFrameIndex = -1;
 
+  int FPOffsetAdjustment = 0; // OHOS_LOCAL
+
 public:
   LoongArchMachineFunctionInfo(const MachineFunction &MF) {}
 
@@ -61,6 +63,11 @@ public:
   void setBranchRelaxationSpillFrameIndex(int Index) {
     BranchRelaxationSpillFrameIndex = Index;
   }
+
+  // OHOS_LOCAL begin
+  int getFPOffsetAdjustment() const { return FPOffsetAdjustment; }
+  void setFPOffsetAdjustment(int Adj) { FPOffsetAdjustment = Adj; }
+  // OHOS_LOCAL end
 };
 
 } // end namespace llvm

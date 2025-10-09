@@ -176,6 +176,16 @@ void LoongArchFrameLowering::processFunctionBeforeFrameFinalized(
   }
 }
 
+// OHOS_LOCAL begin
+#ifdef ARK_GC_SUPPORT
+Triple::ArchType LoongArchFrameLowering::GetArkSupportTarget() const {
+  return Triple::loongarch64;
+}
+
+int LoongArchFrameLowering::GetFixedFpPosition() const { return -1; }
+#endif
+// OHOS_LOCAL end
+
 void LoongArchFrameLowering::emitPrologue(MachineFunction &MF,
                                           MachineBasicBlock &MBB) const {
   MachineFrameInfo &MFI = MF.getFrameInfo();
@@ -193,8 +203,14 @@ void LoongArchFrameLowering::emitPrologue(MachineFunction &MF,
   DebugLoc DL;
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+#ifndef ARK_GC_SUPPORT // OHOS_LOCAL
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+// OHOS_LOCAL begin
+#endif
+  // asm-int GHC call webkit function, we need push regs to stack.
+  // OHOS_LOCAL end
+
   // Determine the correct frame layout
   determineFrameLayout(MF);
 
@@ -231,12 +247,54 @@ void LoongArchFrameLowering::emitPrologue(MachineFunction &MF,
   // to the stack, not before.
   std::advance(MBBI, CSI.size());
 
+  // OHOS_LOCAL begin
+  // Frame layout without ARK_GC_SUPPORT
+  // +--------------+ <-- caller SP (CFA)
+  // | var args     |
+  // +--------------+ <-- FP
+  // | ra           |
+  // | fp           |
+  // | callee saved |
+  // +--------------+
+  // | ...          |
+  // +--------------+ <-- SP
+  // |
+  // v
+  //
+  // Frame layout with ARK_GC_SUPPORT
+  // +--------------+ <-- caller SP (CFA)
+  // | var args     |
+  // +--------------+
+  // | callee saved |
+  // | ra           |
+  // | fp           |
+  // +--------------+ <-- FP
+  // | frame type   |
+  // +--------------+
+  // | ...          |
+  // +--------------+ <-- SP
+  // |
+  // v
+  // OHOS_LOCAL end
+
   // Iterate over list of callee-saved registers and emit .cfi_offset
   // directives.
+  // OHOS_LOCAL begin
+  int64_t FPOffset = StackSize - LoongArchFI->getVarArgsSaveSize();
+  int64_t CFIFPOffset = LoongArchFI->getVarArgsSaveSize();
+  // OHOS_LOCAL end
   for (const auto &Entry : CSI) {
     int64_t Offset = MFI.getObjectOffset(Entry.getFrameIdx());
     unsigned CFIIndex = MF.addFrameInst(MCCFIInstruction::createOffset(
         nullptr, RI->getDwarfRegNum(Entry.getReg(), true), Offset));
+// OHOS_LOCAL begin
+#ifdef ARK_GC_SUPPORT
+    if (Entry.getReg() == FPReg) {
+      FPOffset = StackSize - -Offset;
+      CFIFPOffset = -Offset;
+    }
+#endif
+    // OHOS_LOCAL end
     BuildMI(MBB, MBBI, DL, TII->get(TargetOpcode::CFI_INSTRUCTION))
         .addCFIIndex(CFIIndex)
         .setMIFlag(MachineInstr::FrameSetup);
@@ -244,14 +302,14 @@ void LoongArchFrameLowering::emitPrologue(MachineFunction &MF,
 
   // Generate new FP.
   if (hasFP(MF)) {
-    adjustReg(MBB, MBBI, DL, FPReg, SPReg,
-              StackSize - LoongArchFI->getVarArgsSaveSize(),
-              MachineInstr::FrameSetup);
+    // OHOS_LOCAL begin
+    LoongArchFI->setFPOffsetAdjustment(CFIFPOffset);
+    adjustReg(MBB, MBBI, DL, FPReg, SPReg, FPOffset, MachineInstr::FrameSetup);
 
-    // Emit ".cfi_def_cfa $fp, LoongArchFI->getVarArgsSaveSize()"
-    unsigned CFIIndex = MF.addFrameInst(
-        MCCFIInstruction::cfiDefCfa(nullptr, RI->getDwarfRegNum(FPReg, true),
-                                    LoongArchFI->getVarArgsSaveSize()));
+    // Emit ".cfi_def_cfa $fp, CFIFPOffset)"
+    unsigned CFIIndex = MF.addFrameInst(MCCFIInstruction::cfiDefCfa(
+        nullptr, RI->getDwarfRegNum(FPReg, true), CFIFPOffset));
+    // OHOS_LOCAL end
     BuildMI(MBB, MBBI, DL, TII->get(TargetOpcode::CFI_INSTRUCTION))
         .addCFIIndex(CFIIndex)
         .setMIFlag(MachineInstr::FrameSetup);
@@ -327,8 +385,14 @@ void LoongArchFrameLowering::emitEpilogue(MachineFunction &MF,
   Register SPReg = LoongArch::R3;
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+#ifndef ARK_GC_SUPPORT // OHOS_LOCAL
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+// OHOS_LOCAL begin
+#endif
+  // asm-int GHC call webkit function, we need push regs to stack.
+  // OHOS_LOCAL end
+
   MachineBasicBlock::iterator MBBI = MBB.getFirstTerminator();
   DebugLoc DL = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
 
@@ -345,7 +409,7 @@ void LoongArchFrameLowering::emitEpilogue(MachineFunction &MF,
   if (RI->hasStackRealignment(MF) || MFI.hasVarSizedObjects()) {
     assert(hasFP(MF) && "frame pointer should not have been eliminated");
     adjustReg(MBB, LastFrameDestroy, DL, SPReg, LoongArch::R22,
-              -StackSize + LoongArchFI->getVarArgsSaveSize(),
+              -StackSize + LoongArchFI->getFPOffsetAdjustment(), // OHOS_LOCAL
               MachineInstr::FrameDestroy);
   }
 
@@ -511,7 +575,8 @@ StackOffset LoongArchFrameLowering::getFrameIndexReference(
   } else {
     FrameReg = RI->getFrameRegister(MF);
     if (hasFP(MF))
-      Offset += StackOffset::getFixed(LoongArchFI->getVarArgsSaveSize());
+      Offset += StackOffset::getFixed(
+          LoongArchFI->getFPOffsetAdjustment()); // OHOS_LOCAL
     else
       Offset += StackOffset::getFixed(StackSize);
   }

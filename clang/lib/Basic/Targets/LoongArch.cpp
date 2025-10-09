@@ -34,7 +34,17 @@ ArrayRef<const char *> LoongArchTargetInfo::getGCCRegNames() const {
       "$f19", "$f20", "$f21", "$f22", "$f23", "$f24", "$f25", "$f26", "$f27",
       "$f28", "$f29", "$f30", "$f31",
       // Condition flag registers.
-      "$fcc0", "$fcc1", "$fcc2", "$fcc3", "$fcc4", "$fcc5", "$fcc6", "$fcc7"};
+      "$fcc0", "$fcc1", "$fcc2", "$fcc3", "$fcc4", "$fcc5", "$fcc6", "$fcc7",
+      // 128-bit vector registers.
+      "$vr0", "$vr1", "$vr2", "$vr3", "$vr4", "$vr5", "$vr6", "$vr7", "$vr8",
+      "$vr9", "$vr10", "$vr11", "$vr12", "$vr13", "$vr14", "$vr15", "$vr16",
+      "$vr17", "$vr18", "$vr19", "$vr20", "$vr21", "$vr22", "$vr23", "$vr24",
+      "$vr25", "$vr26", "$vr27", "$vr28", "$vr29", "$vr30", "$vr31",
+      // 256-bit vector registers.
+      "$xr0", "$xr1", "$xr2", "$xr3", "$xr4", "$xr5", "$xr6", "$xr7", "$xr8",
+      "$xr9", "$xr10", "$xr11", "$xr12", "$xr13", "$xr14", "$xr15", "$xr16",
+      "$xr17", "$xr18", "$xr19", "$xr20", "$xr21", "$xr22", "$xr23", "$xr24",
+      "$xr25", "$xr26", "$xr27", "$xr28", "$xr29", "$xr30", "$xr31"};
   return llvm::makeArrayRef(GCCRegNames);
 }
 
@@ -199,6 +209,15 @@ void LoongArchTargetInfo::getTargetDefines(const LangOptions &Opts,
     TuneCPU = ArchName;
   Builder.defineMacro("__loongarch_tune", Twine('"') + TuneCPU + Twine('"'));
 
+  if (HasFeatureLASX) {
+    Builder.defineMacro("__loongarch_simd_width", "256");
+    Builder.defineMacro("__loongarch_sx", Twine(1));
+    Builder.defineMacro("__loongarch_asx", Twine(1));
+  } else if (HasFeatureLSX) {
+    Builder.defineMacro("__loongarch_simd_width", "128");
+    Builder.defineMacro("__loongarch_sx", Twine(1));
+  }
+
   StringRef ABI = getABI();
   if (ABI == "lp64d" || ABI == "lp64f" || ABI == "lp64s")
     Builder.defineMacro("__loongarch_lp64");
@@ -224,7 +243,7 @@ static constexpr Builtin::Info BuiltinInfo[] = {
 #define BUILTIN(ID, TYPE, ATTRS)                                               \
   {#ID, TYPE, ATTRS, nullptr, ALL_LANGUAGES, nullptr},
 #define TARGET_BUILTIN(ID, TYPE, ATTRS, FEATURE)                               \
-  {#ID, TYPE, ATTRS, FEATURE, ALL_LANGUAGES, nullptr},
+  {#ID, TYPE, ATTRS, nullptr, ALL_LANGUAGES, FEATURE},
 #include "clang/Basic/BuiltinsLoongArch.def"
 };
 
@@ -248,6 +267,8 @@ bool LoongArchTargetInfo::hasFeature(StringRef Feature) const {
       .Case("loongarch64", Is64Bit)
       .Case("32bit", !Is64Bit)
       .Case("64bit", Is64Bit)
+      .Case("lsx", HasFeatureLSX)
+      .Case("lasx", HasFeatureLASX)
       .Default(false);
 }
 
@@ -265,7 +286,10 @@ bool LoongArchTargetInfo::handleTargetFeatures(
       if (Feature == "+d") {
         HasFeatureD = true;
       }
-    }
+    } else if (Feature == "+lsx")
+      HasFeatureLSX = true;
+    else if (Feature == "+lasx")
+      HasFeatureLASX = true;
   }
   return true;
 }

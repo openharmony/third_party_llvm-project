@@ -102,6 +102,7 @@
 # CHECK: Type: R_LARCH_ADD_ULEB128 (107)
 # CHECK: Type: R_LARCH_SUB_ULEB128 (108)
 # CHECK: Type: R_LARCH_64_PCREL (109)
+# CHECK: Type: R_LARCH_CALL36 (110)
 
 --- !ELF
 FileHeader:
@@ -211,3 +212,4 @@ Sections:
       - Type: R_LARCH_ADD_ULEB128
       - Type: R_LARCH_SUB_ULEB128
       - Type: R_LARCH_64_PCREL
+      - Type: R_LARCH_CALL36

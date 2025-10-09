@@ -17,6 +17,8 @@
 #include "MCTargetDesc/LoongArchInstPrinter.h"
 #include "TargetInfo/LoongArchTargetInfo.h"
 #include "llvm/CodeGen/AsmPrinter.h"
+#include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCInstBuilder.h"
 #include "llvm/MC/TargetRegistry.h"
 
 using namespace llvm;
@@ -36,6 +38,9 @@ void LoongArchAsmPrinter::emitInstruction(const MachineInstr *MI) {
     return;
 
   switch (MI->getOpcode()) {
+  case TargetOpcode::STATEPOINT:
+    LowerSTATEPOINT(*MI);
+    return;
   case TargetOpcode::PATCHABLE_FUNCTION_ENTER:
     LowerPATCHABLE_FUNCTION_ENTER(*MI);
     return;
@@ -44,6 +49,10 @@ void LoongArchAsmPrinter::emitInstruction(const MachineInstr *MI) {
   MCInst TmpInst;
   if (!lowerLoongArchMachineInstrToMCInst(MI, TmpInst, *this))
     EmitToStreamer(*OutStreamer, TmpInst);
+}
+
+void LoongArchAsmPrinter::emitEndOfAsmFile(Module &M) {
+  emitStackMaps(SM);
 }
 
 bool LoongArchAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
@@ -67,6 +76,20 @@ bool LoongArchAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
         return false;
       }
       break;
+    case 'w': // Print LSX registers.
+      if (MO.getReg().id() >= LoongArch::VR0 &&
+          MO.getReg().id() <= LoongArch::VR31)
+        break;
+      // The modifier is 'w' but the operand is not an LSX register; Report an
+      // unknown operand error.
+      return true;
+    case 'u': // Print LASX registers.
+      if (MO.getReg().id() >= LoongArch::XR0 &&
+          MO.getReg().id() <= LoongArch::XR31)
+        break;
+      // The modifier is 'u' but the operand is not an LASX register; Report an
+      // unknown operand error.
+      return true;
       // TODO: handle other extra codes if any.
     }
   }
@@ -114,6 +137,46 @@ bool LoongArchAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI,
     return true;
 
   return false;
+}
+
+void LoongArchAsmPrinter::LowerSTATEPOINT(const MachineInstr &MI) {
+  StatepointOpers SOpers(&MI);
+  if (unsigned PatchBytes = SOpers.getNumPatchBytes()) {
+    assert(PatchBytes % 4 == 0 && "Invalid number of NOP bytes requested!");
+    emitNops(PatchBytes / 4);
+  } else {
+    // Lower call target and choose correct opcode.
+    const MachineOperand &CallTarget = SOpers.getCallTarget();
+    MCOperand CallTargetMCOp;
+    switch (CallTarget.getType()) {
+    case MachineOperand::MO_GlobalAddress:
+    case MachineOperand::MO_ExternalSymbol:
+      lowerOperand(CallTarget, CallTargetMCOp);
+      EmitToStreamer(*OutStreamer,
+                     MCInstBuilder(LoongArch::BL).addOperand(CallTargetMCOp));
+      break;
+    case MachineOperand::MO_Immediate:
+      CallTargetMCOp = MCOperand::createImm(CallTarget.getImm());
+      EmitToStreamer(*OutStreamer,
+                     MCInstBuilder(LoongArch::BL).addOperand(CallTargetMCOp));
+      break;
+    case MachineOperand::MO_Register:
+      CallTargetMCOp = MCOperand::createReg(CallTarget.getReg());
+      EmitToStreamer(*OutStreamer, MCInstBuilder(LoongArch::JIRL)
+                                       .addReg(LoongArch::R1)
+                                       .addOperand(CallTargetMCOp)
+                                       .addImm(0));
+      break;
+    default:
+      llvm_unreachable("Unsupported operand type in statepoint call target");
+      break;
+    }
+  }
+
+  auto &Ctx = OutStreamer->getContext();
+  MCSymbol *MILabel = Ctx.createTempSymbol();
+  OutStreamer->emitLabel(MILabel);
+  SM.recordStatepoint(*MILabel, MI);
 }
 
 void LoongArchAsmPrinter::LowerPATCHABLE_FUNCTION_ENTER(

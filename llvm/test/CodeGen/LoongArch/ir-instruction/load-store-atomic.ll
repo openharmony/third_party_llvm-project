@@ -72,6 +72,22 @@ define i64 @load_acquire_i64(ptr %ptr) {
   ret i64 %val
 }
 
+define ptr @load_acquire_ptr(ptr %ptr) {
+; LA32-LABEL: load_acquire_ptr:
+; LA32:       # %bb.0:
+; LA32-NEXT:    ld.w $a0, $a0, 0
+; LA32-NEXT:    dbar 0
+; LA32-NEXT:    ret
+;
+; LA64-LABEL: load_acquire_ptr:
+; LA64:       # %bb.0:
+; LA64-NEXT:    ld.d $a0, $a0, 0
+; LA64-NEXT:    dbar 0
+; LA64-NEXT:    ret
+  %val = load atomic ptr, ptr %ptr acquire, align 8
+  ret ptr %val
+}
+
 define void @store_release_i8(ptr %ptr, i8 signext %v) {
 ; LA32-LABEL: store_release_i8:
 ; LA32:       # %bb.0:
@@ -140,6 +156,21 @@ define void @store_release_i64(ptr %ptr, i64 %v) {
   ret void
 }
 
+define void @store_release_ptr(ptr %ptr, ptr %v) {
+; LA32-LABEL: store_release_ptr:
+; LA32:       # %bb.0:
+; LA32-NEXT:    dbar 0
+; LA32-NEXT:    st.w $a1, $a0, 0
+; LA32-NEXT:    ret
+;
+; LA64-LABEL: store_release_ptr:
+; LA64:       # %bb.0:
+; LA64-NEXT:    amswap_db.d $zero, $a1, $a0
+; LA64-NEXT:    ret
+  store atomic ptr %v, ptr %ptr release, align 8
+  ret void
+}
+
 define void @store_unordered_i8(ptr %ptr, i8 signext %v) {
 ; LA32-LABEL: store_unordered_i8:
 ; LA32:       # %bb.0:
@@ -203,6 +234,20 @@ define void @store_unordered_i64(ptr %ptr, i64 %v) {
   ret void
 }
 
+define void @store_unordered_ptr(ptr %ptr, ptr %v) {
+; LA32-LABEL: store_unordered_ptr:
+; LA32:       # %bb.0:
+; LA32-NEXT:    st.w $a1, $a0, 0
+; LA32-NEXT:    ret
+;
+; LA64-LABEL: store_unordered_ptr:
+; LA64:       # %bb.0:
+; LA64-NEXT:    st.d $a1, $a0, 0
+; LA64-NEXT:    ret
+  store atomic ptr %v, ptr %ptr unordered, align 8
+  ret void
+}
+
 define void @store_monotonic_i8(ptr %ptr, i8 signext %v) {
 ; LA32-LABEL: store_monotonic_i8:
 ; LA32:       # %bb.0:
@@ -263,6 +308,20 @@ define void @store_monotonic_i64(ptr %ptr, i64 %v) {
 ; LA64-NEXT:    st.d $a1, $a0, 0
 ; LA64-NEXT:    ret
   store atomic i64 %v, ptr %ptr monotonic, align 8
+  ret void
+}
+
+define void @store_monotonic_ptr(ptr %ptr, ptr %v) {
+; LA32-LABEL: store_monotonic_ptr:
+; LA32:       # %bb.0:
+; LA32-NEXT:    st.w $a1, $a0, 0
+; LA32-NEXT:    ret
+;
+; LA64-LABEL: store_monotonic_ptr:
+; LA64:       # %bb.0:
+; LA64-NEXT:    st.d $a1, $a0, 0
+; LA64-NEXT:    ret
+  store atomic ptr %v, ptr %ptr monotonic, align 8
   ret void
 }
 
@@ -336,5 +395,21 @@ define void @store_seq_cst_i64(ptr %ptr, i64 %v) {
 ; LA64-NEXT:    amswap_db.d $zero, $a1, $a0
 ; LA64-NEXT:    ret
   store atomic i64 %v, ptr %ptr seq_cst, align 8
+  ret void
+}
+
+define void @store_seq_cst_ptr(ptr %ptr, ptr %v) {
+; LA32-LABEL: store_seq_cst_ptr:
+; LA32:       # %bb.0:
+; LA32-NEXT:    dbar 0
+; LA32-NEXT:    st.w $a1, $a0, 0
+; LA32-NEXT:    dbar 0
+; LA32-NEXT:    ret
+;
+; LA64-LABEL: store_seq_cst_ptr:
+; LA64:       # %bb.0:
+; LA64-NEXT:    amswap_db.d $zero, $a1, $a0
+; LA64-NEXT:    ret
+  store atomic ptr %v, ptr %ptr seq_cst, align 8
   ret void
 }
