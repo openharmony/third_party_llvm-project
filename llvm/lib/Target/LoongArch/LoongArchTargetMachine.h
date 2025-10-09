@@ -31,11 +31,17 @@ public:
                          CodeGenOpt::Level OL, bool JIT);
   ~LoongArchTargetMachine() override;
 
+  TargetTransformInfo getTargetTransformInfo(const Function &F) const override;
   const LoongArchSubtarget *getSubtargetImpl(const Function &F) const override;
   const LoongArchSubtarget *getSubtargetImpl() const = delete;
 
   // Pass Pipeline Configuration
   TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
+
+  // Addrspacecasts are always noops.
+  bool isNoopAddrSpaceCast(unsigned SrcAS, unsigned DestAS) const override {
+    return true;
+  }
 
   TargetLoweringObjectFile *getObjFileLowering() const override {
     return TLOF.get();

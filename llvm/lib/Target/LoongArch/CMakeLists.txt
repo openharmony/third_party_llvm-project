@@ -1,9 +1,20 @@
 add_llvm_component_group(LoongArch)
 
+# OHOS_LOCAL begin
+if (BUILD_ARK_GC_SUPPORT)
+  list(APPEND LLVM_TABLEGEN_FLAGS -DARK_GC_SUPPORT)
+endif()
+# OHOS_LOCAL end
+
 set(LLVM_TARGET_DEFINITIONS LoongArch.td)
 
 tablegen(LLVM LoongArchGenAsmMatcher.inc -gen-asm-matcher)
 tablegen(LLVM LoongArchGenAsmWriter.inc -gen-asm-writer)
+# OHOS_LOCAL begin
+if (BUILD_ARK_GC_SUPPORT)
+  tablegen(LLVM LoongArchGenCallingConv.inc -gen-callingconv)
+endif()
+# OHOS_LOCAL end
 tablegen(LLVM LoongArchGenDAGISel.inc -gen-dag-isel)
 tablegen(LLVM LoongArchGenDisassemblerTables.inc -gen-disassembler)
 tablegen(LLVM LoongArchGenInstrInfo.inc -gen-instr-info)
@@ -26,6 +37,7 @@ add_llvm_target(LoongArchCodeGen
   LoongArchRegisterInfo.cpp
   LoongArchSubtarget.cpp
   LoongArchTargetMachine.cpp
+  LoongArchTargetTransformInfo.cpp
 
   LINK_COMPONENTS
   Analysis

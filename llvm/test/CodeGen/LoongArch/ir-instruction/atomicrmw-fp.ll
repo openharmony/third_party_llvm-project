@@ -10,13 +10,14 @@ define float @float_fadd_acquire(ptr %p) nounwind {
 ; LA64F-NEXT:    fld.s $fa0, $a0, 0
 ; LA64F-NEXT:    addi.w $a1, $zero, 1
 ; LA64F-NEXT:    movgr2fr.w $fa1, $a1
+; LA64F-NEXT:    ffint.s.w $fa1, $fa1
 ; LA64F-NEXT:  .LBB0_1: # %atomicrmw.start
 ; LA64F-NEXT:    # =>This Loop Header: Depth=1
 ; LA64F-NEXT:    # Child Loop BB0_3 Depth 2
-; LA64F-NEXT:    ffint.s.w $fa2, $fa1
-; LA64F-NEXT:    fadd.s $fa2, $fa0, $fa2
+; LA64F-NEXT:    fadd.s $fa2, $fa0, $fa1
 ; LA64F-NEXT:    movfr2gr.s $a1, $fa2
 ; LA64F-NEXT:    movfr2gr.s $a2, $fa0
+; LA64F-NEXT:    addi.w $a2, $a2, 0
 ; LA64F-NEXT:  .LBB0_3: # %atomicrmw.start
 ; LA64F-NEXT:    # Parent Loop BB0_1 Depth=1
 ; LA64F-NEXT:    # => This Inner Loop Header: Depth=2
@@ -35,8 +36,7 @@ define float @float_fadd_acquire(ptr %p) nounwind {
 ; LA64F-NEXT:  .LBB0_6: # %atomicrmw.start
 ; LA64F-NEXT:    # in Loop: Header=BB0_1 Depth=1
 ; LA64F-NEXT:    movgr2fr.w $fa0, $a3
-; LA64F-NEXT:    addi.w $a1, $a2, 0
-; LA64F-NEXT:    bne $a3, $a1, .LBB0_1
+; LA64F-NEXT:    bne $a3, $a2, .LBB0_1
 ; LA64F-NEXT:  # %bb.2: # %atomicrmw.end
 ; LA64F-NEXT:    ret
 ;
@@ -45,13 +45,14 @@ define float @float_fadd_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:    fld.s $fa0, $a0, 0
 ; LA64D-NEXT:    addi.w $a1, $zero, 1
 ; LA64D-NEXT:    movgr2fr.w $fa1, $a1
+; LA64D-NEXT:    ffint.s.w $fa1, $fa1
 ; LA64D-NEXT:  .LBB0_1: # %atomicrmw.start
 ; LA64D-NEXT:    # =>This Loop Header: Depth=1
 ; LA64D-NEXT:    # Child Loop BB0_3 Depth 2
-; LA64D-NEXT:    ffint.s.w $fa2, $fa1
-; LA64D-NEXT:    fadd.s $fa2, $fa0, $fa2
+; LA64D-NEXT:    fadd.s $fa2, $fa0, $fa1
 ; LA64D-NEXT:    movfr2gr.s $a1, $fa2
 ; LA64D-NEXT:    movfr2gr.s $a2, $fa0
+; LA64D-NEXT:    addi.w $a2, $a2, 0
 ; LA64D-NEXT:  .LBB0_3: # %atomicrmw.start
 ; LA64D-NEXT:    # Parent Loop BB0_1 Depth=1
 ; LA64D-NEXT:    # => This Inner Loop Header: Depth=2
@@ -70,8 +71,7 @@ define float @float_fadd_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:  .LBB0_6: # %atomicrmw.start
 ; LA64D-NEXT:    # in Loop: Header=BB0_1 Depth=1
 ; LA64D-NEXT:    movgr2fr.w $fa0, $a3
-; LA64D-NEXT:    addi.w $a1, $a2, 0
-; LA64D-NEXT:    bne $a3, $a1, .LBB0_1
+; LA64D-NEXT:    bne $a3, $a2, .LBB0_1
 ; LA64D-NEXT:  # %bb.2: # %atomicrmw.end
 ; LA64D-NEXT:    ret
   %v = atomicrmw fadd ptr %p, float 1.0 acquire, align 4
@@ -91,6 +91,7 @@ define float @float_fsub_acquire(ptr %p) nounwind {
 ; LA64F-NEXT:    fadd.s $fa2, $fa0, $fa1
 ; LA64F-NEXT:    movfr2gr.s $a1, $fa2
 ; LA64F-NEXT:    movfr2gr.s $a2, $fa0
+; LA64F-NEXT:    addi.w $a2, $a2, 0
 ; LA64F-NEXT:  .LBB1_3: # %atomicrmw.start
 ; LA64F-NEXT:    # Parent Loop BB1_1 Depth=1
 ; LA64F-NEXT:    # => This Inner Loop Header: Depth=2
@@ -109,8 +110,7 @@ define float @float_fsub_acquire(ptr %p) nounwind {
 ; LA64F-NEXT:  .LBB1_6: # %atomicrmw.start
 ; LA64F-NEXT:    # in Loop: Header=BB1_1 Depth=1
 ; LA64F-NEXT:    movgr2fr.w $fa0, $a3
-; LA64F-NEXT:    addi.w $a1, $a2, 0
-; LA64F-NEXT:    bne $a3, $a1, .LBB1_1
+; LA64F-NEXT:    bne $a3, $a2, .LBB1_1
 ; LA64F-NEXT:  # %bb.2: # %atomicrmw.end
 ; LA64F-NEXT:    ret
 ;
@@ -126,6 +126,7 @@ define float @float_fsub_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:    fadd.s $fa2, $fa0, $fa1
 ; LA64D-NEXT:    movfr2gr.s $a1, $fa2
 ; LA64D-NEXT:    movfr2gr.s $a2, $fa0
+; LA64D-NEXT:    addi.w $a2, $a2, 0
 ; LA64D-NEXT:  .LBB1_3: # %atomicrmw.start
 ; LA64D-NEXT:    # Parent Loop BB1_1 Depth=1
 ; LA64D-NEXT:    # => This Inner Loop Header: Depth=2
@@ -144,8 +145,7 @@ define float @float_fsub_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:  .LBB1_6: # %atomicrmw.start
 ; LA64D-NEXT:    # in Loop: Header=BB1_1 Depth=1
 ; LA64D-NEXT:    movgr2fr.w $fa0, $a3
-; LA64D-NEXT:    addi.w $a1, $a2, 0
-; LA64D-NEXT:    bne $a3, $a1, .LBB1_1
+; LA64D-NEXT:    bne $a3, $a2, .LBB1_1
 ; LA64D-NEXT:  # %bb.2: # %atomicrmw.end
 ; LA64D-NEXT:    ret
   %v = atomicrmw fsub ptr %p, float 1.0 acquire, align 4
@@ -158,14 +158,15 @@ define float @float_fmin_acquire(ptr %p) nounwind {
 ; LA64F-NEXT:    fld.s $fa0, $a0, 0
 ; LA64F-NEXT:    addi.w $a1, $zero, 1
 ; LA64F-NEXT:    movgr2fr.w $fa1, $a1
+; LA64F-NEXT:    ffint.s.w $fa1, $fa1
 ; LA64F-NEXT:  .LBB2_1: # %atomicrmw.start
 ; LA64F-NEXT:    # =>This Loop Header: Depth=1
 ; LA64F-NEXT:    # Child Loop BB2_3 Depth 2
-; LA64F-NEXT:    ffint.s.w $fa2, $fa1
-; LA64F-NEXT:    fmax.s $fa3, $fa0, $fa0
-; LA64F-NEXT:    fmin.s $fa2, $fa3, $fa2
+; LA64F-NEXT:    fmax.s $fa2, $fa0, $fa0
+; LA64F-NEXT:    fmin.s $fa2, $fa2, $fa1
 ; LA64F-NEXT:    movfr2gr.s $a1, $fa2
 ; LA64F-NEXT:    movfr2gr.s $a2, $fa0
+; LA64F-NEXT:    addi.w $a2, $a2, 0
 ; LA64F-NEXT:  .LBB2_3: # %atomicrmw.start
 ; LA64F-NEXT:    # Parent Loop BB2_1 Depth=1
 ; LA64F-NEXT:    # => This Inner Loop Header: Depth=2
@@ -184,8 +185,7 @@ define float @float_fmin_acquire(ptr %p) nounwind {
 ; LA64F-NEXT:  .LBB2_6: # %atomicrmw.start
 ; LA64F-NEXT:    # in Loop: Header=BB2_1 Depth=1
 ; LA64F-NEXT:    movgr2fr.w $fa0, $a3
-; LA64F-NEXT:    addi.w $a1, $a2, 0
-; LA64F-NEXT:    bne $a3, $a1, .LBB2_1
+; LA64F-NEXT:    bne $a3, $a2, .LBB2_1
 ; LA64F-NEXT:  # %bb.2: # %atomicrmw.end
 ; LA64F-NEXT:    ret
 ;
@@ -194,14 +194,15 @@ define float @float_fmin_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:    fld.s $fa0, $a0, 0
 ; LA64D-NEXT:    addi.w $a1, $zero, 1
 ; LA64D-NEXT:    movgr2fr.w $fa1, $a1
+; LA64D-NEXT:    ffint.s.w $fa1, $fa1
 ; LA64D-NEXT:  .LBB2_1: # %atomicrmw.start
 ; LA64D-NEXT:    # =>This Loop Header: Depth=1
 ; LA64D-NEXT:    # Child Loop BB2_3 Depth 2
-; LA64D-NEXT:    ffint.s.w $fa2, $fa1
-; LA64D-NEXT:    fmax.s $fa3, $fa0, $fa0
-; LA64D-NEXT:    fmin.s $fa2, $fa3, $fa2
+; LA64D-NEXT:    fmax.s $fa2, $fa0, $fa0
+; LA64D-NEXT:    fmin.s $fa2, $fa2, $fa1
 ; LA64D-NEXT:    movfr2gr.s $a1, $fa2
 ; LA64D-NEXT:    movfr2gr.s $a2, $fa0
+; LA64D-NEXT:    addi.w $a2, $a2, 0
 ; LA64D-NEXT:  .LBB2_3: # %atomicrmw.start
 ; LA64D-NEXT:    # Parent Loop BB2_1 Depth=1
 ; LA64D-NEXT:    # => This Inner Loop Header: Depth=2
@@ -220,8 +221,7 @@ define float @float_fmin_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:  .LBB2_6: # %atomicrmw.start
 ; LA64D-NEXT:    # in Loop: Header=BB2_1 Depth=1
 ; LA64D-NEXT:    movgr2fr.w $fa0, $a3
-; LA64D-NEXT:    addi.w $a1, $a2, 0
-; LA64D-NEXT:    bne $a3, $a1, .LBB2_1
+; LA64D-NEXT:    bne $a3, $a2, .LBB2_1
 ; LA64D-NEXT:  # %bb.2: # %atomicrmw.end
 ; LA64D-NEXT:    ret
   %v = atomicrmw fmin ptr %p, float 1.0 acquire, align 4
@@ -234,14 +234,15 @@ define float @float_fmax_acquire(ptr %p) nounwind {
 ; LA64F-NEXT:    fld.s $fa0, $a0, 0
 ; LA64F-NEXT:    addi.w $a1, $zero, 1
 ; LA64F-NEXT:    movgr2fr.w $fa1, $a1
+; LA64F-NEXT:    ffint.s.w $fa1, $fa1
 ; LA64F-NEXT:  .LBB3_1: # %atomicrmw.start
 ; LA64F-NEXT:    # =>This Loop Header: Depth=1
 ; LA64F-NEXT:    # Child Loop BB3_3 Depth 2
-; LA64F-NEXT:    ffint.s.w $fa2, $fa1
-; LA64F-NEXT:    fmax.s $fa3, $fa0, $fa0
-; LA64F-NEXT:    fmax.s $fa2, $fa3, $fa2
+; LA64F-NEXT:    fmax.s $fa2, $fa0, $fa0
+; LA64F-NEXT:    fmax.s $fa2, $fa2, $fa1
 ; LA64F-NEXT:    movfr2gr.s $a1, $fa2
 ; LA64F-NEXT:    movfr2gr.s $a2, $fa0
+; LA64F-NEXT:    addi.w $a2, $a2, 0
 ; LA64F-NEXT:  .LBB3_3: # %atomicrmw.start
 ; LA64F-NEXT:    # Parent Loop BB3_1 Depth=1
 ; LA64F-NEXT:    # => This Inner Loop Header: Depth=2
@@ -260,8 +261,7 @@ define float @float_fmax_acquire(ptr %p) nounwind {
 ; LA64F-NEXT:  .LBB3_6: # %atomicrmw.start
 ; LA64F-NEXT:    # in Loop: Header=BB3_1 Depth=1
 ; LA64F-NEXT:    movgr2fr.w $fa0, $a3
-; LA64F-NEXT:    addi.w $a1, $a2, 0
-; LA64F-NEXT:    bne $a3, $a1, .LBB3_1
+; LA64F-NEXT:    bne $a3, $a2, .LBB3_1
 ; LA64F-NEXT:  # %bb.2: # %atomicrmw.end
 ; LA64F-NEXT:    ret
 ;
@@ -270,14 +270,15 @@ define float @float_fmax_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:    fld.s $fa0, $a0, 0
 ; LA64D-NEXT:    addi.w $a1, $zero, 1
 ; LA64D-NEXT:    movgr2fr.w $fa1, $a1
+; LA64D-NEXT:    ffint.s.w $fa1, $fa1
 ; LA64D-NEXT:  .LBB3_1: # %atomicrmw.start
 ; LA64D-NEXT:    # =>This Loop Header: Depth=1
 ; LA64D-NEXT:    # Child Loop BB3_3 Depth 2
-; LA64D-NEXT:    ffint.s.w $fa2, $fa1
-; LA64D-NEXT:    fmax.s $fa3, $fa0, $fa0
-; LA64D-NEXT:    fmax.s $fa2, $fa3, $fa2
+; LA64D-NEXT:    fmax.s $fa2, $fa0, $fa0
+; LA64D-NEXT:    fmax.s $fa2, $fa2, $fa1
 ; LA64D-NEXT:    movfr2gr.s $a1, $fa2
 ; LA64D-NEXT:    movfr2gr.s $a2, $fa0
+; LA64D-NEXT:    addi.w $a2, $a2, 0
 ; LA64D-NEXT:  .LBB3_3: # %atomicrmw.start
 ; LA64D-NEXT:    # Parent Loop BB3_1 Depth=1
 ; LA64D-NEXT:    # => This Inner Loop Header: Depth=2
@@ -296,8 +297,7 @@ define float @float_fmax_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:  .LBB3_6: # %atomicrmw.start
 ; LA64D-NEXT:    # in Loop: Header=BB3_1 Depth=1
 ; LA64D-NEXT:    movgr2fr.w $fa0, $a3
-; LA64D-NEXT:    addi.w $a1, $a2, 0
-; LA64D-NEXT:    bne $a3, $a1, .LBB3_1
+; LA64D-NEXT:    bne $a3, $a2, .LBB3_1
 ; LA64D-NEXT:  # %bb.2: # %atomicrmw.end
 ; LA64D-NEXT:    ret
   %v = atomicrmw fmax ptr %p, float 1.0 acquire, align 4
@@ -307,43 +307,46 @@ define float @float_fmax_acquire(ptr %p) nounwind {
 define double @double_fadd_acquire(ptr %p) nounwind {
 ; LA64F-LABEL: double_fadd_acquire:
 ; LA64F:       # %bb.0:
-; LA64F-NEXT:    addi.d $sp, $sp, -64
-; LA64F-NEXT:    st.d $ra, $sp, 56 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $fp, $sp, 48 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s0, $sp, 40 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s1, $sp, 32 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s2, $sp, 24 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s3, $sp, 16 # 8-byte Folded Spill
+; LA64F-NEXT:    addi.d $sp, $sp, -80
+; LA64F-NEXT:    st.d $ra, $sp, 72 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $fp, $sp, 64 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s0, $sp, 56 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s1, $sp, 48 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s2, $sp, 40 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s3, $sp, 32 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s4, $sp, 24 # 8-byte Folded Spill
 ; LA64F-NEXT:    move $fp, $a0
 ; LA64F-NEXT:    ld.d $a0, $a0, 0
-; LA64F-NEXT:    ori $s0, $zero, 8
-; LA64F-NEXT:    addi.d $s1, $sp, 8
-; LA64F-NEXT:    addi.d $s2, $sp, 0
-; LA64F-NEXT:    ori $s3, $zero, 2
+; LA64F-NEXT:    lu52i.d $s0, $zero, 1023
+; LA64F-NEXT:    ori $s1, $zero, 8
+; LA64F-NEXT:    addi.d $s2, $sp, 16
+; LA64F-NEXT:    addi.d $s3, $sp, 8
+; LA64F-NEXT:    ori $s4, $zero, 2
 ; LA64F-NEXT:  .LBB4_1: # %atomicrmw.start
 ; LA64F-NEXT:    # =>This Inner Loop Header: Depth=1
-; LA64F-NEXT:    st.d $a0, $sp, 8
-; LA64F-NEXT:    lu52i.d $a1, $zero, 1023
+; LA64F-NEXT:    st.d $a0, $sp, 16
+; LA64F-NEXT:    move $a1, $s0
 ; LA64F-NEXT:    bl %plt(__adddf3)
-; LA64F-NEXT:    st.d $a0, $sp, 0
-; LA64F-NEXT:    move $a0, $s0
+; LA64F-NEXT:    st.d $a0, $sp, 8
+; LA64F-NEXT:    move $a0, $s1
 ; LA64F-NEXT:    move $a1, $fp
-; LA64F-NEXT:    move $a2, $s1
-; LA64F-NEXT:    move $a3, $s2
-; LA64F-NEXT:    move $a4, $s3
-; LA64F-NEXT:    move $a5, $s3
+; LA64F-NEXT:    move $a2, $s2
+; LA64F-NEXT:    move $a3, $s3
+; LA64F-NEXT:    move $a4, $s4
+; LA64F-NEXT:    move $a5, $s4
 ; LA64F-NEXT:    bl %plt(__atomic_compare_exchange)
 ; LA64F-NEXT:    move $a1, $a0
-; LA64F-NEXT:    ld.d $a0, $sp, 8
+; LA64F-NEXT:    ld.d $a0, $sp, 16
 ; LA64F-NEXT:    beqz $a1, .LBB4_1
 ; LA64F-NEXT:  # %bb.2: # %atomicrmw.end
-; LA64F-NEXT:    ld.d $s3, $sp, 16 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $s2, $sp, 24 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $s1, $sp, 32 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $s0, $sp, 40 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $fp, $sp, 48 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $ra, $sp, 56 # 8-byte Folded Reload
-; LA64F-NEXT:    addi.d $sp, $sp, 64
+; LA64F-NEXT:    ld.d $s4, $sp, 24 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s3, $sp, 32 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s2, $sp, 40 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s1, $sp, 48 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s0, $sp, 56 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $fp, $sp, 64 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $ra, $sp, 72 # 8-byte Folded Reload
+; LA64F-NEXT:    addi.d $sp, $sp, 80
 ; LA64F-NEXT:    ret
 ;
 ; LA64D-LABEL: double_fadd_acquire:
@@ -359,7 +362,8 @@ define double @double_fadd_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:    move $fp, $a0
 ; LA64D-NEXT:    fld.d $fa0, $a0, 0
 ; LA64D-NEXT:    addi.d $a0, $zero, 1
-; LA64D-NEXT:    movgr2fr.d $fs0, $a0
+; LA64D-NEXT:    movgr2fr.d $fa1, $a0
+; LA64D-NEXT:    ffint.d.l $fs0, $fa1
 ; LA64D-NEXT:    ori $s0, $zero, 8
 ; LA64D-NEXT:    addi.d $s1, $sp, 16
 ; LA64D-NEXT:    addi.d $s2, $sp, 8
@@ -367,8 +371,7 @@ define double @double_fadd_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:  .LBB4_1: # %atomicrmw.start
 ; LA64D-NEXT:    # =>This Inner Loop Header: Depth=1
 ; LA64D-NEXT:    fst.d $fa0, $sp, 16
-; LA64D-NEXT:    ffint.d.l $fa1, $fs0
-; LA64D-NEXT:    fadd.d $fa0, $fa0, $fa1
+; LA64D-NEXT:    fadd.d $fa0, $fa0, $fs0
 ; LA64D-NEXT:    fst.d $fa0, $sp, 8
 ; LA64D-NEXT:    move $a0, $s0
 ; LA64D-NEXT:    move $a1, $fp
@@ -396,43 +399,46 @@ define double @double_fadd_acquire(ptr %p) nounwind {
 define double @double_fsub_acquire(ptr %p) nounwind {
 ; LA64F-LABEL: double_fsub_acquire:
 ; LA64F:       # %bb.0:
-; LA64F-NEXT:    addi.d $sp, $sp, -64
-; LA64F-NEXT:    st.d $ra, $sp, 56 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $fp, $sp, 48 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s0, $sp, 40 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s1, $sp, 32 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s2, $sp, 24 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s3, $sp, 16 # 8-byte Folded Spill
+; LA64F-NEXT:    addi.d $sp, $sp, -80
+; LA64F-NEXT:    st.d $ra, $sp, 72 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $fp, $sp, 64 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s0, $sp, 56 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s1, $sp, 48 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s2, $sp, 40 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s3, $sp, 32 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s4, $sp, 24 # 8-byte Folded Spill
 ; LA64F-NEXT:    move $fp, $a0
 ; LA64F-NEXT:    ld.d $a0, $a0, 0
-; LA64F-NEXT:    ori $s0, $zero, 8
-; LA64F-NEXT:    addi.d $s1, $sp, 8
-; LA64F-NEXT:    addi.d $s2, $sp, 0
-; LA64F-NEXT:    ori $s3, $zero, 2
+; LA64F-NEXT:    lu52i.d $s0, $zero, -1025
+; LA64F-NEXT:    ori $s1, $zero, 8
+; LA64F-NEXT:    addi.d $s2, $sp, 16
+; LA64F-NEXT:    addi.d $s3, $sp, 8
+; LA64F-NEXT:    ori $s4, $zero, 2
 ; LA64F-NEXT:  .LBB5_1: # %atomicrmw.start
 ; LA64F-NEXT:    # =>This Inner Loop Header: Depth=1
-; LA64F-NEXT:    st.d $a0, $sp, 8
-; LA64F-NEXT:    lu52i.d $a1, $zero, -1025
+; LA64F-NEXT:    st.d $a0, $sp, 16
+; LA64F-NEXT:    move $a1, $s0
 ; LA64F-NEXT:    bl %plt(__adddf3)
-; LA64F-NEXT:    st.d $a0, $sp, 0
-; LA64F-NEXT:    move $a0, $s0
+; LA64F-NEXT:    st.d $a0, $sp, 8
+; LA64F-NEXT:    move $a0, $s1
 ; LA64F-NEXT:    move $a1, $fp
-; LA64F-NEXT:    move $a2, $s1
-; LA64F-NEXT:    move $a3, $s2
-; LA64F-NEXT:    move $a4, $s3
-; LA64F-NEXT:    move $a5, $s3
+; LA64F-NEXT:    move $a2, $s2
+; LA64F-NEXT:    move $a3, $s3
+; LA64F-NEXT:    move $a4, $s4
+; LA64F-NEXT:    move $a5, $s4
 ; LA64F-NEXT:    bl %plt(__atomic_compare_exchange)
 ; LA64F-NEXT:    move $a1, $a0
-; LA64F-NEXT:    ld.d $a0, $sp, 8
+; LA64F-NEXT:    ld.d $a0, $sp, 16
 ; LA64F-NEXT:    beqz $a1, .LBB5_1
 ; LA64F-NEXT:  # %bb.2: # %atomicrmw.end
-; LA64F-NEXT:    ld.d $s3, $sp, 16 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $s2, $sp, 24 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $s1, $sp, 32 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $s0, $sp, 40 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $fp, $sp, 48 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $ra, $sp, 56 # 8-byte Folded Reload
-; LA64F-NEXT:    addi.d $sp, $sp, 64
+; LA64F-NEXT:    ld.d $s4, $sp, 24 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s3, $sp, 32 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s2, $sp, 40 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s1, $sp, 48 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s0, $sp, 56 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $fp, $sp, 64 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $ra, $sp, 72 # 8-byte Folded Reload
+; LA64F-NEXT:    addi.d $sp, $sp, 80
 ; LA64F-NEXT:    ret
 ;
 ; LA64D-LABEL: double_fsub_acquire:
@@ -485,43 +491,46 @@ define double @double_fsub_acquire(ptr %p) nounwind {
 define double @double_fmin_acquire(ptr %p) nounwind {
 ; LA64F-LABEL: double_fmin_acquire:
 ; LA64F:       # %bb.0:
-; LA64F-NEXT:    addi.d $sp, $sp, -64
-; LA64F-NEXT:    st.d $ra, $sp, 56 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $fp, $sp, 48 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s0, $sp, 40 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s1, $sp, 32 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s2, $sp, 24 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s3, $sp, 16 # 8-byte Folded Spill
+; LA64F-NEXT:    addi.d $sp, $sp, -80
+; LA64F-NEXT:    st.d $ra, $sp, 72 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $fp, $sp, 64 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s0, $sp, 56 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s1, $sp, 48 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s2, $sp, 40 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s3, $sp, 32 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s4, $sp, 24 # 8-byte Folded Spill
 ; LA64F-NEXT:    move $fp, $a0
 ; LA64F-NEXT:    ld.d $a0, $a0, 0
-; LA64F-NEXT:    ori $s0, $zero, 8
-; LA64F-NEXT:    addi.d $s1, $sp, 8
-; LA64F-NEXT:    addi.d $s2, $sp, 0
-; LA64F-NEXT:    ori $s3, $zero, 2
+; LA64F-NEXT:    lu52i.d $s0, $zero, 1023
+; LA64F-NEXT:    ori $s1, $zero, 8
+; LA64F-NEXT:    addi.d $s2, $sp, 16
+; LA64F-NEXT:    addi.d $s3, $sp, 8
+; LA64F-NEXT:    ori $s4, $zero, 2
 ; LA64F-NEXT:  .LBB6_1: # %atomicrmw.start
 ; LA64F-NEXT:    # =>This Inner Loop Header: Depth=1
-; LA64F-NEXT:    st.d $a0, $sp, 8
-; LA64F-NEXT:    lu52i.d $a1, $zero, 1023
+; LA64F-NEXT:    st.d $a0, $sp, 16
+; LA64F-NEXT:    move $a1, $s0
 ; LA64F-NEXT:    bl %plt(fmin)
-; LA64F-NEXT:    st.d $a0, $sp, 0
-; LA64F-NEXT:    move $a0, $s0
+; LA64F-NEXT:    st.d $a0, $sp, 8
+; LA64F-NEXT:    move $a0, $s1
 ; LA64F-NEXT:    move $a1, $fp
-; LA64F-NEXT:    move $a2, $s1
-; LA64F-NEXT:    move $a3, $s2
-; LA64F-NEXT:    move $a4, $s3
-; LA64F-NEXT:    move $a5, $s3
+; LA64F-NEXT:    move $a2, $s2
+; LA64F-NEXT:    move $a3, $s3
+; LA64F-NEXT:    move $a4, $s4
+; LA64F-NEXT:    move $a5, $s4
 ; LA64F-NEXT:    bl %plt(__atomic_compare_exchange)
 ; LA64F-NEXT:    move $a1, $a0
-; LA64F-NEXT:    ld.d $a0, $sp, 8
+; LA64F-NEXT:    ld.d $a0, $sp, 16
 ; LA64F-NEXT:    beqz $a1, .LBB6_1
 ; LA64F-NEXT:  # %bb.2: # %atomicrmw.end
-; LA64F-NEXT:    ld.d $s3, $sp, 16 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $s2, $sp, 24 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $s1, $sp, 32 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $s0, $sp, 40 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $fp, $sp, 48 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $ra, $sp, 56 # 8-byte Folded Reload
-; LA64F-NEXT:    addi.d $sp, $sp, 64
+; LA64F-NEXT:    ld.d $s4, $sp, 24 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s3, $sp, 32 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s2, $sp, 40 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s1, $sp, 48 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s0, $sp, 56 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $fp, $sp, 64 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $ra, $sp, 72 # 8-byte Folded Reload
+; LA64F-NEXT:    addi.d $sp, $sp, 80
 ; LA64F-NEXT:    ret
 ;
 ; LA64D-LABEL: double_fmin_acquire:
@@ -537,7 +546,8 @@ define double @double_fmin_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:    move $fp, $a0
 ; LA64D-NEXT:    fld.d $fa0, $a0, 0
 ; LA64D-NEXT:    addi.d $a0, $zero, 1
-; LA64D-NEXT:    movgr2fr.d $fs0, $a0
+; LA64D-NEXT:    movgr2fr.d $fa1, $a0
+; LA64D-NEXT:    ffint.d.l $fs0, $fa1
 ; LA64D-NEXT:    ori $s0, $zero, 8
 ; LA64D-NEXT:    addi.d $s1, $sp, 16
 ; LA64D-NEXT:    addi.d $s2, $sp, 8
@@ -546,8 +556,7 @@ define double @double_fmin_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:    # =>This Inner Loop Header: Depth=1
 ; LA64D-NEXT:    fst.d $fa0, $sp, 16
 ; LA64D-NEXT:    fmax.d $fa0, $fa0, $fa0
-; LA64D-NEXT:    ffint.d.l $fa1, $fs0
-; LA64D-NEXT:    fmin.d $fa0, $fa0, $fa1
+; LA64D-NEXT:    fmin.d $fa0, $fa0, $fs0
 ; LA64D-NEXT:    fst.d $fa0, $sp, 8
 ; LA64D-NEXT:    move $a0, $s0
 ; LA64D-NEXT:    move $a1, $fp
@@ -575,43 +584,46 @@ define double @double_fmin_acquire(ptr %p) nounwind {
 define double @double_fmax_acquire(ptr %p) nounwind {
 ; LA64F-LABEL: double_fmax_acquire:
 ; LA64F:       # %bb.0:
-; LA64F-NEXT:    addi.d $sp, $sp, -64
-; LA64F-NEXT:    st.d $ra, $sp, 56 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $fp, $sp, 48 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s0, $sp, 40 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s1, $sp, 32 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s2, $sp, 24 # 8-byte Folded Spill
-; LA64F-NEXT:    st.d $s3, $sp, 16 # 8-byte Folded Spill
+; LA64F-NEXT:    addi.d $sp, $sp, -80
+; LA64F-NEXT:    st.d $ra, $sp, 72 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $fp, $sp, 64 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s0, $sp, 56 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s1, $sp, 48 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s2, $sp, 40 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s3, $sp, 32 # 8-byte Folded Spill
+; LA64F-NEXT:    st.d $s4, $sp, 24 # 8-byte Folded Spill
 ; LA64F-NEXT:    move $fp, $a0
 ; LA64F-NEXT:    ld.d $a0, $a0, 0
-; LA64F-NEXT:    ori $s0, $zero, 8
-; LA64F-NEXT:    addi.d $s1, $sp, 8
-; LA64F-NEXT:    addi.d $s2, $sp, 0
-; LA64F-NEXT:    ori $s3, $zero, 2
+; LA64F-NEXT:    lu52i.d $s0, $zero, 1023
+; LA64F-NEXT:    ori $s1, $zero, 8
+; LA64F-NEXT:    addi.d $s2, $sp, 16
+; LA64F-NEXT:    addi.d $s3, $sp, 8
+; LA64F-NEXT:    ori $s4, $zero, 2
 ; LA64F-NEXT:  .LBB7_1: # %atomicrmw.start
 ; LA64F-NEXT:    # =>This Inner Loop Header: Depth=1
-; LA64F-NEXT:    st.d $a0, $sp, 8
-; LA64F-NEXT:    lu52i.d $a1, $zero, 1023
+; LA64F-NEXT:    st.d $a0, $sp, 16
+; LA64F-NEXT:    move $a1, $s0
 ; LA64F-NEXT:    bl %plt(fmax)
-; LA64F-NEXT:    st.d $a0, $sp, 0
-; LA64F-NEXT:    move $a0, $s0
+; LA64F-NEXT:    st.d $a0, $sp, 8
+; LA64F-NEXT:    move $a0, $s1
 ; LA64F-NEXT:    move $a1, $fp
-; LA64F-NEXT:    move $a2, $s1
-; LA64F-NEXT:    move $a3, $s2
-; LA64F-NEXT:    move $a4, $s3
-; LA64F-NEXT:    move $a5, $s3
+; LA64F-NEXT:    move $a2, $s2
+; LA64F-NEXT:    move $a3, $s3
+; LA64F-NEXT:    move $a4, $s4
+; LA64F-NEXT:    move $a5, $s4
 ; LA64F-NEXT:    bl %plt(__atomic_compare_exchange)
 ; LA64F-NEXT:    move $a1, $a0
-; LA64F-NEXT:    ld.d $a0, $sp, 8
+; LA64F-NEXT:    ld.d $a0, $sp, 16
 ; LA64F-NEXT:    beqz $a1, .LBB7_1
 ; LA64F-NEXT:  # %bb.2: # %atomicrmw.end
-; LA64F-NEXT:    ld.d $s3, $sp, 16 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $s2, $sp, 24 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $s1, $sp, 32 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $s0, $sp, 40 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $fp, $sp, 48 # 8-byte Folded Reload
-; LA64F-NEXT:    ld.d $ra, $sp, 56 # 8-byte Folded Reload
-; LA64F-NEXT:    addi.d $sp, $sp, 64
+; LA64F-NEXT:    ld.d $s4, $sp, 24 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s3, $sp, 32 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s2, $sp, 40 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s1, $sp, 48 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $s0, $sp, 56 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $fp, $sp, 64 # 8-byte Folded Reload
+; LA64F-NEXT:    ld.d $ra, $sp, 72 # 8-byte Folded Reload
+; LA64F-NEXT:    addi.d $sp, $sp, 80
 ; LA64F-NEXT:    ret
 ;
 ; LA64D-LABEL: double_fmax_acquire:
@@ -627,7 +639,8 @@ define double @double_fmax_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:    move $fp, $a0
 ; LA64D-NEXT:    fld.d $fa0, $a0, 0
 ; LA64D-NEXT:    addi.d $a0, $zero, 1
-; LA64D-NEXT:    movgr2fr.d $fs0, $a0
+; LA64D-NEXT:    movgr2fr.d $fa1, $a0
+; LA64D-NEXT:    ffint.d.l $fs0, $fa1
 ; LA64D-NEXT:    ori $s0, $zero, 8
 ; LA64D-NEXT:    addi.d $s1, $sp, 16
 ; LA64D-NEXT:    addi.d $s2, $sp, 8
@@ -636,8 +649,7 @@ define double @double_fmax_acquire(ptr %p) nounwind {
 ; LA64D-NEXT:    # =>This Inner Loop Header: Depth=1
 ; LA64D-NEXT:    fst.d $fa0, $sp, 16
 ; LA64D-NEXT:    fmax.d $fa0, $fa0, $fa0
-; LA64D-NEXT:    ffint.d.l $fa1, $fs0
-; LA64D-NEXT:    fmax.d $fa0, $fa0, $fa1
+; LA64D-NEXT:    fmax.d $fa0, $fa0, $fs0
 ; LA64D-NEXT:    fst.d $fa0, $sp, 8
 ; LA64D-NEXT:    move $a0, $s0
 ; LA64D-NEXT:    move $a1, $fp

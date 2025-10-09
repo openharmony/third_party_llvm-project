@@ -70,6 +70,8 @@ set(hlsl_files
 
 set(loongarch_files
   larchintrin.h
+  lasxintrin.h
+  lsxintrin.h
   )
 
 set(mips_msa_files

@@ -18,6 +18,7 @@ Despite all the components provided by LLVM community, we included several tripl
 | arm-linux-ohos         | ARM 32bits   | Linux         | Small system    |
 | arm-linux-ohos         | ARM 32bits   | Linux         | Standard system |
 | aarch64-linux-ohos     | ARM 64bits   | Linux         | Standard system |
+| loongarch64-linux-ohos | LoongArch64  | Linux         | Standard system |
 
 For detailed definition of Small System and Standard System, please refer to [System Types](https://gitee.com/openharmony/docs/blob/master/en/device-dev/Readme-EN.md).
 

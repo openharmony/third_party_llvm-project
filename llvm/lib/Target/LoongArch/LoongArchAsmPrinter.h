@@ -15,6 +15,7 @@
 
 #include "LoongArchSubtarget.h"
 #include "llvm/CodeGen/AsmPrinter.h"
+#include "llvm/CodeGen/StackMaps.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/Support/Compiler.h"
 
@@ -22,11 +23,13 @@ namespace llvm {
 
 class LLVM_LIBRARY_VISIBILITY LoongArchAsmPrinter : public AsmPrinter {
   const MCSubtargetInfo *STI;
+  StackMaps SM;
 
 public:
   explicit LoongArchAsmPrinter(TargetMachine &TM,
                                std::unique_ptr<MCStreamer> Streamer)
-      : AsmPrinter(TM, std::move(Streamer)), STI(TM.getMCSubtargetInfo()) {}
+      : AsmPrinter(TM, std::move(Streamer)), STI(TM.getMCSubtargetInfo()),
+        SM(*this) {}
 
   StringRef getPassName() const override {
     return "LoongArch Assembly Printer";
@@ -35,12 +38,14 @@ public:
   bool runOnMachineFunction(MachineFunction &MF) override;
 
   void emitInstruction(const MachineInstr *MI) override;
+  void emitEndOfAsmFile(Module &M) override;
 
   bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
                        const char *ExtraCode, raw_ostream &OS) override;
   bool PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo,
                              const char *ExtraCode, raw_ostream &OS) override;
 
+  void LowerSTATEPOINT(const MachineInstr &MI);
   void LowerPATCHABLE_FUNCTION_ENTER(const MachineInstr &MI);
 
   // tblgen'erated function.

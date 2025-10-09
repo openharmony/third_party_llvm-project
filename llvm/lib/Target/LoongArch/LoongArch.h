@@ -36,8 +36,10 @@ bool lowerLoongArchMachineOperandToMCOperand(const MachineOperand &MO,
 FunctionPass *createLoongArchExpandAtomicPseudoPass();
 FunctionPass *createLoongArchISelDag(LoongArchTargetMachine &TM);
 FunctionPass *createLoongArchPreRAExpandPseudoPass();
+FunctionPass *createLoongArchExpandPseudoPass();
 void initializeLoongArchExpandAtomicPseudoPass(PassRegistry &);
 void initializeLoongArchPreRAExpandPseudoPass(PassRegistry &);
+void initializeLoongArchExpandPseudoPass(PassRegistry &);
 } // end namespace llvm
 
 #endif // LLVM_LIB_TARGET_LOONGARCH_LOONGARCH_H
