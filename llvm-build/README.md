@@ -31,7 +31,7 @@ brew install swig  git-lfs java coreutils wget
 
 ### Get Code
 ```
-repo init -u https://gitee.com/OpenHarmony/manifest.git -b master -m llvm-toolchain.xml
+repo init -u https://gitcode.com/OpenHarmony/manifest.git -b master -m llvm-toolchain.xml
 repo sync -c 
 repo forall -c 'git lfs pull'
 ```
@@ -42,11 +42,11 @@ repo forall -c 'git lfs pull'
 Here is an example of starting build process on Linux or MacOS:
 ```
 # update prebuilts, no need to run each time
-./toolchain/llvm-project/llvm-build/env_prepare.sh
+bash ./toolchain/llvm-project/llvm-build/env_prepare.sh
 #change llvm-project
 cd ./toolchain/llvm-project
 git remote update
-git checkout origin/llvm-18.1.8
+git checkout gitcode/llvm-18.1.8
 # build
 bash ./toolchain/llvm-project/llvm-build/build.sh
 ```
