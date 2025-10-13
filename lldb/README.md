@@ -5,7 +5,7 @@ Low Level Debugger (LLDB) is a next-generation, high-performance debugger. It is
 
 > **NOTE**
 >
-> You can use LLDB and [OpenHarmony Device Connector (hdc)](https://gitee.com/openharmony/docs/blob/master/en/device-dev/subsystems/subsys-toolchain-hdc-guide.md) to remotely debug your application.
+> You can use LLDB and [OpenHarmony Device Connector (hdc)](https://gitcode.com/openharmony/docs/blob/master/en/device-dev/subsystems/subsys-toolchain-hdc-guide.md) to remotely debug your application.
 
 # 2. Obtaining LLDB
 **Obtaining method:**
@@ -1443,7 +1443,7 @@ LLDB client
 
 > **NOTE**
 >
-> For details on how to use the SDK to build the source code, see [HOW TO USE NDK (windows)](https://gitee.com/openharmony/third_party_musl/wikis/HOW%20TO%20USE%20NDK%20(windows)) or [HOW TO USE NDK (linux)](https://gitee.com/openharmony/third_party_musl/wikis/HOW%20TO%20USE%20NDK%20(linux)). You can also use the Clang or Clang++ compiler in the SDK to build the source code.
+> For details on how to use the SDK to build the source code, see [HOW TO USE NDK (windows)](https://gitcode.com/openharmony/build/wiki/NDK%2FHOW%20TO%20USE%20NDK%20(windows).md) or [HOW TO USE NDK (linux)](https://gitcode.com/openharmony/build/wiki/NDK%2FHOW%20TO%20USE%20NDK%20(linux).md). You can also use the Clang or Clang++ compiler in the SDK to build the source code.
 >
 > For example, to build the executable file for the OHOS platform and ARM architecture, use `<clang distribution> /bin/clang++ --target=arm-linux-ohos--gcc-toolchain=<toolchain distribution> --sysroot=<sysroot distribution> -O0 -g <file> -o <outfile>`.
 >
@@ -1529,7 +1529,7 @@ Device side
 >
 > The `-N` parameter in the ability assistant indicates that the application starts debugging. The application stops in the appspawn phase and waits for the debugger to connect.
 >
-> For details about how to use the ability assistant, see [Ability Assistant](https://gitee.com/openharmony/docs/blob/master/en/application-dev/tools/aa-tool.md).
+> For details about how to use the ability assistant, see [Ability Assistant](https://gitcode.com/openharmony/docs/blob/master/en/application-dev/tools/aa-tool.md).
 
 2. Run `lldb-server`.
 
@@ -1865,7 +1865,7 @@ Unlike remote debugging, standalone debugging enables you to perform debugging o
 
 To obtain LLDB Standalone tools, add the **--build-lldb-static** option when building the LLVM project.
 
-For details about how to build the LLVM project, see [LLVM Build](https://gitee.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md).
+For details about how to build the LLVM project, see [LLVM Build](https://gitcode.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md).
 
 After the build is complete, you can obtain LLDB Standalone tools from the following path:
 
@@ -1959,7 +1959,7 @@ This debugger can directly run on OpenHarmony devices without remote connection.
 
 To obtain this tool, build an LLVM project.
 
-For details about the build operation, see [ohos-toolchain-build](https://gitee.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md#build-process-of-aarch64-toolchain).
+For details about the build operation, see [ohos-toolchain-build](https://gitcode.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md#build-process-of-aarch64-toolchain).
 
 After the build is complete, you can obtain the OpenHarmony LLDB package `clang-dev-ohos-aarch64tar.bz2` from `llvm-project/packages`.
 

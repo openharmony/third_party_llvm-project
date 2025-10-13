@@ -8,7 +8,7 @@
 
 A clear and concise description of changes, design etc. Provide a link to external references / discussion if appropriate 
 
-Development Guidelines: https://gitee.com/openharmony/third_party_llvm-project/blob/master/OpenHarmonyDevelopmentGuidelines.md 
+Development Guidelines: https://gitcode.com/openharmony/third_party_llvm-project/blob/master/OpenHarmonyDevelopmentGuidelines.md
 
 ### Test (Local test)
 
