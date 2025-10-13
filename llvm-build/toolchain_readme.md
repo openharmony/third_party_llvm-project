@@ -20,7 +20,7 @@ Despite all the components provided by LLVM community, we included several tripl
 | aarch64-linux-ohos     | ARM 64bits   | Linux         | Standard system |
 | loongarch64-linux-ohos | LoongArch64  | Linux         | Standard system |
 
-For detailed definition of Small System and Standard System, please refer to [System Types](https://gitee.com/openharmony/docs/blob/master/en/device-dev/Readme-EN.md).
+For detailed definition of Small System and Standard System, please refer to [System Types](https://gitcode.com/openharmony/docs/blob/master/en/device-dev/Readme-EN.md).
 
 ### Specify the triplet
 
