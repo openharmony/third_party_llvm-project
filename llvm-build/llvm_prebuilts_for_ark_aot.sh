@@ -29,9 +29,9 @@ EOF
 build_dir=
 ohos_sdk_native=
 runtime_core_branch="OpenHarmony_feature_20241108"
-runtime_core_repo="https://gitee.com/openharmony/arkcompiler_runtime_core"
+runtime_core_repo="https://gitcode.com/openharmony/arkcompiler_runtime_core"
 llvm_project_branch="2024_1127_llvm_ark_aot"
-llvm_repo="https://gitee.com/openharmony/third_party_llvm-project"
+llvm_repo="https://gitcode.com/openharmony/third_party_llvm-project"
 skip_cloning=0
 
 while (( ${#} > 0 )); do

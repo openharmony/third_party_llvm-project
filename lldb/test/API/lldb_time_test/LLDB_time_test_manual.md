@@ -39,13 +39,13 @@ A template file for benchmark data is provided. The data in this file is associa
 $ ./prebuilts/python3/linux-86/3.10.2/bin/python3 ./toolchain/llvm-project/llvm-build/build.py --enable-monitoring --build-python
 ```
 
-Reference: [LLVM Build Guide](https://gitee.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md)
+Reference: [LLVM Build Guide](https://gitcode.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md)
 
 ### 2. HDC Tool
 
 Download the SDK package to obtain HDC tool from [Daily Builds](http://ci.openharmony.cn/dailybuilds),  path in SDK package: `**/ohos-sdk/linux/toolchains`, you can copy HDC tool to /usr/bin directory through a symbolic link.
 
-HDC Usage Reference: [Linux USB Device Permission](https://gitee.com/openharmony/developtools_hdc#linux端usb设备权限说明)
+HDC Usage Reference: [Linux USB Device Permission](https://gitcode.com/openharmony/developtools_hdc/blob/master/README_zh.md#linux%E7%AB%AFusb%E8%AE%BE%E5%A4%87%E6%9D%83%E9%99%90%E8%AF%B4%E6%98%8E)
 
 ### 3. Hardware Platform
 

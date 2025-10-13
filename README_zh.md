@@ -6,7 +6,7 @@
 
 ## LLVM系统入门
 
-取自 [https://llvm.org/docs/GettingStarted.html](https://gitee.com/link?target=https%3A%2F%2Fllvm.org%2Fdocs%2FGettingStarted.html).
+取自 [https://llvm.org/docs/GettingStarted.html](https://llvm.org/docs/GettingStarted.html).
 
 ### 概述
 
