@@ -88,7 +88,7 @@ def _guess_arch() -> Arch:
 def _parse_lldb_version(version_string: str) -> Optional[str]:
     # An example of LLDB's version string:
     #
-    # lldb version 15.0.4 (https://gitee.com/openharmony/third_party_llvm-project revision edacc9e94de5f6d415b1b1ad13f420194739b85a)
+    # lldb version 15.0.4 (https://gitcode.com/openharmony/third_party_llvm-project revision edacc9e94de5f6d415b1b1ad13f420194739b85a)
     #   clang revision edacc9e94de5f6d415b1b1ad13f420194739b85a
     #     llvm revision edacc9e94de5f6d415b1b1ad13f420194739b85a
     parts = version_string.split()
