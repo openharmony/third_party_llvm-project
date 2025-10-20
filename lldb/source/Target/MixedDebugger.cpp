@@ -45,6 +45,7 @@ DataExtractorSP MixedDebugger::ExecuteAction(const char* expr, Status &error) {
     Target *target = exe_ctx.GetTargetPtr();
 
     if (target) {
+      // Evaluate expression in the target.
       lldb::ExpressionResults expr_re =
           target->EvaluateExpression(expr, frame, expr_value_sp);
       if (expr_re) {
@@ -58,13 +59,13 @@ DataExtractorSP MixedDebugger::ExecuteAction(const char* expr, Status &error) {
 
       if (!data_ptr_vo || !size_vo) {
         error.SetErrorString(
-            "[ExecuteAction] Failed to get DebugInput members");
+            "[ExecuteAction] Failed to get DebugResponse members");
         LLDB_LOGF(log,
                   "[ExecuteAction] struct members missing: data=%p, size=%p",
                   data_ptr_vo.get(), size_vo.get());
         return result;
       }
-
+      // Validate payload length.
       size_t payload_len = size_vo->GetValueAsUnsigned(0);
       if (payload_len == 0 || payload_len >= UINT32_MAX) {
         error.SetErrorString("[ExecuteAction] Invalid payload size");
@@ -72,7 +73,7 @@ DataExtractorSP MixedDebugger::ExecuteAction(const char* expr, Status &error) {
                   payload_len);
         return result;
       }
-
+      // Read bytes from target memory pointed by `data`.
       DataExtractor data;
       size_t bytes_read = data_ptr_vo->GetPointeeData(data, 0, payload_len);
       if (bytes_read < payload_len) {
@@ -96,6 +97,31 @@ DataExtractorSP MixedDebugger::ExecuteAction(const char* expr, Status &error) {
             "[MixedDebugger::ExecuteAction] result append terminator failed");
         result->Clear();
         return result;
+      }
+
+      // ArkTS allocates 'data' with new[] in the target process.
+      // Free it in the target (not this process) after we've copied the bytes.
+      lldb::addr_t data_addr = data_ptr_vo->GetValueAsUnsigned(0);
+      if (data_addr != 0) {
+        ValueObjectSP free_result;
+        std::string free_expr =
+            llvm::formatv("delete[] (char*){0};", data_addr).str();
+        lldb::ExpressionResults free_re = target->EvaluateExpression(
+            free_expr.c_str(), frame, free_result);
+        if (free_re) {
+          LLDB_LOGF(
+              log,
+              "[MixedDebugger::ExecuteAction] delete[] at 0x%llx failed: %d",
+              (unsigned long long)data_addr, (int)free_re);
+        } else {
+          LLDB_LOGF(
+              log,
+              "[MixedDebugger::ExecuteAction] freed target buffer at 0x%llx",
+              (unsigned long long)data_addr);
+        }
+      } else {
+        LLDB_LOGF(log, "[MixedDebugger::ExecuteAction] data pointer "
+                       "invalid/zero or empty payload; skip free");
       }
     }
   }
