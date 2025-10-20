@@ -20,8 +20,8 @@
 
 using namespace lldb;
 using namespace lldb_private;
-static const char* BackTrace = "struct DebugInput { size_t size; char *data; }; (DebugInput)GetJsBacktrace()";
-static const char* DebugMessage = "(DebugInput)OperateJsDebugMessage(\"{0}\")";
+static const char* BackTrace = "struct DebugResponse{ size_t size; char *response; }; (DebugResponse)GetJsBacktrace()";
+static const char* DebugResponse = "(DebugResponse)OperateJsDebugMessage(\"{0}\")";
 
 MixedArkTSDebugger::MixedArkTSDebugger(const TargetSP &target_sp)
     : MixedDebugger(target_sp) {}
@@ -38,8 +38,8 @@ DataExtractorSP MixedArkTSDebugger::GetCurrentThreadBackTrace(Status &error) {
 
 DataExtractorSP MixedArkTSDebugger::GetCurrentThreadOperateDebugMessageResult(const char *message, Status &error) {
   std::string operateMessage =
-      "struct DebugInput {size_t size; char *data; };" +
-      llvm::formatv(DebugMessage, message).str();
+      "struct DebugResponse {size_t size; char *response; };" +
+      llvm::formatv(DebugResponse, message).str();
   DataExtractorSP result = ExecuteAction(operateMessage.c_str(), error);
   if (!error.Success()) {
     Log *log = GetLog(LLDBLog::MixedDebugger);
