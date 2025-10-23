@@ -1,47 +1,47 @@
 // RUN: %clang_cc1 -fprofile-instrument=clang -fcoverage-mapping -dump-coverage-mapping -emit-llvm %s -o - | FileCheck %s
 
-// RUN: echo "fun:test1" > %t-func.list
+// RUN: echo "fun:test3" > %t-func.list
 // RUN: %clang_cc1 -fprofile-instrument=clang -fcoverage-mapping -dump-coverage-mapping -fprofile-list=%t-func.list -emit-llvm %s -o - | FileCheck %s --check-prefix=FUNC
 
 // RUN: echo "src:%s" | sed -e 's/\\/\\\\/g' > %t-file.list
 // RUN: %clang_cc1 -fprofile-instrument=clang -fcoverage-mapping -dump-coverage-mapping -fprofile-list=%t-file.list -emit-llvm %s -o - | FileCheck %s --check-prefix=FILE
 
-// RUN: echo -e "[clang]\nfun:test1\n[llvm]\nfun:test2" > %t-section.list
+// RUN: echo -e "[clang]\nfun:test3\n[llvm]\nfun:test2" > %t-section.list
 // RUN: %clang_cc1 -fprofile-instrument=llvm -fprofile-list=%t-section.list -emit-llvm %s -o - | FileCheck %s --check-prefix=SECTION
 
-// RUN: echo -e "fun:test*\n!fun:test1" > %t-exclude.list
+// RUN: echo -e "fun:test*\n!fun:test3" > %t-exclude.list
 // RUN: %clang_cc1 -fprofile-instrument=clang -fcoverage-mapping -dump-coverage-mapping -fprofile-list=%t-exclude.list -emit-llvm %s -o - | FileCheck %s --check-prefix=EXCLUDE
 
-// RUN: echo "!fun:test1" > %t-exclude-only.list
+// RUN: echo "!fun:test3" > %t-exclude-only.list
 // RUN: %clang_cc1 -fprofile-instrument=clang -fcoverage-mapping -dump-coverage-mapping -fprofile-list=%t-exclude-only.list -emit-llvm %s -o - | FileCheck %s --check-prefix=EXCLUDE
 
 unsigned i;
 
-// CHECK: test1
+// CHECK: test3
 // CHECK: test2
-// FUNC: test1
+// FUNC: test3
 // FUNC-NOT: test2
-// FILE: test1
+// FILE: test3
 // FILE: test2
-// EXCLUDE-NOT: test1
+// EXCLUDE-NOT: test3
 // EXCLUDE: test2
 
 // CHECK-NOT: noprofile
-// CHECK: @test1
+// CHECK: @test3
 // FUNC-NOT: noprofile
-// FUNC: @test1
+// FUNC: @test3
 // FILE-NOT: noprofile
-// FILE: @test1
+// FILE: @test3
 // SECTION: noprofile
-// SECTION: @test1
+// SECTION: @test3
 // EXCLUDE: noprofile
-// EXCLUDE: @test1
-unsigned test1(void) {
-  // CHECK: %pgocount = load i64, ptr @__profc_test1
-  // FUNC: %pgocount = load i64, ptr @__profc_test1
-  // FILE: %pgocount = load i64, ptr @__profc_test1
-  // SECTION-NOT: %pgocount = load i64, ptr @__profc_test1
-  // EXCLUDE-NOT: %pgocount = load i64, ptr @__profc_test1
+// EXCLUDE: @test3
+unsigned test3(void) {
+  // CHECK: %pgocount = load i64, ptr @__profc_test3
+  // FUNC: %pgocount = load i64, ptr @__profc_test3
+  // FILE: %pgocount = load i64, ptr @__profc_test3
+  // SECTION-NOT: %pgocount = load i64, ptr @__profc_test3
+  // EXCLUDE-NOT: %pgocount = load i64, ptr @__profc_test3
   return i + 1;
 }
 

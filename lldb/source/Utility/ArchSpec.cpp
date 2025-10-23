@@ -960,6 +960,8 @@ static bool IsCompatibleEnvironment(llvm::Triple::EnvironmentType lhs,
   // that they are using the Android ABI.
   if ((lhs == llvm::Triple::Android && rhs == llvm::Triple::EABI) ||
       (rhs == llvm::Triple::Android && lhs == llvm::Triple::EABI) ||
+      (lhs == llvm::Triple::OpenHOS && rhs == llvm::Triple::EABI) ||
+      (rhs == llvm::Triple::OpenHOS && lhs == llvm::Triple::EABI) ||
       (lhs == llvm::Triple::GNUEABI && rhs == llvm::Triple::EABI) ||
       (rhs == llvm::Triple::GNUEABI && lhs == llvm::Triple::EABI) ||
       (lhs == llvm::Triple::GNUEABIHF && rhs == llvm::Triple::EABIHF) ||

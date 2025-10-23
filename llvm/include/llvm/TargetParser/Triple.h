@@ -223,6 +223,7 @@ public:
     WASI,       // Experimental WebAssembly OS
     Emscripten,
     ShaderModel, // DirectX ShaderModel
+    LiteOS,
     LastOSType = ShaderModel
   };
   enum EnvironmentType {
@@ -273,8 +274,8 @@ public:
     Callable,
     Mesh,
     Amplification,
-
-    LastEnvironmentType = Amplification
+    OpenHOS,
+    LastEnvironmentType = OpenHOS
   };
   enum ObjectFormatType {
     UnknownObjectFormat,
@@ -740,9 +741,18 @@ public:
     return getEnvironment() == Triple::Musl ||
            getEnvironment() == Triple::MuslEABI ||
            getEnvironment() == Triple::MuslEABIHF ||
-           getEnvironment() == Triple::MuslX32;
+           getEnvironment() == Triple::MuslX32 ||
+           getEnvironment() == Triple::OpenHOS ||
+           isOSLiteOS();
   }
 
+  /// Tests whether the target is OHOS
+  /// LiteOS default enviroment is also OHOS, but omited on triple.
+  bool isOHOSFamily() const { return isOpenHOS() || isOSLiteOS(); }
+
+  bool isOpenHOS() const { return getEnvironment() == Triple::OpenHOS; }
+
+  bool isOSLiteOS() const { return getOS() == Triple::LiteOS; }
   /// Tests whether the target is DXIL.
   bool isDXIL() const {
     return getArch() == Triple::dxil;
@@ -789,6 +799,7 @@ public:
             getEnvironment() == Triple::MuslEABI ||
             getEnvironment() == Triple::EABIHF ||
             getEnvironment() == Triple::GNUEABIHF ||
+            getEnvironment() == Triple::OpenHOS ||
             getEnvironment() == Triple::MuslEABIHF || isAndroid()) &&
            isOSBinFormatELF();
   }
@@ -960,7 +971,8 @@ public:
 
   /// Tests whether the target uses emulated TLS as default.
   bool hasDefaultEmulatedTLS() const {
-    return isAndroid() || isOSOpenBSD() || isWindowsCygwinEnvironment();
+    return isOpenHOS() || isAndroid() || isOSOpenBSD() ||
+           isWindowsCygwinEnvironment();
   }
 
   /// Tests whether the target uses -data-sections as default.

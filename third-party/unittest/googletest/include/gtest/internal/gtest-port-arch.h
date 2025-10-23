@@ -88,6 +88,9 @@
 # if defined __ANDROID__
 #  define GTEST_OS_LINUX_ANDROID 1
 # endif
+# if defined __OHOS_FAMILY__
+#  define GTEST_OS_LINUX_OHOS_FAMILY 1
+# endif
 #elif defined __MVS__
 # define GTEST_OS_ZOS 1
 #elif defined(__sun) && defined(__SVR4)

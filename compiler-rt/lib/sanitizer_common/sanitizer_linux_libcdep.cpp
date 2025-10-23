@@ -82,7 +82,7 @@ struct __sanitizer::linux_dirent {
 #endif
 #endif
 
-#if !SANITIZER_ANDROID
+#if !SANITIZER_ANDROID && !SANITIZER_OHOS
 #include <elf.h>
 #include <unistd.h>
 #endif

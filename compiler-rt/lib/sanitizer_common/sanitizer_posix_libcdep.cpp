@@ -171,7 +171,8 @@ void SetAlternateSignalStack() {
   CHECK_EQ(0, sigaltstack(nullptr, &oldstack));
   // If the alternate stack is already in place, do nothing.
   // Android always sets an alternate stack, but it's too small for us.
-  if (!SANITIZER_ANDROID && !(oldstack.ss_flags & SS_DISABLE)) return;
+  if (!SANITIZER_ANDROID && !(oldstack.ss_flags & SS_DISABLE))
+    return;
   // TODO(glider): the mapped stack should have the MAP_STACK flag in the
   // future. It is not required by man 2 sigaltstack now (they're using
   // malloc()).

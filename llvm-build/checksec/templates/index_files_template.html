@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <meta http-equiv="Content-Script-Type" content="text/javascript">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta http-equiv="cache-control" content="no-cache, must-revalidate">
+  <meta http-equiv="expires" content="0">
+  <title></title>
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/font-awesome.min.css" type="text/css" rel="stylesheet">
+  <script src="jquery.min.js"></script>
+  <script src="bootstrap.bundle.min.js"></script>
+</head>
+<style>
+  .collapsed .fa-angle-up::before{content: "\f107"}
+  .tooltip-inner {max-width: 600px !important;}
+</style>
+<body>
+  <script>
+    $(function(){
+      $('[data-toggle="tooltip"]').tooltip()
+    })
+  </script>
+  <style>
+    .tooltip-inner{
+      text-align: left;
+    }
+  </style>
+  <div class="view-container" style="padding: 2% 10% 0 10%;">
+    <div>
+      <h2>Test Summary</h2>
+    </div>
+    <div style="position: relative; margin-top: 20px; display: inline-flex; width: 100%;">
+      <div style="width: 50%;">
+        <span>Start time/End Time: </span>
+        <span>{{summary_data._start_time}}</span><span> - </span><span>{{summary_data._end_time}}</span>
+      </div>
+    </div>
+    <div style="position: relative; margin-top: 20px; display: inline-flex; width: 100%;">
+      <div style="width: 50%">
+        <span>Execution Time: </span>
+        <span>{{summary_data._execution_time}}</span>
+      </div>
+    </div>
+    <div style="width: 100%; margin-top: 20px; display: inline-flex;">
+      <div style="width: 33%; text-align: center;">
+        <label style="font-size: 32px; font-weight: 600; color: #2fb344;">{{summary_data._total_file_num}}</label>
+        <br>
+        <a href="total file list.html" style="font-size: 18px;">Total Files</a>
+      </div>
+      <div style="width: 33%; text-align: center;">
+        <label style="font-size: 32px; font-weight: 600;">{{summary_data._file_size_sum}}</label>
+        <br>
+        <label style="font-size: 18px;">Total Size</label>
+      </div>
+      <div style="width: 33%; text-align: center;">
+        <label style="font-size: 32px; font-weight: 600; color: #d63939;">{{summary_data._check_file_list_num}}</label>
+        <br>
+        <a href="failed files list.html" style="font-size: 18px;">Failed Files</a>
+      </div>
+    </div>
+    <div style="width: 100%; padding: 15px 1% 10px 1%;">
+      <div class="accordion" id="accordionExample">
+        <div class="card" style="
+        border-bottom-right-radius: 0.25rem;
+        border-bottom-left-radius: 0.25rem;"
+        >
+          <div class="card-header" id="headingOne" type="button" data-toggle="collapse" data-target="#collapse" aria-expanded="true" aria-controls="collapse" style="background-color: rgba(0,0,0,.08);">
+            <table style="width: 100%">
+              <thread>
+                <tr>
+                  <th scope="col" style="width: 84%; font-size: large;">Check Items</th>
+                  <th scope="col" style="width: 8%;color: #2fb344;text-align: center; font-size: large;">Passed</th>
+                  <th scope="col" style="width: 8%;color: #d63939;text-align: center; font-size: large;">Failed</th>
+                </tr>
+              </thread>
+            </table>
+          </div>
+        </div>
+        {% for check_item in check_items %}
+          <div class="card" style="
+            border-top-left-radius: 0.25rem;
+            border-top-right-radius: 0.25rem;
+            border-bottom-right-radius: 0.25rem;
+            border-bottom-left-radius: 0.25rem;"
+            >
+            <div class="card-header" id="headingOne" type="button" data-toggle="collapse" data-target="#collapse-{{loop.index}}" aria-expanded="true" aria-controls="collapse-{{loop.index}}" style="background-color: rgba(0,0,0,.08);">
+              <table style="width: 100%">
+                <thread>
+                  <tr>
+                    <th scope="col" style="width: 84%;display: flex; font-weight: 400; font-size: large;">{{check_item._name}}
+                      {% if check_item._name == "relro" %}
+                        <span class="d-inline-block" tabindex="0" data-toggle="tooltip" data-html="true" title="全部开启：-z relro -z now<br/>部分开启：-z relro -z lazy<br/>关闭：-z norelro">
+                          <i data-v-06292f57 class="fa fa-fw fa-info-circle" style="
+                            color: black;
+                            opacity: 0.3;">
+                          </i>
+                        </span>  
+                      {% elif check_item._name == "canary" %}
+                      <span class="d-inline-block" tabindex="0" data-toggle="tooltip" data-html="true" title="全启用：-fstack -protector-all<br/>部分启用：-fstack -protector<br/>禁用：-fno-stack -protector">
+                        <i data-v-06292f57 class="fa fa-fw fa-info-circle" style="
+                          color: black;
+                          opacity: 0.3;">
+                        </i>
+                      </span>
+                      {% elif check_item._name == "nx" %}
+                      <span class="d-inline-block" tabindex="0" data-toggle="tooltip" data-html="true" title="启用：-z noexecstack<br/>禁用：-z execstack">
+                        <i data-v-06292f57 class="fa fa-fw fa-info-circle" style="
+                          color: black;
+                          opacity: 0.3;">
+                        </i>
+                      </span>
+                      {% elif check_item._name == "pie" %}
+                      <span class="d-inline-block" tabindex="0" data-toggle="tooltip" data-html="true" title="开启：-pie<br/>关闭：-no-pie">
+                        <i data-v-06292f57 class="fa fa-fw fa-info-circle" style="
+                          color: black;
+                          opacity: 0.3;">
+                        </i>
+                      </span>
+                      {% elif check_item._name == "rpath" %}
+                      <span class="d-inline-block" tabindex="0" data-toggle="tooltip" data-html="true" title="开启：-Wl,--disable-new-dtags<br/>默认关闭">
+                        <i data-v-06292f57 class="fa fa-fw fa-info-circle" style="
+                          color: black;
+                          opacity: 0.3;">
+                        </i>
+                      </span>
+                      {% elif check_item._name == "fortify" %}
+                      <span class="d-inline-block" tabindex="0" data-toggle="tooltip" data-html="true" title="开启：-D_FORTIFY_SOURCE=1<br/>开启：-D_FORTIFY_SOURCE=2<br/>默认关闭">
+                        <i data-v-06292f57 class="fa fa-fw fa-info-circle" style="
+                          color: black;
+                          opacity: 0.3;">
+                        </i>
+                      </span>
+                      {% elif check_item._name == "clangcfi" %}
+                      <span class="d-inline-block" tabindex="0" data-toggle="tooltip" data-html="true" title="开启：-fsanitize=cfi<br/>默认关闭">
+                        <i data-v-06292f57 class="fa fa-fw fa-info-circle" style="
+                          color: black;
+                          opacity: 0.3;">
+                        </i>
+                      </span>
+                      {% elif check_item._name == "safestack" %}
+                      <span class="d-inline-block" tabindex="0" data-toggle="tooltip" data-html="true" title="开启：-fsanitize=safe-stack<br/>默认关闭">
+                        <i data-v-06292f57 class="fa fa-fw fa-info-circle" style="
+                          color: black;
+                          opacity: 0.3;">
+                        </i>
+                      </span>
+                      {% endif %}
+                    </th>
+                    <th scope="col" style="width: 8%;color: #2fb344;text-align: center;">{{check_item._passed_num}}</th>
+                    <th scope="col" style="width: 8%;color: #d63939;text-align: center;">{{check_item._failed_num}}</th>
+                  </tr>
+                </thread>
+              </table>
+            </div>
+          </div>
+          {% if check_item._do_check == "true" %}
+            <div id="collapse-{{loop.index}}" class="collapse" aria-labelledby="heading-{{loop.index}}">
+              <div class="card">
+                <div class="card-header collapsed" style="padding: .50rem 2rem;" type="button" data-toggle="collapse" data-target="#collapse-{{loop.index}}-fail" aria-expanded="false" aria-controls="collapse-{{loop.index}}-fail" >
+                  <span class="text-left"style="text-align: center;">
+                    failed file list
+                  </span>
+                  <i class="fa fa-angle-up"style="float:right; font-size: 24px;"></i>
+                </div>
+                <div id="collapse-{{loop.index}}-fail" class="collapse" aria-labelledby="heading-{{loop.index}}-fail" style="max-height: 300px; overflow: auto;">
+                  <table class="table table-borderless table-sm" style="margin-bottom: 0">
+                    <thead>
+                      <tr>
+                        <th scope="col" style="width: 5%; text-align: center;">No</th>
+                        <th scope="col" style="width: 80%;">Failed Files</th>
+                        <th scope="col" style="width: 5%; text-align:center;">Expected</th>
+                        <th scope="col" style="width: 5%; text-align:center;">Actual</th>
+                        <th scope="col" style="width: 5%; text-align:center;">Results</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for failed_file in check_item._failed_list %}
+                        <tr>
+                          <th scope="row" style="width: 5%; text-align: center;">{{loop.index}}</th>
+                          <td>{{failed_file}}</td>
+                          <td style="width: 5%; text-align: center;">{{check_item._check_flag}}</td>
+                          {% for found_file in total_file_info %}
+                            {% if found_file.filename == failed_file %}
+                              {% if check_item._name == "relro" and found_file.relro != check_item._check_flag%}
+                                <td style="width: 5%; text-align: center;">{{found_file.relro}}</td>
+                              {% elif check_item._name == "canary" and found_file.canary != check_item._check_flag %}
+                              <td style="width: 5%; text-align: center;">{{found_file.canary}}</td>
+                              {% elif check_item._name == "nx" and found_file.nx != check_item._check_flag %}
+                              <td style="width: 5%; text-align: center;">{{found_file.nx}}</td>
+                              {% elif check_item._name == "pie" and found_file.pie != check_item._check_flag %}
+                              <td style="width: 5%; text-align: center;">{{found_file.pie}}</td>
+                              {% elif check_item._name == "rpath" and found_file.rpath != check_item._check_flag %}
+                              <td style="width: 5%; text-align: center;">{{found_file.rpath}}</td>
+                              {% elif check_item._name == "fortify" and found_file.fortify_source != check_item._check_flag %}
+                              <td style="width: 5%; text-align: center;">{{found_file.fortify_source}}</td>
+                              {% elif check_item._name == "symbols" and found_file.symbols != check_item._check_flag %}
+                              <td style="width: 5%; text-align: center;">{{found_file.symbols}}</td>
+                              {% elif check_item._name == "clangcfi" and found_file.clangcfi != check_item._check_flag %}
+                              <td style="width: 5%; text-align: center;">{{found_file.clangcfi}}</td>
+                              {% elif check_item._name == "safestack" and found_file.safestack != check_item._check_flag %}
+                              <td style="width: 5%; text-align: center;">{{found_file.safestack}}</td>
+                              {% elif check_item._name == "fortified" and found_file.fortified != check_item._check_flag %}
+                              <td style="width: 5%; text-align: center;">{{found_file.fortified}}</td>
+                              {% elif check_item._name == "fortify-able" and found_file.fortify_able != check_item._check_flag %}
+                              <td style="width: 5%; text-align: center;">{{found_file.fortify_able}}</td>
+                              {% endif %}
+                            {% endif %}
+                          {% endfor %}
+                          <td style="color: #d63939; text-align: center; width: 5%;">Failed</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div id="collapse-{{loop.index}}" class="collapse" aria-labelledby="heading-{{loop.index}}">
+              <div class="card">
+                <div class="card-header collapsed"style="padding: .50rem 2rem;" id="headingOne" type="button" data-toggle="collapse" data-target="#collapse-{{loop.index}}-pass" aria-expanded="false" aria-controls="collapse-{{loop.index}}-pass">
+                  <span class="text-left" style="text-align: center;">
+                    passed file list
+                  </span>
+                  <i class="fa fa-angle-up"style="float:right; font-size: 24px;"></i>
+                </div>
+                <div id="collapse-{{loop.index}}-pass" class="collapse" aria-labelledby="heading-{{loop.index}}-pass" style="max-height: 300px; overflow: auto;">
+                  <table class="table table-borderless table-sm" style="margin-bottom: 0">
+                    <thead>
+                      <tr>
+                        <th scope="col" style="width: 5%; text-align: center;">No</th>
+                        <th scope="col" style="width: 80%;">Passed Files</th>
+                        <th scope="col" style="width: 5%; text-align: center;">Expected </th>
+                        <th scope="col" style="width: 5%; text-align: center;">Actual </th>
+                        <th scope="col" style="width: 5%; text-align: center;">Results</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for pass_file in check_item._passed_list %}
+                          <tr>
+                            <th scope="row" style="width: 5%; text-align: center;">{{loop.index}}</th>
+                            <td>{{pass_file}}</td>
+                            <td style="width: 5%; text-align: center;">{{check_item._check_flag}}</td>
+                            {% for found_file in total_file_info %}
+                              {% if found_file.filename == pass_file %}
+                                {% if check_item._name == "relro" and found_file.relro == check_item._check_flag%}
+                                <td style="width: 5%; text-align: center;">{{found_file.relro}}</td>
+                                {% elif check_item._name == "canary" and found_file.canary == check_item._check_flag %}
+                                <td style="width: 5%; text-align: center;">{{found_file.canary}}</td>
+                                {% elif check_item._name == "nx" and found_file.nx == check_item._check_flag %}
+                                <td style="width: 5%; text-align: center;">{{found_file.nx}}</td>
+                                {% elif check_item._name == "pie" and found_file.pie == check_item._check_flag %}
+                                <td style="width: 5%; text-align: center;">{{found_file.pie}}</td>
+                                {% elif check_item._name == "rpath" and found_file.rpath == check_item._check_flag %}
+                                <td style="width: 5%; text-align: center;">{{found_file.rpath}}</td>
+                                {% elif check_item._name == "fortify" and found_file.fortify_source == check_item._check_flag %}
+                                <td style="width: 5%; text-align: center;">{{found_file.fortify_source}}</td>
+                                {% elif check_item._name == "symbols" and found_file.symbols == check_item._check_flag %}
+                                <td style="width: 5%; text-align: center;">{{found_file.symbols}}</td>
+                                {% elif check_item._name == "clangcfi" and found_file.clangcfi == check_item._check_flag %}
+                                <td style="width: 5%; text-align: center;">{{found_file.clangcfi}}</td>
+                                {% elif check_item._name == "safestack" and found_file.safestack == check_item._check_flag %}
+                                <td style="width: 5%; text-align: center;">{{found_file.safestack}}</td>
+                                {% elif check_item._name == "fortified" and found_file.fortified == check_item._check_flag %}
+                                <td style="width: 5%; text-align: center;">{{found_file.fortified}}</td>
+                                {% elif check_item._name == "fortify-able" and found_file.fortify_able == check_item._check_flag %}
+                                <td style="width: 5%; text-align: center;">{{found_file.fortify_able}}</td>
+                                {% endif %}
+                              {% endif %}
+                            {% endfor %}
+                            <td style="color: #2fb344;width: 5%; text-align: center;">Passed</td>
+                          </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <div id="collapse-{{loop.index}}" class="collapse" aria-labelledby="heading-{{loop.index}}" style="max-height: 300px; overflow: auto;">
+              <div class="card">
+                <table class="table table-borderless table-sm" style="margin-bottom: 0; ">
+                  <thead>
+                    <tr>
+                      <th scope="col" style="width: 5%; text-align: center;">No</th>
+                      <th scope="col" style="width: 90%;">Passed Files</th>
+                      <th scope="col" style="width: 5%; text-align:center;">Actual</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for pass_file in check_item._passed_list %}
+                        <tr>
+                          <td style="font-weight: 600; text-align: center; width: 5%;">{{loop.index}}</td>
+                          <td>{{pass_file}}</td>
+                          {% for found_file in total_file_info %}
+                            {% if found_file.filename == pass_file %}
+                              {% if check_item.name == "relro" %}
+                              <td style="width: 5%; text-align: center;">{{found_file.relro}}</td>
+                              {% elif check_item._name == "canary" %}
+                              <td style="width: 5%; text-align: center;">{{found_file.canary}}</td>
+                              {% elif check_item._name == "nx" %}
+                              <td style="width: 5%; text-align: center;">{{found_file.nx}}</td>
+                              {% elif check_item._name == "pie" %}
+                              <td style="width: 5%; text-align: center;">{{found_file.pie}}</td>
+                              {% elif check_item._name == "rpath" %}
+                              <td style="width: 5%; text-align: center;">{{found_file.rpath}}</td>
+                              {% elif check_item._name == "fortify" %}
+                              <td style="width: 5%; text-align: center;">{{found_file.fortify_source}}</td>
+                              {% elif check_item._name == "symbols" %}
+                              <td style="width: 5%; text-align: center;">{{found_file.symbols}}</td>
+                              {% elif check_item._name == "clangcfi" %}
+                              <td style="width: 5%; text-align: center;">{{found_file.clangcfi}}</td>
+                              {% elif check_item._name == "safestack" %}
+                              <td style="width: 5%; text-align: center;">{{found_file.safestack}}</td>
+                              {% elif check_item._name == "fortified" %}
+                              <td style="width: 5%; text-align: center;">{{found_file.fortified}}</td>
+                              {% elif check_item._name == "fortify-able" %}
+                              <td style="width: 5%; text-align: center;">{{found_file.fortify_able}}</td>
+                              {% endif %}
+                            {% endif %}
+                          {% endfor %}
+                        </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+</body>
+
+</html>

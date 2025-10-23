@@ -126,7 +126,7 @@ typedef DefaultSizeClassMap SizeClassMap;
 const uptr kAllocatorSpace = ~(uptr)0;
 const uptr kAllocatorSize  =  0x20000000000ULL;  // 2T.
 typedef DefaultSizeClassMap SizeClassMap;
-# elif defined(__aarch64__) && SANITIZER_ANDROID
+#elif defined(__aarch64__) && (SANITIZER_ANDROID || SANITIZER_OHOS)
 // Android needs to support 39, 42 and 48 bit VMA.
 const uptr kAllocatorSpace =  ~(uptr)0;
 const uptr kAllocatorSize  =  0x2000000000ULL;  // 128G.

@@ -1,0 +1,105 @@
+# Copyright (C) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+SYSROOT :=
+INSTALL_DIR :=
+BUILD_DIR :=
+TARGET_TRIPLE :=
+CC :=
+AR :=
+SRCS := 7zAlloc.c 7zArcIn.c 7zBuf2.c 7zBuf.c 7zCrc.c 7zCrcOpt.c 7zDec.c 7zFile.c 7zStream.c Alloc.c Bcj2.c Bra86.c Bra.c BraIA64.c CpuArch.c Delta.c LzFind.c Lzma2Dec.c Lzma2Enc.c Lzma86Dec.c Lzma86Enc.c LzmaDec.c LzmaEnc.c LzmaLib.c Ppmd7.c Ppmd7Dec.c Ppmd7Enc.c Sha256.c Sha256Opt.c Sort.c Xz.c XzCrc64.c XzCrc64Opt.c XzDec.c XzEnc.c XzIn.c MtDec.c MtCoder.c LzFindMt.c LzFindOpt.c Threads.c
+
+SRC_PREFIX :=
+LIB_VERSION :=
+C_CFLAGS_COMMON := -D_7ZIP_ST -Wall -Werror -Wno-empty-body -Wno-enum-conversion -Wno-logical-op-parentheses -Wno-self-assign -fPIC -fstack-protector-strong
+C_CFLAGS_OHOS := -D_IS_TRY_USE_HW_SHA=0 -DZ7_AFFINITY_DISABLE -Wno-implicit-function-declaration
+IS_STATIC :=
+
+ifeq ($(IS_STATIC), True)
+    LDFLAGS_IS_STATIC := -static
+	TARGET_NAME := liblzma.a
+else
+    LDFLAGS_IS_STATIC := -shared
+	TARGET_NAME := liblzma.so
+endif
+
+$(info TARGET TRIPLE:$(TARGET_TRIPLE))
+ifeq ($(TARGET_TRIPLE),linux-x86_64)
+CFLAGS := --target=x86_64-unknown-linux-gnu $(C_CFLAGS_COMMON)
+LDFLAGS := -shared -fuse-ld=lld -Wl,-z,relro,-z,now -Wl,-z,noexecstack
+TARGET := liblzma.so
+else
+ifeq ($(TARGET_TRIPLE),windows-x86_64)
+CFLAGS := --target=x86_64-pc-windows-gnu --sysroot=$(SYSROOT) $(C_CFLAGS_COMMON)
+LDFLAGS := -shared -fuse-ld=lld --rtlib=compiler-rt -Wl,--out-implib=liblzma.dll.a
+TARGET := liblzma.dll
+TARGET_A := liblzma.dll.a
+else
+ifeq ($(findstring darwin,$(TARGET_TRIPLE)),darwin)
+SDKROOT := $(shell xcrun --sdk macosx --show-sdk-path)
+CFLAGS := $(C_CFLAGS_COMMON) -current_version $(LIB_VERSION) -compatibility_version $(LIB_VERSION)
+LDFLAGS := -dynamiclib -fuse-ld=lld -Wl,-syslibroot,$(SDKROOT) -install_name @rpath/liblzma.$(LIB_VERSION).dylib
+TARGET := liblzma.$(LIB_VERSION).dylib
+else
+ifeq ($(TARGET_TRIPLE),arm-linux-ohos)
+CFLAGS := --target=arm-linux-ohos -march=armv7-a -mfloat-abi=softfp --sysroot=$(SYSROOT) $(C_CFLAGS_COMMON) $(C_CFLAGS_OHOS) -I$(SYSROOT)/$(TARGET_TRIPLE)/usr/include
+LDFLAGS := $(LDFLAGS_IS_STATIC) -fuse-ld=lld -Wl,-z,relro,-z,now -Wl,-z,noexecstack --sysroot=$(SYSROOT) -L$(SYSROOT)/$(TARGET_TRIPLE)/usr/lib -lc --rtlib=compiler-rt -lpthread -lunwind
+TARGET := $(TARGET_NAME)
+else
+ifeq ($(TARGET_TRIPLE),aarch64-linux-ohos)
+CFLAGS := --target=aarch64-linux-ohos --sysroot=$(SYSROOT) $(C_CFLAGS_COMMON) $(C_CFLAGS_OHOS) -I$(SYSROOT)/$(TARGET_TRIPLE)/usr/include
+LDFLAGS := $(LDFLAGS_IS_STATIC) -fuse-ld=lld -Wl,-z,relro,-z,now -Wl,-z,noexecstack --sysroot=$(SYSROOT) -L$(SYSROOT)/$(TARGET_TRIPLE)/usr/lib -lc --rtlib=compiler-rt -lpthread -lunwind
+TARGET := $(TARGET_NAME)
+else
+$(warning *** warning: TARGET_TRIPLE $(TARGET_TRIPLE) has not been set in rights)
+endif
+endif
+endif
+endif
+endif
+
+lzma_header_install:
+	@echo "begin header install"
+	mkdir -p $(INSTALL_DIR)/include
+	cp -rf $(SRC_PREFIX)* $(INSTALL_DIR)/include
+
+ifeq ($(IS_STATIC), True)
+# Compile the source file as .o
+OBJECTS := $(addprefix $(BUILD_DIR)/, $(SRCS:.c=.o))
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+$(BUILD_DIR)/%.o: $(SRC_PREFIX)/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+# Link. o as a static library
+$(TARGET): $(OBJECTS) lzma_header_install
+	$(AR) rc $(TARGET) $(OBJECTS)
+else
+$(TARGET): lzma_header_install
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(addprefix $(SRC_PREFIX), $(SRCS))
+endif
+
+.PHONY: clean
+
+clean:
+	rm -f $(TARGET) $(SRC_PREFIX)*.o $(BUILD_DIR)/*.o
+
+.PHONY:install
+
+install: $(TARGET)
+	@echo "begin install"
+	mkdir -p $(INSTALL_DIR)/lib
+	mv $(TARGET) $(INSTALL_DIR)/lib
+ifeq ($(TARGET_TRIPLE),windows-x86_64)
+	mv $(TARGET_A) $(INSTALL_DIR)/lib
+endif
+	@echo "install success!"

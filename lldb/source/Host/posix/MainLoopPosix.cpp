@@ -59,7 +59,7 @@ private:
   int num_events = -1;
 
 #else
-#ifdef __ANDROID__
+#if defined(__ANDROID__)
   fd_set read_fd_set;
 #else
   std::vector<struct pollfd> read_fds;

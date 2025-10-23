@@ -206,6 +206,13 @@ bool ThreadPlanStepRange::InSymbol() {
   return false;
 }
 
+// TODO: Limit this function scope to OHOS targets
+bool ThreadPlanStepRange::MaybeAArch32Or64FunctionTail() {
+  const llvm::Triple &triple = GetTarget().GetArchitecture().GetTriple();
+  const bool isArm32or64 = triple.isAArch64() || triple.isARM();
+  return isArm32or64 && InSymbol() && InRange();
+}
+
 // FIXME: This should also handle inlining if we aren't going to do inlining in
 // the
 // main stack.

@@ -152,7 +152,14 @@ if ("${COMPILER_RT_DEFAULT_TARGET_TRIPLE}" MATCHES ".*android.*")
   string(REGEX MATCH "-target(=| +)[^ ]+android[a-z]*([0-9]+)" ANDROID_API_LEVEL "${CMAKE_C_FLAGS}")
   set(ANDROID_API_LEVEL ${CMAKE_MATCH_2})
 endif()
+
+# We define OHOS for ohos targets for now
+if (OHOS)
+  set(OHOS_FAMILY 1)
+endif()
+
 pythonize_bool(ANDROID)
+pythonize_bool(OHOS_FAMILY)
 
 set(COMPILER_RT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(COMPILER_RT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -163,7 +170,7 @@ pythonize_bool(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR)
 # and target a UNIX-like system or Windows.
 # We can run tests on Android even when we are cross-compiling.
 if(("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "${CMAKE_SYSTEM_NAME}" AND (UNIX OR WIN32))
-   OR ANDROID OR COMPILER_RT_EMULATOR)
+   OR ANDROID OR COMPILER_RT_EMULATOR OR OHOS)
   option(COMPILER_RT_CAN_EXECUTE_TESTS "Can we execute instrumented tests" ON)
 else()
   option(COMPILER_RT_CAN_EXECUTE_TESTS "Can we execute instrumented tests" OFF)
@@ -294,7 +301,7 @@ cmake_dependent_option(COMPILER_RT_STATIC_CXX_LIBRARY
   "COMPILER_RT_CXX_LIBRARY" OFF)
 
 set(DEFAULT_COMPILER_RT_USE_BUILTINS_LIBRARY OFF)
-if (FUCHSIA)
+if (FUCHSIA OR OHOS)
   set(DEFAULT_COMPILER_RT_USE_BUILTINS_LIBRARY ON)
 endif()
 
@@ -555,6 +562,10 @@ if (SANITIZER_NO_UNDEFINED_SYMBOLS)
   list(APPEND SANITIZER_COMMON_LINK_FLAGS -Wl,-z,defs)
 endif()
 
+if (OHOS)
+  list(APPEND SANITIZER_COMMON_LINK_LIBS unwind)
+endif()
+
 # TODO: COMPILER_RT_COMMON_CFLAGS and COMPILER_RT_COMMON_LINK_FLAGS are
 # intended for use in non-sanitizer runtimes such as libFuzzer, profile or XRay,
 # move these higher to include common flags, then derive SANITIZER_COMMON_CFLAGS
@@ -753,7 +764,7 @@ else()
   endif()
 endif()
 
-if(ANDROID)
+if(ANDROID OR OHOS)
   set(COMPILER_RT_HAS_LLD TRUE)
   set(COMPILER_RT_TEST_USE_LLD TRUE)
   append_list_if(COMPILER_RT_HAS_FUSE_LD_LLD_FLAG -fuse-ld=lld SANITIZER_COMMON_LINK_FLAGS)

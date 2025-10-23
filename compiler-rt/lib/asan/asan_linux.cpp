@@ -45,7 +45,8 @@
 #include <link.h>
 #endif
 
-#if SANITIZER_ANDROID || SANITIZER_FREEBSD || SANITIZER_SOLARIS
+#if SANITIZER_ANDROID || SANITIZER_FREEBSD || SANITIZER_SOLARIS || \
+    SANITIZER_OHOS
 #include <ucontext.h>
 extern "C" void* _DYNAMIC;
 #elif SANITIZER_NETBSD
@@ -121,7 +122,7 @@ void FlushUnneededASanShadowMemory(uptr p, uptr size) {
   ReleaseMemoryPagesToOS(MemToShadow(p), MemToShadow(p + size));
 }
 
-#if SANITIZER_ANDROID
+#if SANITIZER_ANDROID || SANITIZER_OHOS
 // FIXME: should we do anything for Android?
 void AsanCheckDynamicRTPrereqs() {}
 void AsanCheckIncompatibleRT() {}

@@ -1,5 +1,6 @@
 // RUN: %clang_cc1 -no-opaque-pointers -triple arm64-apple-ios7 -target-abi darwinpcs -emit-llvm -o - %s | FileCheck %s
 // RUN: %clang_cc1 -no-opaque-pointers -triple aarch64-linux-android -emit-llvm -o - %s | FileCheck -check-prefix=ANDROID %s
+// RUN: %clang_cc1 -no-opaque-pointers -triple aarch64-linux-ohos -emit-llvm -o - %s | FileCheck -check-prefix=ANDROID %s
 
 #include <stdarg.h>
 

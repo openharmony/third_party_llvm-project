@@ -13,6 +13,7 @@ set(LLVM_LINK_COMPONENTS
 add_clang_unittest(ClangReplInterpreterExceptionTests
   InterpreterExceptionTest.cpp
   )
+set_property(TARGET ClangReplInterpreterExceptionTests APPEND_STRING PROPERTY LINK_FLAGS " -static-libstdc++ -l:libc++abi.a")
 
 llvm_update_compile_flags(ClangReplInterpreterExceptionTests)
 target_link_libraries(ClangReplInterpreterExceptionTests PUBLIC
