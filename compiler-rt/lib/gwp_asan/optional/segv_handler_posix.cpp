@@ -11,6 +11,10 @@
 #include "gwp_asan/guarded_pool_allocator.h"
 #include "gwp_asan/optional/segv_handler.h"
 #include "gwp_asan/options.h"
+// OHOS_LOCAL begin
+#include "sanitizer_common/sanitizer_stacktrace_printer.h"
+#include "sanitizer_common/sanitizer_symbolizer.h"
+// OHOS_LOCAL end
 
 // RHEL creates the PRIu64 format macro (for printing uint64_t's) only when this
 // macro is defined before including <inttypes.h>.
@@ -34,6 +38,10 @@ using gwp_asan::GuardedPoolAllocator;
 using gwp_asan::Printf_t;
 using gwp_asan::backtrace::PrintBacktrace_t;
 using gwp_asan::backtrace::SegvBacktrace_t;
+
+// OHOS_LOCAL begin
+using namespace __sanitizer;
+// OHOS_LOCAL end
 
 namespace {
 
@@ -90,6 +98,23 @@ void printHeader(Error E, uintptr_t AccessPtr,
          AccessPtr, DescriptionBuffer, ThreadBuffer);
 }
 
+// OHOS_LOCAL begin
+void PrintStackTrace(Printf_t Printf, size_t TraceLength, const uintptr_t* Trace) {
+  InternalScopedString frame_desc;
+  for (uintptr_t i = 0; i < TraceLength; i++) {
+    const uintptr_t pc = Trace[i];
+    SymbolizedStack *frame = Symbolizer::GetOrInit()->SymbolizePC(pc);
+    RenderFrame(&frame_desc, " #%n %p %F %L", i, frame->info.address, &frame->info,
+                  common_flags()->symbolize_vs_style,
+                  common_flags()->strip_path_prefix);
+    frame->ClearAll();
+    
+    Printf("%s\n", frame_desc.data());
+    frame_desc.clear();
+  }
+}
+// OHOS_LOCAL end
+
 void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
                 const gwp_asan::AllocationMetadata *Metadata,
                 SegvBacktrace_t SegvBacktrace, Printf_t Printf,
@@ -125,8 +150,7 @@ void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
   uintptr_t Trace[kMaximumStackFramesForCrashTrace];
   size_t TraceLength =
       SegvBacktrace(Trace, kMaximumStackFramesForCrashTrace, Context);
-
-  PrintBacktrace(Trace, TraceLength, Printf);
+  PrintStackTrace(Printf, TraceLength, Trace);
 
   if (AllocMeta == nullptr)
     return;
@@ -140,7 +164,7 @@ void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
       Printf("0x%zx was deallocated by thread %zu here:\n", ErrorPtr, ThreadID);
     TraceLength = __gwp_asan_get_deallocation_trace(
         AllocMeta, Trace, kMaximumStackFramesForCrashTrace);
-    PrintBacktrace(Trace, TraceLength, Printf);
+    PrintStackTrace(Printf, TraceLength, Trace);
   }
 
   // Print the allocation trace.
@@ -151,7 +175,7 @@ void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
     Printf("0x%zx was allocated by thread %zu here:\n", ErrorPtr, ThreadID);
   TraceLength = __gwp_asan_get_allocation_trace(
       AllocMeta, Trace, kMaximumStackFramesForCrashTrace);
-  PrintBacktrace(Trace, TraceLength, Printf);
+  PrintStackTrace(Printf, TraceLength, Trace);
 }
 
 struct sigaction PreviousHandler;
