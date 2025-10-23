@@ -494,7 +494,6 @@ public:
 
   // Returns <ResourceDir>/lib/<OSName>/<arch>.  This is used by runtimes (such
   // as OpenMP) to find arch-specific libraries.
-  // OHOS specific: make this function virtual to override in OHOS.cpp
   virtual std::string getArchSpecificLibPath() const;
 
   // Returns <OSname> part of above.

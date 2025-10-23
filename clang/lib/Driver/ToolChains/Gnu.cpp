@@ -641,7 +641,8 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
         CmdArgs.push_back("--pop-state");
       }
 
-      // We don't need libpthread neither for bionic nor for musl
+      // We don't need libpthread neither for bionic (Android) nor for musl,
+      // (used by OHOS as runtime library).
       if (WantPthread && !isAndroid && !isOHOSFamily)
         CmdArgs.push_back("-lpthread");
 

@@ -1397,16 +1397,8 @@ tools::ParsePICArgs(const ToolChain &ToolChain, const ArgList &Args) {
   }
 
   // OHOS-specific defaults for PIC/PIE
-  if (Triple.isOHOSFamily()) {
-    switch (Triple.getArch()) {
-    case llvm::Triple::aarch64:
-      PIC = true; // "-fpic"
-      break;
-
-    default:
-      break;
-    }
-  }
+  if (Triple.isOHOSFamily() && Triple.getArch() == llvm::Triple::aarch64)
+    PIC = true;
 
   // OpenBSD-specific defaults for PIE
   if (Triple.isOSOpenBSD()) {
@@ -1698,7 +1690,8 @@ static LibGccType getLibGccType(const ToolChain &TC, const Driver &D,
 static void AddUnwindLibrary(const ToolChain &TC, const Driver &D,
                              ArgStringList &CmdArgs, const ArgList &Args) {
   ToolChain::UnwindLibType UNW = TC.GetUnwindLibType(Args);
-  if (TC.getTriple().isOHOSFamily() && UNW != ToolChain::UNW_None) {
+  // By default OHOS binaries are linked statically to libunwind.
+  if (TC.getTriple().isOHOSFamily() && UNW == ToolChain::UNW_CompilerRT) {
     CmdArgs.push_back("-l:libunwind.a");
     return;
   }

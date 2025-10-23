@@ -13,7 +13,7 @@ entry:
 ; FUCHSIA: %[[B:.*]] = getelementptr i8, ptr %[[TP2]], i32 -16
 ; TLS: %[[StackGuard:.*]] = load ptr, ptr %[[B]]
 ; TLS: store ptr %[[StackGuard]], ptr %[[StackGuardSlot:.*]]
-; TLS: store i8* %[[StackGuard]], i8** %[[StackGuardSlot:.*]]
+
   %a = alloca i128, align 16
   call void @Capture(ptr %a)
 

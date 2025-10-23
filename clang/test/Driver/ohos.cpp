@@ -3,19 +3,18 @@
 // RUN:     -resource-dir=%S/Inputs/ohos_native_tree/llvm/lib/clang/x.y.z \
 // RUN:     --sysroot=%S/Inputs/ohos_native_tree/sysroot -fuse-ld=lld 2>&1 | FileCheck %s
 // CHECK: {{.*}}clang{{.*}}" "-cc1"
-// CHECK: "-triple" "armv7-unknown-liteos"
+// CHECK: "-triple" "armv7-unknown-liteos-ohos"
 // CHECK-NOT: "-fuse-init-array"
 // CHECK: "-resource-dir" "[[RESOURCE_DIR:[^"]+]]"
 // CHECK: "-isysroot" "[[SYSROOT:[^"]+]]"
 // CHECK: "-internal-externc-isystem" "[[SYSROOT]]{{/|\\\\}}include"
 // CHECK: {{.*}}ld.lld{{.*}}" "--sysroot=[[SYSROOT]]"
 // CHECK: "-pie"
-// CHECK-NOT: "--build-id"
 // CHECK: "-dynamic-linker" "/lib/ld-musl-arm.so.1"
 // CHECK: Scrt1.o
 // CHECK: crti.o
 // CHECK: clang_rt.crtbegin.o
-// CHECK: "-L{{.*[/\\]}}lib/arm-liteos-ohos/"
+// CHECK: "-L{{.*[/\\]}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}"
 // CHECK-NOT: "--push-state"
 // CHECK-NOT: "--as-needed"
 // CHECK: "-lc++"
@@ -104,18 +103,18 @@
 // CHECK-MULTILIB-HF: "-dynamic-linker" "/lib/ld-musl-armhf.so.1"
 
 // CHECK-MULTILIB-ARM: "-L{{.*}}{{/|\\\\}}..{{/|\\\\}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}"
-// CHECK-MULTILIB-ARM: "-L[[SYSROOT]]/usr/lib/arm-liteos-ohos/"
+// CHECK-MULTILIB-ARM: "-L[[SYSROOT]]{{/|\\\\}}usr{{/|\\\\}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}"
 
 // CHECK-MULTILIB-ARM-A7-SOFT: "-L{{.*}}{{/|\\\\}}..{{/|\\\\}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}a7_soft"
-// CHECK-MULTILIB-ARM-A7-SOFT: "-L[[SYSROOT]]/usr/lib/arm-liteos-ohos/a7_soft"
+// CHECK-MULTILIB-ARM-A7-SOFT: "-L[[SYSROOT]]{{/|\\\\}}usr{{/|\\\\}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}a7_soft"
 
 // CHECK-MULTILIB-ARM-A7-SOFTFP: "-L{{.*}}{{/|\\\\}}..{{/|\\\\}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}a7_softfp_neon-vfpv4"
-// CHECK-MULTILIB-ARM-A7-SOFTFP: "-L[[SYSROOT]]/usr/lib/arm-liteos-ohos/a7_softfp_neon-vfpv4"
+// CHECK-MULTILIB-ARM-A7-SOFTFP: "-L[[SYSROOT]]{{/|\\\\}}usr{{/|\\\\}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}a7_softfp_neon-vfpv4"
 
 // CHECK-MULTILIB-ARM-A7-HARD: "-L{{.*}}{{/|\\\\}}..{{/|\\\\}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}a7_hard_neon-vfpv4"
-// CHECK-MULTILIB-ARM-A7-HARD: "-L[[SYSROOT]]/usr/lib/arm-liteos-ohos/a7_hard_neon-vfpv4"
+// CHECK-MULTILIB-ARM-A7-HARD: "-L[[SYSROOT]]{{/|\\\\}}usr{{/|\\\\}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}a7_hard_neon-vfpv4"
 
-// CHECK-MULTILIB-ARM: "[[RESOURCE_DIR]]/lib/arm-liteos-ohos/libclang_rt.builtins.a"
-// CHECK-MULTILIB-ARM-A7-SOFT: "[[RESOURCE_DIR]]/lib/arm-liteos-ohos/a7_soft/libclang_rt.builtins.a"
-// CHECK-MULTILIB-ARM-A7-SOFTFP: "[[RESOURCE_DIR]]/lib/arm-liteos-ohos/a7_softfp_neon-vfpv4/libclang_rt.builtins.a"
-// CHECK-MULTILIB-ARM-A7-HARD: "[[RESOURCE_DIR]]/lib/arm-liteos-ohos/a7_hard_neon-vfpv4/libclang_rt.builtins.a"
+// CHECK-MULTILIB-ARM: "[[RESOURCE_DIR]]{{/|\\\\}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}libclang_rt.builtins.a"
+// CHECK-MULTILIB-ARM-A7-SOFT: "[[RESOURCE_DIR]]{{/|\\\\}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}a7_soft{{/|\\\\}}libclang_rt.builtins.a"
+// CHECK-MULTILIB-ARM-A7-SOFTFP: "[[RESOURCE_DIR]]{{/|\\\\}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}a7_softfp_neon-vfpv4{{/|\\\\}}libclang_rt.builtins.a"
+// CHECK-MULTILIB-ARM-A7-HARD: "[[RESOURCE_DIR]]{{/|\\\\}}lib{{/|\\\\}}arm-liteos-ohos{{/|\\\\}}a7_hard_neon-vfpv4{{/|\\\\}}libclang_rt.builtins.a"

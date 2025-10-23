@@ -102,7 +102,7 @@ std::string OHOS::getMultiarchTriple(const llvm::Triple &T) const {
   case llvm::Triple::thumb:
     return T.isOSLiteOS() ? "arm-liteos-ohos" : "arm-linux-ohos";
   case llvm::Triple::riscv32:
-    return "riscv32-liteos-ohos";
+    return "riscv32-linux-ohos";
   case llvm::Triple::riscv64:
     return "riscv64-linux-ohos";
   case llvm::Triple::mipsel:
@@ -165,8 +165,6 @@ OHOS::OHOS(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
                             SelectedMultilib.gccSuffix()}),
                   Paths);
 
-  // For compatibility with arm-liteos sysroot
-  // FIXME: Remove this when we'll use arm-liteos sysroot produced by build.py.
   addPathIfExists(
       D,
       makePath({SysRootLibPath, MultiarchTriple, SelectedMultilib.gccSuffix()}),

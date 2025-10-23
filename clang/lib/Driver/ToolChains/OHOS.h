@@ -32,18 +32,12 @@ public:
     return ToolChain::CST_Libcxx;
   }
   // Not add -funwind-tables by default
-  /*bool IsUnwindTablesDefault(const llvm::opt::ArgList &Args) const override {
-    return false;
-  }*/
   bool isPICDefault() const override { return false; }
   bool isPIEDefault(const llvm::opt::ArgList &Args) const override { return true; }
   bool isPICDefaultForced() const override { return false; }
   bool useRelaxRelocations() const override { return false; }
   UnwindLibType GetUnwindLibType(const llvm::opt::ArgList &Args) const override;
   UnwindLibType GetDefaultUnwindLibType() const override { return UNW_CompilerRT; }
-
- // std::string ComputeEffectiveClangTriple(const llvm::opt::ArgList &Args,
- //                                         types::ID InputType = types::TY_INVALID) const override;
 
   RuntimeLibType
   GetRuntimeLibType(const llvm::opt::ArgList &Args) const override;
