@@ -86,8 +86,15 @@ void printHeader(Error E, uintptr_t AccessPtr,
   else
     snprintf(ThreadBuffer, kThreadBufferLen, "%" PRIu64, ThreadID);
 
-  Printf("%s at 0x%zx %sby thread %s here:\n", gwp_asan::ErrorToString(E),
+  if (E == Error::UNKNOWN){
+    Printf("This may occur due to a wild memory access into the GWP-ASan pool, "
+           "or an overflow/underflow that is > 2048B in length."
+           "Wild  memory access at 0x%zx by thread %s here:\n",
+           AccessPtr, ThreadBuffer);
+  } else {
+    Printf("%s at 0x%zx %sby thread %s here:\n", gwp_asan::ErrorToString(E),
          AccessPtr, DescriptionBuffer, ThreadBuffer);
+  }
 }
 
 void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
@@ -106,13 +113,6 @@ void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
     ErrorPtr = InternalErrorPtr;
 
   Error E = __gwp_asan_diagnose_error(State, Metadata, ErrorPtr);
-
-  if (E == Error::UNKNOWN) {
-    Printf("GWP-ASan cannot provide any more information about this error. "
-           "This may occur due to a wild memory access into the GWP-ASan pool, "
-           "or an overflow/underflow that is > 512B in length.\n");
-    return;
-  }
 
   const gwp_asan::AllocationMetadata *AllocMeta =
       __gwp_asan_get_metadata(State, Metadata, ErrorPtr);
