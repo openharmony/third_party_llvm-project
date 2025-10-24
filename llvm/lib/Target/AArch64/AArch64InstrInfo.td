@@ -8181,6 +8181,16 @@ let isCall = 1, isTerminator = 1, isReturn = 1, isBarrier = 1, Uses = [SP] in {
                       Sched<[WriteBrReg]>;
 }
 
+// OHOS_LOCAL begin
+let isCall = 1, isTerminator = 1, isReturn = 1, isBarrier = 1, Size = 16,
+    Defs = [X16,X17], Uses = [SP] in {
+  def AUTH_TCRETURN_BTI
+    : Pseudo<(outs), (ins rtcGPR64:$dst, i32imm:$FPDiff, i32imm:$Key,
+                          tcGPR64:$Disc),
+             []>, Sched<[WriteBrReg]>;
+}
+// OHOS_LOCAL end
+
 def : Pat<(AArch64tcret tcGPR64:$dst, (i32 timm:$FPDiff)),
           (TCRETURNri tcGPR64:$dst, imm:$FPDiff)>,
       Requires<[NotUseBTI]>;

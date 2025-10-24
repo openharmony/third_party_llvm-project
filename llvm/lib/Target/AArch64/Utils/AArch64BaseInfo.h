@@ -751,6 +751,18 @@ namespace AArch64II {
   };
 } // end namespace AArch64II
 
+// OHOS_LOCAL begin
+namespace AArch64PACKey {
+  enum ID : uint8_t {
+    IA = 0,
+    IB = 1,
+    DA = 2,
+    DB = 3,
+    LAST = DB
+  };
+}
+// OHOS_LOCAL end
+
 namespace AArch64 {
 // The number of bits in a SVE register is architecturally defined
 // to be a multiple of this value.  If <M x t> has this number of bits,
