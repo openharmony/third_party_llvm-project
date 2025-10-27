@@ -1,3 +1,4 @@
+// OHOS_LOCAL begin
 //===----------------------------------------------------------------------===//
 //
 // Author: Hans Liljestrand <hans@liljestrand.dev>
@@ -160,63 +161,110 @@ inline const MCInstrDesc& AArch64EarlyPartsCpiPass::getIndirectCallAuth(MachineI
     return TII->get(AArch64::TCRETURNriAA);
 }
 
-inline bool AArch64EarlyPartsCpiPass::handlePhi(MachineFunction &MF, MachineInstr *MIptr, unsigned AutCall) {
-    MachineRegisterInfo *MRI = &MF.getRegInfo();
-    MachineInstr *PhiMi = MRI->getVRegDef(MIptr->getOperand(0).getReg());
-    if (!PhiMi->isPHI()) {
-        return false;
+MachineInstr* AArch64EarlyPartsCpiPass::findLastInstr(
+    const MachineRegisterInfo *MRI, 
+    const MachineBasicBlock::instr_iterator &CurrentMI,
+    unsigned SrcReg) {
+  if (Register::isVirtualRegister(SrcReg)) {
+    return MRI->getVRegDef(SrcReg);
+  }
+  // Copy to physical register when BTI is enabled.
+  for (auto I = MachineBasicBlock::reverse_instr_iterator(CurrentMI), 
+       E = CurrentMI->getParent()->instr_rend(); I != E; ++I) {
+    MachineInstr &MI = *I;
+    if (MI.getNumOperands() == 0 || !MI.getOperand(0).isReg()) {
+      continue;
     }
-    for (unsigned i = 1, e = PhiMi->getNumOperands(); i < e; i += 2) {
-        MachineOperand &Opnd = PhiMi->getOperand(i);
-        // An incomming value of phi is the return value of autcall
-        if (Opnd.getReg() == AutCall) {
-            return true;
-        }
-        // An incomming value of phi is a copy of autcall return value
-        MachineInstr *CopyMi = MRI->getVRegDef(Opnd.getReg());
-        if (CopyMi->isCopy() && (CopyMi->getOperand(1).getReg() == AutCall)) {
-            return true;
-        }
+    if (MI.getOperand(0).getReg() == SrcReg) {
+      return &MI;
     }
-    return false;
+  }
+  return nullptr;
 }
 
-inline void AArch64EarlyPartsCpiPass::findIndirectCallMachineInstr(MachineFunction &MF,
-    MachineBasicBlock &MBB, MachineInstr *MIptr, SmallVector<MachineInstr*> &IndCallVec) {
-    unsigned AUTCALLinstr_oper0 = MIptr->getOperand(0).getReg();
-    unsigned BLRinstr_oper0 = 0;
-    MachineRegisterInfo *MRI = &MF.getRegInfo();
-    for (auto &MBBTmp : MF) {
-        for (auto MIi = MBBTmp.instr_begin(), MIie = MBBTmp.instr_end(); MIi != MIie; ++MIi) {
-            if (isIndirectCall(*MIi)) {
-                BLRinstr_oper0 = MIi->getOperand(0).getReg();
-                if (AUTCALLinstr_oper0 == BLRinstr_oper0) {
-                    IndCallVec.push_back(&*MIi);
-                    continue;
-                }
-                MachineInstr *CopyMi = MRI->getVRegDef(BLRinstr_oper0);
-                if (CopyMi->isCopy() && (CopyMi->getOperand(1).getReg() == AUTCALLinstr_oper0)) {
-                    IndCallVec.push_back(&*MIi);
-                    continue;
-                }
-                if (handlePhi(MF, &*MIi, AUTCALLinstr_oper0)) {
-                    IndCallVec.push_back(&*MIi);
-                    continue;
-                }
-            } else if (isIndirectAutCall(*MIi)) {
-                BLRinstr_oper0 = MIi->getOperand(0).getReg();
-                if (AUTCALLinstr_oper0 == BLRinstr_oper0) {
-                    IndCallVec.push_back(&*MIi);
-                    continue;
-                }
-                if (handlePhi(MF, &*MIi, AUTCALLinstr_oper0)) {
-                    IndCallVec.push_back(&*MIi);
-                    continue;
-                }
-            }
-        }
+// Function pointers with structures are also protected by miu,
+// which generates an additional layer of COPY instrutions.
+bool AArch64EarlyPartsCpiPass::isCopyNesting(const MachineRegisterInfo *MRI, 
+    const MachineBasicBlock::instr_iterator &CurrentMI,
+    unsigned DstOper0,
+    unsigned AutcallOper0) {
+  MachineInstr *CopyMi = &*CurrentMI;
+  unsigned CopySrcReg = DstOper0;
+  do {
+    CopyMi = findLastInstr(MRI, MachineBasicBlock::instr_iterator(CopyMi),
+                           CopySrcReg);
+    if (!CopyMi || !CopyMi->isCopy()) {
+      break;
     }
-    return;
+    CopySrcReg = CopyMi->getOperand(1).getReg();
+    if (CopySrcReg == AutcallOper0) {
+      return true;
+    }
+  } while(true);
+  
+  return false;
+}
+
+inline bool AArch64EarlyPartsCpiPass::handlePhi(MachineFunction &MF, 
+                                                MachineInstr *MIptr, 
+                                                unsigned AutCall) {
+  MachineRegisterInfo *MRI = &MF.getRegInfo();
+  MachineInstr *PhiMi = MRI->getVRegDef(MIptr->getOperand(0).getReg());
+  if (!PhiMi->isPHI()) {
+    return false;
+  }
+  for (unsigned i = 1, e = PhiMi->getNumOperands(); i < e; i += 2) {
+    MachineOperand &Opnd = PhiMi->getOperand(i);
+    // An incomming value of phi is the return value of autcall
+    if (Opnd.getReg() == AutCall) {
+      return true;
+    }
+    // An incomming value of phi is a copy of autcall return value
+    if (isCopyNesting(MRI, MachineBasicBlock::instr_iterator(PhiMi),
+                      Opnd.getReg(), AutCall)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline void AArch64EarlyPartsCpiPass::findIndirectCallMachineInstr(
+    MachineFunction &MF, MachineBasicBlock &MBB, MachineInstr *MIptr, 
+    SmallVector<MachineInstr*> &IndCallVec) {
+  unsigned AUTCALLinstr_oper0 = MIptr->getOperand(0).getReg();
+  unsigned BLRinstr_oper0 = 0;
+  MachineRegisterInfo *MRI = &MF.getRegInfo();
+  for (auto &MBBTmp : MF) {
+    for (auto MIi = MBBTmp.instr_begin(), MIie = MBBTmp.instr_end(); 
+         MIi != MIie; ++MIi) {
+      if (isIndirectCall(*MIi)) {
+        BLRinstr_oper0 = MIi->getOperand(0).getReg();
+        if (AUTCALLinstr_oper0 == BLRinstr_oper0) {
+          IndCallVec.push_back(&*MIi);
+          continue;
+        }
+        if (isCopyNesting(MRI, MIi, BLRinstr_oper0, AUTCALLinstr_oper0)) {
+          IndCallVec.push_back(&*MIi);
+          continue;
+        }
+        if (handlePhi(MF, &*MIi, AUTCALLinstr_oper0)) {
+          IndCallVec.push_back(&*MIi);
+          continue;
+        }
+      } else if (isIndirectAutCall(*MIi)) {
+        BLRinstr_oper0 = MIi->getOperand(0).getReg();
+        if (AUTCALLinstr_oper0 == BLRinstr_oper0) {
+          IndCallVec.push_back(&*MIi);
+          continue;
+        }
+        if (handlePhi(MF, &*MIi, AUTCALLinstr_oper0)) {
+          IndCallVec.push_back(&*MIi);
+          continue;
+        }
+      }
+    }
+  }
+  return;
 }
 
 inline bool AArch64EarlyPartsCpiPass::isIndirectCall(const MachineInstr &MI) const {
@@ -298,3 +346,4 @@ inline void AArch64EarlyPartsCpiPass::insertCOPYInstr(MachineBasicBlock &MBB, Ma
     COPYMI.add(dstOperand);
     COPYMI.add(srcOperand);
 }
+// OHOS_LOCAL end
