@@ -1,3 +1,4 @@
+// OHOS_LOCAL begin
 //===----------------------------------------------------------------------===//
 //
 // Author: Hans Liljestrand <hans@liljestrand.dev>
@@ -44,9 +45,15 @@ private:
     inline const MCInstrDesc &getIndirectCallAuth(MachineInstr *MI_indcall);
     inline void replaceBranchByAuthenticatedBranch(MachineBasicBlock &MBB, MachineInstr *MI_indcall, MachineInstr &MI);
     inline void insertCOPYInstr(MachineBasicBlock &MBB, MachineInstr *MI_indcall, MachineInstr &MI);
+    MachineInstr* findLastInstr(const MachineRegisterInfo *MRI, 
+        const MachineBasicBlock::instr_iterator &CurrentMI, unsigned SrcReg);
+    bool isCopyNesting(const MachineRegisterInfo *MRI, 
+        const MachineBasicBlock::instr_iterator &CurrentMI,
+        unsigned DstOper0, unsigned AutcallOper0);
     inline bool handlePhi(MachineFunction &MF, MachineInstr *MIptr, unsigned AutCall);
     inline bool isIndirectAutCall(const MachineInstr &MI) const;
     inline void addPhiForModifier(MachineInstr *Indirect, Register *ModReg);
 };
 
 #endif
+// OHOS_LOCAL end
