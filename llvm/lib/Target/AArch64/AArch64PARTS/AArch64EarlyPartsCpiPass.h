@@ -53,6 +53,8 @@ private:
     inline bool handlePhi(MachineFunction &MF, MachineInstr *MIptr, unsigned AutCall);
     inline bool isIndirectAutCall(const MachineInstr &MI) const;
     inline void addPhiForModifier(MachineInstr *Indirect, Register *ModReg);
+    bool isTailCall(const MachineInstr &MI) const;
+    void replaceBtiBranch(MachineInstr *MI_indcall, Register &ModReg);
 };
 
 #endif

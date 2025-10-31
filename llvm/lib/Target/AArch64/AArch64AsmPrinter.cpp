@@ -189,6 +189,10 @@ private:
 
   /// Emit instruction to set float register to zero.
   void emitFMov0(const MachineInstr &MI);
+  // OHOS_LOCAL begin
+  void emitMovXReg(Register Dest, Register Src);
+  Register emitPtrauthDiscriminator(Register Disc, Register ScratchReg);
+  // OHOS_LOCAL end
 
   using MInstToMCSymbol = std::map<const MachineInstr *, MCSymbol *>;
 
@@ -1193,6 +1197,30 @@ void AArch64AsmPrinter::emitFMov0(const MachineInstr &MI) {
   }
 }
 
+// OHOS_LOCAL begin
+void AArch64AsmPrinter::emitMovXReg(Register Dest, Register Src) {
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::ORRXrs)
+                                  .addReg(Dest)
+                                  .addReg(AArch64::XZR)
+                                  .addReg(Src)
+                                  .addImm(0));
+}
+
+Register AArch64AsmPrinter::emitPtrauthDiscriminator(Register Disc,
+                                                     Register ScratchReg) {
+  assert(ScratchReg == AArch64::X16 || ScratchReg == AArch64::X17);
+
+  // If there is no constant discriminator, there's no blend involved:
+  // just use the address discriminator register as-is (XZR or not).
+  if (Disc == AArch64::XZR)
+    return Disc;
+
+  // MOV it into the scratch register.
+  emitMovXReg(ScratchReg, Disc);
+  return ScratchReg;
+}
+// OHOS_LOCAL end
+
 void AArch64AsmPrinter::LowerLOADgotAUTH(const MachineInstr &MI) {
   Register DstReg = MI.getOperand(0).getReg();
   Register AuthResultReg = DstReg;
@@ -1392,6 +1420,30 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
   // Tail calls use pseudo instructions so they have the proper code-gen
   // attributes (isCall, isReturn, etc.). We lower them to the real
   // instruction here.
+  // OHOS_LOCAL begin
+  case AArch64::AUTH_TCRETURN_BTI: {
+    Register Callee = MI->getOperand(0).getReg();
+    const uint64_t Key = MI->getOperand(2).getImm();
+    assert((Key == AArch64PACKey::IA || Key == AArch64PACKey::IB) &&
+           "Invalid auth key for tail-call return");
+
+    Register Disc = MI->getOperand(3).getReg();
+    Register ScratchReg = Callee == AArch64::X16 ? AArch64::X17 : AArch64::X16;
+    Register DiscReg = emitPtrauthDiscriminator(Disc, ScratchReg);
+
+    const bool IsZero = DiscReg == AArch64::XZR;
+    const unsigned Opcodes[2][2] = {{AArch64::BRAA, AArch64::BRAAZ},
+                                    {AArch64::BRAB, AArch64::BRABZ}};
+
+    MCInst TmpInst;
+    TmpInst.setOpcode(Opcodes[Key][IsZero]);
+    TmpInst.addOperand(MCOperand::createReg(Callee));
+    if (!IsZero)
+      TmpInst.addOperand(MCOperand::createReg(DiscReg));
+    EmitToStreamer(*OutStreamer, TmpInst);
+    return;
+  }
+  // OHOS_LOCAL end
   case AArch64::TCRETURNri:
   case AArch64::TCRETURNriBTI:
   case AArch64::TCRETURNriALL: {
