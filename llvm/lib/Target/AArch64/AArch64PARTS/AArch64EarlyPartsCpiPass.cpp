@@ -149,16 +149,18 @@ inline bool AArch64EarlyPartsCpiPass::isPartsAUTCALLIntrinsic(unsigned Opcode) c
     return false;
 }
 
-inline const MCInstrDesc& AArch64EarlyPartsCpiPass::getIndirectCallAuth(MachineInstr *MI_indcall) {
-    if (MI_indcall->getOpcode() == AArch64::BLR) {
-        return TII->get(AArch64::BLRAA);
-    }
-    // This is a tail call return, and we need to use BRAA
-    // (tail-call: ~optimation where a tail-call is coverted to a direct call so that
-    // the tail-called function can return immediately to the current callee, without
-    // going through the currently active function.)
+inline const MCInstrDesc& 
+AArch64EarlyPartsCpiPass::getIndirectCallAuth(MachineInstr *MI_indcall) {
+  if (MI_indcall->getOpcode() == AArch64::BLR
+      || MI_indcall->getOpcode() == AArch64::BLR_BTI) {
+    return TII->get(AArch64::BLRAA);
+  }
+  // This is a tail call return, and we need to use BRAA
+  // (tail-call: ~optimation where a tail-call is coverted to a direct call so 
+  // that the tail-called function can return immediately to the current callee,
+  // without going through the currently active function.)
 
-    return TII->get(AArch64::TCRETURNriAA);
+  return TII->get(AArch64::TCRETURNriAA);
 }
 
 MachineInstr* AArch64EarlyPartsCpiPass::findLastInstr(
@@ -267,22 +269,41 @@ inline void AArch64EarlyPartsCpiPass::findIndirectCallMachineInstr(
   return;
 }
 
-inline bool AArch64EarlyPartsCpiPass::isIndirectCall(const MachineInstr &MI) const {
-    switch(MI.getOpcode()) {
-        case AArch64::BLR:  // Normal indirect call
-        case AArch64::TCRETURNri: // Indirect tail call
-            return true;
-    }
-    return false;
+inline bool 
+AArch64EarlyPartsCpiPass::isIndirectCall(const MachineInstr &MI) const {
+  switch(MI.getOpcode()) {
+    case AArch64::BLR:  // Normal indirect call
+    case AArch64::TCRETURNri: // Indirect tail call
+    case AArch64::TCRETURNriBTI:
+      return true;
+    case AArch64::BLR_BTI:
+      if (MI.getOperand(0).isReg()) {
+        return true;
+      }
+    default:
+      return false;
+  }
 }
 
-inline bool AArch64EarlyPartsCpiPass::isIndirectAutCall(const MachineInstr &MI) const {
-    switch (MI.getOpcode()) {
-        case AArch64::BLRAA: // Normal indirect call
-        case AArch64::TCRETURNriAA: // Indirect tail call
-            return true;
-    }
-    return false;
+inline bool 
+AArch64EarlyPartsCpiPass::isIndirectAutCall(const MachineInstr &MI) const {
+  switch (MI.getOpcode()) {
+    case AArch64::BLRAA: // Normal indirect call
+    case AArch64::TCRETURNriAA: // Indirect tail call
+    case AArch64::AUTH_TCRETURN_BTI:
+      return true;
+  }
+  return false;
+}
+
+bool AArch64EarlyPartsCpiPass::isTailCall(const MachineInstr &MI) const {
+  switch (MI.getOpcode()) {
+    case AArch64::TCRETURNri:
+    case AArch64::TCRETURNriBTI:
+      return true;
+    default:
+      return false;
+  }
 }
 
 void AArch64EarlyPartsCpiPass::triggerCompilationErrorOrphanAUTCALL(MachineBasicBlock &MBB) {
@@ -309,34 +330,56 @@ inline void AArch64EarlyPartsCpiPass::addPhiForModifier(MachineInstr *Indirect, 
     return;
 }
 
-inline void AArch64EarlyPartsCpiPass::replaceBranchByAuthenticatedBranch(MachineBasicBlock &MBB,
-    MachineInstr *MI_indcall, MachineInstr &MI) {
-
-    if (isIndirectAutCall(*MI_indcall)) {
-        return;
-    }
-    Register ModReg = MI.getOperand(2).getReg();
-
-    addPhiForModifier(MI_indcall, &ModReg);
-    if (MI_indcall->getOpcode() == AArch64::TCRETURNri) {
-        MachineRegisterInfo *MRI = &MI_indcall->getMF()->getRegInfo();
-        Register TcModReg = MRI->createVirtualRegister(&AArch64::tcGPR64RegClass);
-        auto CopyMi = BuildMI(*MI_indcall->getParent(), *MI_indcall, MI_indcall->getDebugLoc(),
-            TII->get(AArch64::COPY), TcModReg);
-        CopyMi.addUse(ModReg);
-        ModReg = TcModReg;
-    }
-
-    auto BMI = BuildMI(*MI_indcall->getParent(), *MI_indcall, MI_indcall->getDebugLoc(), getIndirectCallAuth(MI_indcall));
-    BMI.addUse(MI_indcall->getOperand(0).getReg());
-    if (MI_indcall->getOpcode() == AArch64::TCRETURNri) {
-        BMI.add(MI_indcall->getOperand(1)); // Copy FPDiff from original tail call pseudo instruction
-    }
-    BMI.addUse(ModReg);
-    BMI.copyImplicitOps(*MI_indcall);
-
-    MI_indcall->removeFromParent();
+void AArch64EarlyPartsCpiPass::replaceBtiBranch(MachineInstr *MI_indcall, 
+                                                Register &ModReg) {
+  auto BMI = BuildMI(*MI_indcall->getParent(), *MI_indcall, 
+                     MI_indcall->getDebugLoc(),
+                     TII->get(AArch64::AUTH_TCRETURN_BTI));
+  BMI.addUse(MI_indcall->getOperand(0).getReg());
+  // Copy FPDiff from original tail call pseudo instruction
+  BMI.add(MI_indcall->getOperand(1));
+  BMI.addImm(AArch64PACKey::IA);
+  BMI.addUse(ModReg);
+  BMI.copyImplicitOps(*MI_indcall);
+  MI_indcall->removeFromParent();
 }
+
+inline void AArch64EarlyPartsCpiPass::replaceBranchByAuthenticatedBranch(
+    MachineBasicBlock &MBB,
+    MachineInstr *MI_indcall, MachineInstr &MI) {
+  if (isIndirectAutCall(*MI_indcall)) {
+    return;
+  }
+  Register ModReg = MI.getOperand(2).getReg();
+
+  addPhiForModifier(MI_indcall, &ModReg);
+  if (isTailCall(*MI_indcall)) {
+    MachineRegisterInfo *MRI = &MI_indcall->getMF()->getRegInfo();
+    Register TcModReg = MRI->createVirtualRegister(&AArch64::tcGPR64RegClass);
+    auto CopyMi = BuildMI(*MI_indcall->getParent(), *MI_indcall, 
+      MI_indcall->getDebugLoc(), TII->get(AArch64::COPY), TcModReg);
+    CopyMi.addUse(ModReg);
+    ModReg = TcModReg;
+  }
+
+  if (MI_indcall->getOpcode() == AArch64::TCRETURNriBTI) {
+    replaceBtiBranch(MI_indcall, ModReg);
+    return;
+  }
+
+  auto BMI = BuildMI(*MI_indcall->getParent(), *MI_indcall, 
+    MI_indcall->getDebugLoc(), getIndirectCallAuth(MI_indcall));
+  BMI.addUse(MI_indcall->getOperand(0).getReg());
+  if (MI_indcall->getOpcode() == AArch64::TCRETURNri) {
+    // Copy FPDiff from original tail call pseudo instruction
+    BMI.add(MI_indcall->getOperand(1)); 
+  }
+  BMI.addUse(ModReg);
+  BMI.copyImplicitOps(*MI_indcall);
+
+  MI_indcall->removeFromParent();
+}
+
 inline void AArch64EarlyPartsCpiPass::insertCOPYInstr(MachineBasicBlock &MBB, MachineInstr *MI_indcall,
     MachineInstr &MI) {
     auto dstOperand = MI.getOperand(0);

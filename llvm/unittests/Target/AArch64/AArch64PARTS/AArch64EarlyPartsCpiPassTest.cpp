@@ -435,4 +435,72 @@ body: |
   bool ret = funcPass->runOnMachineFunction(*MF);
   ASSERT_TRUE(ret);
 }
+
+// Verify PAC and BTI compatibility scenario.
+// BLR will be replaced with BLR_BTI instruction when BTI is enabled.
+TEST(EarlyPartsCpi, BTICompatibility) {
+  std::unique_ptr<LLVMTargetMachine> TM = createTargetMachine();
+  ASSERT_TRUE(TM);
+
+  MachineModuleInfo MMI(TM.get());
+  SmallString<5000> S;
+  StringRef MIRString = Twine(R"MIR(
+--- |
+  define i32 @pac_test(ptr nocapture noundef readonly %0, i64 noundef %1, ptr nocapture noundef readonly %2, ptr noundef %3) {
+    unreachable
+  }
+...
+---
+name: pac_test
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $x0, $x1, $x2, $x3
+    successors: %bb.1
+    %59:gpr64 = COPY $x3
+    %58:gpr64 = COPY $x2
+    %57:gpr64 = COPY $x1
+    %56:gpr64common = COPY $x0
+    %62:gpr32all = COPY $wzr
+    %60:gpr32all = COPY %62:gpr32all
+    B %bb.1
+
+  bb.1:
+    ; predecessors: %bb.0
+    %99:gpr32 = MOVi32imm 22545
+    %100:gpr64sp = SUBREG_TO_REG 0, killed %99:gpr32, %subreg.sub_32
+    %101:gpr64 = PARTS_AUTCALL %58:gpr64, killed %100:gpr64sp
+    ADJCALLSTACKDOWN 0, 0, implicit-def dead $sp, implicit $sp
+    $x0 = COPY %57:gpr64
+    $x1 = COPY %59:gpr64
+    BLR_BTI killed %101:gpr64
+    ADJCALLSTACKUP 0, 0, implicit-def dead $sp, implicit $sp
+    RET_ReallyLR implicit $w0
+)MIR").toNullTerminatedStringRef(S);;
+
+  LLVMContext Context;
+  std::unique_ptr<MIRParser> MIR;
+  std::unique_ptr<Module> M = parseMIR(Context, MIR, *TM, MIRString, "pac_test", MMI);
+  ASSERT_TRUE(M);
+
+  Function *F = M->getFunction("pac_test");
+  auto *MF = MMI.getMachineFunction(*F);
+  ASSERT_TRUE(MF);
+  std::unique_ptr<AArch64EarlyPartsCpiPass> funcPass(new AArch64EarlyPartsCpiPass());
+  ASSERT_TRUE(funcPass);
+
+  bool ret = funcPass->runOnMachineFunction(*MF);
+  ASSERT_TRUE(ret);
+
+  bool found = false;
+  for (auto &MBB : *MF) {
+    for (auto MTi = MBB.instr_begin(), MIie = MBB.instr_end();
+         MTi != MIie; ++MTi) {
+      if (MTi->getOpcode() == AArch64::PARTS_AUTCALL) {
+        found = found || true;
+      }
+    }
+  }
+  ASSERT_FALSE(found);
+}
 }
