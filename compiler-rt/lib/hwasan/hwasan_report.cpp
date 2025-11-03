@@ -604,6 +604,20 @@ static void PrintTagsAroundAddr(tag_t *tag_ptr) {
       "description of short granule tags\n");
 }
 
+// OHOS_LOCAL begin
+void TraceEnhance(StackTrace *stack) {
+#if SANITIZER_OHOS
+  BufferedStackTrace* bstack = static_cast<BufferedStackTrace*>(stack);
+  if(!bstack->is_fast || !flags()->enable_unwind_arkts)
+    return;
+  uptr current_maxdepth = bstack->buffer_maxdepth;
+  uptr current_fp = bstack->frame_buffer[bstack->size - 1];
+  uptr current_pc = bstack->trace[bstack->size - 1];
+  bstack->UnwindIfArkts(current_maxdepth, current_pc, current_fp, current_fp);
+#endif
+}
+// OHOS_LOCAL end
+
 uptr GetTopPc(StackTrace *stack) {
   return stack->size ? StackTrace::GetPreviousInstructionPc(stack->trace[0])
                      : 0;
@@ -642,6 +656,9 @@ void ReportInvalidFree(StackTrace *stack, uptr tagged_addr) {
     Printf("tags: %02x/%02x (ptr/mem)\n", ptr_tag, mem_tag);
   Printf("%s", d.Default());
 
+  // OHOS_LOCAL begin
+  TraceEnhance(stack);
+  // OHOS_LOCAL end
   stack->Print();
 
   PrintAddressDescription(tagged_addr, 0, nullptr);
@@ -678,6 +695,9 @@ void ReportTailOverwritten(StackTrace *stack, uptr tagged_addr, uptr orig_size,
   Printf("%s", d.Allocation());
   Printf("deallocated here:\n");
   Printf("%s", d.Default());
+  // OHOS_LOCAL begin
+  TraceEnhance(stack);
+  // OHOS_LOCAL end
   stack->Print();
   HwasanChunkView chunk = FindHeapChunkByAddress(untagged_addr);
   if (chunk.Beg()) {
@@ -784,6 +804,9 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
     Printf("Invalid access starting at offset %zu\n", offset);
   Printf("%s", d.Default());
 
+  // OHOS_LOCAL begin
+  TraceEnhance(stack);
+  // OHOS_LOCAL end
   stack->Print();
 
   PrintAddressDescription(tagged_addr, access_size,

@@ -962,6 +962,12 @@ inline void SanitizerInitializeUnwinder() {}
 inline AndroidApiLevel AndroidGetApiLevel() { return ANDROID_NOT_ANDROID; }
 #endif
 
+// OHOS_LOCAL begin
+#if SANITIZER_OHOS
+void SanitizerInitializeArkTsUnwinder();
+#endif
+// OHOS_LOCAL end
+
 inline uptr GetPthreadDestructorIterations() {
 #if SANITIZER_ANDROID
   return (AndroidGetApiLevel() == ANDROID_LOLLIPOP_MR1) ? 8 : 4;
