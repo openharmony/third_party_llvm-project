@@ -2,27 +2,28 @@
 #include <stddef.h>
 #include <string.h>
 
-struct DebugInput {
+// new interface check
+struct DebugResponse {
     size_t size;
-    char *data;
+    char *response;
 };
 
 static const char kBt[]  = "This is a ArkTS backtrace";
 static const char kMsg[] = "This is a ArkTS operate debug message result";
 
 __attribute__((visibility("default")))
-struct DebugInput GetJsBacktrace(void) {
-    struct DebugInput out;
+struct DebugResponse GetJsBacktraceV1(void) {
+    struct DebugResponse out;
     out.size = strlen(kBt) + 1;
-    out.data = (char *)kBt;
+    out.response = (char *)kBt;
     return out;
 }
 
 __attribute__((visibility("default")))
-struct DebugInput OperateJsDebugMessage(const char *msg) {
+struct DebugResponse OperateJsDebugMessageV1(const char *msg) {
     (void)msg;
-    struct DebugInput out;
+    struct DebugResponse out;
     out.size = strlen(kMsg) + 1;
-    out.data = (char *)kMsg;
+    out.response = (char *)kMsg;
     return out;
 }
