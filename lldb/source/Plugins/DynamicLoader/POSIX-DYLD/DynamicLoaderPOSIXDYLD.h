@@ -174,6 +174,16 @@ private:
   DynamicLoaderPOSIXDYLD(const DynamicLoaderPOSIXDYLD &) = delete;
   const DynamicLoaderPOSIXDYLD &
   operator=(const DynamicLoaderPOSIXDYLD &) = delete;
+  /// Loaded module list. (link map for each module)
+  /// This may be accessed in a multi-threaded context. Use the accessor methods
+  /// to access `m_loaded_modules` safely.
+  llvm::sys::RWMutex m_loaded_modules_rw_mutex;
+
+  void SetLoadedModule(const lldb::ModuleSP &module_sp,
+                       lldb::addr_t link_map_addr);
+  void UnloadModule(const lldb::ModuleSP &module_sp);
+  llvm::Optional<lldb::addr_t>
+  GetLoadedModuleLinkAddr(const lldb::ModuleSP &module_sp);
 };
 
 #endif // LLDB_SOURCE_PLUGINS_DYNAMICLOADER_POSIX_DYLD_DYNAMICLOADERPOSIXDYLD_H
