@@ -645,6 +645,14 @@ void __hwasan_add_frame_record(u64 frame_record_info) {
     t->stack_allocations()->push(frame_record_info);
 }
 
+// OHOS_LOCAL begin
+void __hwasan_add_emutls_frame_record(u64 frame_record_info) {
+  Thread *t = GetCurrentThread();
+  if (t)
+    t->emutls_stack_allocations()->push(frame_record_info);
+}
+// OHOS_LOCAL end
+
 #if !SANITIZER_SUPPORTS_WEAK_HOOKS
 extern "C" {
 SANITIZER_INTERFACE_ATTRIBUTE SANITIZER_WEAK_ATTRIBUTE

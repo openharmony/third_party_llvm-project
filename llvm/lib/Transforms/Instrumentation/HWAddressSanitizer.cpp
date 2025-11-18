@@ -659,9 +659,14 @@ void HWAddressSanitizer::initializeCallbacks(Module &M) {
       "__hwasan_tag_memory", IRB.getVoidTy(), Int8PtrTy, Int8Ty, IntptrTy);
   HwasanGenerateTagFunc =
       M.getOrInsertFunction("__hwasan_generate_tag", Int8Ty);
-
-  HwasanRecordFrameRecordFunc = M.getOrInsertFunction(
+  // OHOS_LOCAL begin
+  if (TargetTriple.isOHOSFamily() && ClInstrumentWithoutTLS)
+    HwasanRecordFrameRecordFunc = M.getOrInsertFunction(
+      "__hwasan_add_emutls_frame_record", IRB.getVoidTy(), Int64Ty);
+  else
+    HwasanRecordFrameRecordFunc = M.getOrInsertFunction(
       "__hwasan_add_frame_record", IRB.getVoidTy(), Int64Ty);
+  // OHOS_LOCAL end
 
   ShadowGlobal = M.getOrInsertGlobal("__hwasan_shadow",
                                      ArrayType::get(IRB.getInt8Ty(), 0));
