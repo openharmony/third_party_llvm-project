@@ -28,6 +28,7 @@
 #include "llvm/MC/StringTableBuilder.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/Threading.h"
+#include <cstddef>
 
 namespace lld {
 namespace elf {
@@ -186,6 +187,22 @@ public:
 private:
   uint8_t *hashBuf;
 };
+
+// OHOS_LOCAL begin
+// .codesign section.
+class CodeSignSection : public SyntheticSection {
+
+public:
+  CodeSignSection();
+  void writeTo(uint8_t *buf) override;
+  bool isNeeded() const override { return config->codeSign; }
+  size_t getSize() const override { return 4096; }
+  void writeCodeSignSection(uint8_t *buf, size_t size);
+
+private:
+  uint8_t *hashBuf;
+};
+// OHOS_LOCAL end
 
 // BssSection is used to reserve space for copy relocations and common symbols.
 // We create three instances of this class for .bss, .bss.rel.ro and "COMMON",
@@ -1302,6 +1319,9 @@ struct InStruct {
   std::unique_ptr<SymbolTableBaseSection> symTab;
   std::unique_ptr<SymtabShndxSection> symTabShndx;
 
+  // OHOS_LOCAL begin
+  std::unique_ptr<CodeSignSection> codesign;
+  // OHOS_LOCAL end
   void reset();
 };
 

@@ -25,6 +25,9 @@ add_lld_library(lldELF
   Arch/X86_64.cpp
   ARMErrataFix.cpp
   CallGraphSort.cpp
+# OHOS_LOCAL begin
+  CodeSign.cpp
+# OHOS_LOCAL end
   DWARF.cpp
   Driver.cpp
   DriverUtils.cpp
