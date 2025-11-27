@@ -204,16 +204,36 @@ void DynamicLoaderPOSIXDYLD::DidLaunch() {
 
 Status DynamicLoaderPOSIXDYLD::CanLoadImage() { return Status(); }
 
+void DynamicLoaderPOSIXDYLD::SetLoadedModule(const ModuleSP &module_sp,
+                                             addr_t link_map_addr) {
+  llvm::sys::ScopedWriter lock(m_loaded_modules_rw_mutex);
+  m_loaded_modules[module_sp] = link_map_addr;
+}
+
+void DynamicLoaderPOSIXDYLD::UnloadModule(const ModuleSP &module_sp) {
+  llvm::sys::ScopedWriter lock(m_loaded_modules_rw_mutex);
+  m_loaded_modules.erase(module_sp);
+}
+
+llvm::Optional<lldb::addr_t>
+DynamicLoaderPOSIXDYLD::GetLoadedModuleLinkAddr(const ModuleSP &module_sp) {
+  llvm::sys::ScopedReader lock(m_loaded_modules_rw_mutex);
+  auto it = m_loaded_modules.find(module_sp);
+  if (it != m_loaded_modules.end())
+    return it->second;
+  return llvm::None;
+}
+
 void DynamicLoaderPOSIXDYLD::UpdateLoadedSections(ModuleSP module,
                                                   addr_t link_map_addr,
                                                   addr_t base_addr,
                                                   bool base_addr_is_offset) {
-  m_loaded_modules[module] = link_map_addr;
+  SetLoadedModule(module, link_map_addr);
   UpdateLoadedSectionsCommon(module, base_addr, base_addr_is_offset);
 }
 
 void DynamicLoaderPOSIXDYLD::UnloadSections(const ModuleSP module) {
-  m_loaded_modules.erase(module);
+  UnloadModule(module);
 
   UnloadSectionsCommon(module);
 }
@@ -640,8 +660,7 @@ void DynamicLoaderPOSIXDYLD::LoadAllCurrentModules() {
   // The rendezvous class doesn't enumerate the main module, so track that
   // ourselves here.
   ModuleSP executable = GetTargetExecutable();
-  m_loaded_modules[executable] = m_rendezvous.GetLinkMapAddress();
-
+  SetLoadedModule(executable, m_rendezvous.GetLinkMapAddress());
   std::vector<FileSpec> module_names;
   for (I = m_rendezvous.begin(), E = m_rendezvous.end(); I != E; ++I)
     module_names.push_back(I->file_spec);
@@ -735,11 +754,11 @@ lldb::addr_t
 DynamicLoaderPOSIXDYLD::GetThreadLocalData(const lldb::ModuleSP module_sp,
                                            const lldb::ThreadSP thread,
                                            lldb::addr_t tls_file_addr) {
-  auto it = m_loaded_modules.find(module_sp);
-  if (it == m_loaded_modules.end())
+  llvm::Optional<addr_t> link_map_opt = GetLoadedModuleLinkAddr(module_sp);
+  if (!link_map_opt.has_value())
     return LLDB_INVALID_ADDRESS;
 
-  addr_t link_map = it->second;
+  addr_t link_map = link_map_opt.value();
   if (link_map == LLDB_INVALID_ADDRESS)
     return LLDB_INVALID_ADDRESS;
 
