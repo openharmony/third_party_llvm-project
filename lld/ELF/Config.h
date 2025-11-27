@@ -369,6 +369,10 @@ struct Configuration {
   // this means to map the primary and thread stacks as PROT_MTE. Note: This is
   // not supported on Android 11 & 12.
   bool androidMemtagStack;
+
+  // OHOS_LOCAL begin
+  bool codeSign = false;
+  // OHOS_LOCAL end
 };
 
 // The only instance of Configuration struct.

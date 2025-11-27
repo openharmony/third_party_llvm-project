@@ -1177,6 +1177,9 @@ static void readConfigs(opt::InputArgList &args) {
       OPT_plugin_opt_opaque_pointers, OPT_plugin_opt_no_opaque_pointers, true);
   config->optRemarksFilename = args.getLastArgValue(OPT_opt_remarks_filename);
   config->optStatsFilename = args.getLastArgValue(OPT_plugin_opt_stats_file);
+  // OHOS_LOCAL begin
+  config->codeSign = args.hasFlag(OPT_code_sign, OPT_no_code_sign, false);
+  // OHOS_LOCAL end
 
   // Parse remarks hotness threshold. Valid value is either integer or 'auto'.
   if (auto *arg = args.getLastArg(OPT_opt_remarks_hotness_threshold)) {
