@@ -38,7 +38,9 @@
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/LEB128.h"
 #include "llvm/Support/Parallel.h"
+#include "llvm/Support/SHA256.h"
 #include "llvm/Support/TimeProfiler.h"
+#include <cstddef>
 #include <cstdlib>
 
 using namespace llvm;
@@ -339,6 +341,20 @@ void BuildIdSection::writeBuildId(ArrayRef<uint8_t> buf) {
   assert(buf.size() == hashSize);
   memcpy(hashBuf, buf.data(), hashSize);
 }
+
+// OHOS_LOCAL begin
+CodeSignSection::CodeSignSection()
+    : SyntheticSection(0, SHT_PROGBITS, 4096, ".codesign") {}
+
+void CodeSignSection::writeTo(uint8_t *buf) {
+  memset(buf, 0x0, getSize());
+  hashBuf = buf;
+}
+
+void CodeSignSection::writeCodeSignSection(uint8_t *buf, size_t size) {
+  memcpy(hashBuf, buf, size);
+}
+// OHOS_LOCAL end
 
 BssSection::BssSection(StringRef name, uint64_t size, uint32_t alignment)
     : SyntheticSection(SHF_ALLOC | SHF_WRITE, SHT_NOBITS, alignment, name) {
