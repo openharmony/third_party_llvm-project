@@ -174,6 +174,75 @@ void BufferedStackTrace::UnwindSlow(uptr pc, void *context, u32 max_depth) {
     trace_buffer[size++] = frames[i].absolute_pc + 2;
 }
 
+// OHOS_LOCAL begin
+#if SANITIZER_OHOS
+typedef struct {
+    uptr* fp;
+    uptr* sp;
+    uptr* pc;
+    bool* isJsFrame;
+} ArkStepParam;
+
+typedef bool (*ReadMemFunc)(void* ctx, uptr addr, uptr* result);
+typedef int (*step_ark_func)(void* ctx, ReadMemFunc readMem, ArkStepParam *arkStepParam);
+step_ark_func step_ark;
+
+void SanitizerInitializeArkTsUnwinder() {
+  void *p = dlopen("/system/lib64/platformsdk/libark_jsruntime.so", RTLD_LAZY);
+  if (!p) {
+    VReport(1,
+            "Failed to open libark_jsruntime.so. You may see broken stack traces "
+            "in SEGV reports.");
+    return;
+  }
+  step_ark = (step_ark_func)(uptr)dlsym(p, "step_ark");
+  if(!step_ark){
+    VReport(1,
+            "Failed to find one of the required symbols in libark_jsruntime.so "
+            "You may see broken stack traces in SEGV reports.");
+    step_ark = 0;
+  }
+}
+
+void BufferedStackTrace::UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp) {
+  // Ensure that step_ark is initialized only once.
+  if(!step_ark)
+    SanitizerInitializeArkTsUnwinder();
+  if(!step_ark)
+    return;
+
+  //The stack unwinding will only proceed when the incoming pc is determined to
+  // point to a filename in ArkTs.
+  const char* filename = GetFilename(pc);
+  if(!IsArktsExecutable(filename) || size >= max_depth)
+    return;
+
+  ReadMemFunc readMem = [](void* ctx, uptr addr, uptr* result) -> bool {
+    *result = *reinterpret_cast<uptr*>(addr);
+    return true;
+  };
+  uptr current_fp = fp;
+  uptr current_sp = sp;
+  uptr current_pc = pc;
+  bool current_isJsFrame = false;
+  ArkStepParam param = {
+    .fp = &current_fp,
+    .sp = &current_sp,
+    .pc = &current_pc,
+    .isJsFrame = &current_isJsFrame
+    };
+  int res = step_ark(nullptr, readMem, &param);
+  if(res) {
+    frame_buffer[size] = (uptr)param.fp[0]; 
+    trace_buffer[size++] = (uptr)param.pc[0];
+  } else {
+    return;
+  }
+  
+  UnwindIfArkts(max_depth, (uptr)param.pc[0], (uptr)param.fp[0], (uptr)param.sp[0]);
+}
+#endif
+// OHOS_LOCAL end
 }  // namespace __sanitizer
 
 #endif  // SANITIZER_FREEBSD || SANITIZER_LINUX || SANITIZER_NETBSD ||
