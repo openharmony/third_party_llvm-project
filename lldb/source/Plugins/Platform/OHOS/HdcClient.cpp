@@ -14,16 +14,19 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/FileUtilities.h"
+#if defined (__OHOS__)
+#include "llvm/Support/Program.h"
+#endif
 
 #include "lldb/Host/ConnectionFileDescriptor.h"
 #include "lldb/Host/FileSystem.h"
 #include "lldb/Host/PosixApi.h"
-#include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/DataBuffer.h"
 #include "lldb/Utility/DataBufferHeap.h"
 #include "lldb/Utility/DataEncoder.h"
 #include "lldb/Utility/DataExtractor.h"
 #include "lldb/Utility/FileSpec.h"
+#include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/StreamString.h"
 #include "lldb/Utility/Timeout.h"
 #include "lldb/Utility/Timer.h" // OHOS_LOCAL
@@ -177,9 +180,13 @@ Status HdcClient::Connect() {
     }
   }
 
+#if defined(__OHOS__)
+  std::string url = "unix-connect:///data/hdc/hdc_debug/hdc_server";
+#else
   // Support remote HDC server by providing connection address explicitly
-  std::string uri = "connect://" + m_connect_addr + ":" + port;
-  m_conn->Connect(uri.c_str(), &error);
+  std::string url = "connect://" + m_connect_addr + ":" + port;
+#endif
+  m_conn->Connect(url.c_str(), &error);
   ConnectionStatus status = eConnectionStatusError;
   if (error.Success()) {
     error = ReadAllBytes(&handshake, sizeof(handshake));
@@ -282,6 +289,43 @@ Status HdcClient::DeletePortForwarding(const uint16_t local_port,
 Status HdcClient::LocalTransferFile(const char *direction, const FileSpec &src,
                                     const FileSpec &dst) {
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_HDC);   // OHOS_LOCAL
+
+#if defined(__OHOS__)
+  Log *log = GetLog(LLDBLog::Platform);
+  LLDB_LOGF(log, "HdcClient::LocalTransferFile src is %s, dst is %s ",
+            src.GetPath().c_str(), dst.GetPath().c_str());
+
+  llvm::ErrorOr<std::string> hdc_tool = llvm::sys::findProgramByName("hdc");
+  int result = -1;
+  if (!hdc_tool) {
+      LLDB_LOGF(log, "HdcClient::LocalTransferFile find hdc tool failed.");
+      return Status("HDC tool not available");
+  }
+  
+  std::string src_path = "\"" + src.GetPath() + "\"";
+  std::string dst_path = "\"" + dst.GetPath() + "\"";
+  llvm::SmallVector<llvm::StringRef, 6u> hdc_args{"hdc", "file"};
+  hdc_args.push_back(llvm::StringRef(direction));
+  hdc_args.push_back("-m");
+  hdc_args.push_back(llvm::StringRef(src_path));  
+  hdc_args.push_back(llvm::StringRef(dst_path));
+
+  std::string cmd_info = llvm::join(hdc_args.begin(), hdc_args.end(), " ");  
+  LLDB_LOGF(log, "HdcClient::LocalTransferFile Execute cmd : %s", cmd_info.c_str());
+
+  std::string errorMsg;
+  result = llvm::sys::ExecuteAndWait(hdc_tool.get(), hdc_args, llvm::None, {},
+                                     0, 0, &errorMsg);
+  if (result != 0) {
+      LLDB_LOGF(log, "HdcClient::LocalTransferFile Execute failed : %s",
+                errorMsg.c_str());
+      return Status("HdcClient::LocalTransferFile failed execute cmd");
+  }
+
+  LLDB_LOGF(log, "HdcClient::LocalTransferFile Execute success : %s",
+            cmd_info.c_str());
+  return Status(result);
+#else
   llvm::SmallVector<char, 128> cwd;
   std::error_code ec = llvm::sys::fs::current_path(cwd);
   if (ec)
@@ -296,6 +340,7 @@ Status HdcClient::LocalTransferFile(const char *direction, const FileSpec &src,
     return error;
 
   return ReadResponseStatus("FileTransfer finish");
+#endif
 }
 
 Status HdcClient::ExpectCommandMessagePrefix(uint16_t expected_command,
