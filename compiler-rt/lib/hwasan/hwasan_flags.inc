@@ -130,4 +130,8 @@ HWASAN_FLAG(
 
 HWASAN_FLAG(bool, enable_heap_quarantine_debug, false,
             "Enable Hwasan Quarantine Debug Mode.")
+#if SANITIZER_OHOS
+HWASAN_FLAG(bool, enable_unwind_arkts, false,
+            "Enable Hwasan Unwind ArkTs function.")
+#endif
 // OHOS_LOCAL end

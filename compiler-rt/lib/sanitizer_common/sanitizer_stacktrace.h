@@ -43,6 +43,9 @@ struct StackTrace {
   const uptr *trace;
   u32 size;
   u32 tag;
+  // OHOS_LOCAL begin
+  bool is_fast = false;
+  // OHOS_LOCAL end
 
   static const int TAG_UNKNOWN = 0;
   static const int TAG_ALLOC = 1;
@@ -78,6 +81,14 @@ struct StackTrace {
   static uptr GetCurrentPc();
   static inline uptr GetPreviousInstructionPc(uptr pc);
   static uptr GetNextInstructionPc(uptr pc);
+  // OHOS_LOCAL begin
+#if SANITIZER_OHOS
+  static bool StartsWith(const char* str, const char* prefix);
+  static bool EndsWith(const char* str, const char* suffix);
+  static bool IsArktsExecutable(const char* filename);
+  const char* GetFilename(uptr addr);
+#endif
+  // OHOS_LOCAL end
 };
 
 // Performance-critical, must be in the header.
@@ -109,8 +120,16 @@ uptr StackTrace::GetPreviousInstructionPc(uptr pc) {
 struct BufferedStackTrace : public StackTrace {
   uptr trace_buffer[kStackTraceMax];
   uptr top_frame_bp;  // Optional bp of a top frame.
+  // OHOS_LOCAL begin
+  uptr frame_buffer[kStackTraceMax];
+  u32 buffer_maxdepth;
 
-  BufferedStackTrace() : StackTrace(trace_buffer, 0), top_frame_bp(0) {}
+  BufferedStackTrace()
+      : StackTrace(trace_buffer, 0),
+      top_frame_bp(0),
+      frame_buffer{0},
+      buffer_maxdepth(0) {}
+  // OHOS_LOCAL end
 
   void Init(const uptr *pcs, uptr cnt, uptr extra_top_pc = 0);
 
@@ -120,6 +139,7 @@ struct BufferedStackTrace : public StackTrace {
   void Unwind(uptr pc, uptr bp, void *context, bool request_fast,
               u32 max_depth = kStackTraceMax) {
     top_frame_bp = (max_depth > 0) ? bp : 0;
+    buffer_maxdepth = max_depth; 
     // Small max_depth optimization
     if (max_depth <= 1) {
       if (max_depth == 1)
@@ -137,7 +157,11 @@ struct BufferedStackTrace : public StackTrace {
     *static_cast<StackTrace *>(this) = StackTrace(trace_buffer, 0);
     top_frame_bp = 0;
   }
-
+ // OHOS_LOCAL begin
+#if SANITIZER_OHOS
+  void UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp);
+#endif
+ // OHOS_LOCAL end
  private:
   // Every runtime defines its own implementation of this method
   void UnwindImpl(uptr pc, uptr bp, void *context, bool request_fast,
