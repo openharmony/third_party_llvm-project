@@ -1692,6 +1692,12 @@ class LlvmLibs(BuildUtils):
         rt_cflags.append('-fno-omit-frame-pointer')
 
         rt_defines = defines.copy()
+
+        if arch == 'aarch64' and 'libcxx' in rt_list:
+            rt_cflags.append('-Wl,--emit-relocs')
+            rt_cflags.append('-Wl,--no-relax')
+            rt_cflags.append('-mno-fix-cortex-a53-843419')
+
         rt_defines['OHOS'] = '1'
         rt_defines['LLVM_ENABLE_PER_TARGET_RUNTIME_DIR'] = 'ON'
         rt_defines['LLVM_TARGET_MULTILIB_SUFFIX'] = multilib_suffix
