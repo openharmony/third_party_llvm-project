@@ -1,5 +1,3 @@
-
-
 # 1. LLDB工具介绍
 
 
@@ -140,7 +138,7 @@ LLDB工具在SDK中的路径：**\ohos-sdk\\\[system]\native\llvm。
 
 为了方便定位问题，可以使用`log <subcommand> [<command-options>]`命令记录LLDB日志。
 
-- help log 查看log命令帮助
+- help log 查看log命令帮助。
 
   ```
   (lldb) help log
@@ -158,13 +156,13 @@ LLDB工具在SDK中的路径：**\ohos-sdk\\\[system]\native\llvm。
   For more help on any particular subcommand, type 'help <command> <subcommand>'.
   ```
 
-- log list 查看支持的日志列表
+- log list 查看支持的日志列表。
 
   ```
   (lldb) log list
   ```
 
-- 打印LLDB的所有日志到D:\lldb.log（-T 带时间戳，-S 将堆栈回溯附加到每个日志行）
+- 打印LLDB的所有日志到D:\lldb.log（-T 带时间戳，-S 将堆栈回溯附加到每个日志行）。
   ```
   (lldb) log enable lldb all -T -S -f D:\lldb.log
   ```
@@ -231,7 +229,7 @@ LLDB工具在SDK中的路径：**\ohos-sdk\\\[system]\native\llvm。
        between the end of the command options and the beginning of the arguments.
   ```
 ## 3.3 平台
-LLDB中用于管理和创建平台的命令有`platform [connect|disconnect|info|list|status|select] ...`
+LLDB中用于管理和创建平台的命令有`platform [connect|disconnect|info|list|status|select] ...`。
 
 ### 3.3.1 platform相关信息
 
@@ -452,13 +450,13 @@ LLDB可以使用`platform connect <connect-url>`命令指定要连接的平台�
 
   **示例**
 
-  步骤一：lldb-server端创建连接
+  步骤一：lldb-server端创建连接。
   
   ```
   ./lldb-server platform --server --listen unix-abstract:///com.example.myapplication/platform-1667463465318.sock
   ```
 
-  步骤二：LLDB客户端建立连接
+  步骤二：LLDB客户端建立连接。
   
   ```
   (lldb) platform select remote-ohos
@@ -615,7 +613,7 @@ LLDB中可以使用`breakpoint <subcommand> [<command-options>]`或`_regexp-brea
   (lldb) br s -M main
   ```
 
-- 使用`_regexp-break <module>`<name>`给特定库中的函数打断点
+- 使用`_regexp-break <module>`<name>`给特定库中的函数打断点。
 
   ```
   (lldb) _regexp-break libc.so`malloc
@@ -687,13 +685,13 @@ LLDB可以设置条件断点，也就是只有在条件满足时，断点才会�
   (lldb) breakpoint delete 2
   ```
 
-- 删除所有断点
+- 删除所有断点。
 
   ```
   (lldb) breakpoint delete
   ```
 
-- 删除某个文件的某行断点
+- 删除某个文件的某行断点。
 
   ```
   (lldb) breakpoint clear -l 20 -f hello.cpp
@@ -768,7 +766,7 @@ LLDB可以使用`watchpoint list <cmd-options> [<watchpt-id | watchpt-id-list>]`
   (lldb) watchpoint list -v
   (lldb) watch l -v
   ```
-- 列出所有观察点有关位置描述的全部信息
+- 列出所有观察点有关位置描述的全部信息。
   ```
   (lldb) watchpoint list -f
   (lldb) watch l -f
@@ -777,13 +775,13 @@ LLDB可以使用`watchpoint list <cmd-options> [<watchpt-id | watchpt-id-list>]`
 
 LLDB可以使用`watchpoint delete <cmd-options> [<watchpt-id | watchpt-id-list>]`（watchpoint delete简写为watch del）删除观察点。
 
-- 删除某个观察点
+- 删除某个观察点。
   ```
   (lldb) watchpoint delete 2                                             
   1 watchpoints deleted.
   ```
 
-- 删除所有的观察点
+- 删除所有的观察点。
   ```
   (lldb) watchpoint delete
   About to delete all watchpoints, do you want to do that?: [Y/n] Y
@@ -794,12 +792,12 @@ LLDB可以使用`watchpoint delete <cmd-options> [<watchpt-id | watchpt-id-list>
 
 LLDB可以使用watchpoint disable（简写为watch dis）禁用观察点。
 
-- 禁用某个观察点
+- 禁用某个观察点。
   ```
   (lldb) watchpoint disable 2                                             
   1 watchpoints disabled.
   ```
-- 禁用所有的观察点
+- 禁用所有的观察点。
 
   ```
   (lldb) watchpoint disable                                             
@@ -810,14 +808,14 @@ LLDB可以使用watchpoint disable（简写为watch dis）禁用观察点。
 
 LLDB可以使用watchpoint enable（简写为watch en）启用被禁用的观察点。
 
-- 启用某个观察点
+- 启用某个观察点。
 
   ```
   (lldb) watchpoint enable 2                                            
   1 watchpoints enabled.
   ```
 
-- 启用所有被禁用的观察点
+- 启用所有被禁用的观察点。
 
   ```
   (lldb) watchpoint enable  
@@ -828,28 +826,28 @@ LLDB可以使用watchpoint enable（简写为watch en）启用被禁用的观察
 
 LLDB中使用`expression <cmd-options> -- <expr>`（expression 简写为expr）可以实现表达式求值。
 
-- 创建一个变量
+- 创建一个变量。
   ```
   (lldb) print int $value1 = 7
   (lldb) expression int $value2 = 7
   ```
 
-- 打印变量值
+- 打印变量值。
   ```
   (lldb) print $value1
   (lldb) expression $value2
   ```
 
-- 打印全局变量global_var
+- 打印全局变量`global_var`。
   ```
   (lldb) expression global_var
   ```
-- 变量运算
+- 变量运算。
   ```
   (lldb) expression global_var * 3
   ```
 
-- 打印变量（默认十进制）
+- 打印变量（默认十进制）。
 
   ```
   (lldb) print value
@@ -857,7 +855,7 @@ LLDB中使用`expression <cmd-options> -- <expr>`（expression 简写为expr）�
   (lldb) p value
   ```
 
-- 打印变量（十六进制）
+- 打印变量（十六进制）。
 
   ```
   (lldb) print/x value
@@ -865,7 +863,7 @@ LLDB中使用`expression <cmd-options> -- <expr>`（expression 简写为expr）�
   (lldb) p/x value
   ```
 
-- 打印变量（八进制）
+- 打印变量（八进制）。
 
   ```
   (lldb) print/o value
@@ -873,7 +871,7 @@ LLDB中使用`expression <cmd-options> -- <expr>`（expression 简写为expr）�
   (lldb) p/o value
   ```
 
-- 打印变量（二进制）
+- 打印变量（二进制）。
 
   ```
   (lldb) print/t value
@@ -928,7 +926,7 @@ LLDB中使用`expression <cmd-options> -- <expr>`（expression 简写为expr）�
   ```
   (lldb) thread backtrace -c 2
   ```
-- 显示所有线程的堆栈回溯
+- 显示所有线程的堆栈回溯。
   ```
   (lldb) thread backtrace all
   (lldb) bt all
@@ -1004,7 +1002,7 @@ LLDB中用于访问当前线程和堆栈帧的寄存器的命令为`register [re
    (lldb) register read
   ```
 
-- 修改寄存器的值
+- 修改寄存器的值。
 
   ```
    (lldb) register write rax 0x0000000000401470
@@ -1020,7 +1018,7 @@ LLDB中用于访问当前线程和堆栈帧的寄存器的命令为`register [re
   (lldb) settings append target.exec-search-paths "E:\DevEcoStudioProjects\MyApplication\entry\build\default\intermediates\cmake\default\obj\armeabi-v7a"
   ```
 
-- target symbols add 加载符号文件
+- target symbols add 加载符号文件。
 
   ```
   (lldb) target symbols add a.out
@@ -1059,17 +1057,17 @@ LLDB中用于访问当前线程和堆栈帧的寄存器的命令为`register [re
   (lldb) source info
   ```
   
-- 显示某个文件的信息
+- 显示某个文件的信息。
   ```
   (lldb) source info -f hello.cpp
   ```
   
-- 查看当前目标进程的源码
+- 查看当前目标进程的源码。
   ```
   (lldb) source list
   ```
 
-- 查看源码
+- 查看源码。
   ```
   (lldb) _regexp-list
   (lldb) list
@@ -1094,19 +1092,19 @@ LLDB中使用`disassemble [<cmd-options>]`（disassemble 简写为dis或di）命
   (lldb) dis -f
   (lldb) di -f
   ```
-- 显示main函数的汇编指令
+- 显示main函数的汇编指令。
   ```
   (lldb) disassemble --name main
   (lldb) dis -n main
   (lldb) di -n main
   ```
-- 显示特定数目的汇编指令
+- 显示特定数目的汇编指令。
   ```
   (lldb) disassemble --count 10
   (lldb) dis -c 10
   (lldb) di -c 10
   ```
-- 显示当前帧的源码行的汇编指令
+- 显示当前帧的源码行的汇编指令。
   ```
   (lldb) disassemble --line
   (lldb) dis -l
@@ -1119,7 +1117,7 @@ LLDB中使用`disassemble [<cmd-options>]`（disassemble 简写为dis或di）命
 
 当使用LLDB调试时，可能走过了要调试的地方时，可以使用`jump`命令跳转到对应位置。
 
-- 跳转到当前函数的27行
+- 跳转到当前函数的27行。
 
   ```
   (lldb) jump 27
@@ -1199,7 +1197,7 @@ PC寄存器会存储程序下一条要执行的指令，通过修改这个寄存
   (lldb) apropos platform
   ```
 
-- 列出与info相关的调试器命令
+- 列出与info相关的调试器命令。
 
   ```
   (lldb) apropos info
@@ -1209,13 +1207,13 @@ PC寄存器会存储程序下一条要执行的指令，通过修改这个寄存
 
 LLDB中的命令别名机制可以为常用命令构造别名。使用`command alias <cmd-options> -- <alias-name> <cmd-name> [<options-for-aliased-command>]`构造命令别名。
 
-- 构造断点命令别名
+- 构造断点命令别名。
 
-  原始命令
+  原始命令：
   ```
   (lldb) breakpoint set --file hello.cpp --line 12
   ```
-  别名
+  别名：
   ```
   (lldb) command alias bfl breakpoint set --file hello.cpp --line %2
   ```
@@ -1317,7 +1315,7 @@ LLDB支持输入命令起始字符，按`Tab`键实现命令自动联想补齐�
 > - 需要通过编译LLVM工程时添加`--build-libedit`参数使能此功能。建议和`--build-ncurses`参数一起使用。
 > - 命令自动联想补齐功能适配平台有：Linux, Mac x86-64 和 M1。
 
-- 输入pl，按`Tab`键实现命令自动联想。(LLDB命令中包含多个以"pl"开头的命令)
+- 输入`pl`，按`Tab`键实现命令自动联想(LLDB命令中包含多个以"pl"开头的命令)。
 
   ```
   (lldb) pl
@@ -1327,7 +1325,7 @@ LLDB支持输入命令起始字符，按`Tab`键实现命令自动联想补齐�
   (lldb) pl
   ```
 
-- 输入his，按`Tab`键实现命令自动补全。(LLDB命令中仅包含一个以"his"开头的命令)
+- 输入`his`，按`Tab`键实现命令自动补全(LLDB命令中仅包含一个以"his"开头的命令)。
 
   ```
   (lldb) history
@@ -1358,7 +1356,7 @@ LLDB支持使用`gui`命令进入图形化调试界面。
 
 **示例**
 
-设备侧 
+设备侧：
 
 运行lldb-server。
 
@@ -1366,7 +1364,7 @@ LLDB支持使用`gui`命令进入图形化调试界面。
 ./lldb-server platform --server --listen "*:8080"
 ```
 
-LLDB客户端
+LLDB客户端：
 
 1）运行lldb.exe。
 
@@ -1393,11 +1391,11 @@ LLDB客户端
 (lldb) quit   
 ```
 
-**场景二** 自定义源码，使用attach方式调试SDK编译出的可执行文件
+**场景二** 自定义源码，使用attach方式调试SDK编译出的可执行文件。
 
 **示例**
 
-设备侧
+设备侧：
 
 1）运行可执行文件，并使用ps命令查看进程pid。
 
@@ -1405,13 +1403,13 @@ LLDB客户端
 ./process-name
 ```
 
-2）运行lldb-server
+2）运行lldb-server。
 
 ```
 ./lldb-server p --server --listen unix-abstract:///com.example.myapplication/platform-1648104534646.sock
 ```
 
-LLDB客户端
+LLDB客户端：
 
 1）运行lldb.exe。
 
@@ -1460,11 +1458,11 @@ Process ... detached
 
 ## 4.2 hap包调试
 
-**场景一** 基于DevEco编译的debug版本的hap包调试
+**场景一** 基于DevEco编译的debug版本的hap包调试。
 
 **示例**
 
-设备侧
+设备侧：
 
 1）安装hap包并运行，进入使用ps查看应用pid。
 
@@ -1479,7 +1477,7 @@ hdc shell aa start  -a <ability-name> -b <bundle-name> && hdc shell pidof <bundl
 ./lldb-server platform --server --listen "*:8080"
 ```
 
-LLDB客户端
+LLDB客户端：
 
 1）运行lldb.exe。
 
@@ -1511,11 +1509,11 @@ WorkingDir: /data/local/tmp
 (lldb) quit                                     // 简写'q'
 ```
 
-**场景二** 应用启动调试
+**场景二** 应用启动调试。
 
 **示例**
 
-设备侧
+设备侧：
 
 1）安装debug版本的hap包并运行，并查看应用pid。
 
@@ -1536,7 +1534,7 @@ hdc shell aa start -a <ability-name> -b <bundle-name> -N && hdc shell pidof <bun
 ./lldb-server platform --server --listen "*:8080"
 ```
 
-LLDB客户端
+LLDB客户端：
 
 1）运行lldb.exe。
 
@@ -1581,11 +1579,11 @@ WorkingDir: /data/local/tmp
 >
 > 使用ps -elf 查询出来的PPID为1的进程为system ablility服务。
 
-**场景一** 单个system ablility调试
+**场景一** 单个system ablility调试。
 
-**示例** 以调试netmanager为例
+**示例** 以调试netmanager为例。
 
-设备侧
+设备侧：
 
 1）设置需要调试的服务，并获取其pid。
 
@@ -1631,7 +1629,7 @@ WorkingDir: /data/local/tmp
 ./lldb-server platform --server --listen "*:8080"
 ```
 
-LLDB客户端
+LLDB客户端：
 
 1）运行lldb.exe。
 
@@ -1662,11 +1660,11 @@ WorkingDir: /data/local/tmp
 (lldb) quit                                     // 简写'q'
 ```
 
-**场景二** 多个system ability调试
+**场景二** 多个system ability调试。
 
 **示例**
 
-设备侧
+设备侧：
 
 1）设置需要调试的服务，并获取其pid。
 
@@ -1700,13 +1698,13 @@ WorkingDir: /data/local/tmp
   ```
   ps -elf | grep init
 
-2）运行lldb-server
+2）运行lldb-server。
 
 ```
 ./lldb-server platform --server --listen "*:8080"
 ```
 
-LLDB客户端1
+LLDB客户端1：
 
 1）运行lldb.exe。
 
@@ -1737,7 +1735,7 @@ WorkingDir: /data/local/tmp
 (lldb) quit                                     // 简写'q'
 ```
 
-设备侧
+设备侧：
 
 停止需要调试的服务2。
 
@@ -1757,7 +1755,7 @@ service_control start <servicename2>
 ps -elf | grep init
 ```
 
-LLDB客户端2
+LLDB客户端2：
 
 1）运行lldb.exe。
 
@@ -1796,13 +1794,13 @@ WorkingDir: /data/local/tmp
 
 LLDB 支持运行 Python 代码。目前，该功能已在 OpenHarmony 发布的 Linux、Windows 和 macOS 版本 NDK 支持。
 
-1. 执行单行 Python 代码
+1. 执行单行 Python 代码。
 
 ```
 (lldb) script print("Hello OpenHarmony!")
 ```
 
-2. 执行 `script` 命令进入 Python shell，然后执行 Python 代码
+2. 执行 `script` 命令进入 Python shell，然后执行 Python 代码。
 
 ```python
 import os
@@ -1851,8 +1849,8 @@ OpenHarmony NDK 提供了辅助脚本，简化了调试流程，输入以下指�
 | --- | --- | --- |
 | `arch` | `unknown` | 可选值：`arm` 表示 ARM 32位架构；`aarch64` 表示 ARM 64位架构；`x86_64` 表示 x86 64位架构。根据硬件架构，选择响应的 `lldb-server`。参数值为 `unknown` 时，会尝试判断设备的架构；如果自动判断架构出错，用户可以手动设置成其他值，关闭架构发现功能（使用用户指定的架构）。 |
 | `install-path` | `/data/local/tmp/lldb/lldb-server` | `lldb-server` 在 OpenHarmony 设备上的安装路径。 |
-| `tcp-listen-port` | `1234` | `lldb-server` 监听的 tcp 端口号 |
-| `platform` | `remote-ohos` | `lldb-server` 所在设备平台。 |
+| `tcp-listen-port` | `1234` | `lldb-server` 监听的 tcp 端口号。|
+| `platform` | `remote-ohos` | `lldb-server` 所在设备平台。|
 
 
 # 6. LLDB Standalone调试
@@ -1863,34 +1861,34 @@ Standalone调试区别于远程调试，无需配置远程连接，直接在设�
 
 该工具需要通过编译LLVM工程时增加`--build-lldb-static`参数获取。
 
-LLVM工程编译参考：[llvm-build](https://gitcode.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md)
+LLVM工程编译参考：[llvm-build](https://gitcode.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md)。
 
 编译完成后，可通过如下路径获取到Standalone版本的工具：
 
-1）生成路径： llvm-project/out/lib/lldb-server-[platform]-linux-ohos/bin
+1）生成路径： llvm-project/out/lib/lldb-server-[platform]-linux-ohos/bin。
 
-2）Install路径：llvm-project/out/llvm-install/lib/clang/15.0.4/bin/[platform]-linux-ohos
+2）Install路径：llvm-project/out/llvm-install/lib/clang/15.0.4/bin/[platform]-linux-ohos。
 
-3）package压缩包：llvm-project/out/clang-dev-linux-x86_64.tar.bz2内，clang-dev/lib/clang/15.0.4/bin/[platform]-linux-ohos
+3）package压缩包：llvm-project/out/clang-dev-linux-x86_64.tar.bz2内，clang-dev/lib/clang/15.0.4/bin/[platform]-linux-ohos。
 
-​	[platform]值根据调试设备架构，支持arm和aarch64
+​	[platform]值根据调试设备架构，支持arm和aarch64。
 
 ## 6.2 LLDB Standalone调试准备
 
-1）使用HDC工具将[6.1 LLDB Standalone工具获取](#61-lldb-standalone工具获取)中获取到的lldb和lldb-server传输到设备工作路径，以/data/local/tmp为例
+1）使用HDC工具将[6.1 LLDB Standalone工具获取](#61-lldb-standalone工具获取)中获取到的lldb和lldb-server传输到设备工作路径，以/data/local/tmp为例。
 
 ```
 hdc.exe file send lldb /data/local/tmp
 hdc.exe file send lldb-server /data/local/tmp
 ```
 
-2）进入命令行交互模式
+2）进入命令行交互模式。
 
 ```
 hdc.exe shell
 ```
 
-3）赋予lldb工具执行权限
+3）赋予lldb工具执行权限。
 
 ```
 # chmod +x /data/local/tmp/lldb
@@ -1902,8 +1900,8 @@ hdc.exe shell
 
 > **提示：**
 >
-> - 命令print、call、expr尚不支持调用函数
-> - 如遇删除键（Backspace）功能无法正常删除时，使用Ctrl+Backspace删除
+> - 命令print、call、expr尚不支持调用函数。
+> - 如遇删除键（Backspace）功能无法正常删除时，使用 `Ctrl+Backspace` 删除。
 
 ### 6.3.1 attach 到运行的进程
 #### 6.3.1.1 启动LLDB
@@ -1962,25 +1960,25 @@ hdc.exe shell
 
 ## 7.2 调试准备
 
-1）受设备环境限制，你可能需要将压缩包重新打包为：clang-dev-ohos-aarch64.tar
+1）受设备环境限制，你可能需要将压缩包重新打包为：clang-dev-ohos-aarch64.tar。
 
 ```
 bunzip2 -c clang-dev-ohos-aarch64.tar.bz2 > clang-dev-ohos-aarch64.tar
 ```
 
-2）使用hdc工具将压缩包推送到工作路径，以/data/local/tmp为例
+2）使用hdc工具将压缩包推送到工作路径，以/data/local/tmp为例。
 
 ```
 hdc file send clang-dev-ohos-aarch64.tar /data/local/tmp
 ```
 
-3）进入命令行交互模式
+3）进入命令行交互模式。
 
 ```
 hdc shell
 ```
 
-4）解压工具包
+4）解压工具包。
 
 ```
 # cd /data/local/tmp/
@@ -1997,5 +1995,5 @@ hdc shell
 
 LLDB执行程序的位置：`/data/local/tmp/ohos-aarch64-install/bin/`
 
-具体的调试方法参考[6.3 LLDB Standalone调试](#63-LLDB-Standalone调试)
+具体的调试方法参考[6.3 LLDB Standalone调试](#63-LLDB-Standalone调试)。
 
