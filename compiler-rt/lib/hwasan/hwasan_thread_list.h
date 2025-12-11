@@ -227,7 +227,6 @@ class SANITIZER_MUTEX HwasanThreadList {
     for (Thread *t : live_list_) cb(t);
   }
 
-// OHOS_LOCAL begin
   template <class CB>
   Thread *FindThreadLocked(CB cb) SANITIZER_CHECK_LOCKED(stats_mutex_) {
     CheckLocked();
@@ -237,6 +236,7 @@ class SANITIZER_MUTEX HwasanThreadList {
     return nullptr;
   }
 
+// OHOS_LOCAL begin
   template <class CB>
   void VisitAllFreedRingBuffer(CB cb) {
     DisableTracingHeapAllocation();

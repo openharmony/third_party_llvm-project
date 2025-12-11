@@ -252,7 +252,7 @@ void HwasanAtExit() {
   if (__hwasan::ShouldPrintQuarantineDwillTime())
     hwasanThreadList().PrintfAverageQuarantineTime();
   // OHOS_LOCAL end
-  if (common_flags()->print_module_map > 1)
+  if (common_flags()->print_module_map > 2)
     DumpProcessMap();
   if (flags()->print_stats && (flags()->atexit || hwasan_report_count > 0))
     ReportStats();

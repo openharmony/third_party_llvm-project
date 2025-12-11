@@ -609,8 +609,7 @@ void HWAddressSanitizer::initializeModule() {
 
   if (!CompileKernel) {
     createHwasanCtorComdat();
-    bool InstrumentGlobals =
-        ClGlobals.getNumOccurrences() ? ClGlobals : NewRuntime;
+    bool InstrumentGlobals = ClGlobals;
 
     if (InstrumentGlobals && !UsePageAliases)
       instrumentGlobals();
