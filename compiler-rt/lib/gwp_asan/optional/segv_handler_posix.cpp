@@ -14,6 +14,7 @@
 // OHOS_LOCAL begin
 #include "sanitizer_common/sanitizer_stacktrace_printer.h"
 #include "sanitizer_common/sanitizer_symbolizer.h"
+#include "sanitizer_common/sanitizer_common.h"
 // OHOS_LOCAL end
 
 // RHEL creates the PRIu64 format macro (for printing uint64_t's) only when this
@@ -193,6 +194,8 @@ static bool sigSegvHandlerOhos(int sig, siginfo_t *info, void *ucontext) {
     GPAForSignalHandler->getAllocatorState();
     
   if (__gwp_asan_error_is_mine(State, ErrorPtr)) {
+    ScopedErrorReportLock gwp_report_lock_;//Prevented log output confusion
+
     GPAForSignalHandler->stop();
     dumpReport(ErrorPtr, State, GPAForSignalHandler->getMetadataRegion(),
                BacktraceForSignalHandler, PrintfForSignalHandler,
