@@ -7,6 +7,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "lldb/Core/IOHandler.h"
+#include "llvm/ADT/Triple.h"
+#include "llvm/Support/raw_ostream.h"
+#include <cstdlib>
 
 #if defined(__APPLE__)
 #include <deque>
@@ -626,6 +629,19 @@ void IOHandlerEditline::PrintAsync(const char *s, size_t len, bool is_stdout) {
   } else
 #endif
   {
+#ifdef __OHOS__
+    // Add carriage return before async output to ensure proper display.
+    // In hdc shell environments, TERM is "ansi".
+    // If there is ""dump" terminal, cannot properly interpret '\r' characters.
+    const char *prompt = GetPrompt();
+    if (prompt) {
+      std::lock_guard<std::recursive_mutex> guard(m_output_mutex);
+      lldb::StreamFileSP stream = is_stdout ? m_output_sp : m_error_sp;
+      const char *term = getenv("TERM");
+      if (term && strcmp(term, "dumb") != 0)
+        stream->Printf("\r");
+    }
+#endif
 #ifdef _WIN32
     const char *prompt = GetPrompt();
     if (prompt) {
@@ -641,7 +657,7 @@ void IOHandlerEditline::PrintAsync(const char *s, size_t len, bool is_stdout) {
     }
 #endif
     IOHandler::PrintAsync(s, len, is_stdout);
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__OHOS__)
     if (prompt)
       IOHandler::PrintAsync(prompt, strlen(prompt), is_stdout);
 #endif
