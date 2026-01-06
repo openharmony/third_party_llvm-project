@@ -31,7 +31,7 @@ brew install swig  git-lfs java coreutils wget
 
 ### Get Code
 ```
-repo init -u https://gitcode.com/OpenHarmony/manifest.git -b master -m llvm-16.0.0-toolchain.xml
+repo init -u https://gitcode.com/OpenHarmony/manifest.git -b master -m ohos/llvm-16.0.0-toolchain.xml
 repo sync -c 
 repo forall -c 'git lfs pull'
 ```
