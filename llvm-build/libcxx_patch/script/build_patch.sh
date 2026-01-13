@@ -38,9 +38,13 @@ echo "Building the patch..."
 echo "BUILD_PATH: $BUILD_PATH"
 
 # libc++.so
-echo "Copying libc++.so..."
+echo "Copying aarch64 libc++.so..."
 mkdir -p $BUILD_PATH/patch/llvm/system_libcxx/lib/aarch64-linux-ohos
 cp $LLVM_OUT_PATH/llvm-install/lib/aarch64-linux-ohos/libc++.so $BUILD_PATH/patch/llvm/system_libcxx/lib/aarch64-linux-ohos/
+
+echo "Copying x86_64 libc++.so..."
+mkdir -p $BUILD_PATH/patch/llvm/system_libcxx/lib/x86_64-linux-ohos
+cp $LLVM_OUT_PATH/llvm-install/lib/x86_64-linux-ohos/libc++.so $BUILD_PATH/patch/llvm/system_libcxx/lib/x86_64-linux-ohos/
 
 # __config_site
 echo "Copying __config_site..."
@@ -55,12 +59,12 @@ cp $LLVM_OUT_PATH/../build/ohos/ndk/cmake/ohos.toolchain.cmake $BUILD_PATH/patch
 echo "Patching cmake toolchain file..."
 sed -i '/elseif(OHOS_STL STREQUAL c++_shared)/a\
 elseif(OHOS_STL STREQUAL system)\
-  # system libcxx is only supported for aarch64-linux-ohos\
-  if(OHOS_TOOLCHAIN_NAME STREQUAL aarch64-linux-ohos)\
+  # system libcxx is only supported for aarch64-linux-ohos and x86_64-linux-ohos\
+  if(OHOS_TOOLCHAIN_NAME STREQUAL aarch64-linux-ohos OR OHOS_TOOLCHAIN_NAME STREQUAL x86_64-linux-ohos)\
     include_directories("${OHOS_SDK_NATIVE}/llvm/system_libcxx/include")\
     link_directories("${OHOS_SDK_NATIVE}/llvm/system_libcxx/lib/${OHOS_TOOLCHAIN_NAME}")\
   else()\
-    message(FATAL_ERROR "Unsupported STL configuration: ${OHOS_STL} which is only available for aarch64-linux-ohos.")\
+    message(FATAL_ERROR "Unsupported STL configuration: ${OHOS_STL} which is only available for aarch64-linux-ohos and x86_64-linux-ohos.")\
   endif()' $BUILD_PATH/patch/build/cmake/ohos.toolchain.cmake
 
 # script.sh

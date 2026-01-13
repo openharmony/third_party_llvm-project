@@ -15,7 +15,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(ndk-patch-test)
 
-set(OHOS_ARCH arm64-v8a)
 set(OHOS_PLATFORM OHOS)
 
 add_compile_options(-Wno-unused-command-line-argument)

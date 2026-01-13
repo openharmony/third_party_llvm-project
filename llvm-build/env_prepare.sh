@@ -70,6 +70,7 @@ prebuilts/cmake,cmake-${linux_platform}
 prebuilts/clang/ohos/${host_platform}-${host_cpu},linux/clang_${linux_platform}
 prebuilts/python3,python-${linux_platform}
 prebuilts/python3,python-linux-arm64
+prebuilts/python3,python-mingw-x86
 prebuilts/build-tools/${host_platform}-x86/bin,gn-${linux_platform}
 prebuilts/build-tools/${host_platform}-x86/bin,ninja-${linux_platform}
 """
@@ -116,7 +117,7 @@ for i in $(echo ${copy_config})
 do
   unzip_dir=$(echo $i|awk -F ',' '{print $1}')
   keyword=$(echo $i|awk -F ',' '{print $2}')
-  url_part=$(cat ./build/prebuilts_download_config.json | sort | uniq | grep "$keyword" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//' |head -1)
+  url_part=$(cat ./build/prebuilts_config.json | sort | uniq | grep "$keyword" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//' |head -1)
   echo $url_part
   if [ -n "$url_part" ]; then
     full_url="${download_url}${url_part}"
@@ -128,14 +129,14 @@ do
 
 done
 
-linux_filename=$(cat ./build/prebuilts_download_config.json | sort | uniq | grep "clang_linux-x86" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
-CLANG_LINUX_BUILD=$(basename "$linux_filename" .tar.bz2)
+linux_filename=$(cat ./build/prebuilts_config.json | sort | uniq | grep "clang_linux-x86" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
+CLANG_LINUX_BUILD=$(basename "$linux_filename" .tar.gz)
 
-darwin_x86_filename=$(cat ./build/prebuilts_download_config.json | sort | uniq | grep "clang_darwin-x86_64" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
-CLANG_DARWIN_X86_BUILD=$(basename "$darwin_x86_filename" .tar.bz2)
+darwin_x86_filename=$(cat ./build/prebuilts_config.json | sort | uniq | grep "clang_darwin-x86_64" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
+CLANG_DARWIN_X86_BUILD=$(basename "$darwin_x86_filename" .tar.gz)
 
-darwin_arm_filename=$(cat ./build/prebuilts_download_config.json | sort | uniq | grep "clang_darwin-arm64" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
-CLANG_DARWIN_ARM_BUILD=$(basename "$darwin_arm_filename" .tar.bz2)
+darwin_arm_filename=$(cat ./build/prebuilts_config.json | sort | uniq | grep "clang_darwin-arm64" | grep -oE '"/[^"]+"' | sed 's/^"//;s/"$//')
+CLANG_DARWIN_ARM_BUILD=$(basename "$darwin_arm_filename" .tar.gz)
 
 if [ -d "${code_dir}/prebuilts/clang/ohos/linux-x86_64/${CLANG_LINUX_BUILD}" ]; then
     SET_CLANG_VERSION='15.0.4'
