@@ -377,7 +377,7 @@ macro(construct_compiler_rt_default_triple)
           "Default triple for which compiler-rt runtimes will be built.")
   endif()
 
-  if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+  if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT OHOS)
     set(option_prefix "")
     if (CMAKE_C_SIMULATE_ID MATCHES "MSVC")
       set(option_prefix "/clang:")
