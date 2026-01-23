@@ -31,7 +31,7 @@ brew install swig  git-lfs java coreutils wget
 
 ### Get Code
 ```
-repo init -u https://gitcode.com/OpenHarmony/manifest.git -b master -m ohos/llvm-16.0.0-toolchain.xml
+repo init -u https://gitcode.com/OpenHarmony/manifest.git -b master -m ohos/llvm-toolchain.xml
 repo sync -c 
 repo forall -c 'git lfs pull'
 ```
@@ -46,8 +46,9 @@ Here is an example of starting build process on Linux or MacOS:
 #change llvm-project
 cd ./toolchain/llvm-project
 git remote update
-git checkout gitcode/llvm-16.0.0
+git checkout gitcode/kmp-llvm-19.1.7
 # build
+cd -
 bash ./toolchain/llvm-project/llvm-build/build.sh
 ```
 
@@ -55,7 +56,7 @@ bash ./toolchain/llvm-project/llvm-build/build.sh
 
 ### Functionality
 
-The LLVM toolchain is built based on LLVM 16.0.0. It is used to provide capability of building ohos image. For detailed information about LLVM 16.0.0, please refer to [LLVM 16.0.0](https://discourse.llvm.org/t/llvm-16-0-0-release/69326).
+The LLVM toolchain is built based on LLVM 19.1.7. It is used to provide capability of building ohos image. For detailed information about LLVM 19.1.7, please refer to [LLVM 19.1.7](https://discourse.llvm.org/t/llvm-19-1-7-released/84062).
 </br>
 
 ### Specifically Included Triplets
