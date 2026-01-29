@@ -87,6 +87,11 @@ public:
   // allocate.
   void iterate(void *Base, size_t Size, iterate_callback Cb, void *Arg);
 
+  // OHOS_LOCAL begin
+  size_t collectAllocationsByTimeRange(uint64_t Timespan, uintptr_t *Buffer,
+                                       size_t MaxCount, size_t Depth);
+  // OHOS_LOCAL end
+
   // Return whether the allocation should be randomly chosen for sampling.
   GWP_ASAN_ALWAYS_INLINE bool shouldSample() {
     // OHOS_LOCAL begin

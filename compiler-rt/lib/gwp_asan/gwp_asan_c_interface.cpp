@@ -124,6 +124,16 @@ void gwp_asan_iterate(void *base, size_t size, gwp_asan::GuardedPoolAllocator::i
     return guarded_poll_alloctor.iterate(base, size, cb, arg);
 }
 
+// OHOS_LOCAL begin
+size_t gwp_asan_collect_allocations_by_time_range(uint64_t timespan,
+                                                  uintptr_t *buffer,
+                                                  size_t max_count,
+                                                  size_t depth) {
+  return guarded_poll_alloctor.collectAllocationsByTimeRange(
+      timespan, buffer, max_count, depth);
+}
+// OHOS_LOCAL end
+
 #ifdef __cplusplus
 }
 #endif
