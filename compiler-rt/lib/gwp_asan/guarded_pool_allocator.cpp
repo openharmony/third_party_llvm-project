@@ -12,6 +12,7 @@
 #include "gwp_asan/options.h"
 #include "gwp_asan/utilities.h"
 // OHOS_LOCAL begin
+#include "gwp_asan/stack_trace_compressor.h"
 #include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_stacktrace_printer.h"
 #include "sanitizer_common/sanitizer_symbolizer.h"
@@ -43,6 +44,116 @@ uintptr_t getPageAddr(uintptr_t Ptr, uintptr_t PageSize) {
 
 bool isPowerOfTwo(uintptr_t X) { return (X & (X - 1)) == 0; }
 } // anonymous namespace
+
+// OHOS_LOCAL begin
+// Buffer header metadata structure
+struct BufferHeader {
+  size_t max_slots;
+  size_t sample_rate;
+};
+
+// Temporary structure to store metadata snapshot
+struct MetadataSnapshot {
+  uintptr_t addr;
+  size_t size;
+  uint64_t allocation_time;
+  uint8_t compressed_trace[AllocationMetadata::kStackFrameStorageBytes];
+  size_t trace_size;
+};
+
+#if defined (__OHOS__)
+uint64_t getEndTime() {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (uint64_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+}
+#endif
+
+size_t collectMetadataSnapshots(AllocationMetadata *Metadata,
+                                size_t MaxSimultaneousAllocations,
+                                MetadataSnapshot *Snapshots,
+                                size_t MaxCount,
+                                uint64_t StartTime,
+                                uint64_t EndTime) {
+  size_t Count = 0;
+
+  for (size_t i = 0;
+       i < MaxSimultaneousAllocations && Count < MaxCount; ++i) {
+    const AllocationMetadata &Meta = Metadata[i];
+    if (Meta.Addr && !Meta.IsDeallocated && Meta.AllocationTime >= StartTime && 
+        Meta.AllocationTime < EndTime) {
+      MetadataSnapshot &Snapshot = Snapshots[Count];
+      Snapshot.addr = Meta.Addr;
+      Snapshot.size = Meta.RequestedSize;
+      Snapshot.allocation_time = Meta.AllocationTime;
+      Snapshot.trace_size = Meta.AllocationTrace.TraceSize;
+      // Copy compressed trace
+      __sanitizer::internal_memcpy(
+          Snapshot.compressed_trace,
+          Meta.AllocationTrace.CompressedTrace,
+          Meta.AllocationTrace.TraceSize);
+      ++Count;
+    }
+  }
+
+  return Count;
+}
+
+void writeAllocationToBuffer(const MetadataSnapshot &Snapshot,
+                             char *EntryBaseBytes,
+                             size_t EntrySize,
+                             size_t Depth,
+                             uint64_t CurrentTime) {
+  // Write addr (first uintptr_t)
+  *reinterpret_cast<uintptr_t *>(EntryBaseBytes) = Snapshot.addr;
+
+  // Write size (after addr)
+  *reinterpret_cast<size_t *>(EntryBaseBytes + sizeof(uintptr_t)) =
+      Snapshot.size;
+
+  // Write lifetime (after size)
+  uint64_t Lifetime = CurrentTime - Snapshot.allocation_time;
+  *reinterpret_cast<uint64_t *>(
+      EntryBaseBytes + sizeof(uintptr_t) + sizeof(size_t)) = Lifetime;
+
+  // Calculate pointer to stack array (after addr, size, and lifetime)
+  uintptr_t *StackArray = reinterpret_cast<uintptr_t *>(
+      EntryBaseBytes + sizeof(uintptr_t) + sizeof(size_t) +
+      sizeof(uint64_t));
+
+  // Initialize all stack frames to zero
+  for (size_t j = 0; j < Depth; ++j) {
+    StackArray[j] = 0;
+  }
+
+  // Unpack the stack trace
+  if (Snapshot.trace_size > 0) {
+    uintptr_t UnpackedBuffer[AllocationMetadata::kMaxTraceLengthToCollect];
+    // Initialize buffer to zero to avoid garbage values
+    __sanitizer::internal_memset(UnpackedBuffer, 0, sizeof(UnpackedBuffer));
+
+    size_t UnpackedLength = compression::unpack(
+        Snapshot.compressed_trace, Snapshot.trace_size, UnpackedBuffer,
+        AllocationMetadata::kMaxTraceLengthToCollect);
+    
+    constexpr uintptr_t kInvalidPC1 = static_cast<uintptr_t>(-1);
+    constexpr uintptr_t kInvalidPC2 = static_cast<uintptr_t>(-2);
+
+    // Copy up to Depth stack frames to the destination buffer
+    if (UnpackedLength > 0) {
+      size_t FramesToCopy =
+          (UnpackedLength < Depth) ? UnpackedLength : Depth;
+      for (size_t j = 0; j < FramesToCopy; ++j) {
+        // Skip invalid PC addresses: 0, all -1, or -2
+        if (UnpackedBuffer[j] != 0 && UnpackedBuffer[j] != kInvalidPC1 &&
+            UnpackedBuffer[j] != kInvalidPC2) {
+          StackArray[j] = UnpackedBuffer[j];
+        }
+      }
+    }
+  }
+}
+// OHOS_LOCAL end
 
 // Gets the singleton implementation of this class. Thread-compatible until
 // init() is called, thread-safe afterwards.
@@ -546,6 +657,67 @@ void GuardedPoolAllocator::accumulatePersistInterval(size_t reservedSlotsLength)
   PersistInterval += (curTime - PreTime) * reservedSlotsLength;
   PreTime = curTime;
 };
+
+size_t GuardedPoolAllocator::collectAllocationsByTimeRange(
+    uint64_t Timespan, uintptr_t *Buffer, size_t MaxCount, size_t Depth) {
+  if (!Buffer || MaxCount == 0)
+    return 0;
+#if defined (__OHOS__)
+  uint64_t EndTime = getEndTime();
+#else
+  uint64_t EndTime = getCoarseTimeMs();
+#endif
+  // Validate and set stack depth
+  if (Depth == 0)
+    Depth = 1;
+
+  size_t HeaderSize = sizeof(BufferHeader);
+  size_t EntrySize = sizeof(uintptr_t) + sizeof(size_t) + sizeof(uint64_t) +
+                     Depth * sizeof(uintptr_t);
+
+  // Write buffer header metadata at the beginning
+  BufferHeader *Header = reinterpret_cast<BufferHeader *>(Buffer);
+
+  Header->max_slots = State.MaxSimultaneousAllocations;
+  // Calculate sample rate from AdjustedSampleRatePlusOne
+  // If AdjustedSampleRatePlusOne == 2, then SampleRate = 1
+  // Otherwise, SampleRate = (AdjustedSampleRatePlusOne - 1) / 2
+  if (AdjustedSampleRatePlusOne == 0) {
+    Header->sample_rate = 0;
+  } else if (AdjustedSampleRatePlusOne == 2) {
+    Header->sample_rate = 1;
+  } else {
+    Header->sample_rate = (AdjustedSampleRatePlusOne - 1) / 2;
+  }
+
+  uint64_t TimespanMilliseconds = Timespan * 1000;
+  uint64_t StartTime = (EndTime > TimespanMilliseconds)
+                           ? (EndTime - TimespanMilliseconds)
+                           : 0;
+
+  // Step 1: Collect metadata snapshots
+  size_t SnapshotsSize = MaxCount * sizeof(MetadataSnapshot);
+  MetadataSnapshot *Snapshots = static_cast<MetadataSnapshot *>(
+      __sanitizer::MmapOrDie(SnapshotsSize, "MetadataSnapshot"));
+  if (!Snapshots)
+    return 0;
+
+  size_t Count = collectMetadataSnapshots(
+      Metadata, State.MaxSimultaneousAllocations, Snapshots,
+      MaxCount, StartTime, EndTime);
+
+  // Step 2: Store Allocation data to the buffer
+  // Allocation data starts after the header
+  char *DataBase = reinterpret_cast<char *>(Buffer) + HeaderSize;
+  for (size_t i = 0; i < Count; ++i) {
+    char *EntryBaseBytes = DataBase + (i * EntrySize);
+    writeAllocationToBuffer(Snapshots[i], EntryBaseBytes, EntrySize, Depth,
+                            EndTime);
+  }
+
+  __sanitizer::UnmapOrDie(Snapshots, SnapshotsSize);
+  return Count;
+}
 
 #if defined (__OHOS__)
 // This function detects a specific library and returns true immediately if found,
