@@ -380,7 +380,7 @@ class BuildConfig():
             default="LLVM",
             help='which kind of flags for build_crts and build_runtimes')
 
-        llvm_projects = ('clang', 'lld', 'clang-tools-extra', 'openmp', 'lldb')
+        llvm_projects = ('clang', 'lld', 'clang-tools-extra')
         parser.add_argument(
             '--host-build-projects',
             action=choice_wrapper(llvm_projects),
