@@ -380,7 +380,7 @@ class BuildConfig():
             default="LLVM",
             help='which kind of flags for build_crts and build_runtimes')
 
-        llvm_projects = ('clang', 'lld', 'clang-tools-extra')
+        llvm_projects = ('clang', 'lld', 'clang-tools-extra', 'openmp')
         parser.add_argument(
             '--host-build-projects',
             action=choice_wrapper(llvm_projects),
@@ -664,6 +664,7 @@ class BuildUtils(object):
             defines['Python3_RPATH'] = os.path.join('$ORIGIN', '..', 'python3', 'lib')
 
         defines['COMPILER_RT_BUILD_XRAY'] = 'OFF'
+        defines['COMPILER_RT_BUILD_CTX_PROFILE']= 'OFF'
         defines['LIBUNWIND_USE_FRAME_HEADER_CACHE'] = 'ON'
         defines['OPENMP_ENABLE_LIBOMPTARGET'] = 'OFF'
         defines['LIBOMP_INSTALL_ALIASES'] = 'False'
