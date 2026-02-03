@@ -108,6 +108,12 @@ static size_t getCurrentStackAllocation() {
 
 #include <alloca.h>
 
+#ifndef alloca
+# ifdef __GNUC__
+#  define alloca __builtin_alloca
+# endif
+#endif
+
 LLVM_ATTRIBUTE_NOINLINE
 static void ensureStackAddressSpace() {
   // Linux kernels prior to 4.1 will sometimes locate the heap of a PIE binary
