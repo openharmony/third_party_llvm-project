@@ -330,7 +330,7 @@ CachingOnDiskFileSystemImpl::makeDirectory(DirectoryEntry &Parent,
   return &Cache->makeDirectory(Parent, TreePath);
 }
 
-#if defined(HAVE_UNISTD_H)
+#if defined(HAVE_UNISTD_H) && !defined(_WIN32)
 // FIXME: sink into llvm::sys::fs?
 #include <unistd.h>
 static Error readLink(const llvm::Twine &Path, SmallVectorImpl<char> &Dest) {
