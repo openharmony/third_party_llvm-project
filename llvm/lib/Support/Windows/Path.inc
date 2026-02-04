@@ -466,14 +466,13 @@ static std::error_code rename_internal(HANDLE FromHandle, const Twine &To,
                                   (ToWide.size() * sizeof(wchar_t)));
   FILE_RENAME_INFO &RenameInfo =
       *reinterpret_cast<FILE_RENAME_INFO *>(RenameInfoBuf.data());
-  RenameInfo.Flags = FILE_RENAME_FLAG_POSIX_SEMANTICS
-                   | (ReplaceIfExists ? FILE_RENAME_FLAG_REPLACE_IF_EXISTS : 0);
+  RenameInfo.ReplaceIfExists = ReplaceIfExists;
   RenameInfo.RootDirectory = 0;
   RenameInfo.FileNameLength = ToWide.size() * sizeof(wchar_t);
   std::copy(ToWide.begin(), ToWide.end(), &RenameInfo.FileName[0]);
 
   SetLastError(ERROR_SUCCESS);
-  if (!SetFileInformationByHandle(FromHandle, FileRenameInfoEx, &RenameInfo,
+  if (!SetFileInformationByHandle(FromHandle, FileRenameInfo, &RenameInfo,
                                   RenameInfoBuf.size())) {
     unsigned Error = GetLastError();
     if (Error == ERROR_SUCCESS)
