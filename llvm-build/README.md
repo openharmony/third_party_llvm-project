@@ -20,7 +20,7 @@ MacOS X >= 10.15.4
 
 ubuntu 
 ```
-sudo apt-get install build-essential swig python3-dev libedit-dev libncurses5-dev binutils-dev gcc-multilib abigail-tools elfutils pkg-config autoconf autoconf-archive
+sudo apt-get install build-essential swig python3-dev libedit-dev libncurses5-dev binutils-dev gcc-multilib abigail-tools elfutils pkg-config autoconf autoconf-archive libxml2
 ```
 mac 
 ```
@@ -31,7 +31,7 @@ brew install swig  git-lfs java coreutils wget
 
 ### Get Code
 ```
-repo init -u https://gitee.com/OpenHarmony/manifest.git -b master -m llvm-toolchain.xml
+repo init -u https://gitcode.com/OpenHarmony/manifest.git -b master -m llvm-toolchain.xml
 repo sync -c 
 repo forall -c 'git lfs pull'
 ```
@@ -42,189 +42,24 @@ repo forall -c 'git lfs pull'
 Here is an example of starting build process on Linux or MacOS:
 ```
 # update prebuilts, no need to run each time
-./toolchain/llvm-project/llvm-build/env_prepare.sh
+bash -x toolchain/llvm-project/llvm-build/env_prepare.sh
+#change llvm-project
+cd ./toolchain/llvm-project
+git remote update
+git checkout gitcode/kotlin/llvm-19-apple
 # build
-python3 ./toolchain/llvm-project/llvm-build/build.py
-```
-
-1. env_prepare (one time only)
-![输入图片说明](data/one_time_setup.png)
-
-2. build
-![输入图片说明](data/llvm_build.png)
-
-</br>
-
-### Options
-
-build.py options：
-
-```
---skip-build			# skip compile and goto package step
---skip-package			# do compile without package step
---enable-assertions		# enable assertion when compiling
---build-name 			# specify release package name
---debug					# build debug version llvm toolchain
---target-debug          # build debug version of target llvm libraries, runtimes, and lldb-server
---strip					# strip llvm toolchain binaries
---no-strip-libs         # used with -- strip to preserve the symbols of the lib library
---no-build-arm			# skip triplet arm
---no-build-aarch64  	# skip triplet arm64
---no-build-x86_64 		# skip triplet x86_64
---no-lto  				# disable LTO optimization when build toolchain
---build-instrumented	# enable instrument pgo when build toolchain
---xunit-xml-output 		# specify LLVM unit test XML report path
---build-lldb-static     # build statically lldb tool for ARM and AARCH64
---build-python          # build python (not using prebuilt one, currently effective for Windows and OHOS)
---build-ncurses         # build ncurses tool for linux, Mac x86-64 or M1
---build-libedit         # build libedit tool for linux, Mac x86-64 or M1
---build-libxml2         # build libxml2 tool for linux, windows, Mac x86_64 or M1
---lldb-timeout          # automatically exit when timeout (currently effective for lldb-server)
---no-build              # optional, skip some targets
-    windows
-    libs
-    lldb-server
-    linux 
-    check-api
---build-clean           # delete out folder after build packages
---build_libs_flags      # which kind of flags for build_crts and build_runtimes
-    OH
-    LLVM
-    BOTH
---build-only            # build only some targets, skip building windows, lldb-server and package step
-    lld
-    llvm-readelf
-    llvm-objdump
-    musl
-    compiler-rt
-    libcxx
---enable-check-abi      # Check libc++_shared.so ABI. If the ABI was changed then interrupt a build process and report an error.
-```
-</br>
-
-### Output Layout
-
-When build successfully completed. following artifacts will be available in `out` directory
-
-`sysroot` -> sysroots for OHOS targets  
-`install` -> toolchain build  
-`*.tar.bz2` -> archived versions of toolchain and sysroots  
-</br>
-
-### OHOS Archive
-
-1. llvm
-```
-contains: 
-1. toolchain which provides clang compiler, lldb(-mi), clang-tidy etc. tools
-2. libc++/clang_rt/asan/fuzzer libs for target device
-
-OHOS sync from: https://mirrors.huaweicloud.com/openharmony/compiler/clang/
-Which is the same as: out/clang-dev-${platform}-${arch}.tar.bz2
-OHOS archive to: prebuilts/clang/ohos//${platform}/llvm
-
-License: Apache License v2.0 with LLVM Exceptions
-```
-
-2. libcxx-ndk
-```
-contains: provide libc++ for ndk in target device
-
-OHOS fetch prebuilts from: https://mirrors.huaweicloud.com/openharmony/compiler/clang/ and archive it to prebuilts/clang/ohos//${platform}/libcxx-ndk. This tar is 
-
-License: Apache License v2.0 with LLVM Exceptions
-```
-
-### Build process of AArch64 toolchain
-
-First build toolchain on Linux.
-Here is an example of starting build process on Linux:
-```
-# build
-python3 ./toolchain/llvm-project/llvm-build/build-ohos-aarch64.py
+bash ./toolchain/llvm-project/llvm-build/build.sh
 ```
 
 </br>
 
-build-ohos-aarch64.py options：
+**Note**
+* The OHOS runtime library can only be built using build.py on Linux x86. If you are building on Linux x86, the libraries in package/clang-dev-linux-x86_64.tar.gz are the most complete.
+* Other platforms, whether cross-built or host-side built, can not build the OHOS runtime library.
+* The default header file library for clang++ is include/libcxx-ohos/include/c++/v1, which is added along with the OHOS runtime library.
+* If you wish to use the full functionality of OHOS, such as the runtime library and libcxx-ohos header library, on platforms other than Linux-x86, please execute llvm-build/platform_package.sh. Please explore the specific usage of this script on your own.
+* OHOS LLVM only provides the compiler, i.e., the output of the package. For SDK issues, please contact the SDK-related personnel.
 
-```
---enable-assertions             # enable assertion when compiling
---debug                         # build debug version llvm toolchain
---strip                         # strip llvm toolchain binaries
---build-python                  # build python and enable script in debugger
---build-ncurses                 # build ncurses and enable ncurses in debugger
---build-libedit                 # build libedit and enable libedit in debugger
---build-libxml2                 # build libxml2 and enable libxml in debugger
-```
-</br>
-
-When build successfully completed, artifacts will be available in `out/ohos-aarch64-install` directory, including clang, lld, runtimes, LLVM tools and libLLVM.so for aarch64.
-
-<a name="function_introduction"></a>
-## Function Introduction
-</br>
-
-### Build process of Arm debugger
-
-First build toolchain on Linux.
-Here is an example of starting build process on Linux:
-```
-# build
-python3 ./toolchain/llvm-project/llvm-build/build-ohos-arm.py
-```
-
-</br>
-
-build-ohos-arm.py options：
-
-```
---build-python                  # build python and enable script in debugger
---build-ncurses                 # build ncurses and enable ncurses in debugger
---build-libedit                 # build libedit and enable libedit in debugger
---build-libxml2                 # build libxml2 and enable libxml in debugger
-```
-</br>
-
-When build successfully completed, artifacts will be available in `out/ohos-arm-install` directory, including lldb for arm.
-
-<a name="function_introduction"></a>
-## Function Introduction
-</br>
-
-### Build process of AArch64 toolchain for Ubuntu (aarch64-linux-gnu triple)
-
-First build toolchain on Linux.
-Install additional package libstdc++-11-dev-arm64-cross.
-
-Here is an example of starting build process on Linux:
-```
-# build
-python3 ./toolchain/llvm-project/llvm-build/build-linux-aarch64.py
-```
-
-</br>
-
-build-linux-aarch64.py options：
-
-```
---enable-assertions             # enable assertion when compiling
---debug                         # build debug version llvm toolchain
---strip                         # strip llvm toolchain binaries
---build-python                  # build python and enable script in debugger
---build-ncurses                 # build ncurses and enable ncurses in debugger
---build-libedit                 # build libedit and enable libedit in debugger
---build-libxml2                 # build libxml2 and enable libxml in debugger
-```
-</br>
-
-When build successfully completed, artifacts will be available in `out/linux-aarch64-install` directory, including clang, lld, runtimes, LLVM tools and libLLVM.so for aarch64.
-
-</br>
-
-### Functionality
-
-The LLVM toolchain is built based on LLVM 15.0.4. It is used to provide capability of building ohos image. For detailed information about LLVM 15.0.4, please refer to [LLVM 15.0.4](https://discourse.llvm.org/t/llvm-15-0-4-released/66337).
 </br>
 
 ### Specifically Included Triplets
@@ -239,18 +74,3 @@ Despite all the components provided by LLVM community, we included several tripl
 | aarch64-linux-ohos     | ARM 64bits   | Linux         | Standard system |
 
 For detailed definition of Small System and Standard System, please refer to [System Types](https://gitee.com/openharmony/docs/blob/master/en/device-dev/Readme-EN.md).
-
-### Testing musl libc
-
-Toolchain build process includes musl libc build. libc.so is available in sysroot.
-Sometimes it's needed to build libc tests.
-
-Here is an example of starting build process on Linux:
-```
-# build
-python3 ./toolchain/llvm-project/llvm-build/build-libc-test.py
-```
-
-When build successfully completed, artifacts will be available in `out/llvm_build/musl` directory, including test libraries, libc tests and musl_unittest.
-Scripts to execute libc tests could be found in `third_party/musl/scripts` directory.
-For detailed information about musl, please refer to [third_party_musl](https://gitee.com/openharmony/third_party_musl).
