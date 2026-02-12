@@ -221,6 +221,7 @@ static void findPartitions(Module &M, ClusterIDMapType &ClusterIDMap,
 
 static void externalize(GlobalValue *GV) {
   if (GV->hasLocalLinkage()) {
+    GV->setName("__llvmsplit_unnamed");
     GV->setLinkage(GlobalValue::ExternalLinkage);
     GV->setVisibility(GlobalValue::HiddenVisibility);
   }
@@ -231,8 +232,7 @@ static void externalize(GlobalValue *GV) {
     GV->setName("__llvmsplit_unnamed");
 }
 
-// Returns whether GV should be in partition (0-based) I of N.
-static bool isInPartition(const GlobalValue *GV, unsigned I, unsigned N) {
+static unsigned partByMD5(const GlobalValue *GV, unsigned N) {
   if (const GlobalObject *Root = getGVPartitioningRoot(GV))
     GV = Root;
 
@@ -249,7 +249,91 @@ static bool isInPartition(const GlobalValue *GV, unsigned I, unsigned N) {
   MD5::MD5Result R;
   H.update(Name);
   H.final(R);
-  return (R[0] | (R[1] << 8)) % N == I;
+  return (R[0] | (R[1] << 8)) % N;
+}
+
+// Return whether GV should be in partition (0-based) I of N.
+static bool isInPartition(const GlobalValue *GV, unsigned I, unsigned N) {
+  return partByMD5(GV, N) == I;
+}
+#define NON_CMGV 0
+#define LOCAL_CMGV 1
+#define GLOBAL_CMGV 2
+
+static bool isCrossModuleUsed(const GlobalValue *GV,
+                              ClusterIDMapType &ClusterIDMap, unsigned N,
+                              ClusterIDMapType &VisitedGVs);
+
+static unsigned filterLocalCrossModuleGV(const GlobalValue *GV,
+                                         ClusterIDMapType &ClusterIDMap,
+                                         unsigned N,
+                                         ClusterIDMapType &VisitedGVs) {
+  if (GV->isDeclaration() || GV->getName() == "llvm.used")
+    return NON_CMGV;
+  if (VisitedGVs.count(GV))
+    return VisitedGVs[GV];
+  LLVM_DEBUG(dbgs() << "To Filter GV:" << GV->getName() << "\n");
+  VisitedGVs[GV] = NON_CMGV;
+  if (!isCrossModuleUsed(GV, ClusterIDMap, N, VisitedGVs))
+    return NON_CMGV;
+  switch (GV->getLinkage()) {
+  case GlobalValue::ExternalLinkage:
+  case GlobalValue::AvailableExternallyLinkage:
+  case GlobalValue::AppendingLinkage:
+  case GlobalValue::ExternalWeakLinkage:
+  case GlobalValue::CommonLinkage:
+    LLVM_DEBUG(dbgs() << "----> New Global Cross Module GV: " << GV->getName()
+                      << "\n");
+    VisitedGVs[GV] = GLOBAL_CMGV;
+    return GLOBAL_CMGV;
+  case GlobalValue::LinkOnceAnyLinkage:
+  case GlobalValue::LinkOnceODRLinkage:
+  case GlobalValue::WeakAnyLinkage:
+  case GlobalValue::WeakODRLinkage:
+  case GlobalValue::InternalLinkage:
+  case GlobalValue::PrivateLinkage:
+    LLVM_DEBUG(dbgs() << "----> New Local Cross Module GV: " << GV->getName()
+                      << "\n");
+    VisitedGVs[GV] = LOCAL_CMGV;
+    return LOCAL_CMGV;
+  default:
+    llvm_unreachable("Unknown linkage!");
+    break;
+  }
+  return NON_CMGV;
+}
+
+static bool isCrossModuleUsed(const GlobalValue *GV,
+                              ClusterIDMapType &ClusterIDMap, unsigned N,
+                              ClusterIDMapType &VisitedGVs) {
+  unsigned DefClusterID =
+      ClusterIDMap.count(GV) ? ClusterIDMap[GV] : partByMD5(GV, N);
+  for (auto *U : GV->users()) {
+    SmallVector<const User *, 4> Worklist;
+    Worklist.push_back(U);
+    while (!Worklist.empty()) {
+      const User *UU = Worklist.pop_back_val();
+      if (isa<Constant>(UU) && !isa<GlobalValue>(UU)) {
+        Worklist.append(UU->user_begin(), UU->user_end());
+        continue;
+      }
+      const GlobalValue *UGV;
+      if (const Instruction *I = dyn_cast<Instruction>(UU))
+        UGV = I->getParent()->getParent();
+      else if (isa<GlobalAlias>(UU) || isa<GlobalIFunc>(UU) ||
+               isa<Function>(UU) || isa<GlobalVariable>(UU))
+        UGV = cast<GlobalValue>(UU);
+      else
+        return true;
+      unsigned UseClusterID =
+          ClusterIDMap.count(UGV) ? ClusterIDMap[UGV] : partByMD5(UGV, N);
+      if (DefClusterID != UseClusterID ||
+          LOCAL_CMGV ==
+              filterLocalCrossModuleGV(UGV, ClusterIDMap, N, VisitedGVs))
+        return true;
+    }
+  }
+  return false;
 }
 
 void llvm::SplitModule(
@@ -271,6 +355,16 @@ void llvm::SplitModule(
   // always be possible.
   ClusterIDMapType ClusterIDMap;
   findPartitions(M, ClusterIDMap, N);
+
+  ClusterIDMapType VisitedGVs;
+  for (Function &F : M)
+    filterLocalCrossModuleGV(&F, ClusterIDMap, N, VisitedGVs);
+  for (GlobalVariable &GV : M.globals())
+    filterLocalCrossModuleGV(&GV, ClusterIDMap, N, VisitedGVs);
+  for (GlobalAlias &GA : M.aliases())
+    filterLocalCrossModuleGV(&GA, ClusterIDMap, N, VisitedGVs);
+  for (GlobalIFunc &GIF : M.ifuncs())
+    filterLocalCrossModuleGV(&GIF, ClusterIDMap, N, VisitedGVs);
 
   // Find functions not mapped to modules in ClusterIDMap and count functions
   // per module. Map unmapped functions using round-robin so that they skip
@@ -314,11 +408,45 @@ void llvm::SplitModule(
     ValueToValueMapTy VMap;
     std::unique_ptr<Module> MPart(
         CloneModule(M, VMap, [&](const GlobalValue *GV) {
-          if (auto It = ClusterIDMap.find(GV); It != ClusterIDMap.end())
-            return It->second == I;
+          bool result = false;
+          if (GV->getName() == "llvm.used" ||
+              (VisitedGVs.count(GV) && LOCAL_CMGV == VisitedGVs[GV]))
+            result = true;
+          else if (ClusterIDMap.count(GV))
+            result = (ClusterIDMap[GV] == I);
           else
-            return isInPartition(GV, I, N);
+            result = isInPartition(GV, I, N);
+          LLVM_DEBUG(dbgs() << GV->getName() << " Clone Definition: " << result
+                            << "\n");
+          return result;
         }));
+    PointerType *Int8PtrTy = PointerType::get(MPart->getContext(), 0);
+    SmallVector<Constant *, 8> UsedArray;
+    for (auto Item : VisitedGVs) {
+      if (Item.second != GLOBAL_CMGV || !VMap.count(Item.first))
+        continue;
+      Constant *NewGV = dyn_cast<Constant>(VMap[Item.first]);
+      Constant *Cast =
+          ConstantExpr::getPointerBitCastOrAddrSpaceCast(NewGV, Int8PtrTy);
+      UsedArray.push_back(Cast);
+    }
+    if (!UsedArray.empty()) {
+      GlobalVariable *UsedGV = MPart->getGlobalVariable("llvm.used");
+      if (UsedGV) {
+        const ConstantArray *InitList =
+            dyn_cast<ConstantArray>(UsedGV->getInitializer());
+        for (unsigned i = 0, e = InitList->getNumOperands(); i != e; i++)
+          UsedArray.push_back(InitList->getOperand(i));
+        UsedGV->removeFromParent();
+        delete UsedGV;
+      }
+      ArrayType *ATy = ArrayType::get(Int8PtrTy, UsedArray.size());
+      GlobalVariable *NV =
+          new GlobalVariable(*MPart, ATy, false, GlobalValue::AppendingLinkage,
+                             ConstantArray::get(ATy, UsedArray), "");
+      NV->setName("llvm.used");
+      NV->setSection("llvm.metadata");
+    }
     if (I != 0)
       MPart->setModuleInlineAsm("");
     ModuleCallback(std::move(MPart));
