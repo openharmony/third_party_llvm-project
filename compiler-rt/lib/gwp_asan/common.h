@@ -175,7 +175,7 @@ static_assert(sizeof(AllocatorVersionMagic) == 8, "");
 #if defined(__x86_64__)
 static_assert(sizeof(AllocatorState) == 56, "");
 static_assert(offsetof(AllocatorState, FailureAddress) == 48, "");
-static_assert(sizeof(AllocationMetadata) == 568, "");
+static_assert(sizeof(AllocationMetadata) == 576, "");
 static_assert(offsetof(AllocationMetadata, IsDeallocated) == 560, "");
 #elif defined(__aarch64__)
 static_assert(sizeof(AllocatorState) == 56, "");
