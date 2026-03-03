@@ -332,7 +332,7 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
 
   int aid = meta->thread_id;
   if (t) {
-    if (!t->TryPutInQuarantineWithDealloc(reinterpret_cast<uptr>(aligned_ptr),
+    if (!t->TryPutInQuarantineWithDealloc(reinterpret_cast<uptr>(tagged_ptr),
                                           TaggedSize(orig_size),
                                           alloc_context_id, free_context_id)) {
       allocator.Deallocate(t->allocator_cache(), aligned_ptr);

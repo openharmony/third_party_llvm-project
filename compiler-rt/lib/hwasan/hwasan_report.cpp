@@ -913,6 +913,55 @@ void ReportMemoryNearRegisters(uptr *frame, uptr sp, uptr pc) {
   PrintMemoryAroundAddress(proc_maps, -1, pc,
                            flags()->memory_around_register_size, false, true);
 }
+
+void ReportWriteAfterFree(uptr tagged_addr, u32 alloc_id, u32 free_id,
+                          u32 offset, u64 magic) {
+  ScopedReport R(flags()->halt_on_error);
+
+  uptr untagged_addr = UntagAddr(tagged_addr);
+  tag_t ptr_tag = GetTagFromPointer(tagged_addr);
+  tag_t *tag_ptr = nullptr;
+  tag_t mem_tag = 0;
+  if (MemIsApp(untagged_addr)) {
+    tag_ptr = reinterpret_cast<tag_t *>(MemToShadow(untagged_addr));
+    if (MemIsShadow(reinterpret_cast<uptr>(tag_ptr)))
+      mem_tag = *tag_ptr;
+    else
+      tag_ptr = nullptr;
+  }
+  u64 *ptr_beg = reinterpret_cast<u64 *>(untagged_addr);
+  Decorator d;
+  Printf("%s", d.Error());
+  const char *toolName = "memory_debug";
+  const char *bug_type = "use-after-free";
+  const Thread *thread = GetCurrentThread();
+  if (thread) {
+    Report("ERROR: %s: %s on address %p on thread %d\n", toolName, bug_type,
+           &ptr_beg[offset], thread->tid());
+  } else {
+    Report("ERROR: %s: %s on address %p on unknown thread\n", toolName,
+           bug_type, &ptr_beg[offset]);
+  }
+  Printf(
+      "memory was re-written after free at %p[%zu]: %p "
+      "which filled: %016llx, expect: %016llx, freed by:\n",
+      ptr_beg, offset, &ptr_beg[offset], ptr_beg[offset], magic);
+  StackDepotGet(free_id).Print();
+  Printf("allocated by:\n");
+  StackDepotGet(alloc_id).Print();
+  Printf("%s", d.Access());
+  if (tag_ptr)
+    Printf("tags: %02x/%02x (ptr/mem)\n", ptr_tag, mem_tag);
+  Printf("%s", d.Default());
+
+  PrintAddressDescription(tagged_addr, 0, nullptr);
+
+  if (tag_ptr)
+    PrintTagsAroundAddr(tag_ptr);
+
+  ReportErrorSummary(bug_type, toolName);
+}
+
 // OHOS_LOCAL end
 
 // See the frame breakdown defined in __hwasan_tag_mismatch (from
