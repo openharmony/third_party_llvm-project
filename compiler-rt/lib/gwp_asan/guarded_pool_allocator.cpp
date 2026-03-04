@@ -73,15 +73,13 @@ size_t collectMetadataSnapshots(AllocationMetadata *Metadata,
                                 size_t MaxSimultaneousAllocations,
                                 MetadataSnapshot *Snapshots,
                                 size_t MaxCount,
-                                uint64_t StartTime,
-                                uint64_t EndTime) {
+                                uint64_t StartTime) {
   size_t Count = 0;
 
   for (size_t i = 0;
        i < MaxSimultaneousAllocations && Count < MaxCount; ++i) {
     const AllocationMetadata &Meta = Metadata[i];
-    if (Meta.Addr && !Meta.IsDeallocated && Meta.AllocationTime >= StartTime && 
-        Meta.AllocationTime < EndTime) {
+    if (Meta.Addr && !Meta.IsDeallocated && Meta.AllocationTime < StartTime) {
       MetadataSnapshot &Snapshot = Snapshots[Count];
       Snapshot.addr = Meta.Addr;
       Snapshot.size = Meta.RequestedSize;
@@ -704,7 +702,7 @@ size_t GuardedPoolAllocator::collectAllocationsByTimeRange(
 
   size_t Count = collectMetadataSnapshots(
       Metadata, State.MaxSimultaneousAllocations, Snapshots,
-      MaxCount, StartTime, EndTime);
+      MaxCount, StartTime);
 
   // Step 2: Store Allocation data to the buffer
   // Allocation data starts after the header
