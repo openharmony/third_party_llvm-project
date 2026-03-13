@@ -81,14 +81,15 @@ struct StackTrace {
   static uptr GetCurrentPc();
   static inline uptr GetPreviousInstructionPc(uptr pc);
   static uptr GetNextInstructionPc(uptr pc);
-  // OHOS_LOCAL begin
+// OHOS_LOCAL begin
 #if SANITIZER_OHOS
   static bool StartsWith(const char* str, const char* prefix);
   static bool EndsWith(const char* str, const char* suffix);
-  static bool IsArktsExecutable(const char* filename);
+  static bool IsArktsExecutable(uptr pc, const uptr *arkts_ranges,
+                                uptr range_count);
   const char* GetFilename(uptr addr);
 #endif
-  // OHOS_LOCAL end
+// OHOS_LOCAL end
 };
 
 // Performance-critical, must be in the header.
@@ -123,12 +124,16 @@ struct BufferedStackTrace : public StackTrace {
   // OHOS_LOCAL begin
   uptr frame_buffer[kStackTraceMax];
   u32 buffer_maxdepth;
+  uptr bs_stack_top;
+  uptr bs_stack_bottom;
 
   BufferedStackTrace()
       : StackTrace(trace_buffer, 0),
-      top_frame_bp(0),
-      frame_buffer{0},
-      buffer_maxdepth(0) {}
+        top_frame_bp(0),
+        frame_buffer{0},
+        buffer_maxdepth(0),
+        bs_stack_top(0),
+        bs_stack_bottom(0) {}
   // OHOS_LOCAL end
 
   void Init(const uptr *pcs, uptr cnt, uptr extra_top_pc = 0);
@@ -157,11 +162,12 @@ struct BufferedStackTrace : public StackTrace {
     *static_cast<StackTrace *>(this) = StackTrace(trace_buffer, 0);
     top_frame_bp = 0;
   }
- // OHOS_LOCAL begin
+// OHOS_LOCAL begin
 #if SANITIZER_OHOS
-  void UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp);
+  void UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp,
+                     const uptr* arkts_ranges, uptr range_count);
 #endif
- // OHOS_LOCAL end
+// OHOS_LOCAL end
  private:
   // Every runtime defines its own implementation of this method
   void UnwindImpl(uptr pc, uptr bp, void *context, bool request_fast,
