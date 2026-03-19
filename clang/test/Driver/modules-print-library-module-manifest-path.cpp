@@ -18,6 +18,14 @@
 // RUN:     --target=x86_64-linux-gnu 2>&1 \
 // RUN:   | FileCheck libcxx.cpp
 
+// check that -nostdlib causes no library-provided module manifest to
+// be reported, even when libc++.modules.json is present.
+// RUN: %clang -print-library-module-manifest-path \
+// RUN:     -nostdlib \
+// RUN:     -resource-dir=%t/Inputs/usr/lib/x86_64-linux-gnu \
+// RUN:     --target=x86_64-linux-gnu 2>&1 \
+// RUN:   | FileCheck libcxx-no-module-json.cpp
+
 // for macos there is a different directory structure
 // where the library and libc++.modules.json file are in lib
 // directly but headers are in clang/ver directory which
@@ -48,6 +56,9 @@
 // RUN:     --target=x86_64-linux-gnu 2>&1 \
 // RUN:   | FileCheck libcxx-no-shared-lib.cpp
 
+// Testing with libstdc++
+// RUN: touch %t/Inputs/usr/lib/x86_64-linux-gnu/libstdc++.so
+// RUN: touch %t/Inputs/usr/lib/x86_64-linux-gnu/libstdc++.modules.json
 // RUN: %clang -print-library-module-manifest-path \
 // RUN:     -stdlib=libstdc++ \
 // RUN:     -resource-dir=%t/Inputs/usr/lib/x86_64-linux-gnu \
@@ -74,4 +85,4 @@
 
 //--- libstdcxx.cpp
 
-// CHECK: <NOT PRESENT>
+// CHECK: {{.*}}libstdc++.modules.json

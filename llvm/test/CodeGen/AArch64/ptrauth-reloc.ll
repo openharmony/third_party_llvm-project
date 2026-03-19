@@ -65,53 +65,53 @@
 
 @g.ref.ib.0 = constant { i64, ptr, i64 } { i64 5, ptr ptrauth (ptr @g, i32 1, i64 0), i64 6 }
 
-; CHECK-ELF-LABEL:     .globl g.ref.ia.42.addr
+; CHECK-ELF-LABEL:     .globl g.ref.da.42.addr
 ; CHECK-ELF-NEXT:      .p2align 3
-; CHECK-ELF-NEXT:    g.ref.ia.42.addr:
-; CHECK-ELF-NEXT:      .xword g@AUTH(ia,42,addr)
+; CHECK-ELF-NEXT:    g.ref.da.42.addr:
+; CHECK-ELF-NEXT:      .xword g@AUTH(da,42,addr)
 
-; CHECK-MACHO-LABEL:   .globl _g.ref.ia.42.addr
+; CHECK-MACHO-LABEL:   .globl _g.ref.da.42.addr
 ; CHECK-MACHO-NEXT:    .p2align 3
-; CHECK-MACHO-NEXT:  _g.ref.ia.42.addr:
-; CHECK-MACHO-NEXT:    .quad _g@AUTH(ia,42,addr)
+; CHECK-MACHO-NEXT:  _g.ref.da.42.addr:
+; CHECK-MACHO-NEXT:    .quad _g@AUTH(da,42,addr)
 
-@g.ref.ia.42.addr = constant ptr ptrauth (ptr @g, i32 2, i64 42, ptr @g.ref.ia.42.addr)
+@g.ref.da.42.addr = constant ptr ptrauth (ptr @g, i32 2, i64 42, ptr @g.ref.da.42.addr)
 
-; CHECK-ELF-LABEL:     .globl g.offset.ref.ia.0
+; CHECK-ELF-LABEL:     .globl g.offset.ref.da.0
 ; CHECK-ELF-NEXT:      .p2align 3
-; CHECK-ELF-NEXT:    g.offset.ref.ia.0:
-; CHECK-ELF-NEXT:      .xword (g+16)@AUTH(ia,0)
+; CHECK-ELF-NEXT:    g.offset.ref.da.0:
+; CHECK-ELF-NEXT:      .xword (g+16)@AUTH(da,0)
 
-; CHECK-MACHO-LABEL:   .globl _g.offset.ref.ia.0
+; CHECK-MACHO-LABEL:   .globl _g.offset.ref.da.0
 ; CHECK-MACHO-NEXT:    .p2align 3
-; CHECK-MACHO-NEXT:  _g.offset.ref.ia.0:
-; CHECK-MACHO-NEXT:    .quad (_g+16)@AUTH(ia,0)
+; CHECK-MACHO-NEXT:  _g.offset.ref.da.0:
+; CHECK-MACHO-NEXT:    .quad (_g+16)@AUTH(da,0)
 
-@g.offset.ref.ia.0 = constant ptr ptrauth (i8* getelementptr (i8, ptr @g, i64 16), i32 2)
+@g.offset.ref.da.0 = constant ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 16), i32 2)
 
-; CHECK-ELF-LABEL:     .globl g.big_offset.ref.ia.0
+; CHECK-ELF-LABEL:     .globl g.big_offset.ref.da.0
 ; CHECK-ELF-NEXT:      .p2align 3
-; CHECK-ELF-NEXT:    g.big_offset.ref.ia.0:
-; CHECK-ELF-NEXT:      .xword (g+2147549185)@AUTH(ia,0)
+; CHECK-ELF-NEXT:    g.big_offset.ref.da.0:
+; CHECK-ELF-NEXT:      .xword (g+2147549185)@AUTH(da,0)
 
-; CHECK-MACHO-LABEL:   .globl _g.big_offset.ref.ia.0
+; CHECK-MACHO-LABEL:   .globl _g.big_offset.ref.da.0
 ; CHECK-MACHO-NEXT:    .p2align 3
-; CHECK-MACHO-NEXT:  _g.big_offset.ref.ia.0:
-; CHECK-MACHO-NEXT:    .quad (_g+2147549185)@AUTH(ia,0)
+; CHECK-MACHO-NEXT:  _g.big_offset.ref.da.0:
+; CHECK-MACHO-NEXT:    .quad (_g+2147549185)@AUTH(da,0)
 
-@g.big_offset.ref.ia.0 = constant ptr ptrauth (i8* getelementptr (i8, ptr @g, i64 add (i64 2147483648, i64 65537)), i32 2)
+@g.big_offset.ref.da.0 = constant ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 add (i64 2147483648, i64 65537)), i32 2)
 
-; CHECK-ELF-LABEL:     .globl g.weird_ref.ia.0
+; CHECK-ELF-LABEL:     .globl g.weird_ref.da.0
 ; CHECK-ELF-NEXT:      .p2align 3
-; CHECK-ELF-NEXT:    g.weird_ref.ia.0:
-; CHECK-ELF-NEXT:      .xword (g+16)@AUTH(ia,0)
+; CHECK-ELF-NEXT:    g.weird_ref.da.0:
+; CHECK-ELF-NEXT:      .xword (g+16)@AUTH(da,0)
 
-; CHECK-MACHO-LABEL:   .globl _g.weird_ref.ia.0
+; CHECK-MACHO-LABEL:   .globl _g.weird_ref.da.0
 ; CHECK-MACHO-NEXT:    .p2align 3
-; CHECK-MACHO-NEXT:  _g.weird_ref.ia.0:
-; CHECK-MACHO-NEXT:    .quad (_g+16)@AUTH(ia,0)
+; CHECK-MACHO-NEXT:  _g.weird_ref.da.0:
+; CHECK-MACHO-NEXT:    .quad (_g+16)@AUTH(da,0)
 
-@g.weird_ref.ia.0 = constant i64 ptrtoint (ptr inttoptr (i64 ptrtoint (ptr ptrauth (i8* getelementptr (i8, ptr @g, i64 16), i32 2) to i64) to ptr) to i64)
+@g.weird_ref.da.0 = constant i64 ptrtoint (ptr inttoptr (i64 ptrtoint (ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 16), i32 2) to i64) to ptr) to i64)
 
 ; CHECK-ELF-LABEL:     .globl g_weak.ref.ia.42
 ; CHECK-ELF-NEXT:      .p2align 3
@@ -125,52 +125,53 @@
 
 @g_weak.ref.ia.42 = constant ptr ptrauth (ptr @g_weak, i32 0, i64 42)
 
-; CHECK-ELF-LABEL:     .globl g_strong_def.ref.ia.0
+; CHECK-ELF-LABEL:     .globl g_strong_def.ref.da.0
 ; CHECK-ELF-NEXT:      .p2align 3
-; CHECK-ELF-NEXT:    g_strong_def.ref.ia.0:
-; CHECK-ELF-NEXT:      .xword g_strong_def@AUTH(ia,0)
+; CHECK-ELF-NEXT:    g_strong_def.ref.da.0:
+; CHECK-ELF-NEXT:      .xword g_strong_def@AUTH(da,0)
 
-; CHECK-MACHO-LABEL:   .globl _g_strong_def.ref.ia.0
+; CHECK-MACHO-LABEL:   .globl _g_strong_def.ref.da.0
 ; CHECK-MACHO-NEXT:    .p2align 3
-; CHECK-MACHO-NEXT:  _g_strong_def.ref.ia.0:
-; CHECK-MACHO-NEXT:    .quad _g_strong_def@AUTH(ia,0)
+; CHECK-MACHO-NEXT:  _g_strong_def.ref.da.0:
+; CHECK-MACHO-NEXT:    .quad _g_strong_def@AUTH(da,0)
 
-@g_strong_def.ref.ia.0 = constant ptr ptrauth (ptr @g_strong_def, i32 2)
+@g_strong_def.ref.da.0 = constant ptr ptrauth (ptr @g_strong_def, i32 2)
 
 ;--- err-key.ll
 
-; RUN: not --crash llc < err-key.ll -mtriple arm64e-apple-darwin 2>&1 \
+; RUN: not llc < err-key.ll -mtriple arm64e-apple-darwin 2>&1 \
 ; RUN:   | FileCheck %s --check-prefix=CHECK-ERR-KEY
-; RUN: not --crash llc < err-key.ll -mtriple aarch64-elf -mattr=+pauth 2>&1 \
+; RUN: not llc < err-key.ll -mtriple aarch64-elf -mattr=+pauth 2>&1 \
 ; RUN:   | FileCheck %s --check-prefix=CHECK-ERR-KEY
 
-; RUN: not --crash llc < err-key.ll -mtriple arm64e-apple-darwin \
+; RUN: not llc < err-key.ll -mtriple arm64e-apple-darwin \
 ; RUN:   -global-isel -verify-machineinstrs -global-isel-abort=1  2>&1 \
 ; RUN:   | FileCheck %s --check-prefix=CHECK-ERR-KEY
-; RUN: not --crash llc < err-key.ll -mtriple aarch64-elf -mattr=+pauth \
+; RUN: not llc < err-key.ll -mtriple aarch64-elf -mattr=+pauth \
 ; RUN:   -global-isel -verify-machineinstrs -global-isel-abort=1 2>&1 \
 ; RUN:   | FileCheck %s --check-prefix=CHECK-ERR-KEY
 
-; CHECK-ERR-KEY: LLVM ERROR: AArch64 PAC Key ID '4' out of range [0, 3]
+; CHECK-ERR-KEY: error: AArch64 PAC Key ID '4' out of range [0, 3]
+
 
 @g = external global i32
 @g.ref.4.0 = constant ptr ptrauth (ptr @g, i32 4, i64 0)
 
 ;--- err-disc.ll
 
-; RUN: not --crash llc < err-disc.ll -mtriple arm64e-apple-darwin 2>&1 \
+; RUN: not llc < err-disc.ll -mtriple arm64e-apple-darwin 2>&1 \
 ; RUN:   | FileCheck %s --check-prefix=CHECK-ERR-DISC
-; RUN: not --crash llc < err-disc.ll -mtriple aarch64-elf -mattr=+pauth 2>&1 \
+; RUN: not llc < err-disc.ll -mtriple aarch64-elf -mattr=+pauth 2>&1 \
 ; RUN:   | FileCheck %s --check-prefix=CHECK-ERR-DISC
 
-; RUN: not --crash llc < err-disc.ll -mtriple arm64e-apple-darwin \
+; RUN: not llc < err-disc.ll -mtriple arm64e-apple-darwin \
 ; RUN:   -global-isel -verify-machineinstrs -global-isel-abort=1  2>&1 \
 ; RUN:   | FileCheck %s --check-prefix=CHECK-ERR-DISC
-; RUN: not --crash llc < err-disc.ll -mtriple aarch64-elf -mattr=+pauth \
+; RUN: not llc < err-disc.ll -mtriple aarch64-elf -mattr=+pauth \
 ; RUN:   -global-isel -verify-machineinstrs -global-isel-abort=1 2>&1 \
 ; RUN:   | FileCheck %s --check-prefix=CHECK-ERR-DISC
 
-; CHECK-ERR-DISC: LLVM ERROR: AArch64 PAC Discriminator '65536' out of range [0, 0xFFFF]
+; CHECK-ERR-DISC: error: AArch64 PAC Discriminator '65536' out of range [0, 0xFFFF]
 
 @g = external global i32
 @g.ref.ia.65536 = constant ptr ptrauth (ptr @g, i32 0, i64 65536)

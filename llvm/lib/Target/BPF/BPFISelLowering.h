@@ -20,17 +20,6 @@
 
 namespace llvm {
 class BPFSubtarget;
-namespace BPFISD {
-enum NodeType : unsigned {
-  FIRST_NUMBER = ISD::BUILTIN_OP_END,
-  RET_GLUE,
-  CALL,
-  SELECT_CC,
-  BR_CC,
-  Wrapper,
-  MEMCPY
-};
-}
 
 class BPFTargetLowering : public TargetLowering {
 public:
@@ -38,9 +27,6 @@ public:
 
   // Provide custom lowering hooks for some operations.
   SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
-
-  // This method returns the name of a target specific DAG node.
-  const char *getTargetNodeName(unsigned Opcode) const override;
 
   // This method decides whether folding a constant offset
   // with the given GlobalAddress is legal.
@@ -66,6 +52,8 @@ public:
 
   MVT getScalarShiftAmountTy(const DataLayout &, EVT) const override;
 
+  unsigned getJumpTableEncoding() const override;
+
 private:
   // Control Instruction Selection Features
   bool HasAlu32;
@@ -77,9 +65,12 @@ private:
   SDValue LowerDYNAMIC_STACKALLOC(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerBR_CC(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerSELECT_CC(SDValue Op, SelectionDAG &DAG) const;
-
+  SDValue LowerATOMIC_LOAD_STORE(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerConstantPool(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerTRAP(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerBlockAddress(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerJumpTable(SDValue Op, SelectionDAG &DAG) const;
 
   template <class NodeTy>
   SDValue getAddr(NodeTy *N, SelectionDAG &DAG, unsigned Flags = 0) const;
@@ -113,12 +104,14 @@ private:
   void ReplaceNodeResults(SDNode *N, SmallVectorImpl<SDValue> &Results,
                           SelectionDAG &DAG) const override;
 
-  EVT getOptimalMemOpType(const MemOp &Op,
+  EVT getOptimalMemOpType(LLVMContext &Context, const MemOp &Op,
                           const AttributeList &FuncAttributes) const override {
     return Op.size() >= 8 ? MVT::i64 : MVT::i32;
   }
 
-  bool isIntDivCheap(EVT VT, AttributeList Attr) const override { return true; }
+  bool isIntDivCheap(EVT VT, AttributeList Attr) const override {
+    return false;
+  }
 
   bool shouldConvertConstantLoadToIntImm(const APInt &Imm,
                                          Type *Ty) const override {
@@ -133,8 +126,9 @@ private:
   //   ctx = ctx + reloc_offset
   //   ... (*(u8 *)(ctx + 1)) & 0x80 ...
   // which will be rejected by the verifier.
-  bool shouldReduceLoadWidth(SDNode *Load, ISD::LoadExtType ExtTy,
-                             EVT NewVT) const override {
+  bool
+  shouldReduceLoadWidth(SDNode *Load, ISD::LoadExtType ExtTy, EVT NewVT,
+                        std::optional<unsigned> ByteOffset) const override {
     return false;
   }
 
@@ -159,7 +153,9 @@ private:
   MachineBasicBlock * EmitInstrWithCustomInserterMemcpy(MachineInstr &MI,
                                                         MachineBasicBlock *BB)
                                                         const;
-
+  MachineBasicBlock *
+  EmitInstrWithCustomInserterLDimm64(MachineInstr &MI,
+                                     MachineBasicBlock *BB) const;
 };
 }
 

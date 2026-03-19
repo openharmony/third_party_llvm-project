@@ -1,7 +1,5 @@
-
 libcxx/src/**/*.cpp     merge=libcxx-reformat
 libcxx/include/**/*.h   merge=libcxx-reformat
-
 # Explicitly handle files with no extension
 libcxx/include/__availability               merge=libcxx-reformat
 libcxx/include/__bit_reference              merge=libcxx-reformat

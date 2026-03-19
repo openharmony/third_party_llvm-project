@@ -58,7 +58,7 @@ PhysicalRegisterInfo::PhysicalRegisterInfo(const TargetRegisterInfo &tri,
       UnitInfos[U].Reg = F;
     } else {
       for (MCRegUnitMaskIterator I(F, &TRI); I.isValid(); ++I) {
-        std::pair<uint32_t, LaneBitmask> P = *I;
+        std::pair<MCRegUnit, LaneBitmask> P = *I;
         UnitInfo &UI = UnitInfos[P.first];
         UI.Reg = F;
         UI.Mask = P.second;
@@ -263,7 +263,7 @@ void PhysicalRegisterInfo::print(raw_ostream &OS, RegisterRef A) const {
   } else {
     assert(A.isMask());
     // RegMask SS flag is preserved by idx().
-    unsigned Idx = Register::stackSlot2Index(A.idx());
+    unsigned Idx = Register(A.idx()).stackSlotIndex();
     const char *Fmt = Idx < 0x10000 ? "%04x" : "%08x";
     OS << "M#" << format(Fmt, Idx);
   }
@@ -281,9 +281,9 @@ bool RegisterAggr::hasAliasOf(RegisterRef RR) const {
     return Units.anyCommon(PRI.getMaskUnits(RR.Reg));
 
   for (MCRegUnitMaskIterator U(RR.Reg, &PRI.getTRI()); U.isValid(); ++U) {
-    std::pair<uint32_t, LaneBitmask> P = *U;
-    if ((P.second & RR.Mask).any())
-      if (Units.test(P.first))
+    auto [Unit, LaneMask] = *U;
+    if ((LaneMask & RR.Mask).any())
+      if (Units.test(Unit))
         return true;
   }
   return false;
@@ -296,9 +296,9 @@ bool RegisterAggr::hasCoverOf(RegisterRef RR) const {
   }
 
   for (MCRegUnitMaskIterator U(RR.Reg, &PRI.getTRI()); U.isValid(); ++U) {
-    std::pair<uint32_t, LaneBitmask> P = *U;
-    if ((P.second & RR.Mask).any())
-      if (!Units.test(P.first))
+    auto [Unit, LaneMask] = *U;
+    if ((LaneMask & RR.Mask).any())
+      if (!Units.test(Unit))
         return false;
   }
   return true;
@@ -311,9 +311,9 @@ RegisterAggr &RegisterAggr::insert(RegisterRef RR) {
   }
 
   for (MCRegUnitMaskIterator U(RR.Reg, &PRI.getTRI()); U.isValid(); ++U) {
-    std::pair<uint32_t, LaneBitmask> P = *U;
-    if ((P.second & RR.Mask).any())
-      Units.set(P.first);
+    auto [Unit, LaneMask] = *U;
+    if ((LaneMask & RR.Mask).any())
+      Units.set(Unit);
   }
   return *this;
 }
@@ -384,9 +384,9 @@ RegisterRef RegisterAggr::makeRegRef() const {
 
   LaneBitmask M;
   for (MCRegUnitMaskIterator I(F, &PRI.getTRI()); I.isValid(); ++I) {
-    std::pair<uint32_t, LaneBitmask> P = *I;
-    if (Units.test(P.first))
-      M |= P.second;
+    auto [Unit, LaneMask] = *I;
+    if (Units.test(Unit))
+      M |= LaneMask;
   }
   return RegisterRef(F, M);
 }

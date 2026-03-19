@@ -1824,7 +1824,7 @@ class LlvmLibs(BuildUtils):
 
 
     def create_link(self, llvm_install):
-        dst_dir = os.path.join(llvm_install, 'lib', 'clang', '19', 'lib')
+        dst_dir = os.path.join(llvm_install, 'lib', 'clang', '22', 'lib')
         
         src_aarch64_dir = os.path.join(dst_dir, "aarch64-unknown-linux-ohos")
         dst_aarch64_dir = os.path.join(dst_dir, "aarch64-linux-ohos")
@@ -1868,31 +1868,31 @@ class LlvmLibs(BuildUtils):
 
 
     def create_link2(self, llvm_install):
-        src_dir = os.path.join(llvm_install, 'lib', 'clang', '19.1.7', 'lib')
-        dst_dir = os.path.join(llvm_install, 'lib', 'clang', '19', 'lib')
+        src_dir = os.path.join(llvm_install, 'lib', 'clang', '22.0.0', 'lib')
+        dst_dir = os.path.join(llvm_install, 'lib', 'clang', '22', 'lib')
         
         src_aarch64_dir = os.path.join(src_dir, "aarch64-unknown-linux-ohos")
         src_x86_dir = os.path.join(src_dir, "x86_64-unknown-linux-ohos")
         
-        dst_aarch64_19_1_7_dir = os.path.join(src_dir, "aarch64-linux-ohos")
-        dst_x86_19_1_7_dir = os.path.join(src_dir, "x86_64-linux-ohos")
+        dst_aarch64_22_0_0_dir = os.path.join(src_dir, "aarch64-linux-ohos")
+        dst_x86_22_0_0_dir = os.path.join(src_dir, "x86_64-linux-ohos")
         
-        dst_aarch64_19_dir = os.path.join(dst_dir, "aarch64-linux-ohos")
-        dst_x86_19_dir = os.path.join(dst_dir, "x86_64-linux-ohos")
+        dst_aarch64_22_dir = os.path.join(dst_dir, "aarch64-linux-ohos")
+        dst_x86_22_dir = os.path.join(dst_dir, "x86_64-linux-ohos")
         
-        prefix_path = os.path.join("..", "..", "19.1.7", "lib")
+        prefix_path = os.path.join("..", "..", "22.0.0", "lib")
     
-        if os.path.exists(src_aarch64_dir) and not os.path.exists(dst_aarch64_19_1_7_dir):
-            os.symlink(os.path.basename(src_aarch64_dir), dst_aarch64_19_1_7_dir)
+        if os.path.exists(src_aarch64_dir) and not os.path.exists(dst_aarch64_22_0_0_dir):
+            os.symlink(os.path.basename(src_aarch64_dir), dst_aarch64_22_0_0_dir)
             
-        if os.path.exists(src_aarch64_dir) and not os.path.exists(dst_aarch64_19_dir):
-            os.symlink(os.path.join(prefix_path, os.path.basename(src_aarch64_dir)), dst_aarch64_19_dir)
+        if os.path.exists(src_aarch64_dir) and not os.path.exists(dst_aarch64_22_dir):
+            os.symlink(os.path.join(prefix_path, os.path.basename(src_aarch64_dir)), dst_aarch64_22_dir)
             
-        if os.path.exists(src_x86_dir) and not os.path.exists(dst_x86_19_1_7_dir):
-            os.symlink(os.path.basename(src_x86_dir), dst_x86_19_1_7_dir)
+        if os.path.exists(src_x86_dir) and not os.path.exists(dst_x86_22_0_0_dir):
+            os.symlink(os.path.basename(src_x86_dir), dst_x86_22_0_0_dir)
             
-        if os.path.exists(src_x86_dir) and not os.path.exists(dst_x86_19_dir):    
-            os.symlink(os.path.join(prefix_path, os.path.basename(src_x86_dir)), dst_x86_19_dir)
+        if os.path.exists(src_x86_dir) and not os.path.exists(dst_x86_22_dir):    
+            os.symlink(os.path.join(prefix_path, os.path.basename(src_x86_dir)), dst_x86_22_dir)
 
         lib_aarch64_src_dir = os.path.join(llvm_install, 'lib', 'aarch64-unknown-linux-ohos')
         lib_aarch64_dst_dir = os.path.join(llvm_install, 'lib', 'aarch64-linux-ohos')
@@ -1919,7 +1919,7 @@ class LlvmLibs(BuildUtils):
 
         suffix = '-' + multilib_suffix if multilib_suffix else ''
         crt_path = self.merge_out_path('lib', 'clangrt-%s%s' % (llvm_triple, suffix))
-        crt_install = os.path.join(llvm_install, 'lib', 'clang', '19')
+        crt_install = os.path.join(llvm_install, 'lib', 'clang', '22')
 
         crt_extra_flags = []
         if not self.build_config.target_debug:
@@ -2105,7 +2105,7 @@ class LlvmLibs(BuildUtils):
         self.logger().info('Building lldb for %s', arch)
 
         lldb_path = self.merge_out_path('lib', 'lldb-server-%s' % llvm_triple)
-        crt_install = os.path.join(llvm_install, 'lib', 'clang', '19')
+        crt_install = os.path.join(llvm_install, 'lib', 'clang', '22')
         out_dir = os.path.join(lldb_path, 'bin')
 
         lldb_ldflags = list(ldflags)

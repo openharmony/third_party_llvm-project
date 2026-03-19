@@ -27,7 +27,6 @@ public:
   static bool isRequired() { return true; }
 };
 
-int getPaccLimit();
 } // end namespace llvm
 
 #endif // LLVM_TRANSFORMS_UTILS_ADDDISCRIMINATORS_H
