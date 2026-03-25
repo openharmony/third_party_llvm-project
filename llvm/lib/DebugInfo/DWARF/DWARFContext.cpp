@@ -242,6 +242,41 @@ static void dumpAddrSection(raw_ostream &OS, DWARFDataExtractor &AddrData,
   }
 }
 
+// Dump the .mem_tracer section
+static void dumpMemTracerSection(raw_ostream &OS, DWARFDataExtractor &MemData,
+                                 StringRef DebugStr, DIDumpOptions DumpOpts) {
+  uint64_t Offset = 0;
+  uint64_t Index = 0;
+  uint8_t PtrSize = MemData.getAddressSize();
+  uint32_t EntrySize = PtrSize + 4 + 4;
+
+  auto GetStringByOff = [&](uint32_t StrOff) -> StringRef {
+    if (StrOff >= DebugStr.size())
+      return "<invalid offset>";
+    return StringRef(DebugStr.data() + StrOff);
+  };
+
+  while (MemData.isValidOffsetForDataOfSize(Offset, EntrySize)) {
+    uint64_t PcAddr = MemData.getAddress(&Offset);
+    uint32_t StrOff = MemData.getU32(&Offset);
+    uint32_t TypeOff = MemData.getU32(&Offset);
+
+    StringRef VarName = GetStringByOff(StrOff);
+    StringRef TypeName = GetStringByOff(TypeOff);
+    OS << format("  [%4" PRIu64 "] addr=0x%016" PRIx64
+                 " strOff=0x%08x typeOff=0x%08x ",
+                 Index, PcAddr, StrOff, TypeOff);
+
+    OS << "var=\"";
+    OS.write_escaped(VarName);
+    OS << "\" type=\"";
+    OS.write_escaped(TypeName);
+    OS << "\"\n";
+
+    ++Index;
+  }
+}
+
 // Dump the .debug_rnglists or .debug_rnglists.dwo section (DWARF v5).
 static void dumpRnglistsSection(
     raw_ostream &OS, DWARFDataExtractor &rnglistData,
@@ -610,6 +645,13 @@ void DWARFContext::dump(
       }
       rangeList.dump(OS);
     }
+  }
+
+  if (shouldDump(Explicit, ".mem_tracer", DIDT_ID_MemTracer,
+                 DObj->getMemTracerSection().Data)) {
+    DWARFDataExtractor MemTracer(*DObj, DObj->getMemTracerSection(),
+                                 isLittleEndian(), DObj->getAddressSize());
+    dumpMemTracerSection(OS, MemTracer, DObj->getStrSection(), DumpOpts);
   }
 
   auto LookupPooledAddress = [&](uint32_t Index) -> Optional<SectionedAddress> {
@@ -1563,6 +1605,7 @@ class DWARFObjInMemory final : public DWARFObject {
   DWARFSectionMap RangesDWOSection;
   DWARFSectionMap RnglistsDWOSection;
   DWARFSectionMap AddrSection;
+  DWARFSectionMap MemTracerSection;
   DWARFSectionMap AppleNamesSection;
   DWARFSectionMap AppleTypesSection;
   DWARFSectionMap AppleNamespacesSection;
@@ -1591,6 +1634,7 @@ class DWARFObjInMemory final : public DWARFObject {
         .Case("debug_rnglists.dwo", &RnglistsDWOSection)
         .Case("debug_str_offsets.dwo", &StrOffsetsDWOSection)
         .Case("debug_addr", &AddrSection)
+        .Case("mem_tracer", &MemTracerSection)
         .Case("apple_names", &AppleNamesSection)
         .Case("debug_pubnames", &PubnamesSection)
         .Case("debug_pubtypes", &PubtypesSection)
@@ -1978,6 +2022,9 @@ public:
   }
   const DWARFSection &getNamesSection() const override {
     return NamesSection;
+  }
+  const DWARFSection &getMemTracerSection() const override {
+    return MemTracerSection;
   }
 
   StringRef getFileName() const override { return FileName; }

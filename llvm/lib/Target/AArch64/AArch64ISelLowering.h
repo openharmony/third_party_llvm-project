@@ -599,6 +599,12 @@ public:
   bool isZExtFree(EVT VT1, EVT VT2) const override;
   bool isZExtFree(SDValue Val, EVT VT2) const override;
 
+  /// Returns true if the opcode is an AArch64-specific call or tail-call
+  /// that should be tracked by MemTracer for reference tracking.
+  bool isMemTracerCallOpcode(unsigned Opcode) const override {
+    return Opcode == AArch64ISD::CALL || Opcode == AArch64ISD::TC_RETURN;
+  }
+
   bool shouldSinkOperands(Instruction *I,
                           SmallVectorImpl<Use *> &Ops) const override;
 

@@ -83,6 +83,7 @@ public:
   virtual StringRef getTUIndexSection() const { return ""; }
   virtual Optional<RelocAddrEntry> find(const DWARFSection &Sec,
                                         uint64_t Pos) const = 0;
+  virtual const DWARFSection &getMemTracerSection() const { return Dummy; }
 };
 
 } // namespace llvm
