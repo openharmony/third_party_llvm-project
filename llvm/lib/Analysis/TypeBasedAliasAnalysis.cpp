@@ -530,6 +530,8 @@ AAMDNodes AAMDNodes::merge(const AAMDNodes &Other) const {
   Result.TBAAStruct = nullptr;
   Result.Scope = MDNode::getMostGenericAliasScope(Scope, Other.Scope);
   Result.NoAlias = MDNode::intersect(NoAlias, Other.NoAlias);
+  // Preserve memtracer metadata for memory tracking.
+  Result.MemTracer = MemTracer ? MemTracer : Other.MemTracer;
   return Result;
 }
 
@@ -538,6 +540,8 @@ AAMDNodes AAMDNodes::concat(const AAMDNodes &Other) const {
   Result.TBAA = Result.TBAAStruct = nullptr;
   Result.Scope = MDNode::getMostGenericAliasScope(Scope, Other.Scope);
   Result.NoAlias = MDNode::intersect(NoAlias, Other.NoAlias);
+  // Preserve memtracer metadata for memory tracking.
+  Result.MemTracer = MemTracer ? MemTracer : Other.MemTracer;
   return Result;
 }
 

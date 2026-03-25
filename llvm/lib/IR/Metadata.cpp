@@ -1464,6 +1464,9 @@ AAMDNodes Instruction::getAAMetadata() const {
   Result.TBAAStruct = getMetadata(LLVMContext::MD_tbaa_struct);
   Result.Scope = getMetadata(LLVMContext::MD_alias_scope);
   Result.NoAlias = getMetadata(LLVMContext::MD_noalias);
+  // Get memtracer metadata.
+  if (getModule() && getModule()->getModuleFlag("ReferenceTracking"))
+    Result.MemTracer = getMetadata(LLVMContext::MD_memtracer);
   return Result;
 }
 
@@ -1472,6 +1475,9 @@ void Instruction::setAAMetadata(const AAMDNodes &N) {
   setMetadata(LLVMContext::MD_tbaa_struct, N.TBAAStruct);
   setMetadata(LLVMContext::MD_alias_scope, N.Scope);
   setMetadata(LLVMContext::MD_noalias, N.NoAlias);
+  // Set memtracer metadata.
+  if (getModule() && getModule()->getModuleFlag("ReferenceTracking"))
+    setMetadata(LLVMContext::MD_memtracer, N.MemTracer);
 }
 
 MDNode *Instruction::getMetadataImpl(unsigned KindID) const {

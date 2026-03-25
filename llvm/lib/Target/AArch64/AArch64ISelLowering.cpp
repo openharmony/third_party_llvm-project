@@ -16920,9 +16920,17 @@ static SDValue splitStoreSplat(SelectionDAG &DAG, StoreSDNode &St,
   uint64_t BaseOffset = 0;
 
   const MachinePointerInfo &PtrInfo = St.getPointerInfo();
+  AAMDNodes AAInfo = AAMDNodes();
+  // Propagate memtracer metadata
+  if (DAG.getMachineFunction().getFunction().hasFnAttribute(
+          "reference-tracking")) {
+    if (MDNode *MemTracer = St.getAAInfo().MemTracer) {
+      AAInfo.setMemTracer(MemTracer);
+    }
+  }
   SDValue NewST1 =
-      DAG.getStore(St.getChain(), DL, SplatVal, BasePtr, PtrInfo,
-                   OrigAlignment, St.getMemOperand()->getFlags());
+      DAG.getStore(St.getChain(), DL, SplatVal, BasePtr, PtrInfo, OrigAlignment,
+                   St.getMemOperand()->getFlags(), AAInfo);
 
   // As this in ISel, we will not merge this add which may degrade results.
   if (BasePtr->getOpcode() == ISD::ADD &&
@@ -16939,7 +16947,7 @@ static SDValue splitStoreSplat(SelectionDAG &DAG, StoreSDNode &St,
                     DAG.getConstant(BaseOffset + Offset, DL, MVT::i64));
     NewST1 = DAG.getStore(NewST1.getValue(0), DL, SplatVal, OffsetPtr,
                           PtrInfo.getWithOffset(Offset), Alignment,
-                          St.getMemOperand()->getFlags());
+                          St.getMemOperand()->getFlags(), AAInfo);
     Offset += EltOffset;
   }
   return NewST1;
@@ -17278,6 +17286,14 @@ static SDValue splitStores(SDNode *N, TargetLowering::DAGCombinerInfo &DCI,
     return ReplacedSplat;
 
   SDLoc DL(S);
+  AAMDNodes AAInfo = AAMDNodes();
+  // Propagate memtracer metadata.
+  if (DAG.getMachineFunction().getFunction().hasFnAttribute(
+          "reference-tracking")) {
+    if (MDNode *MemTracer = S->getAAInfo().MemTracer) {
+      AAInfo.setMemTracer(MemTracer);
+    }
+  }
 
   // Split VT into two.
   EVT HalfVT = VT.getHalfNumVectorElementsVT(*DAG.getContext());
@@ -17289,12 +17305,12 @@ static SDValue splitStores(SDNode *N, TargetLowering::DAGCombinerInfo &DCI,
   SDValue BasePtr = S->getBasePtr();
   SDValue NewST1 =
       DAG.getStore(S->getChain(), DL, SubVector0, BasePtr, S->getPointerInfo(),
-                   S->getAlign(), S->getMemOperand()->getFlags());
+                   S->getAlign(), S->getMemOperand()->getFlags(), AAInfo);
   SDValue OffsetPtr = DAG.getNode(ISD::ADD, DL, MVT::i64, BasePtr,
                                   DAG.getConstant(8, DL, MVT::i64));
   return DAG.getStore(NewST1.getValue(0), DL, SubVector1, OffsetPtr,
                       S->getPointerInfo(), S->getAlign(),
-                      S->getMemOperand()->getFlags());
+                      S->getMemOperand()->getFlags(), AAInfo);
 }
 
 static SDValue performSpliceCombine(SDNode *N, SelectionDAG &DAG) {

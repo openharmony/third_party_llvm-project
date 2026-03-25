@@ -644,6 +644,8 @@ private:
                        MCSymbol *&BeginLabel);
   SDValue lowerEndEH(SDValue Chain, const InvokeInst *II,
                      const BasicBlock *EHPadBB, MCSymbol *BeginLabel);
+  /// Propagate memtracer metadata.
+  void annotateMemTracer(const Instruction &I, SDValue Root);
 };
 
 /// This struct represents the registers (physical or virtual)
