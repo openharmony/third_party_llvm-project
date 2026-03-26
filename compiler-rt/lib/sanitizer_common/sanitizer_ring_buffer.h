@@ -173,6 +173,158 @@ class CompactRingBuffer {
 
   uptr long_;
 };
+
+template <class T>
+class RingBufferLink {
+public:
+  COMPILER_CHECK(sizeof(T) % sizeof(void *) == 0);
+#define DEFAULT_N_SIZE 1023
+#define DEFAULT_MAX_NUM 1
+#define _INT_MAX ((unsigned int)(-1) >> 1)
+  static uptr manual_log2(uptr x) {
+    int res = 1;
+    while (x >>= 1) res++;
+    return res;
+  }
+  struct MapNode {
+    void *addr;
+    size_t size;
+  };
+  static RingBufferLink *New(uptr _n_size = DEFAULT_N_SIZE,
+                             uptr _max_num = DEFAULT_MAX_NUM) {
+    // must be a positive integer.
+    RAW_CHECK(0 < _n_size && _n_size <= _INT_MAX &&
+              "Sanitizer RingBufferLink: Invelid size of input cache blocks.");
+    RAW_CHECK(
+        0 < _n_size && _n_size <= _INT_MAX &&
+        "Sanitizer RingBufferLink: Invelid number of input cache blocks.");
+
+    void *Ptr = MmapOrDie(sizeof(RingBufferLink) + sizeof(T *) * (_max_num - 1),
+                          "RingBufferLink");
+    RingBufferLink *RBL = reinterpret_cast<RingBufferLink *>(Ptr);
+    RBL->full_ = false;
+    RBL->n_size = _n_size;
+    RBL->max_num = _max_num;
+    RBL->top_ = 0;
+    void *MapPtr =
+        MmapOrDie(sizeof(MapNode) * manual_log2(_max_num), "RingBufferLinkMap");
+    MapNode *Map = reinterpret_cast<MapNode *>(MapPtr);
+    RBL->mem_map = Map;
+    // Add a cache block at initialization.
+    void *NodePtr = MmapOrDie(sizeof(T) * _n_size, "RingBufferLinkList");
+    T *RBNode = reinterpret_cast<T *>(NodePtr);
+    RBL->list[0] = RBNode;
+    RBL->node_num = 1;
+    return RBL;
+  }
+  void Delete() {
+    int num = manual_log2(max_num);
+    for (int i = 0; i < num; i++) {
+      UnmapOrDie(mem_map[i].addr, mem_map[i].size);
+    }
+    UnmapOrDie(mem_map, sizeof(MapNode) * num);
+    UnmapOrDie(this, HeadSizeInBytes());
+  }
+
+  uptr size() const { return n_size * node_num; }
+  uptr realsize() const {
+    if (full_)
+      return size();
+    return top_;
+  }
+
+  uptr HeadSizeInBytes() {
+    return sizeof(RingBufferLink) + sizeof(T *) * (max_num - 1);
+  }
+
+  uptr SizeInBytes() {
+    return HeadSizeInBytes() + sizeof(T) * n_size * node_num +
+           sizeof(MapNode) * manual_log2(max_num);
+  }
+
+  static uptr SizeInBytes(uptr _n_size, uptr _max_num) {
+    return sizeof(RingBufferLink) + sizeof(T *) * (_max_num - 1) +
+           sizeof(T) * _n_size * _max_num +
+           sizeof(MapNode) * manual_log2(_max_num);
+  }
+
+  uptr getNodeId(uptr num) const { return (num / n_size) % max_num; }
+  uptr getNodeOffset(uptr num) const { return num % n_size; }
+
+  void push(T t) {
+    uptr n_id = getNodeId(top_);
+    uptr n_offset = getNodeOffset(top_);
+    // Expand cache
+    if (!full_ && n_id >= node_num && n_id < max_num) {
+      size_t expandNum = (node_num * 2 > max_num) ? max_num : node_num * 2;
+      uptr x = node_num;
+      size_t mem_size = sizeof(T) * n_size * (expandNum - node_num);
+      void *NodePtr = MmapOrDie(mem_size, "RingBufferLinkNode");
+      mem_map[manual_log2(n_id)] = {NodePtr, mem_size};
+      T *RBNode = reinterpret_cast<T *>(NodePtr);
+      for (; node_num < expandNum; node_num++) {
+        list[node_num] = RBNode;
+        RBNode += n_size;
+      }
+      CHECK_LE(((char *)RBNode - (char *)NodePtr),
+               sizeof(T) * n_size * (expandNum - x));
+    }
+    list[n_id][n_offset] = t;
+    top_++;
+    if (top_ >= n_size * max_num) {
+      full_ = true;
+      top_ = top_ % (n_size * max_num);
+    }
+  }
+
+  T operator[](uptr Idx) const {
+    uptr n_id, n_offset, realId;
+    if (full_) {
+      realId = Idx + top_;
+    } else {
+      realId = Idx;
+    }
+    n_id = getNodeId(realId);
+    n_offset = getNodeOffset(realId);
+    return list[n_id][n_offset];
+  }
+
+  T *getIdAddr(uptr Idx) const {
+    uptr n_id, n_offset, realId;
+    if (full_) {
+      realId = Idx + top_;
+    } else {
+      realId = Idx;
+    }
+    n_id = getNodeId(realId);
+    n_offset = getNodeOffset(realId);
+    return &(list[n_id][n_offset]);
+  }
+  T *top() const { return getIdAddr(top_ -1); }
+private:
+  RingBufferLink(){};
+  ~RingBufferLink(){};
+  RingBufferLink(const RingBufferLink &) = delete;
+
+  // Data layout:
+  // FSMTNMLLLLL
+  // F: indicates whether the ringbuffer is full.
+  // S: The amount of data containd in a cache block.
+  // M: Maximum number of cache blocks.
+  // T: ID of the top stack.
+  // N: The amount of cache blocks
+  // M: The map of adderss from mmap.
+  // L: Linked list of cache blocks.
+
+  bool full_;
+  uptr n_size;
+  uptr max_num;
+  uptr top_;
+  uptr node_num;
+  MapNode *mem_map;
+  T *list[1];
+};
+
 #endif
 }  // namespace __sanitizer
 

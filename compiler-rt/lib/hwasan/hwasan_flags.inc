@@ -60,6 +60,12 @@ HWASAN_FLAG(
     "The number of heap (de)allocations remembered for the main thread. "
     "Affects the quality of heap-related reports, but not the ability "
     "to find bugs.")
+
+HWASAN_FLAG(int, heap_history_block_max_num, 1,
+            "Maximum number of heap history cache blocks.")
+HWASAN_FLAG(int, heap_history_block_max_num_main_thread, 1,
+            "Maximum number of heap history cache blocks for the main thread.")
+
 // OHOS_LOCAL end
 HWASAN_FLAG(bool, export_memory_stats, true,
             "Export up-to-date memory stats through /proc")

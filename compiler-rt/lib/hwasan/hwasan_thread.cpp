@@ -46,10 +46,17 @@ void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
   unique_id_ = atomic_fetch_add(&unique_id, 1, memory_order_relaxed);
 
 // OHOS_LOCAL begin
-  if (auto sz = IsMainThread() ? flags()->heap_history_size_main_thread
-                               : flags()->heap_history_size)
+  uptr block_size;
+  uptr block_num;
+  if (IsMainThread()) {
+    block_size = flags()->heap_history_size_main_thread;
+    block_num = flags()->heap_history_block_max_num_main_thread;
+  } else {
+    block_size = flags()->heap_history_size;
+    block_num = flags()->heap_history_block_max_num;
+  }
+  heap_allocations_ = HeapAllocationsRingBuffer::New(block_size, block_num);
 // OHOS_LOCAL end
-    heap_allocations_ = HeapAllocationsRingBuffer::New(sz);
   trace_heap_allocation_ = true;  // OHOS_LOCAL
 #if !SANITIZER_FUCHSIA
   // Do not initialize the stack ring buffer just yet on Fuchsia. Threads will
@@ -136,13 +143,16 @@ void Thread::Destroy() {
 void Thread::Print(const char *Prefix) {
 // OHOS_LOCAL begin
   Printf(
-      "%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p) rb:(%zd/%u) "
+      "%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p) rb:(%llu/%llu/%llu) "
       "records(%llu/o:%llu) tid: %d\n",
       Prefix, unique_id_, (void *)this, stack_bottom(), stack_top(),
       stack_top() - stack_bottom(), tls_begin(), tls_end(),
       heap_allocations() ? heap_allocations()->realsize() : 0,
-      IsMainThread() ? flags()->heap_history_size_main_thread
-                     : flags()->heap_history_size,
+      heap_allocations() ? heap_allocations()->size() : 0,
+      IsMainThread() ? (uptr)flags()->heap_history_size_main_thread *
+                           flags()->heap_history_block_max_num_main_thread
+                     : (uptr)flags()->heap_history_size *
+                           flags()->heap_history_block_max_num,
       all_record_count_, all_record_count_overflow_, tid_);
 // OHOS_LOCAL end
 }

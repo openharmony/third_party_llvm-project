@@ -85,8 +85,10 @@ class HwasanThreadList {
     thread_alloc_size_ =
         RoundUpTo(ring_buffer_size_ + sizeof(Thread), ring_buffer_size_ * 2);
 // OHOS_LOCAL begin
+    auto history_size = flags()->heap_history_size_main_thread;
+    auto block_max_num = flags()->heap_history_block_max_num_main_thread;
     freed_rb_fallback_ =
-      HeapAllocationsRingBuffer::New(flags()->heap_history_size_main_thread);
+        HeapAllocationsRingBuffer::New(history_size, block_max_num);
 
     freed_rb_list_ = nullptr;
     freed_rb_list_size_ = 0;
@@ -177,10 +179,16 @@ class HwasanThreadList {
       freed_rb_list_size_ = left;
     }
     HeapAllocationsRingBuffer *freed_allocations_;
-    freed_allocations_ = HeapAllocationsRingBuffer::New(
-        t->IsMainThread() ? flags()->heap_history_size_main_thread
-                          : flags()->heap_history_size);
 
+    if (t->IsMainThread()) {
+      auto size = flags()->heap_history_size_main_thread;
+      auto num = flags()->heap_history_block_max_num_main_thread;
+      freed_allocations_ = HeapAllocationsRingBuffer::New(size, num);
+    } else {
+      auto size = flags()->heap_history_size;
+      auto num = flags()->heap_history_block_max_num;
+      freed_allocations_ = HeapAllocationsRingBuffer::New(size, num);
+    }
     HeapAllocationsRingBuffer *rb = t->heap_allocations();
     for (uptr i = 0, size = rb->realsize(); i < size; i++) {
       HeapAllocationRecord h = (*rb)[i];
@@ -214,8 +222,9 @@ class HwasanThreadList {
 
   uptr MemoryUsedPerThread() {
     uptr res = sizeof(Thread) + ring_buffer_size_;
-    if (auto sz = flags()->heap_history_size)
-      res += HeapAllocationsRingBuffer::SizeInBytes(sz);
+    if (auto size = flags()->heap_history_size)
+      if (auto num = flags()->heap_history_block_max_num)
+        res += HeapAllocationsRingBuffer::SizeInBytes(size, num);
     return res;
   }
 
