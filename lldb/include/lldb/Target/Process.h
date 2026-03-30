@@ -845,6 +845,7 @@ public:
   ///     otherwise the halt has failed.
   Status Halt(bool clear_thread_plans = false, bool use_run_lock = true);
 
+  // OHOS_LOCAL begin
   /// Detaches from a running or stopped process.
   ///
   /// This function is not meant to be overridden by Process subclasses.
@@ -852,9 +853,14 @@ public:
   /// \param[in] keep_stopped
   ///     If true, don't resume the process on detach.
   ///
+  /// \param[in] unload_modules
+  ///     If true, unload modules from executable search paths during detach,
+  ///     default false
+  ///
   /// \return
   ///     Returns an error object.
-  Status Detach(bool keep_stopped);
+  Status Detach(bool keep_stopped, bool unload_modules = false);
+  // OHOS_LOCAL end
 
   /// Kills the process and shuts down all threads that were spawned to track
   /// and monitor the process.

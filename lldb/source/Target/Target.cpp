@@ -18,6 +18,7 @@
 #include "lldb/Breakpoint/Watchpoint.h"
 #include "lldb/Core/Debugger.h"
 #include "lldb/Core/Module.h"
+#include "lldb/Core/ModuleList.h"
 #include "lldb/Core/ModuleSpec.h"
 #include "lldb/Core/PluginManager.h"
 #include "lldb/Core/SearchFilter.h"
@@ -4782,6 +4783,37 @@ Target::TargetEventData::GetEventDataFromEvent(const Event *event_ptr) {
   }
   return nullptr;
 }
+
+// OHOS_LOCAL begin
+bool Target::UnloadModule(ModuleSP &module_sp, Status &error) {
+  error.Clear();
+
+  // Validate module pointer
+  if (!module_sp) {
+    error.SetErrorString("invalid module");
+    return false;
+  }
+
+  // Remove from module list
+  // Remove the module from the target's image list
+  if (!GetImages().Remove(module_sp, false)) {
+    error.SetErrorString("failed to remove module from target");
+    return false;
+  }
+
+  // Notify module unloading
+  // Create a module list with the single module and notify observers
+  ModuleList module_list;
+  module_list.Append(module_sp);
+  ModulesDidUnload(module_list, false);
+
+  // Remove from shared module list
+  // Also remove from the global shared module list to free resources
+  ModuleList::RemoveSharedModule(module_sp);
+
+  return true;
+}
+// OHOS_LOCAL end
 
 TargetSP Target::TargetEventData::GetTargetFromEvent(const Event *event_ptr) {
   TargetSP target_sp;

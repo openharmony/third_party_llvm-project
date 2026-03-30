@@ -640,6 +640,21 @@ SBError SBProcess::Detach(bool keep_stopped) {
   return sb_error;
 }
 
+SBError SBProcess::Detach(bool keep_stopped, bool unload_module) {
+  LLDB_INSTRUMENT_VA(this, keep_stopped, unload_module);
+
+  SBError sb_error;
+  ProcessSP process_sp(GetSP());
+  if (process_sp) {
+    std::lock_guard<std::recursive_mutex> guard(
+        process_sp->GetTarget().GetAPIMutex());
+    sb_error.SetError(process_sp->Detach(keep_stopped, unload_module));
+  } else
+    sb_error.SetErrorString("SBProcess is invalid");
+
+  return sb_error;
+}
+
 SBError SBProcess::Signal(int signo) {
   LLDB_INSTRUMENT_VA(this, signo);
 
