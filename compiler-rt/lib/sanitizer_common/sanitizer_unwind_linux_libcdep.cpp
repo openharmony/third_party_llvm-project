@@ -176,11 +176,19 @@ void BufferedStackTrace::UnwindSlow(uptr pc, void *context, u32 max_depth) {
 
 // OHOS_LOCAL begin
 #if SANITIZER_OHOS
+enum class StepFrameType : uint8_t {
+  NATIVE_FRAME = 0,
+  JS_FRAME = 1,
+  STATIC_JS_FRAME = 2,
+};
+
 typedef struct {
     uptr* fp;
     uptr* sp;
     uptr* pc;
     bool* isJsFrame;
+    StepFrameType *frameType;
+    uint64_t frameIndex;
 } ArkStepParam;
 
 typedef bool (*ReadMemFunc)(void* ctx, uptr addr, uptr* result);
@@ -204,42 +212,90 @@ void SanitizerInitializeArkTsUnwinder() {
   }
 }
 
-void BufferedStackTrace::UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp) {
+// Used to return the ArkTs and C/C++ mixed stack.
+void BufferedStackTrace::UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp,
+                                       const uptr *arkts_ranges,
+                                       uptr range_count) {
   // Ensure that step_ark is initialized only once.
-  if(!step_ark)
+  if (!step_ark)
     SanitizerInitializeArkTsUnwinder();
-  if(!step_ark)
+  if (!step_ark)
     return;
 
-  //The stack unwinding will only proceed when the incoming pc is determined to
-  // point to a filename in ArkTs.
-  const char* filename = GetFilename(pc);
-  if(!IsArktsExecutable(filename) || size >= max_depth)
+  if (!IsArktsExecutable(pc, arkts_ranges, range_count) || size >= max_depth)
     return;
 
-  ReadMemFunc readMem = [](void* ctx, uptr addr, uptr* result) -> bool {
-    *result = *reinterpret_cast<uptr*>(addr);
+  ReadMemFunc readMem = [](void *ctx, uptr addr, uptr *result) -> bool {
+    *result = *reinterpret_cast<uptr *>(addr);
     return true;
   };
+
+  uptr current_pc = pc;
   uptr current_fp = fp;
   uptr current_sp = sp;
-  uptr current_pc = pc;
-  bool current_isJsFrame = false;
-  ArkStepParam param = {
-    .fp = &current_fp,
-    .sp = &current_sp,
-    .pc = &current_pc,
-    .isJsFrame = &current_isJsFrame
+  const uptr kPageSize = GetPageSizeCached();
+  StepFrameType current_frameType = StepFrameType::NATIVE_FRAME;
+
+  while (size < max_depth) {
+    bool current_isJsFrame = false;
+    uint64_t current_frameIndex = 0;
+
+    ArkStepParam param = {
+        .fp = &current_fp,
+        .sp = &current_sp,
+        .pc = &current_pc,
+        .isJsFrame = &current_isJsFrame,
+        .frameType = &current_frameType,
+        .frameIndex = current_frameIndex,
     };
-  int res = step_ark(nullptr, readMem, &param);
-  if(res) {
-    frame_buffer[size] = (uptr)param.fp[0]; 
-    trace_buffer[size++] = (uptr)param.pc[0];
-  } else {
-    return;
+
+    int res = step_ark(nullptr, readMem, &param);
+    if (!res)
+      break;
+
+    if (current_pc <= kPageSize)
+      break;
+
+    if (current_fp <= frame_buffer[size - 1])
+      break;
+
+    frame_buffer[size] = current_fp;
+    trace_buffer[size] = current_pc;
+    ++size;
+
+    if (IsArktsExecutable(current_pc, arkts_ranges, range_count) ||
+        current_frameType == StepFrameType::JS_FRAME) {
+      continue;
+    }
+
+    if (current_frameType == StepFrameType::NATIVE_FRAME) {
+      BufferedStackTrace tmp;
+      tmp.UnwindFast(current_pc, current_fp, bs_stack_top, bs_stack_bottom,
+                     max_depth);
+      if (tmp.size <= 1)
+        break;
+      for (u32 i = 1; i < tmp.size && size < max_depth; ++i) {
+        if (size > 0 && tmp.frame_buffer[i] <= frame_buffer[size - 1])
+          continue;
+
+        frame_buffer[size] = tmp.frame_buffer[i];
+        trace_buffer[size] = tmp.trace_buffer[i];
+        ++size;
+      }
+      if (size >= max_depth)
+        break;
+
+      current_pc = trace_buffer[size - 1];
+      current_fp = frame_buffer[size - 1];
+
+      if (IsArktsExecutable(current_pc, arkts_ranges, range_count)) {
+        current_frameType = StepFrameType::NATIVE_FRAME;
+        continue;
+      }
+      break;
+    }
+    break;
   }
-  
-  UnwindIfArkts(max_depth, (uptr)param.pc[0], (uptr)param.fp[0], (uptr)param.sp[0]);
 }
 #endif
 // OHOS_LOCAL end
