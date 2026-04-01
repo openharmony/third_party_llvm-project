@@ -455,6 +455,10 @@ CODEGENOPT(ForceEmitVTables, 1, 0)
 /// Whether to emit an address-significance table into the object file.
 CODEGENOPT(Addrsig, 1, 0)
 
+/// Enable reference tracking (AddReferenceTrackingInfo pass: attach memtracer
+/// metadata to stores for downstream analysis).
+CODEGENOPT(ReferenceTracking, 1, 0)
+
 /// Whether to emit unused static constants.
 CODEGENOPT(KeepStaticConsts, 1, 0)
 

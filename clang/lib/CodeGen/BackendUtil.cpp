@@ -83,6 +83,7 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Scalar/LowerMatrixIntrinsics.h"
 #include "llvm/Transforms/Utils.h"
+#include "llvm/Transforms/Utils/AddReferenceTrackingInfo.h"
 #include "llvm/Transforms/Utils/CanonicalizeAliases.h"
 #include "llvm/Transforms/Utils/Debugify.h"
 #include "llvm/Transforms/Utils/EntryExitInstrumenter.h"
@@ -500,6 +501,7 @@ static Optional<GCOVOptions> getGCOVOptions(const CodeGenOptions &CodeGenOpts,
   Options.Filter = CodeGenOpts.ProfileFilterFiles;
   Options.Exclude = CodeGenOpts.ProfileExcludeFiles;
   Options.Atomic = CodeGenOpts.AtomicProfileUpdate;
+  Options.ReferenceTracking = CodeGenOpts.ReferenceTracking;
   return Options;
 }
 
@@ -797,6 +799,12 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
                               /*VerifyEach*/ false, PrintPassOpts);
   SI.registerCallbacks(PIC, &FAM);
   PassBuilder PB(TM.get(), PTO, PGOOpt, &PIC);
+
+  if (CodeGenOpts.ReferenceTracking)
+    PB.registerPipelineStartEPCallback(
+        [&](ModulePassManager &MPM, OptimizationLevel Level) {
+          MPM.addPass(AddReferenceTrackingInfoPass());
+        });
 
   // Enable verify-debuginfo-preserve-each for new PM.
   DebugifyEachInstrumentation Debugify;
