@@ -1402,14 +1402,17 @@ void Instruction::dropUnknownNonDebugMetadata(ArrayRef<unsigned> KnownIDs) {
   if (!Value::hasMetadata())
     return; // Nothing to remove!
 
-  if (KnownIDs.empty()) {
+  SmallSet<unsigned, 4> KnownSet;
+  KnownSet.insert(KnownIDs.begin(), KnownIDs.end());
+  // Always preserve memtracer and not condition-dependent.
+  if (unsigned MemTracerID = getContext().getMDKindID("memtracer"))
+    KnownSet.insert(MemTracerID);
+
+  if (KnownSet.empty()) {
     // Just drop our entry at the store.
     clearMetadata();
     return;
   }
-
-  SmallSet<unsigned, 4> KnownSet;
-  KnownSet.insert(KnownIDs.begin(), KnownIDs.end());
 
   auto &MetadataStore = getContext().pImpl->ValueMetadata;
   auto &Info = MetadataStore[this];
