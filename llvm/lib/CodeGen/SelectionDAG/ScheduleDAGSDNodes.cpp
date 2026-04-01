@@ -882,6 +882,19 @@ EmitSchedule(MachineBasicBlock::iterator &InsertPos) {
       MI = &*std::next(Before);
     }
 
+    // Locate the call instruction and propagate the memtracer metadata.
+    if (MF.getFunction().hasFnAttribute("reference-tracking")) {
+      if (MDNode *MD = DAG->getHeapAllocSite(Node)) {
+        After = Emitter.getInsertPos();
+        for (auto I = MachineBasicBlock::iterator(MI); I != After; ++I) {
+          if (I->isCall()) {
+            I->setHeapAllocMarker(MF, MD);
+            break;
+          }
+        }
+      }
+    }
+
     if (MI->isCandidateForCallSiteEntry() &&
         DAG->getTarget().Options.EmitCallSiteInfo)
       MF.addCallArgsForwardingRegs(MI, DAG->getCallSiteInfo(Node));

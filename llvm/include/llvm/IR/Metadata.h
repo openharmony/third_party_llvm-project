@@ -677,6 +677,13 @@ struct AAMDNodes {
   /// The tag specifying the noalias scope.
   MDNode *NoAlias = nullptr;
 
+  /// The tag specifying store ptr/ptr and malloc/new metadata.
+  /// Used for tracking memory allocations and access.
+  MDNode *MemTracer = nullptr;
+
+  /// Set the Memtracer metadata.
+  void setMemTracer(MDNode *M) { MemTracer = M; }
+
   // Shift tbaa Metadata node to start off bytes later
   static MDNode *shiftTBAA(MDNode *M, size_t off);
 
