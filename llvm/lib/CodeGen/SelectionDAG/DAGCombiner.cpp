@@ -18746,6 +18746,19 @@ bool DAGCombiner::tryStoreMergeOfLoads(SmallVectorImpl<MemOpLink> &StoreNodes,
                                               ? MachineMemOperand::MONonTemporal
                                               : MachineMemOperand::MONone;
 
+    AAMDNodes AAInfo = AAMDNodes();
+    // Propagate memtracer metadata during store merging.
+    // If multiple stores have memtracer metadata, pick the first one to propagate.
+    if (DAG.getMachineFunction().getFunction().hasFnAttribute(
+            "reference-tracking")) {
+      for (unsigned i = 0; i < NumElem; ++i) {
+        if (MDNode *MemTracer = StoreNodes[i].MemNode->getAAInfo().MemTracer) {
+          AAInfo.setMemTracer(MemTracer);
+          break;
+        }
+      }
+    }
+
     SDValue NewLoad, NewStore;
     if (UseVectorTy || !DoIntegerTruncate) {
       NewLoad = DAG.getLoad(
@@ -18763,7 +18776,7 @@ bool DAGCombiner::tryStoreMergeOfLoads(SmallVectorImpl<MemOpLink> &StoreNodes,
       }
       NewStore = DAG.getStore(
           NewStoreChain, StoreDL, StoreOp, FirstInChain->getBasePtr(),
-          FirstInChain->getPointerInfo(), FirstStoreAlign, StMMOFlags);
+          FirstInChain->getPointerInfo(), FirstStoreAlign, StMMOFlags, AAInfo);
     } else { // This must be the truncstore/extload case
       EVT ExtendedTy =
           TLI.getTypeToTransformTo(*DAG.getContext(), JointMemOpVT);
@@ -18774,7 +18787,8 @@ bool DAGCombiner::tryStoreMergeOfLoads(SmallVectorImpl<MemOpLink> &StoreNodes,
       NewStore = DAG.getTruncStore(
           NewStoreChain, StoreDL, NewLoad, FirstInChain->getBasePtr(),
           FirstInChain->getPointerInfo(), JointMemOpVT,
-          FirstInChain->getAlign(), FirstInChain->getMemOperand()->getFlags());
+          FirstInChain->getAlign(), FirstInChain->getMemOperand()->getFlags(),
+          AAInfo);
     }
 
     // Transfer chain users from old loads to the new load.

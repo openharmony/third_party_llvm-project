@@ -340,6 +340,33 @@ void DebugHandlerBase::beginFunction(const MachineFunction *MF) {
     requestLabelBeforeInsn(MI);
   }
 
+  // Collect store instructions and heap alloction calls with
+  // memtracer metadata, and emit labels for these instructions.
+  if (MF->getFunction().hasFnAttribute("reference-tracking")) {
+    assert(MemTracerMIs.empty() && "MemTracerMIs wasn't cleaned!");
+    for (const MachineBasicBlock &MBB : *MF) {
+      for (const MachineInstr &MI : MBB) {
+        MDNode *MT = nullptr;
+        if (MI.mayStore()) {
+          // Check if store has memtracer metadata.
+          // If multiple tagged MMOs exist, pick one to record.
+          for (const MachineMemOperand *MMO : MI.memoperands()) {
+            if (MDNode *Tracer = MMO->getAAInfo().MemTracer) {
+              MT = Tracer;
+              break;
+            }
+          }
+        } else if (MI.isCall())
+          // Check if call is a heap allocation (malloc/new).
+          MT = MI.getHeapAllocMarker();
+        if (MT) {
+          MemTracerMIs.push_back({&MI, MT});
+          requestLabelBeforeInsn(&MI);
+        }
+      }
+    }
+  }
+
   PrevInstLoc = DebugLoc();
   PrevLabel = Asm->getFunctionBegin();
   beginFunctionImpl(MF);
@@ -411,6 +438,7 @@ void DebugHandlerBase::endFunction(const MachineFunction *MF) {
     endFunctionImpl(MF);
   DbgValues.clear();
   DbgLabels.clear();
+  MemTracerMIs.clear();
   LabelsBeforeInsn.clear();
   LabelsAfterInsn.clear();
   InstOrdering.clear();
