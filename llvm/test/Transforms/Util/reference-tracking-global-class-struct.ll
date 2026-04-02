@@ -44,13 +44,15 @@ define dso_local noundef i32 @main() #0 !dbg !400 {
   ret i32 0, !dbg !428
 }
 
-; CHECK: %2 = call noalias noundef nonnull ptr @_Znwm(i64 noundef 16) #4, !dbg !{{[0-9]+}}, !heapallocsite !{{[0-9]+}}, !memtracer !{{[0-9]+}}
+; AsmWriter prints attachments sorted by metadata kind ID; By using opt, !heapallocsite vs
+; !memtracer order is not guaranteed. After !dbg, match either order.
+; CHECK: %2 = call noalias noundef nonnull ptr @_Znwm(i64 noundef 16) #4, !dbg !{{[0-9]+}}, {{(.*!heapallocsite ![0-9]+.*!memtracer ![0-9]+)|(.*!memtracer ![0-9]+.*!heapallocsite ![0-9]+)}}
 ; CHECK: store ptr %2, ptr %1, align 8, !dbg !{{[0-9]+}}, !memtracer !{{[0-9]+}}
-; CHECK: %5 = call noalias noundef nonnull ptr @_Znwm(i64 noundef 16) #4, !dbg !{{[0-9]+}}, !heapallocsite !{{[0-9]+}}, !memtracer !{{[0-9]+}}
+; CHECK: %5 = call noalias noundef nonnull ptr @_Znwm(i64 noundef 16) #4, !dbg !{{[0-9]+}}, {{(.*!heapallocsite ![0-9]+.*!memtracer ![0-9]+)|(.*!memtracer ![0-9]+.*!heapallocsite ![0-9]+)}}
 ; CHECK: store ptr %5, ptr %7, align 8, !dbg !{{[0-9]+}}, !memtracer !{{[0-9]+}}
-; CHECK: %8 = call noalias noundef nonnull ptr @_Znwm(i64 noundef 16) #4, !dbg !{{[0-9]+}}, !heapallocsite !{{[0-9]+}}, !memtracer !{{[0-9]+}}
+; CHECK: %8 = call noalias noundef nonnull ptr @_Znwm(i64 noundef 16) #4, !dbg !{{[0-9]+}}, {{(.*!heapallocsite ![0-9]+.*!memtracer ![0-9]+)|(.*!memtracer ![0-9]+.*!heapallocsite ![0-9]+)}}
 ; CHECK: store ptr %8, ptr %12, align 8, !dbg !{{[0-9]+}}, !memtracer !{{[0-9]+}}
-; CHECK: %13 = call noalias noundef nonnull ptr @_Znwm(i64 noundef 16) #4, !dbg !{{[0-9]+}}, !heapallocsite !{{[0-9]+}}, !memtracer !{{[0-9]+}}
+; CHECK: %13 = call noalias noundef nonnull ptr @_Znwm(i64 noundef 16) #4, !dbg !{{[0-9]+}}, {{(.*!heapallocsite ![0-9]+.*!memtracer ![0-9]+)|(.*!memtracer ![0-9]+.*!heapallocsite ![0-9]+)}}
 ; CHECK: store ptr %13, ptr @a, align 8, !dbg !{{[0-9]+}}, !memtracer !{{[0-9]+}}
 
 ; Function Attrs: nocallback nofree nosync nounwind speculatable willreturn

@@ -45,9 +45,9 @@ define dso_local noundef i32 @main() #0 !dbg !385 {
   ret i32 0, !dbg !427
 }
 
-; CHECK: %4 = call noalias noundef nonnull ptr @_Znwm(i64 noundef 16) #4, !dbg !{{[0-9]+}}, !heapallocsite !{{[0-9]+}}, !memtracer !{{[0-9]+}}
+; CHECK: %4 = call noalias noundef nonnull ptr @_Znwm(i64 noundef 16) #4, !dbg !{{[0-9]+}}, {{(.*!heapallocsite ![0-9]+.*!memtracer ![0-9]+)|(.*!memtracer ![0-9]+.*!heapallocsite ![0-9]+)}}
 ; CHECK: store ptr %4, ptr %3, align 8, !dbg !{{[0-9]+}}, !memtracer !{{[0-9]+}}
-; CHECK: %7 = call noalias noundef nonnull ptr @_Znwm(i64 noundef 16) #4, !dbg !{{[0-9]+}}, !heapallocsite !{{[0-9]+}}, !memtracer !{{[0-9]+}}
+; CHECK: %7 = call noalias noundef nonnull ptr @_Znwm(i64 noundef 16) #4, !dbg !{{[0-9]+}}, {{(.*!heapallocsite ![0-9]+.*!memtracer ![0-9]+)|(.*!memtracer ![0-9]+.*!heapallocsite ![0-9]+)}}
 ; CHECK: store ptr %7, ptr %9, align 8, !dbg !{{[0-9]+}}, !memtracer !{{[0-9]+}}
 ; CHECK: store ptr %10, ptr %14, align 8, !dbg !{{[0-9]+}}, !memtracer !{{[0-9]+}}
 ; CHECK: store ptr %15, ptr %2, align 8, !dbg !{{[0-9]+}}, !memtracer !{{[0-9]+}}
