@@ -2235,6 +2235,9 @@ void CodeGenModule::ConstructAttributeList(StringRef Name,
   // * FunctionDecl attributes: __attribute__((no_builtin(...)))
   addNoBuiltinAttributes(FuncAttrs, getLangOpts(), NBA);
 
+  if (CodeGenOpts.ReferenceTracking)
+    FuncAttrs.addAttribute("reference-tracking", "true");
+
   // Collect function IR attributes based on global settiings.
   getDefaultFunctionAttributes(Name, HasOptnone, AttrOnCallSite, FuncAttrs);
 
