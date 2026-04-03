@@ -501,7 +501,6 @@ static Optional<GCOVOptions> getGCOVOptions(const CodeGenOptions &CodeGenOpts,
   Options.Filter = CodeGenOpts.ProfileFilterFiles;
   Options.Exclude = CodeGenOpts.ProfileExcludeFiles;
   Options.Atomic = CodeGenOpts.AtomicProfileUpdate;
-  Options.ReferenceTracking = CodeGenOpts.ReferenceTracking;
   return Options;
 }
 
