@@ -351,8 +351,8 @@ static void propagateLoad(DenseMap<Value *, ReferenceDbgInfo> &PtrToDbgVar,
   if (getReferenceDbgInfoFromMap(PtrToDbgVar, PtrOp, BaseInfo)) {
     if (BaseInfo.PtrDepth > 0) {
       BaseInfo.PtrDepth--;
-      PtrToDbgVar.try_emplace(LI, BaseInfo);
     }
+    PtrToDbgVar.try_emplace(LI, BaseInfo);
     return;
   }
 
