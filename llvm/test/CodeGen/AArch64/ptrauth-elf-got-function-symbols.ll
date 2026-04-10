@@ -5,19 +5,19 @@
 
 ; ASM:               .type   foo,@function
 ; ASM-LABEL: foo:
-; ASM:               adrp    x17, :got_auth:bar
-; ASM-NEXT:          add     x17, x17, :got_auth_lo12:bar
-; ASM-NEXT:          ldr     x16, [x17]
-; ASM-NEXT:          autia   x16, x17
-; ASM-NEXT:          mov     x17, x16
-; ASM-NEXT:          xpaci   x17
+; ASM:               adrp    x16, :got_auth:bar
+; ASM-NEXT:          add     x16, x16, :got_auth_lo12:bar
+; ASM-NEXT:          ldr     x17, [x16]
+; ASM-NEXT:          autia   x17, x16
+; ASM-NEXT:          mov     x16, x17
+; ASM-NEXT:          xpaci   x16
 ; ASM-NEXT:          cmp     x16, x17
 ; ASM-NEXT:          b.eq    .Lauth_success_0
 ; ASM-NEXT:          brk     #0xc470
 ; ASM-NEXT:  .Lauth_success_0:
-; ASM-NEXT:          paciza  x16
+; ASM-NEXT:          paciza  x17
 ; ASM-NEXT:          adrp    x8, .Lfptr
-; ASM-NEXT:          str     x16, [x8, :lo12:.Lfptr]
+; ASM-NEXT:          str     x17, [x8, :lo12:.Lfptr]
 ; ASM-NEXT:          ret
 ; ASM:               .type   .Lfptr,@object
 ; ASM-NEXT:          .local  .Lfptr

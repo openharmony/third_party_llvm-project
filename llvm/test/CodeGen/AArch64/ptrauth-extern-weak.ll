@@ -29,40 +29,40 @@ define ptr @foo() {
   ret ptr @var
 
 ; CHECK-LABEL: foo:
-; CHECK:         adrp  x17, :got_auth:var
-; CHECK-NEXT:    add   x17, x17, :got_auth_lo12:var
-; NOTRAP-NEXT:   ldr   x0,  [x17]
+; CHECK:         adrp  x16, :got_auth:var
+; CHECK-NEXT:    add   x16, x16, :got_auth_lo12:var
+; NOTRAP-NEXT:   ldr   x0,  [x16]
 ; NOTRAP-NEXT:   cbz   x0,  .Lundef_weak0
-; NOTRAP-NEXT:   autia x0,  x17
-; TRAP-NEXT:     ldr   x16, [x17]
-; TRAP-NEXT:     cbz   x16, .Lundef_weak0
-; TRAP-NEXT:     autia x16, x17
+; NOTRAP-NEXT:   autia x0,  x16
+; TRAP-NEXT:     ldr   x17, [x16]
+; TRAP-NEXT:     cbz   x17, .Lundef_weak0
+; TRAP-NEXT:     autia x17, x16
 ; CHECK-NEXT:  .Lundef_weak0:
-; TRAP-NEXT:     mov   x17, x16
-; TRAP-NEXT:     xpaci x17
+; TRAP-NEXT:     mov   x16, x17
+; TRAP-NEXT:     xpaci x16
 ; TRAP-NEXT:     cmp   x16, x17
 ; TRAP-NEXT:     b.eq  .Lauth_success_0
 ; TRAP-NEXT:     brk   #0xc470
 ; TRAP-NEXT:   .Lauth_success_0:
-; TRAP-NEXT:     mov   x0,  x16
+; TRAP-NEXT:     mov   x0,  x17
 ; CHECK-NEXT:    ret
 
 ; CHECK-TINY-LABEL: foo:
-; CHECK-TINY:         adr   x17, :got_auth:var
-; NOTRAP-TINY-NEXT:   ldr   x0,  [x17]
+; CHECK-TINY:         adr   x16, :got_auth:var
+; NOTRAP-TINY-NEXT:   ldr   x0,  [x16]
 ; NOTRAP-TINY-NEXT:   cbz   x0,  .Lundef_weak0
-; NOTRAP-TINY-NEXT:   autia x0,  x17
-; TRAP-TINY-NEXT:     ldr   x16, [x17]
-; TRAP-TINY-NEXT:     cbz   x16, .Lundef_weak0
-; TRAP-TINY-NEXT:     autia x16, x17
+; NOTRAP-TINY-NEXT:   autia x0,  x16
+; TRAP-TINY-NEXT:     ldr   x17, [x16]
+; TRAP-TINY-NEXT:     cbz   x17, .Lundef_weak0
+; TRAP-TINY-NEXT:     autia x17, x16
 ; CHECK-TINY-NEXT:  .Lundef_weak0:
-; TRAP-TINY-NEXT:     mov   x17, x16
-; TRAP-TINY-NEXT:     xpaci x17
+; TRAP-TINY-NEXT:     mov   x16, x17
+; TRAP-TINY-NEXT:     xpaci x16
 ; TRAP-TINY-NEXT:     cmp   x16, x17
 ; TRAP-TINY-NEXT:     b.eq  .Lauth_success_0
 ; TRAP-TINY-NEXT:     brk   #0xc470
 ; TRAP-TINY-NEXT:   .Lauth_success_0:
-; TRAP-TINY-NEXT:     mov   x0,  x16
+; TRAP-TINY-NEXT:     mov   x0,  x17
 ; CHECK-TINY-NEXT:    ret
 }
 
@@ -73,41 +73,41 @@ define ptr @bar() {
   ret ptr %addr
 
 ; CHECK-LABEL: bar:
-; CHECK:         adrp  x17, :got_auth:arr_var
-; CHECK-NEXT:    add   x17, x17, :got_auth_lo12:arr_var
-; NOTRAP-NEXT:   ldr   x8,  [x17]
+; CHECK:         adrp  x16, :got_auth:arr_var
+; CHECK-NEXT:    add   x16, x16, :got_auth_lo12:arr_var
+; NOTRAP-NEXT:   ldr   x8,  [x16]
 ; NOTRAP-NEXT:   cbz   x8,  .Lundef_weak1
-; NOTRAP-NEXT:   autda x8,  x17
-; TRAP-NEXT:     ldr   x16, [x17]
-; TRAP-NEXT:     cbz   x16, .Lundef_weak1
-; TRAP-NEXT:     autda x16, x17
+; NOTRAP-NEXT:   autda x8,  x16
+; TRAP-NEXT:     ldr   x17, [x16]
+; TRAP-NEXT:     cbz   x17, .Lundef_weak1
+; TRAP-NEXT:     autda x17, x16
 ; CHECK-NEXT:  .Lundef_weak1:
-; TRAP-NEXT:     mov   x17, x16
-; TRAP-NEXT:     xpacd x17
+; TRAP-NEXT:     mov   x16, x17
+; TRAP-NEXT:     xpacd x16
 ; TRAP-NEXT:     cmp   x16, x17
 ; TRAP-NEXT:     b.eq  .Lauth_success_1
 ; TRAP-NEXT:     brk   #0xc472
 ; TRAP-NEXT:   .Lauth_success_1:
-; TRAP-NEXT:     mov   x8,  x16
+; TRAP-NEXT:     mov   x8,  x17
 ; CHECK-NEXT:    add   x0,  x8, #20
 ; CHECK-NEXT:    ret
 
 ; CHECK-TINY-LABEL: bar:
-; CHECK-TINY:         adr   x17, :got_auth:arr_var
-; NOTRAP-TINY-NEXT:   ldr   x8,  [x17]
+; CHECK-TINY:         adr   x16, :got_auth:arr_var
+; NOTRAP-TINY-NEXT:   ldr   x8,  [x16]
 ; NOTRAP-TINY-NEXT:   cbz   x8,  .Lundef_weak1
-; NOTRAP-TINY-NEXT:   autda x8,  x17
-; TRAP-TINY-NEXT:     ldr   x16, [x17]
-; TRAP-TINY-NEXT:     cbz   x16, .Lundef_weak1
-; TRAP-TINY-NEXT:     autda x16, x17
+; NOTRAP-TINY-NEXT:   autda x8,  x16
+; TRAP-TINY-NEXT:     ldr   x17, [x16]
+; TRAP-TINY-NEXT:     cbz   x17, .Lundef_weak1
+; TRAP-TINY-NEXT:     autda x17, x16
 ; CHECK-TINY-NEXT:  .Lundef_weak1:
-; TRAP-TINY-NEXT:     mov   x17, x16
-; TRAP-TINY-NEXT:     xpacd x17
+; TRAP-TINY-NEXT:     mov   x16, x17
+; TRAP-TINY-NEXT:     xpacd x16
 ; TRAP-TINY-NEXT:     cmp   x16, x17
 ; TRAP-TINY-NEXT:     b.eq  .Lauth_success_1
 ; TRAP-TINY-NEXT:     brk   #0xc472
 ; TRAP-TINY-NEXT:   .Lauth_success_1:
-; TRAP-TINY-NEXT:     mov   x8,  x16
+; TRAP-TINY-NEXT:     mov   x8,  x17
 ; CHECK-TINY-NEXT:    add   x0,  x8, #20
 ; CHECK-TINY-NEXT:    ret
 }

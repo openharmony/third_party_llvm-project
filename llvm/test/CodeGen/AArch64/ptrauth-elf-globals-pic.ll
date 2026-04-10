@@ -23,19 +23,19 @@ define i8 @test_i8(i8 %new) {
   ret i8 %val
 
 ; CHECK-LABEL: test_i8:
-; CHECK:         adrp  x17, :got_auth:var8
-; CHECK-NEXT:    add   x17, x17, :got_auth_lo12:var8
-; NOTRAP-NEXT:   ldr   x9,  [x17]
-; NOTRAP-NEXT:   autda x9,  x17
-; TRAP-NEXT:     ldr   x16, [x17]
-; TRAP-NEXT:     autda x16, x17
-; TRAP-NEXT:     mov   x17, x16
-; TRAP-NEXT:     xpacd x17
+; CHECK:         adrp  x16, :got_auth:var8
+; CHECK-NEXT:    add   x16, x16, :got_auth_lo12:var8
+; NOTRAP-NEXT:   ldr   x9,  [x16]
+; NOTRAP-NEXT:   autda x9,  x16
+; TRAP-NEXT:     ldr   x17, [x16]
+; TRAP-NEXT:     autda x17, x16
+; TRAP-NEXT:     mov   x16, x17
+; TRAP-NEXT:     xpacd x16
 ; TRAP-NEXT:     cmp   x16, x17
 ; TRAP-NEXT:     b.eq  .Lauth_success_0
 ; TRAP-NEXT:     brk   #0xc472
 ; TRAP-NEXT:   .Lauth_success_0:
-; TRAP-NEXT:     mov   x9,  x16
+; TRAP-NEXT:     mov   x9,  x17
 ; CHECK-NEXT:    ldrb  w8,  [x9]
 ; CHECK-NEXT:    strb  w0,  [x9]
 ; CHECK-NEXT:    mov   x0,  x8

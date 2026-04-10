@@ -2,12 +2,11 @@
 
 ;--- err1.ll
 
-; RUN: not --crash llc < err1.ll -mtriple aarch64-elf -mattr=+pauth \
-; RUN:   -global-isel=1 -verify-machineinstrs -global-isel-abort=1 2>&1 | \
-; RUN:   FileCheck --check-prefix=ERR1 %s
-; RUN: not --crash llc < err1.ll -mtriple arm64-apple-ios -mattr=+pauth \
-; RUN:   -global-isel=1 -verify-machineinstrs -global-isel-abort=1 2>&1 | \
-; RUN:   FileCheck --check-prefix=ERR1 %s
+; RUN: not --crash llc < err1.ll -mtriple aarch64-elf -mattr=+pauth                         \
+; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR1 %s
+
+; RUN: not --crash llc < err1.ll -mtriple aarch64-elf -mattr=+pauth -mattr=+pauth-hint-only \
+; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR1 %s
 
 @g = external global i32
 
@@ -18,12 +17,11 @@ define ptr @foo() {
 
 ;--- err2.ll
 
-; RUN: not --crash llc < err2.ll -mtriple aarch64-elf -mattr=+pauth \
-; RUN:   -global-isel=1 -verify-machineinstrs -global-isel-abort=1 2>&1 | \
-; RUN:   FileCheck --check-prefix=ERR2 %s
-; RUN: not --crash llc < err2.ll -mtriple arm64-apple-ios -mattr=+pauth \
-; RUN:   -global-isel=1 -verify-machineinstrs -global-isel-abort=1 2>&1 | \
-; RUN:   FileCheck --check-prefix=ERR2 %s
+; RUN: not --crash llc < err2.ll -mtriple aarch64-elf -mattr=+pauth                         \
+; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR2 %s
+
+; RUN: not --crash llc < err2.ll -mtriple aarch64-elf -mattr=+pauth -mattr=+pauth-hint-only \
+; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR2 %s
 
 @g = external global i32
 
@@ -34,12 +32,11 @@ define ptr @foo() {
 
 ;--- err3.ll
 
-; RUN: not --crash llc < err3.ll -mtriple aarch64-elf -mattr=+pauth \
-; RUN:   -global-isel=1 -verify-machineinstrs -global-isel-abort=1 2>&1 | \
-; RUN:   FileCheck --check-prefix=ERR3 %s
-; RUN: not --crash llc < err3.ll -mtriple arm64-apple-ios -mattr=+pauth \
-; RUN:   -global-isel=1 -verify-machineinstrs -global-isel-abort=1 2>&1 | \
-; RUN:   FileCheck --check-prefix=ERR3 %s
+; RUN: not --crash llc < err3.ll -mtriple aarch64-elf -mattr=+pauth                         \
+; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR3 %s
+
+; RUN: not --crash llc < err3.ll -mtriple aarch64-elf -mattr=+pauth -mattr=+pauth-hint-only \
+; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR3 %s
 
 @g_weak = extern_weak global i32
 
@@ -50,12 +47,11 @@ define ptr @foo() {
 
 ;--- err4.ll
 
-; RUN: not --crash llc < err4.ll -mtriple aarch64-elf -mattr=+pauth \
-; RUN:   -global-isel=1 -verify-machineinstrs -global-isel-abort=1 2>&1 | \
-; RUN:   FileCheck --check-prefix=ERR4 %s
-; RUN: not --crash llc < err4.ll -mtriple arm64-apple-ios -mattr=+pauth \
-; RUN:   -global-isel=1 -verify-machineinstrs -global-isel-abort=1 2>&1 | \
-; RUN:   FileCheck --check-prefix=ERR4 %s
+; RUN: not --crash llc < err4.ll -mtriple aarch64-elf -mattr=+pauth                         \
+; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR4 %s
+
+; RUN: not --crash llc < err4.ll -mtriple aarch64-elf -mattr=+pauth -mattr=+pauth-hint-only \
+; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR4 %s
 
 @g_weak = extern_weak global i32
 @g_weak.ref.da.42.addr = dso_local constant ptr ptrauth (ptr @g_weak, i32 2, i64 42, ptr @g_weak.ref.da.42.addr)
@@ -67,9 +63,11 @@ define ptr @foo() {
 
 ;--- err5.ll
 
-; RUN: not --crash llc < err5.ll -mtriple aarch64-windows -mattr=+pauth \
-; RUN:   -global-isel=1 -verify-machineinstrs -global-isel-abort=1 2>&1 | \
-; RUN:   FileCheck --check-prefix=ERR5 %s
+; RUN: not --crash llc < err5.ll -mtriple aarch64-windows -mattr=+pauth                         \
+; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR5 %s
+
+; RUN: not --crash llc < err5.ll -mtriple aarch64-windows -mattr=+pauth -mattr=+pauth-hint-only \
+; RUN:   -global-isel=0 -verify-machineinstrs 2>&1 | FileCheck --check-prefix=ERR5 %s
 
 @g = external global i32
 
@@ -80,17 +78,16 @@ define ptr @foo() {
 
 ;--- ok.ll
 
-; RUN: llc < ok.ll -mtriple aarch64-elf -mattr=+pauth -global-isel=1 \
-; RUN:   -verify-machineinstrs -global-isel-abort=1 | \
-; RUN:   FileCheck %s --check-prefix=ELF
-; RUN: llc < ok.ll -mtriple aarch64-elf -mattr=+pauth -global-isel=1 \
-; RUN:   -verify-machineinstrs -global-isel-abort=1 -filetype=obj
+; RUN: llc < ok.ll -mtriple aarch64-elf -mattr=+pauth                         -global-isel=0 \
+; RUN:   -verify-machineinstrs | FileCheck %s --check-prefix=ELF
+; RUN: llc < ok.ll -mtriple aarch64-elf -mattr=+pauth                         -global-isel=0 \
+; RUN:   -verify-machineinstrs -filetype=obj
 
-; RUN: llc < ok.ll -mtriple arm64-apple-ios -mattr=+pauth -global-isel=1 \
-; RUN:   -verify-machineinstrs -global-isel-abort=1 | \
-; RUN:   FileCheck %s --check-prefix=MACHO
-; RUN: llc < ok.ll -mtriple aarch64-elf -mattr=+pauth -global-isel=1 \
-; RUN:   -verify-machineinstrs -global-isel-abort=1 -filetype=obj
+; RUN: llc < ok.ll -mtriple aarch64-elf -mattr=+pauth -mattr=+pauth-hint-only -global-isel=0 \
+; RUN:   -verify-machineinstrs | FileCheck %s --check-prefix=HINT
+; RUN: llc < ok.ll -mtriple aarch64-elf -mattr=+pauth -mattr=+pauth-hint-only -global-isel=0 \
+; RUN:   -verify-machineinstrs -filetype=obj
+
 
 @g = external global i32
 @g_weak = extern_weak global i32
@@ -105,13 +102,15 @@ define ptr @test_global_zero_disc() {
 ; ELF-NEXT:      mov     x0, x17
 ; ELF-NEXT:      ret
 
-; MACHO-LABEL: _test_global_zero_disc:
-; MACHO:       ; %bb.0:
-; MACHO-NEXT:    adrp    x17, _g@GOTPAGE
-; MACHO-NEXT:    ldr     x17, [x17, _g@GOTPAGEOFF]
-; MACHO-NEXT:    paciza  x17
-; MACHO-NEXT:    mov     x0, x17
-; MACHO-NEXT:    ret
+; HINT-LABEL:   test_global_zero_disc:
+; HINT:         // %bb.0:
+; HINT-NEXT:      adrp    x17, :got:g
+; HINT-NEXT:      ldr     x17, [x17, :got_lo12:g]
+; HINT-NEXT:      mov     x16, xzr
+; HINT-NEXT:      pacia1716
+; HINT-NEXT:      mov     x0, x17
+; HINT-NEXT:      ret
+
 
   ret ptr ptrauth (ptr @g, i32 0)
 }
@@ -126,14 +125,15 @@ define ptr @test_global_offset_zero_disc() {
 ; ELF-NEXT:    mov     x0, x17
 ; ELF-NEXT:    ret
 
-; MACHO-LABEL: _test_global_offset_zero_disc:
-; MACHO:       ; %bb.0:
-; MACHO-NEXT:    adrp    x17, _g@GOTPAGE
-; MACHO-NEXT:    ldr     x17, [x17, _g@GOTPAGEOFF]
-; MACHO-NEXT:    add     x17, x17, #16
-; MACHO-NEXT:    pacdza  x17
-; MACHO-NEXT:    mov     x0, x17
-; MACHO-NEXT:    ret
+; HINT-LABEL: test_global_offset_zero_disc:
+; HINT:       // %bb.0:
+; HINT-NEXT:    adrp    x17, :got:g
+; HINT-NEXT:    ldr     x17, [x17, :got_lo12:g]
+; HINT-NEXT:    add     x17, x17, #16
+; HINT-NEXT:    mov     x16, xzr
+; HINT-NEXT:    pacia1716
+; HINT-NEXT:    mov     x0, x17
+; HINT-NEXT:    ret
 
   ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 16), i32 2)
 }
@@ -149,15 +149,17 @@ define ptr @test_global_neg_offset_zero_disc() {
 ; ELF-NEXT:    mov     x0, x17
 ; ELF-NEXT:    ret
 
-; MACHO-LABEL: _test_global_neg_offset_zero_disc:
-; MACHO:       ; %bb.0:
-; MACHO-NEXT:    adrp    x17, _g@GOTPAGE
-; MACHO-NEXT:    ldr     x17, [x17, _g@GOTPAGEOFF]
-; MACHO-NEXT:    sub     x17, x17, #576
-; MACHO-NEXT:    sub     x17, x17, #30, lsl #12
-; MACHO-NEXT:    pacdza  x17
-; MACHO-NEXT:    mov     x0, x17
-; MACHO-NEXT:    ret
+; HINT-LABEL: test_global_neg_offset_zero_disc:
+; HINT:       // %bb.0:
+; HINT-NEXT:    adrp    x17, :got:g
+; HINT-NEXT:    ldr     x17, [x17, :got_lo12:g]
+; HINT-NEXT:    sub     x17, x17, #576
+; HINT-NEXT:    sub     x17, x17, #30, lsl #12
+; HINT-NEXT:    mov     x16, xzr
+; HINT-NEXT:    pacia1716
+; HINT-NEXT:    mov     x0, x17
+; HINT-NEXT:    ret
+
 
   ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 -123456), i32 2)
 }
@@ -174,16 +176,18 @@ define ptr @test_global_big_offset_zero_disc() {
 ; ELF-NEXT:    mov     x0, x17
 ; ELF-NEXT:    ret
 
-; MACHO-LABEL: _test_global_big_offset_zero_disc:
-; MACHO:       ; %bb.0:
-; MACHO-NEXT:    adrp    x17, _g@GOTPAGE
-; MACHO-NEXT:    ldr     x17, [x17, _g@GOTPAGEOFF]
-; MACHO-NEXT:    mov     x16, #1
-; MACHO-NEXT:    movk    x16, #32769, lsl #16
-; MACHO-NEXT:    add     x17, x17, x16
-; MACHO-NEXT:    pacdza  x17
-; MACHO-NEXT:    mov     x0, x17
-; MACHO-NEXT:    ret
+; HINT-LABEL: test_global_big_offset_zero_disc:
+; HINT:       // %bb.0:
+; HINT-NEXT:    adrp    x17, :got:g
+; HINT-NEXT:    ldr     x17, [x17, :got_lo12:g]
+; HINT-NEXT:    mov     x16, #1
+; HINT-NEXT:    movk    x16, #32769, lsl #16
+; HINT-NEXT:    add     x17, x17, x16
+; HINT-NEXT:    mov     x16, xzr
+; HINT-NEXT:    pacia1716
+; HINT-NEXT:    mov     x0, x17
+; HINT-NEXT:    ret
+
 
   ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 add (i64 2147483648, i64 65537)), i32 2)
 }
@@ -200,16 +204,18 @@ define ptr @test_global_big_neg_offset_zero_disc() {
 ; ELF-NEXT:    mov     x0, x17
 ; ELF-NEXT:    ret
 
-; MACHO-LABEL: _test_global_big_neg_offset_zero_disc:
-; MACHO:       ; %bb.0:
-; MACHO-NEXT:    adrp    x17, _g@GOTPAGE
-; MACHO-NEXT:    ldr     x17, [x17, _g@GOTPAGEOFF]
-; MACHO-NEXT:    mov     x16, #-52501
-; MACHO-NEXT:    movk    x16, #63652, lsl #16
-; MACHO-NEXT:    add     x17, x17, x16
-; MACHO-NEXT:    pacdza  x17
-; MACHO-NEXT:    mov     x0, x17
-; MACHO-NEXT:    ret
+; HINT-LABEL: test_global_big_neg_offset_zero_disc:
+; HINT:       // %bb.0:
+; HINT-NEXT:    adrp    x17, :got:g
+; HINT-NEXT:    ldr     x17, [x17, :got_lo12:g]
+; HINT-NEXT:    mov     x16, #-52501
+; HINT-NEXT:    movk    x16, #63652, lsl #16
+; HINT-NEXT:    add     x17, x17, x16
+; HINT-NEXT:    mov     x16, xzr
+; HINT-NEXT:    pacia1716
+; HINT-NEXT:    mov     x0, x17
+; HINT-NEXT:    ret
+
 
   ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 -123456789), i32 2)
 }
@@ -228,18 +234,20 @@ define ptr @test_global_huge_neg_offset_zero_disc() {
 ; ELF-NEXT:    mov     x0, x17
 ; ELF-NEXT:    ret
 
-; MACHO-LABEL: _test_global_huge_neg_offset_zero_disc:
-; MACHO:       ; %bb.0:
-; MACHO-NEXT:    adrp    x17, _g@GOTPAGE
-; MACHO-NEXT:    ldr     x17, [x17, _g@GOTPAGEOFF]
-; MACHO-NEXT:    mov     x16, #-65536
-; MACHO-NEXT:    movk    x16, #0, lsl #16
-; MACHO-NEXT:    movk    x16, #0, lsl #32
-; MACHO-NEXT:    movk    x16, #32768, lsl #48
-; MACHO-NEXT:    add     x17, x17, x16
-; MACHO-NEXT:    pacdza  x17
-; MACHO-NEXT:    mov     x0, x17
-; MACHO-NEXT:    ret
+; HINT-LABEL: test_global_huge_neg_offset_zero_disc:
+; HINT:       // %bb.0:
+; HINT-NEXT:    adrp    x17, :got:g
+; HINT-NEXT:    ldr     x17, [x17, :got_lo12:g]
+; HINT-NEXT:    mov     x16, #-65536
+; HINT-NEXT:    movk    x16, #0, lsl #16
+; HINT-NEXT:    movk    x16, #0, lsl #32
+; HINT-NEXT:    movk    x16, #32768, lsl #48
+; HINT-NEXT:    add     x17, x17, x16
+; HINT-NEXT:    mov     x16, xzr
+; HINT-NEXT:    pacia1716
+; HINT-NEXT:    mov     x0, x17
+; HINT-NEXT:    ret
+
 
   ret ptr ptrauth (ptr getelementptr (i8, ptr @g, i64 -9223372036854775808), i32 2)
 }
@@ -254,14 +262,16 @@ define ptr @test_global_disc() {
 ; ELF-NEXT:    mov     x0, x17
 ; ELF-NEXT:    ret
 
-; MACHO-LABEL: _test_global_disc:
-; MACHO:       ; %bb.0:
-; MACHO-NEXT:    adrp    x17, _g@GOTPAGE
-; MACHO-NEXT:    ldr     x17, [x17, _g@GOTPAGEOFF]
-; MACHO-NEXT:    mov     x16, #42 ; =0x2a
-; MACHO-NEXT:    pacia   x17, x16
-; MACHO-NEXT:    mov     x0, x17
-; MACHO-NEXT:    ret
+; HINT-LABEL: test_global_disc:
+; HINT:       // %bb.0:
+; HINT-NEXT:    adrp    x17, :got:g
+; HINT-NEXT:    ldr     x17, [x17, :got_lo12:g]
+; HINT-NEXT:    mov     x16, #42 // =0x2a
+; HINT-NEXT:    pacia1716
+; HINT-NEXT:    mov     x0, x17
+; HINT-NEXT:    ret
+
+
 
   ret ptr ptrauth (ptr @g, i32 0, i64 42)
 }
@@ -281,19 +291,18 @@ define ptr @test_global_addr_disc() {
 ; ELF-NEXT:    mov x0, x17
 ; ELF-NEXT:    ret
 
-; MACHO-LABEL: _test_global_addr_disc:
-; MACHO:       ; %bb.0:
-; MACHO-NEXT:   Lloh{{.*}}:
-; MACHO-NEXT:    adrp x8, _g.ref.da.42.addr@PAGE
-; MACHO-NEXT:   Lloh{{.*}}:
-; MACHO-NEXT:    add x8, x8, _g.ref.da.42.addr@PAGEOFF
-; MACHO-NEXT:    adrp x17, _g@GOTPAGE
-; MACHO-NEXT:    ldr x17, [x17, _g@GOTPAGEOFF]
-; MACHO-NEXT:    mov x16, x8
-; MACHO-NEXT:    movk x16, #42, lsl #48
-; MACHO-NEXT:    pacda x17, x16
-; MACHO-NEXT:    mov x0, x17
-; MACHO-NEXT:    ret
+; HINT-LABEL: test_global_addr_disc:
+; HINT:       // %bb.0:
+; HINT-NEXT:    adrp x8, g.ref.da.42.addr
+; HINT-NEXT:    add x8, x8, :lo12:g.ref.da.42.addr
+; HINT-NEXT:    adrp x17, :got:g
+; HINT-NEXT:    ldr x17, [x17, :got_lo12:g]
+; HINT-NEXT:    mov x16, x8
+; HINT-NEXT:    movk x16, #42, lsl #48
+; HINT-NEXT:    pacia1716
+; HINT-NEXT:    mov x0, x17
+; HINT-NEXT:    ret
+
 
   ret ptr ptrauth (ptr @g, i32 2, i64 42, ptr @g.ref.da.42.addr)
 }
@@ -307,13 +316,16 @@ define ptr @test_global_process_specific() {
 ; ELF-NEXT:    mov     x0, x17
 ; ELF-NEXT:    ret
 
-; MACHO-LABEL: _test_global_process_specific:
-; MACHO:       ; %bb.0:
-; MACHO-NEXT:    adrp    x17, _g@GOTPAGE
-; MACHO-NEXT:    ldr     x17, [x17, _g@GOTPAGEOFF]
-; MACHO-NEXT:    pacizb  x17
-; MACHO-NEXT:    mov     x0, x17
-; MACHO-NEXT:    ret
+; HINT-LABEL: test_global_process_specific:
+; HINT:       // %bb.0:
+; HINT-NEXT:    adrp    x17, :got:g
+; HINT-NEXT:    ldr     x17, [x17, :got_lo12:g]
+; HINT-NEXT:    mov     x16, xzr
+; HINT-NEXT:    pacib1716
+; HINT-NEXT:    mov     x0, x17
+; HINT-NEXT:    ret
+
+
 
   ret ptr ptrauth (ptr @g, i32 1)
 }
@@ -329,13 +341,16 @@ define ptr @test_global_strong_def() {
 ; ELF-NEXT:    mov     x0, x17
 ; ELF-NEXT:    ret
 
-; MACHO-LABEL: _test_global_strong_def:
-; MACHO:       ; %bb.0:
-; MACHO-NEXT:    adrp    x17, _g_strong_def@PAGE
-; MACHO-NEXT:    add     x17, x17, _g_strong_def@PAGEOFF
-; MACHO-NEXT:    pacdza  x17
-; MACHO-NEXT:    mov     x0, x17
-; MACHO-NEXT:    ret
+; HINT-LABEL: test_global_strong_def:
+; HINT:       // %bb.0:
+; HINT-NEXT:    adrp    x17, g_strong_def
+; HINT-NEXT:    add     x17, x17, :lo12:g_strong_def
+; HINT-NEXT:    mov     x16, xzr
+; HINT-NEXT:    pacia1716
+; HINT-NEXT:    mov     x0, x17
+; HINT-NEXT:    ret
+
+
 
   ret ptr ptrauth (ptr @g_strong_def, i32 2)
 }
@@ -351,11 +366,11 @@ define ptr @test_global_weak() {
 ; ELF-NEXT:    ldr     x0, [x0, :lo12:g_weak$auth_ptr$ia$42]
 ; ELF-NEXT:    ret
 
-; MACHO-LABEL: _test_global_weak:
-; MACHO:       ; %bb.0:
-; MACHO-NEXT:    adrp    x0, l_g_weak$auth_ptr$ia$42@PAGE
-; MACHO-NEXT:    ldr     x0, [x0, l_g_weak$auth_ptr$ia$42@PAGEOFF]
-; MACHO-NEXT:    ret
+; HINT-LABEL: test_global_weak:
+; HINT:       // %bb.0:
+; HINT-NEXT:    adrp    x0, g_weak$auth_ptr$ia$42
+; HINT-NEXT:    ldr     x0, [x0, :lo12:g_weak$auth_ptr$ia$42]
+; HINT-NEXT:    ret
 
   ret ptr ptrauth (ptr @g_weak, i32 0, i64 42)
 }
@@ -371,11 +386,13 @@ define ptr @test_global_weak_2() {
 ; ELF-NEXT:    ldr     x0, [x0, :lo12:g_weak_2$auth_ptr$ia$42]
 ; ELF-NEXT:    ret
 
-; MACHO-LABEL: _test_global_weak_2:
-; MACHO:       ; %bb.0:
-; MACHO-NEXT:    adrp    x0, l_g_weak_2$auth_ptr$ia$42@PAGE
-; MACHO-NEXT:    ldr     x0, [x0, l_g_weak_2$auth_ptr$ia$42@PAGEOFF]
-; MACHO-NEXT:    ret
+; HINT-LABEL: test_global_weak_2:
+; HINT:       // %bb.0:
+; HINT-NEXT:    adrp    x0, g_weak_2$auth_ptr$ia$42
+; HINT-NEXT:    ldr     x0, [x0, :lo12:g_weak_2$auth_ptr$ia$42]
+; HINT-NEXT:    ret
+
+
 
   ret ptr ptrauth (ptr @g_weak_2, i32 0, i64 42)
 }
@@ -385,7 +402,8 @@ define ptr @test_global_weak_2() {
 ; ELF-LABEL: g_weak_2$auth_ptr$ia$42:
 ; ELF-NEXT:    .xword  g_weak_2@AUTH(ia,42)
 
-; MACHO-LABEL: l_g_weak$auth_ptr$ia$42:
-; MACHO-NEXT:    .quad  _g_weak@AUTH(ia,42)
-; MACHO-LABEL: l_g_weak_2$auth_ptr$ia$42:
-; MACHO-NEXT:    .quad  _g_weak_2@AUTH(ia,42)
+; HINT-LABEL: g_weak$auth_ptr$ia$42:
+; HINT-NEXT:    .xword  g_weak@AUTH(ia,42)
+; HINT-LABEL: g_weak_2$auth_ptr$ia$42:
+; HINT-NEXT:    .xword  g_weak_2@AUTH(ia,42)
+
