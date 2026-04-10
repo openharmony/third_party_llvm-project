@@ -423,7 +423,23 @@ public:
       L.removeAddressSpace();
       R.removeAddressSpace();
     }
+
+    if (L.hasNopac() && R.hasNopac()) {
+      Q.addNopac();
+      L.removeNopac();
+      R.removeNopac();
+    }
     return Q;
+  }
+
+   bool hasNopac() const { return Mask & NopacMask; }
+   void addNopac() { Mask |= NopacMask; }
+   void removeNopac() { Mask &= ~NopacMask; }
+
+   Qualifiers withNopac() const {
+     Qualifiers Qs = *this;
+     Qs.addNopac();
+     return Qs;
   }
 
   static Qualifiers fromFastMask(unsigned Mask) {
@@ -650,10 +666,10 @@ public:
   void addQualifiers(Qualifiers Q) {
     // If the other set doesn't have any non-boolean qualifiers, just
     // bit-or it in.
-    if (!(Q.Mask & ~CVRMask))
+    if (!(Q.Mask & ~(CVRMask | NopacMask)))
       Mask |= Q.Mask;
     else {
-      Mask |= (Q.Mask & CVRMask);
+      Mask |= (Q.Mask & (CVRMask | NopacMask));
       if (Q.hasAddressSpace())
         addAddressSpace(Q.getAddressSpace());
       if (Q.hasObjCGCAttr())
@@ -669,10 +685,10 @@ public:
   void removeQualifiers(Qualifiers Q) {
     // If the other set doesn't have any non-boolean qualifiers, just
     // bit-and the inverse in.
-    if (!(Q.Mask & ~CVRMask))
+    if (!(Q.Mask & ~(CVRMask | NopacMask)))
       Mask &= ~Q.Mask;
     else {
-      Mask &= ~(Q.Mask & CVRMask);
+      Mask &= ~(Q.Mask & (CVRMask | NopacMask));
       if (getObjCGCAttr() == Q.getObjCGCAttr())
         removeObjCGCAttr();
       if (getObjCLifetime() == Q.getObjCLifetime())
@@ -804,8 +820,12 @@ public:
   void Profile(llvm::FoldingSetNodeID &ID) const { ID.AddInteger(Mask); }
 
 private:
-  // bits:     |0 1 2|3|4 .. 5|6  ..  8|9   ...   31|32 ... 63|
-  //           |C R V|U|GCAttr|Lifetime|AddressSpace| PtrAuth |
+  // obsolete // bits:     |0 1 2|3|4 .. 5|6  ..  8|9   ...   31|32 ... 63|
+  // obsolete //           |C R V|U|GCAttr|Lifetime|AddressSpace| PtrAuth |
+
+  // bits:     |0 1 2|3|4 .. 5|6  ..  8|9    |10  ...   31|32 ... 63|
+  //           |C R V|U|GCAttr|Lifetime|Nopac|AddressSpace| PtrAuth |
+
   uint64_t Mask = 0;
   static_assert(sizeof(PointerAuthQualifier) == sizeof(uint32_t),
                 "PointerAuthQualifier must be 32 bits");
@@ -819,9 +839,14 @@ private:
   static constexpr uint64_t GCAttrShift = 4;
   static constexpr uint64_t LifetimeMask = 0x1C0;
   static constexpr uint64_t LifetimeShift = 6;
+
+  static const uint64_t NopacMask = 0x200;
+  static const uint64_t NopacShift = 9;
+
   static constexpr uint64_t AddressSpaceMask =
-      ~(CVRMask | UMask | GCAttrMask | LifetimeMask | PtrAuthMask);
-  static constexpr uint64_t AddressSpaceShift = 9;
+      ~(CVRMask | UMask | GCAttrMask | LifetimeMask | NopacMask | PtrAuthMask);
+  static constexpr uint64_t AddressSpaceShift = 10;
+
 };
 
 class QualifiersAndAtomic {
@@ -995,6 +1020,10 @@ public:
 
   const Type *operator->() const {
     return getTypePtr();
+  }
+
+  bool hasNopac() const {
+    return getQualifiers().hasNopac();
   }
 
   bool isCanonical() const;

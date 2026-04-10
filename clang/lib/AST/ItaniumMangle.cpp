@@ -1499,8 +1499,7 @@ void CXXNameMangler::mangleUnqualifiedName(
   }
   if (pauth_func) {
     if (const FunctionDecl *A = dyn_cast<const FunctionDecl>(GD.getDecl()))
-      isPac = langOptions.PointerAuthMangleFunc
-        && ctx.isFunctionDeclPtr2Fun(A) && !A->isNoPac();
+      isPac = langOptions.PointerAuthMangleClass && !A->isNoPac();
   }
 
   unsigned Arity = KnownArity;

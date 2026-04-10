@@ -3199,6 +3199,18 @@ void MachO::addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
     if (!DriverArgs.hasArg(options::OPT_fptrauth_calls,
                            options::OPT_fno_ptrauth_calls))
       CC1Args.push_back("-fptrauth-calls");
+    if (!DriverArgs.hasArg(options::OPT_fptrauth_icall,
+                           options::OPT_fno_ptrauth_icall))
+      CC1Args.push_back("-fptrauth-icall");
+    if (!DriverArgs.hasArg(options::OPT_fptrauth_vcall,
+                           options::OPT_fno_ptrauth_vcall))
+      CC1Args.push_back("-fptrauth-vcall");
+    if (!DriverArgs.hasArg(options::OPT_fptrauth_mfcall,
+                           options::OPT_fno_ptrauth_mfcall))
+      CC1Args.push_back("-fptrauth-mfcall");
+    if (!DriverArgs.hasArg(options::OPT_fptrauth_vptr,
+                           options::OPT_fno_ptrauth_vptr))
+      CC1Args.push_back("-fptrauth-vptr");
     if (!DriverArgs.hasArg(options::OPT_fptrauth_returns,
                            options::OPT_fno_ptrauth_returns))
       CC1Args.push_back("-fptrauth-returns");
@@ -3232,6 +3244,33 @@ void MachO::addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
     if (!DriverArgs.hasArg(options::OPT_fptrauth_objc_interface_sel,
                            options::OPT_fno_ptrauth_objc_interface_sel))
       CC1Args.push_back("-fptrauth-objc-interface-sel");
+    if (!DriverArgs.hasArg(options::OPT_fptrauth_nopac_atexit,
+                           options::OPT_fno_ptrauth_nopac_atexit))
+      CC1Args.push_back("-fptrauth-nopac-atexit");
+    if (!DriverArgs.hasArg(options::OPT_fptrauth_nopac_throw,
+                           options::OPT_fno_ptrauth_nopac_throw))
+      CC1Args.push_back("-fptrauth-nopac-throw");
+    
+    if (!DriverArgs.hasArg(
+        options::OPT_fptrauth_cxx_function_pointer_zero_discrimination,
+        options::OPT_fno_ptrauth_cxx_function_pointer_zero_discrimination))
+      CC1Args.push_back("-fptrauth-cxx-function-pointer-zero-discrimination");
+    if (!DriverArgs.hasArg(
+        options::OPT_fptrauth_cxx_virtual_function_pointer_zero_discrimination,
+        options::OPT_fno_ptrauth_cxx_virtual_function_pointer_zero_discrimination))
+      CC1Args.push_back("-fptrauth-cxx-virtual-function-pointer-zero-discrimination");
+    if (!DriverArgs.hasArg(options::OPT_fptrauth_init_fini_zero_discrimination,
+        options::OPT_fno_ptrauth_init_fini_zero_discrimination))
+      CC1Args.push_back("-fptrauth-init-fini-zero-discrimination");
+    if (!DriverArgs.hasArg(options::OPT_fptrauth_mangle_class,
+        options::OPT_fno_ptrauth_mangle_class))
+      CC1Args.push_back("-fptrauth-mangle-class");
+    if (!DriverArgs.hasArg(options::OPT_fptrauth_mangle_func,
+        options::OPT_fno_ptrauth_mangle_func))
+      CC1Args.push_back("-fptrauth-mangle-func");
+    if (!DriverArgs.hasArg(options::OPT_fptrauth_mangle_cxxabi,
+        options::OPT_fno_ptrauth_mangle_cxxabi))
+      CC1Args.push_back("-fptrauth-mangle-cxxabi");
   }
 }
 

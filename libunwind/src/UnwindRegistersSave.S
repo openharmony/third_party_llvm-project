@@ -778,7 +778,9 @@ LnoR2Fix:
   .p2align 2
 DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || __has_feature(ptrauth_icall) ||    \
+    __has_feature(ptrauth_vcall) || __has_feature(ptrauth_mfcall) ||   \
+    __has_feature(ptrauth_vptr)
   pacibsp
 #endif
 
@@ -823,7 +825,9 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 #endif
   mov    x0, #0                   // return UNW_ESUCCESS
 
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || __has_feature(ptrauth_icall) ||    \
+    __has_feature(ptrauth_vcall) || __has_feature(ptrauth_mfcall) ||   \
+    __has_feature(ptrauth_vptr)
   retab
 #else
   ret
@@ -847,7 +851,9 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   .p2align 2
 DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_za_disable)
   .variant_pcs __libunwind_Registers_arm64_za_disable
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || __has_feature(ptrauth_icall) ||    \
+    __has_feature(ptrauth_vcall) || __has_feature(ptrauth_mfcall) ||   \
+    __has_feature(ptrauth_vptr)
   pacibsp
 #endif
   // If TPIDR2_EL0 is null, the subroutine just disables ZA.
@@ -885,7 +891,9 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_arm64_za_disable)
   // * Return zero (success)
   mov x0, xzr
 2:
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || __has_feature(ptrauth_icall) ||    \
+    __has_feature(ptrauth_vcall) || __has_feature(ptrauth_mfcall) ||   \
+    __has_feature(ptrauth_vptr)
   retab
 #else
   ret

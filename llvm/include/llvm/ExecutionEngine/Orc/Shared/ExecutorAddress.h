@@ -20,7 +20,9 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include <cassert>
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || __has_feature(ptrauth_icall) ||      \
+    __has_feature(ptrauth_vcall) || __has_feature(ptrauth_mfcall) ||     \
+    __has_feature(ptrauth_vptr)
 #include <ptrauth.h>
 #endif
 #include <type_traits>
@@ -36,7 +38,9 @@ public:
   /// A wrap/unwrap function that leaves pointers unmodified.
   using rawPtr = llvm::identity;
 
-#if __has_feature(ptrauth_calls)
+#if __has_feature(ptrauth_calls) || __has_feature(ptrauth_icall) ||      \
+    __has_feature(ptrauth_vcall) || __has_feature(ptrauth_mfcall) ||     \
+    __has_feature(ptrauth_vptr)
   template <typename T> class PtrauthSignDefault {
   public:
     constexpr T *operator()(T *P) {

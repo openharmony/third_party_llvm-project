@@ -287,6 +287,7 @@ public:
   bool isLittleEndian() const { return IsLittle; }
 
   bool isTargetDarwin() const { return TargetTriple.isOSDarwin(); }
+  bool isTargetOHOS() const { return TargetTriple.isOHOSFamily(); }
   bool isTargetIOS() const { return TargetTriple.isiOS(); }
   bool isTargetLinux() const { return TargetTriple.isOSLinux(); }
   bool isTargetWindows() const { return TargetTriple.isOSWindows(); }
