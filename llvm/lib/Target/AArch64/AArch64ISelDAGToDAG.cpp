@@ -364,6 +364,8 @@ public:
 
   bool tryIndexedLoad(SDNode *N);
 
+  void SelectPtrauthStrip(SDNode *N);
+  void SelectPtrauthSign(SDNode *N);
   void SelectPtrauthAuth(SDNode *N);
   void SelectPtrauthResign(SDNode *N);
 
@@ -1539,6 +1541,48 @@ extractPtrauthBlendDiscriminators(SDValue Disc, SelectionDAG *DAG) {
       AddrDisc);
 }
 
+static SDNode *SelectPtrauthHintStripNode(SDNode *N, SelectionDAG *CurDAG) {
+  SDLoc DL(N);
+  SDValue Val = N->getOperand(1);
+
+  return CurDAG->getMachineNode(AArch64::XPAC, DL, MVT::i64, Val);
+}
+
+void AArch64DAGToDAGISel::SelectPtrauthStrip(SDNode *N) {
+  if (Subtarget->hasPAuthHintOnly())
+    ReplaceNode(N, SelectPtrauthHintStripNode(N, CurDAG));
+  else
+    SelectCode(N);
+}
+
+static SDNode *SelectPtrauthHintSignNode(SDNode *N, SelectionDAG *CurDAG) {
+  SDLoc DL(N);
+  // IntrinsicID is operand #0
+  SDValue Val = N->getOperand(1);
+  SDValue AUTKey = N->getOperand(2);
+  SDValue AUTDisc = N->getOperand(3);
+
+  unsigned AUTKeyC = cast<ConstantSDNode>(AUTKey)->getZExtValue();
+  AUTKey = CurDAG->getTargetConstant(AUTKeyC, DL, MVT::i64);
+
+  SDValue AUTAddrDisc, AUTConstDisc;
+  std::tie(AUTConstDisc, AUTAddrDisc) =
+      extractPtrauthBlendDiscriminators(AUTDisc, CurDAG);
+
+  SDValue X17Copy = CurDAG->getCopyToReg(CurDAG->getEntryNode(), DL,
+                                         AArch64::X17, Val, SDValue());
+  SDValue Ops[] = {AUTKey, AUTConstDisc, AUTAddrDisc, X17Copy.getValue(1)};
+
+  return CurDAG->getMachineNode(AArch64::PACHintOnly, DL, MVT::i64, Ops);
+}
+
+void AArch64DAGToDAGISel::SelectPtrauthSign(SDNode *N) {
+  if (Subtarget->hasPAuthHintOnly())
+    ReplaceNode(N, SelectPtrauthHintSignNode(N, CurDAG));
+  else
+    SelectCode(N);
+}
+
 void AArch64DAGToDAGISel::SelectPtrauthAuth(SDNode *N) {
   SDLoc DL(N);
   // IntrinsicID is operand #0
@@ -1553,16 +1597,16 @@ void AArch64DAGToDAGISel::SelectPtrauthAuth(SDNode *N) {
   std::tie(AUTConstDisc, AUTAddrDisc) =
       extractPtrauthBlendDiscriminators(AUTDisc, CurDAG);
 
-  if (!Subtarget->isX16X17Safer()) {
+  if (!Subtarget->isX16X17Safer() && !Subtarget->hasPAuthHintOnly()) {
     SDValue Ops[] = {Val, AUTKey, AUTConstDisc, AUTAddrDisc};
 
     SDNode *AUT =
         CurDAG->getMachineNode(AArch64::AUTxMxN, DL, MVT::i64, MVT::i64, Ops);
     ReplaceNode(N, AUT);
   } else {
-    SDValue X16Copy = CurDAG->getCopyToReg(CurDAG->getEntryNode(), DL,
-                                           AArch64::X16, Val, SDValue());
-    SDValue Ops[] = {AUTKey, AUTConstDisc, AUTAddrDisc, X16Copy.getValue(1)};
+    SDValue X17Copy = CurDAG->getCopyToReg(CurDAG->getEntryNode(), DL,
+                                           AArch64::X17, Val, SDValue());
+    SDValue Ops[] = {AUTKey, AUTConstDisc, AUTAddrDisc, X17Copy.getValue(1)};
 
     SDNode *AUT = CurDAG->getMachineNode(AArch64::AUTx16x17, DL, MVT::i64, Ops);
     ReplaceNode(N, AUT);
@@ -1592,11 +1636,11 @@ void AArch64DAGToDAGISel::SelectPtrauthResign(SDNode *N) {
   std::tie(PACConstDisc, PACAddrDisc) =
       extractPtrauthBlendDiscriminators(PACDisc, CurDAG);
 
-  SDValue X16Copy = CurDAG->getCopyToReg(CurDAG->getEntryNode(), DL,
-                                         AArch64::X16, Val, SDValue());
+  SDValue X17Copy = CurDAG->getCopyToReg(CurDAG->getEntryNode(), DL,
+                                         AArch64::X17, Val, SDValue());
 
   SDValue Ops[] = {AUTKey,       AUTConstDisc, AUTAddrDisc,        PACKey,
-                   PACConstDisc, PACAddrDisc,  X16Copy.getValue(1)};
+                   PACConstDisc, PACAddrDisc,  X17Copy.getValue(1)};
 
   SDNode *AUTPAC = CurDAG->getMachineNode(AArch64::AUTPAC, DL, MVT::i64, Ops);
   ReplaceNode(N, AUTPAC);
@@ -5789,6 +5833,12 @@ void AArch64DAGToDAGISel::Select(SDNode *Node) {
     case Intrinsic::aarch64_tagp:
       SelectTagP(Node);
       return;
+
+    case Intrinsic::ptrauth_strip:
+      return SelectPtrauthStrip(Node);
+
+    case Intrinsic::ptrauth_sign:
+      return SelectPtrauthSign(Node);
 
     case Intrinsic::ptrauth_auth:
       SelectPtrauthAuth(Node);

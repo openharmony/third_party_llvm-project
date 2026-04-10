@@ -5261,6 +5261,12 @@ def ClspvLibclcBuiltin: InheritableAttr {
   let SimpleHandler = 1;
 }
 
+def Nopac : DeclOrTypeAttr {
+  let Spellings = [Clang<"nopac">];
+  let Subjects = SubjectList<[Var, Function, CXXRecord, TypedefName, Record, Type, Field, FunctionLike]>;
+  let Documentation = [Undocumented];
+}
+
 def NoTrivialAutoVarInit: InheritableAttr {
   let Spellings = [Declspec<"no_init_all">];
   let Subjects = SubjectList<[Function, Tag]>;

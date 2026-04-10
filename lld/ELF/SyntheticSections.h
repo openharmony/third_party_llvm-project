@@ -486,9 +486,8 @@ public:
   /// Add a dynamic relocation without writing an addend to the output section.
   /// This overload can be used if the addends are written directly instead of
   /// using relocations on the input section (e.g. MipsGotSection::writeTo()).
-  template <bool shard = false> void addReloc(const DynamicReloc &reloc) {
-    relocs.push_back(reloc);
-  }
+  template <bool shard = false> void addReloc(const DynamicReloc &reloc);
+
   /// Add a dynamic relocation against \p sym with an optional addend.
   void addSymbolReloc(RelType dynType, InputSectionBase &isec,
                       uint64_t offsetInSec, Symbol &sym, int64_t addend = 0,
@@ -525,7 +524,8 @@ public:
   }
   bool isNeeded() const override {
     return !relocs.empty() ||
-           llvm::any_of(relocsVec, [](auto &v) { return !v.empty(); });
+           llvm::any_of(relocsVec, [](auto &v) { return !v.empty(); }) ||
+           !relocsCfi.empty();
   }
   size_t getSize() const override { return relocs.size() * this->entsize; }
   size_t getRelativeRelocCount() const { return numRelativeRelocs; }
@@ -535,6 +535,7 @@ public:
 
   int32_t dynamicTag, sizeDynamicTag;
   SmallVector<DynamicReloc, 0> relocs;
+  SmallVector<DynamicReloc, 0> relocsCfi;
 
 protected:
   void computeRels();

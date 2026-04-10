@@ -2507,6 +2507,9 @@ Writer<ELFT>::createPhdrs(Partition &part) {
   if (OutputSection *cmd = findSection(ctx, ".note.gnu.property", partNo))
     addHdr(PT_GNU_PROPERTY, PF_R)->add(cmd);
 
+  if (OutputSection *cmd = findSection(ctx, ".cfi.modifier.ro", partNo))
+    addHdr(PT_OHOS_CFI_MODIFIER, cmd->getPhdrFlags())->add(cmd);
+
   // Create one PT_NOTE per a group of contiguous SHT_NOTE sections with the
   // same alignment.
   PhdrEntry *note = nullptr;

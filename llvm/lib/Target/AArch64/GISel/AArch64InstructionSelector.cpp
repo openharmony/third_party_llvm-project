@@ -2621,7 +2621,10 @@ bool AArch64InstructionSelector::select(MachineInstr &I) {
     const Function &Fn = MF.getFunction();
     if (std::optional<uint16_t> BADisc =
             STI.getPtrAuthBlockAddressDiscriminatorIfEnabled(Fn)) {
-      auto MI = MIB.buildInstr(AArch64::BRA, {}, {I.getOperand(0).getReg()});
+      unsigned int Opcode = AArch64::BRA;
+      if (STI.hasPAuthHintOnly())
+        Opcode = AArch64::BRAHintOnly;
+      auto MI = MIB.buildInstr(Opcode, {}, {I.getOperand(0).getReg()});
       MI.addImm(AArch64PACKey::IA);
       MI.addImm(*BADisc);
       MI.addReg(/*AddrDisc=*/AArch64::XZR);
@@ -3541,7 +3544,7 @@ bool AArch64InstructionSelector::select(MachineInstr &I) {
           .addReg(/*AddrDisc=*/AArch64::XZR)
           .addImm(*BADisc)
           .constrainAllUses(TII, TRI, RBI);
-      MIB.buildCopy(I.getOperand(0).getReg(), Register(AArch64::X16));
+      MIB.buildCopy(I.getOperand(0).getReg(), Register(AArch64::X17));
       RBI.constrainGenericRegister(I.getOperand(0).getReg(),
                                    AArch64::GPR64RegClass, MRI);
       I.eraseFromParent();
@@ -6624,8 +6627,8 @@ bool AArch64InstructionSelector::selectIntrinsic(MachineInstr &I,
     std::tie(PACConstDiscC, PACAddrDisc) =
         extractPtrauthBlendDiscriminators(PACDisc, MRI);
 
-    MIB.buildCopy({AArch64::X16}, {ValReg});
-    MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X17}, {});
+    MIB.buildCopy({AArch64::X17}, {ValReg});
+    MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X16}, {});
     MIB.buildInstr(AArch64::AUTPAC)
         .addImm(AUTKey)
         .addImm(AUTConstDiscC)
@@ -6634,7 +6637,7 @@ bool AArch64InstructionSelector::selectIntrinsic(MachineInstr &I,
         .addImm(PACConstDiscC)
         .addUse(PACAddrDisc)
         .constrainAllUses(TII, TRI, RBI);
-    MIB.buildCopy({DstReg}, Register(AArch64::X16));
+    MIB.buildCopy({DstReg}, Register(AArch64::X17));
 
     RBI.constrainGenericRegister(DstReg, AArch64::GPR64RegClass, MRI);
     I.eraseFromParent();
@@ -6651,15 +6654,15 @@ bool AArch64InstructionSelector::selectIntrinsic(MachineInstr &I,
     std::tie(AUTConstDiscC, AUTAddrDisc) =
         extractPtrauthBlendDiscriminators(AUTDisc, MRI);
 
-    if (STI.isX16X17Safer()) {
-      MIB.buildCopy({AArch64::X16}, {ValReg});
-      MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X17}, {});
+    if (STI.isX16X17Safer() || STI.hasPAuthHintOnly()) {
+      MIB.buildCopy({AArch64::X17}, {ValReg});
+      MIB.buildInstr(TargetOpcode::IMPLICIT_DEF, {AArch64::X16}, {});
       MIB.buildInstr(AArch64::AUTx16x17)
           .addImm(AUTKey)
           .addImm(AUTConstDiscC)
           .addUse(AUTAddrDisc)
           .constrainAllUses(TII, TRI, RBI);
-      MIB.buildCopy({DstReg}, Register(AArch64::X16));
+      MIB.buildCopy({DstReg}, Register(AArch64::X17));
     } else {
       Register ScratchReg =
           MRI.createVirtualRegister(&AArch64::GPR64commonRegClass);
@@ -6695,7 +6698,7 @@ bool AArch64InstructionSelector::selectIntrinsic(MachineInstr &I,
             MF, TII, AArch64::LR, AArch64::GPR64RegClass, I.getDebugLoc());
       }
 
-      if (STI.hasPAuth()) {
+      if (STI.hasPAuth() && !STI.hasPAuthHintOnly()) {
         MIB.buildInstr(AArch64::XPACI, {DstReg}, {MFReturnAddr});
       } else {
         MIB.buildCopy({Register(AArch64::LR)}, {MFReturnAddr});
@@ -6722,7 +6725,7 @@ bool AArch64InstructionSelector::selectIntrinsic(MachineInstr &I,
     else {
       MFI.setReturnAddressIsTaken(true);
 
-      if (STI.hasPAuth()) {
+      if (STI.hasPAuth() && !STI.hasPAuthHintOnly()) {
         Register TmpReg = MRI.createVirtualRegister(&AArch64::GPR64RegClass);
         MIB.buildInstr(AArch64::LDRXui, {TmpReg}, {FrameAddr}).addImm(1);
         MIB.buildInstr(AArch64::XPACI, {DstReg}, {TmpReg});
@@ -6881,7 +6884,7 @@ bool AArch64InstructionSelector::selectPtrAuthGlobalValue(
         .addReg(HasAddrDisc ? AddrDisc : AArch64::XZR)
         .addImm(Disc)
         .constrainAllUses(TII, TRI, RBI);
-    MIB.buildCopy(DefReg, Register(AArch64::X16));
+    MIB.buildCopy(DefReg, Register(AArch64::X17));
     RBI.constrainGenericRegister(DefReg, AArch64::GPR64RegClass, MRI);
     I.eraseFromParent();
     return true;

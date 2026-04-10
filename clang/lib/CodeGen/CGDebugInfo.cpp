@@ -1204,6 +1204,7 @@ static void stripUnusedQualifiers(Qualifiers &Q) {
   Q.removeAddressSpace();
   Q.removeObjCLifetime();
   Q.removeUnaligned();
+  Q.removeNopac();
 }
 
 static llvm::dwarf::Tag getNextQualifier(Qualifiers &Q) {

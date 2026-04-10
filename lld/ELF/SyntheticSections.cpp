@@ -1642,6 +1642,15 @@ RelocationBaseSection::RelocationBaseSection(Ctx &ctx, StringRef name,
       dynamicTag(dynamicTag), sizeDynamicTag(sizeDynamicTag),
       relocsVec(concurrency), combreloc(combreloc) {}
 
+template <bool shard> void
+RelocationBaseSection::addReloc(const DynamicReloc &reloc) {
+  const OutputSection *relOsec = reloc.inputSec->getOutputSection();
+  if (relOsec && relOsec->name == ".cfi.modifier.ro")
+    relocsCfi.push_back(reloc);
+  else
+    relocs.push_back(reloc);
+}
+
 void RelocationBaseSection::addSymbolReloc(
     RelType dynType, InputSectionBase &isec, uint64_t offsetInSec, Symbol &sym,
     int64_t addend, std::optional<RelType> addendRelType) {
@@ -1664,8 +1673,16 @@ void RelocationBaseSection::mergeRels() {
   for (const auto &v : relocsVec)
     newSize += v.size();
   relocs.reserve(newSize);
-  for (const auto &v : relocsVec)
-    llvm::append_range(relocs, v);
+
+  for (const auto &v : relocsVec) {
+    for (const auto &reloc : v) {
+      const OutputSection *relOsec = reloc.inputSec->getOutputSection();
+      if (relOsec && relOsec->name == ".cfi.modifier.ro")
+        relocsCfi.push_back(reloc);
+      else
+        relocs.push_back(reloc);
+    }
+  }
   relocsVec.clear();
 }
 
@@ -1746,6 +1763,12 @@ template <class ELFT> void RelocationSection<ELFT>::writeTo(uint8_t *buf) {
     if (ctx.arg.isRela)
       p->r_addend = rel.addend;
     buf += ctx.arg.isRela ? sizeof(Elf_Rela) : sizeof(Elf_Rel);
+  }
+  for (const DynamicReloc &rel : relocsCfi) {
+      const OutputSection *relOsec = rel.inputSec->getOutputSection();
+      uint64_t offset =
+          relOsec->offset + rel.inputSec->getOffset(rel.offsetInSec);
+      write64le(ctx.bufferStart + offset, rel.sym->getVA(ctx, rel.addend));
   }
 }
 

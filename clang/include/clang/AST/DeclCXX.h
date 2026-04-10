@@ -558,6 +558,8 @@ public:
     return const_cast<CXXRecordDecl *>(this);
   }
 
+  bool isNoPac() const;
+
   bool hasDefinition() const { return DefinitionData || dataPtr(); }
 
   static CXXRecordDecl *Create(const ASTContext &C, TagKind TK, DeclContext *DC,

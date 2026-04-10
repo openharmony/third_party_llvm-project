@@ -1701,6 +1701,24 @@ static void handleAliasAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
   if (!S.checkStringLiteralArgumentAttr(AL, 0, Str))
     return;
 
+  auto FD = dyn_cast<FunctionDecl>(D);
+  // todo: unify this with the test from getMangledNameImpl
+  bool isPac = S.getLangOpts().PointerAuthMangleFunc && FD &&
+      S.Context.isFunctionDeclPtr2Fun(FD) && !FD->isNoPac();
+  isPac = isPac
+    && Str.str() != "__cxa_throw"
+    && Str.str() != "__cxa_atexit"
+    && Str.str() != "dl_iterate_phdr"
+    && Str.str() != "pthread_key_create"
+    && Str.str() != "pthread_once"
+    && Str.str() != "__clone"
+    ;
+  std::string PACNameStorage;
+  if (isPac) {
+    PACNameStorage = "PAC_" + Str.str();
+    Str = StringRef(PACNameStorage);
+  }
+
   if (S.Context.getTargetInfo().getTriple().isOSDarwin()) {
     S.Diag(AL.getLoc(), diag::err_alias_not_supported_on_darwin);
     return;
@@ -6828,7 +6846,8 @@ static void handleVTablePointerAuthentication(Sema &S, Decl *D,
       AL.setInvalid();
     }
     if (KeyType == VTablePointerAuthenticationAttr::DefaultKey &&
-        !S.getLangOpts().PointerAuthCalls) {
+        !S.getLangOpts().PointerAuthCalls &&
+        !S.getLangOpts().VTablePointerAuthOnly) {
       S.Diag(AL.getLoc(), diag::err_no_default_vtable_pointer_auth) << 0;
       AL.setInvalid();
     }
@@ -6852,7 +6871,8 @@ static void handleVTablePointerAuthentication(Sema &S, Decl *D,
       }
       if (AddressDiversityMode ==
               VTablePointerAuthenticationAttr::DefaultAddressDiscrimination &&
-          !S.getLangOpts().PointerAuthCalls) {
+          !S.getLangOpts().PointerAuthCalls &&
+          !S.getLangOpts().VTablePointerAuthOnly) {
         S.Diag(IL->getLoc(), diag::err_no_default_vtable_pointer_auth) << 1;
         AL.setInvalid();
       }
@@ -6874,7 +6894,7 @@ static void handleVTablePointerAuthentication(Sema &S, Decl *D,
         AL.setInvalid();
       }
       if (ED == VTablePointerAuthenticationAttr::DefaultExtraDiscrimination &&
-          !S.getLangOpts().PointerAuthCalls) {
+          !S.getLangOpts().PointerAuthCalls && !S.getLangOpts().VTablePointerAuthOnly) {
         S.Diag(AL.getLoc(), diag::err_no_default_vtable_pointer_auth) << 2;
         AL.setInvalid();
       }
@@ -7844,6 +7864,31 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
 
   case ParsedAttr::AT_VTablePointerAuthentication:
     handleVTablePointerAuthentication(S, D, AL);
+    break;
+
+  case ParsedAttr::AT_Nopac:
+    if (!S.getLangOpts().UseNopacAttribute)
+      break;
+    handleSimpleAttribute<NopacAttr>(S, D, AL);
+    {
+      bool hasNopac;
+      if (FunctionDecl *FD = D->getAsFunction())
+        S.Context.addNopacFunctionDecl(FD);
+      else if (TypedefNameDecl *TND = dyn_cast<TypedefNameDecl> (D))
+        S.Context.AddNopacTypedefNameDecl(TND);
+      else if (VarDecl *VD = dyn_cast<VarDecl> (D)) {
+        auto t = VD->getType();
+        auto t2 = S.Context.getNopacQualType(t, hasNopac);
+        if (hasNopac)
+          VD->setType(t2);
+      }
+      else if (FieldDecl *FD = dyn_cast<FieldDecl> (D)) {
+        auto t = FD->getType();
+        auto t2 = S.Context.getNopacQualType(t, hasNopac);
+        if (hasNopac)
+          FD->setType(t2);
+      }
+    }
     break;
   }
 }

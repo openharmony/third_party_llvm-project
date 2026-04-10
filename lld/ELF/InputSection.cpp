@@ -1324,8 +1324,11 @@ template <class ELFT> void InputSection::writeTo(Ctx &ctx, uint8_t *buf) {
 
   // Copy section contents from source object file to output file
   // and then apply relocations.
-  memcpy(buf, content().data(), content().size());
-  relocate<ELFT>(ctx, buf, buf + content().size());
+  if (name != ".cfi.modifier.ro" ||
+      (*((const int64_t *)content().data()) != 0)) {
+    memcpy(buf, content().data(), content().size());
+    relocate<ELFT>(ctx, buf, buf + content().size());
+  }
 }
 
 void InputSection::replace(InputSection *other) {

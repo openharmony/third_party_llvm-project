@@ -1678,6 +1678,14 @@ void Clang::AddAArch64TargetArgs(const ArgList &Args,
                       options::OPT_fno_ptrauth_intrinsics);
     Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_calls,
                       options::OPT_fno_ptrauth_calls);
+    Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_icall,
+                      options::OPT_fno_ptrauth_icall);
+    Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_vcall,
+                      options::OPT_fno_ptrauth_vcall);
+    Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_mfcall,
+                      options::OPT_fno_ptrauth_mfcall);
+    Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_vptr,
+                      options::OPT_fno_ptrauth_vptr);
     Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_returns,
                       options::OPT_fno_ptrauth_returns);
     Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_auth_traps,
@@ -1696,6 +1704,32 @@ void Clang::AddAArch64TargetArgs(const ArgList &Args,
         options::OPT_fno_ptrauth_function_pointer_type_discrimination);
     Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_indirect_gotos,
                       options::OPT_fno_ptrauth_indirect_gotos);
+    Args.addOptInFlag(
+        CmdArgs, options::OPT_fptrauth_cxx_function_pointer_zero_discrimination,
+        options::OPT_fno_ptrauth_cxx_function_pointer_zero_discrimination);
+    Args.addOptInFlag(
+        CmdArgs,
+        options::OPT_fptrauth_cxx_virtual_function_pointer_zero_discrimination,
+        options::OPT_fno_ptrauth_cxx_virtual_function_pointer_zero_discrimination);
+    Args.addOptInFlag(
+        CmdArgs, options::OPT_fptrauth_init_fini_zero_discrimination,
+        options::OPT_fno_ptrauth_init_fini_zero_discrimination);
+    Args.addOptInFlag(
+        CmdArgs, options::OPT_fptrauth_mangle_class,
+        options::OPT_fno_ptrauth_mangle_class);
+    Args.addOptInFlag(
+        CmdArgs, options::OPT_fptrauth_mangle_func,
+        options::OPT_fno_ptrauth_mangle_func);
+    Args.addOptInFlag(
+        CmdArgs, options::OPT_fptrauth_mangle_cxxabi,
+        options::OPT_fno_ptrauth_mangle_cxxabi);
+
+    Args.addOptInFlag(
+        CmdArgs, options::OPT_fptrauth_nopac_atexit,
+        options::OPT_fno_ptrauth_nopac_atexit);
+    Args.addOptInFlag(
+        CmdArgs, options::OPT_fptrauth_nopac_throw,
+        options::OPT_fno_ptrauth_nopac_throw);
   }
   if (Triple.isOSLinux() &&
       Triple.getEnvironment() == llvm::Triple::PAuthTest) {
@@ -6536,6 +6570,9 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   Args.AddLastArg(CmdArgs, options::OPT_fzero_call_used_regs_EQ);
   Args.AddLastArg(CmdArgs, options::OPT_fraw_string_literals,
                   options::OPT_fno_raw_string_literals);
+
+  Args.AddLastArg(CmdArgs, options::OPT_fuse_nopac_attribute,
+    options::OPT_fno_use_nopac_attribute);
 
   if (Args.hasFlag(options::OPT_femulated_tls, options::OPT_fno_emulated_tls,
                    Triple.hasDefaultEmulatedTLS()))

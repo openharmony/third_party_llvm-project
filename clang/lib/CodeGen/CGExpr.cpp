@@ -2181,6 +2181,15 @@ llvm::Value *CodeGenFunction::EmitLoadOfScalar(Address Addr, bool Volatile,
 
   maybeAttachRangeForLoad(Load, Ty, Loc);
 
+  if (Ty->isFunctionPointerType()) {
+    if (Ty.getQualifiers().hasNopac()) {
+      auto NoPacAuthInfo = CGPointerAuthInfo();
+      auto FuncPAI = CGM.getPointerAuthInfoForType(Ty.getUnqualifiedType());
+      return emitPointerAuthResign(
+          EmitFromMemory(Load, Ty), Ty, NoPacAuthInfo, FuncPAI, false);
+    }
+  }
+
   return EmitFromMemory(Load, Ty);
 }
 
@@ -2209,6 +2218,13 @@ llvm::Value *CodeGenFunction::EmitToMemory(llvm::Value *Value, QualType Ty) {
     llvm::Type *StoreTy = convertTypeForLoadStore(Ty, Value->getType());
     bool Signed = Ty->isSignedIntegerOrEnumerationType();
     return Builder.CreateIntCast(Value, StoreTy, Signed, "storedv");
+  }
+  if (Ty->isFunctionPointerType()) {
+    if (Ty.getQualifiers().hasNopac()) {
+      auto NoPacAuthInfo = CGPointerAuthInfo();
+      auto FuncPAI = CGM.getPointerAuthInfoForType(Ty.getUnqualifiedType());
+      Value = emitPointerAuthResign(Value, Ty, FuncPAI, NoPacAuthInfo, false);
+    }
   }
 
   return Value;

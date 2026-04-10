@@ -117,6 +117,10 @@ LANGOPT(ExperimentalLibrary, 1, 0, NotCompatible, "enable unstable and experimen
 
 LANGOPT(PointerAuthIntrinsics, 1, 0, NotCompatible, "pointer authentication intrinsics")
 LANGOPT(PointerAuthCalls  , 1, 0, NotCompatible, "function pointer authentication")
+LANGOPT(IndirectPointerAuthCallOnly, 1, 0, NotCompatible, "indirect function pointer authentication only")
+LANGOPT(VirtualFunctionPointerAuthCallOnly, 1, 0, NotCompatible, "virtual function pointer authentication only")
+LANGOPT(MemberFunctionPointerAuthCallOnly, 1, 0, NotCompatible, "member function pointer authentication only")
+LANGOPT(VTablePointerAuthOnly, 1, 0, NotCompatible, "virtual table pointer authentication only")
 LANGOPT(PointerAuthReturns, 1, 0, NotCompatible, "return pointer authentication")
 LANGOPT(PointerAuthIndirectGotos, 1, 0, NotCompatible, "indirect gotos pointer authentication")
 LANGOPT(PointerAuthAuthTraps, 1, 0, NotCompatible, "pointer authentication failure traps")
@@ -125,6 +129,16 @@ LANGOPT(PointerAuthVTPtrTypeDiscrimination, 1, 0, NotCompatible, "incorporate ty
 LANGOPT(PointerAuthTypeInfoVTPtrDiscrimination, 1, 0, NotCompatible, "incorporate type and address discrimination in authenticated vtable pointers for std::type_info")
 LANGOPT(PointerAuthFunctionTypeDiscrimination, 1, 0, Benign,
         "Use type discrimination when signing function pointers")
+LANGOPT(PointerAuthCxxFunctionPointerZeroDiscrimination, 1, 0, NotCompatible, "Enable zero discrimination on CXX function pointers")
+LANGOPT(PointerAuthCxxVirtualFunctionPointerZeroDiscrimination, 1, 0, NotCompatible, "Enable zero discrimination on CXX virtual function pointers")
+LANGOPT(PointerAuthInitFiniZeroDiscrimination, 1, 0, NotCompatible, "Enable zero discrimination of function pointers in init/fini arrays")
+
+LANGOPT(PointerAuthMangleClass, 1, 0, NotCompatible, "Add PAC_ prefix to class names compiled with pointer authentication")
+LANGOPT(PointerAuthMangleFunc, 1, 0, NotCompatible, "Add PAC_ prefix to functions and variables with types conaining pointer to functions when compiled with pointer authentication")
+LANGOPT(PointerAuthMangleCxxabi, 1, 0, NotCompatible, "Add PAC_ prefix to cxxabi classes. This is needed when libcxx is compiled with pointer authentication")
+
+LANGOPT(PointerAuthNoPacAtexit, 1, 0, NotCompatible, "Enable NoPac for atexit function pointers")
+LANGOPT(PointerAuthNoPacThrow, 1, 0, NotCompatible, "Enable NoPac for function pointers to throw")
 LANGOPT(PointerAuthInitFini, 1, 0, NotCompatible, "sign function pointers in init/fini arrays")
 LANGOPT(PointerAuthInitFiniAddressDiscrimination, 1, 0, NotCompatible,
         "incorporate address discrimination in authenticated function pointers in init/fini arrays")
@@ -322,6 +336,7 @@ LANGOPT(CompatibilityQualifiedIdBlockParamTypeChecking, 1, 0, Benign,
 LANGOPT(ObjCDisableDirectMethodsForTesting, 1, 0, NotCompatible,
         "Disable recognition of objc_direct methods")
 LANGOPT(CFProtectionBranch , 1, 0, NotCompatible, "Control-Flow Branch Protection enabled")
+LANGOPT(UseNopacAttribute , 1, 0, NotCompatible, "Use nopac attribute")
 ENUM_LANGOPT(CFBranchLabelScheme, CFBranchLabelSchemeKind, 2, CFBranchLabelSchemeKind::Default, NotCompatible,
              "Control-Flow Branch Protection Label Scheme")
 LANGOPT(CFProtectionReturn, 1, 0, NotCompatible, "Control-Flow Return Protection enabled")
