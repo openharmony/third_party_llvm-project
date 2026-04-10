@@ -10,7 +10,10 @@
 #include <memory>
 #include <mutex>
 
+#include "llvm/ADT/DenseSet.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/ScopeExit.h"
+#include "llvm/Support/Path.h"
 #include "llvm/Support/ScopedPrinter.h"
 #include "llvm/Support/Threading.h"
 
@@ -75,6 +78,127 @@
 using namespace lldb;
 using namespace lldb_private;
 using namespace std::chrono;
+
+// OHOS_LOCAL begin
+namespace {
+llvm::SmallString<256> NormalizePathForPrefixMatch(llvm::StringRef path) {
+  llvm::SmallString<256> normalized(path);
+  // Paths from exec-search-paths and module file specs are expected to be
+  // absolute here. Keep matching lightweight by only trimming trailing
+  // separators and preserving the original path semantics.
+  while (normalized.size() > 1 &&
+         llvm::sys::path::is_separator(normalized.back()))
+    normalized.pop_back();
+  return normalized;
+}
+
+bool IsSamePathOrWithinDirectory(llvm::StringRef path,
+                                 llvm::StringRef directory) {
+  if (directory.empty())
+    return false;
+  if (path == directory)
+    return true;
+  if (!path.startswith(directory))
+    return false;
+  if (path.size() == directory.size())
+    return true;
+  return llvm::sys::path::is_separator(path[directory.size()]);
+}
+
+void UnloadModulesForDetach(Process &process, bool unload_modules,
+                            Status &detach_error) {
+  if (!unload_modules)
+    return;
+
+  Log *log = GetLog(LLDBLog::Target);
+  LLDB_LOG(log, "Detach: unload-modules enabled, detach status: {0}",
+           detach_error.Success() ? "success" : "failure");
+
+  Target &target = process.GetTarget();
+  FileSpecList search_paths = target.GetExecutableSearchPaths();
+  ModuleList &images = target.GetImages();
+  ModuleList modules_to_unload;
+  llvm::DenseSet<const Module *> seen_modules;
+
+  LLDB_LOG(log, "Detach: checking modules in exec-search-paths");
+  for (uint32_t i = 0; i < search_paths.GetSize(); ++i) {
+    FileSpec search_path = search_paths.GetFileSpecAtIndex(i);
+    llvm::SmallString<256> search_path_str =
+        NormalizePathForPrefixMatch(search_path.GetPath(false));
+    if (search_path_str.empty()) {
+      LLDB_LOG(log, "search-path[{0}] is empty, skip", i);
+      continue;
+    }
+    LLDB_LOG(log, "search-path[{0}]: {1}", i, search_path_str);
+
+    for (uint32_t j = 0; j < images.GetSize(); ++j) {
+      ModuleSP module_sp = images.GetModuleAtIndex(j);
+      if (!module_sp)
+        continue;
+
+      llvm::SmallString<256> module_path =
+          NormalizePathForPrefixMatch(module_sp->GetFileSpec().GetPath(false));
+      if (module_path.empty())
+        continue;
+      if (IsSamePathOrWithinDirectory(module_path, search_path_str) &&
+          seen_modules.insert(module_sp.get()).second) {
+        modules_to_unload.Append(module_sp);
+        LLDB_LOG(log, "  module to unload: {0}", module_path);
+      }
+    }
+  }
+
+  if (modules_to_unload.GetSize() == 0) {
+    LLDB_LOG(log, "Detach: no module matched exec-search-paths");
+    return;
+  }
+
+  uint32_t success_count = 0;
+  uint32_t failure_count = 0;
+  std::string failure_details;
+  LLDB_LOG(log, "Detach: unloading {0} modules from exec-search-paths",
+           modules_to_unload.GetSize());
+  for (uint32_t k = 0; k < modules_to_unload.GetSize(); ++k) {
+    ModuleSP module_sp = modules_to_unload.GetModuleAtIndex(k);
+    Status unload_error;
+    target.UnloadModule(module_sp, unload_error);
+    if (unload_error.Success()) {
+      ++success_count;
+      LLDB_LOG(log, "  successfully unloaded: {0}",
+               module_sp->GetFileSpec().GetPath());
+    } else {
+      ++failure_count;
+      if (!failure_details.empty())
+        failure_details.append("; ");
+      failure_details.append(module_sp->GetFileSpec().GetPath());
+      failure_details.append(": ");
+      failure_details.append(unload_error.AsCString("unknown error"));
+      LLDB_LOG(log, "  failed to unload {0}: {1}",
+               module_sp->GetFileSpec().GetPath(), unload_error.AsCString());
+    }
+  }
+  LLDB_LOG(log, "Detach: unload done, success={0}, failed={1}", success_count,
+           failure_count);
+  if (failure_count > 0) {
+    // Merge unload failures into the detach status so callers can consume the
+    // full outcome without parsing logs.
+    const char *detach_error_cstr = detach_error.AsCString();
+    if (detach_error.Success()) {
+      // Detach itself succeeded, but module unloading introduced failures.
+      detach_error.SetErrorStringWithFormatv(
+          "Detach succeeded, but failed to unload {0}/{1} module(s): {2}",
+          failure_count, modules_to_unload.GetSize(), failure_details);
+    } else {
+      // Preserve the original detach failure and append unload failure details.
+      detach_error.SetErrorStringWithFormatv(
+          "{0}; additionally failed to unload {1}/{2} module(s): {3}",
+          detach_error_cstr ? detach_error_cstr : "detach failed",
+          failure_count, modules_to_unload.GetSize(), failure_details);
+    }
+  }
+}
+} // namespace
+// OHOS_LOCAL end
 
 // Comment out line below to disable memory caching, overriding the process
 // setting target.process.disable-memory-cache
@@ -3225,7 +3349,7 @@ Status Process::StopForDestroyOrDetach(lldb::EventSP &exit_event_sp) {
   return error;
 }
 
-Status Process::Detach(bool keep_stopped) {
+Status Process::Detach(bool keep_stopped, bool unload_modules) {
   EventSP exit_event_sp;
   Status error;
   m_destroy_in_process = true;
@@ -3236,12 +3360,18 @@ Status Process::Detach(bool keep_stopped) {
     if (DetachRequiresHalt()) {
       error = StopForDestroyOrDetach(exit_event_sp);
       if (!error.Success()) {
+        // OHOS_LOCAL begin
+        UnloadModulesForDetach(*this, unload_modules, error);
+        // OHOS_LOCAL end
         m_destroy_in_process = false;
         return error;
       } else if (exit_event_sp) {
         // We shouldn't need to do anything else here.  There's no process left
         // to detach from...
         StopPrivateStateThread();
+        // OHOS_LOCAL begin
+        UnloadModulesForDetach(*this, unload_modules, error);
+        // OHOS_LOCAL end
         m_destroy_in_process = false;
         return error;
       }
@@ -3255,6 +3385,9 @@ Status Process::Detach(bool keep_stopped) {
       DidDetach();
       StopPrivateStateThread();
     } else {
+      // OHOS_LOCAL begin
+      UnloadModulesForDetach(*this, unload_modules, error);
+      // OHOS_LOCAL end
       return error;
     }
   }
@@ -3274,6 +3407,9 @@ Status Process::Detach(bool keep_stopped) {
   // down the process we don't get an error destroying the lock.
 
   m_public_run_lock.SetStopped();
+  // OHOS_LOCAL begin
+  UnloadModulesForDetach(*this, unload_modules, error);
+  // OHOS_LOCAL end
   return error;
 }
 

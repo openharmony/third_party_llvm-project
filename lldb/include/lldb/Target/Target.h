@@ -944,6 +944,25 @@ public:
 
   ModuleList &GetImages() { return m_images; }
 
+  // OHOS_LOCAL begin
+  /// Unload module from the target
+  ///
+  /// \param[in,out] module_sp
+  ///     The module shared pointer to unload.
+  ///
+  /// \param[out] error
+  ///     Status object to store any error that occurs during unloading.
+  ///
+  /// \return
+  ///     True if the module was successfully unloaded, false otherwise.
+  ///
+  /// \details
+  ///     This function removes the module from the target's image list,
+  ///     notifies observers about the module unloading, and removes it
+  ///     from the shared module list to free resources.
+  bool UnloadModule(lldb::ModuleSP &module_sp, Status &error);
+  // OHOS_LOCAL end
+
   /// Return whether this FileSpec corresponds to a module that should be
   /// considered for general searches.
   ///
