@@ -177,6 +177,12 @@ public:
     uint32_t
     GetOSUpdateVersion ();
 
+    bool
+    GetUseExecSearchPathModuleCache();
+
+    bool
+    SetUseExecSearchPathModuleCache(bool use_exec_search_path_module_cache);
+
     void
     SetSDKRoot(const char *sysroot);
 

@@ -257,6 +257,10 @@ let Definition = "platform" in {
     Global,
     DefaultTrue,
     Desc<"Use module cache.">;
+  def UseExecSearchPathModuleCache: Property<"use-exec-search-path-module-cache", "Boolean">,
+    Global,
+    DefaultFalse,
+    Desc<"Use module cache copies for modules discovered via target.exec-search-paths.">;
   def ModuleCacheDirectory: Property<"module-cache-directory", "FileSpec">,
     Global,
     DefaultStringValue<"">,
