@@ -1732,7 +1732,7 @@ void Clang::AddAArch64TargetArgs(const ArgList &Args,
         CmdArgs, options::OPT_fptrauth_nopac_throw,
         options::OPT_fno_ptrauth_nopac_throw);
   }
-  if (Triple.isOHOSFamily() && (Triple.isOSLinux() &&
+  if (Triple.isOHOSFamily() || (Triple.isOSLinux() &&
       Triple.getEnvironment() == llvm::Triple::PAuthTest)) {
     Args.addOptInFlag(CmdArgs, options::OPT_fptrauth_init_fini,
                       options::OPT_fno_ptrauth_init_fini);

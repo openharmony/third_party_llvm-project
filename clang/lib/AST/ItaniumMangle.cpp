@@ -1492,14 +1492,15 @@ void CXXNameMangler::mangleUnqualifiedName(
 
   if (pauth_class) {
     if (const CXXRecordDecl *A = dyn_cast<const CXXRecordDecl>(GD.getDecl()))
-      // todo: if class info is signed, then we must mangle also the name of
-      // non polymorphic classes.
-      isPac = langOptions.PointerAuthMangleClass
-        && (!A->hasDefinition() || A->isPolymorphic()) && !A->isNoPac();
+      isPac = langOptions.PointerAuthMangleClass && !A->isNoPac();
   }
   if (pauth_func) {
     if (const FunctionDecl *A = dyn_cast<const FunctionDecl>(GD.getDecl()))
-      isPac = langOptions.PointerAuthMangleClass && !A->isNoPac();
+      // Member functions have already undergone name mangling
+      // on the class name and do not need to be mangled again.
+      if (!isa<CXXMethodDecl>(A))
+        isPac = langOptions.PointerAuthMangleFunc
+          && ctx.isFunctionDeclPtr2Fun(A) && !A->isNoPac();
   }
 
   unsigned Arity = KnownArity;

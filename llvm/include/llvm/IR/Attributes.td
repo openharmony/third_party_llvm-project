@@ -162,6 +162,9 @@ def Memory : IntAttr<"memory", IntersectCustom, [FnAttr]>;
 /// Forbidden floating-point classes.
 def NoFPClass : IntAttr<"nofpclass", IntersectCustom, [ParamAttr, RetAttr]>;
 
+/// Save cfi modifier
+def CfiModifier : IntAttr<"cfimodifier", IntersectPreserve, [FnAttr]>;
+
 /// Function must be optimized for size first.
 def MinSize : EnumAttr<"minsize", IntersectPreserve, [FnAttr]>;
 

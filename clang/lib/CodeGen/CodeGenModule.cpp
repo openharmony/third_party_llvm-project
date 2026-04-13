@@ -2066,7 +2066,10 @@ static std::string getMangledNameImpl(CodeGenModule &CGM, GlobalDecl GD,
       auto &ctx = GD.getDecl()->getASTContext();
       auto &langOptions = CGM.getLangOpts();
       bool isPac = langOptions.PointerAuthMangleFunc &&
-          FD && ctx.isFunctionDeclPtr2Fun(FD) && !FD->isNoPac();
+          // Member functions have already undergone name mangling
+          // on the class name and do not need to be mangled again.
+          FD && !isa<CXXMethodDecl>(FD) &&
+          ctx.isFunctionDeclPtr2Fun(FD) && !FD->isNoPac();
       isPac = isPac
         && II->getName().str() != "__cxa_throw"
         && II->getName().str() != "__cxa_atexit"
