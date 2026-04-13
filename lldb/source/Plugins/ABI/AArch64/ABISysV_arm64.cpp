@@ -822,6 +822,13 @@ ValueObjectSP ABISysV_arm64::GetReturnValueObjectImpl(
 }
 
 lldb::addr_t ABISysV_arm64::FixAddress(addr_t pc, addr_t mask) {
+  if (lldb::ProcessSP process_sp = GetProcessSP()) {
+    const llvm::Triple &triple = process_sp->GetTarget().GetArchitecture().GetTriple();
+    if (triple.getArch() == llvm::Triple::aarch64_32 ||
+        triple.getArch() == llvm::Triple::aarch64) {
+      return pc & 0x0000FFFFFFFFFFFFULL;
+    }
+  }
   lldb::addr_t pac_sign_extension = 0x0080000000000000ULL;
   return (pc & pac_sign_extension) ? pc | mask : pc & (~mask);
 }
