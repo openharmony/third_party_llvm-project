@@ -440,23 +440,41 @@ void PrintAddressDescription(
 // OHOS_LOCAL begin
   auto PrintUAF = [&](Thread *t, uptr ring_index, HeapAllocationRecord &har) {
     uptr ha_untagged_addr = UntagAddr(har.tagged_addr);
-    Printf("%s", d.Error());
-    Printf("\nPotential Cause: use-after-free\n");
-    Printf("%s", d.Location());
-    Printf(
+    if (flags()->record_malloc_info && har.free_context_id == 0) {
+      Printf("%s", d.Warning());
+      Printf("\nHeap malloc record: \n");
+      Printf("%s", d.Location());
+      Printf(
         "%p (rb[%d] tags:%02x) is located %zd bytes inside of %zd-byte region "
         "[%p,%p)\n",
         untagged_addr, ring_index, GetTagFromPointer(har.tagged_addr),
         untagged_addr - ha_untagged_addr, har.requested_size, ha_untagged_addr,
         ha_untagged_addr + har.requested_size);
-    Printf("%s", d.Allocation());
-    Printf("freed by thread %d here:\n", t->tid());
-    Printf("%s", d.Default());
-    GetStackTraceFromId(har.free_context_id).Print();
-
-    Printf("%s", d.Allocation());
-    Printf("previously allocated by thread %d here:\n", har.alloc_thread);
-    Printf("%s", d.Default());
+      Printf("%s", d.Allocation());
+      if (har.free_thread != 0) {
+        Printf("This chunk is allocated without free.\n");
+      }
+      Printf("Heap allocated by thread %d here:\n", har.alloc_thread);
+      Printf("%s", d.Default());
+    } else {
+      Printf("%s", d.Error());
+      Printf("\nPotential Cause: use-after-free\n");
+      Printf("%s", d.Location());
+      Printf(
+          "%p (rb[%d] tags:%02x) is located %zd bytes inside of %zd-byte region "
+          "[%p,%p)\n",
+          untagged_addr, ring_index, GetTagFromPointer(har.tagged_addr),
+          untagged_addr - ha_untagged_addr, har.requested_size, ha_untagged_addr,
+          ha_untagged_addr + har.requested_size);
+      Printf("%s", d.Allocation());
+      Printf("freed by thread %d here:\n", t->tid());
+      Printf("%s", d.Default());
+      GetStackTraceFromId(har.free_context_id).Print();
+  
+      Printf("%s", d.Allocation());
+      Printf("previously allocated by thread %d here:\n", har.alloc_thread);
+      Printf("%s", d.Default());
+    }
     GetStackTraceFromId(har.alloc_context_id).Print();
 
     Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ring_index + 1,
@@ -496,23 +514,41 @@ void PrintAddressDescription(
 
   auto PrintUAFinFreedThread = [&](HeapAllocationRecord &har) {
     uptr ha_untagged_addr = UntagAddr(har.tagged_addr);
-    Printf("%s", d.Error());
-    Printf("\nPotential Cause: use-after-free\n");
-    Printf("%s", d.Location());
-    Printf(
+    if (flags()->record_malloc_info && har.free_context_id == 0) {
+      Printf("%s", d.Warning());
+      Printf("\nHeap malloc record: \n");
+      Printf("%s", d.Location());
+      Printf(
         "%p (Previously freed thread ptr tags: %02x) is located %zd "
         "bytes inside of %zd-byte region [%p,%p)\n",
         untagged_addr, GetTagFromPointer(har.tagged_addr),
         untagged_addr - ha_untagged_addr, har.requested_size, ha_untagged_addr,
         ha_untagged_addr + har.requested_size);
-    Printf("%s", d.Allocation());
-    Printf("freed by thread %d here:\n", har.free_thread);
-    Printf("%s", d.Default());
-    GetStackTraceFromId(har.free_context_id).Print();
-
-    Printf("%s", d.Allocation());
-    Printf("previously allocated by thread %d here:\n", har.alloc_thread);
-    Printf("%s", d.Default());
+      Printf("%s", d.Allocation());
+      if (har.free_thread != 0) {
+        Printf("This chunk is allocated without free.\n");
+      }
+      Printf("Heap allocated by thread %d here:\n", har.alloc_thread);
+      Printf("%s", d.Default());
+    } else {
+      Printf("%s", d.Error());
+      Printf("\nPotential Cause: use-after-free\n");
+      Printf("%s", d.Location());
+      Printf(
+          "%p (Previously freed thread ptr tags: %02x) is located %zd "
+          "bytes inside of %zd-byte region [%p,%p)\n",
+          untagged_addr, GetTagFromPointer(har.tagged_addr),
+          untagged_addr - ha_untagged_addr, har.requested_size, ha_untagged_addr,
+          ha_untagged_addr + har.requested_size);
+      Printf("%s", d.Allocation());
+      Printf("freed by thread %d here:\n", har.free_thread);
+      Printf("%s", d.Default());
+      GetStackTraceFromId(har.free_context_id).Print();
+  
+      Printf("%s", d.Allocation());
+      Printf("previously allocated by thread %d here:\n", har.alloc_thread);
+      Printf("%s", d.Default());
+    }
     GetStackTraceFromId(har.alloc_context_id).Print();
 
     num_descriptions_printed++;
