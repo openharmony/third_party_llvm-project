@@ -222,12 +222,6 @@ public:
     lldb::SBError
     Detach ();
 
-    lldb::SBError
-    Detach (bool keep_stopped);
-
-    lldb::SBError
-    Detach (bool keep_stopped, bool unload_module);
-
     %feature("docstring", "Sends the process a unix signal.") Signal;
     lldb::SBError
     Signal (int signal);

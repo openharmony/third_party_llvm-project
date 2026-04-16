@@ -828,24 +828,6 @@ public:
             m_keep_stopped = eLazyBoolNo;
         }
         break;
-      // OHOS_LOCAL begin
-      case 'u': // Handle new unload_modules option
-        // Parse the boolean value for the unload-modules option
-        bool u_tmp_result;
-        bool u_success;
-        u_tmp_result =
-            OptionArgParser::ToBoolean(option_arg, false, &u_success);
-        if (!u_success)
-          error.SetErrorStringWithFormat("invalid boolean option: \"%s\"",
-                                         option_arg.str().c_str());
-        else {
-          if (u_tmp_result)
-            m_unload_modules = eLazyBoolYes;
-          else
-            m_unload_modules = eLazyBoolNo;
-        }
-        break;
-      // OHOS_LOCAL end
       default:
         llvm_unreachable("Unimplemented option");
       }
@@ -853,9 +835,7 @@ public:
     }
 
     void OptionParsingStarting(ExecutionContext *execution_context) override {
-      // Reset option values when starting to parse new command
       m_keep_stopped = eLazyBoolCalculate;
-      m_unload_modules = eLazyBoolCalculate;
     }
 
     llvm::ArrayRef<OptionDefinition> GetDefinitions() override {
@@ -864,7 +844,6 @@ public:
 
     // Instance variables to hold the values for command options.
     LazyBool m_keep_stopped;
-    LazyBool m_unload_modules;
   };
 
   CommandObjectProcessDetach(CommandInterpreter &interpreter)
@@ -891,12 +870,7 @@ protected:
     else
       keep_stopped = false;
 
-    // unload_modules logic (newly added)
-    bool unload_modules = false;
-    if (m_options.m_unload_modules == eLazyBoolYes)
-      unload_modules = true;
-
-    Status error(process->Detach(keep_stopped, unload_modules));
+    Status error(process->Detach(keep_stopped));
     if (error.Success()) {
       result.SetStatus(eReturnStatusSuccessFinishResult);
     } else {
