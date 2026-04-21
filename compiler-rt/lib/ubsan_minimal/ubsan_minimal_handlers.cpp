@@ -57,6 +57,14 @@ static void abort_with_message(const char *msg) {
   if (&android_set_abort_message) android_set_abort_message(msg);
   abort();
 }
+#elif defined(__OHOS__)
+extern "C" __attribute__((weak)) void DFX_SetCrashObj(uint8_t type,
+                                                      uintptr_t addr);
+static void abort_with_message(const char *msg) {
+  if (&DFX_SetCrashObj)
+    DFX_SetCrashObj(0, reinterpret_cast<uintptr_t>(msg));
+  __builtin_trap();
+}
 #else
 static void abort_with_message(const char *) { abort(); }
 #endif
