@@ -177,8 +177,6 @@ SANITIZER_INTERFACE_ATTRIBUTE
 void __hwasan_add_frame_record(u64 frame_record_info);
 
 // OHOS_LOCAL begin
-SANITIZER_INTERFACE_ATTRIBUTE
-void __hwasan_add_emutls_frame_record(u64 frame_record_info);
 #if SANITIZER_OHOS
 SANITIZER_INTERFACE_ATTRIBUTE
 void __hwasan_set_arkts_stub_range(uptr start, uptr end);

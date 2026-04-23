@@ -659,14 +659,8 @@ void HWAddressSanitizer::initializeCallbacks(Module &M) {
       "__hwasan_tag_memory", IRB.getVoidTy(), Int8PtrTy, Int8Ty, IntptrTy);
   HwasanGenerateTagFunc =
       M.getOrInsertFunction("__hwasan_generate_tag", Int8Ty);
-  // OHOS_LOCAL begin
-  if (TargetTriple.isOHOSFamily() && ClInstrumentWithoutTLS)
-    HwasanRecordFrameRecordFunc = M.getOrInsertFunction(
-      "__hwasan_add_emutls_frame_record", IRB.getVoidTy(), Int64Ty);
-  else
-    HwasanRecordFrameRecordFunc = M.getOrInsertFunction(
+  HwasanRecordFrameRecordFunc = M.getOrInsertFunction(
       "__hwasan_add_frame_record", IRB.getVoidTy(), Int64Ty);
-  // OHOS_LOCAL end
 
   ShadowGlobal = M.getOrInsertGlobal("__hwasan_shadow",
                                      ArrayType::get(IRB.getInt8Ty(), 0));
@@ -1146,6 +1140,17 @@ Value *HWAddressSanitizer::getHwasanThreadSlotPtr(IRBuilder<> &IRB, Type *Ty) {
                                IRB.CreateCall(ThreadPointerFunc),
                                TargetTriple.isAndroid()? 0x30 : -0x90),
         Ty->getPointerTo(0));
+    // On OHOS, HWASAN is used original without emulated-tls cause the emulated-tls
+    // will use malloc and cause problem with HWASAN. now we are moving the thread
+    // local variable for tls to pthread struct in musl. All the source code need to
+    // be recompiled and cause problem. For new strategy, the thread local variable
+    // in pthread struct will store the value of the original tls not the address
+    // of stack allocations. So, we should load the value before we store frame info
+    // to it.
+    if (TargetTriple.isOHOSFamily()) {
+      Value *LoadTValue = IRB.CreateLoad(SlotPtr->getType(), SlotPtr);
+      return LoadTValue;
+    }
     // OHOS_LOCAL end
     return SlotPtr;
   }

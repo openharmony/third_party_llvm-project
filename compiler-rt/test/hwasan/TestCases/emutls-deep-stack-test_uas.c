@@ -12,7 +12,7 @@
 #include <sanitizer/hwasan_interface.h>
 
 // External declaration for the emutls frame record function
-extern void __hwasan_add_emutls_frame_record(unsigned long long frame_record_info);
+extern void __hwasan_add_frame_record(unsigned long long frame_record_info);
 
 // Base frame record info
 #define BASE_FRAME_RECORD 0x123456789ABCDEF0ULL
@@ -103,7 +103,7 @@ static long long compute_product(long long *arr, int size) {
 __attribute__((noinline))
 void level1_entry() {
   // Add emutls frame record for level 1
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x01);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x01);
   
   // Local variables to simulate stack usage
   int local_var1 = 0x11111111;
@@ -134,7 +134,7 @@ void level1_entry() {
 __attribute__((noinline))
 void level2_function_a(int param) {
   // Add emutls frame record for level 2
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x02);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x02);
   
   // Local variables
   int local_var2 = param + 0x22222222;
@@ -163,7 +163,7 @@ void level2_function_a(int param) {
 __attribute__((noinline))
 void level3_function_b(int param, char *buf) {
   // Add emutls frame record for level 3
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x03);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x03);
   
   // Local variables
   int local_var3 = param * 2;
@@ -195,7 +195,7 @@ void level3_function_b(int param, char *buf) {
 __attribute__((noinline))
 void level4_function_c(int param, char *buf, double *arr) {
   // Add emutls frame record for level 4
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x04);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x04);
   
   // Local variables
   int local_var4 = param + 0x44444444;
@@ -232,7 +232,7 @@ void level4_function_c(int param, char *buf, double *arr) {
 __attribute__((noinline))
 void level5_function_d(int param, char *buf, int *arr) {
   // Add emutls frame record for level 5
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x05);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x05);
   
   // Local variables
   int local_var5 = param - 0x55555555;
@@ -265,7 +265,7 @@ void level5_function_d(int param, char *buf, int *arr) {
 __attribute__((noinline))
 void level6_function_e(int param, char *buf, long long *arr) {
   // Add emutls frame record for level 6
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x06);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x06);
   
   // Local variables
   int local_var6 = param ^ 0x66666666;
@@ -287,7 +287,7 @@ void level6_function_e(int param, char *buf, long long *arr) {
 __attribute__((noinline))
 void level7_function_f(int param, char *buf, float *arr) {
   // Add emutls frame record for level 7
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x07);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x07);
   
   // Local variables
   int local_var7 = param | 0x77777777;
@@ -309,7 +309,7 @@ void level7_function_f(int param, char *buf, float *arr) {
 __attribute__((noinline))
 void level8_function_g(int param, char *buf, double *arr) {
   // Add emutls frame record for level 8
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x08);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x08);
   
   // Local variables
   int local_var8 = param & 0x88888888;
@@ -331,7 +331,7 @@ void level8_function_g(int param, char *buf, double *arr) {
 __attribute__((noinline))
 void level9_function_h(int param, char *buf, int *arr) {
   // Add emutls frame record for level 9
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x09);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x09);
   
   // Local variables
   int local_var9 = param << 1;
@@ -353,7 +353,7 @@ void level9_function_h(int param, char *buf, int *arr) {
 __attribute__((noinline))
 void level10_function_i(int param, char *buf, long long *arr) {
   // Add emutls frame record for level 10
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x0A);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x0A);
   
   // Local variables
   int local_var10 = param >> 1;
@@ -375,7 +375,7 @@ void level10_function_i(int param, char *buf, long long *arr) {
 __attribute__((noinline))
 void level11_function_j(int param, char *buf, float *arr) {
   // Add emutls frame record for level 11
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x0B);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x0B);
   
   // Local variables
   int local_var11 = param + 0x0B0B0B0B;
@@ -397,7 +397,7 @@ void level11_function_j(int param, char *buf, float *arr) {
 __attribute__((noinline))
 void level12_function_k(int param, char *buf, double *arr) {
   // Add emutls frame record for level 12
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x0C);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x0C);
   
   // Local variables
   int local_var12 = param - 0x0C0C0C0C;
@@ -419,7 +419,7 @@ void level12_function_k(int param, char *buf, double *arr) {
 __attribute__((noinline))
 void level13_function_l(int param, char *buf, int *arr) {
   // Add emutls frame record for level 13
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x0D);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x0D);
   
   // Local variables
   int local_var13 = param ^ 0x0D0D0D0D;
@@ -441,7 +441,7 @@ void level13_function_l(int param, char *buf, int *arr) {
 __attribute__((noinline))
 void level14_function_m(int param, char *buf, long long *arr) {
   // Add emutls frame record for level 14
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x0E);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x0E);
   
   // Local variables
   int local_var14 = param | 0x0E0E0E0E;
@@ -463,7 +463,7 @@ void level14_function_m(int param, char *buf, long long *arr) {
 __attribute__((noinline))
 void level15_function_n(int param, char *buf, float *arr) {
   // Add emutls frame record for level 15
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x0F);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x0F);
   
   // Local variables
   int local_var15 = param & 0x0F0F0F0F;
@@ -496,7 +496,7 @@ void level15_function_n(int param, char *buf, float *arr) {
 __attribute__((noinline))
 void level16_function_o(int param, char *buf, double *arr) {
   // Add emutls frame record for level 16
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x10);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x10);
   
   // Local variables
   int local_var16 = param + 0x10101010;
@@ -527,7 +527,7 @@ void level16_function_o(int param, char *buf, double *arr) {
 __attribute__((noinline))
 void level17_function_p(int param, char *buf, long long *arr) {
   // Add emutls frame record for level 17
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x11);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x11);
   
   // Local variables
   int local_var17 = param - 0x11111111;
@@ -560,7 +560,7 @@ void level17_function_p(int param, char *buf, long long *arr) {
 __attribute__((noinline))
 void level18_function_q(int param, char *buf, int *arr) {
   // Add emutls frame record for level 18
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x12);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x12);
   
   // Local variables
   int local_var18 = param ^ 0x12121212;
@@ -593,7 +593,7 @@ void level18_function_q(int param, char *buf, int *arr) {
 __attribute__((noinline))
 void level19_function_r(int param, char *buf, float *arr) {
   // Add emutls frame record for level 19
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x13);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x13);
   
   // Local variables
   int local_var19 = param | 0x13131313;
@@ -626,7 +626,7 @@ void level19_function_r(int param, char *buf, float *arr) {
 __attribute__((noinline))
 void level20_function_s(int param, char *buf, double *arr) {
   // Add emutls frame record for level 20
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x14);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x14);
   
   // Local variables
   int local_var20 = param << 2;
@@ -657,7 +657,7 @@ void level20_function_s(int param, char *buf, double *arr) {
 __attribute__((noinline))
 void level21_function_t(int param, char *buf, long long *arr) {
   // Add emutls frame record for level 21
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x15);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x15);
   
   // Local variables
   int local_var21 = param >> 2;
@@ -690,7 +690,7 @@ void level21_function_t(int param, char *buf, long long *arr) {
 __attribute__((noinline))
 void level22_function_u(int param, char *buf, int *arr) {
   // Add emutls frame record for level 22
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x16);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x16);
   
   // Local variables
   int local_var22 = param + 0x16161616;
@@ -723,7 +723,7 @@ void level22_function_u(int param, char *buf, int *arr) {
 __attribute__((noinline))
 void level23_function_v(int param, char *buf, float *arr) {
   // Add emutls frame record for level 23
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x17);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x17);
   
   // Local variables
   int local_var23 = param - 0x17171717;
@@ -756,7 +756,7 @@ void level23_function_v(int param, char *buf, float *arr) {
 __attribute__((noinline))
 void level24_function_w(int param, char *buf, double *arr) {
   // Add emutls frame record for level 24
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x18);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x18);
   
   // Local variables
   int local_var24 = param ^ 0x18181818;
@@ -787,7 +787,7 @@ void level24_function_w(int param, char *buf, double *arr) {
 __attribute__((noinline))
 void level25_function_x(int param, char *buf, long long *arr) {
   // Add emutls frame record for level 25
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x19);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x19);
   
   // Local variables
   int local_var25 = param | 0x19191919;
@@ -820,7 +820,7 @@ void level25_function_x(int param, char *buf, long long *arr) {
 __attribute__((noinline))
 void level26_function_y(int param, char *buf, int *arr) {
   // Add emutls frame record for level 26
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x1A);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x1A);
   
   // Local variables
   int local_var26 = param & 0x1A1A1A1A;
@@ -853,7 +853,7 @@ void level26_function_y(int param, char *buf, int *arr) {
 __attribute__((noinline))
 void level27_function_z(int param, char *buf, float *arr) {
   // Add emutls frame record for level 27
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x1B);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x1B);
   
   // Local variables
   int local_var27 = param << 3;
@@ -886,7 +886,7 @@ void level27_function_z(int param, char *buf, float *arr) {
 __attribute__((noinline))
 void level28_function_aa(int param, char *buf, double *arr) {
   // Add emutls frame record for level 28
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x1C);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x1C);
   
   // Local variables
   int local_var28 = param >> 3;
@@ -917,7 +917,7 @@ void level28_function_aa(int param, char *buf, double *arr) {
 __attribute__((noinline))
 void level29_function_bb(int param, char *buf, long long *arr) {
   // Add emutls frame record for level 29
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x1D);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x1D);
   
   // Local variables
   int local_var29 = param + 0x1D1D1D1D;
@@ -950,7 +950,7 @@ void level29_function_bb(int param, char *buf, long long *arr) {
 __attribute__((noinline))
 void level30_trigger_error() {
   // Add emutls frame record for level 30
-  __hwasan_add_emutls_frame_record(BASE_FRAME_RECORD + 0x1E);
+  __hwasan_add_frame_record(BASE_FRAME_RECORD + 0x1E);
   
   int* arr;
   {
@@ -999,8 +999,7 @@ int main() {
   // the error reporting with deep stack traces.
   level1_entry();
   
-  // CHECK: Previously allocated frames with emutls:
-  // CHECK-NEXT: record_addr:0x{{.*}} record:0x{{.*}}  {{.*}}
+  // CHECK: record_addr:0x{{.*}} record:0x{{.*}}  {{.*}}
   // CHECK-NEXT: record_addr:0x{{.*}} record:0x{{.*}}  {{.*}}
   // CHECK-NEXT: record_addr:0x{{.*}} record:0x{{.*}}  {{.*}}
   // CHECK-NEXT: record_addr:0x{{.*}} record:0x{{.*}}  {{.*}}

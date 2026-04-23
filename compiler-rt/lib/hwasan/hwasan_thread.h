@@ -65,9 +65,6 @@ class Thread {
   AllocatorCache *allocator_cache() { return &allocator_cache_; }
   HeapAllocationsRingBuffer *heap_allocations() { return heap_allocations_; }
   StackAllocationsRingBuffer *stack_allocations() { return stack_allocations_; }
-  StackAllocationsRingBuffer *emutls_stack_allocations() {
-    return emutls_stack_allocations_;
-  } // OHOS_LOCAL
 
   tag_t GenerateRandomTag(uptr num_bits = kTagBits);
 
@@ -117,7 +114,6 @@ class Thread {
   AllocatorCache allocator_cache_;
   HeapAllocationsRingBuffer *heap_allocations_;
   StackAllocationsRingBuffer *stack_allocations_;
-  StackAllocationsRingBuffer *emutls_stack_allocations_; //OHOS_LOCAL
 
 // OHOS_LOCAL
   HeapQuarantineController heap_quarantine_controller_;
