@@ -115,7 +115,7 @@ struct HeapAllocationRecord {
   int  free_thread;   // OHOS_LOCAL
 };
 
-typedef RingBuffer<HeapAllocationRecord> HeapAllocationsRingBuffer;
+typedef RingBufferLink<HeapAllocationRecord> HeapAllocationsRingBuffer;
 
 void GetAllocatorStats(AllocatorStatCounters s);
 
