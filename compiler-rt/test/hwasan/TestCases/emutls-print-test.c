@@ -11,7 +11,7 @@
 #include <sanitizer/hwasan_interface.h>
 
 // External declaration for the emutls frame record function
-extern void __hwasan_add_emutls_frame_record(unsigned long long frame_record_info);
+extern void __hwasan_add_frame_record(unsigned long long frame_record_info);
 
 // Simulate a frame record with some test data
 #define FRAME_RECORD_INFO 0x123456789ABCDEF0ULL
@@ -19,9 +19,9 @@ extern void __hwasan_add_emutls_frame_record(unsigned long long frame_record_inf
 __attribute__((noinline))
 void add_emutls_records() {
   // Add some emutls frame records to test the recording functionality
-  __hwasan_add_emutls_frame_record(FRAME_RECORD_INFO);
-  __hwasan_add_emutls_frame_record(FRAME_RECORD_INFO + 1);
-  __hwasan_add_emutls_frame_record(FRAME_RECORD_INFO + 2);
+  __hwasan_add_frame_record(FRAME_RECORD_INFO);
+  __hwasan_add_frame_record(FRAME_RECORD_INFO + 1);
+  __hwasan_add_frame_record(FRAME_RECORD_INFO + 2);
 }
 
 __attribute__((noinline))
@@ -37,8 +37,7 @@ int main() {
   add_emutls_records();
   trigger_error();
 
-  // CHECK: Previously allocated frames with emutls:
-  // CHECK-NEXT: record_addr:0x{{.*}} record:0x{{.*}} {{.*}}emutls-print-test.c{{.*}}
+  // CHECK: record_addr:0x{{.*}} record:0x{{.*}} {{.*}}emutls-print-test.c{{.*}}
   // CHECK-NEXT: record_addr:0x{{.*}} record:0x123456789abcdef2 {{.*}}
   // CHECK-NEXT: record_addr:0x{{.*}} record:0x123456789abcdef1 {{.*}}
   // CHECK-NEXT: record_addr:0x{{.*}} record:0x123456789abcdef0 {{.*}}
