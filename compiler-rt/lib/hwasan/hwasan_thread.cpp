@@ -33,7 +33,6 @@ void Thread::InitRandomState() {
   // tag base will be random.
   for (tag_t i = 0, e = GenerateRandomTag(); i != e; ++i)
     stack_allocations_->push(0);
-    emutls_stack_allocations_->push(0);
 }
 
 void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
@@ -77,8 +76,7 @@ void Thread::InitStackRingBuffer(uptr stack_buffer_start,
   // tp - 144, the stack records will overlap. Currently the stack
   // records record by tp - 144 will be printed separately in the hwasan log.
   uptr *ThreadLongWithoutTls = GetCurrentThreadLongPtrWithoutTls();
-  emutls_stack_allocations_ = new (ThreadLongWithoutTls)
-      StackAllocationsRingBuffer((void *)stack_buffer_start, stack_buffer_size);
+  *ThreadLongWithoutTls = (uptr)GetCurrentThreadLongPtr();
   // OHOS_LOCAL end
   // Check that it worked.
   CHECK_EQ(GetCurrentThread(), this);
@@ -95,11 +93,9 @@ void Thread::InitStackRingBuffer(uptr stack_buffer_start,
 
   if (flags()->verbose_threads) {
     if (IsMainThread()) {
-      Printf("sizeof(Thread): %zd sizeof(HeapRB): %zd "
-             "sizeof(StackRB): %zd sizeof(EmutlsStackRB): %zd\n",
+      Printf("sizeof(Thread): %zd sizeof(HeapRB): %zd sizeof(StackRB): %zd\n",
              sizeof(Thread), heap_allocations_->SizeInBytes(),
-             stack_allocations_->size() * sizeof(uptr),
-             emutls_stack_allocations_->size() * sizeof(uptr));
+             stack_allocations_->size() * sizeof(uptr));
     }
     Print("Creating  : ");
   }
