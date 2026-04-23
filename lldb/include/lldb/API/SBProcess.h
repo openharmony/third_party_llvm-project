@@ -162,8 +162,6 @@ public:
 
   lldb::SBError Detach(bool keep_stopped);
 
-  lldb::SBError Detach(bool keep_stopped, bool unload_module);
-
   lldb::SBError Signal(int signal);
 
   lldb::SBUnixSignals GetUnixSignals();

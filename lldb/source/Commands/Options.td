@@ -743,11 +743,6 @@ let Command = "process detach" in {
   def process_detach_keep_stopped : Option<"keep-stopped", "s">, Group<1>,
     Arg<"Boolean">, Desc<"Whether or not the process should be kept stopped on"
     " detach (if possible).">;
-  // OHOS_LOCAL begin
-  def process_detach_unload_modules : Option<"unload-modules", "u">, Group<2>,
-    Arg<"Boolean">, Desc<"Unload modules from exec-search-paths during detach"
-    " (default: false).">;
-  // OHOS_LOCAL end
 }
 
 let Command = "process connect" in {
