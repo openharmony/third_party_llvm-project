@@ -140,8 +140,7 @@ class Decorator: public __sanitizer::SanitizerCommonDecorator {
 };
 
 static void PrintStackAllocations(StackAllocationsRingBuffer *sa,
-                                  tag_t addr_tag, uptr untagged_addr,
-                                  bool use_emutls) {
+                                  tag_t addr_tag, uptr untagged_addr) {
   uptr frames = Min((uptr)flags()->stack_history_size, sa->size());
   bool found_local = false;
   for (uptr i = 0; i < frames; i++) {
@@ -188,12 +187,7 @@ static void PrintStackAllocations(StackAllocationsRingBuffer *sa,
   // We didn't find any locals. Most likely we don't have symbols, so dump
   // the information that we have for offline analysis.
   InternalScopedString frame_desc;
-  // OHOS_LOCAL begin
-  if (!use_emutls)
-    Printf("Previously allocated frames:\n");
-  else
-    Printf("Previously allocated frames with emutls:\n");
-  // OHOS_LOCAL end
+  Printf("Previously allocated frames:\n");
   for (uptr i = 0; i < frames; i++) {
     const uptr *record_addr = &(*sa)[i];
     uptr record = *record_addr;
@@ -337,8 +331,7 @@ static void ShowHeapOrGlobalCandidate(uptr untagged_addr, tag_t *candidate,
 
 void PrintAddressDescription(
     uptr tagged_addr, uptr access_size,
-    StackAllocationsRingBuffer *current_stack_allocations,
-    StackAllocationsRingBuffer *current_emutls_stack_allocations) {
+    StackAllocationsRingBuffer *current_stack_allocations) {
   Decorator d;
   int num_descriptions_printed = 0;
   uptr untagged_addr = UntagAddr(tagged_addr);
@@ -393,16 +386,7 @@ void PrintAddressDescription(
       auto *sa = (t == GetCurrentThread() && current_stack_allocations)
                      ? current_stack_allocations
                      : t->stack_allocations();
-      // OHOS_LOCAL begin
-      if (sa && sa->size() > 0)
-        PrintStackAllocations(sa, addr_tag, untagged_addr, false);
-      auto *sa_emutls = (t == GetCurrentThread() &&
-                        current_emutls_stack_allocations)
-                     ? current_emutls_stack_allocations
-                     : t->emutls_stack_allocations();
-      if (sa_emutls && sa_emutls->size() > 0)
-        PrintStackAllocations(sa_emutls, addr_tag, untagged_addr, true);
-      // OHOS_LOCAL end
+      PrintStackAllocations(sa, addr_tag, untagged_addr);
       num_descriptions_printed++;
     }
   });
@@ -718,7 +702,7 @@ void ReportInvalidFree(StackTrace *stack, uptr tagged_addr) {
   // OHOS_LOCAL end
   stack->Print();
 
-  PrintAddressDescription(tagged_addr, 0, nullptr, nullptr); //OHOS_LOCAL
+  PrintAddressDescription(tagged_addr, 0, nullptr); //OHOS_LOCAL
 
   if (tag_ptr)
     PrintTagsAroundAddr(tag_ptr);
@@ -807,10 +791,6 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
   ScopedReport R(fatal);
   SavedStackAllocations current_stack_allocations(
       GetCurrentThread()->stack_allocations());
-//OHOS_LOCAL begin
-  SavedStackAllocations current_emutls_stack_allocations(
-    GetCurrentThread()->emutls_stack_allocations());
-// OHOS_LOCAL end
 
   Decorator d;
   uptr untagged_addr = UntagAddr(tagged_addr);
@@ -871,8 +851,7 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
   stack->Print();
 // OHOS_LOCAL begin
   PrintAddressDescription(tagged_addr, access_size,
-                          current_stack_allocations.get(),
-                          current_emutls_stack_allocations.get());
+                          current_stack_allocations.get());
 // OHOS_LOCAL end
   t->Announce();
 
