@@ -937,7 +937,7 @@ ModuleList::GetSharedModule(const ModuleSpec &module_spec, ModuleSP &module_sp,
                 arch.GetArchitectureName());
         }
       } else {
-        error.SetErrorStringWithFormat("'%s' does not exist", path);
+        error.SetErrorStringWithFormat("'%s' does not exist or format error", path);
       }
       if (error.Fail())
         module_sp.reset();
