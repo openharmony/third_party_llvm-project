@@ -107,6 +107,19 @@ bool PlatformProperties::SetUseModuleCache(bool use_module_cache) {
       nullptr, ePropertyUseModuleCache, use_module_cache);
 }
 
+bool PlatformProperties::GetUseExecSearchPathModuleCache() const {
+  const auto idx = ePropertyUseExecSearchPathModuleCache;
+  return m_collection_sp->GetPropertyAtIndexAsBoolean(
+      nullptr, idx, g_platform_properties[idx].default_uint_value != 0);
+}
+
+bool PlatformProperties::SetUseExecSearchPathModuleCache(
+    bool use_exec_search_path_module_cache) {
+  return m_collection_sp->SetPropertyAtIndexAsBoolean(
+      nullptr, ePropertyUseExecSearchPathModuleCache,
+      use_exec_search_path_module_cache);
+}
+
 FileSpec PlatformProperties::GetModuleCacheDirectory() const {
   return m_collection_sp->GetPropertyAtIndexAsFileSpec(
       nullptr, ePropertyModuleCacheDirectory);
