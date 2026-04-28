@@ -19,6 +19,9 @@
 #include <list>
 #include <vector>
 
+//OHOS_LOCAL begin
+#include "lldb/Core/LoadedModuleInfoList.h"
+// OHOS_LOCAL end
 #include "lldb/Target/PostMortemProcess.h"
 #include "lldb/Utility/ConstString.h"
 #include "lldb/Utility/Status.h"
@@ -76,6 +79,11 @@ public:
 
   // Process Queries
   bool IsAlive() override;
+
+  //OHOS_LOCAL begin
+  llvm::Expected<lldb_private::LoadedModuleInfoList>
+  GetLoadedModuleList() override;
+  // OHOS_LOCAL end
 
   bool WarnBeforeDetach() const override { return false; }
 
@@ -152,6 +160,15 @@ private:
   // NT_FILE entries found from the NOTE segment
   std::vector<NT_FILE_Entry> m_nt_file_entries;
 
+  //OHOS_LOCAL begin
+  // Cached module view synthesized from NT_FILE. The list is computed once per
+  // core load and reused by ReadModuleListFromNTFile.
+  lldb_private::LoadedModuleInfoList m_module_info_list;
+  // Set once the executable-missing NT_FILE fallback has successfully built a
+  // usable module view, so we can skip POSIX-DYLD for that case.
+  bool m_nt_file_fallback_succeeded = false;
+  // OHOS_LOCAL end
+
   // Parse thread(s) data structures(prstatus, prpsinfo) from given NOTE segment
   llvm::Error ParseThreadContextsFromNoteSegment(
       const elf::ELFProgramHeader &segment_header,
@@ -170,6 +187,9 @@ private:
 
   llvm::Expected<std::vector<lldb_private::CoreNote>>
   parseSegment(const lldb_private::DataExtractor &segment);
+  //OHOS_LOCAL begin
+  llvm::Error ReadModuleListFromNTFile();
+  // OHOS_LOCAL end
   llvm::Error parseFreeBSDNotes(llvm::ArrayRef<lldb_private::CoreNote> notes);
   llvm::Error parseNetBSDNotes(llvm::ArrayRef<lldb_private::CoreNote> notes);
   llvm::Error parseOpenBSDNotes(llvm::ArrayRef<lldb_private::CoreNote> notes);

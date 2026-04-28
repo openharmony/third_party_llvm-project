@@ -15,6 +15,9 @@
 #include "lldb/Core/ModuleSpec.h"
 #include "lldb/Core/PluginManager.h"
 #include "lldb/Core/Section.h"
+//OHOS_LOCAL begin
+#include "lldb/Symbol/ObjectFile.h"
+// OHOS_LOCAL end
 #include "lldb/Target/ABI.h"
 #include "lldb/Target/DynamicLoader.h"
 #include "lldb/Target/MemoryRegionInfo.h"
@@ -30,6 +33,9 @@
 
 #include "Plugins/DynamicLoader/POSIX-DYLD/DynamicLoaderPOSIXDYLD.h"
 #include "Plugins/ObjectFile/ELF/ObjectFileELF.h"
+//OHOS_LOCAL begin
+#include "Plugins/ObjectFile/Placeholder/ObjectFilePlaceholder.h"
+// OHOS_LOCAL end
 #include "Plugins/Process/elf-core/RegisterUtilities.h"
 #include "ProcessElfCore.h"
 #include "ThreadElfCore.h"
@@ -250,8 +256,10 @@ Status ProcessElfCore::DoLoadCore() {
     }
   }
 
-  // Core files are useless without the main executable. See if we can locate
-  // the main executable using data we found in the core file notes.
+  // Best-effort executable recovery from NT_FILE[0]. We keep the original
+  // path and let LLDB's normal module resolution handle sysroot/path remap.
+  // If this fails, the no-executable fallback below can still recover shared
+  // library modules from NT_FILE.
   lldb::ModuleSP exe_module_sp = GetTarget().GetExecutableModule();
   if (!exe_module_sp) {
     // The first entry in the NT_FILE might be our executable
@@ -268,15 +276,138 @@ Status ProcessElfCore::DoLoadCore() {
       }
     }
   }
+
+  //OHOS_LOCAL begin
+  // Fallback path: if we couldn't resolve an executable, try to rebuild a
+  // usable module view from NT_FILE entries so shared-library postmortem
+  // debugging can still proceed.
+  if (!exe_module_sp && !m_nt_file_entries.empty()) {
+    if (llvm::Error module_error = ReadModuleListFromNTFile())
+      return Status(std::move(module_error));
+  }
+  // OHOS_LOCAL end
   return error;
 }
 
 lldb_private::DynamicLoader *ProcessElfCore::GetDynamicLoader() {
+  //OHOS_LOCAL begin
+  Log *log = GetLog(LLDBLog::DynamicLoader);
+  LLDB_LOGF(log,
+            "lldb_private::DynamicLoader *ProcessElfCore::GetDynamicLoader()");
+  // Only the "no executable" path sets this flag, which means NT_FILE has
+  // already built the module view that we need for postmortem symbolization.
+  if (m_nt_file_fallback_succeeded)
+    return nullptr;
+  // OHOS_LOCAL end
+
   if (m_dyld_up.get() == nullptr)
     m_dyld_up.reset(DynamicLoader::FindPlugin(
         this, DynamicLoaderPOSIXDYLD::GetPluginNameStatic()));
   return m_dyld_up.get();
 }
+
+//OHOS_LOCAL begin
+llvm::Expected<lldb_private::LoadedModuleInfoList>
+ProcessElfCore::GetLoadedModuleList() {
+  if (m_module_info_list.m_list.empty()) {
+    // NT_FILE commonly contains multiple mappings for one module path.
+    // Aggregate each path into a single [min_start, max_end) image range.
+    struct ModuleRange {
+      lldb::addr_t min_start = LLDB_INVALID_ADDRESS;
+      lldb::addr_t max_end = 0;
+    };
+    std::unordered_map<std::string, ModuleRange> module_range_map;
+    for (const NT_FILE_Entry &file_entry : m_nt_file_entries) {
+      // Defensive check for malformed core notes.
+      if (file_entry.end < file_entry.start)
+        continue;
+
+      const std::string &module_path = file_entry.path.AsCString();
+      // Skip anonymous/empty-path entries: they cannot be resolved as modules
+      // and would otherwise collapse into one empty-path bucket.
+      if (module_path.empty())
+        continue;
+
+      auto &module_range = module_range_map[module_path];
+      if (module_range.min_start == LLDB_INVALID_ADDRESS ||
+          file_entry.start < module_range.min_start)
+        module_range.min_start = file_entry.start;
+      if (file_entry.end > module_range.max_end)
+        module_range.max_end = file_entry.end;
+    }
+
+    for (const auto &module_range_entry : module_range_map) {
+      const ModuleRange &module_range = module_range_entry.second;
+      if (module_range.min_start == LLDB_INVALID_ADDRESS ||
+          module_range.max_end < module_range.min_start)
+        continue;
+
+      LoadedModuleInfoList::LoadedModuleInfo module;
+      module.set_name(module_range_entry.first);
+      module.set_base(module_range.min_start);
+      module.set_size(module_range.max_end - module_range.min_start);
+      m_module_info_list.add(module);
+    }
+  }
+  return m_module_info_list;
+}
+
+llvm::Error ProcessElfCore::ReadModuleListFromNTFile() {
+  llvm::Expected<LoadedModuleInfoList> module_info_list_ep =
+      GetLoadedModuleList();
+  if (!module_info_list_ep)
+    return module_info_list_ep.takeError();
+
+  bool loaded_any_module = false;
+  for (const LoadedModuleInfoList::LoadedModuleInfo &mod_info :
+       module_info_list_ep->m_list) {
+    lldb::addr_t load_addr = LLDB_INVALID_ADDRESS;
+    lldb::addr_t load_size = 0;
+    std::string name;
+    if (!mod_info.get_base(load_addr) || !mod_info.get_name(name) ||
+        !mod_info.get_size(load_size))
+      continue;
+
+    FileSpec file(name, GetArchitecture().GetTriple());
+    ModuleSpec module_spec(file, GetArchitecture());
+    Status error;
+    // Keep the NT_FILE path intact and rely on LLDB's normal lookup
+    // mechanisms (sysroot/search-path remapping/platform lookup).
+    lldb::ModuleSP module_sp = GetTarget().GetOrCreateModule(
+        module_spec, true /* notify */, &error);
+
+    if (module_sp) {
+      auto *objfile = module_sp->GetObjectFile();
+      if (objfile &&
+          objfile->GetPluginName() ==
+              ObjectFilePlaceholder::GetPluginNameStatic()) {
+        // Placeholder objects assert on SetLoadAddress(base). If we matched a
+        // placeholder with a different base, discard it and create one for the
+        // current range to avoid reusing incompatible placeholder state.
+        if (static_cast<ObjectFilePlaceholder *>(objfile)
+                ->GetBaseImageAddress() != load_addr)
+          module_sp.reset();
+      }
+    }
+
+    if (!module_sp) {
+      module_sp = Module::CreateModuleFromObjectFile<ObjectFilePlaceholder>(
+          module_spec, load_addr, load_size);
+      GetTarget().GetImages().Append(module_sp, true /* notify */);
+    }
+
+    bool load_addr_changed = false;
+    module_sp->SetLoadAddress(GetTarget(), load_addr, false,
+                              load_addr_changed);
+    loaded_any_module = true;
+  }
+
+  // This flag gates GetDynamicLoader(): once NT_FILE fallback built at least
+  // one module, skip POSIX-DYLD attach for the no-executable path.
+  m_nt_file_fallback_succeeded = loaded_any_module;
+  return llvm::Error::success();
+}
+// OHOS_LOCAL end
 
 bool ProcessElfCore::DoUpdateThreadList(ThreadList &old_thread_list,
                                         ThreadList &new_thread_list) {
@@ -442,6 +573,10 @@ ProcessElfCore::ReadMemoryTags(lldb::addr_t addr, size_t len) {
 
 void ProcessElfCore::Clear() {
   m_thread_list.Clear();
+  //OHOS_LOCAL begin
+  m_nt_file_fallback_succeeded = false;
+  m_module_info_list.clear();
+  // OHOS_LOCAL end
 
   SetUnixSignals(std::make_shared<UnixSignals>());
 }
