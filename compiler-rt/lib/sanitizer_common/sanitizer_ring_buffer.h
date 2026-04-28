@@ -194,10 +194,10 @@ public:
                              uptr _max_num = DEFAULT_MAX_NUM) {
     // must be a positive integer.
     RAW_CHECK(0 < _n_size && _n_size <= _INT_MAX &&
-              "Sanitizer RingBufferLink: Invelid size of input cache blocks.");
+              "Sanitizer RingBufferLink: Invalid size of input cache blocks.");
     RAW_CHECK(
-        0 < _n_size && _n_size <= _INT_MAX &&
-        "Sanitizer RingBufferLink: Invelid number of input cache blocks.");
+        0 < _max_num && _max_num <= _INT_MAX &&
+        "Sanitizer RingBufferLink: Invalid number of input cache blocks.");
 
     void *Ptr = MmapOrDie(sizeof(RingBufferLink) + sizeof(T *) * (_max_num - 1),
                           "RingBufferLink");
