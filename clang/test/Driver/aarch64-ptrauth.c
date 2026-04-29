@@ -57,7 +57,7 @@
 // RUN: %clang -### -c --target=aarch64-linux -mabi=pauthtest %s 2>&1 | FileCheck %s --check-prefix=PAUTHABI1
 // RUN: %clang -### -c --target=aarch64-linux-pauthtest %s 2>&1 | FileCheck %s --check-prefix=PAUTHABI1
 // PAUTHABI1:      "-cc1"{{.*}} "-triple" "aarch64-unknown-linux-pauthtest"
-// PAUTHABI1-SAME: "-fptrauth-intrinsics" "-fptrauth-calls" "-fptrauth-returns" "-fptrauth-auth-traps" "-fptrauth-vtable-pointer-address-discrimination" "-fptrauth-vtable-pointer-type-discrimination" "-fptrauth-type-info-vtable-pointer-discrimination" "-fptrauth-indirect-gotos" "-fptrauth-init-fini" "-fptrauth-init-fini-address-discrimination" "-faarch64-jump-table-hardening"
+// PAUTHABI1-SAME: "-fptrauth-intrinsics" "-fptrauth-calls" "-fptrauth-icall" "-fptrauth-vcall" "-fptrauth-mfcall" "-fptrauth-vptr" "-fptrauth-returns" "-fptrauth-auth-traps" "-fptrauth-vtable-pointer-address-discrimination" "-fptrauth-vtable-pointer-type-discrimination" "-fptrauth-type-info-vtable-pointer-discrimination" "-fptrauth-indirect-gotos" "-fptrauth-init-fini" "-fptrauth-init-fini-address-discrimination" "-faarch64-jump-table-hardening" "-fptrauth-nopac-atexit" "-fptrauth-nopac-throw" "-fptrauth-cxx-function-pointer-zero-discrimination" "-fptrauth-cxx-virtual-function-pointer-zero-discrimination" "-fptrauth-init-fini-zero-discrimination" "-fptrauth-mangle-class" "-fptrauth-mangle-func" "-fptrauth-mangle-cxxabi"
 // PAUTHABI1-SAME: "-target-abi" "pauthtest"
 // PAUTHABI1-NOT: "-fptrauth-function-pointer-type-discrimination"
 
@@ -66,6 +66,10 @@
 // RUN:   -fno-ptrauth-vtable-pointer-address-discrimination -fno-ptrauth-vtable-pointer-type-discrimination \
 // RUN:   -fno-ptrauth-type-info-vtable-pointer-discrimination -fno-ptrauth-indirect-gotos \
 // RUN:   -fno-ptrauth-init-fini -fno-ptrauth-init-fini-address-discrimination \
+// RUN:   -fno-ptrauth-icall -fno-ptrauth-vcall -fno-ptrauth-mfcall -fno-ptrauth-vptr \
+// RUN:   -fno-ptrauth-nopac-atexit -fno-ptrauth-nopac-throw -fno-ptrauth-cxx-function-pointer-zero-discrimination \
+// RUN:   -fno-ptrauth-cxx-virtual-function-pointer-zero-discrimination -fno-ptrauth-init-fini-zero-discrimination \
+// RUN:   -fno-ptrauth-mangle-class -fno-ptrauth-mangle-func -fno-ptrauth-mangle-cxxabi \
 // RUN:   -fno-aarch64-jump-table-hardening %s 2>&1 | FileCheck %s --check-prefix=PAUTHABI2
 // RUN: %clang -### -c --target=aarch64-linux-pauthtest -fno-ptrauth-intrinsics \
 // RUN:   -fno-ptrauth-calls -fno-ptrauth-returns -fno-ptrauth-auth-traps \

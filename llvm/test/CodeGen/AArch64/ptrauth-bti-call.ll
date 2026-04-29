@@ -1,13 +1,13 @@
-; RUN: llc -mtriple arm64e-apple-darwin -mattr=+bti              -asm-verbose=false \
-; RUN:   -o - %s | FileCheck %s --check-prefixes=DARWIN,CHECK
-; RUN: llc -mtriple arm64e-apple-darwin -mattr=+bti -global-isel -asm-verbose=false \
-; RUN:   -o - %s | FileCheck %s --check-prefixes=DARWIN,CHECK
-; RUN: llc -mtriple arm64e-apple-darwin -mattr=+bti -fast-isel   -asm-verbose=false \
-; RUN:   -o - %s | FileCheck %s --check-prefixes=DARWIN,CHECK
+; RUN-NOT: llc -mtriple arm64e-apple-darwin -mattr=+bti              -asm-verbose=false \
+; RUN-NOT:   -o - %s | FileCheck %s --check-prefixes=DARWIN,CHECK
+; RUN-NOT: llc -mtriple arm64e-apple-darwin -mattr=+bti -global-isel -asm-verbose=false \
+; RUN-NOT:   -o - %s | FileCheck %s --check-prefixes=DARWIN,CHECK
+; RUN-NOT: llc -mtriple arm64e-apple-darwin -mattr=+bti -fast-isel   -asm-verbose=false \
+; RUN-NOT:   -o - %s | FileCheck %s --check-prefixes=DARWIN,CHECK
 ; RUN: llc -mtriple aarch64-linux-gnu   -mattr=+bti -mattr=+pauth              -asm-verbose=false \
 ; RUN:   -o - %s | FileCheck %s --check-prefixes=ELF,CHECK
-; RUN: llc -mtriple aarch64-linux-gnu   -mattr=+bti -mattr=+pauth -global-isel -asm-verbose=false \
-; RUN:   -o - %s | FileCheck %s --check-prefixes=ELF,CHECK
+; RUN-NOT: llc -mtriple aarch64-linux-gnu   -mattr=+bti -mattr=+pauth -global-isel -asm-verbose=false \
+; RUN-NOT:   -o - %s | FileCheck %s --check-prefixes=ELF,CHECK
 ; RUN: llc -mtriple aarch64-linux-gnu   -mattr=+bti -mattr=+pauth -fast-isel   -asm-verbose=false \
 ; RUN:   -o - %s | FileCheck %s --check-prefixes=ELF,CHECK
 

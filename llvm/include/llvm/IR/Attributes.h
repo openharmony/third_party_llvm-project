@@ -1292,6 +1292,9 @@ public:
   /// Add memory effect attribute.
   LLVM_ABI AttrBuilder &addMemoryAttr(MemoryEffects ME);
 
+  /// Add cfi modifier attribute.
+  AttrBuilder &addCfiModifierAttr(uint64_t Modifier);
+
   /// Add captures attribute.
   LLVM_ABI AttrBuilder &addCapturesAttr(CaptureInfo CI);
 

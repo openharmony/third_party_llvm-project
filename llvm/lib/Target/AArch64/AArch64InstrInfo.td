@@ -64,6 +64,8 @@ def HasPAuthLR       : Predicate<"Subtarget->hasPAuthLR()">,
                                  AssemblerPredicateWithAll<(all_of FeaturePAuthLR), "pauth-lr">;
 def HasJS            : Predicate<"Subtarget->hasJS()">,
                                  AssemblerPredicateWithAll<(all_of FeatureJS), "jsconv">;
+def HasPAuthHintOnly : Predicate<"Subtarget->hasPAuthHintOnly()">,
+                                 AssemblerPredicateWithAll<(all_of FeaturePAuthHintOnly), "pauth-hint-only">;
 def HasCCIDX         : Predicate<"Subtarget->hasCCIDX()">,
                                  AssemblerPredicateWithAll<(all_of FeatureCCIDX), "ccidx">;
 def HasComplxNum     : Predicate<"Subtarget->hasComplxNum()">,
@@ -738,7 +740,7 @@ def top32Zero: PatLeaf<(i64 GPR64:$src), [{
   return Op.getValueType() == MVT::i64 &&
          CurDAG->MaskedValueIsZero(Op, APInt::getHighBitsSet(64, 32));
   }]> {
-  let GISelLeafPredicateCode = [{ 
+  let GISelLeafPredicateCode = [{
     return VT && VT->maskedValueIsZero(Reg, APInt::getHighBitsSet(64, 32)); }];
 }
 
@@ -747,14 +749,14 @@ def topbitsallzero32: PatLeaf<(i32 GPR32:$src), [{
   return Op.getValueType() == MVT::i32 &&
          CurDAG->MaskedValueIsZero(Op, APInt::getHighBitsSet(32, 31));
   }]> {
-  let GISelLeafPredicateCode = [{ 
+  let GISelLeafPredicateCode = [{
     return VT && VT->maskedValueIsZero(Reg, APInt::getHighBitsSet(32, 31)); }];
 }
 def topbitsallzero64: PatLeaf<(i64 GPR64:$src), [{
   return Op.getValueType() == MVT::i64 &&
          CurDAG->MaskedValueIsZero(Op, APInt::getHighBitsSet(64, 63));
   }]> {
-  let GISelLeafPredicateCode = [{ 
+  let GISelLeafPredicateCode = [{
     return VT && VT->maskedValueIsZero(Reg, APInt::getHighBitsSet(64, 63)); }];
 }
 
@@ -1317,6 +1319,10 @@ let RecomputePerFunction = 1 in {
   def TailCallNotX16 : Predicate<[{ !MF->getInfo<AArch64FunctionInfo>()->branchTargetEnforcement() && MF->getInfo<AArch64FunctionInfo>()->branchProtectionPAuthLR() }]>;
   // BTI off, PAuthLR off: Any non-callee-saved register
   def TailCallAny : Predicate<[{ !MF->getInfo<AArch64FunctionInfo>()->branchTargetEnforcement() && !MF->getInfo<AArch64FunctionInfo>()->branchProtectionPAuthLR() }]>;
+  // PAuth on but only use instructions in the HINT space (System)
+  def PAuthHintOnly : Predicate<[{ MF->getSubtarget<AArch64Subtarget>().hasPAuthHintOnly() }]>;
+
+  def NoPAuthHintOnly : Predicate<[{ !MF->getSubtarget<AArch64Subtarget>().hasPAuthHintOnly() }]>;
 
   def SLSBLRMitigation : Predicate<[{ MF->getSubtarget<AArch64Subtarget>().hardenSlsBlr() }]>;
   def NoSLSBLRMitigation : Predicate<[{ !MF->getSubtarget<AArch64Subtarget>().hardenSlsBlr() }]>;
@@ -1687,7 +1693,7 @@ let Predicates = [HasNEON, HasDotProd] in {
   def : Pat<(v2i32 (partial_reduce_umla (v2i32 V64:$Acc), (v8i8 V64:$MulLHS), (v8i8 V64:$MulRHS))),
             (v2i32 (UDOTv8i8 V64:$Acc, V64:$MulLHS, V64:$MulRHS))>;
   def : Pat<(v2i32 (partial_reduce_smla (v2i32 V64:$Acc), (v8i8 V64:$MulLHS), (v8i8 V64:$MulRHS))),
-            (v2i32 (SDOTv8i8 V64:$Acc, V64:$MulLHS, V64:$MulRHS))>; 
+            (v2i32 (SDOTv8i8 V64:$Acc, V64:$MulLHS, V64:$MulRHS))>;
 } // End HasNEON, HasDotProd
 
 // ARMv8.6-A BFloat
@@ -2124,6 +2130,22 @@ let Predicates = [HasPAuth] in {
     let Size = 12; // 4 fixed + 8 variable, to compute discriminator.
     let Defs = [X16,X17,LR];
     let Uses = [SP];
+    let Predicates = [NoPAuthHintOnly];
+  }
+
+  def BLRAHintOnly : Pseudo<(outs), (ins tcGPRx17:$Rn, i32imm:$Key, i64imm:$Disc,
+                                 discGPRx16:$AddrDisc),
+                    [(AArch64authcall tcGPRx17:$Rn, timm:$Key, timm:$Disc,
+                                      discGPRx16:$AddrDisc)]>, Sched<[]> {
+    let isCodeGenOnly = 1;
+    let hasSideEffects = 1;
+    let mayStore = 0;
+    let mayLoad = 0;
+    let isCall = 1;
+    let Size = 12; // 4 fixed + 8 variable, to compute discriminator.
+    let Defs = [X16,X17,LR];
+    let Uses = [SP];
+    let Predicates = [PAuthHintOnly];
   }
 
   def BLRA_RVMARKER : Pseudo<
@@ -2153,7 +2175,23 @@ let Predicates = [HasPAuth] in {
     let isBarrier = 1;
     let isIndirectBranch = 1;
     let Size = 12; // 4 fixed + 8 variable, to compute discriminator.
-    let Defs = [X17];
+    let Defs = [X16];
+    let Predicates = [NoPAuthHintOnly];
+  }
+
+  def BRAHintOnly : Pseudo<(outs), (ins tcGPRx17:$Rn, i32imm:$Key, i64imm:$Disc,
+                                 discGPRx16:$AddrDisc), []>, Sched<[]> {
+    let isCodeGenOnly = 1;
+    let hasNoSchedulingInfo = 1;
+    let hasSideEffects = 1;
+    let mayStore = 0;
+    let mayLoad = 0;
+    let isBranch = 1;
+    let isTerminator = 1;
+    let isBarrier = 1;
+    let isIndirectBranch = 1;
+    let Size = 12; // 4 fixed + 8 variable, to compute discriminator.
+    let Predicates = [PAuthHintOnly];
   }
 
   let isReturn = 1, isTerminator = 1, isBarrier = 1 in {
@@ -2166,6 +2204,33 @@ let Predicates = [HasPAuth] in {
   defm LDRAA  : AuthLoad<0, "ldraa", simm10Scaled>;
   defm LDRAB  : AuthLoad<1, "ldrab", simm10Scaled>;
 
+  // XPAC pseudo.
+  // Use for lowering PAC instructions on the HINT space only
+  def XPAC : Pseudo<(outs GPR64noip:$Rd), (ins GPR64noip:$Rn),
+                   [], "$Rn = $Rd">, Sched<[WriteI, ReadI]> {
+    let isCodeGenOnly = 1;
+    let hasSideEffects = 1;
+    let mayStore = 0;
+    let mayLoad = 0;
+    let Size = 32;
+    let Defs = [X16];
+  }
+
+  // PACHintOnly pseudo instruction. Used for lowering PAC instructions
+  // in the HINT space only (pacia1716/pacib1716).
+  // Unlike PAC, this operates implicitly on X17 (Uses=[X17], Defs=[X17,X16,NZCV])
+  // and has no tied constraint or usesCustomInserter.
+  def PACHintOnly : Pseudo<(outs), (ins i32imm:$Key, i64imm:$Disc, GPR64noip:$AddrDisc),
+                       []>, Sched<[WriteI, ReadI]> {
+    let isCodeGenOnly = 1;
+    let hasSideEffects = 1;
+    let mayStore = 0;
+    let mayLoad = 0;
+    let Size = 32;
+    let Defs = [X17, X16, NZCV];
+    let Uses = [X17];
+  }
+
   // AUT pseudo.
   // This directly manipulates x16/x17, which are the only registers that
   // certain OSs guarantee are safe to use for sensitive operations.
@@ -2177,8 +2242,8 @@ let Predicates = [HasPAuth] in {
     let mayStore = 0;
     let mayLoad = 0;
     let Size = 32;
-    let Defs = [X16,X17,NZCV];
-    let Uses = [X16];
+    let Defs = [X17,X16,NZCV];
+    let Uses = [X17];
   }
 
   def AUTxMxN : Pseudo<(outs GPR64:$AuthVal, GPR64common:$Scratch),
@@ -2227,8 +2292,8 @@ let Predicates = [HasPAuth] in {
     let mayStore = 0;
     let mayLoad = 0;
     let Size = 48;
-    let Defs = [X16,X17,NZCV];
-    let Uses = [X16];
+    let Defs = [X17,X16,NZCV];
+    let Uses = [X17];
   }
 
   // Materialize a signed global address, with adrp+add and PAC.
@@ -2239,7 +2304,7 @@ let Predicates = [HasPAuth] in {
     let isReMaterializable = 1;
     let isCodeGenOnly = 1;
     let Size = 40; // 12 fixed + 28 variable, for pointer offset, and discriminator
-    let Defs = [X16,X17];
+    let Defs = [X17,X16];
   }
 
   // Materialize a signed global address, using a GOT load and PAC.
@@ -2251,7 +2316,7 @@ let Predicates = [HasPAuth] in {
     let isCodeGenOnly = 1;
     let Size = 68; // 12 fixed + 56 variable, for pointer offset, discriminator and
                    // ELF signed GOT signed pointer authentication (if no FPAC)
-    let Defs = [X16,X17,NZCV];
+    let Defs = [X17,X16,NZCV];
   }
 
   def LOADgotAUTH : Pseudo<(outs GPR64common:$dst), (ins i64imm:$addr), []>,
@@ -2287,20 +2352,38 @@ let Predicates = [HasPAuth] in {
       : Pseudo<(outs), (ins tcGPRx16x17:$dst, i32imm:$FPDiff, i32imm:$Key,
                             i64imm:$Disc, tcGPRnotx16x17:$AddrDisc),
                []>, Sched<[WriteBrReg]>;
+    def AUTH_TCRETURN_HINT_ONLY
+      : Pseudo<(outs), (ins tcGPRx17:$dst, i32imm:$FPDiff, i32imm:$Key,
+                            i64imm:$Disc, discGPRx16:$AddrDisc),
+               []>, Sched<[WriteBrReg]>;
   }
 
-  let Predicates = [TailCallAny] in
+  let Predicates = [TailCallAny, NoPAuthHintOnly] in
     def : Pat<(AArch64authtcret tcGPRnotx16x17:$dst, (i32 timm:$FPDiff), (i32 timm:$Key),
                                 (i64 timm:$Disc), tcGPR64:$AddrDisc),
               (AUTH_TCRETURN tcGPRnotx16x17:$dst, imm:$FPDiff, imm:$Key, imm:$Disc,
                              tcGPR64:$AddrDisc)>;
 
-  let Predicates = [TailCallX16X17] in
+  let Predicates = [TailCallX16X17, NoPAuthHintOnly] in
     def : Pat<(AArch64authtcret tcGPRx16x17:$dst, (i32 timm:$FPDiff),
                                 (i32 timm:$Key), (i64 timm:$Disc),
                                 tcGPRnotx16x17:$AddrDisc),
               (AUTH_TCRETURN_BTI tcGPRx16x17:$dst, imm:$FPDiff, imm:$Key,
                                  imm:$Disc, tcGPRnotx16x17:$AddrDisc)>;
+
+  let Predicates = [TailCallAny, HasPAuthHintOnly] in
+    def : Pat<(AArch64authtcret tcGPRx17:$dst, (i32 timm:$FPDiff),
+                                (i32 timm:$Key), (i64 timm:$Disc),
+                                discGPRx16:$AddrDisc),
+              (AUTH_TCRETURN_HINT_ONLY tcGPRx17:$dst, imm:$FPDiff, imm:$Key,
+                                 imm:$Disc, discGPRx16:$AddrDisc)>;
+
+  let Predicates = [TailCallX16X17, HasPAuthHintOnly] in
+    def : Pat<(AArch64authtcret tcGPRx17:$dst, (i32 timm:$FPDiff),
+                                (i32 timm:$Key), (i64 timm:$Disc),
+                                discGPRx16:$AddrDisc),
+              (AUTH_TCRETURN_HINT_ONLY tcGPRx17:$dst, imm:$FPDiff, imm:$Key,
+                                 imm:$Disc, discGPRx16:$AddrDisc)>;
 }
 
 // v9.5-A pointer authentication extensions
@@ -3215,7 +3298,7 @@ defm ORR  : LogicalReg<0b01, 0, "orr", or>;
 def : InstAlias<"mov $dst, $src",
                 (ORRWrs GPR32:$dst, WZR,
                         (logical_shifted_reg32 GPR32:$src, 0)), 2>;
-def : InstAlias<"mov $dst, $src", 
+def : InstAlias<"mov $dst, $src",
                 (ORRXrs GPR64:$dst, XZR,
                         (logical_shifted_reg64 GPR64:$src, 0)), 2>;
 
@@ -4824,7 +4907,7 @@ def : Pat<(truncstorei32 (i64 (bitconvert (f64 FPR64:$Rt))), (am_indexed32 GPR64
 
 // truncstorei16 of f64 bitcasted to i64
 def : Pat<(truncstorei16 (i64 (bitconvert (f64 FPR64:$Rt))), (am_indexed16 GPR64sp:$Rn, uimm12s2:$offset)),
-          (STRHui (f16 (EXTRACT_SUBREG FPR64:$Rt, hsub)), GPR64sp:$Rn, uimm12s2:$offset)>;      
+          (STRHui (f16 (EXTRACT_SUBREG FPR64:$Rt, hsub)), GPR64sp:$Rn, uimm12s2:$offset)>;
 
   // truncstorei16 of f32 bitcasted to i32
 def : Pat<(truncstorei16 (i32 (bitconvert (f32 FPR32:$Rt))), (am_indexed16 GPR64sp:$Rn, uimm12s2:$off)),
@@ -6556,7 +6639,7 @@ multiclass FPToIntegerSIMDScalarPatterns<SDPatternOperator OpN, string INST> {
             (!cast<Instruction>(INST # v1i32) FPR32:$Rn)>;
   def : Pat<(f64 (bitconvert (i64 (OpN (f64 FPR64:$Rn))))),
             (!cast<Instruction>(INST # v1i64) FPR64:$Rn)>;
-            
+
 }
 defm: FPToIntegerSIMDScalarPatterns<int_aarch64_neon_fcvtas, "FCVTAS">;
 defm: FPToIntegerSIMDScalarPatterns<int_aarch64_neon_fcvtau, "FCVTAU">;
@@ -6591,18 +6674,18 @@ multiclass FPToIntegerIntPats<Intrinsic round, string INST> {
   def : Pat<(i64 (round f64:$Rn)), (!cast<Instruction>(INST # v1i64) $Rn)>;
 
   let Predicates = [HasFPRCVT] in {
-  def : Pat<(f32 (bitconvert (i32 (round f16:$Rn)))), 
+  def : Pat<(f32 (bitconvert (i32 (round f16:$Rn)))),
             (!cast<Instruction>(INST # SHr) $Rn)>;
-  def : Pat<(f64 (bitconvert (i64 (round f16:$Rn)))), 
+  def : Pat<(f64 (bitconvert (i64 (round f16:$Rn)))),
             (!cast<Instruction>(INST # DHr) $Rn)>;
-  def : Pat<(f64 (bitconvert (i64 (round f32:$Rn)))), 
+  def : Pat<(f64 (bitconvert (i64 (round f32:$Rn)))),
             (!cast<Instruction>(INST # DSr) $Rn)>;
-  def : Pat<(f32 (bitconvert (i32 (round f64:$Rn)))), 
+  def : Pat<(f32 (bitconvert (i32 (round f64:$Rn)))),
             (!cast<Instruction>(INST # SDr) $Rn)>;
   }
-  def : Pat<(f32 (bitconvert (i32 (round f32:$Rn)))), 
+  def : Pat<(f32 (bitconvert (i32 (round f32:$Rn)))),
             (!cast<Instruction>(INST # v1i32) $Rn)>;
-  def : Pat<(f64 (bitconvert (i64 (round f64:$Rn)))), 
+  def : Pat<(f64 (bitconvert (i64 (round f64:$Rn)))),
             (!cast<Instruction>(INST # v1i64) $Rn)>;
 
   let Predicates = [HasFullFP16] in {
@@ -6788,7 +6871,7 @@ multiclass FPToIntegerPats<SDNode to_int, SDNode to_int_sat, SDNode to_int_sat_g
             (!cast<Instruction>(INST # v1i32) f32:$Rn)>;
   def : Pat<(i64 (to_int_sat_gi (round f64:$Rn))),
             (!cast<Instruction>(INST # v1i64) f64:$Rn)>;
-            
+
   let Predicates = [HasFPRCVT] in {
     def : Pat<(f32 (bitconvert (i32 (to_int_sat (round f16:$Rn), i32)))),
               (!cast<Instruction>(INST # SHr) f16:$Rn)>;

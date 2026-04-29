@@ -8818,6 +8818,19 @@ static void HandleHLSLParamModifierAttr(TypeProcessingState &State,
   }
 }
 
+static void HandleNopacTypeAttribute(QualType &type, ParsedAttr &attr,
+                                     TypeProcessingState &state) {
+  Sema &S = state.getSema();
+  int level;
+  if (!S.Context.isPointerToFunction(type, level))
+    return;
+
+  bool hasNopac;
+  auto type2 = S.Context.getNopacQualType(type, hasNopac);
+  if (hasNopac)
+    type = type2;
+}
+
 static void processTypeAttrs(TypeProcessingState &state, QualType &type,
                              TypeAttrLocation TAL,
                              const ParsedAttributesView &attrs,
@@ -8837,7 +8850,6 @@ static void processTypeAttrs(TypeProcessingState &state, QualType &type,
   // over that.
   ParsedAttributesView AttrsCopy{attrs};
   for (ParsedAttr &attr : AttrsCopy) {
-
     // Skip attributes that were marked to be invalid.
     if (attr.isInvalid())
       continue;
@@ -8883,6 +8895,12 @@ static void processTypeAttrs(TypeProcessingState &state, QualType &type,
             << attr << attr.isRegularKeywordAttribute();
         attr.setUsedAsTypeAttr();
       }
+      break;
+    case ParsedAttr::AT_Nopac:
+      if (!state.getSema().getLangOpts().UseNopacAttribute)
+        break;
+      HandleNopacTypeAttribute(type, attr, state);
+      attr.setUsedAsTypeAttr();
       break;
 
     case ParsedAttr::UnknownAttribute:

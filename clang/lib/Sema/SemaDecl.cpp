@@ -3466,6 +3466,26 @@ static bool EquivalentArrayTypes(QualType Old, QualType New,
   return Old == New;
 }
 
+static bool isFuncPtr(QualType T) {
+  return (T->isFunctionPointerType() || T->isMemberFunctionPointerType());
+}
+
+// viorel todo: check references also.
+static bool areMergeableNoPac(QualType OldType, QualType NewType) {
+  if (!OldType->isPointerType() || !NewType->isPointerType()) {
+    return false;
+  }
+  if (isFuncPtr(OldType) && isFuncPtr(NewType)) {
+    return (OldType.getQualifiers().hasNopac() ||
+        NewType.getQualifiers().hasNopac());
+  }
+
+  QualType OldTypePointee = OldType->getPointeeType();
+  QualType NewTypePointee = NewType->getPointeeType();
+
+  return areMergeableNoPac(OldTypePointee, NewTypePointee);
+}
+
 static void mergeParamDeclTypes(ParmVarDecl *NewParam,
                                 const ParmVarDecl *OldParam,
                                 Sema &S) {
@@ -3488,6 +3508,11 @@ static void mergeParamDeclTypes(ParmVarDecl *NewParam,
       NewT = S.Context.getAttributedType(*Oldnullability, NewT, NewT);
       NewParam->setType(NewT);
     }
+  }
+  if (areMergeableNoPac(OldParam->getType(), NewParam->getType())) {
+    bool hasNopac;
+    NewParam->setType(
+        S.Context.getNopacQualType(NewParam->getType(), hasNopac));
   }
   const auto *OldParamDT = dyn_cast<DecayedType>(OldParam->getType());
   const auto *NewParamDT = dyn_cast<DecayedType>(NewParam->getType());
@@ -4030,6 +4055,9 @@ bool Sema::MergeFunctionDecl(FunctionDecl *New, NamedDecl *&OldD, Scope *S,
     //   use that placeholder, not a deduced type.
     QualType OldDeclaredReturnType = Old->getDeclaredReturnType();
     QualType NewDeclaredReturnType = New->getDeclaredReturnType();
+
+    OldDeclaredReturnType = Context.removeNopacQualType(OldDeclaredReturnType);
+    NewDeclaredReturnType = Context.removeNopacQualType(NewDeclaredReturnType);
     if (!Context.hasSameType(OldDeclaredReturnType, NewDeclaredReturnType) &&
         canFullyTypeCheckRedeclaration(New, Old, NewDeclaredReturnType,
                                        OldDeclaredReturnType)) {
@@ -4242,12 +4270,16 @@ bool Sema::MergeFunctionDecl(FunctionDecl *New, NamedDecl *&OldD, Scope *S,
       // Fall through for conflicting redeclarations and redefinitions.
     }
 
+    OldQTypeForComparison = Context.removeNopacQualType(OldQTypeForComparison);
+
     // If the function types are compatible, merge the declarations. Ignore the
     // exception specifier because it was already checked above in
     // CheckEquivalentExceptionSpec, and we don't want follow-on diagnostics
     // about incompatible types under -fms-compatibility.
     if (Context.hasSameFunctionTypeIgnoringExceptionSpec(OldQTypeForComparison,
-                                                         NewQType))
+                                                         NewQType) ||
+        Context.hasSameFunctionTypeIgnoringNopac(OldQTypeForComparison,
+                                                 NewQType))
       return MergeCompatibleFunctionDecls(New, Old, S, MergeTypeWithOld);
 
     // If the types are imprecise (due to dependent constructs in friends or

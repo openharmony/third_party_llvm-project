@@ -1073,6 +1073,8 @@ static unsigned getCallOpcode(const MachineFunction &CallerF, bool IsIndirect,
                               std::optional<CallLowering::PtrAuthInfo> &PAI,
                               MachineRegisterInfo &MRI) {
   const AArch64FunctionInfo *FuncInfo = CallerF.getInfo<AArch64FunctionInfo>();
+  bool isPAHintOnly =
+      CallerF.getSubtarget<AArch64Subtarget>().hasPAuthHintOnly();
 
   if (!IsTailCall) {
     if (!PAI)
@@ -1081,6 +1083,8 @@ static unsigned getCallOpcode(const MachineFunction &CallerF, bool IsIndirect,
     assert(IsIndirect && "Direct call should not be authenticated");
     assert((PAI->Key == AArch64PACKey::IA || PAI->Key == AArch64PACKey::IB) &&
            "Invalid auth call key");
+    if (isPAHintOnly)
+      return AArch64::BLRAHintOnly;
     return AArch64::BLRA;
   }
 
@@ -1095,7 +1099,8 @@ static unsigned getCallOpcode(const MachineFunction &CallerF, bool IsIndirect,
       return AArch64::TCRETURNrix17;
     }
     if (PAI)
-      return AArch64::AUTH_TCRETURN_BTI;
+      return isPAHintOnly ?
+          AArch64::AUTH_TCRETURN_HINT_ONLY : AArch64::AUTH_TCRETURN;
     return AArch64::TCRETURNrix16x17;
   }
 
@@ -1105,7 +1110,8 @@ static unsigned getCallOpcode(const MachineFunction &CallerF, bool IsIndirect,
   }
 
   if (PAI)
-    return AArch64::AUTH_TCRETURN;
+    return isPAHintOnly ?
+        AArch64::AUTH_TCRETURN_HINT_ONLY : AArch64::AUTH_TCRETURN;
   return AArch64::TCRETURNri;
 }
 
@@ -1164,7 +1170,9 @@ bool AArch64CallLowering::lowerTailCall(
   MIB.addImm(0);
 
   // Authenticated tail calls always take key/discriminator arguments.
-  if (Opc == AArch64::AUTH_TCRETURN || Opc == AArch64::AUTH_TCRETURN_BTI) {
+  if (Opc == AArch64::AUTH_TCRETURN ||
+      Opc == AArch64::AUTH_TCRETURN_HINT_ONLY ||
+      Opc == AArch64::AUTH_TCRETURN_BTI) {
     assert((Info.PAI->Key == AArch64PACKey::IA ||
             Info.PAI->Key == AArch64PACKey::IB) &&
            "Invalid auth call key");
@@ -1438,7 +1446,9 @@ bool AArch64CallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
 
   Mask = getMaskForArgs(OutArgs, Info, *TRI, MF);
 
-  if (Opc == AArch64::BLRA || Opc == AArch64::BLRA_RVMARKER) {
+  if (Opc == AArch64::BLRA ||
+      Opc == AArch64::BLRAHintOnly ||
+      Opc == AArch64::BLRA_RVMARKER) {
     assert((Info.PAI->Key == AArch64PACKey::IA ||
             Info.PAI->Key == AArch64PACKey::IB) &&
            "Invalid auth call key");

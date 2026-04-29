@@ -3118,6 +3118,180 @@ ASTContext::getASTObjCInterfaceLayout(const ObjCInterfaceDecl *D) const {
   return getObjCLayout(D);
 }
 
+bool ASTContext::isPointerToFunction(QualType &type, int &level) {
+  QualType 	t = type.getCanonicalType();
+  for(level = 0; t->isPointerType(); level++, t = t->getPointeeType());
+  return level > 0 && t->isFunctionType();
+}
+
+bool ASTContext::isFunctionDeclPtr2Fun(const FunctionDecl *FD) {
+  QualType t = FD->getType();
+  bool hasNopac;
+  getNopacQualType(t, hasNopac);
+  return hasNopac;
+}
+
+bool ASTContext::addNopacFunctionDecl(FunctionDecl *FD) {
+  QualType t = FD->getType();
+  bool hasNopac;
+  auto rt = getNopacQualType(t, hasNopac);
+  if (!hasNopac)
+    return false;
+
+  FD->setType(rt);
+
+  for(auto param : FD->parameters()) {
+    auto t = param->getType();
+    bool _hasNopac;
+    auto t2 = getNopacQualType(t, _hasNopac);
+    if (_hasNopac)
+      param->setType(t2);
+  }
+  return true;
+}
+
+bool ASTContext::AddNopacTypedefNameDecl(TypedefNameDecl *D) {
+  bool hasNopac;
+  auto oldType = D->getUnderlyingType();
+  auto newType = getNopacQualType(oldType, hasNopac);
+
+  if (hasNopac) {
+    if (D->isModed())
+      D->setModedTypeSourceInfo(D->getTypeSourceInfo(), newType);
+    else
+      D->setTypeSourceInfo(CreateTypeSourceInfo(newType));
+  }
+
+  return hasNopac;
+}
+
+QualType ASTContext::removeNopacQualType(QualType T) const {
+  if (T->isFunctionPointerType() || T->isMemberFunctionPointerType()) {
+    if (!T.hasNopac())
+      return T;
+    QualifierCollector Quals;
+    const Type *TypeNode = Quals.strip(T);
+    Quals.removeNopac();
+
+    // Removal of the NoPac can mean there are no longer any
+    // non-fast qualifiers, so creating an ExtQualType isn't possible (asserts)
+    // or required.
+    if (Quals.hasNonFastQualifiers())
+      return getExtQualType(TypeNode, Quals);
+    return QualType(TypeNode, Quals.getFastQualifiers());
+  } else if (const PointerType *Ptr = T->getAs<PointerType>()) {
+    QualType Pointee = Ptr->getPointeeType();
+    if (Pointee->isPointerType()) {
+      return getPointerType(removeNopacQualType(Pointee));
+    }
+  }
+  return T;
+}
+
+bool ASTContext::hasSameFunctionTypeIgnoringNopac(QualType T,
+                                                  QualType U) const {
+  return hasSameType(T, U) ||
+         hasSameType(getFunctionTypeWithoutNopac(T),
+                     getFunctionTypeWithoutNopac(U));
+}
+
+QualType ASTContext::getFunctionTypeWithoutNopac(QualType T) const {
+  if (const auto *Proto = T->getAs<FunctionProtoType>()) {
+    QualType RetTy = removeNopacQualType(Proto->getReturnType());
+    SmallVector<QualType, 16> Args(Proto->param_types());
+    for (unsigned i = 0, n = Args.size(); i != n; ++i)
+      Args[i] = removeNopacQualType(Args[i]);
+    return getFunctionType(RetTy, Args, Proto->getExtProtoInfo());
+  }
+
+  if (const FunctionNoProtoType *Proto = T->getAs<FunctionNoProtoType>()) {
+    QualType RetTy = removeNopacQualType(Proto->getReturnType());
+    return getFunctionNoProtoType(RetTy, Proto->getExtInfo());
+  }
+
+  return T;
+}
+
+bool ASTContext::hasNopacRec(const QualType &type) const {
+  if (type.isNull())
+    return false;
+
+  if (type.getQualifiers().hasNopac())
+    return true;
+
+  if (type->isFunctionNoProtoType()) {
+    const FunctionNoProtoType *F =
+        type.getTypePtr()->castAs<FunctionNoProtoType>();
+    if (hasNopacRec(F->getReturnType()))
+      return true;
+    return false;
+  } else if (type->isFunctionProtoType()) {
+    const FunctionProtoType *FPT =
+        type.getTypePtr()->castAs<FunctionProtoType>();
+    if (hasNopacRec(FPT->getReturnType()))
+      return true;
+
+    for(auto t : FPT->param_types()) {
+      if (hasNopacRec(t))
+        return true;
+    }
+  } else if (type->isPointerType() || type->isReferenceType()) {
+    auto t = type->getPointeeType();
+    return hasNopacRec(t);
+  }
+  return false;
+}
+
+QualType ASTContext::getNopacQualType(const QualType &type,
+                                      bool &hasNopac) const {
+  hasNopac = false;
+  QualifierCollector Quals;
+  const Type *TypeNode = Quals.strip(type);
+
+  if (type.isNull())
+    return type;
+
+  if (TypeNode->isFunctionNoProtoType()) {
+    auto newtype = adjustType(type, [&](QualType orig) {
+      const FunctionNoProtoType *F = orig->castAs<FunctionNoProtoType>();
+      QualType newReturnType = getNopacQualType(F->getReturnType(), hasNopac);
+      QualType rt = getFunctionNoProtoType(newReturnType, F->getExtInfo());
+      return rt;
+    } );
+
+    return newtype;
+  } else if (TypeNode->isFunctionProtoType()) {
+    auto newtype = adjustType(type, [&](QualType orig) {
+      const FunctionProtoType *FPT = orig->castAs<FunctionProtoType>();
+      QualType newReturnType = getNopacQualType(FPT->getReturnType(), hasNopac);
+      auto paramTypes = FPT->getParamTypes();
+      std::vector<QualType> types;
+      for(const QualType &pt : paramTypes) {
+        bool _hasNopac;
+        types.push_back(getNopacQualType(pt, _hasNopac));
+        hasNopac = hasNopac | _hasNopac;
+      }
+      ArrayRef<QualType> newParamTypes = types;
+      QualType rt =
+          getFunctionType(newReturnType, newParamTypes, FPT->getExtProtoInfo());
+      return rt;
+    });
+
+    return newtype;
+  } else if (TypeNode->isPointerType()) {
+    const PointerType *ptype = TypeNode->getAs<PointerType>();
+    auto t = getNopacQualType(ptype->getPointeeType(), hasNopac);
+    if (ptype->isFunctionPointerType()) {
+      hasNopac = true;
+      Quals.addNopac();
+    }
+    auto rt = getQualifiedType(getPointerType(t), Quals);
+    return rt;
+  }
+
+  return type;
+}
+
 static auto getCanonicalTemplateArguments(const ASTContext &C,
                                           ArrayRef<TemplateArgument> Args,
                                           bool &AnyNonCanonArgs) {
@@ -11633,6 +11807,19 @@ QualType ASTContext::mergeTypes(QualType LHS, QualType RHS, bool OfBlockPointer,
   // If the qualifiers are different, the types aren't compatible... mostly.
   Qualifiers LQuals = LHSCan.getLocalQualifiers();
   Qualifiers RQuals = RHSCan.getLocalQualifiers();
+
+  if (LQuals.hasNopac() && !RQuals.hasNopac()) {
+    bool hasNopac;
+    QualType AdjustedRHS = getNopacQualType(RHS, hasNopac);
+    if (hasNopac)
+      return mergeTypes(LHS, AdjustedRHS);
+  } else if (!LQuals.hasNopac() && RQuals.hasNopac()) {
+    bool hasNopac;
+    QualType AdjustedLHS = getNopacQualType(LHS, hasNopac);
+    if (hasNopac)
+      return mergeTypes(AdjustedLHS, RHS);
+  }
+
   if (LQuals != RQuals) {
     // If any of these qualifiers are different, we have a type
     // mismatch.
@@ -15081,7 +15268,7 @@ bool ASTContext::useAbbreviatedThunkName(GlobalDecl VirtualMethodDecl,
   auto *Method = cast<CXXMethodDecl>(VirtualMethodDecl.getDecl());
   assert(Method->isVirtual());
   bool DefaultIncludesPointerAuth =
-      LangOpts.PointerAuthCalls || LangOpts.PointerAuthIntrinsics;
+      LangOpts.PointerAuthCalls || LangOpts.VirtualFunctionPointerAuthCallOnly || LangOpts.PointerAuthIntrinsics;
 
   if (!DefaultIncludesPointerAuth)
     return true;

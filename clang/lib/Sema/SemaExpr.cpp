@@ -14626,7 +14626,9 @@ QualType Sema::CheckAddressOfOperand(ExprResult &OrigOp, SourceLocation OpLoc) {
     QualType MPTy = Context.getMemberPointerType(
         op->getType(), DRE->getQualifier(), MD->getParent());
 
-    if (getLangOpts().PointerAuthCalls && MD->isVirtual() &&
+    if ((getLangOpts().PointerAuthCalls ||
+        getLangOpts().MemberFunctionPointerAuthCallOnly ||
+        getLangOpts().VirtualFunctionPointerAuthCallOnly) && MD->isVirtual() &&
         !isUnevaluatedContext() && !MPTy->isDependentType()) {
       // When pointer authentication is enabled, argument and return types of
       // vitual member functions must be complete. This is because vitrual

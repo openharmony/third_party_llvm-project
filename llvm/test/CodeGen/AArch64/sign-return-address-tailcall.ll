@@ -19,12 +19,12 @@ define i32 @tailcall_direct() "sign-return-address"="non-leaf" {
 ;
 ; XPAC-NEXT:      mov x16, x30
 ; XPAC-NEXT:      [[XPACLRI]]
-; XPAC-NEXT:      cmp x30, x16
+; XPAC-NEXT:      cmp x16, x30
 ; XPAC-NEXT:      b.eq .[[GOOD:Lauth_success[_0-9]+]]
 ;
 ; XPAC83-NEXT:    mov x16, x30
 ; XPAC83-NEXT:    xpaci x16
-; XPAC83-NEXT:    cmp x30, x16
+; XPAC83-NEXT:    cmp x16, x30
 ; XPAC83-NEXT:    b.eq .[[GOOD:Lauth_success[_0-9]+]]
 ;
 ; BRK-NEXT:       brk #0xc470
@@ -49,12 +49,12 @@ define i32 @tailcall_indirect(ptr %fptr) "sign-return-address"="non-leaf" {
 ;
 ; XPAC-NEXT:      mov x16, x30
 ; XPAC-NEXT:      [[XPACLRI]]
-; XPAC-NEXT:      cmp x30, x16
+; XPAC-NEXT:      cmp x16, x30
 ; XPAC-NEXT:      b.eq .[[GOOD:Lauth_success[_0-9]+]]
 ;
 ; XPAC83-NEXT:    mov x16, x30
 ; XPAC83-NEXT:    xpaci x16
-; XPAC83-NEXT:    cmp x30, x16
+; XPAC83-NEXT:    cmp x16, x30
 ; XPAC83-NEXT:    b.eq .[[GOOD:Lauth_success[_0-9]+]]
 ;
 ; BRK-NEXT:       brk #0xc470
@@ -95,12 +95,12 @@ define i32 @tailcall_direct_noframe_sign_all() "sign-return-address"="all" {
 ;
 ; XPAC-NEXT:      mov x16, x30
 ; XPAC-NEXT:      [[XPACLRI]]
-; XPAC-NEXT:      cmp x30, x16
+; XPAC-NEXT:      cmp x16, x30
 ; XPAC-NEXT:      b.eq .[[GOOD:Lauth_success[_0-9]+]]
 ;
 ; XPAC83-NEXT:    mov x16, x30
 ; XPAC83-NEXT:    xpaci x16
-; XPAC83-NEXT:    cmp x30, x16
+; XPAC83-NEXT:    cmp x16, x30
 ; XPAC83-NEXT:    b.eq .[[GOOD:Lauth_success[_0-9]+]]
 ;
 ; BRK-NEXT:       brk #0xc470
@@ -124,12 +124,12 @@ define i32 @tailcall_indirect_noframe_sign_all(ptr %fptr) "sign-return-address"=
 ;
 ; XPAC-NEXT:      mov x16, x30
 ; XPAC-NEXT:      [[XPACLRI]]
-; XPAC-NEXT:      cmp x30, x16
+; XPAC-NEXT:      cmp x16, x30
 ; XPAC-NEXT:      b.eq .[[GOOD:Lauth_success[_0-9]+]]
 ;
 ; XPAC83-NEXT:    mov x16, x30
 ; XPAC83-NEXT:    xpaci x16
-; XPAC83-NEXT:    cmp x30, x16
+; XPAC83-NEXT:    cmp x16, x30
 ; XPAC83-NEXT:    b.eq .[[GOOD:Lauth_success[_0-9]+]]
 ;
 ; BRK-NEXT:       brk #0xc470
@@ -166,12 +166,12 @@ define i32 @tailcall_two_branches(i1 %0) "sign-return-address"="all" {
 ;
 ; XPAC-NEXT:         mov x16, x30
 ; XPAC-NEXT:         [[XPACLRI]]
-; XPAC-NEXT:         cmp x30, x16
+; XPAC-NEXT:         cmp x16, x30
 ; XPAC-NEXT:         b.eq .[[GOOD:Lauth_success[_0-9]+]]
 ;
 ; XPAC83-NEXT:       mov x16, x30
 ; XPAC83-NEXT:       xpaci x16
-; XPAC83-NEXT:       cmp x30, x16
+; XPAC83-NEXT:       cmp x16, x30
 ; XPAC83-NEXT:       b.eq .[[GOOD:Lauth_success[_0-9]+]]
 ;
 ; BRK-NEXT:          brk #0xc470

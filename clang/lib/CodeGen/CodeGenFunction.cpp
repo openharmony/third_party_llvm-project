@@ -1513,6 +1513,15 @@ void CodeGenFunction::GenerateCode(GlobalDecl GD, llvm::Function *Fn,
     // Disable debug info indefinitely for this function
     DebugInfo = nullptr;
   }
+
+  if (FD->hasAttr<CfiModifierAttr>()) {
+    llvm::Attribute ModifierAttr
+      = llvm::Attribute::get(Fn->getContext(),
+                             llvm::Attribute::CfiModifier,
+                             FD->getAttr<CfiModifierAttr>()->getModifier());
+    Fn->addFnAttr(ModifierAttr);
+  }
+
   // Finalize function debug info on exit.
   auto Cleanup = llvm::make_scope_exit([this] {
     if (CGDebugInfo *DI = getDebugInfo())

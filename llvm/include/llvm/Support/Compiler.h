@@ -707,7 +707,8 @@ void AnnotateIgnoreWritesEnd(const char *file, int line);
 #endif
 
 #if LLVM_HAS_CPP_ATTRIBUTE(clang::ptrauth_vtable_pointer) &&                   \
-    (defined(__PTRAUTH__) || __has_feature(ptrauth_calls))
+    (defined(__PTRAUTH__) || __has_feature(ptrauth_calls) ||                   \
+    __has_feature(ptrauth_vptr))
 #define LLVM_MOVABLE_POLYMORPHIC_TYPE                                          \
   [[clang::ptrauth_vtable_pointer(default_key, no_address_discrimination,      \
                                   default_extra_discrimination)]]

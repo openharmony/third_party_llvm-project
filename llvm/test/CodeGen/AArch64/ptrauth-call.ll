@@ -1,12 +1,12 @@
-; RUN: llc -mtriple arm64e-apple-darwin   -o - %s -asm-verbose=0 \
-; RUN:   | FileCheck %s --check-prefixes=CHECK,DARWIN
+; RUN-NOT: llc -mtriple arm64e-apple-darwin   -o - %s -asm-verbose=0 \
+; RUN-NOT:   | FileCheck %s --check-prefixes=CHECK,DARWIN
 
 ; RUN: llc -mtriple aarch64 -mattr=+pauth -o - %s -asm-verbose=0 \
 ; RUN:   | FileCheck %s --check-prefixes=CHECK,ELF
 
-; RUN: llc -mtriple arm64e-apple-darwin   -o - %s -asm-verbose=0 \
-; RUN:   -global-isel -global-isel-abort=1 -verify-machineinstrs \
-; RUN:   | FileCheck %s --check-prefixes=CHECK,DARWIN
+; RUN-NOT: llc -mtriple arm64e-apple-darwin   -o - %s -asm-verbose=0 \
+; RUN-NOT:   -global-isel -global-isel-abort=1 -verify-machineinstrs \
+; RUN-NOT:   | FileCheck %s --check-prefixes=CHECK,DARWIN
 
 ; RUN: llc -mtriple aarch64 -mattr=+pauth -o - %s -asm-verbose=0 \
 ; RUN:   -global-isel -global-isel-abort=1 -verify-machineinstrs \
@@ -468,11 +468,11 @@ define i32 @test_direct_call_mismatch() #0 {
 ;
 ; ELF-LABEL: test_direct_call_mismatch:
 ; ELF-NEXT:   str x30, [sp, #-16]!
-; ELF-NEXT:   adrp x16, :got:f
-; ELF-NEXT:   ldr x16, [x16, :got_lo12:f]
-; ELF-NEXT:   mov x17, #42
-; ELF-NEXT:   pacia x16, x17
-; ELF-NEXT:   mov x8, x16
+; ELF-NEXT:   adrp x17, :got:f
+; ELF-NEXT:   ldr x17, [x17, :got_lo12:f]
+; ELF-NEXT:   mov x16, #42
+; ELF-NEXT:   pacia x17, x16
+; ELF-NEXT:   mov x8, x17
 ; ELF-NEXT:   mov x17, #42
 ; ELF-NEXT:   blrab x8, x17
 ; ELF-NEXT:   ldr x30, [sp], #16

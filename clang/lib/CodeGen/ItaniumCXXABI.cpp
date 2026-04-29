@@ -861,23 +861,27 @@ CGCallee ItaniumCXXABI::EmitLoadOfMemberFunctionPointer(
   CalleePtr->addIncoming(NonVirtualFn, FnNonVirtual);
 
   CGPointerAuthInfo PointerAuth;
-
-  if (const auto &Schema =
-          CGM.getCodeGenOpts().PointerAuth.CXXMemberFunctionPointers) {
-    llvm::PHINode *DiscriminatorPHI = Builder.CreatePHI(CGF.IntPtrTy, 2);
-    DiscriminatorPHI->addIncoming(llvm::ConstantInt::get(CGF.IntPtrTy, 0),
-                                  FnVirtual);
-    const auto &AuthInfo =
-        CGM.getMemberFunctionPointerAuthInfo(QualType(MPT, 0));
-    assert(Schema.getKey() == AuthInfo.getKey() &&
-           "Keys for virtual and non-virtual member functions must match");
-    auto *NonVirtualDiscriminator = AuthInfo.getDiscriminator();
-    DiscriminatorPHI->addIncoming(NonVirtualDiscriminator, FnNonVirtual);
-    PointerAuth = CGPointerAuthInfo(
-        Schema.getKey(), Schema.getAuthenticationMode(), Schema.isIsaPointer(),
-        Schema.authenticatesNullValues(), DiscriminatorPHI);
+  bool NoPac = MPT->getMostRecentCXXRecordDecl()->isNoPac();
+  if (!NoPac) {
+    if (const auto &Schema =
+            CGM.getCodeGenOpts().PointerAuth.CXXMemberFunctionPointers) {
+      llvm::PHINode *DiscriminatorPHI = Builder.CreatePHI(CGF.IntPtrTy, 2);
+      DiscriminatorPHI->addIncoming(llvm::ConstantInt::get(CGF.IntPtrTy, 0),
+                                    FnVirtual);
+      const bool NoPac = RD->isNoPac();
+      const auto &AuthInfo =
+          CGM.getMemberFunctionPointerAuthInfo(QualType(MPT, 0), NoPac);
+      assert(Schema.getKey() == AuthInfo.getKey() &&
+             "Keys for virtual and non-virtual member functions must match");
+      auto *NonVirtualDiscriminator = AuthInfo.getDiscriminator();
+      DiscriminatorPHI->addIncoming(NonVirtualDiscriminator, FnNonVirtual);
+      PointerAuth = CGPointerAuthInfo(Schema.getKey(),
+                                      Schema.getAuthenticationMode(),
+                                      Schema.isIsaPointer(),
+                                      Schema.authenticatesNullValues(),
+                                      DiscriminatorPHI);
+    }
   }
-
   CGCallee Callee(FPT, CalleePtr, PointerAuth);
   return Callee;
 }
@@ -955,12 +959,21 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
   CGBuilderTy &Builder = CGF.Builder;
   QualType DstType = E->getType();
 
+  const MemberPointerType *destTy =
+    E->getType()->castAs<MemberPointerType>();
+
+  assert(destTy != nullptr && "destTy is nullptr");
+  auto *RD = destTy->getMostRecentCXXRecordDecl();
+  assert(RD != nullptr && "RD is nullptr");
+  const bool NoPac = RD->isNoPac();
+
   if (DstType->isMemberFunctionPointerType()) {
     if (const auto &NewAuthInfo =
-            CGM.getMemberFunctionPointerAuthInfo(DstType)) {
+            CGM.getMemberFunctionPointerAuthInfo(DstType, NoPac)) {
       QualType SrcType = E->getSubExpr()->getType();
       assert(SrcType->isMemberFunctionPointerType());
-      const auto &CurAuthInfo = CGM.getMemberFunctionPointerAuthInfo(SrcType);
+      const auto &CurAuthInfo =
+          CGM.getMemberFunctionPointerAuthInfo(SrcType, NoPac);
       llvm::Value *MemFnPtr = Builder.CreateExtractValue(src, 0, "memptr.ptr");
       llvm::Type *OrigTy = MemFnPtr->getType();
 
@@ -1003,9 +1016,6 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
 
   bool isDerivedToBase = (E->getCastKind() == CK_DerivedToBaseMemberPointer);
 
-  const MemberPointerType *destTy =
-    E->getType()->castAs<MemberPointerType>();
-
   // For member data pointers, this is just a matter of adding the
   // offset if the source is non-null.
   if (destTy->isMemberDataPointer()) {
@@ -1040,7 +1050,8 @@ ItaniumCXXABI::EmitMemberPointerConversion(CodeGenFunction &CGF,
 
 static llvm::Constant *
 pointerAuthResignMemberFunctionPointer(llvm::Constant *Src, QualType DestType,
-                                       QualType SrcType, CodeGenModule &CGM) {
+                                       QualType SrcType, CodeGenModule &CGM,
+                                       bool DstNoPac, bool SrcNoPac) {
   assert(DestType->isMemberFunctionPointerType() &&
          SrcType->isMemberFunctionPointerType() &&
          "member function pointers expected");
@@ -1060,8 +1071,11 @@ pointerAuthResignMemberFunctionPointer(llvm::Constant *Src, QualType DestType,
     return Src;
   }
 
-  llvm::Constant *ConstPtr = pointerAuthResignConstant(
-      cast<llvm::User>(MemFnPtr)->getOperand(0), CurAuthInfo, NewAuthInfo, CGM);
+  llvm::Constant *ConstPtr = DstNoPac
+    ? dyn_cast<llvm::Constant>(cast<llvm::User>(MemFnPtr)->getOperand(0))
+    : pointerAuthResignConstant(cast<llvm::User>(MemFnPtr)->getOperand(0),
+                                CurAuthInfo, NewAuthInfo, CGM);
+  assert(ConstPtr != nullptr && "ConstPtr is nullptr");
   ConstPtr = llvm::ConstantExpr::getPtrToInt(ConstPtr, MemFnPtr->getType());
   return ConstantFoldInsertValueInstruction(Src, ConstPtr, 0);
 }
@@ -1073,11 +1087,17 @@ ItaniumCXXABI::EmitMemberPointerConversion(const CastExpr *E,
          E->getCastKind() == CK_BaseToDerivedMemberPointer ||
          E->getCastKind() == CK_ReinterpretMemberPointer);
 
+  const MemberPointerType *destTy =
+    E->getType()->castAs<MemberPointerType>();
+  assert(destTy != nullptr && "destTy is nullptr");
+  auto *RD = destTy->getMostRecentCXXRecordDecl();
+  assert(RD != nullptr && "RD is nullptr");
+  const bool NoPac = RD->isNoPac();
   QualType DstType = E->getType();
 
   if (DstType->isMemberFunctionPointerType())
     src = pointerAuthResignMemberFunctionPointer(
-        src, DstType, E->getSubExpr()->getType(), CGM);
+        src, DstType, E->getSubExpr()->getType(), CGM, NoPac, NoPac);
 
   // Under Itanium, reinterprets don't require any additional processing.
   if (E->getCastKind() == CK_ReinterpretMemberPointer) return src;
@@ -1087,9 +1107,6 @@ ItaniumCXXABI::EmitMemberPointerConversion(const CastExpr *E,
   if (!adj) return src;
 
   bool isDerivedToBase = (E->getCastKind() == CK_DerivedToBaseMemberPointer);
-
-  const MemberPointerType *destTy =
-    E->getType()->castAs<MemberPointerType>();
 
   // For member data pointers, this is just a matter of adding the
   // offset if the source is non-null.
@@ -1193,7 +1210,11 @@ llvm::Constant *ItaniumCXXABI::BuildMemberPointer(const CXXMethodDecl *MD,
       // be valid.
       const auto &Schema =
           CGM.getCodeGenOpts().PointerAuth.CXXMemberFunctionPointers;
-      if (Schema)
+      const auto &vfuncSchema =
+          CGM.getCodeGenOpts().PointerAuth.CXXVirtualFunctionPointers;
+      auto *RD = MD->getParent();
+      bool NoPac = RD->isNoPac();
+      if ((Schema || vfuncSchema)  && !NoPac)
         MemPtr[0] = llvm::ConstantExpr::getPtrToInt(
             getSignedVirtualMemberFunctionPointer(MD), CGM.PtrDiffTy);
       else
@@ -1201,7 +1222,8 @@ llvm::Constant *ItaniumCXXABI::BuildMemberPointer(const CXXMethodDecl *MD,
       // Don't set the LSB of adj to 1 if pointer authentication for member
       // function pointers is enabled.
       MemPtr[1] = llvm::ConstantInt::get(
-          CGM.PtrDiffTy, 2 * ThisAdjustment.getQuantity() + !Schema);
+        CGM.PtrDiffTy,
+        2 * ThisAdjustment.getQuantity() + (!(Schema || vfuncSchema) || NoPac));
     } else {
       // Itanium C++ ABI 2.3:
       //   For a virtual function, [the pointer field] is 1 plus the
@@ -1223,7 +1245,8 @@ llvm::Constant *ItaniumCXXABI::BuildMemberPointer(const CXXMethodDecl *MD,
       // function type is incomplete.
       Ty = CGM.PtrDiffTy;
     }
-    llvm::Constant *addr = CGM.getMemberFunctionPointer(MD, Ty);
+    const bool NoPac = MD->getParent()->isNoPac();
+    llvm::Constant *addr = CGM.getMemberFunctionPointer(MD, Ty, NoPac);
 
     MemPtr[0] = llvm::ConstantExpr::getPtrToInt(addr, CGM.PtrDiffTy);
     MemPtr[1] = llvm::ConstantInt::get(CGM.PtrDiffTy,
@@ -1247,7 +1270,9 @@ llvm::Constant *ItaniumCXXABI::EmitMemberPointer(const APValue &MP,
     llvm::Constant *Src = BuildMemberPointer(MD, ThisAdjustment);
     QualType SrcType = getContext().getMemberPointerType(
         MD->getType(), /*Qualifier=*/std::nullopt, MD->getParent());
-    return pointerAuthResignMemberFunctionPointer(Src, MPType, SrcType, CGM);
+    const bool NoPac = MD->getParent()->isNoPac();
+    return pointerAuthResignMemberFunctionPointer(Src, MPType, SrcType, CGM,
+                                                  NoPac, NoPac);
   }
 
   CharUnits FieldOffset =
@@ -1492,13 +1517,15 @@ void ItaniumCXXABI::emitThrow(CodeGenFunction &CGF, const CXXThrowExpr *E) {
     // __cxa_throw is declared to take its destructor as void (*)(void *). We
     // must match that if function pointers can be authenticated with a
     // discriminator based on their type.
-    const ASTContext &Ctx = getContext();
-    QualType DtorTy = Ctx.getFunctionType(Ctx.VoidTy, {Ctx.VoidPtrTy},
-                                          FunctionProtoType::ExtProtoInfo());
 
     CXXDestructorDecl *DtorD = Record->getDestructor();
     Dtor = CGM.getAddrOfCXXStructor(GlobalDecl(DtorD, Dtor_Complete));
-    Dtor = CGM.getFunctionPointer(Dtor, DtorTy);
+    if (!CGM.getLangOpts().PointerAuthNoPacAtexit) {
+      const ASTContext &Ctx = getContext();
+      QualType DtorTy = Ctx.getFunctionType(Ctx.VoidTy, {Ctx.VoidPtrTy},
+                                            FunctionProtoType::ExtProtoInfo());
+      Dtor = CGM.getFunctionPointer(Dtor, DtorTy);
+    }
   }
   if (!Dtor) Dtor = llvm::Constant::getNullValue(CGM.Int8PtrTy);
 
@@ -2207,6 +2234,12 @@ llvm::Value *ItaniumCXXABI::getVTableAddressPointInStructorWithVTT(
       CGF.Builder.CreateAlignedLoad(CGF.GlobalsVoidPtrTy, VTT,
                                     CGF.getPointerAlign());
 
+  bool NoPac = VTableClass->isNoPac();
+  // Sanity check: Base classes should also be NoPac if the derived class is.
+  // NoPac |= Base.getBase()->hasAttr<NopacAttr>();
+  if (NoPac)
+   return AP;
+
   if (auto &Schema = CGF.CGM.getCodeGenOpts().PointerAuth.CXXVTTVTablePointers) {
     CGPointerAuthInfo PointerAuth = CGF.EmitPointerAuthInfo(Schema, VTT,
                                                             GlobalDecl(),
@@ -2265,12 +2298,16 @@ CGCallee ItaniumCXXABI::getVirtualFunctionPointer(CodeGenFunction &CGF,
   uint64_t VTableIndex = CGM.getItaniumVTableContext().getMethodVTableIndex(GD);
   llvm::Value *VFunc, *VTableSlotPtr = nullptr;
   auto &Schema = CGM.getCodeGenOpts().PointerAuth.CXXVirtualFunctionPointers;
+  auto *RD = MethodDecl->getParent();
+
+  bool nopac = RD->isNoPac();
 
   llvm::Type *ComponentTy = CGM.getVTables().getVTableComponentType();
   uint64_t ByteOffset =
       VTableIndex * CGM.getDataLayout().getTypeSizeInBits(ComponentTy) / 8;
 
-  if (!Schema && CGF.ShouldEmitVTableTypeCheckedLoad(MethodDecl->getParent())) {
+  if ((!Schema || nopac) &&
+      CGF.ShouldEmitVTableTypeCheckedLoad(MethodDecl->getParent())) {
     VFunc = CGF.EmitVTableTypeCheckedLoad(MethodDecl->getParent(), VTable,
                                           PtrTy, ByteOffset);
   } else {
@@ -2307,7 +2344,7 @@ CGCallee ItaniumCXXABI::getVirtualFunctionPointer(CodeGenFunction &CGF,
   }
 
   CGPointerAuthInfo PointerAuth;
-  if (Schema) {
+  if (Schema && !nopac) {
     assert(VTableSlotPtr && "virtual function pointer not set");
     GD = CGM.getItaniumVTableContext().findOriginalMethod(GD.getCanonicalDecl());
     PointerAuth = CGF.EmitPointerAuthInfo(Schema, VTableSlotPtr, GD, QualType());
@@ -2947,11 +2984,12 @@ static void emitGlobalDtorWithCXAAtExit(CodeGenFunction &CGF,
   const auto &Context = CGF.CGM.getContext();
   FunctionProtoType::ExtProtoInfo EPI(Context.getDefaultCallingConvention(
       /*IsVariadic=*/false, /*IsCXXMethod=*/false));
-  QualType fnType =
-      Context.getFunctionType(Context.VoidTy, {Context.VoidPtrTy}, EPI);
   llvm::Constant *dtorCallee = cast<llvm::Constant>(dtor.getCallee());
-  dtorCallee = CGF.CGM.getFunctionPointer(dtorCallee, fnType);
-
+  if (!CGF.CGM.getLangOpts().PointerAuthNoPacAtexit) {
+    QualType fnType =
+        Context.getFunctionType(Context.VoidTy, {Context.VoidPtrTy}, EPI);
+    dtorCallee = CGF.CGM.getFunctionPointer(dtorCallee, fnType);
+  }
   if (!addr)
     // addr is null when we are trying to register a dtor annotated with
     // __attribute__((destructor)) in a constructor function. Using null here is
@@ -3915,15 +3953,20 @@ static bool CanUseSingleInheritance(const CXXRecordDecl *RD) {
 
 void ItaniumRTTIBuilder::BuildVTablePointer(const Type *Ty,
                                             llvm::Constant *StorageAddress) {
+  bool mangleCxxabi = CGM.getContext().getLangOpts().PointerAuthMangleCxxabi;
+
   // abi::__class_type_info.
-  static const char * const ClassTypeInfo =
-    "_ZTVN10__cxxabiv117__class_type_infoE";
+  const char * ClassTypeInfo = mangleCxxabi ?
+      "_ZTVN10__cxxabiv121PAC___class_type_infoE" :
+      "_ZTVN10__cxxabiv117__class_type_infoE";
   // abi::__si_class_type_info.
-  static const char * const SIClassTypeInfo =
-    "_ZTVN10__cxxabiv120__si_class_type_infoE";
+  const char * SIClassTypeInfo = mangleCxxabi ?
+      "_ZTVN10__cxxabiv124PAC___si_class_type_infoE" :
+      "_ZTVN10__cxxabiv120__si_class_type_infoE";
   // abi::__vmi_class_type_info.
-  static const char * const VMIClassTypeInfo =
-    "_ZTVN10__cxxabiv121__vmi_class_type_infoE";
+  const char * VMIClassTypeInfo = mangleCxxabi ?
+      "_ZTVN10__cxxabiv125PAC___vmi_class_type_infoE" :
+      "_ZTVN10__cxxabiv121__vmi_class_type_infoE";
 
   const char *VTableName = nullptr;
 
@@ -3961,25 +4004,33 @@ void ItaniumRTTIBuilder::BuildVTablePointer(const Type *Ty,
   // FIXME: GCC treats block pointers as fundamental types?!
   case Type::BlockPointer:
     // abi::__fundamental_type_info.
-    VTableName = "_ZTVN10__cxxabiv123__fundamental_type_infoE";
+    VTableName = mangleCxxabi ?
+        "_ZTVN10__cxxabiv127PAC___fundamental_type_infoE" :
+        "_ZTVN10__cxxabiv123__fundamental_type_infoE";
     break;
 
   case Type::ConstantArray:
   case Type::IncompleteArray:
   case Type::VariableArray:
     // abi::__array_type_info.
-    VTableName = "_ZTVN10__cxxabiv117__array_type_infoE";
+    VTableName = mangleCxxabi ?
+        "_ZTVN10__cxxabiv121PAC___array_type_infoE" :
+        "_ZTVN10__cxxabiv117__array_type_infoE";
     break;
 
   case Type::FunctionNoProto:
   case Type::FunctionProto:
     // abi::__function_type_info.
-    VTableName = "_ZTVN10__cxxabiv120__function_type_infoE";
+    VTableName = mangleCxxabi ?
+        "_ZTVN10__cxxabiv124PAC___function_type_infoE":
+        "_ZTVN10__cxxabiv120__function_type_infoE";
     break;
 
   case Type::Enum:
     // abi::__enum_type_info.
-    VTableName = "_ZTVN10__cxxabiv116__enum_type_infoE";
+    VTableName = mangleCxxabi ?
+        "_ZTVN10__cxxabiv120PAC___enum_type_infoE" :
+        "_ZTVN10__cxxabiv116__enum_type_infoE";
     break;
 
   case Type::Record: {
@@ -4021,12 +4072,16 @@ void ItaniumRTTIBuilder::BuildVTablePointer(const Type *Ty,
   case Type::ObjCObjectPointer:
   case Type::Pointer:
     // abi::__pointer_type_info.
-    VTableName = "_ZTVN10__cxxabiv119__pointer_type_infoE";
+    VTableName = mangleCxxabi ?
+        "_ZTVN10__cxxabiv123PAC___pointer_type_infoE" :
+        "_ZTVN10__cxxabiv119__pointer_type_infoE";
     break;
 
   case Type::MemberPointer:
     // abi::__pointer_to_member_type_info.
-    VTableName = "_ZTVN10__cxxabiv129__pointer_to_member_type_infoE";
+    VTableName = mangleCxxabi ?
+        "_ZTVN10__cxxabiv133PAC___pointer_to_member_type_infoE" :
+        "_ZTVN10__cxxabiv129__pointer_to_member_type_infoE";
     break;
 
   case Type::HLSLAttributedResource:
@@ -5211,7 +5266,8 @@ ItaniumCXXABI::getSignedVirtualMemberFunctionPointer(const CXXMethodDecl *MD) {
   llvm::Constant *thunk = getOrCreateVirtualFunctionPointerThunk(origMD);
   QualType funcType = CGM.getContext().getMemberPointerType(
       MD->getType(), /*Qualifier=*/std::nullopt, MD->getParent());
-  return CGM.getMemberFunctionPointer(thunk, funcType);
+  const bool NoPac = MD->getParent()->isNoPac();
+  return CGM.getMemberFunctionPointer(thunk, funcType, NoPac);
 }
 
 void WebAssemblyCXXABI::emitBeginCatch(CodeGenFunction &CGF,

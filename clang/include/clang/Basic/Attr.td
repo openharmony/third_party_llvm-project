@@ -1480,6 +1480,13 @@ def Constructor : InheritableAttr {
   }];
 }
 
+def CfiModifier : InheritableAttr {
+  let Spellings = [GCC<"modifier">];
+  let Args = [DefaultIntArgument<"Modifier", 65535>];
+  let Subjects = SubjectList<[Function]>;
+  let Documentation = [CfiModifierDocs];
+}
+
 def CPUSpecific : InheritableAttr {
   let Spellings = [Clang<"cpu_specific">, Declspec<"cpu_specific">];
   let Args = [VariadicIdentifierArgument<"Cpus">];
@@ -5259,6 +5266,12 @@ def ClspvLibclcBuiltin: InheritableAttr {
   let Subjects = SubjectList<[Function]>;
   let Documentation = [ClspvLibclcBuiltinDoc];
   let SimpleHandler = 1;
+}
+
+def Nopac : DeclOrTypeAttr {
+  let Spellings = [Clang<"nopac">];
+  let Subjects = SubjectList<[Var, Function, CXXRecord, TypedefName, Record, Type, Field, FunctionLike]>;
+  let Documentation = [Undocumented];
 }
 
 def NoTrivialAutoVarInit: InheritableAttr {

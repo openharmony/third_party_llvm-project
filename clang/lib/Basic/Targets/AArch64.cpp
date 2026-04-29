@@ -1205,6 +1205,10 @@ bool AArch64TargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
       HasPAuthLR = true;
       HasPAuth = true;
     }
+    if (Feature == "+pauth-hint-only") {
+      HasPAuthHintOnly = true;
+      HasPAuth = true;
+    }
     if (Feature == "+cssc")
       HasCSSC = true;
   }

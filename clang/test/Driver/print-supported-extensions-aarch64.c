@@ -55,6 +55,7 @@
 // CHECK-NEXT:     simd                FEAT_AdvSIMD                                           Enable Advanced SIMD instructions
 // CHECK-NEXT:     occmo               FEAT_OCCMO                                             Enable Armv9.6-A Outer cacheable cache maintenance operations
 // CHECK-NEXT:     pauth               FEAT_PAuth                                             Enable Armv8.3-A Pointer Authentication extension
+// CHECK-NEXT:     pauth-hint-only     FEAT_PAuthHintOnly                                     Only use Pointer Authentication instructions in the HINT space
 // CHECK-NEXT:     pauth-lr            FEAT_PAuth_LR                                          Enable Armv9.5-A PAC enhancements
 // CHECK-NEXT:     pcdphint            FEAT_PCDPHINT                                          Enable Armv9.6-A Producer Consumer Data Placement hints
 // CHECK-NEXT:     pmuv3               FEAT_PMUv3                                             Enable Armv8.0-A PMUv3 Performance Monitors extension

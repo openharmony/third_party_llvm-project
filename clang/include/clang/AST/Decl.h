@@ -1161,6 +1161,8 @@ public:
 
   static VarDecl *CreateDeserialized(ASTContext &C, GlobalDeclID ID);
 
+  bool isNoPac() const;
+
   SourceRange getSourceRange() const override LLVM_READONLY;
 
   /// Returns the storage class as written in the source. For the
@@ -2052,6 +2054,8 @@ public:
 
     void setDeletedMessage(StringLiteral *Message);
   };
+
+  bool isNoPac() const;
 
 private:
   /// A new[]'d array of pointers to VarDecls for the formal

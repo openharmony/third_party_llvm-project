@@ -16,8 +16,8 @@ inline void Test1a::foo() {}
 
 // CHECK:     $_ZTV6Test1a = comdat any
 // CHECK:     $_ZTI6Test1a = comdat any
-// CHECK:     $_ZTS6Test1a = comdat any
 // CHECK-NOT: $_ZTI6Test1a.1 = comdat any
+// CHECK:     $_ZTS6Test1a = comdat any
 // CHECK-NOT: $_ZTS6Test1a.1 = comdat any
 
 // CHECK: @_ZTV6Test1a = linkonce_odr dso_local unnamed_addr constant {{.*}} ptr @_ZTI6Test1a

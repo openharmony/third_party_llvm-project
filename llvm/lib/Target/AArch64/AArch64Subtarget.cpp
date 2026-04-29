@@ -653,9 +653,9 @@ AArch64Subtarget::getPtrAuthBlockAddressDiscriminatorIfEnabled(
 }
 
 bool AArch64Subtarget::isX16X17Safer() const {
-  // The Darwin kernel implements special protections for x16 and x17 so we
-  // should prefer to use those registers on that platform.
-  return isTargetDarwin();
+  // The Darwin or Open Harmony kernel implements special protections for x16
+  // and x17 so we should prefer to use those registers on that platform.
+  return isTargetDarwin() || isTargetOHOS();
 }
 
 bool AArch64Subtarget::enableMachinePipeliner() const {

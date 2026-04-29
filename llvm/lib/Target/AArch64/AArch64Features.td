@@ -629,6 +629,9 @@ def FeatureF16F32MM : ExtensionWithMArch<"f16f32mm", "F16F32MM", "FEAT_F16F32MM"
 //  Other Features
 //===----------------------------------------------------------------------===//
 
+def FeaturePAuthHintOnly : ExtensionWithMArch<"pauth-hint-only", "PAuthHintOnly", "FEAT_PAuthHintOnly",
+  "Only use Pointer Authentication instructions in the HINT space", [FeaturePAuth]>;
+
 def FeatureOutlineAtomics : SubtargetFeature<"outline-atomics", "OutlineAtomics", "true",
   "Enable out of line atomics to support LSE instructions">;
 
