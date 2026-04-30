@@ -16,6 +16,7 @@
 #include "hwasan_quarantine.h"
 
 #include "hwasan_allocator.h"
+#include "hwasan_report.h"
 #include "hwasan_thread.h"
 #include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_stackdepot.h"
@@ -98,22 +99,20 @@ void HeapQuarantineController::DeallocateWithHeapQuarantcheck(
   static u64 magic;
   internal_memset(&magic, flags()->free_fill_byte, sizeof(magic));
   for (u32 i = 0; i < free_count; i++) {
-    u64 *ptrBeg = reinterpret_cast<u64 *>(heap_quarantine_list_[i].ptr);
+    u64 *tagged_ptr = reinterpret_cast<u64 *>(heap_quarantine_list_[i].ptr);
+    void *untagged_ptr = UntagPtr(tagged_ptr);
+    u64 *ptrBeg = reinterpret_cast<u64 *>(
+        RoundDownTo(reinterpret_cast<uptr>(untagged_ptr), kShadowAlignment));
     if (heap_quarantine_list_[i].s > sizeof(u64)) {
       if (flags()->max_free_fill_size > 0) {
-        size_t fill_size =
-            Min(heap_quarantine_list_[i].s, (size_t)flags()->max_free_fill_size);
-        for (size_t j = 0; j < fill_size / sizeof(u64); j++) {
-          if (ptrBeg[j] != magic) {
-            Printf("\nPotential Cause: use-after-free\n");
-            Printf(
-                "ptrBeg was re-written after free %p[%zu], %p "
-                "%016llx:%016llx, freed by:\n",
-                ptrBeg, j, &ptrBeg[j], ptrBeg[j], magic);
-            StackDepotGet(heap_quarantine_list_[i].free_context_id).Print();
-            Printf("allocated by:\n");
-            StackDepotGet(heap_quarantine_list_[i].alloc_context_id).Print();
-            Report("End Hwasan report\n");
+        size_t fill_size = Min(heap_quarantine_list_[i].s,
+                               (size_t)flags()->max_free_fill_size);
+        for (size_t offset = 0; offset < fill_size / sizeof(u64); offset++) {
+          if (ptrBeg[offset] != magic) {
+            u32 alloc_id = heap_quarantine_list_[i].alloc_context_id;
+            u32 free_id = heap_quarantine_list_[i].free_context_id;
+            uptr tagged_addr = reinterpret_cast<uptr>(tagged_ptr);
+            ReportWriteAfterFree(tagged_addr, alloc_id, free_id, offset, magic);
             break;
           }
         }
