@@ -33,6 +33,8 @@ void ReportMemoryNearRegisters(uptr *registers_frame, uptr sp, uptr pc);
 void PrintMemoryAroundAddress(MemoryMappingLayout &proc_maps, int reg_num,
                               uptr addr, uptr len, bool is_sp = false,
                               bool is_pc = false);
+void ReportWriteAfterFree(uptr tagged_addr, u32 alloc_id, u32 free_id,
+                          u32 offset, u64 magic);
 // OHOS_LOCAL end
 void ReportAtExitStatistics();
 
