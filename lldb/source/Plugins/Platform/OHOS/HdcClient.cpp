@@ -304,7 +304,12 @@ Status HdcClient::LocalTransferFile(const char *direction, const FileSpec &src,
   
   std::string src_path = "\"" + src.GetPath() + "\"";
   std::string dst_path = "\"" + dst.GetPath() + "\"";
-  llvm::SmallVector<llvm::StringRef, 6u> hdc_args{"hdc", "file"};
+  llvm::SmallVector<llvm::StringRef, 8u> hdc_args{"hdc"};
+  if (!m_device_id.empty()) {
+    hdc_args.push_back("-t");
+    hdc_args.push_back(llvm::StringRef(m_device_id));
+  }
+  hdc_args.push_back("file");
   hdc_args.push_back(llvm::StringRef(direction));
   hdc_args.push_back("-m");
   hdc_args.push_back(llvm::StringRef(src_path));  
