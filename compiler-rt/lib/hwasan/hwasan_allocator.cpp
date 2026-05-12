@@ -176,6 +176,10 @@ static void *HwasanAllocate(StackTrace *stack, uptr orig_size, uptr alignment,
   Metadata *meta =
       reinterpret_cast<Metadata *>(allocator.GetMetaData(allocated));
   meta->set_requested_size(orig_size);
+  bool chunk_is_allocated_before = false;
+  if (flags()->record_malloc_info) {
+    chunk_is_allocated_before = meta->alloc_context_id != 0;
+  }
   meta->alloc_context_id = StackDepotPut(*stack);
   meta->right_aligned = false;
   // OHOS_LOCAL begin
@@ -220,6 +224,37 @@ static void *HwasanAllocate(StackTrace *stack, uptr orig_size, uptr alignment,
       }
     } else {
       user_ptr = (void *)TagMemoryAligned((uptr)user_ptr, size, 0);
+    }
+  }
+
+  if (flags()->record_malloc_info) {
+    if (t) {
+      if (t->AllowTracingHeapAllocation()) {
+        if (auto *ha = t->heap_allocations()) {
+          if ((flags()->heap_record_max == 0 ||
+               orig_size <= flags()->heap_record_max) &&
+              (flags()->heap_record_min == 0 ||
+               orig_size >= flags()->heap_record_min)) {
+            ha->push({reinterpret_cast<uptr>(user_ptr), meta->alloc_context_id,
+                      0, static_cast<u32>(orig_size), t->tid(),
+                      static_cast<int>(chunk_is_allocated_before)});
+            t->inc_record();
+          }
+        }
+      }
+    } else {
+      SpinMutexLock l(&fallback_mutex);
+      if (hwasanThreadList().AllowTracingHeapAllocation()) {
+        if ((flags()->heap_record_max == 0 ||
+             orig_size <= flags()->heap_record_max) &&
+            (flags()->heap_record_min == 0 ||
+             orig_size >= flags()->heap_record_min)) {
+          hwasanThreadList().RecordFallBack(
+              {reinterpret_cast<uptr>(user_ptr), meta->alloc_context_id,
+               0, static_cast<u32>(orig_size), 0,
+               static_cast<int>(chunk_is_allocated_before)});
+        }
+      }
     }
   }
 

@@ -5,6 +5,12 @@
 
 // RUN: %clang_hwasan -O0 -DISREAD=0 %s -o %t && not %run %t 2>&1 | FileCheck %s --check-prefixes=CHECK
 
+// RUN: %clang_hwasan %s -o %t
+// RUN: %env_hwasan_opts="record_malloc_info=true" %run %t 2>&1 | FileCheck %s --check-prefixes=CHECK-RECORD-MALLOC-INFO
+// CHECK-RECORD-MALLOC-INFO: Heap malloc record:
+// CHECK-RECORD-MALLOC-INFO: Heap allocated by thread {{.*}} here:
+// CHECK-RECORD-MALLOC-INFO: #0 {{.*}} in {{.*}}malloc{{.*}} {{.*}}hwasan_allocation_functions.cpp
+// CHECK-RECORD-MALLOC-INFO: #1 {{.*}} in main {{.*}}use-after-free.c{{.*}}
 // REQUIRES: stable-runtime
 
 #include <stdlib.h>
