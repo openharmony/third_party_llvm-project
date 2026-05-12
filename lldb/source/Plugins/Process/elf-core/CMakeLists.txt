@@ -15,6 +15,9 @@ add_lldb_library(lldbPluginProcessElfCore PLUGIN
     lldbTarget
     lldbPluginDynamicLoaderPosixDYLD
     lldbPluginObjectFileELF
+    #OHOS_LOCAL begin
+    lldbPluginObjectFilePlaceholder
+    # OHOS_LOCAL end
     lldbPluginProcessUtility
   LINK_COMPONENTS
     BinaryFormat
