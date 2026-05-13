@@ -344,3 +344,7 @@ def arch_EQ : Joined<["--"], "arch=">,
 def : Separate<["--"], "arch">,
   Alias<arch_EQ>,
   Group<grp_mach_o>;
+
+def crash_snapshot_EQ : Joined<["--"], "crash-snapshot=">,
+  HelpText<"Path to the AArch64 crash log (tombstone file)">,
+  MetaVarName<"file">;

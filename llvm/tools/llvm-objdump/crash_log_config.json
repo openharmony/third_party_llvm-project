@@ -1,0 +1,95 @@
+{
+    "_comment": "Crash log pattern configuration for HWASAN log parsing.",
+    "version": 1,
+  
+    "log_validation": {
+      "_comment": "String required to identify a valid HWASAN log file.",
+      "required_string": "ERROR: HWAddressSanitizer:"
+    },
+  
+    "fault_line": {
+      "_comment": "Rules for parsing fault lines to extract fault address and thread ID.",
+      "address_patterns": [
+        { "prefix": "on address 0x", "length": 14,
+          "_comment": "Used for invalid-free, double-free, etc." },
+        { "prefix": " at 0x", "length": 6,
+          "_comment": "Used for READ/WRITE errors." }
+      ],
+      "tags_suffix": " tags:",
+      "_comment_tags_suffix": "Memory tags sometimes follow the address; this suffix is stripped.",
+      "hex_prefix": "0x",
+      "thread_patterns": [
+        { "prefix": "in thread ", "length": 10,
+          "_comment": "Common prefix for thread ID." },
+        { "prefix": "on thread ", "length": 10,
+          "_comment": "Alternative prefix for thread ID." }
+      ]
+    },
+  
+    "stack_frame": {
+      "_comment": "Rules for parsing stack frame lines (e.g., '#0 pc 0x... module').",
+      "line_prefix": "#",
+      "build_id_open": "(BuildId: ",
+      "build_id_close": ")",
+      "_comment_build_id": "BuildID is typically appended as '(BuildId: ...)'.",
+      "pc_keyword": "pc",
+      "hex_prefix": "0x",
+      "module_bracket_strip": {
+        "_comment": "Module name may be wrapped in parentheses with an offset, e.g. (/lib/libc.so+0x1234). Strip both.",
+        "open": "(",
+        "close": ")",
+        "offset_separator": "+"
+      },
+      "module_colon_strip": ":",
+      "_comment_module_colon_strip": "Module name may be followed by ':line_number'; this colon separates them."
+    },
+  
+    "registers_section": {
+      "_comment": "Rules for parsing register dump lines.",
+      "skip_prefixes": ["#", "========="],
+      "_comment_skip_prefixes": "Lines with these prefixes are not register data and should be skipped.",
+      "value_separators": [" ", ":"],
+      "_comment_value_separators": "Separators between register name and value, tried in order."
+    },
+  
+    "memory_map": {
+      "_comment": "Rules for parsing memory map lines.",
+      "end_marker": "End of process",
+      "_comment_end_marker": "Indicates the end of the memory map section.",
+      "address_separator": "-",
+      "_comment_address_separator": "Separates start and end addresses.",
+      "hex_prefix": "0x",
+      "path_indicator": "/",
+      "_comment_path_indicator": "If a token contains this character, it is treated as a file path."
+    },
+  
+    "state_machine": {
+      "_comment": "Trigger words for the parsing state machine.",
+      "ignore_stack_triggers": [
+        "allocated here:",
+        "freed here:",
+        "Cause:"
+      ],
+      "_comment_ignore_stack_triggers": "When these lines appear, ignore any following stack frames until a new section starts.",
+      "registers_triggers": [
+        "Registers where the failure occurred",
+        "Registers:"
+      ],
+      "memory_near_regs_triggers": [
+        "Memory near registers:"
+      ],
+      "memory_map_trigger": "memory map follows"
+    },
+  
+    "limits": {
+      "_comment": "Global processing limits.",
+      "max_frames_to_keep": 3,
+      "_comment_max_frames": "Maximum number of stack frames to retain (reduce for performance)."
+    },
+  
+    "module_matching": {
+      "_comment": "Strategies for matching a frame's module name to a memory map entry.",
+      "strategies": ["exact", "parent_dir"],
+      "_comment_strategies": "exact: full path match; parent_dir: match if parent directories are the same."
+    }
+  }
