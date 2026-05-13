@@ -16,12 +16,16 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm-objdump.h"
+#include "AArch64BackwardSlicer.h"
+#include "AArch64CrashSnapshot.h"
 #include "COFFDump.h"
+#include "DWARFLocator.h"
 #include "ELFDump.h"
 #include "MachODump.h"
 #include "ObjdumpOptID.h"
 #include "OffloadDump.h"
 #include "SourcePrinter.h"
+#include "ValueEvaluator.h"
 #include "WasmDump.h"
 #include "XCOFFDump.h"
 #include "llvm/ADT/IndexedMap.h"
@@ -33,6 +37,7 @@
 #include "llvm/ADT/StringSet.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/ADT/Twine.h"
+#include "llvm/DebugInfo/DWARF/DWARFCompileUnit.h"
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
 #include "llvm/DebugInfo/Symbolize/SymbolizableModule.h"
 #include "llvm/DebugInfo/Symbolize/Symbolize.h"
@@ -66,6 +71,7 @@
 #include "llvm/Option/Option.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Debug.h"
+#include "llvm/Support/Endian.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Format.h"
@@ -124,10 +130,18 @@ static constexpr opt::OptTable::Info ObjdumpInfoTable[] = {
 #define OBJDUMP_nullptr nullptr
 #define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM,  \
                HELPTEXT, METAVAR, VALUES)                                      \
-  {OBJDUMP_##PREFIX, NAME,         HELPTEXT,                                   \
-   METAVAR,          OBJDUMP_##ID, opt::Option::KIND##Class,                   \
-   PARAM,            FLAGS,        OBJDUMP_##GROUP,                            \
-   OBJDUMP_##ALIAS,  ALIASARGS,    VALUES},
+  {OBJDUMP_##PREFIX,                                                           \
+   NAME,                                                                       \
+   HELPTEXT,                                                                   \
+   METAVAR,                                                                    \
+   OBJDUMP_##ID,                                                               \
+   opt::Option::KIND##Class,                                                   \
+   PARAM,                                                                      \
+   FLAGS,                                                                      \
+   OBJDUMP_##GROUP,                                                            \
+   OBJDUMP_##ALIAS,                                                            \
+   ALIASARGS,                                                                  \
+   VALUES},
 #include "ObjdumpOpts.inc"
 #undef OPTION
 #undef OBJDUMP_nullptr
@@ -231,6 +245,10 @@ int objdump::DbgIndent = 52;
 static StringSet<> DisasmSymbolSet;
 StringSet<> objdump::FoundSectionSet;
 static StringRef ToolName;
+
+// HWASAN log info
+std::string CrashSnapshotPath;
+std::unique_ptr<crash_analyzer::CrashSnapshotManager> CrashManager;
 
 namespace {
 struct FilterResult {
@@ -365,8 +383,8 @@ static const Target *getTarget(const ObjectFile *Obj) {
 
   // Get the target specific parser.
   std::string Error;
-  const Target *TheTarget = TargetRegistry::lookupTarget(ArchName, TheTriple,
-                                                         Error);
+  const Target *TheTarget =
+      TargetRegistry::lookupTarget(ArchName, TheTriple, Error);
   if (!TheTarget)
     reportError(Obj->getFileName(), "can't find target: " + Error);
 
@@ -451,7 +469,7 @@ static bool isCSKYElf(const ObjectFile &Obj) {
 }
 
 static bool hasMappingSymbols(const ObjectFile &Obj) {
-  return isArmElf(Obj) || isAArch64Elf(Obj) || isCSKYElf(Obj) ;
+  return isArmElf(Obj) || isAArch64Elf(Obj) || isCSKYElf(Obj);
 }
 
 static void printRelocation(formatted_raw_ostream &OS, StringRef FileName,
@@ -517,7 +535,7 @@ public:
   void printLead(ArrayRef<uint8_t> Bytes, uint64_t Address,
                  formatted_raw_ostream &OS) {
     uint32_t opcode =
-      (Bytes[3] << 24) | (Bytes[2] << 16) | (Bytes[1] << 8) | Bytes[0];
+        (Bytes[3] << 24) | (Bytes[2] << 16) | (Bytes[1] << 8) | Bytes[0];
     if (LeadingAddr)
       OS << format("%8" PRIx64 ":", Address);
     if (ShowRawInsn) {
@@ -579,8 +597,7 @@ public:
         OS << Duplex.first;
         OS << "; ";
         Inst = Duplex.second;
-      }
-      else
+      } else
         Inst = HeadTail.first;
       OS << Inst;
       HeadTail = HeadTail.second.split('\n');
@@ -620,10 +637,10 @@ public:
                      support::endian::read32<support::little>(Bytes.data()));
         OS.indent(42);
       } else {
-          OS << format("\t.byte 0x%02" PRIx8, Bytes[0]);
-          for (unsigned int i = 1; i < Bytes.size(); i++)
-            OS << format(", 0x%02" PRIx8, Bytes[i]);
-          OS.indent(55 - (6 * Bytes.size()));
+        OS << format("\t.byte 0x%02" PRIx8, Bytes[0]);
+        for (unsigned int i = 1; i < Bytes.size(); i++)
+          OS << format(", 0x%02" PRIx8, Bytes[i]);
+        OS.indent(55 - (6 * Bytes.size()));
       }
     }
 
@@ -755,7 +772,7 @@ public:
 AArch64PrettyPrinter AArch64PrettyPrinterInst;
 
 PrettyPrinter &selectPrettyPrinter(Triple const &Triple) {
-  switch(Triple.getArch()) {
+  switch (Triple.getArch()) {
   default:
     return PrettyPrinterInst;
   case Triple::hexagon:
@@ -776,7 +793,7 @@ PrettyPrinter &selectPrettyPrinter(Triple const &Triple) {
     return AArch64PrettyPrinterInst;
   }
 }
-}
+} // namespace
 
 static uint8_t getElfSymbolType(const ObjectFile &Obj, const SymbolRef &Sym) {
   assert(Obj.isELF());
@@ -975,7 +992,6 @@ static bool shouldAdjustVA(const SectionRef &Section) {
   return false;
 }
 
-
 typedef std::pair<uint64_t, char> MappingSymbolPair;
 static char getMappingSymbolKind(ArrayRef<MappingSymbolPair> MappingSymbols,
                                  uint64_t Address) {
@@ -1003,8 +1019,7 @@ static uint64_t dumpARMELFData(uint64_t SectionAddr, uint64_t Index,
     dumpBytes(Bytes.slice(Index, 4), OS);
     AlignToInstStartColumn(Start, STI, OS);
     OS << "\t.word\t"
-           << format_hex(support::endian::read32(Bytes.data() + Index, Endian),
-                         10);
+       << format_hex(support::endian::read32(Bytes.data() + Index, Endian), 10);
     return 4;
   }
   if (Index + 2 <= End) {
@@ -1087,10 +1102,10 @@ static SymbolInfoTy createDummySymbolInfo(const ObjectFile &Obj,
     return SymbolInfoTy(Addr, Name, Type);
 }
 
-static void
-collectBBAddrMapLabels(const std::unordered_map<uint64_t, BBAddrMap> &AddrToBBAddrMap,
-                       uint64_t SectionAddr, uint64_t Start, uint64_t End,
-                       std::unordered_map<uint64_t, std::vector<std::string>> &Labels) {
+static void collectBBAddrMapLabels(
+    const std::unordered_map<uint64_t, BBAddrMap> &AddrToBBAddrMap,
+    uint64_t SectionAddr, uint64_t Start, uint64_t End,
+    std::unordered_map<uint64_t, std::vector<std::string>> &Labels) {
   if (AddrToBBAddrMap.empty())
     return;
   Labels.clear();
@@ -1107,10 +1122,12 @@ collectBBAddrMapLabels(const std::unordered_map<uint64_t, BBAddrMap> &AddrToBBAd
   }
 }
 
-static void collectLocalBranchTargets(
-    ArrayRef<uint8_t> Bytes, const MCInstrAnalysis *MIA, MCDisassembler *DisAsm,
-    MCInstPrinter *IP, const MCSubtargetInfo *STI, uint64_t SectionAddr,
-    uint64_t Start, uint64_t End, std::unordered_map<uint64_t, std::string> &Labels) {
+static void
+collectLocalBranchTargets(ArrayRef<uint8_t> Bytes, const MCInstrAnalysis *MIA,
+                          MCDisassembler *DisAsm, MCInstPrinter *IP,
+                          const MCSubtargetInfo *STI, uint64_t SectionAddr,
+                          uint64_t Start, uint64_t End,
+                          std::unordered_map<uint64_t, std::string> &Labels) {
   // So far only supports PowerPC and X86.
   if (!STI->getTargetTriple().isPPC() && !STI->getTargetTriple().isX86())
     return;
@@ -1250,6 +1267,195 @@ static void createFakeELFSections(ObjectFile &Obj) {
     llvm_unreachable("Unsupported binary format");
 }
 
+// Helper function: Manually extract Build ID from ELF
+static std::string extractBuildIDManually(const llvm::object::ObjectFile &Obj) {
+  // 1. Ensure it is an ELF file
+  if (!Obj.isELF())
+    return "";
+
+  // 2. Iterate through all sections to find ".note.gnu.build-id"
+  for (const auto &Sec : Obj.sections()) {
+    llvm::StringRef SecName;
+    if (auto NameOrErr = Sec.getName()) {
+      SecName = *NameOrErr;
+    } else {
+      // CRITICAL: Must consume the error to prevent LLVM assertion failure
+      // (crash)
+      llvm::consumeError(NameOrErr.takeError());
+      continue;
+    }
+
+    if (SecName != ".note.gnu.build-id")
+      continue;
+
+    // 3. Get section contents
+    llvm::StringRef Contents;
+    if (auto ContentsOrErr = Sec.getContents()) {
+      Contents = *ContentsOrErr;
+    } else {
+      // Consume error before returning
+      llvm::consumeError(ContentsOrErr.takeError());
+      return "";
+    }
+
+    // 4. Parse the Note structure
+    // Note structure: namesz (4 bytes), descsz (4 bytes), type (4 bytes), name
+    // (aligned), desc (aligned)
+    if (Contents.size() < 16)
+      return "";
+
+    const char *Data = Contents.data();
+
+    // Use LLVM's endian-safe reader (Assuming Little Endian for target
+    // architectures like AArch64)
+    uint32_t NameSz = llvm::support::endian::read32le(Data);
+    uint32_t DescSz = llvm::support::endian::read32le(Data + 4);
+    uint32_t Type = llvm::support::endian::read32le(Data + 8);
+
+    // Usually type == 3 (NT_GNU_BUILD_ID)
+    if (Type != 3)
+      continue;
+
+    // Skip the name field (e.g., "GNU\0") and align to 4-byte boundaries
+    size_t NameEnd = 12 + ((NameSz + 3) & ~3);
+    if (Contents.size() < NameEnd + DescSz)
+      return "";
+
+    // 5. The descriptor content is the actual Build ID
+    llvm::StringRef BuildID(Data + NameEnd, DescSz);
+
+    // Return lowercase hex string to match HWASan log format perfectly
+    return llvm::toHex(
+        llvm::ArrayRef<uint8_t>(
+            reinterpret_cast<const uint8_t *>(BuildID.data()), DescSz),
+        /*LowerCase=*/true);
+  }
+
+  return "";
+}
+
+// This function disassembles the function containing the TargetPC
+static bool fastDisassembleCrashTarget(
+    llvm::object::ObjectFile &Obj, llvm::MCDisassembler *PrimaryDisAsm,
+    llvm::MCInstPrinter *IP, const llvm::MCSubtargetInfo *PrimarySTI,
+    const llvm::MCRegisterInfo *MRI, const llvm::MCInstrInfo *MII,
+    std::string RunningPC, uint64_t TargetPC, bool IsCrashPC) {
+
+  llvm::StringRef ObjName = llvm::sys::path::filename(Obj.getFileName());
+  outs() << "Targeting PC: 0x" << llvm::Twine::utohexstr(TargetPC) << " in "
+         << ObjName << " ==========\n";
+
+  std::unique_ptr<llvm::DWARFContext> DICtx = llvm::DWARFContext::create(Obj);
+  llvm::DWARFCompileUnit *CU = DICtx->getCompileUnitForAddress(TargetPC);
+
+  if (!CU) {
+    outs() << "Failed to locate Compile Unit. Debug info might missed.\n";
+    return false;
+  }
+
+  llvm::DWARFDie FuncDIE = CU->getSubroutineForAddress(TargetPC);
+  uint64_t LowPC, HighPC, SectionIndex;
+
+  if (!FuncDIE.isValid() ||
+      !FuncDIE.getLowAndHighPC(LowPC, HighPC, SectionIndex)) {
+    outs() << "Failed to retrieve function boundaries.\n";
+    return false;
+  }
+
+  outs() << "Target function bounds locked: 0x" << llvm::Twine::utohexstr(LowPC)
+         << " - 0x" << llvm::Twine::utohexstr(HighPC) << "\n";
+
+  // find the function Section
+  for (const llvm::object::SectionRef &Section : Obj.sections()) {
+    uint64_t SecAddr = Section.getAddress();
+    uint64_t SecSize = Section.getSize();
+
+    if (SecAddr <= LowPC && HighPC <= SecAddr + SecSize) {
+      llvm::Expected<llvm::StringRef> ExpectedBytes = Section.getContents();
+      if (!ExpectedBytes)
+        continue;
+
+      llvm::StringRef BytesStr = *ExpectedBytes;
+      llvm::ArrayRef<uint8_t> SecBytes(
+          reinterpret_cast<const uint8_t *>(BytesStr.data()), BytesStr.size());
+      llvm::ArrayRef<uint8_t> FuncBytes =
+          SecBytes.slice(LowPC - SecAddr, HighPC - LowPC);
+
+      std::vector<crash_analyzer::evaluator::SimplifiedInst>
+          CurrentFunctionInsts;
+
+      uint64_t CurrentPC = LowPC;
+      uint64_t Index = 0;
+
+      // Function body disassembly
+      while (Index < FuncBytes.size()) {
+        llvm::MCInst Inst;
+        uint64_t InstSize;
+
+        if (PrimaryDisAsm->getInstruction(Inst, InstSize,
+                                          FuncBytes.slice(Index), CurrentPC,
+                                          llvm::nulls())) {
+
+          crash_analyzer::evaluator::SimplifiedInst SI;
+          SI.Address = CurrentPC;
+          SI.Inst = Inst;
+
+          CurrentFunctionInsts.push_back(SI);
+
+          outs() << llvm::format_hex(CurrentPC, 10) << ":\t";
+          IP->printInst(&Inst, CurrentPC, "", *PrimarySTI, outs());
+          outs() << "\n";
+
+          if (CurrentPC == TargetPC) {
+            outs() << "<result> \n";
+            if (IsCrashPC) {
+              outs() << "<--- [CRASH ROOT CAUSE HERE]\n";
+              outs() << "<--- RUNNING PC: 0x" << RunningPC << "\n";
+              outs() << "DWARF Active Variables:\n";
+            } else {
+              outs() << "<--- [HISTORICAL CALL SITE]\n";
+              outs() << "<--- RUNNING PC: 0x" << RunningPC << "\n";
+              outs() << "DWARF Active Variables (Historical):\n";
+            }
+
+            if (CrashManager) {
+              auto ThreadCtx = CrashManager->getCrashedThreadContext();
+
+              crash_analyzer::evaluator::AArch64BackwardSlicer ArchSlicer(MRI,
+                                                                          MII);
+
+              crash_analyzer::DWARFVariableLocator::locateVariablesAtCrashPC(
+                  *DICtx, CurrentPC, CurrentFunctionInsts, ThreadCtx, IsCrashPC,
+                  &ArchSlicer);
+
+              // only crash frame has variable value
+              if (IsCrashPC) {
+                outs() << "Register Snapshot:\n";
+                if (auto sp = ThreadCtx->getCleanSP())
+                  outs() << "\t\t    SP = 0x" << llvm::Twine::utohexstr(*sp)
+                         << "\n";
+                if (auto fp = ThreadCtx->getRegister(29))
+                  outs() << "\t\t    FP = 0x" << llvm::Twine::utohexstr(*fp)
+                         << "\n";
+              }
+            }
+            outs() << "</result> \n";
+          }
+
+          CurrentPC += InstSize;
+          Index += InstSize;
+        } else {
+          outs() << llvm::format_hex(CurrentPC, 10) << ":\t<unknown>\n";
+          Index += 4;
+          CurrentPC += 4;
+        }
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 static void disassembleObject(const Target *TheTarget, ObjectFile &Obj,
                               MCContext &Ctx, MCDisassembler *PrimaryDisAsm,
                               MCDisassembler *SecondaryDisAsm,
@@ -1263,6 +1469,84 @@ static void disassembleObject(const Target *TheTarget, ObjectFile &Obj,
   bool PrimaryIsThumb = false;
   if (isArmElf(Obj))
     PrimaryIsThumb = STI->checkFeatures("+thumb-mode");
+
+  const llvm::MCRegisterInfo *MRI = Ctx.getRegisterInfo();
+  std::unique_ptr<llvm::MCInstrInfo> MII(TheTarget->createMCInstrInfo());
+
+  llvm::Optional<uint64_t> TargetCrashPC;
+  llvm::StringRef CurrentObjName = llvm::sys::path::filename(Obj.getFileName());
+
+  if (CrashManager) {
+
+    llvm::Triple::ArchType Arch = Obj.getArch();
+    // This option takes effect only on AArch64
+    if (Arch != llvm::Triple::aarch64 && Arch != llvm::Triple::aarch64_be &&
+        Arch != llvm::Triple::aarch64_32) {
+      llvm::errs() << "Error: Crash analysis currently only supports AArch64 "
+                      "architecture.\n";
+      return;
+    }
+    outs() << "\t\t CurrentObjName is: " << CurrentObjName << "\n";
+    auto ThreadCtx = CrashManager->getCrashedThreadContext();
+
+    std::string CurrentObjBuildID = extractBuildIDManually(Obj);
+    if (!CurrentObjBuildID.empty()) {
+      outs() << "\t\t CurrentObjBuildID is: " << CurrentObjBuildID << "\n";
+    }
+
+    if (ThreadCtx) {
+      auto &frames = ThreadCtx->getFrames();
+      if (!frames.empty()) {
+
+        bool GetCrashPC = false;
+        for (auto &frame : frames) {
+          llvm::StringRef FrameModuleName =
+              llvm::sys::path::filename(frame.getModuleName());
+          std::string CurrentRunningPC = llvm::utohexstr(frame.getRuntimePC());
+          outs() << "\t\t FrameModuleName is: " << FrameModuleName << "\n";
+          outs() << "\t\t Current Running PC is: " << CurrentRunningPC << "\n";
+          bool IsModuleMatch = false;
+          std::string FrameBuildID = frame.getBuildID();
+
+          if (FrameBuildID.empty() || CurrentObjBuildID.empty()) {
+            llvm::errs() << "warning: buildid does not exist, please ensure "
+                            "the module input is correct.\n";
+
+            if (FrameModuleName == CurrentObjName) {
+              IsModuleMatch = true;
+            } else if (FrameModuleName.contains(CurrentObjName) ||
+                       CurrentObjName.contains(FrameModuleName)) {
+              IsModuleMatch = true;
+            }
+          } else {
+            if (FrameBuildID == CurrentObjBuildID) {
+              IsModuleMatch = true;
+            }
+          }
+
+          if (IsModuleMatch) {
+            if (frame.getFrameIndex() == 0) {
+              TargetCrashPC = frame.getStaticPC();
+              if (fastDisassembleCrashTarget(Obj, PrimaryDisAsm, IP, PrimarySTI,
+                                             MRI, MII.get(), CurrentRunningPC,
+                                             *TargetCrashPC, true)) {
+                GetCrashPC = true;
+              }
+            } else {
+              if (fastDisassembleCrashTarget(Obj, PrimaryDisAsm, IP, PrimarySTI,
+                                             MRI, MII.get(), CurrentRunningPC,
+                                             frame.getStaticPC() - 4, false)) {
+                GetCrashPC = true;
+              }
+            }
+          }
+        }
+        if (GetCrashPC) {
+          return;
+        }
+      }
+    }
+  }
 
   std::map<SectionRef, std::vector<RelocationRef>> RelocMap;
   if (InlineRelocs)
@@ -1297,9 +1581,9 @@ static void disassembleObject(const Target *TheTarget, ObjectFile &Obj,
       // STAB symbol's section field refers to a valid section index. Otherwise
       // the symbol may error trying to load a section that does not exist.
       DataRefImpl SymDRI = Symbol.getRawDataRefImpl();
-      uint8_t NType = (MachO->is64Bit() ?
-                       MachO->getSymbol64TableEntry(SymDRI).n_type:
-                       MachO->getSymbolTableEntry(SymDRI).n_type);
+      uint8_t NType =
+          (MachO->is64Bit() ? MachO->getSymbol64TableEntry(SymDRI).n_type
+                            : MachO->getSymbolTableEntry(SymDRI).n_type);
       if (NType & MachO::N_STAB)
         continue;
     }
@@ -1389,8 +1673,7 @@ static void disassembleObject(const Target *TheTarget, ObjectFile &Obj,
     if (const auto *Elf = dyn_cast<ELFObjectFileBase>(&Obj)) {
       auto BBAddrMapsOrErr = Elf->readBBAddrMap(SectionIndex);
       if (!BBAddrMapsOrErr)
-          reportWarning(toString(BBAddrMapsOrErr.takeError()),
-                        Obj.getFileName());
+        reportWarning(toString(BBAddrMapsOrErr.takeError()), Obj.getFileName());
       for (auto &FunctionBBAddrMap : *BBAddrMapsOrErr)
         AddrToBBAddrMap.emplace(FunctionBBAddrMap.Addr,
                                 std::move(FunctionBBAddrMap));
@@ -1916,8 +2199,7 @@ static void disassembleObject(ObjectFile *Obj, bool InlineRelocs) {
 }
 
 void objdump::printRelocations(const ObjectFile *Obj) {
-  StringRef Fmt = Obj->getBytesInAddress() > 4 ? "%016" PRIx64 :
-                                                 "%08" PRIx64;
+  StringRef Fmt = Obj->getBytesInAddress() > 4 ? "%016" PRIx64 : "%08" PRIx64;
 
   // Build a mapping from relocation target to a vector of relocation
   // sections. Usually, there is an only one relocation section for
@@ -2093,7 +2375,8 @@ void objdump::printSectionContents(const ObjectFile *Obj) {
       continue;
     }
 
-    StringRef Contents = unwrapOrError(Section.getContents(), Obj->getFileName());
+    StringRef Contents =
+        unwrapOrError(Section.getContents(), Obj->getFileName());
 
     // Dump out the content as hex and printable ascii characters.
     for (std::size_t Addr = 0, End = Contents.size(); Addr < End; Addr += 16) {
@@ -2528,8 +2811,8 @@ static bool shouldWarnForInvalidStartStopAddress(ObjectFile *Obj) {
   return false;
 }
 
-static void checkForInvalidStartStopAddress(ObjectFile *Obj,
-                                            uint64_t Start, uint64_t Stop) {
+static void checkForInvalidStartStopAddress(ObjectFile *Obj, uint64_t Start,
+                                            uint64_t Stop) {
   if (!shouldWarnForInvalidStartStopAddress(Obj))
     return;
 
@@ -2868,7 +3151,19 @@ static void parseObjdumpOptions(const llvm::opt::InputArgList &InputArgs) {
     const char *Argv[] = {"llvm-objdump", AsmSyntax};
     llvm::cl::ParseCommandLineOptions(2, Argv);
   }
-
+  // The -crash-snapshot option is disabled by default
+  if (InputArgs.hasArg(OBJDUMP_crash_snapshot_EQ)) {
+    CrashSnapshotPath =
+        InputArgs.getLastArgValue(OBJDUMP_crash_snapshot_EQ).str();
+    if (CrashSnapshotPath.empty()) {
+      llvm::errs() << "error: --crash-snapshot requires non-empty path\n";
+    } else {
+      CrashManager = std::make_unique<crash_analyzer::CrashSnapshotManager>();
+      if (!CrashManager->loadFromLogAndDump(CrashSnapshotPath)) {
+        CrashManager.reset();
+      }
+    }
+  }
   // objdump defaults to a.out if no filenames specified.
   if (InputFilenames.empty())
     InputFilenames.push_back("a.out");
