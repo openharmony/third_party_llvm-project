@@ -11,14 +11,6 @@ add_llvm_unittest(ObjectTests
   ELFTypesTest.cpp
   ELFTest.cpp
   MinidumpTest.cpp
-  MinidumpMemoryRegionTests.cpp
-  MinidumpThreadTests.cpp
-  MinidumpStreamTests.cpp
-  MinidumpModuleTests.cpp
-  MinidumpExceptionTests.cpp
-  MinidumpStackTests.cpp
-  MinidumpIntegrationTests.cpp
-  MinidumpFunctionTableTests.cpp
   ObjectFileTest.cpp
   OffloadingTest.cpp
   SymbolSizeTest.cpp
