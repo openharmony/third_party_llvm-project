@@ -249,11 +249,21 @@ static std::string findConfigFile() {
     return "";
 
   llvm::SmallString<256> ConfigPath(ExePathStr);
-  llvm::sys::path::remove_filename(ConfigPath);
-  llvm::sys::path::append(ConfigPath, "crash_log_config.json");
 
+  //remove "llvm-objdump", get the bin/ path
+  llvm::sys::path::remove_filename(ConfigPath);
+  // remove "bin", get the install/ path
+  llvm::sys::path::remove_filename(ConfigPath);
+  llvm::sys::path::append(ConfigPath, "share", "clang", "crash_log_config.json");
   if (llvm::sys::fs::exists(ConfigPath))
     return ConfigPath.str().str();
+
+  ConfigPath = ExePathStr;
+  llvm::sys::path::remove_filename(ConfigPath);
+  llvm::sys::path::append(ConfigPath, "crash_log_config.json");
+  if (llvm::sys::fs::exists(ConfigPath))
+    return ConfigPath.str().str();
+
   // can not find json file, return empty
   return "";
 }
