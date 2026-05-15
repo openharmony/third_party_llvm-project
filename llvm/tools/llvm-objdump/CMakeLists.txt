@@ -54,7 +54,7 @@ set(CRASH_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/crash_log_config.json")
 
 # Install the config file to the same directory as the llvm-objdump binary
 install(FILES ${CRASH_CONFIG_FILE}
-        DESTINATION "${CMAKE_INSTALL_BINDIR}"
+        DESTINATION share/clang
         PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
         COMPONENT llvm-objdump)
 
