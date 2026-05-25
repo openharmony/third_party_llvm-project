@@ -14,22 +14,30 @@
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Regex.h"
 #include <string>
+#include <vector>
 
 const char *IndexFilename;
 const char *RequestsFilename;
+unsigned IndexLoadThreads = 1;
 
 namespace clang {
 namespace clangd {
 namespace {
 
 std::unique_ptr<SymbolIndex> buildMem() {
-  return loadIndex(IndexFilename, clang::clangd::SymbolOrigin::Static,
-                   /*UseDex=*/false);
+  IndexLoadOptions Opts;
+  Opts.Origin = clang::clangd::SymbolOrigin::Static;
+  Opts.UseDex = false;
+  Opts.Threads = IndexLoadThreads;
+  return loadIndex(IndexFilename, Opts);
 }
 
 std::unique_ptr<SymbolIndex> buildDex() {
-  return loadIndex(IndexFilename, clang::clangd::SymbolOrigin::Static,
-                   /*UseDex=*/true);
+  IndexLoadOptions Opts;
+  Opts.Origin = clang::clangd::SymbolOrigin::Static;
+  Opts.UseDex = true;
+  Opts.Threads = IndexLoadThreads;
+  return loadIndex(IndexFilename, Opts);
 }
 
 // Reads JSON array of serialized FuzzyFindRequest's from user-provided file.
@@ -97,9 +105,44 @@ static void dexBuild(benchmark::State &State) {
 }
 BENCHMARK(dexBuild);
 
+static void dexBuildSerial(benchmark::State &State) {
+  unsigned SavedThreads = IndexLoadThreads;
+  IndexLoadThreads = 1;
+  for (auto _ : State)
+    buildDex();
+  IndexLoadThreads = SavedThreads;
+}
+BENCHMARK(dexBuildSerial);
+
 } // namespace
 } // namespace clangd
 } // namespace clang
+
+void parseIndexBenchmarkArgs(int &argc, char **argv) {
+  std::vector<char *> Kept;
+  Kept.push_back(argv[0]);
+  for (int I = 1; I < argc; ++I) {
+    llvm::StringRef Arg(argv[I]);
+    if (Arg == "--index-load-threads") {
+      llvm::errs() << "--index-load-threads must be passed as "
+                      "--index-load-threads=N\n";
+      exit(1);
+    }
+    if (Arg.consume_front("--index-load-threads=")) {
+      unsigned Parsed = 0;
+      if (Arg.getAsInteger(10, Parsed) || Parsed == 0) {
+        llvm::errs() << "--index-load-threads must be a positive integer\n";
+        exit(1);
+      }
+      IndexLoadThreads = Parsed;
+      continue;
+    }
+    Kept.push_back(argv[I]);
+  }
+  for (size_t I = 0; I < Kept.size(); ++I)
+    argv[I] = Kept[I];
+  argc = static_cast<int>(Kept.size());
+}
 
 // FIXME(kbobyrev): Add index building time benchmarks.
 // FIXME(kbobyrev): Add memory consumption "benchmarks" by manually measuring
@@ -119,6 +162,9 @@ int main(int argc, char *argv[]) {
   argv[2] = argv[0];
   argv += 2;
   argc -= 2;
+  parseIndexBenchmarkArgs(argc, argv);
   ::benchmark::Initialize(&argc, argv);
+  if (::benchmark::ReportUnrecognizedArguments(argc, argv))
+    return 1;
   ::benchmark::RunSpecifiedBenchmarks();
 }
