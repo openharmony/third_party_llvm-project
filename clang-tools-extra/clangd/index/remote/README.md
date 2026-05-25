@@ -58,3 +58,7 @@ flag will inform build system that you chose this option &mdash;
 
 You can run `clangd-index-server` and connect `clangd` instance to it using
 `--remote-index-address` and `--project-root` flags.
+
+`clangd-index-server` accepts `--j=N` to control the number of workers used to
+load the monolithic index during startup and hot reload. Use `--j=1` to force
+the serial load path when comparing performance or investigating a regression.

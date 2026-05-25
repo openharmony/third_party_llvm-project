@@ -1,6 +1,6 @@
 # RUN: rm -rf %t
 # RUN: clangd-indexer %S/Inputs/Source.cpp > %t.idx
-# RUN: %python %S/pipeline_helper.py --input-file-name=%s --project-root=%S --index-file=%t.idx | FileCheck %s
+# RUN: %python %S/pipeline_helper.py --input-file-name=%s --project-root=%S --index-file=%t.idx --server-arg=--j=2 | FileCheck %s
 # REQUIRES: clangd-remote-index
 
 #      CHECK:  "uptime_seconds": "{{.*}}",

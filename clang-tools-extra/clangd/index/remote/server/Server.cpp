@@ -31,6 +31,7 @@
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Signals.h"
+#include "llvm/Support/Threading.h"
 #include "llvm/Support/VirtualFileSystem.h"
 
 #include <chrono>
@@ -110,6 +111,12 @@ llvm::cl::opt<size_t> LimitResults(
     llvm::cl::desc("Maximum number of results to stream as a response to "
                    "single request. Limit is to keep the server from being "
                    "DOS'd. Defaults to 10000."));
+
+llvm::cl::opt<unsigned> WorkerThreadsCount{
+    "j",
+    llvm::cl::desc("Number of workers used to load the index. "
+                   "Also used when hot-reloading the index."),
+    llvm::cl::init(llvm::hardware_concurrency().compute_thread_count())};
 
 static Key<grpc::ServerContext *> CurrentRequest;
 
@@ -377,7 +384,7 @@ void maybeTrimMemory() {
 void hotReload(clangd::SwapIndex &Index, llvm::StringRef IndexPath,
                llvm::vfs::Status &LastStatus,
                llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> &FS,
-               Monitor &Monitor) {
+               Monitor &Monitor, unsigned Threads) {
   // glibc malloc doesn't shrink an arena if there are items living at the end,
   // which might happen since we destroy the old index after building new one.
   // Trim more aggresively to keep memory usage of the server low.
@@ -395,8 +402,12 @@ void hotReload(clangd::SwapIndex &Index, llvm::StringRef IndexPath,
        "{0}, new index was modified at {1}. Attempting to reload.",
        LastStatus.getLastModificationTime(), Status->getLastModificationTime());
   LastStatus = *Status;
+  IndexLoadOptions Opts;
+  Opts.Origin = SymbolOrigin::Static;
+  Opts.UseDex = true;
+  Opts.Threads = Threads;
   std::unique_ptr<clang::clangd::SymbolIndex> NewIndex =
-      loadIndex(IndexPath, SymbolOrigin::Static);
+      loadIndex(IndexPath, Opts);
   if (!NewIndex) {
     elog("Failed to load new index. Old index will be served.");
     return;
@@ -493,6 +504,12 @@ int main(int argc, char *argv[]) {
   llvm::sys::PrintStackTraceOnErrorSignal(argv[0]);
   llvm::sys::SetInterruptFunction(&clang::clangd::requestShutdown);
 
+  if (WorkerThreadsCount == 0) {
+    llvm::errs() << "A number of index load worker threads cannot be 0.\n";
+    return 1;
+  }
+  const unsigned LoadThreads = WorkerThreadsCount.getValue();
+
   if (!llvm::sys::path::is_absolute(IndexRoot)) {
     llvm::errs() << "Index root should be an absolute path.\n";
     return -1;
@@ -534,8 +551,11 @@ int main(int argc, char *argv[]) {
     return Status.getError().value();
   }
 
-  auto SymIndex =
-      clang::clangd::loadIndex(IndexPath, clang::clangd::SymbolOrigin::Static);
+  clang::clangd::IndexLoadOptions LoadOpts;
+  LoadOpts.Origin = clang::clangd::SymbolOrigin::Static;
+  LoadOpts.UseDex = true;
+  LoadOpts.Threads = LoadThreads;
+  auto SymIndex = clang::clangd::loadIndex(IndexPath, LoadOpts);
   if (!SymIndex) {
     llvm::errs() << "Failed to open the index.\n";
     return -1;
@@ -544,11 +564,12 @@ int main(int argc, char *argv[]) {
 
   Monitor Monitor(Status->getLastModificationTime());
 
-  std::thread HotReloadThread([&Index, &Status, &FS, &Monitor]() {
+  std::thread HotReloadThread([&Index, &Status, &FS, &Monitor, LoadThreads]() {
     llvm::vfs::Status LastStatus = *Status;
     static constexpr auto RefreshFrequency = std::chrono::seconds(30);
     while (!clang::clangd::shutdownRequested()) {
-      hotReload(Index, llvm::StringRef(IndexPath), LastStatus, FS, Monitor);
+      hotReload(Index, llvm::StringRef(IndexPath), LastStatus, FS, Monitor,
+                LoadThreads);
       std::this_thread::sleep_for(RefreshFrequency);
     }
   });

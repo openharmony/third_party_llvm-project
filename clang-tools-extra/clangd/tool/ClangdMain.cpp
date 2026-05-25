@@ -620,8 +620,13 @@ loadExternalIndex(const Config::ExternalIndexSpec &External,
         External.Location);
     auto NewIndex = std::make_unique<SwapIndex>(std::make_unique<MemIndex>());
     auto IndexLoadTask = [File = External.Location,
-                          PlaceHolder = NewIndex.get()] {
-      if (auto Idx = loadIndex(File, SymbolOrigin::Static, /*UseDex=*/true))
+                          PlaceHolder = NewIndex.get(),
+                          Threads = WorkerThreadsCount.getValue()] {
+      IndexLoadOptions Opts;
+      Opts.Origin = SymbolOrigin::Static;
+      Opts.UseDex = true;
+      Opts.Threads = Threads;
+      if (auto Idx = loadIndex(File, Opts))
         PlaceHolder->reset(std::move(Idx));
     };
     if (Tasks) {
