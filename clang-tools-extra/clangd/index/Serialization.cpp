@@ -21,8 +21,13 @@
 #include "llvm/Support/Compression.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/Error.h"
+#include "llvm/Support/ThreadPool.h"
 #include "llvm/Support/raw_ostream.h"
+#include <algorithm>
 #include <cstdint>
+#include <future>
+#include <iterator>
+#include <memory>
 #include <vector>
 
 namespace clang {
@@ -452,11 +457,49 @@ struct RecordRange {
   size_t Ordinal = 0;
 };
 
+struct SymbolRecord {
+  size_t Ordinal = 0;
+  Symbol Value;
+};
+
+struct SourceRecord {
+  size_t Ordinal = 0;
+  IncludeGraphNode Value;
+};
+
+struct RefRecord {
+  SymbolID ID;
+  std::vector<Ref> Refs;
+};
+
+struct ChunkRange {
+  size_t BeginRecord = 0;
+  size_t EndRecord = 0;
+};
+
+std::vector<ChunkRange> splitRecordRanges(llvm::ArrayRef<RecordRange> Records,
+                                          unsigned Threads) {
+  std::vector<ChunkRange> Chunks;
+  if (Records.empty())
+    return Chunks;
+  unsigned TaskCount = std::min<unsigned>(Threads, Records.size());
+  Chunks.reserve(TaskCount);
+  size_t RecordsPerTask = Records.size() / TaskCount;
+  size_t Extra = Records.size() % TaskCount;
+  size_t Begin = 0;
+  for (unsigned I = 0; I < TaskCount; ++I) {
+    size_t Count = RecordsPerTask + (I < Extra ? 1 : 0);
+    Chunks.push_back({Begin, Begin + Count});
+    Begin += Count;
+  }
+  return Chunks;
+}
+
 constexpr size_t SerializedDigestSize = FileDigest{}.size();
 
 bool consumeElementCount(Reader &Data, uint32_t &Count) {
   Count = Data.consumeVar();
-  if (Count > static_cast<uint32_t>(Data.rest().size())) {
+  if (static_cast<size_t>(Count) > Data.rest().size()) {
     Data.fail();
     return false;
   }
@@ -560,6 +603,102 @@ scanRelationRecords(llvm::StringRef Data, llvm::StringRef ErrorMessage) {
   return std::move(Result);
 }
 
+llvm::Expected<std::vector<SymbolRecord>>
+parseSymbolRanges(llvm::StringRef Data, llvm::ArrayRef<RecordRange> Ranges,
+                  llvm::ArrayRef<llvm::StringRef> Strings,
+                  SymbolOrigin Origin) {
+  std::vector<SymbolRecord> Result;
+  Result.reserve(Ranges.size());
+  for (const RecordRange &Range : Ranges) {
+    Reader R(Data.slice(Range.Begin, Range.End));
+    Symbol Sym = readSymbol(R, Strings, Origin);
+    if (R.err() || !R.eof())
+      return error("malformed or truncated symbol");
+    Result.push_back({Range.Ordinal, std::move(Sym)});
+  }
+  return std::move(Result);
+}
+
+llvm::Expected<std::vector<SourceRecord>>
+parseSourceRanges(llvm::StringRef Data, llvm::ArrayRef<RecordRange> Ranges,
+                  llvm::ArrayRef<llvm::StringRef> Strings) {
+  std::vector<SourceRecord> Result;
+  Result.reserve(Ranges.size());
+  for (const RecordRange &Range : Ranges) {
+    Reader R(Data.slice(Range.Begin, Range.End));
+    IncludeGraphNode IGN = readIncludeGraphNode(R, Strings);
+    if (R.err() || !R.eof())
+      return error("malformed or truncated include uri");
+    Result.push_back({Range.Ordinal, std::move(IGN)});
+  }
+  return std::move(Result);
+}
+
+llvm::Expected<std::vector<RefRecord>>
+parseRefRanges(llvm::StringRef Data, llvm::ArrayRef<RecordRange> Ranges,
+               llvm::ArrayRef<llvm::StringRef> Strings) {
+  std::vector<RefRecord> Result;
+  Result.reserve(Ranges.size());
+  for (const RecordRange &Range : Ranges) {
+    Reader R(Data.slice(Range.Begin, Range.End));
+    auto RefsBundle = readRefs(R, Strings);
+    if (R.err() || !R.eof())
+      return error("malformed or truncated refs");
+    Result.push_back({RefsBundle.first, std::move(RefsBundle.second)});
+  }
+  return std::move(Result);
+}
+
+llvm::Expected<std::vector<Relation>>
+parseRelationRanges(llvm::StringRef Data, llvm::ArrayRef<RecordRange> Ranges) {
+  std::vector<Relation> Result;
+  Result.reserve(Ranges.size());
+  for (const RecordRange &Range : Ranges) {
+    Reader R(Data.slice(Range.Begin, Range.End));
+    Relation Rel = readRelation(R);
+    if (R.err() || !R.eof())
+      return error("malformed or truncated relations");
+    Result.push_back(Rel);
+  }
+  return std::move(Result);
+}
+
+template <typename T, typename Parse>
+llvm::Expected<std::vector<T>>
+parseRecordRangesThreaded(llvm::ArrayRef<RecordRange> Ranges, unsigned Threads,
+                          Parse ParseChunk, llvm::StringRef ErrorMessage) {
+  if (Threads <= 1 || Ranges.size() < 2)
+    return ParseChunk(Ranges);
+
+  llvm::ThreadPool Pool(llvm::hardware_concurrency(Threads));
+  using WorkerResult = std::shared_ptr<llvm::Expected<std::vector<T>>>;
+  std::vector<std::shared_future<WorkerResult>> Futures;
+  std::vector<ChunkRange> Chunks = splitRecordRanges(Ranges, Threads);
+  Futures.reserve(Chunks.size());
+  for (ChunkRange Chunk : Chunks) {
+    Futures.push_back(Pool.async([=, &Ranges, &ParseChunk]() {
+      return std::make_shared<llvm::Expected<std::vector<T>>>(
+          ParseChunk(Ranges.slice(Chunk.BeginRecord,
+                                  Chunk.EndRecord - Chunk.BeginRecord)));
+    }));
+  }
+  Pool.wait();
+
+  std::vector<T> Result;
+  Result.reserve(Ranges.size());
+  for (auto &Future : Futures) {
+    WorkerResult PartialPtr = Future.get();
+    llvm::Expected<std::vector<T>> &Partial = *PartialPtr;
+    if (!Partial) {
+      llvm::consumeError(Partial.takeError());
+      return error("{0}", ErrorMessage);
+    }
+    Result.insert(Result.end(), std::make_move_iterator(Partial->begin()),
+                  std::make_move_iterator(Partial->end()));
+  }
+  return std::move(Result);
+}
+
 // FILE ENCODING
 // A file is a RIFF chunk with type 'CdIx'.
 // It contains the sections:
@@ -573,6 +712,72 @@ scanRelationRecords(llvm::StringRef Data, llvm::StringRef ErrorMessage) {
 // If you make a breaking change, bump this version number to invalidate stored
 // data. Later we may want to support some backward compatibility.
 constexpr static uint32_t Version = 17;
+
+llvm::Expected<IndexFileIn>
+readRIFFSectionsSerial(const llvm::StringMap<llvm::StringRef> &Chunks,
+                       llvm::ArrayRef<llvm::StringRef> Strings,
+                       SymbolOrigin Origin) {
+  IndexFileIn Result;
+  if (Chunks.count("srcs")) {
+    Reader SrcsReader(Chunks.lookup("srcs"));
+    Result.Sources.emplace();
+    while (!SrcsReader.eof()) {
+      auto IGN = readIncludeGraphNode(SrcsReader, Strings);
+      auto Entry = Result.Sources->try_emplace(IGN.URI).first;
+      Entry->getValue() = std::move(IGN);
+      // We change all the strings inside the structure to point at the keys in
+      // the map, since it is the only copy of the string that's going to live.
+      Entry->getValue().URI = Entry->getKey();
+      for (auto &Include : Entry->getValue().DirectIncludes)
+        Include = Result.Sources->try_emplace(Include).first->getKey();
+    }
+    if (SrcsReader.err())
+      return error("malformed or truncated include uri");
+  }
+
+  if (Chunks.count("symb")) {
+    Reader SymbolReader(Chunks.lookup("symb"));
+    SymbolSlab::Builder Symbols;
+    while (!SymbolReader.eof())
+      Symbols.insert(readSymbol(SymbolReader, Strings, Origin));
+    if (SymbolReader.err())
+      return error("malformed or truncated symbol");
+    Result.Symbols = std::move(Symbols).build();
+  }
+  if (Chunks.count("refs")) {
+    Reader RefsReader(Chunks.lookup("refs"));
+    RefSlab::Builder Refs;
+    while (!RefsReader.eof()) {
+      auto RefsBundle = readRefs(RefsReader, Strings);
+      for (const auto &Ref : RefsBundle.second) // FIXME: bulk insert?
+        Refs.insert(RefsBundle.first, Ref);
+    }
+    if (RefsReader.err())
+      return error("malformed or truncated refs");
+    Result.Refs = std::move(Refs).build();
+  }
+  if (Chunks.count("rela")) {
+    Reader RelationsReader(Chunks.lookup("rela"));
+    RelationSlab::Builder Relations;
+    while (!RelationsReader.eof())
+      Relations.insert(readRelation(RelationsReader));
+    if (RelationsReader.err())
+      return error("malformed or truncated relations");
+    Result.Relations = std::move(Relations).build();
+  }
+  if (Chunks.count("cmdl")) {
+    Reader CmdReader(Chunks.lookup("cmdl"));
+    InternedCompileCommand Cmd = readCompileCommand(CmdReader, Strings);
+    if (CmdReader.err())
+      return error("malformed or truncated commandline section");
+    Result.Cmd.emplace();
+    Result.Cmd->Directory = std::string(Cmd.Directory);
+    Result.Cmd->CommandLine.reserve(Cmd.CommandLine.size());
+    for (llvm::StringRef C : Cmd.CommandLine)
+      Result.Cmd->CommandLine.emplace_back(C);
+  }
+  return std::move(Result);
+}
 
 llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
                                      unsigned Threads) {
@@ -602,87 +807,112 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
   if (!Strings)
     return Strings.takeError();
 
+  if (Threads <= 1)
+    return readRIFFSectionsSerial(Chunks, Strings->Strings, Origin);
+
   IndexFileIn Result;
+
   if (Chunks.count("srcs")) {
-    if (Threads > 1) {
-      auto SourceRanges = scanRecords(
-          Chunks.lookup("srcs"), Strings->Strings,
-          [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) {
-            skipIncludeGraphNode(R, S);
-          },
-          "malformed or truncated include uri");
-      if (!SourceRanges)
-        return SourceRanges.takeError();
-    }
-    Reader SrcsReader(Chunks.lookup("srcs"));
+    auto SourceRanges = scanRecords(
+        Chunks.lookup("srcs"), Strings->Strings,
+        [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) {
+          skipIncludeGraphNode(R, S);
+        },
+        "malformed or truncated include uri");
+    if (!SourceRanges)
+      return SourceRanges.takeError();
+    auto ParsedSources = parseRecordRangesThreaded<SourceRecord>(
+        *SourceRanges, Threads,
+        [&](llvm::ArrayRef<RecordRange> Ranges) {
+          return parseSourceRanges(Chunks.lookup("srcs"), Ranges,
+                                   Strings->Strings);
+        },
+        "malformed or truncated include uri");
+    if (!ParsedSources)
+      return ParsedSources.takeError();
+    llvm::sort(*ParsedSources,
+               [](const SourceRecord &L, const SourceRecord &R) {
+                 return L.Ordinal < R.Ordinal;
+               });
     Result.Sources.emplace();
-    while (!SrcsReader.eof()) {
-      auto IGN = readIncludeGraphNode(SrcsReader, Strings->Strings);
+    for (SourceRecord &Record : *ParsedSources) {
+      IncludeGraphNode IGN = std::move(Record.Value);
       auto Entry = Result.Sources->try_emplace(IGN.URI).first;
       Entry->getValue() = std::move(IGN);
-      // We change all the strings inside the structure to point at the keys in
-      // the map, since it is the only copy of the string that's going to live.
       Entry->getValue().URI = Entry->getKey();
       for (auto &Include : Entry->getValue().DirectIncludes)
         Include = Result.Sources->try_emplace(Include).first->getKey();
     }
-    if (SrcsReader.err())
-      return error("malformed or truncated include uri");
   }
 
   if (Chunks.count("symb")) {
-    if (Threads > 1) {
-      auto SymbolRanges = scanRecords(
-          Chunks.lookup("symb"), Strings->Strings,
-          [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) { skipSymbol(R, S); },
-          "malformed or truncated symbol");
-      if (!SymbolRanges)
-        return SymbolRanges.takeError();
-    }
-    Reader SymbolReader(Chunks.lookup("symb"));
+    auto SymbolRanges = scanRecords(
+        Chunks.lookup("symb"), Strings->Strings,
+        [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) { skipSymbol(R, S); },
+        "malformed or truncated symbol");
+    if (!SymbolRanges)
+      return SymbolRanges.takeError();
+    auto ParsedSymbols = parseRecordRangesThreaded<SymbolRecord>(
+        *SymbolRanges, Threads,
+        [&](llvm::ArrayRef<RecordRange> Ranges) {
+          return parseSymbolRanges(Chunks.lookup("symb"), Ranges,
+                                   Strings->Strings, Origin);
+        },
+        "malformed or truncated symbol");
+    if (!ParsedSymbols)
+      return ParsedSymbols.takeError();
+    llvm::sort(*ParsedSymbols,
+               [](const SymbolRecord &L, const SymbolRecord &R) {
+                 return L.Ordinal < R.Ordinal;
+               });
     SymbolSlab::Builder Symbols;
-    while (!SymbolReader.eof())
-      Symbols.insert(readSymbol(SymbolReader, Strings->Strings, Origin));
-    if (SymbolReader.err())
-      return error("malformed or truncated symbol");
+    for (const SymbolRecord &Record : *ParsedSymbols)
+      Symbols.insert(Record.Value);
     Result.Symbols = std::move(Symbols).build();
   }
+
   if (Chunks.count("refs")) {
-    if (Threads > 1) {
-      auto RefRanges = scanRecords(
-          Chunks.lookup("refs"), Strings->Strings,
-          [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) { skipRefs(R, S); },
-          "malformed or truncated refs");
-      if (!RefRanges)
-        return RefRanges.takeError();
-    }
-    Reader RefsReader(Chunks.lookup("refs"));
+    auto RefRanges = scanRecords(
+        Chunks.lookup("refs"), Strings->Strings,
+        [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) { skipRefs(R, S); },
+        "malformed or truncated refs");
+    if (!RefRanges)
+      return RefRanges.takeError();
+    auto ParsedRefs = parseRecordRangesThreaded<RefRecord>(
+        *RefRanges, Threads,
+        [&](llvm::ArrayRef<RecordRange> Ranges) {
+          return parseRefRanges(Chunks.lookup("refs"), Ranges,
+                                Strings->Strings);
+        },
+        "malformed or truncated refs");
+    if (!ParsedRefs)
+      return ParsedRefs.takeError();
     RefSlab::Builder Refs;
-    while (!RefsReader.eof()) {
-      auto RefsBundle = readRefs(RefsReader, Strings->Strings);
-      for (const auto &Ref : RefsBundle.second) // FIXME: bulk insert?
-        Refs.insert(RefsBundle.first, Ref);
-    }
-    if (RefsReader.err())
-      return error("malformed or truncated refs");
+    for (const RefRecord &Record : *ParsedRefs)
+      for (const Ref &R : Record.Refs)
+        Refs.insert(Record.ID, R);
     Result.Refs = std::move(Refs).build();
   }
+
   if (Chunks.count("rela")) {
-    if (Threads > 1) {
-      auto RelationRanges =
-          scanRelationRecords(Chunks.lookup("rela"),
-                              "malformed or truncated relations");
-      if (!RelationRanges)
-        return RelationRanges.takeError();
-    }
-    Reader RelationsReader(Chunks.lookup("rela"));
+    auto RelationRanges = scanRelationRecords(
+        Chunks.lookup("rela"), "malformed or truncated relations");
+    if (!RelationRanges)
+      return RelationRanges.takeError();
+    auto ParsedRelations = parseRecordRangesThreaded<Relation>(
+        *RelationRanges, Threads,
+        [&](llvm::ArrayRef<RecordRange> Ranges) {
+          return parseRelationRanges(Chunks.lookup("rela"), Ranges);
+        },
+        "malformed or truncated relations");
+    if (!ParsedRelations)
+      return ParsedRelations.takeError();
     RelationSlab::Builder Relations;
-    while (!RelationsReader.eof())
-      Relations.insert(readRelation(RelationsReader));
-    if (RelationsReader.err())
-      return error("malformed or truncated relations");
+    for (const Relation &R : *ParsedRelations)
+      Relations.insert(R);
     Result.Relations = std::move(Relations).build();
   }
+
   if (Chunks.count("cmdl")) {
     Reader CmdReader(Chunks.lookup("cmdl"));
     InternedCompileCommand Cmd =
@@ -695,6 +925,7 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
     for (llvm::StringRef C : Cmd.CommandLine)
       Result.Cmd->CommandLine.emplace_back(C);
   }
+
   return std::move(Result);
 }
 

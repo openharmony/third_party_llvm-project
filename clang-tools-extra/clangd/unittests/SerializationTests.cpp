@@ -287,6 +287,38 @@ TEST(SerializationTest, BinaryConversionsWithThreadedAPI) {
   expectSameIndexFile(*Serial, *Threaded);
 }
 
+TEST(SerializationTest, ThreadedReadPreservesDuplicateSourceFileOrder) {
+  auto In = readIndexFile(YAML);
+  ASSERT_FALSE(!In) << In.takeError();
+
+  IndexFileOut Out(*In);
+  Out.Format = IndexFileFormat::RIFF;
+  std::string Serialized = llvm::to_string(Out);
+
+  auto ParsedFile = riff::readFile(Serialized);
+  ASSERT_FALSE(!ParsedFile) << ParsedFile.takeError();
+  auto Srcs = llvm::find_if(ParsedFile->Chunks, [](const riff::Chunk &C) {
+    return C.ID == riff::fourCC("srcs");
+  });
+  ASSERT_NE(Srcs, ParsedFile->Chunks.end());
+  ASSERT_FALSE(Srcs->Data.empty());
+
+  std::string FirstRecord = Srcs->Data.str();
+  std::string SecondRecord = FirstRecord;
+  SecondRecord[0] = static_cast<char>(IncludeGraphNode::SourceFlag::HadErrors);
+  std::string CombinedRecords = FirstRecord + SecondRecord;
+  Srcs->Data = CombinedRecords;
+  std::string DuplicateSources = llvm::to_string(*ParsedFile);
+
+  auto Parsed = readIndexFile(DuplicateSources, SymbolOrigin::Static, 4);
+  ASSERT_TRUE(bool(Parsed)) << Parsed.takeError();
+  ASSERT_TRUE(Parsed->Sources);
+  const auto *URI = "file:///path/source1.cpp";
+  ASSERT_TRUE(Parsed->Sources->count(URI));
+  EXPECT_EQ(Parsed->Sources->lookup(URI).Flags,
+            IncludeGraphNode::SourceFlag::HadErrors);
+}
+
 TEST(SerializationTest, SrcsTest) {
   auto In = readIndexFile(YAML);
   EXPECT_TRUE(bool(In)) << In.takeError();
@@ -479,6 +511,27 @@ TEST(SerializationTest, ThreadedReadReportsMalformedRefs) {
   auto Parsed = readIndexFile(Corrupt, SymbolOrigin::Static, 4);
   ASSERT_TRUE(!Parsed);
   EXPECT_EQ(llvm::toString(Parsed.takeError()), "malformed or truncated refs");
+}
+
+TEST(SerializationTest, ThreadedReadMatchesSerialErrorPriority) {
+  auto In = readIndexFile(YAML);
+  ASSERT_FALSE(!In) << In.takeError();
+  IndexFileOut Out(*In);
+  Out.Format = IndexFileFormat::RIFF;
+  std::string Serialized = llvm::to_string(Out);
+
+  std::string Corrupt =
+      corruptChunkPayload(Serialized, "srcs", llvm::StringRef("\x01\x02", 2));
+  Corrupt =
+      corruptChunkPayload(Corrupt, "symb", llvm::StringRef("\x01\x02", 2));
+
+  auto Serial = readIndexFile(Corrupt, SymbolOrigin::Static, 1);
+  ASSERT_TRUE(!Serial);
+  std::string SerialError = llvm::toString(Serial.takeError());
+  auto Threaded = readIndexFile(Corrupt, SymbolOrigin::Static, 4);
+  ASSERT_TRUE(!Threaded);
+  EXPECT_EQ(llvm::toString(Threaded.takeError()), SerialError);
+  EXPECT_EQ(SerialError, "malformed or truncated include uri");
 }
 
 // Check we detect invalid string table size size without allocating it first.
