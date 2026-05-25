@@ -33,11 +33,11 @@ if (GRPC_INSTALL_PATH)
   set(PROTOC ${Protobuf_PROTOC_EXECUTABLE})
 else()
   # This setup requires system-installed gRPC and Protobuf.
-  # We always link dynamically in this mode. While the static libraries are
-  # usually installed, the CMake files telling us *which* static libraries to
-  # link are not.
+  # If find_library() finds static gRPC archives, wire up common transitive
+  # dependencies manually because system packages often do not install the
+  # CMake config files that would otherwise describe them.
   if (NOT BUILD_SHARED_LIBS)
-    message(NOTICE "gRPC and Protobuf will be linked dynamically. If you want static linking, build gRPC from sources with -DBUILD_SHARED_LIBS=Off.")
+    message(NOTICE "Using system gRPC and Protobuf. Static archives will be linked with detected transitive dependencies when found.")
   endif()
   find_program(GRPC_CPP_PLUGIN grpc_cpp_plugin)
   find_program(PROTOC protoc)
@@ -87,6 +87,36 @@ else()
     message(STATUS "Using grpc++: " ${GRPC_LIBRARY})
     set_target_properties(grpc++ PROPERTIES IMPORTED_LOCATION ${GRPC_LIBRARY})
     target_include_directories(grpc++ INTERFACE ${GRPC_INCLUDE_PATHS})
+    if (GRPC_LIBRARY MATCHES "\\.a$")
+      get_filename_component(GRPC_LIBRARY_DIR "${GRPC_LIBRARY}" DIRECTORY)
+      set(GRPC_STATIC_LINK_LIBRARIES "")
+      foreach(GRPC_STATIC_DEP grpc gpr address_sorting cares ssl crypto z)
+        string(TOUPPER "${GRPC_STATIC_DEP}" GRPC_STATIC_DEP_UPPER)
+        set(GRPC_STATIC_${GRPC_STATIC_DEP_UPPER}_LIBRARY
+          "${GRPC_LIBRARY_DIR}/lib${GRPC_STATIC_DEP}.a")
+        if (EXISTS "${GRPC_STATIC_${GRPC_STATIC_DEP_UPPER}_LIBRARY}")
+          list(APPEND GRPC_STATIC_LINK_LIBRARIES
+            ${GRPC_STATIC_${GRPC_STATIC_DEP_UPPER}_LIBRARY})
+        endif()
+      endforeach()
+      file(GLOB GRPC_STATIC_ABSL_LIBRARIES "${GRPC_LIBRARY_DIR}/libabsl_*.a")
+      if (GRPC_STATIC_ABSL_LIBRARIES)
+        list(SORT GRPC_STATIC_ABSL_LIBRARIES)
+        list(APPEND GRPC_STATIC_LINK_LIBRARIES ${GRPC_STATIC_ABSL_LIBRARIES})
+      endif()
+      find_file(GRPC_STATIC_UNWINDER_LIBRARY libgcc_s.so.1
+        PATHS /usr/lib/x86_64-linux-gnu /lib/x86_64-linux-gnu)
+      if (GRPC_STATIC_UNWINDER_LIBRARY)
+        list(APPEND GRPC_STATIC_LINK_LIBRARIES ${GRPC_STATIC_UNWINDER_LIBRARY})
+      endif()
+      if (GRPC_STATIC_LINK_LIBRARIES)
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+          list(INSERT GRPC_STATIC_LINK_LIBRARIES 0 "-Wl,--start-group")
+          list(APPEND GRPC_STATIC_LINK_LIBRARIES "-Wl,--end-group")
+        endif()
+        target_link_libraries(grpc++ INTERFACE ${GRPC_STATIC_LINK_LIBRARIES})
+      endif()
+    endif()
     if (ENABLE_GRPC_REFLECTION)
       find_library(GRPC_REFLECTION_LIBRARY grpc++_reflection ${GRPC_OPTS} REQUIRED)
       add_library(grpc++_reflection UNKNOWN IMPORTED GLOBAL)
