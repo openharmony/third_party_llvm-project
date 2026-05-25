@@ -586,6 +586,25 @@ TEST(SerializationTest, ThreadedReadMatchesSerialErrorPriority) {
   EXPECT_EQ(SerialError, "malformed or truncated include uri");
 }
 
+TEST(SerializationTest, ReadReportsMalformedCommandLine) {
+  auto In = readIndexFile(YAML);
+  ASSERT_FALSE(!In) << In.takeError();
+  IndexFileOut Out(*In);
+  Out.Format = IndexFileFormat::RIFF;
+  std::string Serialized = llvm::to_string(Out);
+
+  std::string Corrupt =
+      corruptChunkPayload(Serialized, "cmdl", llvm::StringRef("\x01\x02", 2));
+  auto Serial = readIndexFile(Corrupt, SymbolOrigin::Static, 1);
+  ASSERT_TRUE(!Serial);
+  EXPECT_EQ(llvm::toString(Serial.takeError()),
+            "malformed or truncated commandline section");
+  auto Threaded = readIndexFile(Corrupt, SymbolOrigin::Static, 4);
+  ASSERT_TRUE(!Threaded);
+  EXPECT_EQ(llvm::toString(Threaded.takeError()),
+            "malformed or truncated commandline section");
+}
+
 // Check we detect invalid string table size size without allocating it first.
 // If this detection fails, the test should allocate a huge array and crash.
 TEST(SerializationTest, NoCrashOnBadStringTableSize) {

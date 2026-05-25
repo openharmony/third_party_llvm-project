@@ -441,7 +441,7 @@ void writeCompileCommand(const InternedCompileCommand &Cmd,
 }
 
 InternedCompileCommand
-readCompileCommand(Reader CmdReader, llvm::ArrayRef<llvm::StringRef> Strings) {
+readCompileCommand(Reader &CmdReader, llvm::ArrayRef<llvm::StringRef> Strings) {
   InternedCompileCommand Cmd;
   Cmd.Directory = CmdReader.consumeString(Strings);
   if (!CmdReader.consumeSize(Cmd.CommandLine))
@@ -663,31 +663,36 @@ parseRelationRanges(llvm::StringRef Data, llvm::ArrayRef<RecordRange> Ranges) {
   return std::move(Result);
 }
 
-template <typename T, typename Parse>
-llvm::Expected<std::vector<T>>
-parseRecordRangesThreaded(llvm::ArrayRef<RecordRange> Ranges, unsigned Threads,
-                          Parse ParseChunk, llvm::StringRef ErrorMessage) {
-  if (Threads <= 1 || Ranges.size() < 2)
-    return ParseChunk(Ranges);
+template <typename T>
+using RecordParseFuture =
+    std::shared_future<std::shared_ptr<llvm::Expected<std::vector<T>>>>;
 
-  llvm::ThreadPool Pool(llvm::hardware_concurrency(Threads));
-  using WorkerResult = std::shared_ptr<llvm::Expected<std::vector<T>>>;
-  std::vector<std::shared_future<WorkerResult>> Futures;
+template <typename T, typename Parse>
+std::vector<RecordParseFuture<T>>
+scheduleRecordRangeParses(llvm::ThreadPool &Pool,
+                          llvm::ArrayRef<RecordRange> Ranges, unsigned Threads,
+                          Parse ParseChunk) {
+  std::vector<RecordParseFuture<T>> Futures;
   std::vector<ChunkRange> Chunks = splitRecordRanges(Ranges, Threads);
   Futures.reserve(Chunks.size());
   for (ChunkRange Chunk : Chunks) {
-    Futures.push_back(Pool.async([=, &Ranges, &ParseChunk]() {
+    Futures.push_back(Pool.async([=]() {
       return std::make_shared<llvm::Expected<std::vector<T>>>(
           ParseChunk(Ranges.slice(Chunk.BeginRecord,
                                   Chunk.EndRecord - Chunk.BeginRecord)));
     }));
   }
-  Pool.wait();
+  return Futures;
+}
 
+template <typename T>
+llvm::Expected<std::vector<T>>
+collectRecordRangeParses(std::vector<RecordParseFuture<T>> &Futures,
+                         llvm::StringRef ErrorMessage, size_t ResultSize) {
   std::vector<T> Result;
-  Result.reserve(Ranges.size());
+  Result.reserve(ResultSize);
   for (auto &Future : Futures) {
-    WorkerResult PartialPtr = Future.get();
+    std::shared_ptr<llvm::Expected<std::vector<T>>> PartialPtr = Future.get();
     llvm::Expected<std::vector<T>> &Partial = *PartialPtr;
     if (!Partial) {
       llvm::consumeError(Partial.takeError());
@@ -697,6 +702,20 @@ parseRecordRangesThreaded(llvm::ArrayRef<RecordRange> Ranges, unsigned Threads,
                   std::make_move_iterator(Partial->end()));
   }
   return std::move(Result);
+}
+
+template <typename T, typename Parse>
+llvm::Expected<std::vector<T>>
+parseRecordRangesThreaded(llvm::ArrayRef<RecordRange> Ranges, unsigned Threads,
+                          Parse ParseChunk, llvm::StringRef ErrorMessage) {
+  if (Threads <= 1 || Ranges.size() < 2)
+    return ParseChunk(Ranges);
+
+  llvm::ThreadPool Pool(llvm::hardware_concurrency(Threads));
+  std::vector<RecordParseFuture<T>> Futures =
+      scheduleRecordRangeParses<T>(Pool, Ranges, Threads, ParseChunk);
+  Pool.wait();
+  return collectRecordRangeParses<T>(Futures, ErrorMessage, Ranges.size());
 }
 
 // FILE ENCODING
@@ -811,23 +830,87 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
     return readRIFFSectionsSerial(Chunks, Strings->Strings, Origin);
 
   IndexFileIn Result;
+  llvm::Optional<std::vector<RecordRange>> SourceRanges;
+  llvm::Optional<std::vector<RecordRange>> SymbolRanges;
+  llvm::Optional<std::vector<RecordRange>> RefRanges;
+  llvm::Optional<std::vector<RecordRange>> RelationRanges;
 
   if (Chunks.count("srcs")) {
-    auto SourceRanges = scanRecords(
+    auto ScannedSourceRanges = scanRecords(
         Chunks.lookup("srcs"), Strings->Strings,
         [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) {
           skipIncludeGraphNode(R, S);
         },
         "malformed or truncated include uri");
-    if (!SourceRanges)
-      return SourceRanges.takeError();
-    auto ParsedSources = parseRecordRangesThreaded<SourceRecord>(
-        *SourceRanges, Threads,
-        [&](llvm::ArrayRef<RecordRange> Ranges) {
+    if (!ScannedSourceRanges)
+      return ScannedSourceRanges.takeError();
+    SourceRanges = std::move(*ScannedSourceRanges);
+  }
+
+  if (Chunks.count("symb")) {
+    auto ScannedSymbolRanges = scanRecords(
+        Chunks.lookup("symb"), Strings->Strings,
+        [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) { skipSymbol(R, S); },
+        "malformed or truncated symbol");
+    if (!ScannedSymbolRanges)
+      return ScannedSymbolRanges.takeError();
+    SymbolRanges = std::move(*ScannedSymbolRanges);
+  }
+
+  if (Chunks.count("refs")) {
+    auto ScannedRefRanges = scanRecords(
+        Chunks.lookup("refs"), Strings->Strings,
+        [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) { skipRefs(R, S); },
+        "malformed or truncated refs");
+    if (!ScannedRefRanges)
+      return ScannedRefRanges.takeError();
+    RefRanges = std::move(*ScannedRefRanges);
+  }
+
+  if (Chunks.count("rela")) {
+    auto ScannedRelationRanges = scanRelationRecords(
+        Chunks.lookup("rela"), "malformed or truncated relations");
+    if (!ScannedRelationRanges)
+      return ScannedRelationRanges.takeError();
+    RelationRanges = std::move(*ScannedRelationRanges);
+  }
+
+  llvm::ThreadPool Pool(llvm::hardware_concurrency(Threads));
+  std::vector<RecordParseFuture<SourceRecord>> SourceFutures;
+  std::vector<RecordParseFuture<SymbolRecord>> SymbolFutures;
+  std::vector<RecordParseFuture<RefRecord>> RefFutures;
+  std::vector<RecordParseFuture<Relation>> RelationFutures;
+
+  if (SourceRanges)
+    SourceFutures = scheduleRecordRangeParses<SourceRecord>(
+        Pool, *SourceRanges, Threads, [&](llvm::ArrayRef<RecordRange> Ranges) {
           return parseSourceRanges(Chunks.lookup("srcs"), Ranges,
                                    Strings->Strings);
-        },
-        "malformed or truncated include uri");
+        });
+  if (SymbolRanges)
+    SymbolFutures = scheduleRecordRangeParses<SymbolRecord>(
+        Pool, *SymbolRanges, Threads, [&](llvm::ArrayRef<RecordRange> Ranges) {
+          return parseSymbolRanges(Chunks.lookup("symb"), Ranges,
+                                   Strings->Strings, Origin);
+        });
+  if (RefRanges)
+    RefFutures = scheduleRecordRangeParses<RefRecord>(
+        Pool, *RefRanges, Threads, [&](llvm::ArrayRef<RecordRange> Ranges) {
+          return parseRefRanges(Chunks.lookup("refs"), Ranges,
+                                Strings->Strings);
+        });
+  if (RelationRanges)
+    RelationFutures = scheduleRecordRangeParses<Relation>(
+        Pool, *RelationRanges, Threads,
+        [&](llvm::ArrayRef<RecordRange> Ranges) {
+          return parseRelationRanges(Chunks.lookup("rela"), Ranges);
+        });
+  Pool.wait();
+
+  if (SourceRanges) {
+    auto ParsedSources = collectRecordRangeParses<SourceRecord>(
+        SourceFutures, "malformed or truncated include uri",
+        SourceRanges->size());
     if (!ParsedSources)
       return ParsedSources.takeError();
     llvm::sort(*ParsedSources,
@@ -845,20 +928,9 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
     }
   }
 
-  if (Chunks.count("symb")) {
-    auto SymbolRanges = scanRecords(
-        Chunks.lookup("symb"), Strings->Strings,
-        [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) { skipSymbol(R, S); },
-        "malformed or truncated symbol");
-    if (!SymbolRanges)
-      return SymbolRanges.takeError();
-    auto ParsedSymbols = parseRecordRangesThreaded<SymbolRecord>(
-        *SymbolRanges, Threads,
-        [&](llvm::ArrayRef<RecordRange> Ranges) {
-          return parseSymbolRanges(Chunks.lookup("symb"), Ranges,
-                                   Strings->Strings, Origin);
-        },
-        "malformed or truncated symbol");
+  if (SymbolRanges) {
+    auto ParsedSymbols = collectRecordRangeParses<SymbolRecord>(
+        SymbolFutures, "malformed or truncated symbol", SymbolRanges->size());
     if (!ParsedSymbols)
       return ParsedSymbols.takeError();
     llvm::sort(*ParsedSymbols,
@@ -871,20 +943,9 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
     Result.Symbols = std::move(Symbols).build();
   }
 
-  if (Chunks.count("refs")) {
-    auto RefRanges = scanRecords(
-        Chunks.lookup("refs"), Strings->Strings,
-        [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) { skipRefs(R, S); },
-        "malformed or truncated refs");
-    if (!RefRanges)
-      return RefRanges.takeError();
-    auto ParsedRefs = parseRecordRangesThreaded<RefRecord>(
-        *RefRanges, Threads,
-        [&](llvm::ArrayRef<RecordRange> Ranges) {
-          return parseRefRanges(Chunks.lookup("refs"), Ranges,
-                                Strings->Strings);
-        },
-        "malformed or truncated refs");
+  if (RefRanges) {
+    auto ParsedRefs = collectRecordRangeParses<RefRecord>(
+        RefFutures, "malformed or truncated refs", RefRanges->size());
     if (!ParsedRefs)
       return ParsedRefs.takeError();
     RefSlab::Builder Refs;
@@ -894,17 +955,10 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
     Result.Refs = std::move(Refs).build();
   }
 
-  if (Chunks.count("rela")) {
-    auto RelationRanges = scanRelationRecords(
-        Chunks.lookup("rela"), "malformed or truncated relations");
-    if (!RelationRanges)
-      return RelationRanges.takeError();
-    auto ParsedRelations = parseRecordRangesThreaded<Relation>(
-        *RelationRanges, Threads,
-        [&](llvm::ArrayRef<RecordRange> Ranges) {
-          return parseRelationRanges(Chunks.lookup("rela"), Ranges);
-        },
-        "malformed or truncated relations");
+  if (RelationRanges) {
+    auto ParsedRelations = collectRecordRangeParses<Relation>(
+        RelationFutures, "malformed or truncated relations",
+        RelationRanges->size());
     if (!ParsedRelations)
       return ParsedRelations.takeError();
     RelationSlab::Builder Relations;
