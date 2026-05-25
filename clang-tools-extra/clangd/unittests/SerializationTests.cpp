@@ -236,6 +236,57 @@ TEST(SerializationTest, BinaryConversions) {
               UnorderedElementsAreArray(yamlFromRelations(*In->Relations)));
 }
 
+void expectSameIndexFile(const IndexFileIn &L, const IndexFileIn &R) {
+  ASSERT_EQ(static_cast<bool>(L.Symbols), static_cast<bool>(R.Symbols));
+  if (L.Symbols)
+    EXPECT_THAT(yamlFromSymbols(*R.Symbols),
+                UnorderedElementsAreArray(yamlFromSymbols(*L.Symbols)));
+
+  ASSERT_EQ(static_cast<bool>(L.Refs), static_cast<bool>(R.Refs));
+  if (L.Refs)
+    EXPECT_THAT(yamlFromRefs(*R.Refs),
+                UnorderedElementsAreArray(yamlFromRefs(*L.Refs)));
+
+  ASSERT_EQ(static_cast<bool>(L.Relations), static_cast<bool>(R.Relations));
+  if (L.Relations)
+    EXPECT_THAT(yamlFromRelations(*R.Relations),
+                UnorderedElementsAreArray(yamlFromRelations(*L.Relations)));
+
+  ASSERT_EQ(static_cast<bool>(L.Cmd), static_cast<bool>(R.Cmd));
+  if (L.Cmd) {
+    EXPECT_EQ(R.Cmd->Directory, L.Cmd->Directory);
+    EXPECT_EQ(R.Cmd->CommandLine, L.Cmd->CommandLine);
+  }
+
+  ASSERT_EQ(static_cast<bool>(L.Sources), static_cast<bool>(R.Sources));
+  if (L.Sources) {
+    ASSERT_EQ(R.Sources->size(), L.Sources->size());
+    for (const auto &Entry : *L.Sources) {
+      ASSERT_TRUE(R.Sources->count(Entry.getKey()));
+      const auto &Other = R.Sources->lookup(Entry.getKey());
+      EXPECT_EQ(Other.URI, Entry.getValue().URI);
+      EXPECT_EQ(Other.Flags, Entry.getValue().Flags);
+      EXPECT_EQ(Other.Digest, Entry.getValue().Digest);
+      EXPECT_EQ(Other.DirectIncludes, Entry.getValue().DirectIncludes);
+    }
+  }
+}
+
+TEST(SerializationTest, BinaryConversionsWithThreadedAPI) {
+  auto In = readIndexFile(YAML);
+  ASSERT_TRUE(bool(In)) << In.takeError();
+
+  IndexFileOut Out(*In);
+  Out.Format = IndexFileFormat::RIFF;
+  std::string Serialized = llvm::to_string(Out);
+
+  auto Serial = readIndexFile(Serialized, SymbolOrigin::Static, 1);
+  ASSERT_TRUE(bool(Serial)) << Serial.takeError();
+  auto Threaded = readIndexFile(Serialized, SymbolOrigin::Static, 4);
+  ASSERT_TRUE(bool(Threaded)) << Threaded.takeError();
+  expectSameIndexFile(*Serial, *Threaded);
+}
+
 TEST(SerializationTest, SrcsTest) {
   auto In = readIndexFile(YAML);
   EXPECT_TRUE(bool(In)) << In.takeError();

@@ -33,12 +33,17 @@ namespace dex {
 
 std::unique_ptr<SymbolIndex> Dex::build(SymbolSlab Symbols, RefSlab Refs,
                                         RelationSlab Rels) {
+  return build(std::move(Symbols), std::move(Refs), std::move(Rels), 1);
+}
+
+std::unique_ptr<SymbolIndex> Dex::build(SymbolSlab Symbols, RefSlab Refs,
+                                        RelationSlab Rels, unsigned Threads) {
   auto Size = Symbols.bytes() + Refs.bytes();
   // There is no need to include "Rels" in Data because the relations are self-
   // contained, without references into a backing store.
   auto Data = std::make_pair(std::move(Symbols), std::move(Refs));
   return std::make_unique<Dex>(Data.first, Data.second, Rels, std::move(Data),
-                                Size);
+                               Size, Threads);
 }
 
 namespace {
@@ -119,7 +124,8 @@ public:
 
 } // namespace
 
-void Dex::buildIndex() {
+void Dex::buildIndex(unsigned Threads) {
+  (void)Threads;
   this->Corpus = dex::Corpus(Symbols.size());
   std::vector<std::pair<float, const Symbol *>> ScoredSymbols(Symbols.size());
 

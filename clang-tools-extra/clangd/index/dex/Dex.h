@@ -20,9 +20,9 @@
 #ifndef LLVM_CLANG_TOOLS_EXTRA_CLANGD_INDEX_DEX_DEX_H
 #define LLVM_CLANG_TOOLS_EXTRA_CLANGD_INDEX_DEX_DEX_H
 
-#include "index/dex/Iterator.h"
 #include "index/Index.h"
 #include "index/Relation.h"
+#include "index/dex/Iterator.h"
 #include "index/dex/PostingList.h"
 #include "index/dex/Token.h"
 #include "llvm/ADT/StringSet.h"
@@ -36,7 +36,8 @@ class Dex : public SymbolIndex {
 public:
   // All data must outlive this index.
   template <typename SymbolRange, typename RefsRange, typename RelationsRange>
-  Dex(SymbolRange &&Symbols, RefsRange &&Refs, RelationsRange &&Relations)
+  Dex(SymbolRange &&Symbols, RefsRange &&Refs, RelationsRange &&Relations,
+      unsigned Threads = 1)
       : Corpus(0) {
     for (auto &&Sym : Symbols)
       this->Symbols.push_back(&Sym);
@@ -46,15 +47,15 @@ public:
       this->Relations[std::make_pair(Rel.Subject,
                                      static_cast<uint8_t>(Rel.Predicate))]
           .push_back(Rel.Object);
-    buildIndex();
+    buildIndex(Threads);
   }
   // Symbols and Refs are owned by BackingData, Index takes ownership.
   template <typename SymbolRange, typename RefsRange, typename RelationsRange,
             typename Payload>
   Dex(SymbolRange &&Symbols, RefsRange &&Refs, RelationsRange &&Relations,
-      Payload &&BackingData, size_t BackingDataSize)
+      Payload &&BackingData, size_t BackingDataSize, unsigned Threads = 1)
       : Dex(std::forward<SymbolRange>(Symbols), std::forward<RefsRange>(Refs),
-            std::forward<RelationsRange>(Relations)) {
+            std::forward<RelationsRange>(Relations), Threads) {
     KeepAlive = std::shared_ptr<void>(
         std::make_shared<Payload>(std::move(BackingData)), nullptr);
     this->BackingDataSize = BackingDataSize;
@@ -64,16 +65,18 @@ public:
             typename FileRange, typename Payload>
   Dex(SymbolRange &&Symbols, RefsRange &&Refs, RelationsRange &&Relations,
       FileRange &&Files, IndexContents IdxContents, Payload &&BackingData,
-      size_t BackingDataSize)
+      size_t BackingDataSize, unsigned Threads = 1)
       : Dex(std::forward<SymbolRange>(Symbols), std::forward<RefsRange>(Refs),
             std::forward<RelationsRange>(Relations),
-            std::forward<Payload>(BackingData), BackingDataSize) {
+            std::forward<Payload>(BackingData), BackingDataSize, Threads) {
     this->Files = std::forward<FileRange>(Files);
     this->IdxContents = IdxContents;
   }
 
   /// Builds an index from slabs. The index takes ownership of the slab.
   static std::unique_ptr<SymbolIndex> build(SymbolSlab, RefSlab, RelationSlab);
+  static std::unique_ptr<SymbolIndex> build(SymbolSlab, RefSlab, RelationSlab,
+                                            unsigned Threads);
 
   bool
   fuzzyFind(const FuzzyFindRequest &Req,
@@ -95,7 +98,7 @@ public:
   size_t estimateMemoryUsage() const override;
 
 private:
-  void buildIndex();
+  void buildIndex(unsigned Threads);
   std::unique_ptr<Iterator> iterator(const Token &Tok) const;
   std::unique_ptr<Iterator>
   createFileProximityIterator(llvm::ArrayRef<std::string> ProximityPaths) const;

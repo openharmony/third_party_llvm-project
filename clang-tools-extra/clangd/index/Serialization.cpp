@@ -457,8 +457,9 @@ readCompileCommand(Reader CmdReader, llvm::ArrayRef<llvm::StringRef> Strings) {
 // data. Later we may want to support some backward compatibility.
 constexpr static uint32_t Version = 17;
 
-llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data,
-                                     SymbolOrigin Origin) {
+llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
+                                     unsigned Threads) {
+  (void)Threads;
   auto RIFF = riff::readFile(Data);
   if (!RIFF)
     return RIFF.takeError();
@@ -688,10 +689,10 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const IndexFileOut &O) {
   return OS;
 }
 
-llvm::Expected<IndexFileIn> readIndexFile(llvm::StringRef Data,
-                                          SymbolOrigin Origin) {
+llvm::Expected<IndexFileIn>
+readIndexFile(llvm::StringRef Data, SymbolOrigin Origin, unsigned Threads) {
   if (Data.startswith("RIFF")) {
-    return readRIFF(Data, Origin);
+    return readRIFF(Data, Origin, Threads);
   }
   if (auto YAMLContents = readYAML(Data, Origin)) {
     return std::move(*YAMLContents);
@@ -702,8 +703,9 @@ llvm::Expected<IndexFileIn> readIndexFile(llvm::StringRef Data,
 }
 
 std::unique_ptr<SymbolIndex> loadIndex(llvm::StringRef SymbolFilename,
-                                       SymbolOrigin Origin, bool UseDex) {
+                                       IndexLoadOptions Opts) {
   trace::Span OverallTracer("LoadIndex");
+  SPAN_ATTACH(OverallTracer, "threads", static_cast<int>(Opts.Threads));
   auto Buffer = llvm::MemoryBuffer::getFile(SymbolFilename);
   if (!Buffer) {
     elog("Can't open {0}: {1}", SymbolFilename, Buffer.getError().message());
@@ -715,7 +717,8 @@ std::unique_ptr<SymbolIndex> loadIndex(llvm::StringRef SymbolFilename,
   RelationSlab Relations;
   {
     trace::Span Tracer("ParseIndex");
-    if (auto I = readIndexFile(Buffer->get()->getBuffer(), Origin)) {
+    if (auto I = readIndexFile(Buffer->get()->getBuffer(), Opts.Origin,
+                               Opts.Threads)) {
       if (I->Symbols)
         Symbols = std::move(*I->Symbols);
       if (I->Refs)
@@ -733,17 +736,29 @@ std::unique_ptr<SymbolIndex> loadIndex(llvm::StringRef SymbolFilename,
   size_t NumRelations = Relations.size();
 
   trace::Span Tracer("BuildIndex");
-  auto Index = UseDex ? dex::Dex::build(std::move(Symbols), std::move(Refs),
-                                        std::move(Relations))
-                      : MemIndex::build(std::move(Symbols), std::move(Refs),
-                                        std::move(Relations));
+  auto Index = Opts.UseDex
+                   ? dex::Dex::build(std::move(Symbols), std::move(Refs),
+                                     std::move(Relations), Opts.Threads)
+                   : MemIndex::build(std::move(Symbols), std::move(Refs),
+                                     std::move(Relations));
   vlog("Loaded {0} from {1} with estimated memory usage {2} bytes\n"
        "  - number of symbols: {3}\n"
        "  - number of refs: {4}\n"
-       "  - number of relations: {5}",
-       UseDex ? "Dex" : "MemIndex", SymbolFilename,
-       Index->estimateMemoryUsage(), NumSym, NumRefs, NumRelations);
+       "  - number of relations: {5}\n"
+       "  - index load threads: {6}",
+       Opts.UseDex ? "Dex" : "MemIndex", SymbolFilename,
+       Index->estimateMemoryUsage(), NumSym, NumRefs, NumRelations,
+       Opts.Threads);
   return Index;
+}
+
+std::unique_ptr<SymbolIndex> loadIndex(llvm::StringRef SymbolFilename,
+                                       SymbolOrigin Origin, bool UseDex) {
+  IndexLoadOptions Opts;
+  Opts.Origin = Origin;
+  Opts.UseDex = UseDex;
+  Opts.Threads = 1;
+  return loadIndex(SymbolFilename, Opts);
 }
 
 } // namespace clangd
