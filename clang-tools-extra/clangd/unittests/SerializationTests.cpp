@@ -9,6 +9,7 @@
 #include "Headers.h"
 #include "RIFF.h"
 #include "index/Serialization.h"
+#include "index/dex/Dex.h"
 #include "support/Logger.h"
 #include "clang/Tooling/CompilationDatabase.h"
 #include "llvm/ADT/StringExtras.h"
@@ -120,6 +121,32 @@ MATCHER_P2(IncludeHeaderWithRef, IncludeHeader, References, "") {
 
 auto readIndexFile(llvm::StringRef Text) {
   return readIndexFile(Text, SymbolOrigin::Static);
+}
+
+std::vector<std::string> fuzzyFindNames(SymbolIndex &Index,
+                                        llvm::StringRef Query) {
+  FuzzyFindRequest Req;
+  Req.Query = Query.str();
+  Req.AnyScope = true;
+  Req.Limit = 20;
+  std::vector<std::string> Result;
+  Index.fuzzyFind(Req, [&](const Symbol &S) {
+    Result.push_back((S.Scope + S.Name).str());
+  });
+  return Result;
+}
+
+std::vector<std::string> lookupNames(SymbolIndex &Index,
+                                     llvm::ArrayRef<SymbolID> IDs) {
+  LookupRequest Req;
+  for (SymbolID ID : IDs)
+    Req.IDs.insert(ID);
+  std::vector<std::string> Result;
+  Index.lookup(Req, [&](const Symbol &S) {
+    Result.push_back((S.Scope + S.Name).str());
+  });
+  llvm::sort(Result);
+  return Result;
 }
 
 TEST(SerializationTest, NoCrashOnEmptyYAML) {
@@ -285,6 +312,31 @@ TEST(SerializationTest, BinaryConversionsWithThreadedAPI) {
   auto Threaded = readIndexFile(Serialized, SymbolOrigin::Static, 4);
   ASSERT_TRUE(bool(Threaded)) << Threaded.takeError();
   expectSameIndexFile(*Serial, *Threaded);
+}
+
+TEST(SerializationTest, DexBuildThreadedMatchesSerial) {
+  auto In = readIndexFile(YAML);
+  ASSERT_TRUE(bool(In)) << In.takeError();
+  ASSERT_TRUE(In->Symbols);
+  ASSERT_TRUE(In->Refs);
+  ASSERT_TRUE(In->Relations);
+
+  SymbolSlab Symbols1 = std::move(*In->Symbols);
+  RefSlab Refs1 = std::move(*In->Refs);
+  RelationSlab Relations1 = std::move(*In->Relations);
+
+  auto InAgain = readIndexFile(YAML);
+  ASSERT_TRUE(bool(InAgain)) << InAgain.takeError();
+  auto Serial = dex::Dex::build(std::move(Symbols1), std::move(Refs1),
+                                std::move(Relations1), 1);
+  auto Threaded =
+      dex::Dex::build(std::move(*InAgain->Symbols), std::move(*InAgain->Refs),
+                      std::move(*InAgain->Relations), 4);
+
+  EXPECT_EQ(fuzzyFindNames(*Threaded, "Foo"), fuzzyFindNames(*Serial, "Foo"));
+  std::vector<SymbolID> IDs = {cantFail(SymbolID::fromStr("057557CEBF6E6B2D")),
+                               cantFail(SymbolID::fromStr("057557CEBF6E6B2E"))};
+  EXPECT_EQ(lookupNames(*Threaded, IDs), lookupNames(*Serial, IDs));
 }
 
 TEST(SerializationTest, ThreadedReadPreservesDuplicateSourceFileOrder) {

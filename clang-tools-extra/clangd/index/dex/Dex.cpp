@@ -22,7 +22,9 @@
 #include "llvm/ADT/StringSet.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/ScopedPrinter.h"
+#include "llvm/Support/ThreadPool.h"
 #include <algorithm>
+#include <future>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -85,6 +87,27 @@ public:
       TypeDocs[Sym.Type].push_back(D);
   }
 
+  void merge(IndexBuilder &&Other) {
+    auto AppendStringMap = [](llvm::StringMap<std::vector<DocID>> &Target,
+                              llvm::StringMap<std::vector<DocID>> &Source) {
+      for (auto &Entry : Source) {
+        auto &Docs = Target[Entry.first()];
+        Docs.insert(Docs.end(), Entry.second.begin(), Entry.second.end());
+      }
+    };
+    AppendStringMap(TypeDocs, Other.TypeDocs);
+    AppendStringMap(ScopeDocs, Other.ScopeDocs);
+    AppendStringMap(ProximityDocs, Other.ProximityDocs);
+
+    for (auto &Entry : Other.TrigramDocs) {
+      auto &Docs = TrigramDocs[Entry.first];
+      Docs.insert(Docs.end(), Entry.second.begin(), Entry.second.end());
+    }
+    RestrictedCCDocs.insert(RestrictedCCDocs.end(),
+                            Other.RestrictedCCDocs.begin(),
+                            Other.RestrictedCCDocs.end());
+  }
+
   // Assemble the final compressed posting lists for the added symbols.
   llvm::DenseMap<Token, PostingList> build() && {
     llvm::DenseMap<Token, PostingList> Result(/*InitialReserve=*/
@@ -122,17 +145,49 @@ public:
   }
 };
 
+std::vector<std::pair<size_t, size_t>> splitIndexRange(size_t Size,
+                                                       unsigned Threads) {
+  std::vector<std::pair<size_t, size_t>> Result;
+  if (Size == 0 || Threads == 0)
+    return Result;
+  unsigned TaskCount = std::min<unsigned>(Threads, Size);
+  Result.reserve(TaskCount);
+  size_t PerTask = Size / TaskCount;
+  size_t Extra = Size % TaskCount;
+  size_t Begin = 0;
+  for (unsigned I = 0; I < TaskCount; ++I) {
+    size_t Count = PerTask + (I < Extra ? 1 : 0);
+    Result.emplace_back(Begin, Begin + Count);
+    Begin += Count;
+  }
+  return Result;
+}
+
 } // namespace
 
 void Dex::buildIndex(unsigned Threads) {
-  (void)Threads;
   this->Corpus = dex::Corpus(Symbols.size());
   std::vector<std::pair<float, const Symbol *>> ScoredSymbols(Symbols.size());
 
-  for (size_t I = 0; I < Symbols.size(); ++I) {
-    const Symbol *Sym = Symbols[I];
-    LookupTable[Sym->ID] = Sym;
-    ScoredSymbols[I] = {quality(*Sym), Sym};
+  if (Threads <= 1 || Symbols.size() < 2) {
+    for (size_t I = 0; I < Symbols.size(); ++I) {
+      const Symbol *Sym = Symbols[I];
+      ScoredSymbols[I] = {quality(*Sym), Sym};
+    }
+  } else {
+    llvm::ThreadPool Pool(llvm::hardware_concurrency(Threads));
+    std::vector<std::shared_future<void>> Futures;
+    for (auto Range : splitIndexRange(Symbols.size(), Threads)) {
+      Futures.push_back(Pool.async([&, Range] {
+        for (size_t I = Range.first; I < Range.second; ++I) {
+          const Symbol *Sym = Symbols[I];
+          ScoredSymbols[I] = {quality(*Sym), Sym};
+        }
+      }));
+    }
+    Pool.wait();
+    for (auto &Future : Futures)
+      Future.get();
   }
 
   // Symbols are sorted by symbol qualities so that items in the posting lists
@@ -141,16 +196,41 @@ void Dex::buildIndex(unsigned Threads) {
 
   // SymbolQuality was empty up until now.
   SymbolQuality.resize(Symbols.size());
+  LookupTable.clear();
   // Populate internal storage using Symbol + Score pairs.
   for (size_t I = 0; I < ScoredSymbols.size(); ++I) {
     SymbolQuality[I] = ScoredSymbols[I].first;
     Symbols[I] = ScoredSymbols[I].second;
+    LookupTable[Symbols[I]->ID] = Symbols[I];
   }
 
-  // Build posting lists for symbols.
+  if (Threads <= 1 || Symbols.size() < 2) {
+    IndexBuilder Builder;
+    for (DocID SymbolRank = 0; SymbolRank < Symbols.size(); ++SymbolRank)
+      Builder.add(*Symbols[SymbolRank], SymbolRank);
+    InvertedIndex = std::move(Builder).build();
+    return;
+  }
+
+  std::vector<IndexBuilder> Builders;
+  auto Ranges = splitIndexRange(Symbols.size(), Threads);
+  Builders.resize(Ranges.size());
+  llvm::ThreadPool Pool(llvm::hardware_concurrency(Threads));
+  std::vector<std::shared_future<void>> Futures;
+  for (size_t Task = 0; Task < Ranges.size(); ++Task) {
+    Futures.push_back(Pool.async([&, Task] {
+      for (DocID SymbolRank = Ranges[Task].first;
+           SymbolRank < Ranges[Task].second; ++SymbolRank)
+        Builders[Task].add(*Symbols[SymbolRank], SymbolRank);
+    }));
+  }
+  Pool.wait();
+  for (auto &Future : Futures)
+    Future.get();
+
   IndexBuilder Builder;
-  for (DocID SymbolRank = 0; SymbolRank < Symbols.size(); ++SymbolRank)
-    Builder.add(*Symbols[SymbolRank], SymbolRank);
+  for (IndexBuilder &Partial : Builders)
+    Builder.merge(std::move(Partial));
   InvertedIndex = std::move(Builder).build();
 }
 
