@@ -439,6 +439,48 @@ TEST(SerializationTest, NoCrashOnBadArraySize) {
             "malformed or truncated include uri");
 }
 
+std::string corruptChunkPayload(llvm::StringRef Serialized,
+                                llvm::StringRef ChunkName,
+                                llvm::StringRef Payload) {
+  auto Parsed = riff::readFile(Serialized);
+  EXPECT_FALSE(!Parsed) << Parsed.takeError();
+  auto Chunk = llvm::find_if(Parsed->Chunks, [&](riff::Chunk C) {
+    return C.ID == riff::fourCC(ChunkName);
+  });
+  EXPECT_NE(Chunk, Parsed->Chunks.end());
+  Chunk->Data = Payload;
+  return llvm::to_string(*Parsed);
+}
+
+TEST(SerializationTest, ThreadedReadReportsMalformedSymbol) {
+  auto In = readIndexFile(YAML);
+  ASSERT_FALSE(!In) << In.takeError();
+  IndexFileOut Out(*In);
+  Out.Format = IndexFileFormat::RIFF;
+  std::string Serialized = llvm::to_string(Out);
+
+  std::string Corrupt =
+      corruptChunkPayload(Serialized, "symb", llvm::StringRef("\x01\x02", 2));
+  auto Parsed = readIndexFile(Corrupt, SymbolOrigin::Static, 4);
+  ASSERT_TRUE(!Parsed);
+  EXPECT_EQ(llvm::toString(Parsed.takeError()),
+            "malformed or truncated symbol");
+}
+
+TEST(SerializationTest, ThreadedReadReportsMalformedRefs) {
+  auto In = readIndexFile(YAML);
+  ASSERT_FALSE(!In) << In.takeError();
+  IndexFileOut Out(*In);
+  Out.Format = IndexFileFormat::RIFF;
+  std::string Serialized = llvm::to_string(Out);
+
+  std::string Corrupt =
+      corruptChunkPayload(Serialized, "refs", llvm::StringRef("\x01\x02", 2));
+  auto Parsed = readIndexFile(Corrupt, SymbolOrigin::Static, 4);
+  ASSERT_TRUE(!Parsed);
+  EXPECT_EQ(llvm::toString(Parsed.takeError()), "malformed or truncated refs");
+}
+
 // Check we detect invalid string table size size without allocating it first.
 // If this detection fails, the test should allocate a huge array and crash.
 TEST(SerializationTest, NoCrashOnBadStringTableSize) {

@@ -40,11 +40,14 @@ namespace {
 
 // Reads binary data from a StringRef, and keeps track of position.
 class Reader {
-  const char *Begin, *End;
+  const char *Start, *Begin, *End;
   bool Err = false;
 
 public:
-  Reader(llvm::StringRef Data) : Begin(Data.begin()), End(Data.end()) {}
+  Reader(llvm::StringRef Data)
+      : Start(Data.begin()), Begin(Data.begin()), End(Data.end()) {}
+  void fail() { Err = true; }
+  size_t offset() const { return Begin - Start; }
   // The "error" bit is set by reading past EOF or reading invalid data.
   // When in an error state, reads may return zero values: callers should check.
   bool err() const { return Err; }
@@ -443,6 +446,120 @@ readCompileCommand(Reader CmdReader, llvm::ArrayRef<llvm::StringRef> Strings) {
   return Cmd;
 }
 
+struct RecordRange {
+  size_t Begin = 0;
+  size_t End = 0;
+  size_t Ordinal = 0;
+};
+
+constexpr size_t SerializedDigestSize = FileDigest{}.size();
+
+bool consumeElementCount(Reader &Data, uint32_t &Count) {
+  Count = Data.consumeVar();
+  if (Count > static_cast<uint32_t>(Data.rest().size())) {
+    Data.fail();
+    return false;
+  }
+  return !Data.err();
+}
+
+void skipLocation(Reader &Data, llvm::ArrayRef<llvm::StringRef> Strings) {
+  Data.consumeString(Strings);
+  Data.consumeVar();
+  Data.consumeVar();
+  Data.consumeVar();
+  Data.consumeVar();
+}
+
+void skipIncludeGraphNode(Reader &Data,
+                          llvm::ArrayRef<llvm::StringRef> Strings) {
+  Data.consume8();
+  Data.consumeString(Strings);
+  Data.consume(SerializedDigestSize);
+  uint32_t Includes = 0;
+  if (!consumeElementCount(Data, Includes))
+    return;
+  for (uint32_t I = 0; I < Includes; ++I)
+    Data.consumeString(Strings);
+}
+
+void skipSymbol(Reader &Data, llvm::ArrayRef<llvm::StringRef> Strings) {
+  Data.consumeID();
+  Data.consume8();
+  Data.consume8();
+  Data.consumeString(Strings);
+  Data.consumeString(Strings);
+  Data.consumeString(Strings);
+  skipLocation(Data, Strings);
+  skipLocation(Data, Strings);
+  Data.consumeVar();
+  Data.consume8();
+  Data.consumeString(Strings);
+  Data.consumeString(Strings);
+  Data.consumeString(Strings);
+  Data.consumeString(Strings);
+  Data.consumeString(Strings);
+  uint32_t Includes = 0;
+  if (!consumeElementCount(Data, Includes))
+    return;
+  for (uint32_t I = 0; I < Includes; ++I) {
+    Data.consumeString(Strings);
+    Data.consumeVar();
+  }
+}
+
+void skipRefs(Reader &Data, llvm::ArrayRef<llvm::StringRef> Strings) {
+  Data.consumeID();
+  uint32_t Refs = 0;
+  if (!consumeElementCount(Data, Refs))
+    return;
+  for (uint32_t I = 0; I < Refs; ++I) {
+    Data.consume8();
+    skipLocation(Data, Strings);
+    Data.consumeID();
+  }
+}
+
+void skipRelationRecord(Reader &Data) {
+  Data.consumeID();
+  Data.consume8();
+  Data.consumeID();
+}
+
+template <typename Skip>
+llvm::Expected<std::vector<RecordRange>>
+scanRecords(llvm::StringRef Data, llvm::ArrayRef<llvm::StringRef> Strings,
+            Skip SkipRecord, llvm::StringRef ErrorMessage) {
+  Reader R(Data);
+  std::vector<RecordRange> Result;
+  size_t Ordinal = 0;
+  while (!R.eof()) {
+    size_t Begin = R.offset();
+    SkipRecord(R, Strings);
+    size_t End = R.offset();
+    if (R.err() || End <= Begin)
+      return error("{0}", ErrorMessage);
+    Result.push_back({Begin, End, Ordinal++});
+  }
+  return std::move(Result);
+}
+
+llvm::Expected<std::vector<RecordRange>>
+scanRelationRecords(llvm::StringRef Data, llvm::StringRef ErrorMessage) {
+  Reader R(Data);
+  std::vector<RecordRange> Result;
+  size_t Ordinal = 0;
+  while (!R.eof()) {
+    size_t Begin = R.offset();
+    skipRelationRecord(R);
+    size_t End = R.offset();
+    if (R.err() || End <= Begin)
+      return error("{0}", ErrorMessage);
+    Result.push_back({Begin, End, Ordinal++});
+  }
+  return std::move(Result);
+}
+
 // FILE ENCODING
 // A file is a RIFF chunk with type 'CdIx'.
 // It contains the sections:
@@ -459,7 +576,6 @@ constexpr static uint32_t Version = 17;
 
 llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
                                      unsigned Threads) {
-  (void)Threads;
   auto RIFF = riff::readFile(Data);
   if (!RIFF)
     return RIFF.takeError();
@@ -488,6 +604,16 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
 
   IndexFileIn Result;
   if (Chunks.count("srcs")) {
+    if (Threads > 1) {
+      auto SourceRanges = scanRecords(
+          Chunks.lookup("srcs"), Strings->Strings,
+          [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) {
+            skipIncludeGraphNode(R, S);
+          },
+          "malformed or truncated include uri");
+      if (!SourceRanges)
+        return SourceRanges.takeError();
+    }
     Reader SrcsReader(Chunks.lookup("srcs"));
     Result.Sources.emplace();
     while (!SrcsReader.eof()) {
@@ -505,6 +631,14 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
   }
 
   if (Chunks.count("symb")) {
+    if (Threads > 1) {
+      auto SymbolRanges = scanRecords(
+          Chunks.lookup("symb"), Strings->Strings,
+          [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) { skipSymbol(R, S); },
+          "malformed or truncated symbol");
+      if (!SymbolRanges)
+        return SymbolRanges.takeError();
+    }
     Reader SymbolReader(Chunks.lookup("symb"));
     SymbolSlab::Builder Symbols;
     while (!SymbolReader.eof())
@@ -514,6 +648,14 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
     Result.Symbols = std::move(Symbols).build();
   }
   if (Chunks.count("refs")) {
+    if (Threads > 1) {
+      auto RefRanges = scanRecords(
+          Chunks.lookup("refs"), Strings->Strings,
+          [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) { skipRefs(R, S); },
+          "malformed or truncated refs");
+      if (!RefRanges)
+        return RefRanges.takeError();
+    }
     Reader RefsReader(Chunks.lookup("refs"));
     RefSlab::Builder Refs;
     while (!RefsReader.eof()) {
@@ -526,6 +668,13 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
     Result.Refs = std::move(Refs).build();
   }
   if (Chunks.count("rela")) {
+    if (Threads > 1) {
+      auto RelationRanges =
+          scanRelationRecords(Chunks.lookup("rela"),
+                              "malformed or truncated relations");
+      if (!RelationRanges)
+        return RelationRanges.takeError();
+    }
     Reader RelationsReader(Chunks.lookup("rela"));
     RelationSlab::Builder Relations;
     while (!RelationsReader.eof())
