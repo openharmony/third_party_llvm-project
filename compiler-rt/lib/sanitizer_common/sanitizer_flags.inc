@@ -281,6 +281,6 @@ COMMON_FLAG(bool, run_on_tw, false,
             "If true, no abort.")
 COMMON_FLAG(bool, verbose_format_important_flags, false,
             "Prints the important options of hwasan.")
-COMMON_FLAG(bool, unwind_arkts_on_malloc, false,
+COMMON_FLAG(bool, unwind_arkts_on_malloc, true,
             "Enable Hwasan Unwind ArkTs function on malloc.")
 // OHOS_LOCAL end

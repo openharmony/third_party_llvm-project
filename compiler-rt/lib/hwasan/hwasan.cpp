@@ -282,8 +282,12 @@ void HandleTagMismatch(AccessInfo ai, uptr pc, uptr frame, void *uc,
                        uptr *registers_frame) {
   InternalMmapVector<BufferedStackTrace> stack_buffer(1);
   BufferedStackTrace *stack = stack_buffer.data();
+  bool whether_unwind_fast = common_flags()->fast_unwind_on_fatal;
+#if SANITIZER_OHOS
+  whether_unwind_fast = whether_unwind_fast || flags()->enable_unwind_arkts;
+#endif
   stack->Reset();
-  stack->Unwind(pc, frame, uc, common_flags()->fast_unwind_on_fatal);
+  stack->Unwind(pc, frame, uc, whether_unwind_fast);
 
   // The second stack frame contains the failure __hwasan_check function, as
   // we have a stack frame for the registers saved in __hwasan_tag_mismatch that
