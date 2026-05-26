@@ -12,8 +12,10 @@
 #include "index/dex/Dex.h"
 #include "support/Logger.h"
 #include "clang/Tooling/CompilationDatabase.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Compression.h"
+#include "llvm/Support/Endian.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/ScopedPrinter.h"
 #include "gmock/gmock.h"
@@ -314,6 +316,27 @@ TEST(SerializationTest, BinaryConversionsWithThreadedAPI) {
   expectSameIndexFile(*Serial, *Threaded);
 }
 
+TEST(SerializationTest, BinaryConversionsWritesRecordOffsets) {
+  auto In = readIndexFile(YAML);
+  ASSERT_TRUE(bool(In)) << In.takeError();
+
+  IndexFileOut Out(*In);
+  Out.Format = IndexFileFormat::RIFF;
+  std::string Serialized = llvm::to_string(Out);
+
+  auto ParsedFile = riff::readFile(Serialized);
+  ASSERT_TRUE(bool(ParsedFile)) << ParsedFile.takeError();
+  auto HasChunk = [&](llvm::StringRef ID) {
+    return llvm::any_of(ParsedFile->Chunks, [&](const riff::Chunk &C) {
+      return llvm::StringRef(C.ID.data(), C.ID.size()) == ID;
+    });
+  };
+  EXPECT_TRUE(HasChunk("syof"));
+  EXPECT_TRUE(HasChunk("rfof"));
+  EXPECT_TRUE(HasChunk("rlof"));
+  EXPECT_TRUE(HasChunk("scof"));
+}
+
 TEST(SerializationTest, DexBuildThreadedMatchesSerial) {
   auto In = readIndexFile(YAML);
   ASSERT_TRUE(bool(In)) << In.takeError();
@@ -360,6 +383,20 @@ TEST(SerializationTest, ThreadedReadPreservesDuplicateSourceFileOrder) {
   SecondRecord[0] = static_cast<char>(IncludeGraphNode::SourceFlag::HadErrors);
   std::string CombinedRecords = FirstRecord + SecondRecord;
   Srcs->Data = CombinedRecords;
+  auto SrcOffsets = llvm::find_if(ParsedFile->Chunks, [](const riff::Chunk &C) {
+    return C.ID == riff::fourCC("scof");
+  });
+  ASSERT_NE(SrcOffsets, ParsedFile->Chunks.end());
+  std::string OffsetData;
+  {
+    llvm::raw_string_ostream OS(OffsetData);
+    char Buf[8];
+    llvm::support::endian::write64le(Buf, 0);
+    OS.write(Buf, sizeof(Buf));
+    llvm::support::endian::write64le(Buf, FirstRecord.size());
+    OS.write(Buf, sizeof(Buf));
+  }
+  SrcOffsets->Data = OffsetData;
   std::string DuplicateSources = llvm::to_string(*ParsedFile);
 
   auto Parsed = readIndexFile(DuplicateSources, SymbolOrigin::Static, 4);

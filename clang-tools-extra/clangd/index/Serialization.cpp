@@ -16,6 +16,7 @@
 #include "support/Logger.h"
 #include "support/Trace.h"
 #include "clang/Tooling/CompilationDatabase.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/Compression.h"
@@ -79,6 +80,16 @@ public:
     return Ret;
   }
 
+  uint64_t consume64() {
+    if (LLVM_UNLIKELY(Begin + 8 > End)) {
+      Err = true;
+      return 0;
+    }
+    auto Ret = llvm::support::endian::read64le(Begin);
+    Begin += 8;
+    return Ret;
+  }
+
   llvm::StringRef consume(int N) {
     if (LLVM_UNLIKELY(Begin + N > End)) {
       Err = true;
@@ -139,6 +150,12 @@ public:
 void write32(uint32_t I, llvm::raw_ostream &OS) {
   char Buf[4];
   llvm::support::endian::write32le(Buf, I);
+  OS.write(Buf, sizeof(Buf));
+}
+
+void write64(uint64_t I, llvm::raw_ostream &OS) {
+  char Buf[8];
+  llvm::support::endian::write64le(Buf, I);
   OS.write(Buf, sizeof(Buf));
 }
 
@@ -219,20 +236,29 @@ public:
 
 struct StringTableIn {
   llvm::BumpPtrAllocator Arena;
+  std::shared_ptr<llvm::SmallVector<uint8_t, 0>> Storage;
   std::vector<llvm::StringRef> Strings;
 };
 
-llvm::Expected<StringTableIn> readStringTable(llvm::StringRef Data) {
+llvm::Expected<StringTableIn> readStringTable(llvm::StringRef Data,
+                                              bool BorrowStrings) {
   Reader R(Data);
   size_t UncompressedSize = R.consume32();
   if (R.err())
     return error("Truncated string table");
 
+  StringTableIn Table;
   llvm::StringRef Uncompressed;
   llvm::SmallVector<uint8_t, 0> UncompressedStorage;
-  if (UncompressedSize == 0) // No compression
-    Uncompressed = R.rest();
-  else if (llvm::compression::zlib::isAvailable()) {
+  auto UncompressInto =
+      [&](llvm::SmallVectorImpl<uint8_t> &Storage) -> llvm::Error {
+    if (UncompressedSize == 0) {
+      llvm::StringRef Rest = R.rest();
+      Storage.assign(Rest.bytes_begin(), Rest.bytes_end());
+      return llvm::Error::success();
+    }
+    if (!llvm::compression::zlib::isAvailable())
+      return error("Compressed string table, but zlib is unavailable");
     // Don't allocate a massive buffer if UncompressedSize was corrupted
     // This is effective for sharded index, but not big monolithic ones, as
     // once compressed size reaches 4MB nothing can be ruled out.
@@ -241,28 +267,42 @@ llvm::Expected<StringTableIn> readStringTable(llvm::StringRef Data) {
     if (UncompressedSize / MaxCompressionRatio > R.rest().size())
       return error("Bad stri table: uncompress {0} -> {1} bytes is implausible",
                    R.rest().size(), UncompressedSize);
+    return llvm::compression::zlib::uncompress(
+        llvm::arrayRefFromStringRef(R.rest()), Storage, UncompressedSize);
+  };
 
-    if (llvm::Error E = llvm::compression::zlib::uncompress(
-            llvm::arrayRefFromStringRef(R.rest()), UncompressedStorage,
-            UncompressedSize))
+  if (BorrowStrings) {
+    Table.Storage = std::make_shared<llvm::SmallVector<uint8_t, 0>>();
+    if (llvm::Error E = UncompressInto(*Table.Storage))
+      return std::move(E);
+    Uncompressed = toStringRef(*Table.Storage);
+  } else if (UncompressedSize == 0) {
+    Uncompressed = R.rest();
+  } else {
+    if (llvm::Error E = UncompressInto(UncompressedStorage))
       return std::move(E);
     Uncompressed = toStringRef(UncompressedStorage);
-  } else
-    return error("Compressed string table, but zlib is unavailable");
+  }
 
-  StringTableIn Table;
   llvm::StringSaver Saver(Table.Arena);
-  R = Reader(Uncompressed);
-  for (Reader R(Uncompressed); !R.eof();) {
-    auto Len = R.rest().find(0);
+  Reader StringsReader(Uncompressed);
+  while (!StringsReader.eof()) {
+    auto Len = StringsReader.rest().find(0);
     if (Len == llvm::StringRef::npos)
       return error("Bad string table: not null terminated");
-    Table.Strings.push_back(Saver.save(R.consume(Len)));
-    R.consume8();
+    llvm::StringRef S = StringsReader.consume(Len);
+    Table.Strings.push_back(BorrowStrings ? S : Saver.save(S));
+    StringsReader.consume8();
   }
-  if (R.err())
+  if (StringsReader.err())
     return error("Truncated string table");
   return std::move(Table);
+}
+
+size_t estimateStringTableMemory(const StringTableIn &Table) {
+  return Table.Arena.getTotalMemory() +
+         (Table.Storage ? Table.Storage->capacity() : 0) +
+         Table.Strings.capacity() * sizeof(llvm::StringRef);
 }
 
 // SYMBOL ENCODING
@@ -467,10 +507,7 @@ struct SourceRecord {
   IncludeGraphNode Value;
 };
 
-struct RefRecord {
-  SymbolID ID;
-  std::vector<Ref> Refs;
-};
+using RefRecord = RefSlab::RefBundle;
 
 struct ChunkRange {
   size_t BeginRecord = 0;
@@ -603,6 +640,67 @@ scanRelationRecords(llvm::StringRef Data, llvm::StringRef ErrorMessage) {
   return std::move(Result);
 }
 
+std::string encodeRecordOffsets(llvm::ArrayRef<size_t> Offsets) {
+  std::string Result;
+  llvm::raw_string_ostream OS(Result);
+  for (size_t Offset : Offsets)
+    write64(Offset, OS);
+  return Result;
+}
+
+llvm::Expected<std::vector<RecordRange>>
+rangesFromRecordOffsets(llvm::StringRef Data, llvm::StringRef OffsetData,
+                        llvm::StringRef ErrorMessage) {
+  if (OffsetData.size() % sizeof(uint64_t) != 0)
+    return error("{0}", ErrorMessage);
+
+  Reader R(OffsetData);
+  std::vector<RecordRange> Result;
+  size_t Ordinal = 0;
+  while (!R.eof()) {
+    uint64_t Offset = R.consume64();
+    if (R.err() || Offset > Data.size())
+      return error("{0}", ErrorMessage);
+    if (Result.empty()) {
+      if (Offset != 0)
+        return error("{0}", ErrorMessage);
+    } else {
+      if (Offset <= Result.back().Begin)
+        return error("{0}", ErrorMessage);
+      Result.back().End = Offset;
+    }
+    Result.push_back({static_cast<size_t>(Offset), Data.size(), Ordinal++});
+  }
+  if (!Data.empty() && Result.empty())
+    return error("{0}", ErrorMessage);
+  for (const RecordRange &Range : Result)
+    if (Range.Begin >= Range.End)
+      return error("{0}", ErrorMessage);
+  return std::move(Result);
+}
+
+template <typename Skip>
+llvm::Expected<std::vector<RecordRange>>
+getRecordRanges(const llvm::StringMap<llvm::StringRef> &Chunks,
+                llvm::StringRef DataChunk, llvm::StringRef OffsetChunk,
+                Skip SkipRecord, llvm::StringRef ErrorMessage,
+                llvm::ArrayRef<llvm::StringRef> Strings) {
+  llvm::StringRef Data = Chunks.lookup(DataChunk);
+  if (Chunks.count(OffsetChunk))
+    return rangesFromRecordOffsets(Data, Chunks.lookup(OffsetChunk),
+                                   ErrorMessage);
+  return scanRecords(Data, Strings, SkipRecord, ErrorMessage);
+}
+
+llvm::Expected<std::vector<RecordRange>>
+getRelationRecordRanges(const llvm::StringMap<llvm::StringRef> &Chunks,
+                        llvm::StringRef ErrorMessage) {
+  llvm::StringRef Data = Chunks.lookup("rela");
+  if (Chunks.count("rlof"))
+    return rangesFromRecordOffsets(Data, Chunks.lookup("rlof"), ErrorMessage);
+  return scanRelationRecords(Data, ErrorMessage);
+}
+
 llvm::Expected<std::vector<SymbolRecord>>
 parseSymbolRanges(llvm::StringRef Data, llvm::ArrayRef<RecordRange> Ranges,
                   llvm::ArrayRef<llvm::StringRef> Strings,
@@ -644,7 +742,7 @@ parseRefRanges(llvm::StringRef Data, llvm::ArrayRef<RecordRange> Ranges,
     auto RefsBundle = readRefs(R, Strings);
     if (R.err() || !R.eof())
       return error("malformed or truncated refs");
-    Result.push_back({RefsBundle.first, std::move(RefsBundle.second)});
+    Result.push_back(std::move(RefsBundle));
   }
   return std::move(Result);
 }
@@ -822,9 +920,10 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
     if (!Chunks.count(RequiredChunk))
       return error("missing required chunk {0}", RequiredChunk);
 
-  auto Strings = readStringTable(Chunks.lookup("stri"));
-  if (!Strings)
-    return Strings.takeError();
+  auto StringsOr = readStringTable(Chunks.lookup("stri"), Threads > 1);
+  if (!StringsOr)
+    return StringsOr.takeError();
+  auto Strings = std::make_shared<StringTableIn>(std::move(*StringsOr));
 
   if (Threads <= 1)
     return readRIFFSectionsSerial(Chunks, Strings->Strings, Origin);
@@ -836,40 +935,40 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
   llvm::Optional<std::vector<RecordRange>> RelationRanges;
 
   if (Chunks.count("srcs")) {
-    auto ScannedSourceRanges = scanRecords(
-        Chunks.lookup("srcs"), Strings->Strings,
+    auto ScannedSourceRanges = getRecordRanges(
+        Chunks, "srcs", "scof",
         [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) {
           skipIncludeGraphNode(R, S);
         },
-        "malformed or truncated include uri");
+        "malformed or truncated include uri", Strings->Strings);
     if (!ScannedSourceRanges)
       return ScannedSourceRanges.takeError();
     SourceRanges = std::move(*ScannedSourceRanges);
   }
 
   if (Chunks.count("symb")) {
-    auto ScannedSymbolRanges = scanRecords(
-        Chunks.lookup("symb"), Strings->Strings,
+    auto ScannedSymbolRanges = getRecordRanges(
+        Chunks, "symb", "syof",
         [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) { skipSymbol(R, S); },
-        "malformed or truncated symbol");
+        "malformed or truncated symbol", Strings->Strings);
     if (!ScannedSymbolRanges)
       return ScannedSymbolRanges.takeError();
     SymbolRanges = std::move(*ScannedSymbolRanges);
   }
 
   if (Chunks.count("refs")) {
-    auto ScannedRefRanges = scanRecords(
-        Chunks.lookup("refs"), Strings->Strings,
+    auto ScannedRefRanges = getRecordRanges(
+        Chunks, "refs", "rfof",
         [](Reader &R, llvm::ArrayRef<llvm::StringRef> S) { skipRefs(R, S); },
-        "malformed or truncated refs");
+        "malformed or truncated refs", Strings->Strings);
     if (!ScannedRefRanges)
       return ScannedRefRanges.takeError();
     RefRanges = std::move(*ScannedRefRanges);
   }
 
   if (Chunks.count("rela")) {
-    auto ScannedRelationRanges = scanRelationRecords(
-        Chunks.lookup("rela"), "malformed or truncated relations");
+    auto ScannedRelationRanges =
+        getRelationRecordRanges(Chunks, "malformed or truncated relations");
     if (!ScannedRelationRanges)
       return ScannedRelationRanges.takeError();
     RelationRanges = std::move(*ScannedRelationRanges);
@@ -913,10 +1012,6 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
         SourceRanges->size());
     if (!ParsedSources)
       return ParsedSources.takeError();
-    llvm::sort(*ParsedSources,
-               [](const SourceRecord &L, const SourceRecord &R) {
-                 return L.Ordinal < R.Ordinal;
-               });
     Result.Sources.emplace();
     for (SourceRecord &Record : *ParsedSources) {
       IncludeGraphNode IGN = std::move(Record.Value);
@@ -933,14 +1028,12 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
         SymbolFutures, "malformed or truncated symbol", SymbolRanges->size());
     if (!ParsedSymbols)
       return ParsedSymbols.takeError();
-    llvm::sort(*ParsedSymbols,
-               [](const SymbolRecord &L, const SymbolRecord &R) {
-                 return L.Ordinal < R.Ordinal;
-               });
-    SymbolSlab::Builder Symbols;
-    for (const SymbolRecord &Record : *ParsedSymbols)
-      Symbols.insert(Record.Value);
-    Result.Symbols = std::move(Symbols).build();
+    std::vector<Symbol> Symbols;
+    Symbols.reserve(ParsedSymbols->size());
+    for (SymbolRecord &Record : *ParsedSymbols)
+      Symbols.push_back(std::move(Record.Value));
+    Result.Symbols = SymbolSlab::createFromSorted(
+        std::move(Symbols), Strings, estimateStringTableMemory(*Strings));
   }
 
   if (RefRanges) {
@@ -948,11 +1041,7 @@ llvm::Expected<IndexFileIn> readRIFF(llvm::StringRef Data, SymbolOrigin Origin,
         RefFutures, "malformed or truncated refs", RefRanges->size());
     if (!ParsedRefs)
       return ParsedRefs.takeError();
-    RefSlab::Builder Refs;
-    for (const RefRecord &Record : *ParsedRefs)
-      for (const Ref &R : Record.Refs)
-        Refs.insert(Record.ID, R);
-    Result.Refs = std::move(Refs).build();
+    Result.Refs = RefSlab::createFromSorted(std::move(*ParsedRefs), Strings);
   }
 
   if (RelationRanges) {
@@ -1056,41 +1145,73 @@ void writeRIFF(const IndexFileOut &Data, llvm::raw_ostream &OS) {
   RIFF.Chunks.push_back({riff::fourCC("stri"), StringSection});
 
   std::string SymbolSection;
+  std::string SymbolOffsetSection;
   {
     llvm::raw_string_ostream SymbolOS(SymbolSection);
-    for (const auto &Sym : Symbols)
+    std::vector<size_t> Offsets;
+    Offsets.reserve(Symbols.size());
+    for (const auto &Sym : Symbols) {
+      Offsets.push_back(static_cast<size_t>(SymbolOS.tell()));
       writeSymbol(Sym, Strings, SymbolOS);
+    }
+    SymbolOffsetSection = encodeRecordOffsets(Offsets);
   }
   RIFF.Chunks.push_back({riff::fourCC("symb"), SymbolSection});
+  if (!SymbolOffsetSection.empty())
+    RIFF.Chunks.push_back({riff::fourCC("syof"), SymbolOffsetSection});
 
   std::string RefsSection;
+  std::string RefOffsetSection;
   if (Data.Refs) {
     {
       llvm::raw_string_ostream RefsOS(RefsSection);
-      for (const auto &Sym : Refs)
+      std::vector<size_t> Offsets;
+      Offsets.reserve(Refs.size());
+      for (const auto &Sym : Refs) {
+        Offsets.push_back(static_cast<size_t>(RefsOS.tell()));
         writeRefs(Sym.first, Sym.second, Strings, RefsOS);
+      }
+      RefOffsetSection = encodeRecordOffsets(Offsets);
     }
     RIFF.Chunks.push_back({riff::fourCC("refs"), RefsSection});
+    if (!RefOffsetSection.empty())
+      RIFF.Chunks.push_back({riff::fourCC("rfof"), RefOffsetSection});
   }
 
   std::string RelationSection;
+  std::string RelationOffsetSection;
   if (Data.Relations) {
     {
       llvm::raw_string_ostream RelationOS{RelationSection};
-      for (const auto &Relation : Relations)
+      std::vector<size_t> Offsets;
+      Offsets.reserve(Relations.size());
+      for (const auto &Relation : Relations) {
+        Offsets.push_back(static_cast<size_t>(RelationOS.tell()));
         writeRelation(Relation, RelationOS);
+      }
+      RelationOffsetSection = encodeRecordOffsets(Offsets);
     }
     RIFF.Chunks.push_back({riff::fourCC("rela"), RelationSection});
+    if (!RelationOffsetSection.empty())
+      RIFF.Chunks.push_back({riff::fourCC("rlof"), RelationOffsetSection});
   }
 
   std::string SrcsSection;
+  std::string SourceOffsetSection;
   {
     {
       llvm::raw_string_ostream SrcsOS(SrcsSection);
-      for (const auto &SF : Sources)
+      std::vector<size_t> Offsets;
+      Offsets.reserve(Sources.size());
+      for (const auto &SF : Sources) {
+        Offsets.push_back(static_cast<size_t>(SrcsOS.tell()));
         writeIncludeGraphNode(SF, Strings, SrcsOS);
+      }
+      SourceOffsetSection = encodeRecordOffsets(Offsets);
     }
     RIFF.Chunks.push_back({riff::fourCC("srcs"), SrcsSection});
+    if (!SourceOffsetSection.empty())
+      RIFF.Chunks.push_back({riff::fourCC("scof"), SourceOffsetSection});
   }
 
   std::string CmdlSection;

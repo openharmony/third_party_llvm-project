@@ -64,5 +64,74 @@ RefSlab RefSlab::Builder::build() && {
   return RefSlab(std::move(Result), std::move(Arena), Entries.size());
 }
 
+RefSlab RefSlab::createImpl(std::vector<RefBundle> RefBundles,
+                            std::shared_ptr<void> KeepAlive,
+                            size_t BackingDataSize, bool OwnStrings) {
+  std::vector<std::pair<SymbolID, Ref>> Flat;
+  size_t RefCount = 0;
+  for (const auto &Bundle : RefBundles)
+    RefCount += Bundle.second.size();
+  Flat.reserve(RefCount);
+  for (auto &Bundle : RefBundles)
+    for (Ref &R : Bundle.second)
+      Flat.emplace_back(Bundle.first, std::move(R));
+
+  llvm::sort(Flat, [](const auto &L, const auto &R) {
+    return std::tie(L.first, L.second) < std::tie(R.first, R.second);
+  });
+  Flat.erase(std::unique(Flat.begin(), Flat.end(),
+                         [](const auto &L, const auto &R) {
+                           return L.first == R.first && L.second == R.second;
+                         }),
+             Flat.end());
+
+  llvm::BumpPtrAllocator Arena;
+  llvm::UniqueStringSaver UniqueStrings(Arena);
+  std::vector<std::pair<SymbolID, llvm::ArrayRef<Ref>>> Result;
+  Result.reserve(RefBundles.size());
+  std::vector<Ref> Refs;
+  for (auto I = Flat.begin(), End = Flat.end(); I != End;) {
+    SymbolID Sym = I->first;
+    Refs.clear();
+    do {
+      Ref R = std::move(I->second);
+      if (OwnStrings)
+        R.Location.FileURI = UniqueStrings.save(R.Location.FileURI).data();
+      Refs.push_back(R);
+      ++I;
+    } while (I != End && I->first == Sym);
+    Result.emplace_back(Sym, llvm::ArrayRef<Ref>(Refs).copy(Arena));
+  }
+  return RefSlab(std::move(Result), std::move(Arena), Flat.size(),
+                 std::move(KeepAlive), BackingDataSize);
+}
+
+RefSlab RefSlab::create(std::vector<RefBundle> RefBundles) {
+  return createImpl(std::move(RefBundles), nullptr, 0, /*OwnStrings=*/true);
+}
+
+RefSlab RefSlab::create(std::vector<RefBundle> RefBundles,
+                        std::shared_ptr<void> KeepAlive,
+                        size_t BackingDataSize) {
+  return createImpl(std::move(RefBundles), std::move(KeepAlive),
+                    BackingDataSize, /*OwnStrings=*/false);
+}
+
+RefSlab RefSlab::createFromSorted(std::vector<RefBundle> RefBundles,
+                                  std::shared_ptr<void> KeepAlive,
+                                  size_t BackingDataSize) {
+  llvm::BumpPtrAllocator Arena;
+  std::vector<std::pair<SymbolID, llvm::ArrayRef<Ref>>> Result;
+  Result.reserve(RefBundles.size());
+  size_t RefCount = 0;
+  for (auto &Bundle : RefBundles) {
+    RefCount += Bundle.second.size();
+    Result.emplace_back(Bundle.first,
+                        llvm::ArrayRef<Ref>(Bundle.second).copy(Arena));
+  }
+  return RefSlab(std::move(Result), std::move(Arena), RefCount,
+                 std::move(KeepAlive), BackingDataSize);
+}
+
 } // namespace clangd
 } // namespace clang

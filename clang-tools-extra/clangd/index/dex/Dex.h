@@ -26,6 +26,7 @@
 #include "index/dex/PostingList.h"
 #include "index/dex/Token.h"
 #include "llvm/ADT/StringSet.h"
+#include <iterator>
 
 namespace clang {
 namespace clangd {
@@ -39,10 +40,15 @@ public:
   Dex(SymbolRange &&Symbols, RefsRange &&Refs, RelationsRange &&Relations,
       unsigned Threads = 1)
       : Corpus(0) {
+    using std::begin;
+    using std::end;
+    this->Symbols.reserve(std::distance(begin(Symbols), end(Symbols)));
     for (auto &&Sym : Symbols)
       this->Symbols.push_back(&Sym);
+    this->Refs.reserve(std::distance(begin(Refs), end(Refs)));
     for (auto &&Ref : Refs)
       this->Refs.try_emplace(Ref.first, Ref.second);
+    this->Relations.reserve(std::distance(begin(Relations), end(Relations)));
     for (auto &&Rel : Relations)
       this->Relations[std::make_pair(Rel.Subject,
                                      static_cast<uint8_t>(Rel.Predicate))]

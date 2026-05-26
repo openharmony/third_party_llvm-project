@@ -15,6 +15,7 @@
 #include "clang/Index/IndexSymbol.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/StringSaver.h"
+#include <memory>
 
 namespace clang {
 namespace clangd {
@@ -192,7 +193,7 @@ public:
   // Estimates the total memory usage.
   size_t bytes() const {
     return sizeof(*this) + Arena.getTotalMemory() +
-           Symbols.capacity() * sizeof(Symbol);
+           Symbols.capacity() * sizeof(Symbol) + BackingDataSize;
   }
 
   /// SymbolSlab::Builder is a mutable container that can 'freeze' to
@@ -225,12 +226,28 @@ public:
     llvm::DenseMap<SymbolID, Symbol> Symbols;
   };
 
+  /// Build a slab directly from decoded symbols. If duplicate IDs are present,
+  /// the last symbol in the input wins, matching Builder::insert().
+  static SymbolSlab create(std::vector<Symbol> Symbols);
+  static SymbolSlab create(std::vector<Symbol> Symbols,
+                           std::shared_ptr<void> KeepAlive,
+                           size_t BackingDataSize);
+  static SymbolSlab createFromSorted(std::vector<Symbol> Symbols,
+                                     std::shared_ptr<void> KeepAlive,
+                                     size_t BackingDataSize);
+
 private:
   SymbolSlab(llvm::BumpPtrAllocator Arena, std::vector<Symbol> Symbols)
       : Arena(std::move(Arena)), Symbols(std::move(Symbols)) {}
+  SymbolSlab(std::vector<Symbol> Symbols, std::shared_ptr<void> KeepAlive,
+             size_t BackingDataSize)
+      : Symbols(std::move(Symbols)), KeepAlive(std::move(KeepAlive)),
+        BackingDataSize(BackingDataSize) {}
 
   llvm::BumpPtrAllocator Arena; // Owns Symbol data that the Symbols do not.
   std::vector<Symbol> Symbols;  // Sorted by SymbolID to allow lookup.
+  std::shared_ptr<void> KeepAlive;
+  size_t BackingDataSize = 0;
 };
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const SymbolSlab &Slab);

@@ -18,6 +18,7 @@
 #include "support/Logger.h"
 #include "support/Trace.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringSet.h"
 #include "llvm/Support/Path.h"
@@ -54,6 +55,9 @@ namespace {
 const Token RestrictedForCodeCompletion =
     Token(Token::Kind::Sentinel, "Restricted For Code Completion");
 
+std::vector<std::pair<size_t, size_t>> splitIndexRange(size_t Size,
+                                                       unsigned Threads);
+
 // Helper to efficiently assemble the inverse index (token -> matching docs).
 // The output is a nice uniform structure keyed on Token, but constructing
 // the Token object every time we want to insert into the map is wasteful.
@@ -66,6 +70,40 @@ class IndexBuilder {
   llvm::StringMap<std::vector<DocID>> ScopeDocs;
   llvm::StringMap<std::vector<DocID>> ProximityDocs;
   std::vector<Trigram> TrigramScratch;
+
+  static void appendDocs(std::vector<DocID> &Target,
+                         std::vector<DocID> &Source) {
+    if (Target.empty()) {
+      Target = std::move(Source);
+      return;
+    }
+    Target.insert(Target.end(), Source.begin(), Source.end());
+  }
+
+  static void appendStringMap(llvm::StringMap<std::vector<DocID>> &Target,
+                              llvm::StringMap<std::vector<DocID>> &Source) {
+    for (auto &Entry : Source) {
+      auto It = Target.find(Entry.first());
+      if (It == Target.end()) {
+        Target.try_emplace(Entry.first(), std::move(Entry.second));
+        continue;
+      }
+      appendDocs(It->second, Entry.second);
+    }
+  }
+
+  static void
+  appendTrigramMap(llvm::DenseMap<Trigram, std::vector<DocID>> &Target,
+                   llvm::DenseMap<Trigram, std::vector<DocID>> &Source) {
+    for (auto &Entry : Source) {
+      auto It = Target.find(Entry.first);
+      if (It == Target.end()) {
+        Target.try_emplace(Entry.first, std::move(Entry.second));
+        continue;
+      }
+      appendDocs(It->second, Entry.second);
+    }
+  }
 
 public:
   // Add the tokens which are given symbol's characteristics.
@@ -88,59 +126,125 @@ public:
   }
 
   void merge(IndexBuilder &&Other) {
-    auto AppendStringMap = [](llvm::StringMap<std::vector<DocID>> &Target,
-                              llvm::StringMap<std::vector<DocID>> &Source) {
-      for (auto &Entry : Source) {
-        auto &Docs = Target[Entry.first()];
-        Docs.insert(Docs.end(), Entry.second.begin(), Entry.second.end());
-      }
-    };
-    AppendStringMap(TypeDocs, Other.TypeDocs);
-    AppendStringMap(ScopeDocs, Other.ScopeDocs);
-    AppendStringMap(ProximityDocs, Other.ProximityDocs);
+    appendStringMap(TypeDocs, Other.TypeDocs);
+    appendStringMap(ScopeDocs, Other.ScopeDocs);
+    appendStringMap(ProximityDocs, Other.ProximityDocs);
+    appendTrigramMap(TrigramDocs, Other.TrigramDocs);
+    appendDocs(RestrictedCCDocs, Other.RestrictedCCDocs);
+  }
 
-    for (auto &Entry : Other.TrigramDocs) {
-      auto &Docs = TrigramDocs[Entry.first];
-      Docs.insert(Docs.end(), Entry.second.begin(), Entry.second.end());
+  static IndexBuilder merge(std::vector<IndexBuilder> &&Builders,
+                            unsigned Threads) {
+    IndexBuilder Result = std::move(Builders.front());
+    if (Threads <= 1 || Builders.size() < 3) {
+      for (size_t I = 1; I < Builders.size(); ++I)
+        Result.merge(std::move(Builders[I]));
+      return Result;
     }
-    RestrictedCCDocs.insert(RestrictedCCDocs.end(),
-                            Other.RestrictedCCDocs.begin(),
-                            Other.RestrictedCCDocs.end());
+
+    llvm::ThreadPool Pool(llvm::hardware_concurrency(Threads));
+    std::vector<std::shared_future<void>> Futures;
+    auto ForEachOther = [&](auto Merge) {
+      for (size_t I = 1; I < Builders.size(); ++I)
+        Merge(Builders[I]);
+    };
+    Futures.push_back(Pool.async([&] {
+      ForEachOther([&](IndexBuilder &Other) {
+        appendStringMap(Result.TypeDocs, Other.TypeDocs);
+      });
+    }));
+    Futures.push_back(Pool.async([&] {
+      ForEachOther([&](IndexBuilder &Other) {
+        appendStringMap(Result.ScopeDocs, Other.ScopeDocs);
+      });
+    }));
+    Futures.push_back(Pool.async([&] {
+      ForEachOther([&](IndexBuilder &Other) {
+        appendStringMap(Result.ProximityDocs, Other.ProximityDocs);
+      });
+    }));
+    Futures.push_back(Pool.async([&] {
+      ForEachOther([&](IndexBuilder &Other) {
+        appendTrigramMap(Result.TrigramDocs, Other.TrigramDocs);
+      });
+    }));
+    Futures.push_back(Pool.async([&] {
+      ForEachOther([&](IndexBuilder &Other) {
+        appendDocs(Result.RestrictedCCDocs, Other.RestrictedCCDocs);
+      });
+    }));
+    Pool.wait();
+    for (auto &Future : Futures)
+      Future.get();
+    return Result;
   }
 
   // Assemble the final compressed posting lists for the added symbols.
   llvm::DenseMap<Token, PostingList> build() && {
-    llvm::DenseMap<Token, PostingList> Result(/*InitialReserve=*/
-                                              TrigramDocs.size() +
-                                              RestrictedCCDocs.size() +
-                                              TypeDocs.size() +
-                                              ScopeDocs.size() +
-                                              ProximityDocs.size());
+    return std::move(*this).build(1);
+  }
+
+  llvm::DenseMap<Token, PostingList> build(unsigned Threads) && {
+    struct PostingDocs {
+      Token Tok;
+      std::vector<DocID> Docs;
+    };
+    std::vector<PostingDocs> Entries;
+    Entries.reserve(TrigramDocs.size() + TypeDocs.size() + ScopeDocs.size() +
+                    ProximityDocs.size() + (RestrictedCCDocs.empty() ? 0 : 1));
+
     // Tear down intermediate structs as we go to reduce memory usage.
     // Since we're trying to get rid of underlying allocations, clearing the
     // containers is not enough.
-    auto CreatePostingList =
-        [&Result](Token::Kind TK, llvm::StringMap<std::vector<DocID>> &Docs) {
+    auto TakePostingLists =
+        [&Entries](Token::Kind TK, llvm::StringMap<std::vector<DocID>> &Docs) {
           for (auto &E : Docs) {
-            Result.try_emplace(Token(TK, E.first()), E.second);
-            E.second = {};
+            Entries.push_back({Token(TK, E.first()), std::move(E.second)});
           }
           Docs = {};
         };
-    CreatePostingList(Token::Kind::Type, TypeDocs);
-    CreatePostingList(Token::Kind::Scope, ScopeDocs);
-    CreatePostingList(Token::Kind::ProximityURI, ProximityDocs);
+    TakePostingLists(Token::Kind::Type, TypeDocs);
+    TakePostingLists(Token::Kind::Scope, ScopeDocs);
+    TakePostingLists(Token::Kind::ProximityURI, ProximityDocs);
 
     // TrigramDocs are stored in a DenseMap and RestrictedCCDocs is not even a
     // map, treat them specially.
-    for (auto &E : TrigramDocs) {
-      Result.try_emplace(Token(Token::Kind::Trigram, E.first.str()), E.second);
-      E.second = {};
-    }
+    for (auto &E : TrigramDocs)
+      Entries.push_back(
+          {Token(Token::Kind::Trigram, E.first.str()), std::move(E.second)});
     TrigramDocs = llvm::DenseMap<Trigram, std::vector<DocID>>{};
     if (!RestrictedCCDocs.empty())
-      Result.try_emplace(RestrictedForCodeCompletion,
-                         std::move(RestrictedCCDocs));
+      Entries.push_back(
+          {RestrictedForCodeCompletion, std::move(RestrictedCCDocs)});
+
+    if (Threads <= 1 || Entries.size() < 2) {
+      llvm::DenseMap<Token, PostingList> Result(Entries.size());
+      for (PostingDocs &Entry : Entries)
+        Result.try_emplace(std::move(Entry.Tok), Entry.Docs);
+      return Result;
+    }
+
+    auto Ranges = splitIndexRange(Entries.size(), Threads);
+    std::vector<std::vector<std::pair<Token, PostingList>>> PartialResults(
+        Ranges.size());
+    llvm::ThreadPool Pool(llvm::hardware_concurrency(Threads));
+    std::vector<std::shared_future<void>> Futures;
+    for (size_t Task = 0; Task < Ranges.size(); ++Task) {
+      Futures.push_back(Pool.async([&, Task] {
+        auto &Partial = PartialResults[Task];
+        Partial.reserve(Ranges[Task].second - Ranges[Task].first);
+        for (size_t I = Ranges[Task].first; I < Ranges[Task].second; ++I)
+          Partial.emplace_back(std::move(Entries[I].Tok), Entries[I].Docs);
+      }));
+    }
+    Pool.wait();
+    for (auto &Future : Futures)
+      Future.get();
+
+    llvm::DenseMap<Token, PostingList> Result(Entries.size());
+    for (auto &Partial : PartialResults)
+      for (auto &Entry : Partial)
+        Result.try_emplace(std::move(Entry.first), std::move(Entry.second));
     return Result;
   }
 };
@@ -169,42 +273,62 @@ void Dex::buildIndex(unsigned Threads) {
   this->Corpus = dex::Corpus(Symbols.size());
   std::vector<std::pair<float, const Symbol *>> ScoredSymbols(Symbols.size());
 
-  if (Threads <= 1 || Symbols.size() < 2) {
-    for (size_t I = 0; I < Symbols.size(); ++I) {
-      const Symbol *Sym = Symbols[I];
-      ScoredSymbols[I] = {quality(*Sym), Sym};
+  {
+    llvm::Optional<trace::Span> Tracer;
+    if (trace::enabled())
+      Tracer.emplace("DexQuality");
+    if (Threads <= 1 || Symbols.size() < 2) {
+      for (size_t I = 0; I < Symbols.size(); ++I) {
+        const Symbol *Sym = Symbols[I];
+        ScoredSymbols[I] = {quality(*Sym), Sym};
+      }
+    } else {
+      llvm::ThreadPool Pool(llvm::hardware_concurrency(Threads));
+      std::vector<std::shared_future<void>> Futures;
+      for (auto Range : splitIndexRange(Symbols.size(), Threads)) {
+        Futures.push_back(Pool.async([&, Range] {
+          for (size_t I = Range.first; I < Range.second; ++I) {
+            const Symbol *Sym = Symbols[I];
+            ScoredSymbols[I] = {quality(*Sym), Sym};
+          }
+        }));
+      }
+      Pool.wait();
+      for (auto &Future : Futures)
+        Future.get();
     }
-  } else {
-    llvm::ThreadPool Pool(llvm::hardware_concurrency(Threads));
-    std::vector<std::shared_future<void>> Futures;
-    for (auto Range : splitIndexRange(Symbols.size(), Threads)) {
-      Futures.push_back(Pool.async([&, Range] {
-        for (size_t I = Range.first; I < Range.second; ++I) {
-          const Symbol *Sym = Symbols[I];
-          ScoredSymbols[I] = {quality(*Sym), Sym};
-        }
-      }));
-    }
-    Pool.wait();
-    for (auto &Future : Futures)
-      Future.get();
   }
 
   // Symbols are sorted by symbol qualities so that items in the posting lists
   // are stored in the descending order of symbol quality.
-  llvm::sort(ScoredSymbols, std::greater<std::pair<float, const Symbol *>>());
+  {
+    llvm::Optional<trace::Span> Tracer;
+    if (trace::enabled())
+      Tracer.emplace("DexSort");
+    llvm::sort(ScoredSymbols,
+               [](const auto &L, const auto &R) { return L.first > R.first; });
+  }
 
-  // SymbolQuality was empty up until now.
-  SymbolQuality.resize(Symbols.size());
-  LookupTable.clear();
-  // Populate internal storage using Symbol + Score pairs.
-  for (size_t I = 0; I < ScoredSymbols.size(); ++I) {
-    SymbolQuality[I] = ScoredSymbols[I].first;
-    Symbols[I] = ScoredSymbols[I].second;
-    LookupTable[Symbols[I]->ID] = Symbols[I];
+  {
+    llvm::Optional<trace::Span> Tracer;
+    if (trace::enabled())
+      Tracer.emplace("DexLookup");
+    // SymbolQuality was empty up until now.
+    SymbolQuality.resize(Symbols.size());
+    LookupTable.clear();
+    LookupTable.reserve(Symbols.size());
+    // Populate internal storage using Symbol + Score pairs.
+    for (size_t I = 0; I < ScoredSymbols.size(); ++I) {
+      SymbolQuality[I] = ScoredSymbols[I].first;
+      Symbols[I] = ScoredSymbols[I].second;
+      LookupTable[Symbols[I]->ID] = Symbols[I];
+    }
   }
 
   if (Threads <= 1 || Symbols.size() < 2) {
+    llvm::Optional<trace::Span> Tracer;
+    if (trace::enabled())
+      Tracer.emplace("DexTokenize");
     IndexBuilder Builder;
     for (DocID SymbolRank = 0; SymbolRank < Symbols.size(); ++SymbolRank)
       Builder.add(*Symbols[SymbolRank], SymbolRank);
@@ -215,23 +339,37 @@ void Dex::buildIndex(unsigned Threads) {
   std::vector<IndexBuilder> Builders;
   auto Ranges = splitIndexRange(Symbols.size(), Threads);
   Builders.resize(Ranges.size());
-  llvm::ThreadPool Pool(llvm::hardware_concurrency(Threads));
-  std::vector<std::shared_future<void>> Futures;
-  for (size_t Task = 0; Task < Ranges.size(); ++Task) {
-    Futures.push_back(Pool.async([&, Task] {
-      for (DocID SymbolRank = Ranges[Task].first;
-           SymbolRank < Ranges[Task].second; ++SymbolRank)
-        Builders[Task].add(*Symbols[SymbolRank], SymbolRank);
-    }));
+  {
+    llvm::Optional<trace::Span> Tracer;
+    if (trace::enabled())
+      Tracer.emplace("DexTokenize");
+    llvm::ThreadPool Pool(llvm::hardware_concurrency(Threads));
+    std::vector<std::shared_future<void>> Futures;
+    for (size_t Task = 0; Task < Ranges.size(); ++Task) {
+      Futures.push_back(Pool.async([&, Task] {
+        for (DocID SymbolRank = Ranges[Task].first;
+             SymbolRank < Ranges[Task].second; ++SymbolRank)
+          Builders[Task].add(*Symbols[SymbolRank], SymbolRank);
+      }));
+    }
+    Pool.wait();
+    for (auto &Future : Futures)
+      Future.get();
   }
-  Pool.wait();
-  for (auto &Future : Futures)
-    Future.get();
 
   IndexBuilder Builder;
-  for (IndexBuilder &Partial : Builders)
-    Builder.merge(std::move(Partial));
-  InvertedIndex = std::move(Builder).build();
+  {
+    llvm::Optional<trace::Span> Tracer;
+    if (trace::enabled())
+      Tracer.emplace("DexMerge");
+    Builder = IndexBuilder::merge(std::move(Builders), Threads);
+  }
+  {
+    llvm::Optional<trace::Span> Tracer;
+    if (trace::enabled())
+      Tracer.emplace("DexPostings");
+    InvertedIndex = std::move(Builder).build(Threads);
+  }
 }
 
 std::unique_ptr<Iterator> Dex::iterator(const Token &Tok) const {

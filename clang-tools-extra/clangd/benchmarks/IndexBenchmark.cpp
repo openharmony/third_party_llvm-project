@@ -8,17 +8,22 @@
 
 #include "../index/Serialization.h"
 #include "../index/dex/Dex.h"
+#include "../support/Trace.h"
 #include "benchmark/benchmark.h"
+#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Regex.h"
+#include "llvm/Support/raw_ostream.h"
 #include <string>
 #include <vector>
 
 const char *IndexFilename;
 const char *RequestsFilename;
 unsigned IndexLoadThreads = 1;
+std::string TraceFilename;
 
 namespace clang {
 namespace clangd {
@@ -99,6 +104,21 @@ static void dexQueries(benchmark::State &State) {
 }
 BENCHMARK(dexQueries);
 
+static void memBuild(benchmark::State &State) {
+  for (auto _ : State)
+    buildMem();
+}
+BENCHMARK(memBuild);
+
+static void memBuildSerial(benchmark::State &State) {
+  unsigned SavedThreads = IndexLoadThreads;
+  IndexLoadThreads = 1;
+  for (auto _ : State)
+    buildMem();
+  IndexLoadThreads = SavedThreads;
+}
+BENCHMARK(memBuildSerial);
+
 static void dexBuild(benchmark::State &State) {
   for (auto _ : State)
     buildDex();
@@ -137,6 +157,10 @@ void parseIndexBenchmarkArgs(int &argc, char **argv) {
       IndexLoadThreads = Parsed;
       continue;
     }
+    if (Arg.consume_front("--trace-file=")) {
+      TraceFilename = Arg.str();
+      continue;
+    }
     Kept.push_back(argv[I]);
   }
   for (size_t I = 0; I < Kept.size(); ++I)
@@ -163,6 +187,20 @@ int main(int argc, char *argv[]) {
   argv += 2;
   argc -= 2;
   parseIndexBenchmarkArgs(argc, argv);
+  std::unique_ptr<llvm::raw_fd_ostream> TraceOS;
+  std::unique_ptr<clang::clangd::trace::EventTracer> Tracer;
+  llvm::Optional<clang::clangd::trace::Session> TracingSession;
+  if (!TraceFilename.empty()) {
+    std::error_code EC;
+    TraceOS = std::make_unique<llvm::raw_fd_ostream>(TraceFilename, EC,
+                                                     llvm::sys::fs::OF_Text);
+    if (EC) {
+      llvm::errs() << "Failed to open trace file: " << EC.message() << "\n";
+      return 1;
+    }
+    Tracer = clang::clangd::trace::createJSONTracer(*TraceOS);
+    TracingSession.emplace(*Tracer);
+  }
   ::benchmark::Initialize(&argc, argv);
   if (::benchmark::ReportUnrecognizedArguments(argc, argv))
     return 1;

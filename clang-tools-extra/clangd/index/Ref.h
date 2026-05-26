@@ -16,8 +16,10 @@
 #include "llvm/Support/StringSaver.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cstdint>
+#include <memory>
 #include <set>
 #include <utility>
+#include <vector>
 
 namespace clang {
 namespace clangd {
@@ -109,6 +111,7 @@ class RefSlab {
 public:
   // Refs are stored in order.
   using value_type = std::pair<SymbolID, llvm::ArrayRef<Ref>>;
+  using RefBundle = std::pair<SymbolID, std::vector<Ref>>;
   using const_iterator = std::vector<value_type>::const_iterator;
   using iterator = const_iterator;
 
@@ -125,7 +128,7 @@ public:
 
   size_t bytes() const {
     return sizeof(*this) + Arena.getTotalMemory() +
-           sizeof(value_type) * Refs.capacity();
+           sizeof(value_type) * Refs.capacity() + BackingDataSize;
   }
 
   /// RefSlab::Builder is a mutable container that can 'freeze' to RefSlab.
@@ -151,15 +154,36 @@ public:
     llvm::DenseSet<Entry> Entries;
   };
 
+  /// Build a slab directly from decoded ref bundles. Duplicate refs are
+  /// removed, matching Builder::insert().
+  static RefSlab create(std::vector<RefBundle> RefBundles);
+  static RefSlab create(std::vector<RefBundle> RefBundles,
+                        std::shared_ptr<void> KeepAlive,
+                        size_t BackingDataSize = 0);
+  static RefSlab createFromSorted(std::vector<RefBundle> RefBundles,
+                                  std::shared_ptr<void> KeepAlive,
+                                  size_t BackingDataSize = 0);
+
 private:
+  static RefSlab createImpl(std::vector<RefBundle> RefBundles,
+                            std::shared_ptr<void> KeepAlive,
+                            size_t BackingDataSize, bool OwnStrings);
+
   RefSlab(std::vector<value_type> Refs, llvm::BumpPtrAllocator Arena,
           size_t NumRefs)
       : Arena(std::move(Arena)), Refs(std::move(Refs)), NumRefs(NumRefs) {}
+  RefSlab(std::vector<value_type> Refs, llvm::BumpPtrAllocator Arena,
+          size_t NumRefs, std::shared_ptr<void> KeepAlive,
+          size_t BackingDataSize)
+      : Arena(std::move(Arena)), Refs(std::move(Refs)), NumRefs(NumRefs),
+        KeepAlive(std::move(KeepAlive)), BackingDataSize(BackingDataSize) {}
 
   llvm::BumpPtrAllocator Arena;
   std::vector<value_type> Refs;
   /// Number of all references.
   size_t NumRefs = 0;
+  std::shared_ptr<void> KeepAlive;
+  size_t BackingDataSize = 0;
 };
 
 } // namespace clangd

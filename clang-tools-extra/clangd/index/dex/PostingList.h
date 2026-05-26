@@ -69,7 +69,7 @@ public:
   size_t bytes() const { return Chunks.capacity() * sizeof(Chunk); }
 
 private:
-  const std::vector<Chunk> Chunks;
+  std::vector<Chunk> Chunks;
 };
 
 } // namespace dex

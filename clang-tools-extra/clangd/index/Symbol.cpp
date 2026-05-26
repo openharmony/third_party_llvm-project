@@ -51,6 +51,21 @@ void SymbolSlab::Builder::insert(const Symbol &S) {
   own(Symbols[S.ID] = S, UniqueStrings);
 }
 
+static void sortAndDeduplicateSymbols(std::vector<Symbol> &Symbols) {
+  llvm::stable_sort(
+      Symbols, [](const Symbol &L, const Symbol &R) { return L.ID < R.ID; });
+
+  std::vector<Symbol> UniqueSymbols;
+  UniqueSymbols.reserve(Symbols.size());
+  for (Symbol &S : Symbols) {
+    if (!UniqueSymbols.empty() && UniqueSymbols.back().ID == S.ID)
+      UniqueSymbols.back() = std::move(S);
+    else
+      UniqueSymbols.push_back(std::move(S));
+  }
+  Symbols = std::move(UniqueSymbols);
+}
+
 SymbolSlab SymbolSlab::Builder::build() && {
   // Sort symbols into vector so the slab can binary search over them.
   std::vector<Symbol> SortedSymbols;
@@ -65,6 +80,29 @@ SymbolSlab SymbolSlab::Builder::build() && {
   for (auto &S : SortedSymbols)
     own(S, Strings);
   return SymbolSlab(std::move(NewArena), std::move(SortedSymbols));
+}
+
+SymbolSlab SymbolSlab::create(std::vector<Symbol> Symbols) {
+  sortAndDeduplicateSymbols(Symbols);
+
+  llvm::BumpPtrAllocator Arena;
+  llvm::UniqueStringSaver Strings(Arena);
+  for (auto &S : Symbols)
+    own(S, Strings);
+  return SymbolSlab(std::move(Arena), std::move(Symbols));
+}
+
+SymbolSlab SymbolSlab::create(std::vector<Symbol> Symbols,
+                              std::shared_ptr<void> KeepAlive,
+                              size_t BackingDataSize) {
+  sortAndDeduplicateSymbols(Symbols);
+  return SymbolSlab(std::move(Symbols), std::move(KeepAlive), BackingDataSize);
+}
+
+SymbolSlab SymbolSlab::createFromSorted(std::vector<Symbol> Symbols,
+                                        std::shared_ptr<void> KeepAlive,
+                                        size_t BackingDataSize) {
+  return SymbolSlab(std::move(Symbols), std::move(KeepAlive), BackingDataSize);
 }
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const SymbolSlab &Slab) {

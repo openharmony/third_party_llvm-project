@@ -11,6 +11,7 @@
 
 #include "index/Index.h"
 #include "llvm/ADT/StringSet.h"
+#include <iterator>
 #include <mutex>
 
 namespace clang {
@@ -23,10 +24,15 @@ public:
   // All symbols and refs must outlive this index.
   template <typename SymbolRange, typename RefRange, typename RelationRange>
   MemIndex(SymbolRange &&Symbols, RefRange &&Refs, RelationRange &&Relations) {
+    using std::begin;
+    using std::end;
+    Index.reserve(std::distance(begin(Symbols), end(Symbols)));
     for (const Symbol &S : Symbols)
       Index[S.ID] = &S;
+    this->Refs.reserve(std::distance(begin(Refs), end(Refs)));
     for (const std::pair<SymbolID, llvm::ArrayRef<Ref>> &R : Refs)
       this->Refs.try_emplace(R.first, R.second.begin(), R.second.end());
+    this->Relations.reserve(std::distance(begin(Relations), end(Relations)));
     for (const Relation &R : Relations)
       this->Relations[std::make_pair(R.Subject,
                                      static_cast<uint8_t>(R.Predicate))]
