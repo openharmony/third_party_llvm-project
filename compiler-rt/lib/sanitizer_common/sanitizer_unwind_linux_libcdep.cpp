@@ -271,7 +271,7 @@ void BufferedStackTrace::UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp,
     if (current_frameType == StepFrameType::NATIVE_FRAME) {
       BufferedStackTrace tmp;
       tmp.UnwindFast(current_pc, current_fp, bs_stack_top, bs_stack_bottom,
-                     max_depth);
+                     max_depth, true);
       if (tmp.size <= 1)
         break;
       for (u32 i = 1; i < tmp.size && size < max_depth; ++i) {

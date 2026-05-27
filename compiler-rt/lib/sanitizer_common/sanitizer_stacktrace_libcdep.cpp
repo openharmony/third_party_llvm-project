@@ -182,7 +182,8 @@ void BufferedStackTrace::Unwind(u32 max_depth, uptr pc, uptr bp, void *context,
     UNREACHABLE("slow unwind requested but not available");
 #endif
   }
-  UnwindFast(pc, bp, stack_top, stack_bottom, max_depth);
+  UnwindFast(pc, bp, stack_top, stack_bottom, max_depth,
+             context == nullptr);
 }
 
 int GetModuleAndOffsetForPc(uptr pc, char *module_name, uptr module_name_len,

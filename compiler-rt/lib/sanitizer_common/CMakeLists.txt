@@ -222,6 +222,8 @@ append_list_if(COMPILER_RT_HAS_WGLOBAL_CONSTRUCTORS_FLAG -Wglobal-constructors
 # OHOS_LOCAL begin
 if(OHOS)
   list(APPEND SANITIZER_CFLAGS -fno-emulated-tls)
+  list(APPEND SANITIZER_SYMBOLIZER_SOURCES
+    sanitizer_ffrt_coroutine_stack_ohos.cpp)
 endif()
 # OHOS_LOCAL end
 
