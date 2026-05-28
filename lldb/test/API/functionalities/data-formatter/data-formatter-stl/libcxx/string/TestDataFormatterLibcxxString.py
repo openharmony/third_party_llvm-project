@@ -33,6 +33,8 @@ class LibcxxStringDataFormatterTestCase(TestBase):
                                                                             "Set break point at this line.",
                                                                             self.main_spec)
         frame = thread.frames[0]
+        self.assertIsNone(frame.FindVariable('schar').GetSummary())
+        self.runCmd('settings set target.char-signedness signed')
 
         # This is the function to remove the custom formats in order to have a
         # clean slate for the next test case.
@@ -70,6 +72,8 @@ class LibcxxStringDataFormatterTestCase(TestBase):
                 '(%s::u32string) u32_string = U"🍄🍅🍆🍌"'%ns,
                 # FIXME: This should have a 'U' prefix.
                 '(%s::u32string) u32_empty = ""'%ns,
+                '(%s::basic_string<signed char, %s::char_traits<signed char>, '
+                '%s::allocator<signed char> >) schar = "aaaaa"'%(ns,ns,ns),
                 '(%s::basic_string<unsigned char, %s::char_traits<unsigned char>, '
                 '%s::allocator<unsigned char> >) uchar = "aaaaa"'%(ns,ns,ns),
                 '(%s::string *) null_str = nullptr'%ns,
@@ -108,6 +112,8 @@ class LibcxxStringDataFormatterTestCase(TestBase):
                 '(%s::u16string) u16_string = u"ß水氶"'%ns,
                 '(%s::u32string) u32_string = U"🍄🍅🍆🍌"'%ns,
                 '(%s::u32string) u32_empty = ""'%ns,
+                '(%s::basic_string<signed char, %s::char_traits<signed char>, '
+                '%s::allocator<signed char> >) schar = "aaaaa"'%(ns,ns,ns),
                 '(%s::basic_string<unsigned char, %s::char_traits<unsigned char>, '
                 '%s::allocator<unsigned char> >) uchar = "aaaaa"'%(ns,ns,ns),
                 '(%s::string *) null_str = nullptr'%ns,

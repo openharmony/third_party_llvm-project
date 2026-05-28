@@ -28,6 +28,7 @@
 #include "lldb/DataFormatters/FormattersHelpers.h"
 #include "lldb/DataFormatters/VectorType.h"
 #include "lldb/Symbol/SymbolFile.h"
+#include "lldb/Target/Target.h"
 #include "lldb/Utility/ConstString.h"
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
@@ -560,6 +561,29 @@ ConstString CPlusPlusLanguage::FindBestAlternateFunctionMangledName(
     return ConstString();
 }
 
+static bool IsSignedCharFormattingEnabled(ValueObject &valobj) {
+  TargetSP target_sp = valobj.GetTargetSP();
+  return target_sp && target_sp->GetCharSignedness() == eCharSignednessSigned;
+}
+
+static bool LibcxxSignedCharStringSummaryProviderASCII(
+    ValueObject &valobj, Stream &stream,
+    const TypeSummaryOptions &summary_options) {
+  if (!IsSignedCharFormattingEnabled(valobj))
+    return false;
+  return formatters::LibcxxStringSummaryProviderASCII(valobj, stream,
+                                                      summary_options);
+}
+
+static bool LibcxxSignedCharStringViewSummaryProviderASCII(
+    ValueObject &valobj, Stream &stream,
+    const TypeSummaryOptions &summary_options) {
+  if (!IsSignedCharFormattingEnabled(valobj))
+    return false;
+  return formatters::LibcxxStringViewSummaryProviderASCII(valobj, stream,
+                                                          summary_options);
+}
+
 static void LoadLibCxxFormatters(lldb::TypeCategoryImplSP cpp_category_sp) {
   if (!cpp_category_sp)
     return;
@@ -591,6 +615,13 @@ static void LoadLibCxxFormatters(lldb::TypeCategoryImplSP cpp_category_sp) {
                 ConstString("^std::__[[:alnum:]]+::basic_string<unsigned char, "
                             "std::__[[:alnum:]]+::char_traits<unsigned char>, "
                             "std::__[[:alnum:]]+::allocator<unsigned char> >$"),
+                stl_summary_flags, true);
+  AddCXXSummary(cpp_category_sp,
+                LibcxxSignedCharStringSummaryProviderASCII,
+                "std::string summary provider",
+                ConstString("^std::__[[:alnum:]]+::basic_string<signed char, "
+                            "std::__[[:alnum:]]+::char_traits<signed char>, "
+                            "std::__[[:alnum:]]+::allocator<signed char> >$"),
                 stl_summary_flags, true);
 
   AddCXXSummary(cpp_category_sp,
@@ -638,6 +669,13 @@ static void LoadLibCxxFormatters(lldb::TypeCategoryImplSP cpp_category_sp) {
       "std::string_view summary provider",
       ConstString("^std::__[[:alnum:]]+::basic_string_view<unsigned char, "
                   "std::__[[:alnum:]]+::char_traits<unsigned char> >$"),
+      stl_summary_flags, true);
+  AddCXXSummary(
+      cpp_category_sp,
+      LibcxxSignedCharStringViewSummaryProviderASCII,
+      "std::string_view summary provider",
+      ConstString("^std::__[[:alnum:]]+::basic_string_view<signed char, "
+                  "std::__[[:alnum:]]+::char_traits<signed char> >$"),
       stl_summary_flags, true);
 
   AddCXXSummary(cpp_category_sp,

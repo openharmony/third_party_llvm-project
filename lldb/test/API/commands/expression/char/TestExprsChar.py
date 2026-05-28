@@ -18,6 +18,20 @@ class ExprCharTestCase(TestBase):
     def test_default_char(self):
         self.do_test()
 
+    def do_target_char_signedness_test(self, signedness, result_value):
+        self.build()
+        lldbutil.run_to_source_breakpoint(
+            self, '// Break here', lldb.SBFileSpec('main.cpp'))
+        self.runCmd('settings set target.char-signedness ' + signedness)
+        self.expect_expr('(char)-1 < 0', result_type='bool',
+                         result_value=result_value)
+
+    def test_target_char_signedness_unsigned(self):
+        self.do_target_char_signedness_test('unsigned', 'false')
+
+    def test_target_char_signedness_signed(self):
+        self.do_target_char_signedness_test('signed', 'true')
+
     @skipIf(oslist=["linux"], archs=["aarch64", "arm"], bugnumber="llvm.org/pr23069")
     @expectedFailureAll(
         archs=[

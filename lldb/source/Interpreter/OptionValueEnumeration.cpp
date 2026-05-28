@@ -33,7 +33,10 @@ void OptionValueEnumeration::DumpValue(const ExecutionContext *exe_ctx,
         return;
       }
     }
-    strm.Printf("%" PRIu64, (uint64_t)m_current_value);
+    if (m_current_value == m_default_value)
+      strm.PutCString("<unset>");
+    else
+      strm.Printf("%" PRIu64, (uint64_t)m_current_value);
   }
 }
 
@@ -48,7 +51,20 @@ Status OptionValueEnumeration::SetValueFromString(llvm::StringRef value,
 
   case eVarSetOperationReplace:
   case eVarSetOperationAssign: {
-    ConstString const_enumerator_name(value.trim());
+    llvm::StringRef value_name = value.trim();
+    bool default_value_is_enumerator = false;
+    for (size_t i = 0; i < m_enumerations.GetSize(); ++i) {
+      if (m_enumerations.GetValueAtIndexUnchecked(i).value == m_default_value) {
+        default_value_is_enumerator = true;
+        break;
+      }
+    }
+    if (value_name == "<unset>" && !default_value_is_enumerator) {
+      Clear();
+      NotifyValueChanged();
+      break;
+    }
+    ConstString const_enumerator_name(value_name);
     const EnumerationMapEntry *enumerator_entry =
         m_enumerations.FindFirstValueForName(const_enumerator_name);
     if (enumerator_entry) {
