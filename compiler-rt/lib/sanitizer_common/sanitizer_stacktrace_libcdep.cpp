@@ -133,31 +133,12 @@ void StackTrace::Print() const {
   Printf("%s", output.data());
 }
 
-// OHOS_LOCAL begin
-//Used ti determine the corresponding filename based on the currently passed address
-#if SANITIZER_OHOS
-const char* StackTrace::GetFilename(uptr addr) {
-  uptr pc = GetPreviousInstructionPc(addr);
-
-  SymbolizedStack *frames = Symbolizer::GetOrInit()->SymbolizePC(pc);
-  if (!frames)
-    return nullptr;
-  
-  const char* res = frames->info.module;
-  frames->ClearAll();
-  return res;
-}
-#endif
-// OHOS_LOCAL end
-
 void BufferedStackTrace::Unwind(u32 max_depth, uptr pc, uptr bp, void *context,
                                 uptr stack_top, uptr stack_bottom,
                                 bool request_fast_unwind) {
   // Ensures all call sites get what they requested.
   CHECK_EQ(request_fast_unwind, WillUseFastUnwind(request_fast_unwind));
   top_frame_bp = (max_depth > 0) ? bp : 0;
-  bs_stack_top = stack_top;
-  bs_stack_bottom = stack_bottom;
   // Avoid doing any work for small max_depth.
   if (max_depth == 0) {
     size = 0;
