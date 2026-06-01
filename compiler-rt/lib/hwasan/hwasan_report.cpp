@@ -461,7 +461,8 @@ void PrintAddressDescription(
     }
     GetStackTraceFromId(har.alloc_context_id).Print();
 
-    Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ring_index + 1,
+    Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n",
+           t->heap_allocations()->DistanceFromNewest(ring_index),
            t->IsMainThread() ? flags()->heap_history_size_main_thread
                              : flags()->heap_history_size);
     t->Announce();

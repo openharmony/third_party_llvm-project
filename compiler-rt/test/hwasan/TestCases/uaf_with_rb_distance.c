@@ -2,8 +2,16 @@
 // RUN: %clang_hwasan %s -o %t
 // RUN: not %run %t 10 2>&1 | FileCheck %s --check-prefix=D10
 // RUN: not %run %t 42 2>&1 | FileCheck %s --check-prefix=D42
-
 // REQUIRES: stable-runtime
+// REQUIRES: !ohos_family
+
+// OHOS_LOCAL begin
+// RUN: %clang_hwasan %s -o %t
+// RUN: not %run %t 10 2>&1 | FileCheck %s --check-prefix=D10-OHOS
+// RUN: not %run %t 42 2>&1 | FileCheck %s --check-prefix=D42-OHOS
+// REQUIRES: stable-runtime
+// REQUIRES: ohos_family
+// OHOS_LOCAL end
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,3 +33,7 @@ int main(int argc, char **argv) {
 
 // D10: hwasan_dev_note_heap_rb_distance: 90 1023
 // D42: hwasan_dev_note_heap_rb_distance: 58 1023
+// OHOS_LOCAL begin
+// D10-OHOS: hwasan_dev_note_heap_rb_distance: 90 102300
+// D42-OHOS: hwasan_dev_note_heap_rb_distance: 58 102300
+// OHOS_LOCAL end
