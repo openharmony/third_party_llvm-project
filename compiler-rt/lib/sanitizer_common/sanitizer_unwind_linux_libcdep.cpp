@@ -213,16 +213,11 @@ void SanitizerInitializeArkTsUnwinder() {
 }
 
 // Used to return the ArkTs and C/C++ mixed stack.
-void BufferedStackTrace::UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp,
-                                       const uptr *arkts_ranges,
-                                       uptr range_count) {
+void BufferedStackTrace::UnwindIfArkts(u32 max_depth, uptr stack_top, uptr stack_bottom) {
   // Ensure that step_ark is initialized only once.
   if (!step_ark)
     SanitizerInitializeArkTsUnwinder();
-  if (!step_ark)
-    return;
-
-  if (!IsArktsExecutable(pc, arkts_ranges, range_count) || size >= max_depth)
+  if (!step_ark || size >= max_depth || size == 0)
     return;
 
   ReadMemFunc readMem = [](void *ctx, uptr addr, uptr *result) -> bool {
@@ -230,9 +225,9 @@ void BufferedStackTrace::UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp,
     return true;
   };
 
-  uptr current_pc = pc;
-  uptr current_fp = fp;
-  uptr current_sp = sp;
+  uptr current_pc = trace_buffer[size - 1];
+  uptr current_fp = *(uptr *)frame_buffer[size - 1];
+  uptr current_sp = current_fp; 
   const uptr kPageSize = GetPageSizeCached();
   StepFrameType current_frameType = StepFrameType::NATIVE_FRAME;
 
@@ -263,14 +258,14 @@ void BufferedStackTrace::UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp,
     trace_buffer[size] = current_pc;
     ++size;
 
-    if (IsArktsExecutable(current_pc, arkts_ranges, range_count) ||
+    if ((current_pc >= arkts_stub_start && current_pc < arkts_stub_end) ||
         current_frameType == StepFrameType::JS_FRAME) {
       continue;
     }
 
     if (current_frameType == StepFrameType::NATIVE_FRAME) {
       BufferedStackTrace tmp;
-      tmp.UnwindFast(current_pc, current_fp, bs_stack_top, bs_stack_bottom,
+      tmp.UnwindFast(current_pc, current_fp, stack_top, stack_bottom,
                      max_depth, true);
       if (tmp.size <= 1)
         break;
@@ -288,7 +283,7 @@ void BufferedStackTrace::UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp,
       current_pc = trace_buffer[size - 1];
       current_fp = frame_buffer[size - 1];
 
-      if (IsArktsExecutable(current_pc, arkts_ranges, range_count)) {
+      if (current_pc >= arkts_stub_start && current_pc < arkts_stub_end) {
         current_frameType = StepFrameType::NATIVE_FRAME;
         continue;
       }

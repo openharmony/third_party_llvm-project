@@ -129,31 +129,17 @@ SANITIZER_INTERFACE_ATTRIBUTE
 uptr Hwasan_get_arkts_stub_start();
 uptr Hwasan_get_arkts_stub_end();
 }
-void MaybeUnwindArkTS(BufferedStackTrace *stack, bool is_fast, bool if_arkts);
 #endif
 // OHOS_LOCAL end
 
 void InstallAtExitHandler();
 
-// OHOS_LOCAL begin
-#if SANITIZER_OHOS
-#define GET_MALLOC_STACK_TRACE                                             \
-  BufferedStackTrace stack;                                                \
-  if (hwasan_inited)                                                       \
-    stack.Unwind(StackTrace::GetCurrentPc(), GET_CURRENT_FRAME(), nullptr, \
-                 common_flags()->fast_unwind_on_malloc,                    \
-                 common_flags()->malloc_context_size);                     \
-  MaybeUnwindArkTS(&stack, common_flags()->fast_unwind_on_malloc,          \
-                   common_flags()->unwind_arkts_on_malloc);
-#else
 #define GET_MALLOC_STACK_TRACE                                            \
   BufferedStackTrace stack;                                               \
   if (hwasan_inited)                                                      \
     stack.Unwind(StackTrace::GetCurrentPc(), GET_CURRENT_FRAME(),         \
                  nullptr, common_flags()->fast_unwind_on_malloc,          \
                  common_flags()->malloc_context_size)
-#endif
-// OHOS_LOCAL end
 
 #define GET_FATAL_STACK_TRACE_PC_BP(pc, bp)              \
   BufferedStackTrace stack;                              \

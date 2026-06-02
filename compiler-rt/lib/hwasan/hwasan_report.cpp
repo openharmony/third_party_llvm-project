@@ -641,61 +641,6 @@ static void PrintTagsAroundAddr(tag_t *tag_ptr) {
       "description of short granule tags\n");
 }
 
-// OHOS_LOCAL begin
-#if SANITIZER_OHOS
-// Retrieve the start and end addresses of modules with prefix '[anon:ArkTS
-// Code', prefix '/dev/zero', and suffix 'stub.an' from mmaps. These addresses
-// are considered ArkTS modules and can be used to determine which module a PC
-// address belongs to.
-uptr GetArktsExecutableRanges(uptr *arkts_ranges, uptr max_ranges) {
-  if (arkts_ranges == nullptr || max_ranges == 0)
-    return 0;
-
-  MemoryMappingLayout proc_maps(/*cache_enabled*/ true);
-  const sptr kBufSize = 4095;
-  char *filename = (char *)MmapOrDie(kBufSize, __func__);
-  MemoryMappedSegment segment(filename, kBufSize);
-  uptr count = 0;
-
-  // Two elements should be passed in at a time: the start address and end
-  // address of the currently read module.
-  while (proc_maps.Next(&segment) && (count * 2 + 1) < max_ranges) {
-    if (StackTrace::StartsWith(segment.filename, "[anon:ArkTS Code") ||
-        StackTrace::StartsWith(segment.filename, "/dev/zero") ||
-        StackTrace::EndsWith(segment.filename, "stub.an")) {
-      arkts_ranges[count * 2] = segment.start;
-      arkts_ranges[count * 2 + 1] = segment.end;
-      count++;
-    }
-  }
-  UnmapOrDie(filename, kBufSize);
-  return count;
-}
-#endif
-
-void TraceEnhance(StackTrace *stack) {
-#if SANITIZER_OHOS
-  BufferedStackTrace* bstack = static_cast<BufferedStackTrace*>(stack);
-  if(!bstack->is_fast || !flags()->enable_unwind_arkts)
-    return;
-
-  static const uptr maxRanges = 256;
-  static uptr arkts_ranges[maxRanges * 2];
-  static uptr range_count = 0;
-
-  if (range_count == 0) {
-    range_count = GetArktsExecutableRanges(arkts_ranges, maxRanges * 2);
-  }
-
-  uptr current_maxdepth = bstack->buffer_maxdepth;
-  uptr current_fp = bstack->frame_buffer[bstack->size - 1];
-  uptr current_pc = bstack->trace[bstack->size - 1];
-  bstack->UnwindIfArkts(current_maxdepth, current_pc, current_fp, current_fp,
-                        arkts_ranges, range_count);
-#endif
-}
-// OHOS_LOCAL end
-
 uptr GetTopPc(StackTrace *stack) {
   return stack->size ? StackTrace::GetPreviousInstructionPc(stack->trace[0])
                      : 0;
@@ -734,9 +679,6 @@ void ReportInvalidFree(StackTrace *stack, uptr tagged_addr) {
     Printf("tags: %02x/%02x (ptr/mem)\n", ptr_tag, mem_tag);
   Printf("%s", d.Default());
 
-  // OHOS_LOCAL begin
-  TraceEnhance(stack);
-  // OHOS_LOCAL end
   stack->Print();
 
   PrintAddressDescription(tagged_addr, 0, nullptr); //OHOS_LOCAL
@@ -773,9 +715,6 @@ void ReportTailOverwritten(StackTrace *stack, uptr tagged_addr, uptr orig_size,
   Printf("%s", d.Allocation());
   Printf("deallocated here:\n");
   Printf("%s", d.Default());
-  // OHOS_LOCAL begin
-  TraceEnhance(stack);
-  // OHOS_LOCAL end
   stack->Print();
   HwasanChunkView chunk = FindHeapChunkByAddress(untagged_addr);
   if (chunk.Beg()) {
@@ -882,9 +821,6 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
     Printf("Invalid access starting at offset %zu\n", offset);
   Printf("%s", d.Default());
 
-  // OHOS_LOCAL begin
-  TraceEnhance(stack);
-  // OHOS_LOCAL end
   stack->Print();
 // OHOS_LOCAL begin
   PrintAddressDescription(tagged_addr, access_size,
