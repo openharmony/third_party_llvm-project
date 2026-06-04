@@ -90,36 +90,73 @@ namespace {
 struct InitializePythonRAII {
 public:
   InitializePythonRAII() {
-    InitializePythonHome();
+#if PY_VERSION_HEX >= 0x03080000
+    PyConfig config;
+    PyConfig_InitPythonConfig(&config);
+#endif
 
-#ifdef LLDB_USE_LIBEDIT_READLINE_COMPAT_MODULE
-    // Python's readline is incompatible with libedit being linked into lldb.
-    // Provide a patched version local to the embedded interpreter.
-    bool ReadlinePatched = false;
-    for (auto *p = PyImport_Inittab; p->name != NULL; p++) {
-      if (strcmp(p->name, "readline") == 0) {
-        p->initfunc = initlldb_readline;
-        break;
-      }
-    }
-    if (!ReadlinePatched) {
-      PyImport_AppendInittab("readline", initlldb_readline);
-      ReadlinePatched = true;
+#if LLDB_EMBED_PYTHON_HOME
+    static std::string g_python_home = []() -> std::string {
+      if (llvm::sys::path::is_absolute(LLDB_PYTHON_HOME))
+        return LLDB_PYTHON_HOME;
+
+      FileSpec spec = HostInfo::GetShlibDir();
+      if (!spec)
+        return {};
+      spec.AppendPathComponent(LLDB_PYTHON_HOME);
+      return spec.GetPath();
+    }();
+    if (!g_python_home.empty()) {
+#if PY_VERSION_HEX >= 0x03080000
+      PyConfig_SetBytesString(&config, &config.home, g_python_home.c_str());
+#else
+      size_t size = 0;
+      wchar_t *python_home_w = Py_DecodeLocale(g_python_home.c_str(), &size);
+      Py_SetPythonHome(python_home_w);
+      PyMem_RawFree(python_home_w);
+#endif
     }
 #endif
 
-    // Register _lldb as a built-in module.
-    PyImport_AppendInittab("_lldb", LLDBSwigPyInit);
+    // The table of built-in modules can only be extended before Python is
+    // initialized.
+    if (!Py_IsInitialized()) {
+#ifdef LLDB_USE_LIBEDIT_READLINE_COMPAT_MODULE
+      // Python's readline is incompatible with libedit being linked into lldb.
+      // Provide a patched version local to the embedded interpreter.
+      bool ReadlinePatched = false;
+      for (auto *p = PyImport_Inittab; p->name != nullptr; p++) {
+        if (strcmp(p->name, "readline") == 0) {
+          p->initfunc = initlldb_readline;
+          break;
+        }
+      }
+      if (!ReadlinePatched) {
+        PyImport_AppendInittab("readline", initlldb_readline);
+        ReadlinePatched = true;
+      }
+#endif
 
+      // Register _lldb as a built-in module.
+      PyImport_AppendInittab("_lldb", LLDBSwigPyInit);
+    }
+
+#if PY_VERSION_HEX >= 0x03080000
+    config.install_signal_handlers = 0;
+    Py_InitializeFromConfig(&config);
+    PyConfig_Clear(&config);
+    InitializeThreadsPrivate();
+#else
 // Python < 3.2 and Python >= 3.2 reversed the ordering requirements for
 // calling `Py_Initialize` and `PyEval_InitThreads`.  < 3.2 requires that you
 // call `PyEval_InitThreads` first, and >= 3.2 requires that you call it last.
-#if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 2) || (PY_MAJOR_VERSION > 3)
+#if PY_VERSION_HEX >= 0x03020000
     Py_InitializeEx(0);
     InitializeThreadsPrivate();
 #else
     InitializeThreadsPrivate();
     Py_InitializeEx(0);
+#endif
 #endif
   }
 
