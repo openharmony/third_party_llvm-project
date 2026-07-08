@@ -656,6 +656,14 @@ if(COMPILER_RT_USE_LLVM_UNWINDER)
   endif()
 endif()
 
+# OHOS: link compiler-rt libunwind for scudo standalone on arm when LLVM unwinder
+# is not used (see gitcode 750fb65e, adapted as -lunwind in 39a73c5).
+if (COMPILER_RT_HAS_SCUDO_STANDALONE AND
+    NOT COMPILER_RT_USE_LLVM_UNWINDER AND
+    COMPILER_RT_DEFAULT_TARGET_TRIPLE MATCHES "^arm-.*")
+  list(APPEND COMPILER_RT_UNWINDER_LINK_LIBS "-lunwind")
+endif()
+
 if (COMPILER_RT_CXX_LIBRARY STREQUAL "libcxx")
   # We are using the in-tree libc++ so avoid including the default one.
   append_list_if(COMPILER_RT_HAS_NOSTDINCXX_FLAG -nostdinc++ COMPILER_RT_COMMON_CFLAGS)
