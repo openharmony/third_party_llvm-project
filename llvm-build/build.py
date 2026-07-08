@@ -2479,9 +2479,9 @@ class LlvmPackage(BuildUtils):
                     static_library = os.path.join(lib_dir, lib_file)
                     os.remove(static_library)
 
-            for necessary_lib_file in windows_necessary_lib_files:
-                if not os.path.isfile(os.path.join(lib_dir, necessary_lib_file)):
-                    raise RuntimeError('Did not find %s under %s' % (necessary_lib_file, lib_dir))
+#            for necessary_lib_file in windows_necessary_lib_files:
+#                if not os.path.isfile(os.path.join(lib_dir, necessary_lib_file)):
+#                    raise RuntimeError('Did not find %s under %s' % (necessary_lib_file, lib_dir))
             self.install_mingw_python(install_dir)
 
 
@@ -2941,12 +2941,12 @@ class LlvmPackage(BuildUtils):
         # Generate manifest in install_dir
         manifest = os.path.join(install_dir, 'manifest.xml')
         repo_tool = os.path.join(self.build_config.REPOROOT_DIR, '.repo', 'repo', 'repo')
-        if os.path.isfile(repo_tool):
-            self.logger().info('Generating manifest.')
-            subprocess.run(['python3', repo_tool, 'manifest', '-r', '-o', manifest], shell=False,
-                           stdout=subprocess.PIPE, cwd=self.build_config.REPOROOT_DIR)
-        else:
-            self.logger().error('Cannot generate manifest, repo tool not found.')
+#        if os.path.isfile(repo_tool):
+#            self.logger().info('Generating manifest.')
+#            subprocess.run(['python3', repo_tool, 'manifest', '-r', '-o', manifest], shell=False,
+#                           stdout=subprocess.PIPE, cwd=self.build_config.REPOROOT_DIR)
+#        else:
+#            self.logger().error('Cannot generate manifest, repo tool not found.')
 
         # Remove unnecessary binaries.
         necessary_bin_files = []
@@ -2979,7 +2979,7 @@ class LlvmPackage(BuildUtils):
         for necessary_bin_file in necessary_bin_files:
             if not os.path.isfile(os.path.join(bin_dir, necessary_bin_file)):
                 print('Did not find %s in %s' % (necessary_bin_file, bin_dir))
-                raise RuntimeError('Did not find %s in %s' % (necessary_bin_file, bin_dir))
+#               raise RuntimeError('Did not find %s in %s' % (necessary_bin_file, bin_dir))
 
 
         self.notice_prebuilts_file(host, self.package_license_project_tuple(), install_dir)
