@@ -179,13 +179,6 @@ OHOS::OHOS(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
       Paths);
 }
 
-std::string OHOS::ComputeEffectiveClangTriple(const ArgList &Args,
-                                              types::ID InputType) const {
-  auto TripleStr = Generic_ELF::ComputeEffectiveClangTriple(Args, InputType);
-  llvm::Triple T(TripleStr);
-  T.setEnvironment(llvm::Triple::OpenHOS);
-  return T.str();
-}
 
 ToolChain::RuntimeLibType OHOS::GetRuntimeLibType(
     const ArgList &Args) const {
