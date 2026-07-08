@@ -15,6 +15,7 @@
 
 import os
 import shutil
+import subprocess
 from typing import List
 from build import BuildConfig, BuildUtils, LlvmLibs, SysrootComposer, LlvmPackage
 from python_builder import OHOSPythonBuilder
@@ -78,6 +79,20 @@ class CrossToolchainBuilder:
             ])
         return ldflags
 
+    def _get_llvm_config_version(self) -> str:
+        llvm_config = os.path.join(self._llvm_root, "bin", "llvm-config")
+        if not os.path.isfile(llvm_config):
+            return ""
+        try:
+            output = subprocess.check_output(
+                [llvm_config, "--version"],
+                text=True,
+                stderr=subprocess.STDOUT,
+            ).strip()
+            return output.split()[0] if output else ""
+        except (OSError, subprocess.CalledProcessError):
+            return ""
+
     def _init_llvm_defines(self):
         llvm_defines = {}
         llvm_defines["LLVM_TARGET_ARCH"] = self._platform
@@ -101,6 +116,11 @@ class CrossToolchainBuilder:
             self._llvm_root, "bin", "clang++"
         )
         llvm_defines["CMAKE_AR"] = os.path.join(self._llvm_root, "bin", "llvm-ar")
+        asm_compiler_version = self._get_llvm_config_version()
+        if asm_compiler_version:
+            # CMake does not detect ASM Clang version; without this it emits
+            # legacy "-gcc-toolchain" which modern Clang rejects.
+            llvm_defines["CMAKE_ASM_COMPILER_VERSION"] = asm_compiler_version
         llvm_defines["CMAKE_FIND_ROOT_PATH_MODE_INCLUDE"] = "ONLY"
         llvm_defines["CMAKE_FIND_ROOT_PATH_MODE_LIBRARY"] = "ONLY"
         llvm_defines["CMAKE_FIND_ROOT_PATH_MODE_PACKAGE"] = "ONLY"
@@ -260,7 +280,7 @@ class CrossToolchainBuilder:
             self._build_utils.open_ohos_triple("arm"),
             self._build_utils.open_ohos_triple("aarch64"),
             self._build_utils.open_ohos_triple("riscv64"),
-            self._build_utils.open_ohos_triple("loongarch64"),
+#            self._build_utils.open_ohos_triple("loongarch64"),
             self._build_utils.open_ohos_triple("mipsel"),
             self._build_utils.open_ohos_triple("x86_64"),
         ]
@@ -270,8 +290,8 @@ class CrossToolchainBuilder:
                 os.path.join(self._llvm_install, "lib", arch),
             )
             self._build_utils.check_copy_tree(
-                os.path.join(self._llvm_root, "lib", "clang", "15.0.4", "lib", arch),
-                os.path.join(self._llvm_install, "lib", "clang", "15.0.4", "lib", arch),
+                os.path.join(self._llvm_root, "lib", "clang", "21", "lib", arch),
+                os.path.join(self._llvm_install, "lib", "clang", "21", "lib", arch),
             )
 
         # Copy required c++ headerfiles from main toolchain build.
