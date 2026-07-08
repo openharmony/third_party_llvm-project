@@ -40,7 +40,21 @@ add_custom_target(lldb-sbapi-dwarf-enums
   DEPENDS ${sb_languages_file})
 set_target_properties(lldb-sbapi-dwarf-enums PROPERTIES FOLDER "LLDB/Tablegenning")
 
-add_lldb_library(liblldb SHARED ${option_framework}
+# OHOS_LOCAL begin
+if(CMAKE_SYSTEM_NAME MATCHES "OHOS")
+  list(APPEND LLDB_ALL_PLUGINS lldbPluginProcessPOSIX)
+endif()
+
+option(LIBLLDB_BUILD_STATIC "Build liblldb as a static library" OFF)
+
+if (LIBLLDB_BUILD_STATIC)
+  set(LIBLLDB_LIB_TYPE STATIC)
+else()
+  set(LIBLLDB_LIB_TYPE SHARED)
+endif()
+# OHOS_LOCAL end
+
+add_lldb_library(liblldb ${LIBLLDB_LIB_TYPE} ${option_framework} # OHOS_LOCAL
   SBAddress.cpp
   SBAddressRange.cpp
   SBAddressRangeList.cpp
