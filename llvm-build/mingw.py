@@ -233,7 +233,7 @@ class LlvmMingw():
         force_symlink(libmingwex, os.path.join(mingw_lib_dir, 'libssp_nonshared.a'))
         source_dir = os.path.join(self.LLVM_ROOT, 'include/libcxx-ohos/include/c++/v1')
         target_dir = os.path.join(self.prefix, 'x86_64-w64-mingw32/include/c++/x86_64-w64-mingw32')
-        os.makedirs(target_dir)
+        os.makedirs(target_dir, exist_ok=True)
         shutil.copytree(source_dir, target_dir, dirs_exist_ok=True)
 
 

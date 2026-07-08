@@ -2502,6 +2502,11 @@ class LlvmPackage(BuildUtils):
                 else:
                     self.check_call(['strip', binary])
 
+        for bin_filename in os.listdir(bin_dir):
+            binary = os.path.join(bin_dir, bin_filename)
+            if os.path.islink(binary) and not os.path.exists(binary):
+                os.remove(binary)
+
 
     def strip_lldb_server(self, host, install_dir):
         clang_version_bin_dir = os.path.join(install_dir, 'lib', 'clang', self.build_config.CLANG_VERSION, 'bin')
