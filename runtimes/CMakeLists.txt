@@ -192,7 +192,7 @@ message(STATUS "LLVM default target triple: ${LLVM_DEFAULT_TARGET_TRIPLE}")
 
 set(LLVM_TARGET_TRIPLE "${LLVM_DEFAULT_TARGET_TRIPLE}")
 
-if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT OHOS)
   set(option_prefix "")
   if (CMAKE_C_SIMULATE_ID MATCHES "MSVC")
     set(option_prefix "/clang:")
