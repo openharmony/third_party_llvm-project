@@ -7709,6 +7709,8 @@ def fdump_vtable_layouts : Flag<["-"], "fdump-vtable-layouts">,
 def fmerge_functions : Flag<["-"], "fmerge-functions">,
   HelpText<"Permit merging of identical functions when optimizing.">,
   MarshallingInfoFlag<CodeGenOpts<"MergeFunctions">>;
+def fenable_merge_functions : Flag<["-"], "fenable-merge-functions">, Group<f_Group>,
+  HelpText<"Enables Merge Functions optimization">;
 def : Joined<["-"], "coverage-data-file=">,
   MarshallingInfoString<CodeGenOpts<"CoverageDataFile">>;
 def : Joined<["-"], "coverage-notes-file=">,

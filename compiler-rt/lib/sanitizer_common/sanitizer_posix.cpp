@@ -361,7 +361,7 @@ bool OpenReadsVaArgs(int oflag) {
 #  endif
 }
 
-#  if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_GO
+#  if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_GO && !SANITIZER_OHOS
 int GetNamedMappingFd(const char *name, uptr size, int *flags) {
   if (!common_flags()->decorate_proc_maps || !name)
     return -1;
@@ -393,7 +393,7 @@ int GetNamedMappingFd(const char *name, uptr size, int *flags) {
 }
 #endif
 
-#if SANITIZER_ANDROID
+#if SANITIZER_ANDROID || SANITIZER_OHOS
 #define PR_SET_VMA 0x53564d41
 #define PR_SET_VMA_ANON_NAME 0
 void DecorateMapping(uptr addr, uptr size, const char *name) {
