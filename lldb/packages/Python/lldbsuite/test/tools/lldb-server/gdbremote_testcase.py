@@ -132,7 +132,9 @@ class GdbRemoteTestCaseBase(Base, metaclass=GdbRemoteTestCaseFactory):
             if configuration.lldb_platform_url.startswith("unix-"):
                 url_pattern = r"(.+)://\[?(.+?)\]?/.*"
             else:
-                url_pattern = r"(.+)://(.+):\d+"
+                # use (.*) for host instead of (.+) because
+                # 'connect://:port' - is a valid way to connect to lldb-server
+                url_pattern = r"(.+)://(.*):\d+"
             scheme, host = re.match(
                 url_pattern, configuration.lldb_platform_url
             ).groups()
@@ -272,8 +274,8 @@ class GdbRemoteTestCaseBase(Base, metaclass=GdbRemoteTestCaseFactory):
 
         logger = self.logger
 
-        triple = self.dbg.GetSelectedPlatform().GetTriple()
-        if re.match(".*-.*-.*-android", triple):
+        # TODO: forward port always when use adb connection
+        if configuration.lldb_platform_name == "remote-android":
             self.forward_adb_port(self.port, self.port, "forward", self.stub_device)
 
         logger.info(
