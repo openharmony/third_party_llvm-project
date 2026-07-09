@@ -495,8 +495,16 @@ elif is_ohos_family_mobile():
     config.compile_wrapper = compile_wrapper
     config.substitutions.append(("%run", ""))
     config.substitutions.append(("%env ", "env "))
-    lit_config.warning("%device_rm is not implemented")
-    config.substitutions.append(("%device_rm", "echo "))
+    # OHOS_LOCAL begin
+    env = os.environ.copy()
+    adb = os.environ.get("ADB", "adb")
+    device_tmpdir = "/data/local/tmp/Output/"
+    config.substitutions.append(("%device_rundir/", device_tmpdir))
+    config.substitutions.append(("%push_to_device", "%s push " % adb))
+    config.substitutions.append(("%adb_shell ", "%s shell " % adb))
+    config.substitutions.append(("%device_rm", "%s shell 'rm ' " % adb))
+    subprocess.check_call([adb, "shell", "mkdir", "-p", device_tmpdir], env=env)
+    # OHOS_LOCAL end
 elif config.android:
     config.available_features.add("android")
     compile_wrapper = (

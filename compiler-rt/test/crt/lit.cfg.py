@@ -19,7 +19,7 @@ else:
     execute_external = (not sys.platform in ['win32'])
 
 def get_library_path(file):
-    cmd = subprocess.Popen([config.clang.strip(),
+    cmd = subprocess.Popen([config.clang.split()[-1].strip(), # OHOS_LOCAL
                             '-print-file-name=%s' % file] +
                            shlex.split(config.target_cflags),
                            stdout=subprocess.PIPE,
@@ -34,7 +34,7 @@ def get_library_path(file):
 
 
 def get_libgcc_file_name():
-    cmd = subprocess.Popen([config.clang.strip(),
+    cmd = subprocess.Popen([config.clang.split()[-1].strip(), # OHOS_LOCAL
                             '-print-libgcc-file-name'] +
                            shlex.split(config.target_cflags),
                            stdout=subprocess.PIPE,
@@ -49,7 +49,7 @@ def get_libgcc_file_name():
 
 
 def build_invocation(compile_flags):
-    return ' ' + ' '.join([config.compile_wrapper, config.clang] + compile_flags) + ' '
+    return ' ' + ' '.join([config.clang] + compile_flags) + ' '
 
 
 config.substitutions.append(
