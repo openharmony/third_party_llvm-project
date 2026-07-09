@@ -179,14 +179,19 @@ Status PlatformOHOS::ConnectRemote(Args &args) {
   }
 
   auto error = PlatformLinux::ConnectRemote(args);
-  if (error.Success()) {
-    HdcClient hdc(m_connect_addr);
-    error = HdcClient::CreateByDeviceID(m_device_id, hdc);
-    if (error.Fail())
-      return error;
-
-    m_device_id = hdc.GetDeviceID();
+  if (error.Fail()) {
+    m_remote_platform_sp.reset();
+    return error;
   }
+
+  HdcClient hdc(m_connect_addr);
+  error = HdcClient::CreateByDeviceID(m_device_id, hdc);
+  if (error.Fail()) {
+    m_remote_platform_sp.reset();
+    return error;
+  }
+
+  m_device_id = hdc.GetDeviceID();
   return error;
 }
 
@@ -308,6 +313,11 @@ PlatformOHOS::GetLibdlFunctionDeclarations(lldb_private::Process *process) {
              )";
 
   return PlatformPOSIX::GetLibdlFunctionDeclarations(process);
+}
+
+ConstString PlatformOHOS::GetMmapSymbolName(const ArchSpec &arch) {
+  return arch.GetTriple().isArch32Bit() ? ConstString("__lldb_mmap")
+                                        : PlatformLinux::GetMmapSymbolName(arch);
 }
 
 MmapArgList PlatformOHOS::GetMmapArgumentList(const ArchSpec &arch,
