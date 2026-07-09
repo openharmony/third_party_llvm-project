@@ -2024,8 +2024,6 @@ static void getTrivialDefaultFunctionAttributes(
       FuncAttrs.addAttribute("use-soft-float", "true");
     FuncAttrs.addAttribute("stack-protector-buffer-size",
                            llvm::utostr(CodeGenOpts.SSPBufferSize));
-    FuncAttrs.addAttribute("stack-protector-ret-cookie-size",
-                           llvm::utostr(CodeGenOpts.SSPRetCookieSize)); // OHOS_LOCAL
     if (LangOpts.NoSignedZero)
       FuncAttrs.addAttribute("no-signed-zeros-fp-math", "true");
 
