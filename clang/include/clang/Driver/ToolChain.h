@@ -543,7 +543,7 @@ public:
   llvm::Triple getTripleWithoutOSVersion() const;
 
   // Returns the target specific runtime path if it exists.
-  std::optional<std::string> getRuntimePath() const;
+  virtual std::optional<std::string> getRuntimePath() const; // OHOS_LOCAL
 
   // Returns target specific standard library path if it exists.
   std::optional<std::string> getStdlibPath() const;

@@ -74,6 +74,8 @@ public:
 
   path_list getRuntimePaths() const;
 
+  std::optional<std::string> getRuntimePath() const override; // OHOS_LOCAL
+
 protected:
   std::string getMultiarchTriple(const llvm::Triple &T) const;
   std::string getMultiarchTriple(const Driver &D,

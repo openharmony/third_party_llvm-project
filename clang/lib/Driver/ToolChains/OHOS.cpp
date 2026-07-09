@@ -327,6 +327,16 @@ ToolChain::path_list OHOS::getRuntimePaths() const {
   return Paths;
 }
 
+std::optional<std::string> OHOS::getRuntimePath() const {
+  path_list Paths = getRuntimePaths();
+  if (Paths.empty())
+    return std::nullopt;
+  for (const auto &Path : Paths)
+    if (getVFS().exists(Path))
+      return Path;
+  return std::nullopt;
+}
+
 std::string OHOS::getDynamicLinker(const ArgList &Args) const {
   const llvm::Triple &Triple = getTriple();
   const llvm::Triple::ArchType Arch = getArch();
