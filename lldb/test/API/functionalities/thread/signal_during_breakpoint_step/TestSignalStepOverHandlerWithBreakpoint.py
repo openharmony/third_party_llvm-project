@@ -104,6 +104,9 @@ class TestSignalStepOverHandlerWithBreakpoint(SignalDuringBreakpointStepTestCase
     # Atomic sequences are not supported yet for MIPS in LLDB.
     # (Copied from concurrent_events/TestConcurrentSignalBreak.py)
     @skipIf(triple='^mips')
+    # Currently, lldb might skip the next stop when stepping out of the func,
+    # if the single-stepping is not emulated
+    @skipIf(archs=no_match(['arm']))
     # Currently on arm, lldb might get wrong return addresses from a signal handler
     # and fail with 'could not create return address breakpoint'
     @skipIf(archs='arm')
@@ -114,6 +117,9 @@ class TestSignalStepOverHandlerWithBreakpoint(SignalDuringBreakpointStepTestCase
     # Atomic sequences are not supported yet for MIPS in LLDB.
     # (Copied from concurrent_events/TestConcurrentSignalBreak.py)
     @skipIf(triple='^mips')
+    # Currently, lldb might skip the next stop when stepping out of the func,
+    # if the single-stepping is not emulated
+    @skipIf(archs=no_match(['arm']))
     def test_breakpoint_inside_handler_continue(self):
         self.set_up_step_over_handler_with_breakpoint()
         self.set_up_and_iterate(self.action, True, self.check_handler_bp_continue)
@@ -121,6 +127,9 @@ class TestSignalStepOverHandlerWithBreakpoint(SignalDuringBreakpointStepTestCase
     # Atomic sequences are not supported yet for MIPS in LLDB.
     # (Copied from concurrent_events/TestConcurrentSignalBreak.py)
     @skipIf(triple='^mips')
+    # Currently, lldb might skip the next stop when stepping out of the func,
+    # if the single-stepping is not emulated
+    @skipIf(archs=no_match(['arm']))
     def test_breakpoint_inside_handler_continue_to_breakpoint(self):
         self.set_up_step_over_handler_with_breakpoint()
         self.set_up_and_iterate(self.action, False, self.check_handler_bp_continue)
