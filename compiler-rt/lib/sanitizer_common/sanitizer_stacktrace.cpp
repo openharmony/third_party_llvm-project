@@ -149,6 +149,10 @@ void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
 #endif  // !defined(__sparc__)
 
 void BufferedStackTrace::PopStackFrames(uptr count) {
+  // Don't attempt to pop if stack unwinding failed; this may happen at the
+  // early stage of ASAN initialization (e.g. malloc called from __dl_vseterr).
+  if (count == 0)
+    return;
   CHECK_LT(count, size);
   size -= count;
   for (uptr i = 0; i < size; ++i) {
