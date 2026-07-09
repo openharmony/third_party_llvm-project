@@ -257,11 +257,6 @@ bool MipsTargetInfo::validateTarget(DiagnosticsEngine &Diags) const {
     return false;
   }
 
-  if (getTriple().isOpenHOS() && FPMode == FPXX) {
-    Diags.Report(diag::err_unsupported_fpxx_ohos);
-    return false;
-  }
-
   // -fpxx is valid only for the o32 ABI
   if (FPMode == FPXX && (ABI == "n32" || ABI == "n64")) {
     Diags.Report(diag::err_unsupported_abi_for_opt) << "-mfpxx" << "o32";

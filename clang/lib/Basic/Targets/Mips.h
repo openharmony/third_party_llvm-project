@@ -87,9 +87,7 @@ public:
   }
 
   enum FPModeEnum getDefaultFPMode() const {
-    // TODO: remove getTriple().isOpenHOS() case when fpxx is supported on OHOS
-    if (getTriple().isOpenHOS() || CPU == "mips32r6" || ABI == "n32" ||
-        ABI == "n64" || ABI == "64")
+    if (CPU == "mips32r6" || ABI == "n32" || ABI == "n64" || ABI == "64")
       return FP64;
     else if (CPU == "mips1")
       return FP32;

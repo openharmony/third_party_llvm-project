@@ -379,13 +379,8 @@ void mips::getMIPSTargetFeatures(const Driver &D, const llvm::Triple &Triple,
     else if (A->getOption().matches(options::OPT_mfpxx)) {
       Features.push_back("+fpxx");
       Features.push_back("+nooddspreg");
-    } else
+    }     else
       Features.push_back("+fp64");
-  // OHOS_LOCAL begin
-  } else if (Triple.isOpenHOS()) {
-    // Set FP64 as default in OHOS
-    Features.push_back("+fp64");
-  // OHOS_LOCAL end
   } else if (mips::shouldUseFPXX(Args, Triple, CPUName, ABIName, FloatABI)) {
     Features.push_back("+fpxx");
     Features.push_back("+nooddspreg");
