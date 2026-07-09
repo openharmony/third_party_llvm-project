@@ -38,6 +38,7 @@
 #include "lldb/Host/OptionParser.h"
 #include "lldb/Host/Socket.h"
 #include "lldb/Host/common/TCPSocket.h"
+#include "lldb/Host/Config.h" // OHOS_LOCAL
 #if LLDB_ENABLE_POSIX
 #include "lldb/Host/posix/DomainSocket.h"
 #endif
@@ -96,6 +97,7 @@ static void signal_handler(int signo) {
     abort();
     break;
   // OHOS_LOCAL begin
+#if LLDB_ENABLE_TIMEOUT
   case SIGALRM:
     llvm::errs() << llvm::formatv(
         "In non-server mode with a timeout of {0}s. "
@@ -103,6 +105,7 @@ static void signal_handler(int signo) {
         g_timeout_sec);
     exit(-1);
     break;
+#endif
     // OHOS_LOCAL end
   }
 }
@@ -382,7 +385,9 @@ int main_platform(int argc, char *argv[]) {
   signal(SIGPIPE, SIG_IGN);
   signal(SIGHUP, signal_handler);
   // OHOS_LOCAL
+#if LLDB_ENABLE_TIMEOUT
   signal(SIGALRM, signal_handler);
+#endif
 #endif
   int long_option_index = 0;
   Status error;
@@ -593,7 +598,7 @@ int main_platform(int argc, char *argv[]) {
                         log_channels, &main_loop,
                         &platform_handles](std::unique_ptr<Socket> sock_up) {
               // OHOS_LOCAL begin
-#if !defined(_WIN32)
+#if !defined(_WIN32) && LLDB_ENABLE_TIMEOUT
               alarm(0);
 #endif
               // OHOS_LOCAL end
@@ -630,7 +635,7 @@ int main_platform(int argc, char *argv[]) {
     }
 
     // OHOS_LOCAL begin
-#if !defined(_WIN32)
+#if !defined(_WIN32) && LLDB_ENABLE_TIMEOUT
     char *lldb_server_listimeout = getenv("LLDB_SERVER_LISTIMEOUT");
     if (!g_server && lldb_server_listimeout != nullptr) {
       if (!llvm::to_integer(lldb_server_listimeout, g_timeout_sec) ||
