@@ -40,7 +40,7 @@ std::string rectifyPathSeparators(const char *S) {
 }
 
 TEST(OHOSTCTest, VFSSysroot) {
-  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  DiagnosticOptions DiagOpts;
 
   IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   struct TestDiagnosticConsumer : public DiagnosticConsumer {};
@@ -56,7 +56,7 @@ TEST(OHOSTCTest, VFSSysroot) {
   InMemoryFileSystem->addFile("/include/libcxx-ohos/include/c++/v1", 0,
                               llvm::MemoryBuffer::getMemBuffer(""));
 
-  DiagnosticsEngine Diags(DiagID, &*DiagOpts, new TestDiagnosticConsumer);
+  DiagnosticsEngine Diags(DiagID, DiagOpts, new TestDiagnosticConsumer);
   Driver TheDriver("/bin/clang", "arm-linux-liteos", Diags,
                    "clang LLVM compiler", InMemoryFileSystem);
   std::unique_ptr<Compilation> C(TheDriver.BuildCompilation(
