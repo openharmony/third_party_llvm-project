@@ -215,7 +215,7 @@ bool StackProtector::runOnFunction(Function &Fn) {
 
 bool StackProtector::CreateSSPRetCookie() {
   std::string cookiename = "__sspret_cookie";
-  Type *cookietype = Type::getInt8PtrTy(M->getContext());
+  Type *cookietype = PointerType::getUnqual(M->getContext());
   GlobalVariable *cookie = dyn_cast_or_null<GlobalVariable>(
       M->getOrInsertGlobal(cookiename, cookietype));
 

@@ -345,6 +345,19 @@ ENUM_LANGOPT(TypeVisibilityMode, Visibility, 3, DefaultVisibility, Benign,
              "default visibility for types [-ftype-visibility]")
 LANGOPT(SetVisibilityForExternDecls, 1, 0, NotCompatible,
         "apply global symbol visibility to external declarations without an explicit visibility")
+LANGOPT(VisibilityFromDLLStorageClass, 1, 0, Benign,
+        "override the visibility of globals based on their final DLL storage class [-fvisibility-from-dllstorageclass]")
+ENUM_LANGOPT(DLLExportVisibility, VisibilityFromDLLStorageClassKinds, 3, VisibilityFromDLLStorageClassKinds::Default, Benign,
+             "how to adjust the visibility for functions and variables with dllexport annotations [-fvisibility-dllexport]")
+ENUM_LANGOPT(NoDLLStorageClassVisibility, VisibilityFromDLLStorageClassKinds, 3, VisibilityFromDLLStorageClassKinds::Hidden, Benign,
+             "how to adjust the visibility for functions and variables without an explicit DLL storage class [-fvisibility-nodllstorageclass]")
+ENUM_LANGOPT(ExternDeclDLLImportVisibility, VisibilityFromDLLStorageClassKinds, 3, VisibilityFromDLLStorageClassKinds::Default, Benign,
+             "how to adjust the visibility for external declarations with dllimport annotations [-fvisibility-externs-dllimport]")
+ENUM_LANGOPT(ExternDeclNoDLLStorageClassVisibility, VisibilityFromDLLStorageClassKinds, 3,  VisibilityFromDLLStorageClassKinds::Hidden, Benign,
+             "how to adjust the visibility for external declarations without an explicit DLL storage class [-fvisibility-externs-nodllstorageclass]")
+LANGOPT(SemanticInterposition        , 1, 0, Benign, "semantic interposition")
+LANGOPT(HalfNoSemanticInterposition, 1, 0, Benign,
+        "Like -fno-semantic-interposition but don't use local aliases")
 ENUM_LANGOPT(StackProtector, StackProtectorMode, 3, SSPOff, NotCompatible,
              "stack protector mode")
 ENUM_LANGOPT(TrivialAutoVarInit, TrivialAutoVarInitKind, 2, TrivialAutoVarInitKind::Uninitialized, Benign,

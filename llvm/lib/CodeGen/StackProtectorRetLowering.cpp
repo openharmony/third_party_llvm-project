@@ -73,8 +73,8 @@ void StackProtectorRetLowering::insertStackProtectorRets(MachineFunction &MF) co
   if (!MFI.hasStackProtectorRetRegister())
     llvm_unreachable("Invalid stack-protector-ret state.");
 
-  GlobalVariable *cookie = dyn_cast_or_null<GlobalVariable>(M->getGlobalVariable(
-    Fn.getFnAttribute("sspret-randomdata").getValueAsString(), Type::getInt8PtrTy(M->getContext())));
+  GlobalVariable *cookie = M->getGlobalVariable(
+      Fn.getFnAttribute("sspret-randomdata").getValueAsString());
 
   if (!cookie)
     llvm_unreachable("Function needs stack-protector-ret but missing cookies available.");

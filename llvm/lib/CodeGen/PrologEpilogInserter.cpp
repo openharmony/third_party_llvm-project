@@ -430,7 +430,7 @@ void PEIImpl::calculateCallFrameInfo(MachineFunction &MF) {
 /// Compute the sets of entry and return blocks for saving and restoring
 /// callee-saved registers, and placing prolog and epilog code.
 void PEIImpl::calculateSaveRestoreBlocks(MachineFunction &MF) {
-  const MachineFrameInfo &MFI = MF.getFrameInfo();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
   const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
   const StackProtectorRetLowering *SPRL = TFI->getStackProtectorRet();
 
