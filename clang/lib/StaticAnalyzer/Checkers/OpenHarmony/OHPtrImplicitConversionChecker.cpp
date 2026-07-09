@@ -12,6 +12,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "clang/AST/DeclCXX.h"
+#include "clang/AST/Type.h"
 #include "clang/StaticAnalyzer/Checkers/BuiltinCheckerRegistration.h"
 #include "clang/StaticAnalyzer/Core/BugReporter/BugType.h"
 #include "clang/StaticAnalyzer/Core/Checker.h"
@@ -64,6 +66,17 @@ void OHPtrImplicitConversionChecker::checkPreStmt(const ImplicitCastExpr *Cast,
   }
   if (Cast->getCastKind() != CK_ConstructorConversion) {
     return;
+  }
+  if (auto *FD = dyn_cast<FunctionDecl>(ND)) {
+    ArrayRef<ParmVarDecl *> PAR = FD->parameters();
+    if (!PAR.empty()) {
+      QualType PT = PAR[0]->getOriginalType();
+      std::string PTS = PT.getAsString();
+      if (PTS.find("wptr") != std::string::npos ||
+          PTS.find("sptr") != std::string::npos) {
+        return;
+      }
+    }
   }
 
   std::string cf = ND->getNameAsString();
