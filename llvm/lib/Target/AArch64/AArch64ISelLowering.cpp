@@ -8413,6 +8413,9 @@ static bool mayTailCallThisCC(CallingConv::ID CC) {
   case CallingConv::SwiftTail:
   case CallingConv::Tail:
   case CallingConv::Fast:
+#ifdef ARK_GC_SUPPORT
+  case CallingConv::GHC:
+#endif
   // OHOS_LOCAL begin
   case CallingConv::ArkInt:
   case CallingConv::ArkFast0:
