@@ -105,6 +105,14 @@ public:
 
   void spillFPBP(MachineFunction &MF) const override;
 
+  // OHOS_LOCAL begin
+  bool supportsArkSpills() const override {
+    return true;
+  }
+
+  int getArkFrameAdaptationOffset(const MachineFunction &MF) const override;
+  // OHOS_LOCAL end
+
   bool hasReservedCallFrame(const MachineFunction &MF) const override;
   bool canSimplifyCallFramePseudos(const MachineFunction &MF) const override;
   bool needsFrameIndexResolution(const MachineFunction &MF) const override;

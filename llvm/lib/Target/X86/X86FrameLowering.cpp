@@ -90,6 +90,17 @@ bool X86FrameLowering::needsFrameIndexResolution(
          MF.getInfo<X86MachineFunctionInfo>()->getHasPushSequences();
 }
 
+// OHOS_LOCAL begin
+int
+X86FrameLowering::getArkFrameAdaptationOffset(const MachineFunction &MF) const {
+  const auto &F = MF.getFunction();
+  if (F.getMetadata("use-ark-frame") != nullptr)
+    return 0;
+  // FP + LR
+  return 0x10;
+}
+// OHOS_LOCAL end
+
 /// hasFPImpl - Return true if the specified function should have a dedicated
 /// frame pointer register.  This is true if the function has variable sized
 /// allocas or if frame pointer elimination is disabled.
@@ -4291,6 +4302,16 @@ void X86FrameLowering::adjustFrameForMsvcCxxEh(MachineFunction &MF) const {
 void X86FrameLowering::processFunctionBeforeFrameIndicesReplaced(
     MachineFunction &MF, RegScavenger *RS) const {
   auto *X86FI = MF.getInfo<X86MachineFunctionInfo>();
+
+  // OHOS_LOCAL begin
+  auto &MFI = MF.getFrameInfo();
+  int ArkSpillNo = 0;
+  for (int I = 0, E = MFI.getObjectIndexEnd(); I != E; ++I)
+    if (MFI.isArkSpillSlotObjectIndex(I)) {
+      MFI.setObjectOffset(I, MF.getArkSpillOffset(ArkSpillNo));
+      ArkSpillNo++;
+    }
+  // OHOS_LOCAL end
 
   if (STI.is32Bit() && MF.hasEHFunclets())
     restoreWinEHStackPointersInParent(MF);
