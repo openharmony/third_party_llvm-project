@@ -1830,6 +1830,22 @@ def SignalHandlerChecker : Checker<"SignalHandler">,
   ]>,
   Documentation<HasDocumentation>;
 
+def RefBaseDeleteChecker : Checker<"RefBaseDelete">,
+  HelpText<"Check for delete refbase managed by sptr/wptr">,
+  Documentation<NotDocumented>;
+
+def OHPtrImplicitConversionChecker : Checker<"OHPtrImplicitConversion">,
+  HelpText<"Check for implicit conversion of pointer to sptr/wptr">,
+  Documentation<NotDocumented>;
+
+def OHPtrNotInitChecker : Checker<"OHPtrNotInit">,
+  HelpText<"Check for sptr/wptr not init">,
+  Documentation<NotDocumented>;
+
+def NotHeapObjChecker : Checker<"NotHeapObj">,
+  HelpText<"Check for assign non-heap obj to sptr/wptr">,
+  Documentation<NotDocumented>;
+
 def NapiScopeManagerChecker : Checker<"Napi.Scope">,
   HelpText<"Check the use of napi_handle_scope">,
   Documentation<HasDocumentation>;
