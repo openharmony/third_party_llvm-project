@@ -2640,6 +2640,8 @@ void CodeGenModule::SetLLVMFunctionAttributesForDefinition(const Decl *D,
     B.addAttribute(llvm::Attribute::StackProtectStrong);
   else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPReq))
     B.addAttribute(llvm::Attribute::StackProtectReq);
+  else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPRet))
+    B.addAttribute(llvm::Attribute::StackProtectRet);
 
   if (!D) {
     // Non-entry HLSL functions must always be inlined.

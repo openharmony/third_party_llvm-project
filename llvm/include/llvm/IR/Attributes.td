@@ -302,6 +302,9 @@ def Speculatable : EnumAttr<"speculatable", IntersectAnd, [FnAttr]>;
 /// Stack protection.
 def StackProtect : EnumAttr<"ssp", IntersectPreserve, [FnAttr]>;
 
+/// Stack protection for return address.
+def StackProtectRet : EnumAttr<"sspret", IntersectPreserve, [FnAttr]>;
+
 /// Stack protection required.
 def StackProtectReq : EnumAttr<"sspreq", IntersectPreserve, [FnAttr]>;
 

@@ -4033,6 +4033,8 @@ defm split_stack : BoolFOption<"split-stack",
   PosFlag<SetTrue, [], [ClangOption, CC1Option], "Use segmented stack">>;
 def fstack_protector_all : Flag<["-"], "fstack-protector-all">, Group<f_Group>,
   HelpText<"Enable stack protectors for all functions">;
+def fstack_protector_ret : Flag<["-"], "fstack-protector-ret">, Group<f_Group>,
+  HelpText<"Enable stack protectors for all functions with return address check">;
 defm stack_clash_protection : BoolFOption<"stack-clash-protection",
   CodeGenOpts<"StackClashProtector">, DefaultFalse,
   PosFlag<SetTrue, [], [ClangOption, CC1Option], "Enable">,
@@ -8448,9 +8450,9 @@ def static_define : Flag<["-"], "static-define">,
   MarshallingInfoFlag<LangOpts<"Static">>;
 def stack_protector : Separate<["-"], "stack-protector">,
   HelpText<"Enable stack protectors">,
-  Values<"0,1,2,3">,
+  Values<"0,1,2,3,4">,
   NormalizedValuesScope<"LangOptions">,
-  NormalizedValues<["SSPOff", "SSPOn", "SSPStrong", "SSPReq"]>,
+  NormalizedValues<["SSPOff", "SSPOn", "SSPStrong", "SSPReq", "SSPRet"]>,
   MarshallingInfoEnum<LangOpts<"StackProtector">, "SSPOff">;
 def stack_protector_buffer_size : Separate<["-"], "stack-protector-buffer-size">,
   HelpText<"Lower bound for a buffer to be considered for stack protection">,

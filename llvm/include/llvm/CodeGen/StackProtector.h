@@ -104,6 +104,8 @@ private:
 
   SSPLayoutInfo LayoutInfo;
 
+  bool CreateSSPRetCookie();
+
 public:
   static char ID; // Pass identification, replacement for typeid.
 

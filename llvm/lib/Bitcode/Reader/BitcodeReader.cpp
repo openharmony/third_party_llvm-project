@@ -1899,6 +1899,8 @@ static uint64_t getRawAttributeMask(Attribute::AttrKind Val) {
     return 1ULL << 62;
   case Attribute::NoFree:
     return 1ULL << 63;
+  case Attribute::StackProtectRet:
+    return 1ULL << 64;
   default:
     // Other attributes are not supported in the raw format,
     // as we ran out of space.
@@ -2166,6 +2168,8 @@ static Attribute::AttrKind getAttrFromCode(uint64_t Code) {
     return Attribute::StackAlignment;
   case bitc::ATTR_KIND_STACK_PROTECT:
     return Attribute::StackProtect;
+  case bitc::ATTR_KIND_STACK_PROTECT_RET:
+    return Attribute::StackProtectRet;
   case bitc::ATTR_KIND_STACK_PROTECT_REQ:
     return Attribute::StackProtectReq;
   case bitc::ATTR_KIND_STACK_PROTECT_STRONG:
