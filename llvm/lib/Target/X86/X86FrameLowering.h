@@ -337,6 +337,10 @@ private:
   // any instructions from related sequence.
   bool skipSpillFPBP(MachineFunction &MF,
                      MachineBasicBlock::reverse_iterator &MI) const;
+
+  // OHOS_LOCAL begin
+  int getOffsetOfLocalArea(CallingConv::ID CC = CallingConv::C) const override;
+  // OHOS_LOCAL end
 };
 
 } // End llvm namespace

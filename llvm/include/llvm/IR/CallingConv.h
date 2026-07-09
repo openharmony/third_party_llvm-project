@@ -89,6 +89,11 @@ namespace CallingConv {
     /// Used for runtime calls that preserves none general registers.
     PreserveNone = 21,
 
+    // OHOS_LOCAL begin
+    // Ark Irtoc calling convention for Interpreter handlers
+    ArkInt = 22,
+    // OHOS_LOCAL end
+
     /// This is the start of the target-specific calling conventions, e.g.
     /// fastcall and thiscall on X86.
     FirstTargetCC = 64,
