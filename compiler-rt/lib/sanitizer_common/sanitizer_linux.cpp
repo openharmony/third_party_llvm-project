@@ -190,7 +190,9 @@ void SetSigProcMask(__sanitizer_sigset_t *set, __sanitizer_sigset_t *oldset) {
 static void KeepUnblocked(__sanitizer_sigset_t &newset,
                           __sanitizer_sigset_t &oldset, int signum) {
   // FIXME: https://github.com/google/sanitizers/issues/1816
-  if (SANITIZER_ANDROID || !internal_sigismember(&oldset, signum))
+  // OHOS_LOCAL: BlockSignals skips filling oldset on OHOS.
+  if (SANITIZER_ANDROID || SANITIZER_OHOS ||
+      !internal_sigismember(&oldset, signum))
     internal_sigdelset(&newset, signum);
 }
 #  endif
