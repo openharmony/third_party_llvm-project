@@ -212,7 +212,7 @@
 #include "AArch64InstrInfo.h"
 #include "AArch64MachineFunctionInfo.h"
 #include "AArch64RegisterInfo.h"
-#include "AArch64StackProtectorRetLowering.h"
+#include "AArch64StackProtectorRetLowering.h" // OHOS_LOCAL
 #include "AArch64Subtarget.h"
 #include "MCTargetDesc/AArch64AddressingModes.h"
 #include "MCTargetDesc/AArch64MCTargetDesc.h"
@@ -3954,9 +3954,11 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
                                 ? RegInfo->getBaseRegister()
                                 : (unsigned)AArch64::NoRegister;
 
+  // OHOS_LOCAL begin
   if (MFI.hasStackProtectorRetRegister()) {
     SavedRegs.set(MFI.getStackProtectorRetRegister());
   }
+  // OHOS_LOCAL end
 
   unsigned ExtraCSSpill = 0;
   bool HasUnpairedGPR64 = false;
@@ -5365,10 +5367,12 @@ unsigned AArch64FrameLowering::getWinEHFuncletFrameSize(
                  getStackAlign());
 }
 
+/// OHOS_LOCAL begin
 const StackProtectorRetLowering *
 AArch64FrameLowering::getStackProtectorRet() const {
   return &SPRL;
 }
+/// OHOS_LOCAL end
 
 namespace {
 struct FrameObject {

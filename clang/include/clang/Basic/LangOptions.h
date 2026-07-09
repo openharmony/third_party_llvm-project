@@ -94,7 +94,7 @@ public:
   };
 
   enum GCMode { NonGC, GCOnly, HybridGC };
-  enum StackProtectorMode { SSPOff, SSPOn, SSPStrong, SSPReq, SSPRet };
+  enum StackProtectorMode { SSPOff, SSPOn, SSPStrong, SSPReq, SSPRetStrong, SSPRetReq }; // OHOS_LOCAL
 
   // Automatic variables live on the stack, and when trivial they're usually
   // uninitialized because it's undefined behavior to use them without

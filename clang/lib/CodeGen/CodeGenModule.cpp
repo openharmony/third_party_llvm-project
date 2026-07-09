@@ -2640,8 +2640,12 @@ void CodeGenModule::SetLLVMFunctionAttributesForDefinition(const Decl *D,
     B.addAttribute(llvm::Attribute::StackProtectStrong);
   else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPReq))
     B.addAttribute(llvm::Attribute::StackProtectReq);
-  else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPRet))
-    B.addAttribute(llvm::Attribute::StackProtectRet);
+  // OHOS_LOCAL begin
+  else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPRetStrong))
+    B.addAttribute(llvm::Attribute::StackProtectRetStrong);
+  else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPRetReq))
+    B.addAttribute(llvm::Attribute::StackProtectRetReq);
+  // OHOS_LOCAL end
 
   if (!D) {
     // Non-entry HLSL functions must always be inlined.

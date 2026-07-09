@@ -4033,8 +4033,12 @@ defm split_stack : BoolFOption<"split-stack",
   PosFlag<SetTrue, [], [ClangOption, CC1Option], "Use segmented stack">>;
 def fstack_protector_all : Flag<["-"], "fstack-protector-all">, Group<f_Group>,
   HelpText<"Enable stack protectors for all functions">;
-def fstack_protector_ret : Flag<["-"], "fstack-protector-ret">, Group<f_Group>,
+// OHOS_LOCAL begin
+def fstack_protector_ret_all : Flag<["-"], "fstack-protector-ret-all">, Group<f_Group>,
   HelpText<"Enable stack protectors for all functions with return address check">;
+def fstack_protector_ret_strong : Flag<["-"], "fstack-protector-ret-strong">, Group<f_Group>,
+  HelpText<"Enable stack protectors for some functions vulnerable to stack smashing with return address check">;
+// OHOS_LOCAL end
 defm stack_clash_protection : BoolFOption<"stack-clash-protection",
   CodeGenOpts<"StackClashProtector">, DefaultFalse,
   PosFlag<SetTrue, [], [ClangOption, CC1Option], "Enable">,
@@ -8456,13 +8460,18 @@ def static_define : Flag<["-"], "static-define">,
   MarshallingInfoFlag<LangOpts<"Static">>;
 def stack_protector : Separate<["-"], "stack-protector">,
   HelpText<"Enable stack protectors">,
-  Values<"0,1,2,3,4">,
+  Values<"0,1,2,3,4,5">, // OHOS_LOCAL
   NormalizedValuesScope<"LangOptions">,
-  NormalizedValues<["SSPOff", "SSPOn", "SSPStrong", "SSPReq", "SSPRet"]>,
+  NormalizedValues<["SSPOff", "SSPOn", "SSPStrong", "SSPReq", "SSPRetStrong", "SSPRetReq"]>, // OHOS_LOCAL
   MarshallingInfoEnum<LangOpts<"StackProtector">, "SSPOff">;
 def stack_protector_buffer_size : Separate<["-"], "stack-protector-buffer-size">,
   HelpText<"Lower bound for a buffer to be considered for stack protection">,
   MarshallingInfoInt<CodeGenOpts<"SSPBufferSize">, "8">;
+// OHOS_LOCAL begin
+def stack_protector_ret_cookie_size : Separate<["-"], "stack-protector-ret-cookie-size">,
+  HelpText<"Maximum number of cookies for return address check to be considered for stack protection">,
+  MarshallingInfoInt<CodeGenOpts<"SSPRetCookieSize">, "1">;
+// OHOS_LOCAL end
 def ftype_visibility : Joined<["-"], "ftype-visibility=">,
   HelpText<"Default type visibility">,
   MarshallingInfoVisibility<LangOpts<"TypeVisibilityMode">, fvisibility_EQ.KeyPath>;

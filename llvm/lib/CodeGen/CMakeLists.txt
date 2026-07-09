@@ -226,7 +226,7 @@ add_llvm_component_library(LLVMCodeGen
   StackMapLivenessAnalysis.cpp
   StackMaps.cpp
   StackProtector.cpp
-  StackProtectorRetLowering.cpp
+  StackProtectorRetLowering.cpp # OHOS_LOCAL
   StackSlotColoring.cpp
   StaticDataSplitter.cpp
   StaticDataAnnotator.cpp

@@ -636,7 +636,7 @@ static bool isRelroSection(Ctx &ctx, const OutputSection *sec) {
 
   bool abiSpecific =
       (ctx.arg.osabi == ELFOSABI_OPENBSD && s == ".openbsd.randomdata") ||
-      s == ".ohos.randomdata";
+      s == ".ohos.randomdata"; // OHOS_LOCAL
 
   return abiAgnostic || abiSpecific;
 }
@@ -2495,8 +2495,10 @@ Writer<ELFT>::createPhdrs(Partition &part) {
   if (OutputSection *cmd = findSection(ctx, ".note.gnu.property", partNo))
     addHdr(PT_GNU_PROPERTY, PF_R)->add(cmd);
 
+  // OHOS_LOCAL
   if (OutputSection *cmd = findSection(ctx, ".ohos.randomdata", partNo))
     addHdr(PT_OHOS_RANDOMDATA, cmd->getPhdrFlags())->add(cmd);
+  // OHOS_LOCAL
 
   // Create one PT_NOTE per a group of contiguous SHT_NOTE sections with the
   // same alignment.

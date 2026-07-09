@@ -302,8 +302,13 @@ def Speculatable : EnumAttr<"speculatable", IntersectAnd, [FnAttr]>;
 /// Stack protection.
 def StackProtect : EnumAttr<"ssp", IntersectPreserve, [FnAttr]>;
 
-/// Stack protection for return address.
-def StackProtectRet : EnumAttr<"sspret", IntersectPreserve, [FnAttr]>;
+/// OHOS_LOCAL begin
+/// Stack protection required with return address check.
+def StackProtectRetReq : EnumAttr<"sspretreq", IntersectPreserve, [FnAttr]>;
+
+/// Strong Stack protection with return address check.
+def StackProtectRetStrong : EnumAttr<"sspretstrong", IntersectPreserve, [FnAttr]>;
+/// OHOS_LOCAL end
 
 /// Stack protection required.
 def StackProtectReq : EnumAttr<"sspreq", IntersectPreserve, [FnAttr]>;

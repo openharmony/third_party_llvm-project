@@ -374,6 +374,11 @@ VALUE_CODEGENOPT(SmallDataLimit, 32, 0, Benign)
 /// The lower bound for a buffer to be considered for stack protection.
 VALUE_CODEGENOPT(SSPBufferSize, 32, 0, Benign)
 
+/// OHOS_LOCAL begin
+/// The maximum total of cookies used by backward cfi for stack protection.
+VALUE_CODEGENOPT(SSPRetCookieSize, 32, 1, Benign)
+/// OHOS_LOCAL end
+
 /// The kind of inlining to perform.
 ENUM_CODEGENOPT(Inlining, InliningMethod, 2, NormalInlining, Benign)
 

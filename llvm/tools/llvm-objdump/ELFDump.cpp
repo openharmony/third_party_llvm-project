@@ -318,9 +318,11 @@ template <class ELFT> void ELFDumper<ELFT>::printProgramHeaders() {
     case ELF::PT_OPENBSD_WXNEEDED:
       outs() << "OPENBSD_WXNEEDED ";
       break;
+    // OHOS_LOCAL begin
     case ELF::PT_OHOS_RANDOMDATA:
       outs() << "    OHOS_RANDOMDATA ";
       break;
+    // OHOS_LOCAL end
     case ELF::PT_PHDR:
       outs() << "    PHDR ";
       break;

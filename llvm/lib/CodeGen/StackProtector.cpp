@@ -48,6 +48,7 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include <functional>
 #include <optional>
 #include <utility>
 
@@ -180,6 +181,14 @@ bool StackProtector::runOnFunction(Function &Fn) {
 
   LayoutInfo.SSPBufferSize = Fn.getFnAttributeAsParsedInteger(
       "stack-protector-buffer-size", SSPLayoutInfo::DefaultSSPBufferSize);
+
+  // OHOS_LOCAL begin
+  SSPRetCookieSize = Fn.getFnAttributeAsParsedInteger(
+      "stack-protector-ret-cookie-size", 1);
+  if (!SSPRetCookieSize)
+    return false;
+  // OHOS_LOCAL end
+
   if (!requiresStackProtector(F, &LayoutInfo.Layout))
     return false;
 
@@ -193,13 +202,16 @@ bool StackProtector::runOnFunction(Function &Fn) {
 
   ++NumFunProtected;
 
-  if (Fn.hasFnAttribute(Attribute::StackProtectRet)) {
+  // OHOS_LOCAL begin
+  if (Fn.hasFnAttribute(Attribute::StackProtectRetReq) ||
+      Fn.hasFnAttribute(Attribute::StackProtectRetStrong)) {
     LayoutInfo.HasIRCheck = true;
     CreateSSPRetCookie();
     // StackProtectRet requires special code generation methods for backward
     // cfi.
     return false;
   }
+  // OHOS_LOCAL end
 
   bool Changed =
       InsertStackProtectors(TM, F, DTU ? &*DTU : nullptr,
@@ -213,9 +225,13 @@ bool StackProtector::runOnFunction(Function &Fn) {
   return Changed;
 }
 
+// OHOS_LOCAL begin
 bool StackProtector::CreateSSPRetCookie() {
-  std::string cookiename = "__sspret_cookie";
   Type *cookietype = PointerType::getUnqual(M->getContext());
+  std::hash<std::string> hasher;
+  std::string hash = std::to_string(
+      hasher((M->getName() + F->getName()).str()) % SSPRetCookieSize);
+  std::string cookiename = "__sspret_cookie_" + hash;
   GlobalVariable *cookie = dyn_cast_or_null<GlobalVariable>(
       M->getOrInsertGlobal(cookiename, cookietype));
 
@@ -230,6 +246,7 @@ bool StackProtector::CreateSSPRetCookie() {
 
   return true;
 }
+// OHOS_LOCAL end
 
 /// \param [out] IsLarge is set to true if a protectable array is found and
 /// it is "large" ( >= ssp-buffer-size).  In the case of a structure with
@@ -451,9 +468,13 @@ bool SSPLayoutAnalysis::requiresStackProtector(Function *F,
     });
     NeedsProtector = true;
     Strong = true; // Use the same heuristic as strong to determine SSPLayout
-  } else if (F->hasFnAttribute(Attribute::StackProtectRet)) {
+  // OHOS_LOCAL begin
+  } else if (F->hasFnAttribute(Attribute::StackProtectRetReq)) {
     NeedsProtector = true;
     Strong = true;
+  } else if (F->hasFnAttribute(Attribute::StackProtectRetStrong)) {
+    Strong = true;
+  // OHOS_LOCAL end
   } else if (F->hasFnAttribute(Attribute::StackProtectStrong))
     Strong = true;
   else if (!F->hasFnAttribute(Attribute::StackProtect))

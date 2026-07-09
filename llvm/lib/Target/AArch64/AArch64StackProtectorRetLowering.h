@@ -6,6 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+/// OHOS_LOCAL begin
 #ifndef LLVM_LIB_TARGET_AARCH64_AARCH64STACKPROTECTORRETLOWERING_H
 #define LLVM_LIB_TARGET_AARCH64_AARCH64STACKPROTECTORRETLOWERING_H
 
@@ -37,3 +38,4 @@ public:
 } // namespace llvm
 
 #endif
+/// OHOS_LOCAL end

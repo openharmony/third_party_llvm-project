@@ -14,7 +14,7 @@
 #define LLVM_LIB_TARGET_AARCH64_AARCH64FRAMELOWERING_H
 
 #include "llvm/CodeGen/MachineOptimizationRemarkEmitter.h"
-#include "AArch64StackProtectorRetLowering.h"
+#include "AArch64StackProtectorRetLowering.h" // OHOS_LOCAL
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/Support/TypeSize.h"
 
@@ -22,12 +22,11 @@ namespace llvm {
 
 class AArch64FrameLowering : public TargetFrameLowering {
 public:
-  const AArch64StackProtectorRetLowering SPRL;
+  const AArch64StackProtectorRetLowering SPRL; // OHOS_LOCAL
 
   explicit AArch64FrameLowering()
       : TargetFrameLowering(StackGrowsDown, Align(16), 0, Align(16),
-                            true /*StackRealignable*/),
-        SPRL() {}
+                            true /*StackRealignable*/), SPRL() {} // OHOS_LOCAL
 
   void resetCFIToInitialState(MachineBasicBlock &MBB) const override;
 
@@ -52,7 +51,7 @@ public:
 
   bool enableFullCFIFixup(const MachineFunction &MF) const override;
 
-  const StackProtectorRetLowering *getStackProtectorRet() const override;
+  const StackProtectorRetLowering *getStackProtectorRet() const override; // OHOS_LOCAL
 
   bool canUseAsPrologue(const MachineBasicBlock &MBB) const override;
 
