@@ -370,6 +370,10 @@ def get_lit_conf(name, default=None):
 emulator = get_lit_conf("emulator", None)
 
 
+def is_ohos_family_mobile():
+    return getattr(config, "ohos_family", False) and config.target_arch != "x86_64"
+
+
 def get_ios_commands_dir():
     return os.path.join(
         config.compiler_rt_src_root, "test", "sanitizer_common", "ios_commands"
@@ -475,6 +479,24 @@ elif config.host_os == "Darwin" and config.apple_platform != "osx":
     prepare_output_json = prepare_output.split("\n")[-1]
     prepare_output = json.loads(prepare_output_json)
     config.environment.update(prepare_output["env"])
+elif is_ohos_family_mobile():
+    config.available_features.add("ohos_family")
+    config.available_features.add("android")
+    compile_wrapper = (
+        os.path.join(
+            config.compiler_rt_src_root,
+            "test",
+            "sanitizer_common",
+            "ohos_family_commands",
+            "ohos_compile.py",
+        )
+        + " "
+    )
+    config.compile_wrapper = compile_wrapper
+    config.substitutions.append(("%run", ""))
+    config.substitutions.append(("%env ", "env "))
+    lit_config.warning("%device_rm is not implemented")
+    config.substitutions.append(("%device_rm", "echo "))
 elif config.android:
     config.available_features.add("android")
     compile_wrapper = (

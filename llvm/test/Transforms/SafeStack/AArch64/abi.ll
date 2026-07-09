@@ -1,9 +1,12 @@
 ; RUN: opt -safe-stack -S -mtriple=aarch64-linux-android < %s -o - | FileCheck %s
 ; RUN: opt -passes=safe-stack -S -mtriple=aarch64-linux-android < %s -o - | FileCheck %s
+; RUN: opt -safe-stack -S -mtriple=aarch64-linux-ohos < %s -o - | FileCheck %s --check-prefix=OHOS
+; RUN: opt -passes=safe-stack -S -mtriple=aarch64-linux-ohos < %s -o - | FileCheck %s --check-prefix=OHOS
 
 
 define void @foo() nounwind uwtable safestack {
 entry:
+; OHOS-NOT: call ptr @llvm.thread.pointer.p0()
 ; CHECK: %[[TP:.*]] = call ptr @llvm.thread.pointer.p0()
 ; CHECK: %[[SPA0:.*]] = getelementptr i8, ptr %[[TP]], i32 72
 ; CHECK: %[[USP:.*]] = load ptr, ptr %[[SPA0]]

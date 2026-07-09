@@ -61,6 +61,8 @@ class SymbolFileDWARFDebugMap;
 class SymbolFileDWARFDwo;
 class SymbolFileDWARFDwp;
 
+struct DWARFStrOffsetsInfo;
+
 #define DIE_IS_BEING_PARSED ((lldb_private::Type *)1)
 
 class SymbolFileDWARF : public SymbolFileCommon {
@@ -223,7 +225,8 @@ public:
   virtual void GetObjCMethods(ConstString class_name,
                               llvm::function_ref<bool(DWARFDIE die)> callback);
 
-  DebugMacrosSP ParseDebugMacros(lldb::offset_t *offset);
+  DebugMacrosSP ParseDebugMacros(lldb::offset_t *offset,
+                                 const DWARFStrOffsetsInfo &str_offsets_info);
 
   static DWARFDIE GetParentSymbolContextDIE(const DWARFDIE &die);
 

@@ -17,6 +17,7 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/Errno.h"
 #include "llvm/Support/Error.h"
@@ -172,6 +173,8 @@ Status TCPSocket::Connect(llvm::StringRef name) {
   std::vector<SocketAddress> addresses =
       SocketAddress::GetAddressInfo(host_port->hostname.c_str(), nullptr,
                                     AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP);
+  llvm::partition(addresses,
+                  [](auto &sa) { return sa.GetFamily() == AF_INET; });
   for (SocketAddress &address : addresses) {
     error = CreateSocket(address.GetFamily());
     if (error.Fail())

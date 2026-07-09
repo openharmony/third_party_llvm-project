@@ -8,6 +8,7 @@
 
 from libcxx.test.dsl import *
 from lit.BooleanExpression import BooleanExpression
+import os
 import re
 import shutil
 import subprocess
@@ -926,4 +927,5 @@ DEFAULT_FEATURES += [
             cfg.available_features,
         ),
     ),
+    Feature(name="ohos-ci", when=lambda cfg: os.path.exists("/.dockerenv")),
 ]

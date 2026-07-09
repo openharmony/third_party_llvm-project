@@ -165,6 +165,10 @@ def platformIsDarwin():
     return getPlatform() in getDarwinOSTriples()
 
 
+def isOpenHarmonyCI():
+    return getPlatform() == "linux" and os.path.exists("/.dockerenv")
+
+
 def findMainThreadCheckerDylib():
     if not platformIsDarwin():
         return ""

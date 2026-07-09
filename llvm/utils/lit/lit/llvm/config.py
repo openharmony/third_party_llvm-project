@@ -97,6 +97,8 @@ class LLVMConfig(object):
             features.add("system-windows")
         elif platform.system() == "Linux":
             features.add("system-linux")
+            if os.path.exists("/.dockerenv"):
+                features.add("ohos-ci")
         elif platform.system() in ["FreeBSD"]:
             features.add("system-freebsd")
         elif platform.system() == "NetBSD":

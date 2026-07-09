@@ -786,17 +786,6 @@ class Base(unittest.TestCase):
         for setting, value in configuration.settings:
             commands.append("setting set %s %s" % (setting, value))
 
-        # Make sure that a sanitizer LLDB's environment doesn't get passed on.
-        if (
-            cls.platformContext
-            and cls.platformContext.shlib_environment_var in os.environ
-        ):
-            commands.append(
-                "settings set target.env-vars {}=".format(
-                    cls.platformContext.shlib_environment_var
-                )
-            )
-
         # Set environment variables for the inferior.
         if lldbtest_config.inferior_env:
             commands.append(
