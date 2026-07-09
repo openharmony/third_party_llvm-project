@@ -3556,21 +3556,26 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
     // OHOS_LOCAL begin
     if (Str.starts_with("ssp-ret-cookie-size=")) {
       unsigned int SSPRetCookieSize = 0;
+      size_t CookieSizePrefixLen = sizeof("ssp-ret-cookie-size=") - 1;
       // Currently only supports AArch64 architecture.
       if (!EffectiveTriple.isAArch64() || !EffectiveTriple.isOSBinFormatELF()) {
         D.Diag(diag::err_drv_unsupported_opt_for_target)
-          << Str.take_front(19) << EffectiveTriple.getTriple();
+          << Str.take_front(CookieSizePrefixLen) << EffectiveTriple.getTriple();
         continue;
       }
       // The parameter must be greater than 0.
-      if (Str.drop_front(20).getAsInteger(10, SSPRetCookieSize) || !SSPRetCookieSize) {
+      if (Str.drop_front(sizeof("ssp-ret-cookie-size=") - 1)
+              .getAsInteger(10, SSPRetCookieSize) ||
+          !SSPRetCookieSize) {
         D.Diag(diag::err_drv_invalid_int_value)
-          << Str.take_front(19) << Str.drop_front(20);
+            << Str.take_front(CookieSizePrefixLen)
+            << Str.drop_front(sizeof("ssp-ret-cookie-size=") - 1);
         continue;
       }
       if (StackProtectorLevel) {
         CmdArgs.push_back("-stack-protector-ret-cookie-size");
-        CmdArgs.push_back(Args.MakeArgString(Str.drop_front(20)));
+        CmdArgs.push_back(
+            Args.MakeArgString(Str.drop_front(sizeof("ssp-ret-cookie-size=") - 1)));
       }
       A->claim();
     }
