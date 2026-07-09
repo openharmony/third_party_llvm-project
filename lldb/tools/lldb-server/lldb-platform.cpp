@@ -17,6 +17,7 @@
 #include <cstring>
 #if !defined(_WIN32)
 #include <sys/wait.h>
+#include <unistd.h>
 #endif
 #include <fstream>
 #include <optional>
@@ -59,6 +60,7 @@ static const int socket_error = -1;
 static int g_debug = 0;
 static int g_verbose = 0;
 static int g_server = 0;
+static int g_timeout_sec = 300;
 
 // option descriptors for getopt_long_only()
 static struct option g_long_options[] = {
@@ -93,6 +95,15 @@ static void signal_handler(int signo) {
     llvm::errs() << "SIGHUP received, exiting lldb-server...\n";
     abort();
     break;
+  // OHOS_LOCAL begin
+  case SIGALRM:
+    llvm::errs() << llvm::formatv(
+        "In non-server mode with a timeout of {0}s. "
+        "SIGALRM received because of timeout, exiting lldb-server...\n",
+        g_timeout_sec);
+    exit(-1);
+    break;
+    // OHOS_LOCAL end
   }
 }
 #endif
@@ -370,6 +381,8 @@ int main_platform(int argc, char *argv[]) {
 #if !defined(_WIN32)
   signal(SIGPIPE, SIG_IGN);
   signal(SIGHUP, signal_handler);
+  // OHOS_LOCAL
+  signal(SIGALRM, signal_handler);
 #endif
   int long_option_index = 0;
   Status error;
@@ -579,6 +592,11 @@ int main_platform(int argc, char *argv[]) {
             main_loop, [progname, gdbserver_port, &inferior_arguments, log_file,
                         log_channels, &main_loop,
                         &platform_handles](std::unique_ptr<Socket> sock_up) {
+              // OHOS_LOCAL begin
+#if !defined(_WIN32)
+              alarm(0);
+#endif
+              // OHOS_LOCAL end
               printf("Connection established.\n");
               Status error = spawn_process(
                   progname, HostInfo::GetProgramFileSpec(), sock_up.get(),
@@ -610,6 +628,22 @@ int main_platform(int argc, char *argv[]) {
              llvm::toString(gdb_handles.takeError()).c_str());
       return socket_error;
     }
+
+    // OHOS_LOCAL begin
+#if !defined(_WIN32)
+    char *lldb_server_listimeout = getenv("LLDB_SERVER_LISTIMEOUT");
+    if (!g_server && lldb_server_listimeout != nullptr) {
+      if (!llvm::to_integer(lldb_server_listimeout, g_timeout_sec) ||
+          g_timeout_sec <= 0) {
+        WithColor::error() << "Invalid environment variable: "
+                           << "LLDB_SERVER_LISTIMEOUT="
+                           << lldb_server_listimeout << "\n";
+        exit(0);
+      }
+      alarm(g_timeout_sec);
+    }
+#endif
+    // OHOS_LOCAL end
 
     main_loop.Run();
   }
