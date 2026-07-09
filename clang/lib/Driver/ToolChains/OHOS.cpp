@@ -409,6 +409,10 @@ void OHOS::addExtraOpts(llvm::opt::ArgStringList &CmdArgs) const {
 }
 
 SanitizerMask OHOS::getSupportedSanitizers() const {
+  const llvm::Triple::ArchType Arch = getArch();
+  const bool IsAArch64 =
+      Arch == llvm::Triple::aarch64 || Arch == llvm::Triple::aarch64_be;
+
   SanitizerMask Res = ToolChain::getSupportedSanitizers();
   Res |= SanitizerKind::Address;
   Res |= SanitizerKind::PointerCompare;
@@ -419,8 +423,10 @@ SanitizerMask OHOS::getSupportedSanitizers() const {
   Res |= SanitizerKind::Vptr;
   Res |= SanitizerKind::SafeStack;
   Res |= SanitizerKind::Scudo;
-  // TODO: kASAN for liteos ??
-  // TODO: Support TSAN and HWASAN and update mask.
+  // OHOS_LOCAL
+  if (IsAArch64)
+    Res |= SanitizerKind::HWAddress;
+  // TODO: Support TSAN and update mask.
   return Res;
 }
 
