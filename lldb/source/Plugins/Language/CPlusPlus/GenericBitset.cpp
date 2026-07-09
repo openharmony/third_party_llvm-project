@@ -11,6 +11,7 @@
 #include "Plugins/TypeSystem/Clang/TypeSystemClang.h"
 #include "lldb/DataFormatters/FormattersHelpers.h"
 #include "lldb/Target/Target.h"
+#include "lldb/Utility/Stream.h"
 #include <optional>
 
 using namespace lldb;
@@ -94,8 +95,14 @@ lldb::ChildCacheState GenericBitsetFrontEnd::Update() {
 
   size_t size = 0;
 
+  // OHOS_LOCAL begin
+  const size_t bit_in_byte_cnt = 8;
+  const size_t sizeof_sizet_in_bits = sizeof(size_t) * bit_in_byte_cnt;
+
   if (auto arg = m_backend.GetCompilerType().GetIntegralTemplateArgument(0))
-    size = arg->value.GetAPSInt().getLimitedValue();
+    size = (arg->value.GetAPSInt().getLimitedValue() + sizeof_sizet_in_bits - 1) /
+           sizeof_sizet_in_bits;
+  // OHOS_LOCAL end
 
   m_elements.assign(size, ValueObjectSP());
   m_first =
@@ -110,33 +117,23 @@ ValueObjectSP GenericBitsetFrontEnd::GetChildAtIndex(uint32_t idx) {
   if (m_elements[idx])
     return m_elements[idx];
 
-  ExecutionContext ctx = m_backend.GetExecutionContextRef().Lock(false);
-  CompilerType type;
   ValueObjectSP chunk;
   // For small bitsets __first_ is not an array, but a plain size_t.
-  if (m_first->GetCompilerType().IsArrayType(&type)) {
-    std::optional<uint64_t> bit_size = llvm::expectedToOptional(
-        type.GetBitSize(ctx.GetBestExecutionContextScope()));
-    if (!bit_size || *bit_size == 0)
-      return {};
-    chunk = m_first->GetChildAtIndex(idx / *bit_size);
+  // OHOS_LOCAL begin
+  if (m_first->GetCompilerType().IsArrayType(nullptr)) {
+    chunk = m_first->GetChildAtIndex(idx);
+  // OHOS_LOCAL end
   } else {
-    type = m_first->GetCompilerType();
     chunk = m_first->GetSP();
   }
-  if (!type || !chunk)
-    return {};
+  // OHOS_LOCAL begin
+  if (!chunk)
+    return ValueObjectSP();
 
-  std::optional<uint64_t> bit_size = llvm::expectedToOptional(
-      type.GetBitSize(ctx.GetBestExecutionContextScope()));
-  if (!bit_size || *bit_size == 0)
-    return {};
-  size_t chunk_idx = idx % *bit_size;
-  uint8_t value = !!(chunk->GetValueAsUnsigned(0) & (uint64_t(1) << chunk_idx));
-  DataExtractor data(&value, sizeof(value), m_byte_order, m_byte_size);
-
-  m_elements[idx] = CreateValueObjectFromData(llvm::formatv("[{0}]", idx).str(),
-                                              data, ctx, m_bool_type);
+  StreamString name;
+  name.Printf("[%" PRIu64 "]", (uint64_t)idx);
+  m_elements[idx] = chunk->Clone(ConstString(name.GetString()));
+  // OHOS_LOCAL end
 
   return m_elements[idx];
 }
