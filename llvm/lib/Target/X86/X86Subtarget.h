@@ -19,6 +19,7 @@
 #include "X86SelectionDAGInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/CallingConv.h"
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/TargetParser/Triple.h"
 #include <climits>
 #include <memory>
@@ -187,6 +188,12 @@ public:
     // CX16 is just the CPUID bit, instruction requires 64-bit mode too.
     return hasCX16() && is64Bit();
   }
+
+  // OHOS_LOCAL begin
+  // Reserved registers features
+  SmallSet<Register, 8> getRRegReservation() const;
+  // OHOS_LOCAL end
+
   // SSE codegen depends on cmovs, and all SSE1+ processors support them.
   // All 64-bit processors support cmov.
   bool canUseCMOV() const { return hasCMOV() || hasSSE1() || is64Bit(); }
