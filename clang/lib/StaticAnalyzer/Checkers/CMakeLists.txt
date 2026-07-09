@@ -143,6 +143,9 @@ add_clang_library(clangStaticAnalyzerCheckers
   OpenHarmony/MemcpyChecker.cpp
   OpenHarmony/PrintSensitiveInfoChecker.cpp
   OpenHarmony/SignalHandlerChecker.cpp
+  OpenHarmony/NapiScopeManagerChecker.cpp
+  OpenHarmony/NapiGetArrBufferDataChecker.cpp
+  OpenHarmony/NapiWrapParamChecker.cpp
 
   LINK_LIBS
   clangAST

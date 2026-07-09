@@ -1829,4 +1829,16 @@ def SignalHandlerChecker : Checker<"SignalHandler">,
                   Released>,
   ]>,
   Documentation<HasDocumentation>;
+
+def NapiScopeManagerChecker : Checker<"Napi.Scope">,
+  HelpText<"Check the use of napi_handle_scope">,
+  Documentation<HasDocumentation>;
+
+def NapiGetArrBufferDataChecker : Checker<"Napi.GetArrayBuffer">,
+  HelpText<"Check the use of napi_get_arraybuffer_info">,
+  Documentation<HasDocumentation>;
+
+def NapiWrapParamChecker : Checker<"Napi.Wrap">,
+  HelpText<"Check the use of napi_wrap">,
+  Documentation<HasDocumentation>;
 }
