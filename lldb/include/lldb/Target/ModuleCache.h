@@ -17,6 +17,7 @@
 #include "lldb/Utility/Status.h"
 
 #include <functional>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 
@@ -67,6 +68,7 @@ private:
              bool *did_create_ptr);
 
   std::unordered_map<std::string, lldb::ModuleWP> m_loaded_modules;
+  std::recursive_mutex m_cache_mutex;
 };
 
 } // namespace lldb_private
