@@ -2645,7 +2645,7 @@ class LlvmPackage(BuildUtils):
             'lldb%s' % ext,
             'lldb-argdumper%s' % ext,
             'lldb-server%s' % ext,
-            'lldb-vscode%s' % ext,
+            'lldb-dap%s' % ext,
             ]
         necessary_bin_files.extend(necessary_bin_file)
 

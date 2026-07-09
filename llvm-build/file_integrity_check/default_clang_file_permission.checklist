@@ -49,7 +49,7 @@ lib/clang-format.exe,-rwxr-xr-x
 lib/clang-check.exe,-rwxr-xr-x
 lib/llvm-size.exe,-rwxr-xr-x
 lib/git-clang-format,-rwxr-xr-x
-lib/lldb-vscode.exe,-rwxr-xr-x
+lib/lldb-dap.exe,-rwxr-xr-x
 lib/dsymutil.exe,-rwxr-xr-x
 lib/lldb.cmd,-rw-r--r--
 lib/libclang.dll,-rw-r--r--
