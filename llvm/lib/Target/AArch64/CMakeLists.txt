@@ -1,7 +1,10 @@
 add_llvm_component_group(AArch64 HAS_JIT)
 
-set(LLVM_TARGET_DEFINITIONS AArch64.td)
-
+if(BUILD_ARK_GC_SUPPORT)
+    set(LLVM_TARGET_DEFINITIONS AArch64ArkGc.td)
+else()
+    set(LLVM_TARGET_DEFINITIONS AArch64.td)
+endif(BUILD_ARK_GC_SUPPORT)
 tablegen(LLVM AArch64GenAsmMatcher.inc -gen-asm-matcher)
 tablegen(LLVM AArch64GenAsmWriter.inc -gen-asm-writer)
 tablegen(LLVM AArch64GenAsmWriter1.inc -gen-asm-writer -asmwriternum=1)

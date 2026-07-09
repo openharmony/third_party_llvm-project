@@ -219,3 +219,17 @@ void TargetFrameLowering::restoreCalleeSavedRegister(
     assert(MI != MBB.begin() && "loadRegFromStackSlot didn't insert any code!");
   }
 }
+
+#ifdef ARK_GC_SUPPORT
+int TargetFrameLowering::GetFrameReserveSize(MachineFunction &MF) const
+{
+    int slotSize = sizeof(uint64_t);
+    int64_t marker = 0x0;
+    int reserveSize = 0;
+    MF.getFunction()
+      .getFnAttribute("frame-reserved-slots")
+      .getValueAsString()
+      .getAsInteger(10, marker);
+    return marker;
+}
+#endif
