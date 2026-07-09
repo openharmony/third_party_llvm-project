@@ -1601,6 +1601,22 @@ void RelocationScanner::scanOne(typename Relocs<RelTy>::const_iterator &i) {
     }
   }
 
+  // OHOS_LOCAL begin
+  if (ctx.arg.isPic && isa<EhInputSection>(sec) && expr == R_ABS) {
+    expr = R_PC;
+    if (!ctx.target->convertAbsRelToPC(type)) {
+      ELFSyncStream diag = Err(ctx);
+      diag << "relocation " << toStr(ctx, type)
+           << " cannot be used against "
+           << (sym.getName().empty() ? "local symbol "
+                                       : "symbol '" + toStr(ctx, sym) + "' ")
+           << "in .eh_frame section; recompile with -fPIC";
+      printLocation(diag, *sec, sym, offset);
+      return;
+    }
+  }
+  // OHOS_LOCAL end
+
   processAux(expr, type, offset, sym, addend);
 }
 

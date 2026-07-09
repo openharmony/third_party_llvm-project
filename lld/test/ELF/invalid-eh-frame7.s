@@ -3,7 +3,9 @@
 # RUN: llvm-mc -filetype=obj -triple=x86_64-pc-linux %s -o %t
 # RUN: not ld.lld --eh-frame-hdr %t -o /dev/null 2>&1 | FileCheck %s
 
-# CHECK: error: corrupted .eh_frame: DW_EH_PE_aligned encoding is not supported
+# OHOS_LOCAL begin
+# CHECK: error: malformed CIE in .eh_frame: DW_EH_PE_aligned personality encoding is not supported
+# OHOS_LOCAL end
 
 .section .eh_frame,"a",@unwind
   .byte 0x0E

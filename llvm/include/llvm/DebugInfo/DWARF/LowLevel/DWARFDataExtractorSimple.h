@@ -102,6 +102,63 @@ public:
     return getInitialLength(&getOffset(C), &getError(C));
   }
 
+  // OHOS_LOCAL begin
+
+  /// Extracts a DWARF-encoded pointer without a PC-relative adjustment.
+  std::optional<uint64_t> getRawEncodedPointer(Cursor &C,
+                                             uint8_t Encoding) const {
+    if (Encoding == dwarf::DW_EH_PE_omit)
+      return std::nullopt;
+
+    switch (Encoding & 0x0F) {
+    case dwarf::DW_EH_PE_absptr:
+    case dwarf::DW_EH_PE_signed:
+      switch (getAddressSize()) {
+      case 2:
+        return (Encoding & 0x0F) == dwarf::DW_EH_PE_absptr ? getU16(C)
+                                                          : getS16(C);
+      case 4:
+        return (Encoding & 0x0F) == dwarf::DW_EH_PE_absptr ? getU32(C)
+                                                          : getS32(C);
+      case 8:
+        return (Encoding & 0x0F) == dwarf::DW_EH_PE_absptr ? getU64(C)
+                                                          : getS64(C);
+      default:
+        return std::nullopt;
+      }
+    case dwarf::DW_EH_PE_uleb128:
+      return getULEB128(C);
+    case dwarf::DW_EH_PE_sleb128:
+      return getSLEB128(C);
+    case dwarf::DW_EH_PE_udata2:
+      return getUnsigned(C, 2);
+    case dwarf::DW_EH_PE_udata4:
+      return getUnsigned(C, 4);
+    case dwarf::DW_EH_PE_udata8:
+      return getUnsigned(C, 8);
+    case dwarf::DW_EH_PE_sdata2:
+      return getS16(C);
+    case dwarf::DW_EH_PE_sdata4:
+      return getS32(C);
+    case dwarf::DW_EH_PE_sdata8:
+      return getS64(C);
+    default:
+      return std::nullopt;
+    }
+  }
+
+  std::optional<uint64_t> getRawEncodedPointer(uint64_t *Offset,
+                                               uint8_t Encoding) const {
+    Cursor C(*Offset);
+    std::optional<uint64_t> Ret = getRawEncodedPointer(C, Encoding);
+    if (!C)
+      return std::nullopt;
+    *Offset = C.tell();
+    return Ret;
+  }
+
+  // OHOS_LOCAL end
+
   /// Extracts a DWARF-encoded pointer in \p Offset using \p Encoding.
   /// There is a DWARF encoding that uses a PC-relative adjustment.
   /// For these values, \p AbsPosOffset is used to fix them, which should
@@ -111,55 +168,16 @@ public:
     if (Encoding == dwarf::DW_EH_PE_omit)
       return std::nullopt;
 
-    uint64_t Result = 0;
     uint64_t OldOffset = *Offset;
-    // First get value
-    switch (Encoding & 0x0F) {
-    case dwarf::DW_EH_PE_absptr:
-      switch (getAddressSize()) {
-      case 2:
-      case 4:
-      case 8:
-        Result = getUnsigned(Offset, getAddressSize());
-        break;
-      default:
-        return std::nullopt;
-      }
-      break;
-    case dwarf::DW_EH_PE_uleb128:
-      Result = getULEB128(Offset);
-      break;
-    case dwarf::DW_EH_PE_sleb128:
-      Result = getSLEB128(Offset);
-      break;
-    case dwarf::DW_EH_PE_udata2:
-      Result = getUnsigned(Offset, 2);
-      break;
-    case dwarf::DW_EH_PE_udata4:
-      Result = getUnsigned(Offset, 4);
-      break;
-    case dwarf::DW_EH_PE_udata8:
-      Result = getUnsigned(Offset, 8);
-      break;
-    case dwarf::DW_EH_PE_sdata2:
-      Result = getSigned(Offset, 2);
-      break;
-    case dwarf::DW_EH_PE_sdata4:
-      Result = SignExtend64<32>(getRelocatedValue(4, Offset));
-      break;
-    case dwarf::DW_EH_PE_sdata8:
-      Result = getRelocatedValue(8, Offset);
-      break;
-    default:
+    std::optional<uint64_t> Result = getRawEncodedPointer(Offset, Encoding);
+    if (!Result)
       return std::nullopt;
-    }
-    // Then add relative offset, if required
+
     switch (Encoding & 0x70) {
     case dwarf::DW_EH_PE_absptr:
-      // do nothing
       break;
     case dwarf::DW_EH_PE_pcrel:
-      Result += PCRelOffset;
+      *Result += PCRelOffset;
       break;
     case dwarf::DW_EH_PE_datarel:
     case dwarf::DW_EH_PE_textrel:
