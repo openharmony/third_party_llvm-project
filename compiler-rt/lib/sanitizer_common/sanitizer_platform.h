@@ -479,7 +479,9 @@
 #  endif
 #endif
 
-#if defined(__thumb__) && defined(__linux__)
+// musl may not respect static ctor order; background thread can start before
+// flag parsing (OHOS shared runtime). Same workaround as thumb Linux CI.
+#if (defined(__thumb__) && defined(__linux__)) || SANITIZER_OHOS
 // Workaround for
 // https://lab.llvm.org/buildbot/#/builders/clang-thumbv7-full-2stage
 // or
