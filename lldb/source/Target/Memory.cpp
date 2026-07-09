@@ -13,6 +13,7 @@
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/RangeMap.h"
 #include "lldb/Utility/State.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 #include <cinttypes>
 #include <memory>
@@ -153,6 +154,7 @@ lldb::DataBufferSP MemoryCache::GetL2CacheLine(lldb::addr_t line_base_addr,
 
 size_t MemoryCache::Read(addr_t addr, void *dst, size_t dst_len,
                          Status &error) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
   if (!dst || dst_len == 0)
     return 0;
 

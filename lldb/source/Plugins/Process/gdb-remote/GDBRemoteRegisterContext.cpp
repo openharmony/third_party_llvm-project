@@ -22,6 +22,7 @@
 #include "lldb/Utility/Scalar.h"
 #include "lldb/Utility/StreamString.h"
 #include "lldb/Utility/StringExtractorGDBRemote.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 #include <memory>
 
@@ -83,6 +84,7 @@ const RegisterSet *GDBRemoteRegisterContext::GetRegisterSet(size_t reg_set) {
 
 bool GDBRemoteRegisterContext::ReadRegister(const RegisterInfo *reg_info,
                                             RegisterValue &value) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   // Read the register
   if (ReadRegisterBytes(reg_info)) {
     const uint32_t reg = reg_info->kinds[eRegisterKindLLDB];

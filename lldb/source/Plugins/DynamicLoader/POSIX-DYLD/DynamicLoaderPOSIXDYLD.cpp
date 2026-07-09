@@ -26,6 +26,7 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/ProcessInfo.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 #include "llvm/Support/ThreadPool.h"
 
 #include <memory>
@@ -82,6 +83,7 @@ DynamicLoaderPOSIXDYLD::~DynamicLoaderPOSIXDYLD() {
 }
 
 void DynamicLoaderPOSIXDYLD::DidAttach() {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_DYNAMICLOADER);   // OHOS_LOCAL
   Log *log = GetLog(LLDBLog::DynamicLoader);
   LLDB_LOGF(log, "DynamicLoaderPOSIXDYLD::%s() pid %" PRIu64, __FUNCTION__,
             m_process ? m_process->GetID() : LLDB_INVALID_PROCESS_ID);
@@ -648,6 +650,7 @@ ModuleSP DynamicLoaderPOSIXDYLD::LoadModuleAtAddress(const FileSpec &file,
                                                      addr_t link_map_addr,
                                                      addr_t base_addr,
                                                      bool base_addr_is_offset) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_DYNAMICLOADER);   // OHOS_LOCAL
   if (ModuleSP module_sp = DynamicLoader::LoadModuleAtAddress(
           file, link_map_addr, base_addr, base_addr_is_offset))
     return module_sp;
@@ -677,6 +680,7 @@ ModuleSP DynamicLoaderPOSIXDYLD::LoadModuleAtAddress(const FileSpec &file,
 }
 
 void DynamicLoaderPOSIXDYLD::LoadAllCurrentModules() {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_DYNAMICLOADER);   // OHOS_LOCAL
   DYLDRendezvous::iterator I;
   DYLDRendezvous::iterator E;
   ModuleList module_list;

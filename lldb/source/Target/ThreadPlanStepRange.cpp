@@ -22,6 +22,7 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/Stream.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 using namespace lldb;
 using namespace lldb_private;
@@ -507,6 +508,7 @@ StateType ThreadPlanStepRange::GetPlanRunState() {
 }
 
 bool ThreadPlanStepRange::MischiefManaged() {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
   // If we have pushed some plans between ShouldStop & MischiefManaged, then
   // we're not done...
   // I do this check first because we might have stepped somewhere that will
@@ -533,6 +535,7 @@ bool ThreadPlanStepRange::MischiefManaged() {
     LLDB_LOGF(log, "Completed step through range plan.");
     ClearNextBranchBreakpoint();
     ThreadPlan::MischiefManaged();
+    LLDB_PERFORMANCE_LOG("Completed step through range.");    // OHOS_LOCAL
     return true;
   } else {
     return false;

@@ -22,6 +22,7 @@
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/RegularExpression.h"
 #include "lldb/Utility/StreamString.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Config/llvm-config.h" // for LLVM_ENABLE_ZLIB
@@ -100,6 +101,7 @@ size_t GDBRemoteCommunication::SendNack() {
 
 GDBRemoteCommunication::PacketResult
 GDBRemoteCommunication::SendPacketNoLock(llvm::StringRef payload) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   StreamString packet(0, 4, eByteOrderBig);
   packet.PutChar('$');
   packet.Write(payload.data(), payload.size());

@@ -27,6 +27,7 @@
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/StreamString.h"
 #include "lldb/ValueObject/ValueObject.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 using namespace lldb;
 using namespace lldb_private;
@@ -150,6 +151,7 @@ public:
   StopReason GetStopReason() const override { return eStopReasonBreakpoint; }
 
   bool ShouldStopSynchronous(Event *event_ptr) override {
+    LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
     ThreadSP thread_sp(m_thread_wp.lock());
     if (thread_sp) {
       if (!m_should_stop_is_valid) {
@@ -787,6 +789,7 @@ protected:
   };
 
   bool ShouldStopSynchronous(Event *event_ptr) override {
+    LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);   // OHOS_LOCAL
     // If we are running our step-over the watchpoint plan, stop if it's done
     // and continue if it's not:
     if (m_should_stop_is_valid)

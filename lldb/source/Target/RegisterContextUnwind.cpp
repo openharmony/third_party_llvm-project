@@ -37,6 +37,7 @@
 #include "lldb/Utility/RegisterValue.h"
 #include "lldb/Utility/VASPrintf.h"
 #include "lldb/lldb-private.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 #include <cassert>
 #include <memory>
@@ -66,6 +67,7 @@ RegisterContextUnwind::RegisterContextUnwind(Thread &thread,
       m_behaves_like_zeroth_frame(false), m_sym_ctx(sym_ctx),
       m_sym_ctx_valid(false), m_frame_number(frame_number), m_registers(),
       m_parent_unwind(unwind_lldb) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_UNWIND);   // OHOS_LOCAL
   m_sym_ctx.Clear(false);
   m_sym_ctx_valid = false;
 

@@ -35,6 +35,7 @@
 #include "lldb/Utility/Args.h"
 #include "lldb/Utility/ScriptedMetadata.h"
 #include "lldb/Utility/State.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 #include "llvm/Support/FormatAdapters.h"
 
 #include "llvm/ADT/ScopeExit.h"
@@ -312,6 +313,7 @@ public:
 
 protected:
   void DoExecute(Args &command, CommandReturnObject &result) override {
+    LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_COMMANDS);    // OHOS_LOCAL
     PlatformSP platform_sp(
         GetDebugger().GetPlatformList().GetSelectedPlatform());
 
