@@ -149,7 +149,7 @@ public:
       : CommandObjectParsed(interpreter, "platform select",
                             "Create a platform if needed and select it as the "
                             "current platform.",
-                            "platform select <platform-name>", 0),
+                            "platform select <platform-name> [inner]", 0),
         m_platform_options(
             false) // Don't include the "--platform" option by passing false
   {
@@ -169,11 +169,16 @@ public:
 
 protected:
   void DoExecute(Args &args, CommandReturnObject &result) override {
-    if (args.GetArgumentCount() == 1) {
+    if (args.GetArgumentCount() >= 1) {
       const char *platform_name = args.GetArgumentAtIndex(0);
       if (platform_name && platform_name[0]) {
         const bool select = true;
         m_platform_options.SetPlatformName(platform_name);
+        if (args.GetArgumentCount() == 2) {
+          std::string inner(args.GetArgumentAtIndex(1));
+          if (inner == "inner")
+            m_platform_options.SetContainer(true);
+        }
         Status error;
         ArchSpec platform_arch;
         PlatformSP platform_sp(m_platform_options.CreatePlatformWithOptions(
