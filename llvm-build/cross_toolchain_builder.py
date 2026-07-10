@@ -194,7 +194,7 @@ class CrossToolchainBuilder:
             )
             lldb_defines["LibEdit_LIBRARIES"] = (
                 self._build_utils.merge_install_dir(
-                    "libedit", self._llvm_triple, "lib", "libedit.so.0.0.75"
+                    "libedit", self._llvm_triple, "lib", "libedit.so.0.0.76"
                 )
             )
 

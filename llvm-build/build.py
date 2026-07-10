@@ -921,7 +921,7 @@ class LlvmCore(BuildUtils):
 
             if self.build_config.build_libedit:
                 llvm_defines['LibEdit_LIBRARIES'] = \
-                    self.merge_install_dir('libedit', self.use_platform(), 'lib', 'libedit.so.0.0.75')
+                    self.merge_install_dir('libedit', self.use_platform(), 'lib', 'libedit.so.0.0.76')
 
             if not build_instrumented and not no_lto and not debug_build:
                 llvm_defines['LLVM_ENABLE_LTO'] = 'Thin'
