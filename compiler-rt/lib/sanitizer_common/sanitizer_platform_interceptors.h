@@ -58,6 +58,12 @@
 #define SI_ANDROID 0
 #endif
 
+#if SANITIZER_OHOS
+#define SI_OHOS 1
+#else
+#define SI_OHOS 0
+#endif
+
 #if SANITIZER_FREEBSD
 #define SI_FREEBSD 1
 #else
@@ -315,7 +321,7 @@ SANITIZER_WEAK_IMPORT void *aligned_alloc(__sanitizer::usize __alignment,
 #define SANITIZER_INTERCEPT_SYSINFO SI_LINUX
 #define SANITIZER_INTERCEPT_READDIR SI_POSIX
 #define SANITIZER_INTERCEPT_READDIR64 SI_GLIBC || SI_SOLARIS32
-#if SI_LINUX_NOT_ANDROID &&                                                \
+#if SI_LINUX_NOT_ANDROID && !SI_OHOS &&                                    \
     (defined(__i386) || defined(__x86_64) || defined(__mips64) ||          \
      defined(__powerpc64__) || defined(__aarch64__) || defined(__arm__) || \
      defined(__s390__) || defined(__loongarch__) || SANITIZER_RISCV64 ||   \
@@ -391,7 +397,7 @@ SANITIZER_WEAK_IMPORT void *aligned_alloc(__sanitizer::usize __alignment,
   (SI_FREEBSD || SI_MAC || SI_LINUX_NOT_ANDROID)
 #define SANITIZER_INTERCEPT_ETHER_R (SI_FREEBSD || SI_LINUX_NOT_ANDROID)
 #define SANITIZER_INTERCEPT_SHMCTL                                       \
-  (((SI_FREEBSD || SI_LINUX_NOT_ANDROID) && SANITIZER_WORDSIZE == 64) || \
+  (((SI_FREEBSD || SI_LINUX_NOT_ANDROID) && !SI_OHOS && SANITIZER_WORDSIZE == 64) || \
    SI_NETBSD || SI_SOLARIS)
 #define SANITIZER_INTERCEPT_RANDOM_R SI_GLIBC
 #define SANITIZER_INTERCEPT_PTHREAD_ATTR_GET SI_POSIX
@@ -457,7 +463,7 @@ SANITIZER_WEAK_IMPORT void *aligned_alloc(__sanitizer::usize __alignment,
   (SI_FREEBSD || SI_NETBSD || SI_GLIBC || SI_SOLARIS)
 
 #define SANITIZER_INTERCEPT_TLS_GET_ADDR \
-  (SI_FREEBSD || SI_NETBSD || SI_LINUX_NOT_ANDROID)
+  (SI_FREEBSD || SI_NETBSD || (SI_LINUX_NOT_ANDROID && !SI_OHOS))
 
 #define SANITIZER_INTERCEPT_LISTXATTR SI_LINUX
 #define SANITIZER_INTERCEPT_GETXATTR SI_LINUX
@@ -518,7 +524,7 @@ SANITIZER_WEAK_IMPORT void *aligned_alloc(__sanitizer::usize __alignment,
 #define SI_STAT_LINUX (SI_LINUX && __GLIBC_PREREQ(2, 33))
 #define SANITIZER_INTERCEPT_STAT                                    \
   (SI_FREEBSD || SI_MAC || SI_ANDROID || SI_NETBSD || SI_SOLARIS || \
-   SI_STAT_LINUX || !SI_NOT_AIX)
+   SI_STAT_LINUX || !SI_NOT_AIX || SI_OHOS)
 #define SANITIZER_INTERCEPT_STAT64 \
   ((SI_STAT_LINUX || !SI_NOT_AIX) && SANITIZER_HAS_STAT64)
 #define SANITIZER_INTERCEPT_LSTAT \
@@ -554,7 +560,7 @@ SANITIZER_WEAK_IMPORT void *aligned_alloc(__sanitizer::usize __alignment,
 #define SANITIZER_INTERCEPT_WCSCAT SI_POSIX
 #define SANITIZER_INTERCEPT_WCSDUP SI_POSIX
 #define SANITIZER_INTERCEPT_SIGNAL_AND_SIGACTION (!SI_WINDOWS && SI_NOT_FUCHSIA)
-#define SANITIZER_INTERCEPT_BSD_SIGNAL SI_ANDROID
+#define SANITIZER_INTERCEPT_BSD_SIGNAL (SI_ANDROID || SI_OHOS)
 
 #define SANITIZER_INTERCEPT_ACCT (SI_NETBSD || SI_FREEBSD)
 #define SANITIZER_INTERCEPT_USER_FROM_UID SI_NETBSD
@@ -566,7 +572,7 @@ SANITIZER_WEAK_IMPORT void *aligned_alloc(__sanitizer::usize __alignment,
 #define SANITIZER_INTERCEPT_GETGROUPLIST \
   (SI_NETBSD || SI_FREEBSD || SI_LINUX)
 #define SANITIZER_INTERCEPT_STRLCPY \
-  (SI_NETBSD || SI_FREEBSD || SI_MAC || SI_ANDROID)
+  (SI_NETBSD || SI_FREEBSD || SI_MAC || SI_ANDROID || SI_OHOS)
 
 #define SANITIZER_INTERCEPT_NAME_TO_HANDLE_AT SI_LINUX_NOT_ANDROID
 #define SANITIZER_INTERCEPT_OPEN_BY_HANDLE_AT SI_LINUX_NOT_ANDROID

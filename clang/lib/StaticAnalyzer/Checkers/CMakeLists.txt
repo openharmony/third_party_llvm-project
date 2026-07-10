@@ -139,6 +139,17 @@ add_clang_library(clangStaticAnalyzerCheckers
   WebKit/RawPtrRefLambdaCapturesChecker.cpp
   WebKit/RawPtrRefLocalVarsChecker.cpp
   WebKit/RawPtrRefMemberChecker.cpp
+  OpenHarmony/UnixAPIArgsChecker.cpp
+  OpenHarmony/MemcpyChecker.cpp
+  OpenHarmony/PrintSensitiveInfoChecker.cpp
+  OpenHarmony/SignalHandlerChecker.cpp
+  OpenHarmony/RefBaseDeleteChecker.cpp
+  OpenHarmony/OHPtrImplicitConversionChecker.cpp
+  OpenHarmony/NotHeapObjChecker.cpp
+  OpenHarmony/OHPtrNotInitChecker.cpp
+  OpenHarmony/NapiScopeManagerChecker.cpp
+  OpenHarmony/NapiGetArrBufferDataChecker.cpp
+  OpenHarmony/NapiWrapParamChecker.cpp
 
   LINK_LIBS
   clangAST

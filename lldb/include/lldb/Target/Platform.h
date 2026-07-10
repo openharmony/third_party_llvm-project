@@ -540,6 +540,10 @@ public:
     m_sdk_build = std::move(sdk_build);
   }
 
+  void SetContainer(bool b_container) { m_container = b_container; }
+
+  bool GetContainer() const { return m_container; }
+
   // Override this to return true if your platform supports Clang modules. You
   // may also need to override AddClangModuleCompilationOptions to pass the
   // right Clang flags for your platform.
@@ -628,6 +632,8 @@ public:
   virtual bool GetFileExists(const lldb_private::FileSpec &file_spec);
 
   virtual Status Unlink(const FileSpec &file_spec);
+
+  virtual ConstString GetMmapSymbolName(const ArchSpec &arch);
 
   virtual MmapArgList GetMmapArgumentList(const ArchSpec &arch,
                                           lldb::addr_t addr,
@@ -1002,6 +1008,7 @@ protected:
   std::string
       m_sdk_sysroot; // the root location of where the SDK files are all located
   std::string m_sdk_build;
+  bool m_container;
   FileSpec m_working_dir; // The working directory which is used when installing
                           // modules that have no install path set
   std::string m_hostname;

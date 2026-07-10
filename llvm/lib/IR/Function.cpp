@@ -848,7 +848,11 @@ void Function::clearGC() {
 bool Function::hasStackProtectorFnAttr() const {
   return hasFnAttribute(Attribute::StackProtect) ||
          hasFnAttribute(Attribute::StackProtectStrong) ||
-         hasFnAttribute(Attribute::StackProtectReq);
+         hasFnAttribute(Attribute::StackProtectReq) ||
+         /// OHOS_LOCAL begin
+         hasFnAttribute(Attribute::StackProtectRetStrong) ||
+         hasFnAttribute(Attribute::StackProtectRetReq);
+         /// OHOS_LOCAL end
 }
 
 /// Copy all additional attributes (those not needed to create a Function) from

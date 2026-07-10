@@ -33,6 +33,7 @@
 
 #include "lldb/Interpreter/CommandInterpreter.h"
 #include "lldb/Interpreter/CommandReturnObject.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 using namespace lldb;
 using namespace lldb_private;
@@ -793,6 +794,7 @@ Thread *CommandObject::GetDefaultThread() {
 
 void CommandObjectParsed::Execute(const char *args_string,
                                   CommandReturnObject &result) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_COMMANDS);   // OHOS_LOCAL
   bool handled = false;
   Args cmd_args(args_string);
   if (HasOverrideCallback()) {

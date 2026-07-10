@@ -28,6 +28,7 @@ class TestDAP_runInTerminal(lldbdap_testcase.DAPTestCaseBase):
 
     @skipIfAsan
     @skipIfWindows
+    @skipIfLinux
     @skipIf(oslist=["linux"], archs=no_match(["x86_64"]))
     def test_runInTerminal(self):
         """

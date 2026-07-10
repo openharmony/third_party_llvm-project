@@ -821,6 +821,12 @@ def skipIfPlatform(oslist):
     )
 
 
+def skipOnOpenHarmonyCI(func):
+    return unittest.skipIf(
+        lldbplatformutil.isOpenHarmonyCI(), "skip on OpenHarmony CI"
+    )(func)
+
+
 def skipUnlessPlatform(oslist):
     """Decorate the item to skip tests unless running on one of the listed platforms."""
     # This decorator cannot be ported to `skipIf` yet because it is used on entire

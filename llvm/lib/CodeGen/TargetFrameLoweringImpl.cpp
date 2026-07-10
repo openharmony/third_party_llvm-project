@@ -56,9 +56,11 @@ TargetFrameLowering::getFrameIndexReference(const MachineFunction &MF, int FI,
   // something different.
   FrameReg = RI->getFrameRegister(MF);
 
+  // OHOS_LOCAL begin
   return StackOffset::getFixed(MFI.getObjectOffset(FI) + MFI.getStackSize() -
-                               getOffsetOfLocalArea() +
+                               getOffsetOfLocalArea(MF.getFunction().getCallingConv()) +
                                MFI.getOffsetAdjustment());
+  // OHOS_LOCAL end
 }
 
 /// Returns the offset from the stack pointer to the slot of the specified
@@ -217,3 +219,17 @@ void TargetFrameLowering::restoreCalleeSavedRegister(
     assert(MI != MBB.begin() && "loadRegFromStackSlot didn't insert any code!");
   }
 }
+
+#ifdef ARK_GC_SUPPORT
+int TargetFrameLowering::GetFrameReserveSize(MachineFunction &MF) const
+{
+    int slotSize = sizeof(uint64_t);
+    int64_t marker = 0x0;
+    int reserveSize = 0;
+    MF.getFunction()
+      .getFnAttribute("frame-reserved-slots")
+      .getValueAsString()
+      .getAsInteger(10, marker);
+    return marker;
+}
+#endif

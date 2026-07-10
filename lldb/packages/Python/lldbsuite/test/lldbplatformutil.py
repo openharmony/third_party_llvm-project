@@ -157,12 +157,35 @@ def getPlatform():
             platform = "ios"
         return platform
 
-    return _get_platform_os(lldb.selected_platform)
+    platform = _get_platform_os(lldb.selected_platform)
+    if platform:
+        return platform
+
+    # OHOS_LOCAL begin
+    # Remote OHOS targets may have no triple; fall back to the platform plugin
+    # name. Treat remote-android as linux for OHOS device test runs.
+    platform_name = configuration.lldb_platform_name
+    if platform_name is None:
+        return getHostPlatform()
+    if platform_name == "qemu-user":
+        platform_name = "host"
+    if platform_name == "host":
+        return getHostPlatform()
+    if platform_name.startswith("remote-"):
+        if platform_name == "remote-android":
+            return "linux"
+        return platform_name[7:]
+    return platform_name
+    # OHOS_LOCAL end
 
 
 def platformIsDarwin():
     """Returns true if the OS triple for the selected platform is any valid apple OS"""
     return getPlatform() in getDarwinOSTriples()
+
+
+def isOpenHarmonyCI():
+    return getPlatform() == "linux" and os.path.exists("/.dockerenv")
 
 
 def findMainThreadCheckerDylib():

@@ -91,7 +91,7 @@ extern "C" int __sys_sigaction(int signum, const struct sigaction *act,
 #    include <sys/link_elf.h>
 #  endif
 
-#  if !SANITIZER_ANDROID
+#  if !SANITIZER_ANDROID && !SANITIZER_OHOS
 #    include <elf.h>
 #    include <unistd.h>
 #  endif

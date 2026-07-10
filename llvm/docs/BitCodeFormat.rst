@@ -803,6 +803,18 @@ function. The operand fields are:
   * ``tailcc`` : code 18
   * ``cfguard_checkcc`` : code 19
   * ``swifttailcc`` : code 20
+.. OHOS_LOCAL begin
+  * ``arkintcc`` : code 22
+  * ``arkfast0cc`` : code 23
+  * ``arkfast1cc`` : code 24
+  * ``arkfast2cc`` : code 25
+  * ``arkfast3cc`` : code 26
+  * ``arkfast4cc`` : code 27
+  * ``arkfast5cc`` : code 28
+  * ``arkmethodcc`` : code 29
+  * ``arkresolvercc`` : code 30
+  * ``arkpltcc`` : code 31
+.. OHOS_LOCAL end
   * ``x86_stdcallcc``: code 64
   * ``x86_fastcallcc``: code 65
   * ``arm_apcscc``: code 66

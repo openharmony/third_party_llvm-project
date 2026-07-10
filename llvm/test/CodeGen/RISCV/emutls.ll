@@ -3,6 +3,8 @@
 ; RUN:     | FileCheck -check-prefix=RV32 %s
 ; RUN: llc -mtriple=riscv64 -emulated-tls -relocation-model=pic < %s \
 ; RUN:     | FileCheck -check-prefix=RV64 %s
+; RUN: llc -mtriple=riscv64-linux-ohos -emulated-tls -relocation-model=pic < %s \
+; RUN:     | FileCheck -check-prefix=RV64 %s
 
 @external_x = external thread_local global i32, align 8
 @y = thread_local global i8 7, align 2

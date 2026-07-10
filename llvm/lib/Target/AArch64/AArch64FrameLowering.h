@@ -14,16 +14,22 @@
 #define LLVM_LIB_TARGET_AARCH64_AARCH64FRAMELOWERING_H
 
 #include "llvm/CodeGen/MachineOptimizationRemarkEmitter.h"
+#include "AArch64StackProtectorRetLowering.h" // OHOS_LOCAL
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/Support/TypeSize.h"
+#ifdef ARK_GC_SUPPORT
+#include "llvm/TargetParser/Triple.h"
+#endif
 
 namespace llvm {
 
 class AArch64FrameLowering : public TargetFrameLowering {
 public:
+  const AArch64StackProtectorRetLowering SPRL; // OHOS_LOCAL
+
   explicit AArch64FrameLowering()
       : TargetFrameLowering(StackGrowsDown, Align(16), 0, Align(16),
-                            true /*StackRealignable*/) {}
+                            true /*StackRealignable*/), SPRL() {} // OHOS_LOCAL
 
   void resetCFIToInitialState(MachineBasicBlock &MBB) const override;
 
@@ -35,6 +41,10 @@ public:
   /// the function.
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+#ifdef ARK_GC_SUPPORT
+  Triple::ArchType GetArkSupportTarget() const override;
+  int GetFixedFpPosition() const override;
+#endif
 
   /// Harden the entire function with pac-ret.
   ///
@@ -47,6 +57,8 @@ public:
   bool enableCFIFixup(const MachineFunction &MF) const override;
 
   bool enableFullCFIFixup(const MachineFunction &MF) const override;
+
+  const StackProtectorRetLowering *getStackProtectorRet() const override; // OHOS_LOCAL
 
   bool canUseAsPrologue(const MachineBasicBlock &MBB) const override;
 
@@ -74,6 +86,14 @@ public:
 
   /// Can this function use the red zone for local allocations.
   bool canUseRedZone(const MachineFunction &MF) const;
+
+  // OHOS_LOCAL begin
+  bool supportsArkSpills() const override {
+    return true;
+  }
+
+  int getArkFrameAdaptationOffset(const MachineFunction &MF) const override;
+  // OHOS_LOCAL end
 
   bool hasReservedCallFrame(const MachineFunction &MF) const override;
 

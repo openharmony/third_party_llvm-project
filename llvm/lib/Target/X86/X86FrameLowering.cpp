@@ -90,6 +90,17 @@ bool X86FrameLowering::needsFrameIndexResolution(
          MF.getInfo<X86MachineFunctionInfo>()->getHasPushSequences();
 }
 
+// OHOS_LOCAL begin
+int
+X86FrameLowering::getArkFrameAdaptationOffset(const MachineFunction &MF) const {
+  const auto &F = MF.getFunction();
+  if (F.getMetadata("use-ark-frame") != nullptr)
+    return 0;
+  // FP + LR
+  return 0x10;
+}
+// OHOS_LOCAL end
+
 /// hasFPImpl - Return true if the specified function should have a dedicated
 /// frame pointer register.  This is true if the function has variable sized
 /// allocas or if frame pointer elimination is disabled.
@@ -1584,6 +1595,37 @@ static bool isOpcodeRep(unsigned Opcode) {
   - for 32-bit code, substitute %e?? registers for %r??
 */
 
+#ifdef ARK_GC_SUPPORT
+Triple::ArchType X86FrameLowering::GetArkSupportTarget() const
+{
+    return Is64Bit ? Triple::x86_64 : Triple::x86;
+}
+
+int X86FrameLowering::GetFixedFpPosition() const
+{
+  return 2;
+}
+
+int X86FrameLowering::GetFrameReserveSize(MachineFunction &MF) const
+{
+    int slotSize = sizeof(uint64_t);
+    if (!Is64Bit) {
+      slotSize = sizeof(uint32_t);
+    }
+    int reserveSize = 0;
+    MF.getFunction()
+      .getFnAttribute("frame-reserved-slots")
+      .getValueAsString()
+      .getAsInteger(10, reserveSize);
+
+    // x86-64 shoule align 16 bytes
+    if (Is64Bit) {
+      return RoundUp(reserveSize, 2 * sizeof(uint64_t));
+    }
+    return reserveSize;
+}
+#endif
+
 void X86FrameLowering::emitPrologue(MachineFunction &MF,
                                     MachineBasicBlock &MBB) const {
   assert(&STI == &MF.getSubtarget<X86Subtarget>() &&
@@ -1930,6 +1972,19 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
     else
       MFI.setOffsetAdjustment(-StackSize);
   }
+#ifdef ARK_GC_SUPPORT
+    // push marker
+    if (MF.getFunction().hasFnAttribute("frame-reserved-slots"))
+    {
+      unsigned StackPtr = TRI->getStackRegister();
+      int reserveSize = GetFrameReserveSize(MF);
+      const unsigned SUBOpc = getSUBriOpcode(Uses64BitFramePtr);
+      BuildMI(MBB, MBBI, DL, TII.get(SUBOpc), StackPtr)
+        .addReg(StackPtr)
+        .addImm(reserveSize)
+        .setMIFlag(MachineInstr::FrameSetup);
+    }
+#endif
 
   // For EH funclets, only allocate enough space for outgoing calls. Save the
   // NumBytes value that we would've used for the parent frame.
@@ -2484,6 +2539,22 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
   // AfterPop is the position to insert .cfi_restore.
   MachineBasicBlock::iterator AfterPop = MBBI;
   if (HasFP) {
+#ifdef ARK_GC_SUPPORT
+    if (MF.getFunction().hasFnAttribute("frame-reserved-slots"))
+    {
+
+      int reserveSize = GetFrameReserveSize(MF);
+      int slotSize = sizeof(uint32_t);
+      if (Is64Bit) {
+        slotSize = sizeof(uint64_t);
+      }
+      for (int i = 0; i < reserveSize / slotSize; i++) {
+        BuildMI(MBB, MBBI, DL, TII.get(Is64Bit ? X86::POP64r : X86::POP32r),
+          MachineFramePtr)
+          .setMIFlag(MachineInstr::FrameDestroy);
+      }
+    }
+#endif
     if (X86FI->hasSwiftAsyncContext()) {
       // Discard the context.
       int64_t Offset = mergeSPAdd(MBB, MBBI, 16, true);
@@ -2678,7 +2749,10 @@ StackOffset X86FrameLowering::getFrameIndexReference(const MachineFunction &MF,
   // object.
   // We need to factor in additional offsets applied during the prologue to the
   // frame, base, and stack pointer depending on which is used.
-  int Offset = MFI.getObjectOffset(FI) - getOffsetOfLocalArea();
+  // OHOS_LOCAL begin
+  auto CC = MF.getFunction().getCallingConv();
+  int Offset = MFI.getObjectOffset(FI) - getOffsetOfLocalArea(CC);
+  // OHOS_LOCAL end
   const X86MachineFunctionInfo *X86FI = MF.getInfo<X86MachineFunctionInfo>();
   unsigned CSSize = X86FI->getCalleeSavedFrameSize();
   uint64_t StackSize = MFI.getStackSize();
@@ -2689,10 +2763,11 @@ StackOffset X86FrameLowering::getFrameIndexReference(const MachineFunction &MF,
   // address from any stack object allocated in the caller's frame. Interrupts
   // do not have a standard return address. Fixed objects in the current frame,
   // such as SSE register spills, should not get this treatment.
-  if (MF.getFunction().getCallingConv() == CallingConv::X86_INTR &&
-      Offset >= 0) {
-    Offset += getOffsetOfLocalArea();
+  // OHOS_LOCAL begin
+  if (CC == CallingConv::X86_INTR && Offset >= 0) {
+    Offset += getOffsetOfLocalArea(CC);
   }
+  // OHOS_LOCAL end
 
   if (IsWin64Prologue) {
     assert(!MFI.hasCalls() || (StackSize % 16) == 8);
@@ -2762,8 +2837,11 @@ X86FrameLowering::getFrameIndexReferenceSP(const MachineFunction &MF, int FI,
                                            int Adjustment) const {
   const MachineFrameInfo &MFI = MF.getFrameInfo();
   FrameReg = TRI->getStackRegister();
+  // OHOS_LOCAL begin
+  auto CC = MF.getFunction().getCallingConv();
   return StackOffset::getFixed(MFI.getObjectOffset(FI) -
-                               getOffsetOfLocalArea() + Adjustment);
+                               getOffsetOfLocalArea(CC) + Adjustment);
+  // OHOS_LOCAL end
 }
 
 StackOffset
@@ -2858,7 +2936,10 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
   unsigned CalleeSavedFrameSize = 0;
   unsigned XMMCalleeSavedFrameSize = 0;
   auto &WinEHXMMSlotInfo = X86FI->getWinEHXMMSlotInfo();
-  int SpillSlotOffset = getOffsetOfLocalArea() + X86FI->getTCReturnAddrDelta();
+  // OHOS_LOCAL begin
+  auto CC = MF.getFunction().getCallingConv();
+  int SpillSlotOffset = getOffsetOfLocalArea(CC) + X86FI->getTCReturnAddrDelta();
+  // OHOS_LOCAL end
 
   int64_t TailCallReturnAddrDelta = X86FI->getTCReturnAddrDelta();
 
@@ -2935,6 +3016,12 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
       MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
     }
   }
+
+#ifdef ARK_GC_SUPPORT
+  int reserveSize = GetFrameReserveSize(MF);
+  SpillSlotOffset -= reserveSize; // skip frame reserved
+  CalleeSavedFrameSize += reserveSize;
+#endif
 
   // Assign slots for GPRs. It increases frame size.
   for (CalleeSavedInfo &I : llvm::reverse(CSI)) {
@@ -3211,6 +3298,13 @@ void X86FrameLowering::determineCalleeSaves(MachineFunction &MF,
       BasePtr = getX86SubSuperRegister(BasePtr, 64);
     SavedRegs.set(BasePtr);
   }
+
+  // OHOS_LOCAL begin
+  if (MF.getSubtarget<X86Subtarget>().is64Bit()) {
+    for (auto Reg : MF.getSubtarget<X86Subtarget>().getRRegReservation())
+      SavedRegs.reset(Reg);
+  }
+  // OHOS_LOCAL end
 }
 
 static bool HasNestArgument(const MachineFunction *MF) {
@@ -4275,6 +4369,16 @@ void X86FrameLowering::processFunctionBeforeFrameIndicesReplaced(
     MachineFunction &MF, RegScavenger *RS) const {
   auto *X86FI = MF.getInfo<X86MachineFunctionInfo>();
 
+  // OHOS_LOCAL begin
+  auto &MFI = MF.getFrameInfo();
+  int ArkSpillNo = 0;
+  for (int I = 0, E = MFI.getObjectIndexEnd(); I != E; ++I)
+    if (MFI.isArkSpillSlotObjectIndex(I)) {
+      MFI.setObjectOffset(I, MF.getArkSpillOffset(ArkSpillNo));
+      ArkSpillNo++;
+    }
+  // OHOS_LOCAL end
+
   if (STI.is32Bit() && MF.hasEHFunclets())
     restoreWinEHStackPointersInParent(MF);
   // We have emitted prolog and epilog. Don't need stack pointer saving
@@ -4299,6 +4403,13 @@ void X86FrameLowering::restoreWinEHStackPointersInParent(
                                   /*RestoreSP=*/IsSEH);
   }
 }
+
+// OHOS_LOCAL begin
+int X86FrameLowering::getOffsetOfLocalArea(CallingConv::ID CC) const {
+  return CC == CallingConv::ArkInt ? 0
+                                   : TargetFrameLowering::getOffsetOfLocalArea();
+}
+// OHOS_LOCAL end
 
 // Compute the alignment gap between current SP after spilling FP/BP and the
 // next properly aligned stack offset.

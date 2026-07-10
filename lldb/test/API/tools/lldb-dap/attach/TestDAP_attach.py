@@ -39,6 +39,7 @@ class TestDAP_attach(lldbdap_testcase.DAPTestCaseBase):
         if continueToExit:
             self.continue_to_exit()
 
+    @skipIfLinux
     @skipIfNetBSD  # Hangs on NetBSD as well
     def test_by_pid(self):
         """

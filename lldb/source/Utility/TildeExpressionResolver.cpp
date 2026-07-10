@@ -47,7 +47,7 @@ bool StandardTildeExpressionResolver::ResolvePartial(StringRef Expr,
   assert(Expr.empty() || Expr[0] == '~');
 
   Output.clear();
-#if defined(_WIN32) || defined(__ANDROID__)
+#if defined(_WIN32) || defined(__ANDROID__) || defined(__OHOS_FAMILY__)
   return false;
 #else
   if (Expr.empty())

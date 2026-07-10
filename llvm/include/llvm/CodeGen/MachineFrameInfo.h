@@ -125,6 +125,16 @@ private:
   struct StackObject {
     // The offset of this object from the stack pointer on entry to
     // the function.  This field has no meaning for a variable sized element.
+    // OHOS_LOCAL begin
+    // For ArkSpills this field represents the offset from the FP:
+    // * LLVM IR Module should have a named metadata 'ark.frame.info'
+    //   which contains frame size and offsets of caller saved registers.
+    // * During DAG generation, class StatepointLowering allocates new
+    //   StackObjects and mark them as ArkSpill, plus it sets certain SPOffset
+    //   for each StackObject according to aforementioned metadata.
+    // * Prolog/Epilog inserter checks the type of selected StackObject, for
+    //   those marked as ArkSpill straightforward lowering is used: FP+SPOffset.
+    // OHOS_LOCAL end
     int64_t SPOffset;
 
     // The size of this object on the stack. 0 means a variable sized object,
@@ -149,6 +159,11 @@ private:
     /// Slot, but is created by statepoint lowering is SelectionDAG, not the
     /// register allocator.
     bool isStatepointSpillSlot = false;
+
+    // OHOS_LOCAL begin
+    /// If true, this stack slot is used to access ArkFrame slots
+    bool isArkSpillSlot = false;
+    // OHOS_LOCAL end
 
     /// Identifier for stack memory type analagous to address space. If this is
     /// non-0, the meaning is target defined. Offsets cannot be directly
@@ -213,6 +228,11 @@ private:
   /// The list of stack objects allocated.
   std::vector<StackObject> Objects;
 
+  // OHOS_LOCAL begin
+  /// The amount of stack objects that will be pointed inside Ark's frame
+  unsigned NumArkSpills = 0;
+  // OHOS_LOCAL end
+
   /// This contains the number of fixed objects contained on
   /// the stack.  Because fixed objects are stored at a negative index in the
   /// Objects list, this is also the index to the 0th object in the list.
@@ -274,6 +294,15 @@ private:
 
   /// The frame index for the stack protector.
   int StackProtectorIdx = -1;
+
+  /// OHOS_LOCAL begin
+  struct StackProtectorRet {
+    /// The register to use for stack protector & backwrad cfi calculations
+    unsigned Register = 0;
+    /// Set to true if this function needs stack-protector-ret
+    bool Needed = false;
+  } SPR;
+  /// OHOS_LOCAL end
 
   /// The frame index for the function context. Used for SjLj exceptions.
   int FunctionContextIdx = -1;
@@ -363,6 +392,16 @@ public:
   void setStackProtectorIndex(int I) { StackProtectorIdx = I; }
   bool hasStackProtectorIndex() const { return StackProtectorIdx != -1; }
 
+  /// OHOS_LOCAL begin
+  /// Get / Set stack protector ret calculation register
+  unsigned getStackProtectorRetRegister() const { return SPR.Register; }
+  void setStackProtectorRetRegister(unsigned I) { SPR.Register = I; }
+  bool hasStackProtectorRetRegister() const { return SPR.Register != 0; }
+  /// Get / Set if this frame needs backward cfi protect.
+  void setStackProtectorRetNeeded(bool I) { SPR.Needed = I; }
+  bool getStackProtectorRetNeeded() const { return SPR.Needed; }
+  /// OHOS_LOCAL end
+
   /// Return the index for the function context object.
   /// This object is used for SjLj exceptions.
   int getFunctionContextIndex() const { return FunctionContextIdx; }
@@ -418,6 +457,8 @@ public:
 
   /// Return the number of objects.
   unsigned getNumObjects() const { return Objects.size(); }
+
+  unsigned getNumArkSpills() const { return NumArkSpills; }  // OHOS_LOCAL
 
   /// Map a frame index into the local object block
   void mapLocalFrameObject(int ObjectIndex, int64_t Offset) {
@@ -748,6 +789,14 @@ public:
     return Objects[ObjectIdx+NumFixedObjects].isStatepointSpillSlot;
   }
 
+  // OHOS_LOCAL begin
+  bool isArkSpillSlotObjectIndex(int ObjectIdx) const {
+    assert(unsigned(ObjectIdx+NumFixedObjects) < Objects.size() &&
+           "Invalid Object Idx!");
+    return Objects[ObjectIdx+NumFixedObjects].isArkSpillSlot;
+  }
+  // OHOS_LOCAL end
+
   /// \see StackID
   uint8_t getStackID(int ObjectIdx) const {
     return Objects[ObjectIdx+NumFixedObjects].StackID;
@@ -783,6 +832,18 @@ public:
     Objects[ObjectIdx+NumFixedObjects].isStatepointSpillSlot = true;
     assert(isStatepointSpillSlotObjectIndex(ObjectIdx) && "inconsistent");
   }
+
+  // OHOS_LOCAL begin
+  void markAsArkSpillSlotObjectIndex(int ObjectIdx) {
+    assert(unsigned(ObjectIdx+NumFixedObjects) < Objects.size() &&
+           "Invalid Object Idx!");
+    if (!Objects[ObjectIdx+NumFixedObjects].isArkSpillSlot) {
+      NumArkSpills++;
+      Objects[ObjectIdx+NumFixedObjects].isArkSpillSlot = true;
+    }
+    assert(isArkSpillSlotObjectIndex(ObjectIdx) && "inconsistent");
+  }
+  // OHOS_LOCAL end
 
   /// Create a new statically sized stack object, returning
   /// a nonnegative identifier to represent it.

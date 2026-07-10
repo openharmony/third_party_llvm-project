@@ -1083,6 +1083,7 @@ void ProcessGDBRemote::DidLaunch() {
 
 Status ProcessGDBRemote::DoAttachToProcessWithID(
     lldb::pid_t attach_pid, const ProcessAttachInfo &attach_info) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   Log *log = GetLog(GDBRLog::Process);
   Status error;
 
@@ -1175,6 +1176,7 @@ void ProcessGDBRemote::DidExit() {
 }
 
 void ProcessGDBRemote::DidAttach(ArchSpec &process_arch) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   // If you can figure out what the architecture is, fill it in here.
   process_arch.Clear();
   DidLaunchOrAttach(process_arch);
@@ -2635,6 +2637,7 @@ addr_t ProcessGDBRemote::GetImageInfoAddress() {
 }
 
 void ProcessGDBRemote::WillPublicStop() {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   // See if the GDB remote client supports the JSON threads info. If so, we
   // gather stop info for all threads, expedited registers, expedited memory,
   // runtime queue information (iOS and MacOSX only), and more. Expediting
@@ -2661,6 +2664,7 @@ void ProcessGDBRemote::WillPublicStop() {
 // Process Memory
 size_t ProcessGDBRemote::DoReadMemory(addr_t addr, void *buf, size_t size,
                                       Status &error) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   using xPacketState = GDBRemoteCommunicationClient::xPacketState;
 
   GetMaxMemorySize();
@@ -3076,6 +3080,7 @@ size_t ProcessGDBRemote::PutSTDIN(const char *src, size_t src_len,
 }
 
 Status ProcessGDBRemote::EnableBreakpointSite(BreakpointSite *bp_site) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   Status error;
   assert(bp_site != nullptr);
 
@@ -3659,6 +3664,7 @@ void ProcessGDBRemote::DebuggerInitialize(Debugger &debugger) {
 }
 
 bool ProcessGDBRemote::StartAsyncThread() {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
   Log *log = GetLog(GDBRLog::Process);
 
   LLDB_LOGF(log, "ProcessGDBRemote::%s ()", __FUNCTION__);

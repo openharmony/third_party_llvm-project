@@ -399,8 +399,13 @@ struct OutgoingArgHandler : public CallLowering::OutgoingValueHandler {
 } // namespace
 
 static bool doesCalleeRestoreStack(CallingConv::ID CallConv, bool TailCallOpt) {
+#ifdef ARK_GC_SUPPORT
+  return ((CallConv == CallingConv::GHC || CallConv == CallingConv::Fast) && TailCallOpt) ||
+         CallConv == CallingConv::Tail || CallConv == CallingConv::SwiftTail;
+#else
   return (CallConv == CallingConv::Fast && TailCallOpt) ||
          CallConv == CallingConv::Tail || CallConv == CallingConv::SwiftTail;
+#endif
 }
 
 bool AArch64CallLowering::lowerReturn(MachineIRBuilder &MIRBuilder,
@@ -828,8 +833,13 @@ bool AArch64CallLowering::lowerFormalArguments(
 
 /// Return true if the calling convention is one that we can guarantee TCO for.
 static bool canGuaranteeTCO(CallingConv::ID CC, bool GuaranteeTailCalls) {
+#ifdef ARK_GC_SUPPORT
+  return ((CC == CallingConv::GHC || CC == CallingConv::Fast) && GuaranteeTailCalls) ||
+         CC == CallingConv::Tail || CC == CallingConv::SwiftTail;
+#else
   return (CC == CallingConv::Fast && GuaranteeTailCalls) ||
          CC == CallingConv::Tail || CC == CallingConv::SwiftTail;
+#endif
 }
 
 /// Return true if we might ever do TCO for calls with this calling convention.
@@ -843,6 +853,15 @@ static bool mayTailCallThisCC(CallingConv::ID CC) {
   case CallingConv::SwiftTail:
   case CallingConv::Tail:
   case CallingConv::Fast:
+  // OHOS_LOCAL begin
+  case CallingConv::ArkInt:
+  case CallingConv::ArkFast0:
+  case CallingConv::ArkFast1:
+  case CallingConv::ArkFast2:
+  case CallingConv::ArkFast3:
+  case CallingConv::ArkFast4:
+  case CallingConv::ArkFast5:
+  // OHOS_LOCAL end
     return true;
   default:
     return false;

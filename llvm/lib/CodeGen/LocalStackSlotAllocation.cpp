@@ -28,6 +28,7 @@
 #include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
+#include "llvm/IR/Function.h" // OHOS_LOCAL
 #include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
@@ -213,7 +214,9 @@ void LocalStackSlotImpl::calculateFrameObjectOffsets(MachineFunction &Fn) {
 
   // Make sure that the stack protector comes before the local variables on the
   // stack.
+  Function &F = Fn.getFunction(); // OHOS_LOCAL
   SmallSet<int, 16> ProtectedObjs;
+
   if (MFI.hasStackProtectorIndex()) {
     int StackProtectorFI = MFI.getStackProtectorIndex();
 
@@ -258,13 +261,46 @@ void LocalStackSlotImpl::calculateFrameObjectOffsets(MachineFunction &Fn) {
       }
       llvm_unreachable("Unexpected SSPLayoutKind.");
     }
-
     AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
     AssignProtectedObjSet(SmallArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
     AssignProtectedObjSet(AddrOfObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
+  /// OHOS_LOCAL begin
+  } else if (F.hasFnAttribute(Attribute::StackProtectRetReq) ||
+             F.hasFnAttribute(Attribute::StackProtectRetStrong)) {
+    StackObjSet LargeArrayObjs;
+    StackObjSet SmallArrayObjs;
+    StackObjSet AddrOfObjs;
+    // Assign large stack objects first.
+    for (unsigned i = 0, e = MFI.getObjectIndexEnd(); i != e; ++i) {
+      if (MFI.isDeadObjectIndex(i))
+        continue;
+      if (!TFI.isStackIdSafeForLocalArea(MFI.getStackID(i)))
+        continue;
+      switch (MFI.getObjectSSPLayout(i)) {
+      case MachineFrameInfo::SSPLK_None:
+        continue;
+      case MachineFrameInfo::SSPLK_SmallArray:
+        SmallArrayObjs.insert(i);
+        continue;
+      case MachineFrameInfo::SSPLK_AddrOf:
+        AddrOfObjs.insert(i);
+        continue;
+      case MachineFrameInfo::SSPLK_LargeArray:
+        LargeArrayObjs.insert(i);
+        continue;
+      }
+      llvm_unreachable("Unexpected SSPLayoutKind.");
+    }
+    AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
+                          Offset, MaxAlign);
+    AssignProtectedObjSet(SmallArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
+                          Offset, MaxAlign);
+    AssignProtectedObjSet(AddrOfObjs, ProtectedObjs, MFI, StackGrowsDown,
+                          Offset, MaxAlign);
+  /// OHOS_LOCAL end
   }
 
   // Then assign frame offsets to stack objects that are not used to spill

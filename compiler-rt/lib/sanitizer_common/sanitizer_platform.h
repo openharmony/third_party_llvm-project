@@ -14,8 +14,8 @@
 
 #if !defined(__linux__) && !defined(__FreeBSD__) && !defined(__NetBSD__) && \
     !defined(__APPLE__) && !defined(_WIN32) && !defined(__Fuchsia__) &&     \
-    !(defined(__sun__) && defined(__svr4__)) && !defined(__HAIKU__) &&      \
-    !defined(__wasi__)
+    !defined(__OHOS_FAMILY__) && !(defined(__sun__) && defined(__svr4__)) && \
+    !defined(__HAIKU__) && !defined(__wasi__)
 #  error "This operating system is not supported"
 #endif
 
@@ -134,6 +134,12 @@
 #  define SANITIZER_ANDROID 1
 #else
 #  define SANITIZER_ANDROID 0
+#endif
+
+#if defined(__OHOS__)
+#define SANITIZER_OHOS 1
+#else
+#define SANITIZER_OHOS 0
 #endif
 
 #if defined(__Fuchsia__)
@@ -313,6 +319,8 @@
 #    define SANITIZER_CAN_USE_ALLOCATOR64 0
 #  elif defined(__mips64) || defined(__hexagon__)
 #    define SANITIZER_CAN_USE_ALLOCATOR64 0
+#  elif SANITIZER_OHOS && defined(__aarch64__)
+#    define SANITIZER_CAN_USE_ALLOCATOR64 1
 #  else
 #    define SANITIZER_CAN_USE_ALLOCATOR64 (SANITIZER_WORDSIZE == 64)
 #  endif
@@ -471,7 +479,9 @@
 #  endif
 #endif
 
-#if defined(__thumb__) && defined(__linux__)
+// musl may not respect static ctor order; background thread can start before
+// flag parsing (OHOS shared runtime). Same workaround as thumb Linux CI.
+#if (defined(__thumb__) && defined(__linux__)) || SANITIZER_OHOS
 // Workaround for
 // https://lab.llvm.org/buildbot/#/builders/clang-thumbv7-full-2stage
 // or

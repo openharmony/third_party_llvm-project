@@ -30,6 +30,8 @@ PlatformSP OptionGroupPlatform::CreatePlatformWithOptions(
           m_platform_name);
     }
     if (platform_sp) {
+      if (GetContainer())
+        platform_sp->SetContainer(true);
       if (platform_arch.IsValid() &&
           !platform_sp->IsCompatibleArchitecture(
               arch, {}, ArchSpec::CompatibleMatch, &platform_arch)) {
@@ -66,6 +68,7 @@ void OptionGroupPlatform::OptionParsingStarting(
   m_sdk_sysroot.clear();
   m_sdk_build.clear();
   m_os_version = llvm::VersionTuple();
+  m_container = false;
 }
 
 static constexpr OptionDefinition g_option_table[] = {
@@ -142,6 +145,9 @@ bool OptionGroupPlatform::PlatformMatches(
     return false;
 
   if (!m_os_version.empty() && platform_sp->GetOSVersion() != m_os_version)
+    return false;
+
+  if (m_container != platform_sp->GetContainer())
     return false;
 
   return true;

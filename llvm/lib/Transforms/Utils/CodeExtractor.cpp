@@ -972,6 +972,10 @@ Function *CodeExtractor::constructFunctionDeclaration(
       case Attribute::SanitizeRealtimeBlocking:
       case Attribute::SpeculativeLoadHardening:
       case Attribute::StackProtect:
+      // OHOS_LOCAL begin
+      case Attribute::StackProtectRetReq:
+      case Attribute::StackProtectRetStrong:
+      // OHOS_LOCAL end
       case Attribute::StackProtectReq:
       case Attribute::StackProtectStrong:
       case Attribute::StrictFP:

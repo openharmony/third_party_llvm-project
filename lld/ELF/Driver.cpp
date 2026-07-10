@@ -1003,6 +1003,44 @@ static std::pair<bool, bool> getPackDynRelocs(Ctx &ctx,
   return {false, false};
 }
 
+static std::pair<unsigned, unsigned>
+parseLTOOptArg(Ctx &ctx, opt::InputArgList &args, unsigned key,
+               StringRef defaultValue) {
+  auto *a = args.getLastArg(key);
+  StringRef value = a ? a->getValue() : defaultValue;
+
+  unsigned optLevel = 0;
+  unsigned sizeLevel = 0;
+
+  if (value.size() != 1) {
+    ErrAlways(ctx) << "invalid optimization level for LTO: " << value;
+    return {optLevel, sizeLevel};
+  }
+
+  char c = value[0];
+
+  switch (c) {
+  case '0':
+  case '1':
+  case '2':
+  case '3':
+    optLevel = c - '0';
+    break;
+  case 's':
+    optLevel = 2;
+    sizeLevel = 1;
+    break;
+  case 'z':
+    optLevel = 2;
+    sizeLevel = 2;
+    break;
+  default:
+    ErrAlways(ctx) << "invalid optimization level for LTO: " << value;
+  }
+
+  return {optLevel, sizeLevel};
+}
+
 static void readCallGraph(Ctx &ctx, MemoryBufferRef mb) {
   // Build a map from symbol name to section
   DenseMap<StringRef, Symbol *> map;
@@ -1454,9 +1492,9 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
   ctx.arg.ltoValidateAllVtablesHaveTypeInfos =
       args.hasFlag(OPT_lto_validate_all_vtables_have_type_infos,
                    OPT_no_lto_validate_all_vtables_have_type_infos, false);
-  ctx.arg.ltoo = args::getInteger(args, OPT_lto_O, 2);
-  if (ctx.arg.ltoo > 3)
-    ErrAlways(ctx) << "invalid optimization level for LTO: " << ctx.arg.ltoo;
+  std::tie(ctx.arg.ltoo, ctx.arg.ltos) =
+      parseLTOOptArg(ctx, args, OPT_lto_O, "2");
+  ctx.arg.mergeFunctions = args.hasArg(OPT_lto_mf);
   unsigned ltoCgo =
       args::getInteger(args, OPT_lto_CGO, args::getCGOptLevel(ctx.arg.ltoo));
   if (auto level = CodeGenOpt::getLevel(ltoCgo))

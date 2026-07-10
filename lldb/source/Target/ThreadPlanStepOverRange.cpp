@@ -22,6 +22,7 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/Stream.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 using namespace lldb_private;
 using namespace lldb;
@@ -137,6 +138,7 @@ void ThreadPlanStepOverRange::SetStopOthers(bool stop_others) {
 }
 
 bool ThreadPlanStepOverRange::ShouldStop(Event *event_ptr) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
   Log *log = GetLog(LLDBLog::Step);
   Thread &thread = GetThread();
 
@@ -359,6 +361,7 @@ void ThreadPlanStepOverRange::DidPush() {
 }
 
 bool ThreadPlanStepOverRange::DoPlanExplainsStop(Event *event_ptr) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
   // For crashes, breakpoint hits, signals, etc, let the base plan (or some
   // plan above us) handle the stop.  That way the user can see the stop, step
   // around, and then when they are done, continue and have their step
@@ -391,6 +394,7 @@ bool ThreadPlanStepOverRange::DoPlanExplainsStop(Event *event_ptr) {
 
 bool ThreadPlanStepOverRange::DoWillResume(lldb::StateType resume_state,
                                            bool current_plan) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
   if (resume_state != eStateSuspended && m_first_resume) {
     m_first_resume = false;
     if (resume_state == eStateStepping && current_plan) {

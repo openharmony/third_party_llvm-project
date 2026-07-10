@@ -2166,6 +2166,12 @@ static Attribute::AttrKind getAttrFromCode(uint64_t Code) {
     return Attribute::StackAlignment;
   case bitc::ATTR_KIND_STACK_PROTECT:
     return Attribute::StackProtect;
+  /// OHOS_LOCAL begin
+  case bitc::ATTR_KIND_STACK_PROTECT_RET_REQ:
+    return Attribute::StackProtectRetReq;
+  case bitc::ATTR_KIND_STACK_PROTECT_RET_STRONG:
+    return Attribute::StackProtectRetStrong;
+  /// OHOS_LOCAL end
   case bitc::ATTR_KIND_STACK_PROTECT_REQ:
     return Attribute::StackProtectReq;
   case bitc::ATTR_KIND_STACK_PROTECT_STRONG:

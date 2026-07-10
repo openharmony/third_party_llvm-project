@@ -30,6 +30,8 @@
 #cmakedefine01 LLDB_ENABLE_TERMIOS
 
 #cmakedefine01 LLDB_ENABLE_LZMA
+// OHOS_LOCAL
+#cmakedefine01 LLDB_ENABLE_LZMA_7ZIP
 
 #cmakedefine01 LLVM_ENABLE_CURL
 
@@ -48,6 +50,11 @@
 #cmakedefine01 LLDB_ENABLE_FBSDVMCORE
 
 #cmakedefine01 LLDB_EMBED_PYTHON_HOME
+
+// OHOS_LOCAL begin
+/* Define to 1 If the tool timeout automatic exit option is enabled. */
+#cmakedefine01 LLDB_ENABLE_TIMEOUT
+// OHOS_LOCAL end
 
 #cmakedefine LLDB_PYTHON_HOME R"(${LLDB_PYTHON_HOME})"
 

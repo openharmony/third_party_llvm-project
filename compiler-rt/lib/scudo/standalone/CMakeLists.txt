@@ -35,7 +35,11 @@ append_list_if(COMPILER_RT_HAS_WTHREAD_SAFETY_FLAG -Werror=thread-safety
 
 set(SCUDO_LINK_FLAGS)
 
-list(APPEND SCUDO_LINK_FLAGS -Wl,-z,defs,-z,now,-z,relro)
+# OHOS currently uses TSD_EXCLUSIVE with TLS storage in scudo; musl may lack
+# some GWP-ASan TLS symbols at link time.
+if (NOT OHOS)
+  list(APPEND SCUDO_LINK_FLAGS -Wl,-z,defs,-z,now,-z,relro)
+endif()
 
 list(APPEND SCUDO_LINK_FLAGS -ffunction-sections -fdata-sections -Wl,--gc-sections)
 
@@ -47,7 +51,8 @@ if(COMPILER_RT_SCUDO_STANDALONE_SYSROOT_PATH)
   list(APPEND SCUDO_CFLAGS "--sysroot=${COMPILER_RT_SCUDO_STANDALONE_SYSROOT_PATH}")
 endif()
 
-if(ANDROID)
+if(ANDROID OR OHOS)
+  # OHOS currently uses TSD_EXCLUSIVE with TLS storage in scudo, so disable EmuTLS
   list(APPEND SCUDO_CFLAGS -fno-emulated-tls)
 
 # Put the shared library in the global group. For more details, see
@@ -192,7 +197,8 @@ append_list_if(COMPILER_RT_HAS_LIBPTHREAD -pthread SCUDO_LINK_FLAGS)
 
 append_list_if(FUCHSIA zircon SCUDO_LINK_LIBS)
 
-if(COMPILER_RT_DEFAULT_TARGET_ARCH MATCHES "mips|mips64|mipsel|mips64el")
+if(COMPILER_RT_DEFAULT_TARGET_ARCH MATCHES "mips|mips64|mipsel|mips64el" AND
+   NOT OHOS)
   list(APPEND SCUDO_LINK_LIBS atomic)
 endif()
 

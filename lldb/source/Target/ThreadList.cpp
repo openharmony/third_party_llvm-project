@@ -19,6 +19,7 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/State.h"
+#include "lldb/Utility/Timer.h"   // OHOS_LOCAL
 
 using namespace lldb;
 using namespace lldb_private;
@@ -209,6 +210,7 @@ ThreadSP ThreadList::FindThreadByIndexID(uint32_t index_id, bool can_update) {
 }
 
 bool ThreadList::ShouldStop(Event *event_ptr) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
   // Running events should never stop, obviously...
 
   Log *log = GetLog(LLDBLog::Step);
@@ -495,6 +497,7 @@ void ThreadList::DiscardThreadPlans() {
 }
 
 bool ThreadList::WillResume(RunDirection &direction) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
   // Run through the threads and perform their momentary actions. But we only
   // do this for threads that are running, user suspended threads stay where
   // they are.
@@ -656,6 +659,7 @@ bool ThreadList::WillResume(RunDirection &direction) {
 }
 
 void ThreadList::DidResume() {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
   std::lock_guard<std::recursive_mutex> guard(GetMutex());
   collection::iterator pos, end = m_threads.end();
   for (pos = m_threads.begin(); pos != end; ++pos) {
@@ -697,6 +701,7 @@ ThreadSP ThreadList::GetSelectedThread() {
 }
 
 bool ThreadList::SetSelectedThreadByID(lldb::tid_t tid, bool notify) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_THREAD);   // OHOS_LOCAL
   std::lock_guard<std::recursive_mutex> guard(GetMutex());
   ThreadSP selected_thread_sp(FindThreadByID(tid));
   if (selected_thread_sp) {

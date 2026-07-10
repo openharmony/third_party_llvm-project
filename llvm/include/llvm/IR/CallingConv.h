@@ -89,6 +89,40 @@ namespace CallingConv {
     /// Used for runtime calls that preserves none general registers.
     PreserveNone = 21,
 
+    // OHOS_LOCAL begin
+    // Ark Irtoc calling convention for Interpreter handlers
+    ArkInt = 22,
+
+    // Ark Irtoc calling convention for void-return FastPath handlers with
+    // zero arguments
+    ArkFast0 = 23,
+
+    // Ark Irtoc calling convention for FastPath handlers with one argument or
+    // no arguments but having a return value
+    ArkFast1 = 24,
+
+    // Ark Itroc calling convention for FastPath handlers with two arguments
+    ArkFast2 = 25,
+
+    // Ark Itroc calling convention for FastPath handlers with three arguments
+    ArkFast3 = 26,
+
+    // Ark Itroc calling convention for FastPath handlers with four arguments
+    ArkFast4 = 27,
+
+    // Ark Itroc calling convention for FastPath handlers with five arguments
+    ArkFast5 = 28,
+
+    // Ark AOT method calling convention with frame adaptation
+    ArkMethod = 29,
+
+    // Ark AOT calling convention for special class resolvers
+    ArkResolver = 30,
+
+    // Ark AOT calling convention for static calls through special PLT resolver
+    ArkPlt = 31,
+    // OHOS_LOCAL end
+
     /// This is the start of the target-specific calling conventions, e.g.
     /// fastcall and thiscall on X86.
     FirstTargetCC = 64,

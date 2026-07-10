@@ -379,10 +379,12 @@ struct ErrorODRViolation : ErrorBase {
   ErrorODRViolation(u32 tid, const __asan_global *g1, u32 stack_id1_,
                     const __asan_global *g2, u32 stack_id2_)
       : ErrorBase(tid, 10, "odr-violation"),
-        global1(*g1),
-        global2(*g2),
         stack_id1(stack_id1_),
-        stack_id2(stack_id2_) {}
+        stack_id2(stack_id2_) {
+    // Avoid memcpy intrinsic: memory for g2 may be poisoned during ODR reporting.
+    internal_memcpy(&global1, g1, sizeof(*g1));
+    internal_memcpy(&global2, g2, sizeof(*g2));
+  }
   void Print();
 };
 

@@ -1,0 +1,17 @@
+## OHOS_LOCAL
+## Check that llvm-objdump dumps OHOS program headers correctly.
+
+# RUN: yaml2obj %s -o %t
+# RUN: llvm-objdump -p %t | FileCheck %s
+
+# CHECK:      OHOS_RANDOMDATA off    0x0000000000000000 vaddr 0x0000000000000000 paddr 0x0000000000000000 align 2**0
+# CHECK-NEXT:      filesz 0x0000000000000000 memsz 0x0000000000000000 flags ---
+
+--- !ELF
+FileHeader:
+  Class:   ELFCLASS64
+  Data:    ELFDATA2LSB
+  Type:    ET_EXEC
+  Machine: EM_X86_64
+ProgramHeaders:
+  - Type: 0x6788FC60 ## PT_OHOS_RANDOMDATA

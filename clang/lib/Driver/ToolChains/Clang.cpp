@@ -3508,6 +3508,10 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
 
   if (Arg *A = Args.getLastArg(options::OPT_fno_stack_protector,
                                options::OPT_fstack_protector_all,
+                               // OHOS_LOCAL begin
+                               options::OPT_fstack_protector_ret_all,
+                               options::OPT_fstack_protector_ret_strong,
+                               // OHOS_LOCAL end
                                options::OPT_fstack_protector_strong,
                                options::OPT_fstack_protector)) {
     if (A->getOption().matches(options::OPT_fstack_protector))
@@ -3515,6 +3519,12 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
           std::max<>(LangOptions::SSPOn, DefaultStackProtectorLevel);
     else if (A->getOption().matches(options::OPT_fstack_protector_strong))
       StackProtectorLevel = LangOptions::SSPStrong;
+    // OHOS_LOCAL begin
+    else if (A->getOption().matches(options::OPT_fstack_protector_ret_strong))
+      StackProtectorLevel = LangOptions::SSPRetStrong;
+    else if (A->getOption().matches(options::OPT_fstack_protector_ret_all))
+      StackProtectorLevel = LangOptions::SSPRetReq;
+    // OHOS_LOCAL end
     else if (A->getOption().matches(options::OPT_fstack_protector_all))
       StackProtectorLevel = LangOptions::SSPReq;
 
@@ -3532,7 +3542,7 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
     CmdArgs.push_back(Args.MakeArgString(Twine(StackProtectorLevel)));
   }
 
-  // --param ssp-buffer-size=
+  // --param ssp-buffer-size= && ssp-ret-cookie-size=, OHOS_LOCAL
   for (const Arg *A : Args.filtered(options::OPT__param)) {
     StringRef Str(A->getValue());
     if (Str.consume_front("ssp-buffer-size=")) {
@@ -3543,6 +3553,33 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
       }
       A->claim();
     }
+    // OHOS_LOCAL begin
+    if (Str.starts_with("ssp-ret-cookie-size=")) {
+      unsigned int SSPRetCookieSize = 0;
+      size_t CookieSizePrefixLen = sizeof("ssp-ret-cookie-size=") - 1;
+      // Currently only supports AArch64 architecture.
+      if (!EffectiveTriple.isAArch64() || !EffectiveTriple.isOSBinFormatELF()) {
+        D.Diag(diag::err_drv_unsupported_opt_for_target)
+          << Str.take_front(CookieSizePrefixLen) << EffectiveTriple.getTriple();
+        continue;
+      }
+      // The parameter must be greater than 0.
+      if (Str.drop_front(sizeof("ssp-ret-cookie-size=") - 1)
+              .getAsInteger(10, SSPRetCookieSize) ||
+          !SSPRetCookieSize) {
+        D.Diag(diag::err_drv_invalid_int_value)
+            << Str.take_front(CookieSizePrefixLen)
+            << Str.drop_front(sizeof("ssp-ret-cookie-size=") - 1);
+        continue;
+      }
+      if (StackProtectorLevel) {
+        CmdArgs.push_back("-stack-protector-ret-cookie-size");
+        CmdArgs.push_back(
+            Args.MakeArgString(Str.drop_front(sizeof("ssp-ret-cookie-size=") - 1)));
+      }
+      A->claim();
+    }
+    // OHOS_LOCAL end
   }
 
   const std::string &TripleStr = EffectiveTriple.getTriple();
@@ -6890,6 +6927,9 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
                   options::OPT_fno_loop_interchange);
 
   Args.AddLastArg(CmdArgs, options::OPT_fstrict_flex_arrays_EQ);
+
+  if (Args.hasArg(options::OPT_fenable_merge_functions))
+    CmdArgs.push_back(Args.MakeArgString("-fmerge-functions"));
 
   Args.AddLastArg(CmdArgs, options::OPT_pthread);
 

@@ -78,6 +78,24 @@ AArch64RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
     return CSR_AArch64_NoRegs_SaveList;
   if (MF->getFunction().getCallingConv() == CallingConv::PreserveNone)
     return CSR_AArch64_NoneRegs_SaveList;
+  // OHOS_LOCAL begin
+  if (MF->getFunction().getCallingConv() == CallingConv::ArkInt)
+    return CSR_AArch64_ArkInt_SaveList;
+  if (MF->getFunction().getCallingConv() == CallingConv::ArkFast0)
+    return CSR_AArch64_ArkFast0_SaveList;
+  if (MF->getFunction().getCallingConv() == CallingConv::ArkFast1)
+    return CSR_AArch64_ArkFast1_SaveList;
+  if (MF->getFunction().getCallingConv() == CallingConv::ArkFast2)
+    return CSR_AArch64_ArkFast2_SaveList;
+  if (MF->getFunction().getCallingConv() == CallingConv::ArkFast3)
+    return CSR_AArch64_ArkFast3_SaveList;
+  if (MF->getFunction().getCallingConv() == CallingConv::ArkFast4)
+    return CSR_AArch64_ArkFast4_SaveList;
+  if (MF->getFunction().getCallingConv() == CallingConv::ArkFast5)
+    return CSR_AArch64_ArkFast5_SaveList;
+  if (MF->getFunction().getCallingConv() == CallingConv::ArkMethod)
+    return CSR_AArch64_ArkMethod_SaveList;
+  // OHOS_LOCAL end
   if (MF->getFunction().getCallingConv() == CallingConv::AnyReg)
     return CSR_AArch64_AllRegs_SaveList;
 
@@ -294,6 +312,24 @@ AArch64RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
   if (CC == CallingConv::PreserveNone)
     return SCS ? CSR_AArch64_NoneRegs_SCS_RegMask
                : CSR_AArch64_NoneRegs_RegMask;
+  // OHOS_LOCAL begin
+  if (CC == CallingConv::ArkInt)
+    return CSR_AArch64_ArkInt_RegMask;
+  if (CC == CallingConv::ArkFast0)
+    return CSR_AArch64_ArkFast0_RegMask;
+  if (CC == CallingConv::ArkFast1)
+    return CSR_AArch64_ArkFast1_RegMask;
+  if (CC == CallingConv::ArkFast2)
+    return CSR_AArch64_ArkFast2_RegMask;
+  if (CC == CallingConv::ArkFast3)
+    return CSR_AArch64_ArkFast3_RegMask;
+  if (CC == CallingConv::ArkFast4)
+    return CSR_AArch64_ArkFast4_RegMask;
+  if (CC == CallingConv::ArkFast5)
+    return CSR_AArch64_ArkFast5_RegMask;
+  if (CC == CallingConv::ArkMethod)
+    return CSR_AArch64_ArkMethod_RegMask;
+  // OHOS_LOCAL end
   if (CC == CallingConv::AnyReg)
     return SCS ? CSR_AArch64_AllRegs_SCS_RegMask : CSR_AArch64_AllRegs_RegMask;
 
@@ -455,6 +491,17 @@ AArch64RegisterInfo::getStrictlyReservedRegs(const MachineFunction &MF) const {
     for (unsigned i = AArch64::B16; i <= AArch64::B31; ++i)
       markSuperRegs(Reserved, i);
   }
+
+#ifdef ARK_GC_SUPPORT
+  if (MF.getFunction().getCallingConv() == CallingConv::GHC) {
+    markSuperRegs(Reserved, AArch64::W29);
+    markSuperRegs(Reserved, AArch64::W30);
+  }
+  if ((MF.getFunction().getCallingConv() == CallingConv::WebKit_JS) ||
+      (MF.getFunction().getCallingConv() == CallingConv::C)) {
+    markSuperRegs(Reserved, AArch64::W30);
+  }
+#endif
 
   for (size_t i = 0; i < AArch64::GPR32commonRegClass.getNumRegs(); ++i) {
     if (MF.getSubtarget<AArch64Subtarget>().isXRegisterReserved(i))

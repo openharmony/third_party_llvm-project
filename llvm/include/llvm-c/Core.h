@@ -4813,6 +4813,12 @@ LLVM_C_ABI LLVMValueRef LLVMBuildCallWithOperandBundles(
     LLVMBuilderRef, LLVMTypeRef, LLVMValueRef Fn, LLVMValueRef *Args,
     unsigned NumArgs, LLVMOperandBundleRef *Bundles, unsigned NumBundles,
     const char *Name);
+#ifdef ARK_GC_SUPPORT
+LLVM_C_ABI LLVMValueRef LLVMBuildCall3(LLVMBuilderRef B, LLVMTypeRef Ty,
+                                       LLVMValueRef Fn, LLVMValueRef *Args,
+                                       unsigned NumArgs, const char *Name,
+                                       LLVMValueRef *deoptVals, int NumVals);
+#endif
 LLVM_C_ABI LLVMValueRef LLVMBuildSelect(LLVMBuilderRef, LLVMValueRef If,
                                         LLVMValueRef Then, LLVMValueRef Else,
                                         const char *Name);

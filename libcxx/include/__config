@@ -842,7 +842,8 @@ typedef __char32_t char32_t;
         defined(__APPLE__) ||                                                                                          \
         defined(__MVS__) ||                                                                                            \
         defined(_AIX) ||                                                                                               \
-        defined(__EMSCRIPTEN__)
+        defined(__EMSCRIPTEN__) ||                                                                                     \
+        defined(__OHOS_FAMILY__)
 // clang-format on
 #      undef _LIBCPP_HAS_THREAD_API_PTHREAD
 #      define _LIBCPP_HAS_THREAD_API_PTHREAD 1
@@ -924,7 +925,7 @@ typedef __char32_t char32_t;
 #    define _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION 0
 #  endif
 
-#  if defined(__BIONIC__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||                        \
+#  if defined(__BIONIC__) || defined(__OHOS__) || defined(__NuttX__) || defined(__Fuchsia__) || defined(__wasi__) ||                        \
       _LIBCPP_HAS_MUSL_LIBC || defined(__OpenBSD__) || defined(__LLVM_LIBC__)
 #    define _LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE
 #  endif

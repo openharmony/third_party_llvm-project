@@ -2,6 +2,10 @@
 ; RUN:     -relocation-model=pic -frame-pointer=all < %s | FileCheck -check-prefix=ARM64 %s
 ; RUN: llc -mtriple=aarch64-linux-android \
 ; RUN:     -relocation-model=pic -frame-pointer=all < %s | FileCheck -check-prefix=ARM64 %s
+; RUN: llc -emulated-tls -mtriple=aarch64-linux-ohos \
+; RUN:     -relocation-model=pic -frame-pointer=all < %s | FileCheck -check-prefix=ARM64 %s
+; RUN: llc -mtriple=aarch64-linux-ohos \
+; RUN:     -relocation-model=pic -frame-pointer=all < %s | FileCheck -check-prefix=ARM64 %s
 
 ; Copied from X86/emutls.ll
 

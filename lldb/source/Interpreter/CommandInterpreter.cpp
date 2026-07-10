@@ -1937,6 +1937,8 @@ bool CommandInterpreter::HandleCommand(const char *command_line,
                                        LazyBool lazy_add_to_history,
                                        CommandReturnObject &result,
                                        bool force_repeat_command) {
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_COMMANDS);   // OHOS_LOCAL
+  LLDB_PERFORMANCE_LOG("HandleCommand: %s", command_line);   // OHOS_LOCAL
   // These are assigned later in the function but they must be declared before
   // the ScopedDispatcher object because we need their destructions to occur
   // after the dispatcher's dtor call, which may reference them.

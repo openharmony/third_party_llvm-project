@@ -124,6 +124,8 @@ def FuchsiaAlpha : Package<"fuchsia">, ParentPackage<Alpha>;
 def WebKit : Package<"webkit">;
 def WebKitAlpha : Package<"webkit">, ParentPackage<Alpha>;
 
+def OpenHarmony : Package<"openharmony">;
+
 //===----------------------------------------------------------------------===//
 // Core Checkers.
 //===----------------------------------------------------------------------===//
@@ -1792,3 +1794,67 @@ def RetainPtrCtorAdoptChecker : Checker<"RetainPtrCtorAdoptChecker">,
   Documentation<HasDocumentation>;
 
 } // end alpha.webkit
+
+//===----------------------------------------------------------------------===//
+// OpenHarmony checkers.
+//===----------------------------------------------------------------------===//
+
+let ParentPackage = OpenHarmony in {
+def UnixAPIArgsChecker : Checker<"UnixAPIArgs">,
+  HelpText<"Check for open unix api arguments">,
+  Documentation<HasDocumentation>;
+
+def MemcpyChecker : Checker<"Memcpy">,
+  HelpText<"Check for memcpy_s api arguments">,
+  Documentation<HasDocumentation>;
+
+def PrintSensitiveInfoChecker : Checker<"PrintSensitiveInfo">,
+  HelpText<"Check for sensitive information disclosure">,
+  CheckerOptions<[
+    CmdLineOption<String,
+                  "Config",
+                  "Path to the yaml configuration of sensitive information",
+                  "",
+                  Released>,
+  ]>,
+  Documentation<HasDocumentation>;
+
+def SignalHandlerChecker : Checker<"SignalHandler">,
+  HelpText<"Check for signal handler">,
+  CheckerOptions<[
+    CmdLineOption<String,
+                  "Config",
+                  "Path to the yaml configuration of async-safe function",
+                  "",
+                  Released>,
+  ]>,
+  Documentation<HasDocumentation>;
+
+def RefBaseDeleteChecker : Checker<"RefBaseDelete">,
+  HelpText<"Check for delete refbase managed by sptr/wptr">,
+  Documentation<NotDocumented>;
+
+def OHPtrImplicitConversionChecker : Checker<"OHPtrImplicitConversion">,
+  HelpText<"Check for implicit conversion of pointer to sptr/wptr">,
+  Documentation<NotDocumented>;
+
+def OHPtrNotInitChecker : Checker<"OHPtrNotInit">,
+  HelpText<"Check for sptr/wptr not init">,
+  Documentation<NotDocumented>;
+
+def NotHeapObjChecker : Checker<"NotHeapObj">,
+  HelpText<"Check for assign non-heap obj to sptr/wptr">,
+  Documentation<NotDocumented>;
+
+def NapiScopeManagerChecker : Checker<"Napi.Scope">,
+  HelpText<"Check the use of napi_handle_scope">,
+  Documentation<HasDocumentation>;
+
+def NapiGetArrBufferDataChecker : Checker<"Napi.GetArrayBuffer">,
+  HelpText<"Check the use of napi_get_arraybuffer_info">,
+  Documentation<HasDocumentation>;
+
+def NapiWrapParamChecker : Checker<"Napi.Wrap">,
+  HelpText<"Check the use of napi_wrap">,
+  Documentation<HasDocumentation>;
+}

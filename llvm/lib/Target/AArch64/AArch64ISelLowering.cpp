@@ -7675,6 +7675,7 @@ CCAssignFn *AArch64TargetLowering::CCAssignFnForCall(CallingConv::ID CC,
   case CallingConv::SwiftTail:
   case CallingConv::Tail:
   case CallingConv::GRAAL:
+  case CallingConv::ArkMethod: // OHOS_LOCAL
     if (Subtarget->isTargetWindows()) {
       if (IsVarArg) {
         if (Subtarget->isWindowsArm64EC())
@@ -7689,6 +7690,24 @@ CCAssignFn *AArch64TargetLowering::CCAssignFnForCall(CallingConv::ID CC,
       return CC_AArch64_DarwinPCS;
     return Subtarget->isTargetILP32() ? CC_AArch64_DarwinPCS_ILP32_VarArg
                                       : CC_AArch64_DarwinPCS_VarArg;
+  // OHOS_LOCAL begin
+  case CallingConv::ArkInt:
+    return CC_AArch64_ArkInt;
+  case CallingConv::ArkFast0:
+    return CC_AArch64_ArkFast0;
+  case CallingConv::ArkFast1:
+    return CC_AArch64_ArkFast1;
+  case CallingConv::ArkFast2:
+    return CC_AArch64_ArkFast2;
+  case CallingConv::ArkFast3:
+    return CC_AArch64_ArkFast3;
+  case CallingConv::ArkFast4:
+    return CC_AArch64_ArkFast4;
+  case CallingConv::ArkFast5:
+    return CC_AArch64_ArkFast5;
+  case CallingConv::ArkResolver:
+    return CC_AArch64_ArkResolver;
+  // OHOS_LOCAL end
   case CallingConv::Win64:
     if (IsVarArg) {
       if (Subtarget->isWindowsArm64EC())
@@ -7724,6 +7743,10 @@ AArch64TargetLowering::CCAssignFnForReturn(CallingConv::ID CC) const {
     if (Subtarget->isWindowsArm64EC())
       return RetCC_AArch64_Arm64EC_CFGuard_Check;
     return RetCC_AArch64_AAPCS;
+  // OHOS_LOCAL begin
+  case CallingConv::ArkResolver:
+    return RetCC_AArch64_ArkResolver;
+  // OHOS_LOCAL end
   }
 }
 
@@ -8369,8 +8392,13 @@ SDValue AArch64TargetLowering::LowerCallResult(
 
 /// Return true if the calling convention is one that we can guarantee TCO for.
 static bool canGuaranteeTCO(CallingConv::ID CC, bool GuaranteeTailCalls) {
+#ifdef ARK_GC_SUPPORT
+  return ((CC == CallingConv::GHC || CC == CallingConv::Fast) && GuaranteeTailCalls) ||
+         CC == CallingConv::Tail || CC == CallingConv::SwiftTail;
+#else
   return (CC == CallingConv::Fast && GuaranteeTailCalls) ||
          CC == CallingConv::Tail || CC == CallingConv::SwiftTail;
+#endif
 }
 
 /// Return true if we might ever do TCO for calls with this calling convention.
@@ -8385,6 +8413,18 @@ static bool mayTailCallThisCC(CallingConv::ID CC) {
   case CallingConv::SwiftTail:
   case CallingConv::Tail:
   case CallingConv::Fast:
+#ifdef ARK_GC_SUPPORT
+  case CallingConv::GHC:
+#endif
+  // OHOS_LOCAL begin
+  case CallingConv::ArkInt:
+  case CallingConv::ArkFast0:
+  case CallingConv::ArkFast1:
+  case CallingConv::ArkFast2:
+  case CallingConv::ArkFast3:
+  case CallingConv::ArkFast4:
+  case CallingConv::ArkFast5:
+  // OHOS_LOCAL end
     return true;
   default:
     return false;
@@ -8670,8 +8710,13 @@ SDValue AArch64TargetLowering::addTokenForArgument(SDValue Chain,
 
 bool AArch64TargetLowering::DoesCalleeRestoreStack(CallingConv::ID CallCC,
                                                    bool TailCallOpt) const {
+#ifdef ARK_GC_SUPPORT
+  return ((CallCC == CallingConv::GHC || CallCC == CallingConv::Fast) && TailCallOpt) ||
+         CallCC == CallingConv::Tail || CallCC == CallingConv::SwiftTail;
+#else
   return (CallCC == CallingConv::Fast && TailCallOpt) ||
          CallCC == CallingConv::Tail || CallCC == CallingConv::SwiftTail;
+#endif
 }
 
 // Check if the value is zero-extended from i1 to i8

@@ -1,0 +1,13 @@
+#!/bin/sh
+
+SOURCE=$(dirname -- "$( readlink -f -- "$0"; )")
+
+exec $SOURCE/clang++ \
+  -target arm-linux-ohos \
+  --sysroot=$SOURCE/../../sysroot \
+  -D__MUSL__ \
+  -march=armv7-a \
+  -mfloat-abi=softfp \
+  -mtune=generic-armv7-a \
+  -mthumb \
+  "$@"

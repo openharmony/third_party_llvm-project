@@ -263,6 +263,9 @@ endif()
 
 set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
 
+if (NOT DEFINED LIBCXX_OUTPUT_STATIC_NAME)
+  set (LIBCXX_OUTPUT_STATIC_NAME "c++")
+endif()
 # Build the static library.
 add_library(cxx_static STATIC ${LIBCXX_SOURCES} ${LIBCXX_HEADERS})
 target_include_directories(cxx_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

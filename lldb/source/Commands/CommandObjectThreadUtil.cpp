@@ -11,6 +11,7 @@
 #include "lldb/Interpreter/CommandReturnObject.h"
 #include "lldb/Target/Process.h"
 #include "lldb/Target/Thread.h"
+#include "lldb/Utility/LLDBLog.h"   // OHOS_LOCAL
 
 using namespace lldb;
 using namespace lldb_private;
@@ -140,6 +141,7 @@ bool CommandObjectIterateOverThreads::BucketThread(
   if (thread == nullptr) {
     result.AppendErrorWithFormatv("Failed to process thread #{0}.\n", tid);
     return false;
+    LLDB_PERFORMANCE_LOG("Completed backtrace.");     // OHOS_LOCAL
   }
 
   // Collect the each frame's address for this call-stack

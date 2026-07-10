@@ -1548,6 +1548,8 @@ defm access_control : BoolFOption<"access-control",
   PosFlag<SetTrue>>;
 def falign_functions : Flag<["-"], "falign-functions">, Group<f_Group>;
 def falign_functions_EQ : Joined<["-"], "falign-functions=">, Group<f_Group>;
+def fenable_merge_functions : Flag<["-"], "fenable-merge-functions">, Group<f_Group>,
+  HelpText<"Enables Merge Functions optimization">;
 def falign_loops_EQ : Joined<["-"], "falign-loops=">, Group<f_Group>,
   Visibility<[ClangOption, CC1Option]>, MetaVarName<"<N>">,
   HelpText<"N must be a power of two. Align loops to the boundary">,
@@ -4031,6 +4033,12 @@ defm split_stack : BoolFOption<"split-stack",
   PosFlag<SetTrue, [], [ClangOption, CC1Option], "Use segmented stack">>;
 def fstack_protector_all : Flag<["-"], "fstack-protector-all">, Group<f_Group>,
   HelpText<"Enable stack protectors for all functions">;
+// OHOS_LOCAL begin
+def fstack_protector_ret_all : Flag<["-"], "fstack-protector-ret-all">, Group<f_Group>,
+  HelpText<"Enable stack protectors for all functions with return address check">;
+def fstack_protector_ret_strong : Flag<["-"], "fstack-protector-ret-strong">, Group<f_Group>,
+  HelpText<"Enable stack protectors for some functions vulnerable to stack smashing with return address check">;
+// OHOS_LOCAL end
 defm stack_clash_protection : BoolFOption<"stack-clash-protection",
   CodeGenOpts<"StackClashProtector">, DefaultFalse,
   PosFlag<SetTrue, [], [ClangOption, CC1Option], "Enable">,
@@ -6782,6 +6790,12 @@ def mretpoline_external_thunk : Flag<["-"], "mretpoline-external-thunk">, Group<
 def mno_retpoline_external_thunk : Flag<["-"], "mno-retpoline-external-thunk">, Group<m_x86_Features_Group>;
 def mvzeroupper : Flag<["-"], "mvzeroupper">, Group<m_x86_Features_Group>;
 def mno_vzeroupper : Flag<["-"], "mno-vzeroupper">, Group<m_x86_Features_Group>;
+
+// OHOS_LOCAL begin
+foreach i = {8-15} in
+  def mfixed_r#i : Flag<["-"], "mfixed-r"#i>, Group<m_x86_Features_Group>,
+    HelpText<"Reserve the r"#i#" register (x86 only)">;
+// OHOS_LOCAL end
 def mno_gather : Flag<["-"], "mno-gather">, Group<m_Group>,
                  HelpText<"Disable generation of gather instructions in auto-vectorization(x86 only)">;
 def mno_scatter : Flag<["-"], "mno-scatter">, Group<m_Group>,
@@ -8446,13 +8460,18 @@ def static_define : Flag<["-"], "static-define">,
   MarshallingInfoFlag<LangOpts<"Static">>;
 def stack_protector : Separate<["-"], "stack-protector">,
   HelpText<"Enable stack protectors">,
-  Values<"0,1,2,3">,
+  Values<"0,1,2,3,4,5">, // OHOS_LOCAL
   NormalizedValuesScope<"LangOptions">,
-  NormalizedValues<["SSPOff", "SSPOn", "SSPStrong", "SSPReq"]>,
+  NormalizedValues<["SSPOff", "SSPOn", "SSPStrong", "SSPReq", "SSPRetStrong", "SSPRetReq"]>, // OHOS_LOCAL
   MarshallingInfoEnum<LangOpts<"StackProtector">, "SSPOff">;
 def stack_protector_buffer_size : Separate<["-"], "stack-protector-buffer-size">,
   HelpText<"Lower bound for a buffer to be considered for stack protection">,
   MarshallingInfoInt<CodeGenOpts<"SSPBufferSize">, "8">;
+// OHOS_LOCAL begin
+def stack_protector_ret_cookie_size : Separate<["-"], "stack-protector-ret-cookie-size">,
+  HelpText<"Maximum number of cookies for return address check to be considered for stack protection">,
+  MarshallingInfoInt<CodeGenOpts<"SSPRetCookieSize">, "1">;
+// OHOS_LOCAL end
 def ftype_visibility : Joined<["-"], "ftype-visibility=">,
   HelpText<"Default type visibility">,
   MarshallingInfoVisibility<LangOpts<"TypeVisibilityMode">, fvisibility_EQ.KeyPath>;

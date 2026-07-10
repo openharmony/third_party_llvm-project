@@ -65,6 +65,8 @@ if (C_SUPPORTS_NODEFAULTLIBS_FLAG)
                         shell32 user32 kernel32 mingw32 ${MINGW_RUNTIME}
                         moldname mingwex msvcrt)
     list(APPEND CMAKE_REQUIRED_LIBRARIES ${MINGW_LIBRARIES})
+  elseif (OHOS)
+    list(APPEND CMAKE_REQUIRED_LIBRARIES unwind)
   endif()
   if (NOT TARGET unwind)
     # Don't check for a library named unwind, if there's a target with that name within
@@ -188,9 +190,13 @@ check_include_files("sys/auxv.h"    COMPILER_RT_HAS_AUXV)
 
 # Libraries.
 check_library_exists(dl dlopen "" COMPILER_RT_HAS_LIBDL)
-check_library_exists(rt shm_open "" COMPILER_RT_HAS_LIBRT)
+if (NOT OHOS)
+    check_library_exists(rt shm_open "" COMPILER_RT_HAS_LIBRT)
+endif()
 check_library_exists(m pow "" COMPILER_RT_HAS_LIBM)
-check_library_exists(pthread pthread_create "" COMPILER_RT_HAS_LIBPTHREAD)
+if (NOT OHOS)
+    check_library_exists(pthread pthread_create "" COMPILER_RT_HAS_LIBPTHREAD)
+endif()
 check_library_exists(execinfo backtrace "" COMPILER_RT_HAS_LIBEXECINFO)
 
 if (ANDROID AND COMPILER_RT_HAS_LIBDL)
@@ -760,7 +766,7 @@ set(COMPILER_RT_SANITIZERS_TO_BUILD all CACHE STRING
 list_replace(COMPILER_RT_SANITIZERS_TO_BUILD all "${ALL_SANITIZERS}")
 
 if (SANITIZER_COMMON_SUPPORTED_ARCH AND NOT LLVM_USE_SANITIZER AND
-    (OS_NAME MATCHES "Android|Darwin|Linux|FreeBSD|NetBSD|Fuchsia|SunOS|Haiku" OR
+    (OS_NAME MATCHES "Android|Darwin|Linux|FreeBSD|NetBSD|Fuchsia|SunOS|Haiku|OHOS" OR
     (OS_NAME MATCHES "Windows" AND NOT CYGWIN AND
         (NOT MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"))))
   set(COMPILER_RT_HAS_SANITIZER_COMMON TRUE)
@@ -786,7 +792,7 @@ else()
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND HWASAN_SUPPORTED_ARCH AND
-    OS_NAME MATCHES "Linux|Android|Fuchsia")
+    OS_NAME MATCHES "Linux|Android|Fuchsia|OHOS")
   set(COMPILER_RT_HAS_HWASAN TRUE)
 else()
   set(COMPILER_RT_HAS_HWASAN FALSE)
@@ -799,7 +805,7 @@ else()
   set(COMPILER_RT_HAS_RTSAN FALSE)
 endif()
 
-if (OS_NAME MATCHES "Linux|FreeBSD|Windows|NetBSD|SunOS")
+if (OS_NAME MATCHES "Linux|FreeBSD|Windows|NetBSD|SunOS|OHOS")
   set(COMPILER_RT_ASAN_HAS_STATIC_RUNTIME TRUE)
 else()
   set(COMPILER_RT_ASAN_HAS_STATIC_RUNTIME FALSE)
@@ -836,7 +842,7 @@ else()
 endif()
 
 if (PROFILE_SUPPORTED_ARCH AND NOT LLVM_USE_SANITIZER AND
-    OS_NAME MATCHES "Darwin|Linux|FreeBSD|Windows|Android|Fuchsia|SunOS|NetBSD|AIX|WASI|Haiku")
+    OS_NAME MATCHES "Darwin|Linux|FreeBSD|Windows|Android|Fuchsia|SunOS|NetBSD|AIX|WASI|Haiku|OHOS")
   set(COMPILER_RT_HAS_PROFILE TRUE)
 else()
   set(COMPILER_RT_HAS_PROFILE FALSE)
@@ -857,7 +863,7 @@ else()
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND TSAN_SUPPORTED_ARCH)
-  if (OS_NAME MATCHES "Linux|Darwin|FreeBSD|NetBSD")
+  if (OS_NAME MATCHES "Linux|Darwin|FreeBSD|NetBSD|OHOS")
     set(COMPILER_RT_HAS_TSAN TRUE)
   elseif (OS_NAME MATCHES "Android" AND ANDROID_PLATFORM_LEVEL GREATER 23)
     set(COMPILER_RT_HAS_TSAN TRUE)
@@ -875,14 +881,14 @@ else()
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND UBSAN_SUPPORTED_ARCH AND
-    OS_NAME MATCHES "Darwin|Linux|FreeBSD|NetBSD|Windows|Android|Fuchsia|SunOS|Haiku")
+    OS_NAME MATCHES "Darwin|Linux|FreeBSD|NetBSD|Windows|Android|Fuchsia|SunOS|Haiku|OHOS")
   set(COMPILER_RT_HAS_UBSAN TRUE)
 else()
   set(COMPILER_RT_HAS_UBSAN FALSE)
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND UBSAN_SUPPORTED_ARCH AND
-    OS_NAME MATCHES "Linux|FreeBSD|NetBSD|Android|Darwin")
+    OS_NAME MATCHES "Linux|FreeBSD|NetBSD|Android|Darwin|OHOS")
   set(COMPILER_RT_HAS_UBSAN_MINIMAL TRUE)
 else()
   set(COMPILER_RT_HAS_UBSAN_MINIMAL FALSE)
@@ -905,7 +911,7 @@ endif()
 if (SCUDO_STANDALONE_SUPPORTED_ARCH AND
     COMPILER_RT_BUILD_SANITIZERS AND
     "scudo_standalone" IN_LIST COMPILER_RT_SANITIZERS_TO_BUILD AND
-    OS_NAME MATCHES "Linux" AND
+    OS_NAME MATCHES "Linux|OHOS" AND
     COMPILER_RT_HAS_AUXV)
   set(COMPILER_RT_HAS_SCUDO_STANDALONE TRUE)
 else()
@@ -926,14 +932,14 @@ else()
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND FUZZER_SUPPORTED_ARCH AND
-    OS_NAME MATCHES "Android|Darwin|Linux|NetBSD|FreeBSD|Fuchsia|Windows")
+    OS_NAME MATCHES "Android|Darwin|Linux|NetBSD|FreeBSD|Fuchsia|Windows|OHOS")
   set(COMPILER_RT_HAS_FUZZER TRUE)
 else()
   set(COMPILER_RT_HAS_FUZZER FALSE)
 endif()
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND SHADOWCALLSTACK_SUPPORTED_ARCH AND
-    OS_NAME MATCHES "Linux|Android")
+    OS_NAME MATCHES "Linux|Android|OHOS")
   set(COMPILER_RT_HAS_SHADOWCALLSTACK TRUE)
 else()
   set(COMPILER_RT_HAS_SHADOWCALLSTACK FALSE)
@@ -944,15 +950,17 @@ endif()
 # calling malloc on first use.
 # TODO(hctim): Enable this on Android again. Looks like it's causing a SIGSEGV
 # for Scudo and GWP-ASan, further testing needed.
+# OHOS_LOCAL begin
 if (GWP_ASAN_SUPPORTED_ARCH AND
     COMPILER_RT_BUILD_GWP_ASAN AND
     COMPILER_RT_BUILD_SANITIZERS AND
     "gwp_asan" IN_LIST COMPILER_RT_SANITIZERS_TO_BUILD AND
-    OS_NAME MATCHES "Linux")
+    OS_NAME MATCHES "Linux|OHOS")
   set(COMPILER_RT_HAS_GWP_ASAN TRUE)
 else()
   set(COMPILER_RT_HAS_GWP_ASAN FALSE)
 endif()
+# OHOS_LOCAL end
 
 if (COMPILER_RT_HAS_SANITIZER_COMMON AND NSAN_SUPPORTED_ARCH AND
     OS_NAME MATCHES "Linux")

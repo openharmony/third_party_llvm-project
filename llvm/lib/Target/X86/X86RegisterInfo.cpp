@@ -301,6 +301,28 @@ X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
     return CSR_NoRegs_SaveList;
 
   switch (CC) {
+  // OHOS_LOCAL begin
+  case CallingConv::ArkInt:
+    return CSR_NoRegs_SaveList;
+  case CallingConv::ArkFast0:
+    return CSR_ArkFast0_SaveList;
+  case CallingConv::ArkFast1:
+    return CSR_ArkFast1_SaveList;
+  case CallingConv::ArkFast2:
+    return CSR_ArkFast2_SaveList;
+  case CallingConv::ArkFast3:
+    return CSR_ArkFast3_SaveList;
+  case CallingConv::ArkFast4:
+    return CSR_ArkFast4_SaveList;
+  case CallingConv::ArkFast5:
+    return CSR_ArkFast5_SaveList;
+  case CallingConv::ArkMethod:
+    return CSR_ArkMethod_SaveList;
+  case CallingConv::ArkResolver:
+    return CSR_ArkResolver_SaveList;
+  case CallingConv::ArkPlt:
+    return CSR_ArkPlt_SaveList;
+  // OHOS_LOCAL end
   case CallingConv::GHC:
   case CallingConv::HiPE:
     return CSR_NoRegs_SaveList;
@@ -430,6 +452,28 @@ X86RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
   bool HasAVX512 = Subtarget.hasAVX512();
 
   switch (CC) {
+  // OHOS_LOCAL begin
+  case CallingConv::ArkInt:
+    return CSR_NoRegs_RegMask;
+  case CallingConv::ArkFast0:
+    return CSR_ArkFast0_RegMask;
+  case CallingConv::ArkFast1:
+    return CSR_ArkFast1_RegMask;
+  case CallingConv::ArkFast2:
+    return CSR_ArkFast2_RegMask;
+  case CallingConv::ArkFast3:
+    return CSR_ArkFast3_RegMask;
+  case CallingConv::ArkFast4:
+    return CSR_ArkFast4_RegMask;
+  case CallingConv::ArkFast5:
+    return CSR_ArkFast5_RegMask;
+  case CallingConv::ArkMethod:
+    return CSR_ArkMethod_RegMask;
+  case CallingConv::ArkResolver:
+    return CSR_ArkResolver_RegMask;
+  case CallingConv::ArkPlt:
+    return CSR_ArkPlt_RegMask;
+  // OHOS_LOCAL end
   case CallingConv::GHC:
   case CallingConv::HiPE:
     return CSR_NoRegs_RegMask;
@@ -557,6 +601,16 @@ BitVector X86RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   // Set the Shadow Stack Pointer as reserved.
   Reserved.set(X86::SSP);
 
+  // OHOS_LOCAL begin
+  // Set r# as reserved register if we need it
+  if (Is64Bit) {
+    for (auto Reg : MF.getSubtarget<X86Subtarget>().getRRegReservation()) {
+      for (const MCPhysReg &SubReg : subregs_inclusive(Reg))
+        Reserved.set(SubReg);
+    }
+  }
+  // OHOS_LOCAL end
+
   // Set the instruction pointer register and its aliases as reserved.
   for (const MCPhysReg &SubReg : subregs_inclusive(X86::RIP))
     Reserved.set(SubReg);
@@ -571,6 +625,12 @@ BitVector X86RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
     for (const MCPhysReg &SubReg : subregs_inclusive(X86::RBP))
       Reserved.set(SubReg);
   }
+#ifdef ARK_GC_SUPPORT
+  if (MF.getFunction().getCallingConv() == CallingConv::GHC) {
+    for (const MCPhysReg &SubReg : subregs_inclusive(X86::RBP))
+      Reserved.set(SubReg);
+  }
+#endif
 
   // Set the base-pointer register and its aliases as reserved if needed.
   if (hasBasePointer(MF)) {
@@ -900,6 +960,7 @@ X86RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   MachineInstr &MI = *II;
   MachineBasicBlock &MBB = *MI.getParent();
   MachineFunction &MF = *MBB.getParent();
+  const MachineFrameInfo &MFI = MF.getFrameInfo(); // OHOS_LOCAL
   MachineBasicBlock::iterator MBBI = MBB.getFirstTerminator();
   bool IsEHFuncletEpilogue = MBBI == MBB.end() ? false
                                                : isFuncletReturnInstr(*MBBI);
@@ -953,11 +1014,28 @@ X86RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   if (Opc == TargetOpcode::STACKMAP || Opc == TargetOpcode::PATCHPOINT) {
     assert(BasePtr == FramePtr && "Expected the FP as base register");
     int64_t Offset = MI.getOperand(FIOperandNum + 1).getImm() + FIOffset;
+    // OHOS_LOCAL begin
+    if (MFI.isArkSpillSlotObjectIndex(FrameIndex)) {
+      assert(TFI->supportsArkSpills());
+      auto Adaptation = TFI->getArkFrameAdaptationOffset(MF);
+      Offset = MFI.getObjectOffset(FrameIndex) + Adaptation;
+    }
+    // OHOS_LOCAL end
     MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
     return false;
   }
 
   if (MI.getOperand(FIOperandNum+3).isImm()) {
+    // OHOS_LOCAL begin
+    if (MFI.isArkSpillSlotObjectIndex(FrameIndex)) {
+      assert(BasePtr == FramePtr && "Expected the FP as base register");
+      assert(TFI->supportsArkSpills());
+      auto Adaptation = TFI->getArkFrameAdaptationOffset(MF);
+      int64_t Offset = MFI.getObjectOffset(FrameIndex) + Adaptation;
+      MI.getOperand(FIOperandNum + 3).ChangeToImmediate(Offset);
+      return false;
+    }
+    // OHOS_LOCAL end
     // Offset is a 32-bit integer.
     int Imm = (int)(MI.getOperand(FIOperandNum + 3).getImm());
     int Offset = FIOffset + Imm;

@@ -212,6 +212,7 @@
 #include "AArch64InstrInfo.h"
 #include "AArch64MachineFunctionInfo.h"
 #include "AArch64RegisterInfo.h"
+#include "AArch64StackProtectorRetLowering.h" // OHOS_LOCAL
 #include "AArch64Subtarget.h"
 #include "MCTargetDesc/AArch64AddressingModes.h"
 #include "MCTargetDesc/AArch64MCTargetDesc.h"
@@ -327,6 +328,30 @@ static int64_t getArgumentStackToRestore(MachineFunction &MF,
 
   return ArgumentPopSize;
 }
+
+// OHOS_LOCAL begin
+int AArch64FrameLowering::getArkFrameAdaptationOffset(
+    const MachineFunction &MF) const {
+
+  const auto &F = MF.getFunction();
+  if (F.getMetadata("use-ark-frame") != nullptr)
+    return 0x10; // FP & LR
+
+  const auto &FRI = MF.getFrameInfo();
+  const auto &CSI = FRI.getCalleeSavedInfo();
+  auto End = CSI.end();
+  auto FP_iter = std::find_if(CSI.begin(), End, [](auto &csi) {
+    return csi.getReg() == AArch64::FP;
+  });
+
+  assert(FP_iter != End &&
+         "FP register has not been callee-saved as expected");
+
+  int32_t offset = FRI.getObjectOffset(FP_iter->getFrameIdx());
+  assert(offset < 0 && "FP register is expected to be above SP");
+  return -offset;
+}
+// OHOS_LOCAL end
 
 static bool produceCompactUnwindFrame(MachineFunction &MF);
 static bool needsWinCFI(const MachineFunction &MF);
@@ -1826,6 +1851,18 @@ void AArch64FrameLowering::emitPacRetPlusLeafHardening(
   }
 }
 
+#ifdef ARK_GC_SUPPORT
+Triple::ArchType AArch64FrameLowering::GetArkSupportTarget() const
+{
+    return Triple::aarch64;
+}
+
+int AArch64FrameLowering::GetFixedFpPosition() const
+{
+  return -1;
+}
+#endif
+
 void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
                                         MachineBasicBlock &MBB) const {
   MachineBasicBlock::iterator MBBI = MBB.begin();
@@ -1968,8 +2005,23 @@ void AArch64FrameLowering::emitPrologue(MachineFunction &MF,
 
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+  #ifndef ARK_GC_SUPPORT
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+  #endif
+  // asm-int GHC call webkit function, we need push regs to stack.
+
+  // OHOS_LOCAL begin
+  if (HasFP && (MF.getFunction().getCallingConv() == CallingConv::ArkFast0 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast1 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast2 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast3 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast4 ||
+                MF.getFunction().getCallingConv() == CallingConv::ArkFast5)) {
+    report_fatal_error(
+        "Implicit use of FP is forbidden for ArkFast conventions!");
+  }
+  // OHOS_LOCAL end
 
   // Set tagged base pointer to the requested stack slot.
   // Ideally it should match SP value after prologue.
@@ -2507,8 +2559,11 @@ void AArch64FrameLowering::emitEpilogue(MachineFunction &MF,
 
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+  #ifndef ARK_GC_SUPPORT
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+  #endif
+  // asm-int GHC call webkit function, we need push regs to stack.
 
   // How much of the stack used by incoming arguments this function is expected
   // to restore in this particular epilogue.
@@ -3923,8 +3978,11 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
                                                 RegScavenger *RS) const {
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+  #ifndef ARK_GC_SUPPORT
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+  #endif
+  // asm-int GHC call webkit function, we need push regs to stack.
 
   TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
   const AArch64RegisterInfo *RegInfo = static_cast<const AArch64RegisterInfo *>(
@@ -3940,6 +3998,12 @@ void AArch64FrameLowering::determineCalleeSaves(MachineFunction &MF,
   unsigned BasePointerReg = RegInfo->hasBasePointer(MF)
                                 ? RegInfo->getBaseRegister()
                                 : (unsigned)AArch64::NoRegister;
+
+  // OHOS_LOCAL begin
+  if (MFI.hasStackProtectorRetRegister()) {
+    SavedRegs.set(MFI.getStackProtectorRetRegister());
+  }
+  // OHOS_LOCAL end
 
   unsigned ExtraCSSpill = 0;
   bool HasUnpairedGPR64 = false;
@@ -4756,6 +4820,15 @@ void AArch64FrameLowering::processFunctionBeforeFrameFinalized(
 
   MachineFrameInfo &MFI = MF.getFrameInfo();
 
+  // OHOS_LOCAL begin
+  int ArkSpillNo = 0;
+  for (int I = 0, E = MFI.getObjectIndexEnd(); I != E; ++I)
+    if (MFI.isArkSpillSlotObjectIndex(I)) {
+      MFI.setObjectOffset(I, MF.getArkSpillOffset(ArkSpillNo));
+      ArkSpillNo++;
+    }
+  // OHOS_LOCAL end
+
   assert(getStackGrowthDirection() == TargetFrameLowering::StackGrowsDown &&
          "Upwards growing stack unsupported");
 
@@ -5347,6 +5420,13 @@ unsigned AArch64FrameLowering::getWinEHFuncletFrameSize(
   return alignTo(CSSize + MF.getFrameInfo().getMaxCallFrameSize(),
                  getStackAlign());
 }
+
+/// OHOS_LOCAL begin
+const StackProtectorRetLowering *
+AArch64FrameLowering::getStackProtectorRet() const {
+  return &SPRL;
+}
+/// OHOS_LOCAL end
 
 namespace {
 struct FrameObject {

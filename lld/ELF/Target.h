@@ -34,6 +34,9 @@ public:
   virtual RelExpr getRelExpr(RelType type, const Symbol &s,
                              const uint8_t *loc) const = 0;
   virtual RelType getDynRel(RelType type) const { return 0; }
+  // OHOS_LOCAL begin
+  virtual bool convertAbsRelToPC(RelType &type) const { return false; }
+  // OHOS_LOCAL end
   virtual void writeGotPltHeader(uint8_t *buf) const {}
   virtual void writeGotHeader(uint8_t *buf) const {}
   virtual void writeGotPlt(uint8_t *buf, const Symbol &s) const {};
