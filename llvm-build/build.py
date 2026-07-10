@@ -93,9 +93,9 @@ class BuildConfig():
 
         self.OPENHOS_SFX = '-linux-ohos'
         self.LITEOS_SFX = '-liteos-ohos'
-        self.LLDB_PY_VERSION = '3.11'
+        self.LLDB_PY_VERSION = '3.12'
         self.LLDB_PYTHON = 'python3'
-        self.LLDB_PY_DETAILED_VERSION = self.LLDB_PY_VERSION + '.4'
+        self.LLDB_PY_DETAILED_VERSION = self.LLDB_PY_VERSION + '.10'
         self.CLANG_VERSION = prebuilts_clang_version
         self.MINGW_TRIPLE = 'x86_64-windows-gnu'
         self.build_libs_with_hb = self.build_libs_flags == 'OH' or self.build_libs_flags == 'BOTH'
@@ -3164,7 +3164,7 @@ def main():
             llvm_package.copy_python_to_host(mingw_python_dir, build_utils.merge_out_path('windows-x86_64'))
             llvm_package.copy_python_to_host(mingw_python_dir, windows64_install)
         else:
-            mingw_python_dir = os.path.join(build_utils.buildtools_path, 'python3/windows-x86/3.11.4')
+            mingw_python_dir = os.path.join(build_utils.buildtools_path, 'python3/windows-x86/3.12.10')
             llvm_core.set_mingw_python_dir(mingw_python_dir)
             llvm_package.copy_python_to_host(mingw_python_dir, build_utils.merge_out_path('windows-x86_64'))
             llvm_package.copy_python_to_host(mingw_python_dir, windows64_install)
