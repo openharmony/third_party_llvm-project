@@ -1,3 +1,9 @@
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 if (NOT LIBIPT_INCLUDE_PATH)
   message (FATAL_ERROR "libipt include path not provided")
 endif()
@@ -10,14 +16,17 @@ include_directories(${LIBIPT_INCLUDE_PATH})
 find_library(LIBIPT_LIBRARY ipt PATHS ${LIBIPT_LIBRARY_PATH} REQUIRED)
 
 lldb_tablegen(TraceIntelPTCommandOptions.inc -gen-lldb-option-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE TraceIntelPTOptions.td
   TARGET TraceIntelPTOptionsGen)
 
 lldb_tablegen(TraceIntelPTProperties.inc -gen-lldb-property-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE TraceIntelPTProperties.td
   TARGET TraceIntelPTPropertiesGen)
 
 lldb_tablegen(TraceIntelPTPropertiesEnum.inc -gen-lldb-property-enum-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE TraceIntelPTProperties.td
   TARGET TraceIntelPTPropertiesEnumGen)
 

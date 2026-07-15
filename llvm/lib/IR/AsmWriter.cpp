@@ -348,7 +348,7 @@ static void PrintCallingConv(unsigned cc, raw_ostream &Out) {
   case CallingConv::GHC:           Out << "ghccc"; break;
   case CallingConv::Tail:          Out << "tailcc"; break;
   case CallingConv::GRAAL:         Out << "graalcc"; break;
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   case CallingConv::ArkInt:        Out << "arkintcc"; break;
   case CallingConv::ArkFast0:      Out << "arkfast0cc"; break;
   case CallingConv::ArkFast1:      Out << "arkfast1cc"; break;
@@ -359,7 +359,7 @@ static void PrintCallingConv(unsigned cc, raw_ostream &Out) {
   case CallingConv::ArkMethod:     Out << "arkmethodcc"; break;
   case CallingConv::ArkResolver:   Out << "arkresolvercc"; break;
   case CallingConv::ArkPlt:        Out << "arkpltcc"; break;
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   case CallingConv::CFGuard_Check: Out << "cfguard_checkcc"; break;
   case CallingConv::X86_StdCall:   Out << "x86_stdcallcc"; break;
   case CallingConv::X86_FastCall:  Out << "x86_fastcallcc"; break;

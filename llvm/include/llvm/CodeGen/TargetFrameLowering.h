@@ -16,12 +16,16 @@
 #include "llvm/ADT/BitVector.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineOptimizationRemarkEmitter.h"
+#ifdef OHOS_LLVM
 #include "llvm/CodeGen/StackProtectorRetLowering.h" // OHOS_LOCAL
+#endif
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/TypeSize.h"
+#ifdef OHOS_LLVM
 #include "llvm/IR/CallingConv.h" // OHOS_LOCAL
+#endif
 #include <vector>
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 #include "llvm/TargetParser/Triple.h"
 #endif
 
@@ -147,11 +151,13 @@ public:
   /// getOffsetOfLocalArea - This method returns the offset of the local area
   /// from the stack pointer on entrance to a function.
   ///
-  // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+  int getOffsetOfLocalArea() const { return LocalAreaOffset; }
+#else /* OHOS_LLVM */
   virtual int getOffsetOfLocalArea(CallingConv::ID CC = CallingConv::C) const {
     return LocalAreaOffset;
   }
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   /// Control the placement of special register scavenging spill slots when
   /// allocating a stack frame.
@@ -230,7 +236,7 @@ public:
   /// emitZeroCallUsedRegs - Zeros out call used registers.
   virtual void emitZeroCallUsedRegs(BitVector RegsToZero,
                                     MachineBasicBlock &MBB) const {}
-  #ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
   template <typename T>
   constexpr T RoundUp(T x, size_t n) const
   {
@@ -249,14 +255,14 @@ public:
   }
 
   virtual int GetFrameReserveSize(MachineFunction &MF) const;
-  #endif
+#endif
 
-  /// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   /// Instances about backward cfi and stack protection provided by different architectures.
   virtual const StackProtectorRetLowering *getStackProtectorRet() const {
     return nullptr;
   }
-  /// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   /// With basic block sections, emit callee saved frame moves for basic blocks
   /// that are in a different section.
@@ -315,7 +321,7 @@ public:
                                 const TargetInstrInfo *TII,
                                 const TargetRegisterInfo *TRI) const;
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   /// Return true if the target implements spilling & restoring caller-saved
   /// registers from Ark spill slots.
   virtual bool supportsArkSpills() const {
@@ -326,7 +332,7 @@ public:
   virtual int getArkFrameAdaptationOffset(const MachineFunction &MF) const {
     return 0;
   }
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   /// restoreCalleeSavedRegisters - Issues instruction(s) to restore all callee
   /// saved registers and returns true if it isn't possible / profitable to do

@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //===-- HostInfoOHOS.cpp -------------------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -92,3 +93,4 @@ bool HostInfoOHOS::ComputeTempFileBaseDirectory(FileSpec &file_spec) {
 
   return FileSystem::Instance().Exists(file_spec);
 }
+#endif /* OHOS_LLVM */

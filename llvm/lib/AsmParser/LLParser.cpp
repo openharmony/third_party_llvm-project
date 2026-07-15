@@ -2202,7 +2202,7 @@ void LLParser::parseOptionalDLLStorageClass(unsigned &Res) {
 ///   ::= 'graalcc'
 ///   ::= 'riscv_vector_cc'
 ///   ::= 'riscv_vls_cc'
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
 ///   ::= 'arkintcc'
 ///   ::= 'arkfast0cc'
 ///   ::= 'arkfast1cc'
@@ -2213,7 +2213,7 @@ void LLParser::parseOptionalDLLStorageClass(unsigned &Res) {
 ///   ::= 'arkmethodcc'
 ///   ::= 'arkresolvercc'
 ///   ::= 'arkpltcc'
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 ///   ::= 'cc' UINT
 ///
 bool LLParser::parseOptionalCallingConv(unsigned &CC) {
@@ -2321,7 +2321,7 @@ bool LLParser::parseOptionalCallingConv(unsigned &CC) {
 #undef CC_VLS_CASE
     }
     return false;
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   case lltok::kw_arkintcc:       CC = CallingConv::ArkInt; break;
   case lltok::kw_arkfast0cc:     CC = CallingConv::ArkFast0; break;
   case lltok::kw_arkfast1cc:     CC = CallingConv::ArkFast1; break;
@@ -2332,7 +2332,7 @@ bool LLParser::parseOptionalCallingConv(unsigned &CC) {
   case lltok::kw_arkmethodcc:    CC = CallingConv::ArkMethod; break;
   case lltok::kw_arkresolvercc:  CC = CallingConv::ArkResolver; break;
   case lltok::kw_arkpltcc:       CC = CallingConv::ArkPlt; break;
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   case lltok::kw_cc: {
       Lex.Lex();
       return parseUInt32(CC);

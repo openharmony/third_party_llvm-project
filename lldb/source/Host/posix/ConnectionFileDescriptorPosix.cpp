@@ -240,7 +240,9 @@ size_t ConnectionFileDescriptor::Read(void *dst, size_t dst_len,
                                       const Timeout<std::micro> &timeout,
                                       ConnectionStatus &status,
                                       Status *error_ptr) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_CONNECTION);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   Log *log = GetLog(LLDBLog::Connection);
 
   std::unique_lock<std::recursive_mutex> locker(m_mutex, std::defer_lock);
@@ -430,7 +432,9 @@ std::string ConnectionFileDescriptor::GetURI() { return m_uri; }
 ConnectionStatus
 ConnectionFileDescriptor::BytesAvailable(const Timeout<std::micro> &timeout,
                                          Status *error_ptr) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_CONNECTION);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   // Don't need to take the mutex here separately since we are only called from
   // Read.  If we ever get used more generally we will need to lock here as
   // well.

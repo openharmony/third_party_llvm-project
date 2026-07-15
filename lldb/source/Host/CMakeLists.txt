@@ -108,7 +108,8 @@ else()
     endif()
 
 
-  elseif (CMAKE_SYSTEM_NAME MATCHES "Linux|Android|OHOS")
+  elseif (CMAKE_SYSTEM_NAME MATCHES "Linux|Android" OR
+         (OHOS_LLVM AND CMAKE_SYSTEM_NAME MATCHES "OHOS"))
     add_host_subdirectory(linux
       linux/AbstractSocket.cpp
       linux/Host.cpp
@@ -121,7 +122,7 @@ else()
         android/HostInfoAndroid.cpp
         )
     endif()
-    if (CMAKE_SYSTEM_NAME MATCHES "OHOS")
+    if (OHOS_LLVM AND CMAKE_SYSTEM_NAME MATCHES "OHOS")
       add_host_subdirectory(ohos
         ohos/HostInfoOHOS.cpp
         )

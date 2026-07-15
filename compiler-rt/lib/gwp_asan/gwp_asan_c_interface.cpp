@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //===-- gwp_asan_c_interface.cpp ------------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -82,3 +83,4 @@ void gwp_asan_iterate(void *base, size_t size,
 #ifdef __cplusplus
 }
 #endif
+#endif /* OHOS_LLVM */

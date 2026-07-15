@@ -470,11 +470,14 @@ public:
     return AttributeSets.getFnStackAlignment();
   }
 
-  /// OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+  /// Returns true if the function has ssp, sspstrong, or sspreq fn attrs.
+  bool hasStackProtectorFnAttr() const;
+#else /* OHOS_LLVM */
   /// Returns true if the function has ssp, sspstrong, sspretstrong,
   /// sspretreq or sspreq fn attrs.
   bool hasStackProtectorFnAttr() const;
-  /// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   /// adds the dereferenceable attribute to the list of attributes for
   /// the given arg.

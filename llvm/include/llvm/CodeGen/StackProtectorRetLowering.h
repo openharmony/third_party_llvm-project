@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //===-- StackProtectorRetLowering.h -----------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -6,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-/// OHOS_LOCAL begin
 #ifndef LLVM_CODEGEN_STACKPROTECTORRETLOWERING_H
 #define LLVM_CODEGEN_STACKPROTECTORRETLOWERING_H
 
@@ -55,5 +55,5 @@ public:
 
 } // namespace llvm
 
-#endif
-/// OHOS_LOCAL end
+#endif // LLVM_CODEGEN_STACKPROTECTORRETLOWERING_H
+#endif /* OHOS_LLVM */

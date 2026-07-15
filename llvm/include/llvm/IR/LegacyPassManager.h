@@ -16,9 +16,9 @@
 #ifndef LLVM_IR_LEGACYPASSMANAGER_H
 #define LLVM_IR_LEGACYPASSMANAGER_H
 
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 #include "llvm/Pass.h"
-#endif
+#endif /* OHOS_LLVM && ARK_GC_SUPPORT */
 #include "llvm/Support/CBindingWrapping.h"
 #include "llvm/Support/Compiler.h"
 

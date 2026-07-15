@@ -22,8 +22,10 @@
 #include "lldb/Target/ThreadPlanStepThrough.h"
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
-#include "lldb/ValueObject/ValueObjectConstResult.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+#include "lldb/ValueObject/ValueObjectConstResult.h"
 
 #include <memory>
 
@@ -308,7 +310,9 @@ bool ThreadPlanStepOut::ValidatePlan(Stream *error) {
 }
 
 bool ThreadPlanStepOut::DoPlanExplainsStop(Event *event_ptr) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   // If the step out plan is done, then we just need to step through the
   // inlined frame.
   if (m_step_out_to_inline_plan_sp) {
@@ -377,7 +381,9 @@ bool ThreadPlanStepOut::DoPlanExplainsStop(Event *event_ptr) {
 }
 
 bool ThreadPlanStepOut::ShouldStop(Event *event_ptr) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   if (IsPlanComplete())
     return true;
 
@@ -437,7 +443,9 @@ StateType ThreadPlanStepOut::GetPlanRunState() { return eStateRunning; }
 
 bool ThreadPlanStepOut::DoWillResume(StateType resume_state,
                                      bool current_plan) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   if (m_step_out_to_inline_plan_sp || m_step_through_inline_plan_sp)
     return true;
 
@@ -453,7 +461,9 @@ bool ThreadPlanStepOut::DoWillResume(StateType resume_state,
 }
 
 bool ThreadPlanStepOut::WillStop() {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   if (m_return_bp_id != LLDB_INVALID_BREAK_ID) {
     Breakpoint *return_bp = GetTarget().GetBreakpointByID(m_return_bp_id).get();
     if (return_bp != nullptr)
@@ -464,7 +474,9 @@ bool ThreadPlanStepOut::WillStop() {
 }
 
 bool ThreadPlanStepOut::MischiefManaged() {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   if (IsPlanComplete()) {
     // Did I reach my breakpoint?  If so I'm done.
     //
@@ -482,7 +494,9 @@ bool ThreadPlanStepOut::MischiefManaged() {
     }
 
     ThreadPlan::MischiefManaged();
+#ifdef OHOS_LLVM
     LLDB_PERFORMANCE_LOG("Completed step out.");      // OHOS_LOCAL
+#endif /* OHOS_LLVM */
     return true;
   } else {
     return false;

@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //===-- AArch64StackProtectorRetLowering.h ----------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -6,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-/// OHOS_LOCAL begin
 #ifndef LLVM_LIB_TARGET_AARCH64_AARCH64STACKPROTECTORRETLOWERING_H
 #define LLVM_LIB_TARGET_AARCH64_AARCH64STACKPROTECTORRETLOWERING_H
 
@@ -37,5 +37,5 @@ public:
 
 } // namespace llvm
 
-#endif
-/// OHOS_LOCAL end
+#endif // LLVM_LIB_TARGET_AARCH64_AARCH64STACKPROTECTORRETLOWERING_H
+#endif /* OHOS_LLVM */

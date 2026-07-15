@@ -1,4 +1,11 @@
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 lldb_tablegen(CommandOptions.inc -gen-lldb-option-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE Options.td
   TARGET LLDBOptionsGen)
 

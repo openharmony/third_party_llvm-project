@@ -150,7 +150,7 @@ foreach(arch ${ASAN_TEST_ARCH})
       ${CMAKE_CURRENT_BINARY_DIR}/Unit/${CONFIG_NAME_DYNAMIC}/lit.site.cfg.py)
   endif()
   # FIXME: support unit test in the android test runner
-  if (NOT ANDROID AND NOT OHOS)
+  if (NOT ANDROID AND (NOT OHOS_LLVM OR NOT OHOS))
     if (NOT MINGW)
       list(APPEND ASAN_TEST_DEPS AsanUnitTests)
       list(APPEND ASAN_TESTSUITES ${CMAKE_CURRENT_BINARY_DIR}/Unit/${CONFIG_NAME})

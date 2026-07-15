@@ -130,9 +130,13 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
 #undef RESERVE_REG
 
   // -mrelax is default, unless -mno-relax is specified.
+#ifndef OHOS_LLVM
+  if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, true)) {
+#else /* OHOS_LLVM */
   // lld does not support relocations used by -mrelax on RISC-V
   bool DefaultMRelax = !Triple.isOpenHOS();
   if (Args.hasFlag(options::OPT_mrelax, options::OPT_mno_relax, DefaultMRelax)) {
+#endif /* OHOS_LLVM */
     Features.push_back("+relax");
     // -gsplit-dwarf -mrelax requires DW_AT_high_pc/DW_AT_ranges/... indexing
     // into .debug_addr, which is currently not implemented.

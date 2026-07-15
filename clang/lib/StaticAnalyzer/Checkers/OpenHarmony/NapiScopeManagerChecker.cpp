@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //== NapiScopeManagerChecker.cpp ------------------------------*- C++ -*--==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -398,3 +399,4 @@ void ento::registerNapiScopeManagerChecker(CheckerManager &mgr) {
 bool ento::shouldRegisterNapiScopeManagerChecker(const CheckerManager &mgr) {
   return true;
 }
+#endif /* OHOS_LLVM */

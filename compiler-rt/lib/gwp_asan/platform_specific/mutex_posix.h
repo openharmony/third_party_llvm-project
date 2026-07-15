@@ -15,14 +15,13 @@
 namespace gwp_asan {
 class PlatformMutex {
 protected:
-// OHOS_LOCAL begin
-#if defined(__OHOS__)
+#if defined(OHOS_LLVM) && defined(__OHOS__)
   pthread_mutex_t Mu = {{{PTHREAD_MUTEX_RECURSIVE}}};
 #else
   pthread_mutex_t Mu = PTHREAD_MUTEX_INITIALIZER;
 #endif
-// OHOS_LOCAL end
 };
 } // namespace gwp_asan
+
 #endif // GWP_ASAN_MUTEX_POSIX_H_
 #endif // defined(__unix__)

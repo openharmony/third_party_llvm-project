@@ -28297,10 +28297,10 @@ SDValue X86TargetLowering::LowerFRAMEADDR(SDValue Op, SelectionDAG &DAG) const {
   return FrameAddr;
 }
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
 #define GET_REGISTER_MATCHER
 #include "X86GenAsmMatcher.inc"
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 // FIXME? Maybe this could be a TableGen attribute on some registers and
 // this table could be generated automatically from RegInfo.
@@ -28331,19 +28331,21 @@ Register X86TargetLowering::getRegisterByName(const char* RegName, LLT VT,
 #endif
   }
 
+#ifndef OHOS_LLVM
+  return Reg;
+#else /* OHOS_LLVM */
   if (Reg)
     return Reg;
 
-  // OHOS_LOCAL begin
   Reg = MatchRegisterName(RegName);
   if (Reg) {
     Register RReg = getX86SubSuperRegister(Reg, 64);
     if (Subtarget.getRRegReservation().contains(RReg))
       return Reg;
   }
-  // OHOS_LOCAL end
 
   report_fatal_error("Invalid register name global variable");
+#endif /* OHOS_LLVM */
 }
 
 SDValue X86TargetLowering::LowerFRAME_TO_ARGS_OFFSET(SDValue Op,

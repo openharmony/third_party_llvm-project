@@ -13,7 +13,7 @@ set(GWP_ASAN_SOURCES
   stack_trace_compressor.cpp
 )
 # OHOS_LOCAL begin
-if(OHOS)
+if(OHOS_LLVM AND OHOS)
   list(APPEND GWP_ASAN_SOURCES gwp_asan_c_interface.cpp)
 endif()
 # OHOS_LOCAL end
@@ -64,7 +64,7 @@ set(GWP_ASAN_BACKTRACE_HEADERS
   options.inc
 )
 # OHOS_LOCAL begin
-if(OHOS)
+if(OHOS_LLVM AND OHOS)
   set(GWP_ASAN_BACKTRACE_SOURCES
     optional/backtrace_ohos.cpp)
   set(GWP_ASAN_OBJECT_LIBS

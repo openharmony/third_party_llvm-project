@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //== OHPtrImplicitConversionChecker.cpp ------------------------------*- C++
 //-*--==//
 //
@@ -94,3 +95,4 @@ bool ento::shouldRegisterOHPtrImplicitConversionChecker(
     const CheckerManager &mgr) {
   return true;
 }
+#endif /* OHOS_LLVM */

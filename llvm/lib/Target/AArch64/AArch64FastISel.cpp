@@ -3868,7 +3868,9 @@ bool AArch64FastISel::selectRet(const Instruction *I) {
     // Analyze operands of the call, assigning locations to each operand.
     SmallVector<CCValAssign, 16> ValLocs;
     CCState CCInfo(CC, F.isVarArg(), *FuncInfo.MF, ValLocs, I->getContext());
-    // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+    CCInfo.AnalyzeReturn(Outs, RetCC_AArch64_AAPCS);
+#else /* OHOS_LLVM */
     CCAssignFn *RetCC;
     switch (CC) {
     default:
@@ -3878,8 +3880,8 @@ bool AArch64FastISel::selectRet(const Instruction *I) {
       RetCC = RetCC_AArch64_ArkResolver;
       break;
     }
-    // OHOS_LOCAL end
     CCInfo.AnalyzeReturn(Outs, RetCC);
+#endif /* OHOS_LLVM */
 
     // Only handle a single return value for now.
     if (ValLocs.size() != 1)

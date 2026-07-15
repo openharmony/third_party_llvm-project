@@ -14,10 +14,12 @@
 #define LLVM_LIB_TARGET_AARCH64_AARCH64FRAMELOWERING_H
 
 #include "llvm/CodeGen/MachineOptimizationRemarkEmitter.h"
+#ifdef OHOS_LLVM
 #include "AArch64StackProtectorRetLowering.h" // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/Support/TypeSize.h"
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 #include "llvm/TargetParser/Triple.h"
 #endif
 
@@ -25,11 +27,19 @@ namespace llvm {
 
 class AArch64FrameLowering : public TargetFrameLowering {
 public:
+#ifdef OHOS_LLVM
   const AArch64StackProtectorRetLowering SPRL; // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
+#ifndef OHOS_LLVM
+  explicit AArch64FrameLowering()
+      : TargetFrameLowering(StackGrowsDown, Align(16), 0, Align(16),
+                            true /*StackRealignable*/) {}
+#else /* OHOS_LLVM */
   explicit AArch64FrameLowering()
       : TargetFrameLowering(StackGrowsDown, Align(16), 0, Align(16),
                             true /*StackRealignable*/), SPRL() {} // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
   void resetCFIToInitialState(MachineBasicBlock &MBB) const override;
 
@@ -41,7 +51,7 @@ public:
   /// the function.
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
   Triple::ArchType GetArkSupportTarget() const override;
   int GetFixedFpPosition() const override;
 #endif
@@ -58,7 +68,9 @@ public:
 
   bool enableFullCFIFixup(const MachineFunction &MF) const override;
 
+#ifdef OHOS_LLVM
   const StackProtectorRetLowering *getStackProtectorRet() const override; // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
   bool canUseAsPrologue(const MachineBasicBlock &MBB) const override;
 
@@ -87,13 +99,13 @@ public:
   /// Can this function use the red zone for local allocations.
   bool canUseRedZone(const MachineFunction &MF) const;
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   bool supportsArkSpills() const override {
     return true;
   }
 
   int getArkFrameAdaptationOffset(const MachineFunction &MF) const override;
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   bool hasReservedCallFrame(const MachineFunction &MF) const override;
 

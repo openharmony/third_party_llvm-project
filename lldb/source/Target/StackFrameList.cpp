@@ -25,7 +25,9 @@
 #include "lldb/Target/Unwind.h"
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 #include "llvm/ADT/SmallPtrSet.h"
 
 #include <memory>
@@ -341,7 +343,9 @@ void StackFrameList::SynthesizeTailCallFrames(StackFrame &next_frame) {
 
 bool StackFrameList::GetFramesUpTo(uint32_t end_idx,
                                    InterruptionControl allow_interrupt) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   // GetFramesUpTo is always called with the intent to add frames, so get the
   // writer lock:
   std::unique_lock<std::shared_mutex> guard(m_list_mutex);
@@ -608,7 +612,9 @@ void StackFrameList::Dump(Stream *s) {
 }
 
 StackFrameSP StackFrameList::GetFrameAtIndex(uint32_t idx) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   StackFrameSP frame_sp;
   uint32_t original_idx = idx;
 
@@ -879,7 +885,9 @@ size_t StackFrameList::GetStatus(Stream &strm, uint32_t first_frame,
                                  uint32_t num_frames_with_source,
                                  bool show_unique, bool show_hidden,
                                  const char *selected_frame_marker) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   size_t num_frames_displayed = 0;
 
   if (num_frames == 0)

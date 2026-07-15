@@ -52,8 +52,7 @@ static DWORD getWindowsProtectionFlags(MemProt MP) {
 
 Expected<std::pair<ExecutorAddr, std::string>>
 ExecutorSharedMemoryMapperService::reserve(uint64_t Size) {
-// OHOS_LOCAL
-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)) || defined(_WIN32)
+#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && (!defined(OHOS_LLVM) || !defined(__OHOS__))) || defined(_WIN32)
 
 #if defined(LLVM_ON_UNIX)
 
@@ -142,8 +141,7 @@ ExecutorSharedMemoryMapperService::reserve(uint64_t Size) {
 
 Expected<ExecutorAddr> ExecutorSharedMemoryMapperService::initialize(
     ExecutorAddr Reservation, tpctypes::SharedMemoryFinalizeRequest &FR) {
-// OHOS_LOCAL
-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)) || defined(_WIN32)
+#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && (!defined(OHOS_LLVM) || !defined(__OHOS__))) || defined(_WIN32)
 
   ExecutorAddr MinAddr(~0ULL);
 
@@ -247,8 +245,7 @@ Error ExecutorSharedMemoryMapperService::deinitialize(
 
 Error ExecutorSharedMemoryMapperService::release(
     const std::vector<ExecutorAddr> &Bases) {
-// OHOS_LOCAL
-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)) || defined(_WIN32)
+#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && (!defined(OHOS_LLVM) || !defined(__OHOS__))) || defined(_WIN32)
   Error Err = Error::success();
 
   for (auto Base : Bases) {

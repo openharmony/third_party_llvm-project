@@ -32,7 +32,9 @@
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/Stream.h"
 #include "lldb/Utility/StreamString.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
 #include <memory>
 
@@ -481,7 +483,9 @@ BreakpointOptions &Breakpoint::GetOptions() { return m_options; }
 const BreakpointOptions &Breakpoint::GetOptions() const { return m_options; }
 
 void Breakpoint::ResolveBreakpoint() {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_BREAKPOINTS);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   if (m_resolver_sp) {
     ElapsedTime elapsed(m_resolve_time);
     m_resolver_sp->ResolveBreakpoint(*m_filter_sp);

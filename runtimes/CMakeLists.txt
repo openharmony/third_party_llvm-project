@@ -33,6 +33,8 @@ list(INSERT CMAKE_MODULE_PATH 0
   "${CMAKE_CURRENT_SOURCE_DIR}/../llvm/cmake/modules"
 )
 
+include(HandleOHOSOptions)
+
 # We order libraries to mirror roughly how they are layered, except that compiler-rt can depend
 # on libc++, so we put it after.
 set(LLVM_DEFAULT_RUNTIMES "libc;libunwind;libcxxabi;pstl;libcxx;compiler-rt;libclc;openmp;offload")
@@ -192,7 +194,7 @@ message(STATUS "LLVM default target triple: ${LLVM_DEFAULT_TARGET_TRIPLE}")
 
 set(LLVM_TARGET_TRIPLE "${LLVM_DEFAULT_TARGET_TRIPLE}")
 
-if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND NOT OHOS)
+if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND (NOT OHOS_LLVM OR NOT OHOS))
   set(option_prefix "")
   if (CMAKE_C_SIMULATE_ID MATCHES "MSVC")
     set(option_prefix "/clang:")

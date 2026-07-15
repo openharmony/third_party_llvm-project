@@ -16,7 +16,11 @@
 
 #if defined(CRT_HAS_TF_MODE)
 
+#ifndef OHOS_LLVM
+#define NUMBER_OF_HALF_ITERATIONS 4
+#else /* OHOS_LLVM */
 #define NUMBER_OF_HALF_ITERATIONS 5
+#endif /* OHOS_LLVM */
 #define NUMBER_OF_FULL_ITERATIONS 1
 
 #include "fp_div_impl.inc"

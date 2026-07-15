@@ -1498,7 +1498,9 @@ static StringRef segmentTypeToString(unsigned Arch, unsigned Type) {
     LLVM_READOBJ_ENUM_CASE(ELF, PT_OPENBSD_SYSCALLS);
     LLVM_READOBJ_ENUM_CASE(ELF, PT_OPENBSD_BOOTDATA);
 
+#ifdef OHOS_LLVM
     LLVM_READOBJ_ENUM_CASE(ELF, PT_OHOS_RANDOMDATA); // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   default:
     return "";
   }

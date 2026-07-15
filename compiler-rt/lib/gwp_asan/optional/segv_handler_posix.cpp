@@ -22,11 +22,9 @@
 #include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
-// OHOS_LOCAL begin
-#if defined(__OHOS__)
+#if defined(OHOS_LLVM) && defined(__OHOS__)
 #include <sigchain.h>
 #endif
-// OHOS_LOCAL end
 
 using gwp_asan::AllocationMetadata;
 using gwp_asan::Error;
@@ -198,8 +196,7 @@ Printf_t PrintfForSignalHandler;
 PrintBacktrace_t PrintBacktraceForSignalHandler;
 SegvBacktrace_t BacktraceForSignalHandler;
 
-// OHOS_LOCAL begin
-#if defined(__OHOS__)
+#if defined(OHOS_LLVM) && defined(__OHOS__)
 // Adaptations: 15.x used GPA->stop(); 21.x uses preCrashReport and
 // __gwp_asan_error_is_mine (stop() was removed).
 static bool sigSegvHandlerOhos(int sig, siginfo_t *info, void *ucontext) {
@@ -220,8 +217,6 @@ static bool sigSegvHandlerOhos(int sig, siginfo_t *info, void *ucontext) {
   return false;
 }
 #endif
-// OHOS_LOCAL end
-
 static void sigSegvHandler(int sig, siginfo_t *info, void *ucontext) {
   const gwp_asan::AllocatorState *State =
       GPAForSignalHandler->getAllocatorState();
@@ -266,8 +261,7 @@ static void sigSegvHandler(int sig, siginfo_t *info, void *ucontext) {
 namespace gwp_asan {
 namespace segv_handler {
 
-// OHOS_LOCAL begin
-#if defined(__OHOS__)
+#if defined(OHOS_LLVM) && defined(__OHOS__)
 void installSignalHandlersOhos(gwp_asan::GuardedPoolAllocator *GPA,
                               Printf_t Printf, PrintBacktrace_t PrintBacktrace,
                               SegvBacktrace_t SegvBacktrace) {
@@ -293,8 +287,6 @@ void installSignalHandlersOhos(gwp_asan::GuardedPoolAllocator *GPA,
   HasReportedBadPoolAccess = false;
 }
 #endif
-// OHOS_LOCAL end
-
 void installSignalHandlers(gwp_asan::GuardedPoolAllocator *GPA, Printf_t Printf,
                            PrintBacktrace_t PrintBacktrace,
                            SegvBacktrace_t SegvBacktrace, bool Recoverable) {

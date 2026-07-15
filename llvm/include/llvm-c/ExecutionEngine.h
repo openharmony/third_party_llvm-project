@@ -51,9 +51,9 @@ typedef struct LLVMOpaqueMCJITMemoryManager *LLVMMCJITMemoryManagerRef;
 
 struct LLVMMCJITCompilerOptions {
   unsigned OptLevel;
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
   LLVMRelocMode RelMode;
-#endif
+#endif /* OHOS_LLVM && ARK_GC_SUPPORT */
   LLVMCodeModel CodeModel;
   LLVMBool NoFramePointerElim;
   LLVMBool EnableFastISel;

@@ -1,37 +1,51 @@
 add_llvm_component_group(AArch64 HAS_JIT)
+set(EXTRA_FEAT_LIST)
 
-if(BUILD_ARK_GC_SUPPORT)
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
+if(OHOS_LLVM AND BUILD_ARK_GC_SUPPORT)
     set(LLVM_TARGET_DEFINITIONS AArch64ArkGc.td)
 else()
     set(LLVM_TARGET_DEFINITIONS AArch64.td)
-endif(BUILD_ARK_GC_SUPPORT)
-tablegen(LLVM AArch64GenAsmMatcher.inc -gen-asm-matcher)
-tablegen(LLVM AArch64GenAsmWriter.inc -gen-asm-writer)
-tablegen(LLVM AArch64GenAsmWriter1.inc -gen-asm-writer -asmwriternum=1)
-tablegen(LLVM AArch64GenCallingConv.inc -gen-callingconv)
-tablegen(LLVM AArch64GenDAGISel.inc -gen-dag-isel)
-tablegen(LLVM AArch64GenDisassemblerTables.inc -gen-disassembler)
-tablegen(LLVM AArch64GenFastISel.inc -gen-fast-isel)
-tablegen(LLVM AArch64GenGlobalISel.inc -gen-global-isel)
+endif()
+tablegen(LLVM AArch64GenAsmMatcher.inc -gen-asm-matcher ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenAsmWriter.inc -gen-asm-writer ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenAsmWriter1.inc -gen-asm-writer -asmwriternum=1 ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenCallingConv.inc -gen-callingconv ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenDAGISel.inc -gen-dag-isel ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenDisassemblerTables.inc -gen-disassembler ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenFastISel.inc -gen-fast-isel ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenGlobalISel.inc -gen-global-isel ${EXTRA_FEAT_LIST})
 tablegen(LLVM AArch64GenO0PreLegalizeGICombiner.inc -gen-global-isel-combiner
-              -combiners="AArch64O0PreLegalizerCombiner")
+              -combiners="AArch64O0PreLegalizerCombiner" ${EXTRA_FEAT_LIST})
 tablegen(LLVM AArch64GenPreLegalizeGICombiner.inc -gen-global-isel-combiner
-              -combiners="AArch64PreLegalizerCombiner")
+              -combiners="AArch64PreLegalizerCombiner" ${EXTRA_FEAT_LIST})
 tablegen(LLVM AArch64GenPostLegalizeGICombiner.inc -gen-global-isel-combiner
-              -combiners="AArch64PostLegalizerCombiner")
+              -combiners="AArch64PostLegalizerCombiner" ${EXTRA_FEAT_LIST})
 tablegen(LLVM AArch64GenPostLegalizeGILowering.inc -gen-global-isel-combiner
-              -combiners="AArch64PostLegalizerLowering")
-tablegen(LLVM AArch64GenInstrInfo.inc -gen-instr-info)
-tablegen(LLVM AArch64GenMCCodeEmitter.inc -gen-emitter)
-tablegen(LLVM AArch64GenMCPseudoLowering.inc -gen-pseudo-lowering)
-tablegen(LLVM AArch64GenRegisterBank.inc -gen-register-bank)
-tablegen(LLVM AArch64GenRegisterInfo.inc -gen-register-info)
-tablegen(LLVM AArch64GenSDNodeInfo.inc -gen-sd-node-info)
-tablegen(LLVM AArch64GenSubtargetInfo.inc -gen-subtarget)
-tablegen(LLVM AArch64GenSystemOperands.inc -gen-searchable-tables)
-tablegen(LLVM AArch64GenExegesis.inc -gen-exegesis)
+              -combiners="AArch64PostLegalizerLowering" ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenInstrInfo.inc -gen-instr-info ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenMCCodeEmitter.inc -gen-emitter ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenMCPseudoLowering.inc -gen-pseudo-lowering ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenRegisterBank.inc -gen-register-bank ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenRegisterInfo.inc -gen-register-info ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenSDNodeInfo.inc -gen-sd-node-info ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenSubtargetInfo.inc -gen-subtarget ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenSystemOperands.inc -gen-searchable-tables ${EXTRA_FEAT_LIST})
+tablegen(LLVM AArch64GenExegesis.inc -gen-exegesis ${EXTRA_FEAT_LIST})
 
 add_public_tablegen_target(AArch64CommonTableGen)
+
+# OHOS_LOCAL begin
+set(OHOS_AARCH64_SOURCES)
+if(OHOS_LLVM)
+  list(APPEND OHOS_AARCH64_SOURCES AArch64StackProtectorRetLowering.cpp)
+else()
+  set(LLVM_OPTIONAL_SOURCES AArch64StackProtectorRetLowering.cpp)
+endif()
+# OHOS_LOCAL end
 
 add_llvm_target(AArch64CodeGen
   GISel/AArch64CallLowering.cpp
@@ -82,7 +96,7 @@ add_llvm_target(AArch64CodeGen
   AArch64SLSHardening.cpp
   AArch64SelectionDAGInfo.cpp
   AArch64SpeculationHardening.cpp
-  AArch64StackProtectorRetLowering.cpp # OHOS_LOCAL
+  ${OHOS_AARCH64_SOURCES} # OHOS_LOCAL
   AArch64StackTagging.cpp
   AArch64StackTaggingPreRA.cpp
   AArch64StorePairSuppress.cpp

@@ -167,7 +167,7 @@ function(add_asan_tests arch test_runtime)
   # selection. Each configuration expects the test binaries in a corresponding
   # subdirectory. Generate subdirectory names based on the architecture name.
   string(TOUPPER ${arch} ARCH_UPPER_CASE)
-  if (OHOS)
+  if (OHOS_LLVM AND OHOS)
     set(CONFIG_NAME default)
     set(CONFIG_NAME_DYNAMIC dynamic)
   else()

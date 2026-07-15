@@ -657,7 +657,11 @@ def FeatureExecuteOnly : SubtargetFeature<"execute-only",
                                           "Enable the generation of "
                                           "execute only code.">;
 
+#ifndef OHOS_LLVM
+foreach i = {1-7,9-15,18,20-28} in
+#else /* OHOS_LLVM */
 foreach i = {1-7,9-15,18,20-30} in // OHOS_LOCAL
+#endif /* OHOS_LLVM */
     def FeatureReserveX#i : SubtargetFeature<"reserve-x"#i, "ReserveXRegister["#i#"]", "true",
                                              "Reserve X"#i#", making it unavailable "
                                              "as a GPR">;

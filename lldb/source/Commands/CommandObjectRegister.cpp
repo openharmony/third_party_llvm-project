@@ -27,8 +27,10 @@
 #include "lldb/Utility/Args.h"
 #include "lldb/Utility/DataExtractor.h"
 #include "lldb/Utility/RegisterValue.h"
-#include "lldb/Utility/LLDBLog.h"   // OHOS_LOCAL
 #include "llvm/Support/Errno.h"
+#ifdef OHOS_LLVM
+#include "lldb/Utility/LLDBLog.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
 using namespace lldb;
 using namespace lldb_private;
@@ -221,7 +223,9 @@ protected:
         }
       }
     }
+#ifdef OHOS_LLVM
     LLDB_PERFORMANCE_LOG("Completed register read.");      // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   }
 
   class CommandOptions : public OptionGroup {

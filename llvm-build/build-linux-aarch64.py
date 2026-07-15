@@ -84,6 +84,7 @@ class UbuntuAarch64ToolchainBuilder(CrossToolchainBuilder):
         if not self._build_config.build_libxml2:
             self._llvm_defines["LLDB_ENABLE_LIBXML2"] = "OFF"
 
+        self._llvm_defines["OHOS_LLVM"] = "ON"
         self._build_config.build_python = False
 
 

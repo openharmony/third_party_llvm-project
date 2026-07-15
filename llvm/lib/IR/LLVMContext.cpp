@@ -17,7 +17,9 @@
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
+#ifdef OHOS_LLVM
 #include "llvm/Config/llvm-config.h"
+#endif /* OHOS_LLVM */
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/IR/LLVMRemarkStreamer.h"
@@ -61,11 +63,11 @@ static StringRef knownBundleName(unsigned BundleTagID) {
   llvm_unreachable("covered switch");
 }
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
 const char *LLVMContext::getLLVMVersion() {
   return LLVM_VERSION_STRING;
 }
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 LLVMContext::LLVMContext() : pImpl(new LLVMContextImpl(*this)) {
   // Create the fixed metadata kinds. This is done in the same order as the

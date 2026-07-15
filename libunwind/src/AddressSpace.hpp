@@ -180,6 +180,13 @@ public:
     memcpy(&val, (void *)addr, sizeof(val));
     return val;
   }
+#ifndef OHOS_LLVM
+  double           getDouble(pint_t addr) {
+    double val;
+    memcpy(&val, (void *)addr, sizeof(val));
+    return val;
+  }
+#else /* OHOS_LLVM */
   unw_fpreg_t      getDouble(pint_t addr) {
     unw_fpreg_t val;
 #if defined(_LIBUNWIND_TARGET_MIPS_O32)
@@ -189,6 +196,7 @@ public:
 #endif
     return val;
   }
+#endif /* OHOS_LLVM */
   v128             getVector(pint_t addr) {
     v128 val;
     memcpy(&val, (void *)addr, sizeof(val));

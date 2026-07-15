@@ -9,7 +9,16 @@
 #ifndef LLD_ELF_EHFRAME_H
 #define LLD_ELF_EHFRAME_H
 
-// OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+#include "lld/Common/LLVM.h"
+
+namespace lld::elf {
+struct EhSectionPiece;
+
+uint8_t getFdeEncoding(EhSectionPiece *p);
+bool hasLSDA(const EhSectionPiece &p);
+}
+#else /* OHOS_LLVM */
 
 #include "lld/Common/LLVM.h"
 
@@ -33,6 +42,6 @@ bool hasLSDA(const EhSectionPiece &cie);
 
 } // namespace lld::elf
 
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 #endif

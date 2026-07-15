@@ -540,9 +540,12 @@ public:
     m_sdk_build = std::move(sdk_build);
   }
 
+#ifdef OHOS_LLVM
   void SetContainer(bool b_container) { m_container = b_container; }
 
   bool GetContainer() const { return m_container; }
+
+#endif /* OHOS_LLVM */
 
   // Override this to return true if your platform supports Clang modules. You
   // may also need to override AddClangModuleCompilationOptions to pass the
@@ -628,12 +631,14 @@ public:
   virtual Status Install(const FileSpec &src, const FileSpec &dst);
 
   virtual Environment GetEnvironment();
+#ifdef OHOS_LLVM
+  virtual ConstString GetMmapSymbolName(const ArchSpec &arch);
+
+#endif /* OHOS_LLVM */
 
   virtual bool GetFileExists(const lldb_private::FileSpec &file_spec);
 
   virtual Status Unlink(const FileSpec &file_spec);
-
-  virtual ConstString GetMmapSymbolName(const ArchSpec &arch);
 
   virtual MmapArgList GetMmapArgumentList(const ArchSpec &arch,
                                           lldb::addr_t addr,
@@ -1001,6 +1006,9 @@ protected:
   // Set to true when we are able to actually set the OS version while being
   // connected. For remote platforms, we might set the version ahead of time
   // before we actually connect and this version might change when we actually
+#ifdef OHOS_LLVM
+  bool m_container;
+#endif /* OHOS_LLVM */
   // connect to a remote platform. For the host platform this will be set to
   // the once we call HostInfo::GetOSVersion().
   bool m_os_version_set_while_connected;
@@ -1008,7 +1016,6 @@ protected:
   std::string
       m_sdk_sysroot; // the root location of where the SDK files are all located
   std::string m_sdk_build;
-  bool m_container;
   FileSpec m_working_dir; // The working directory which is used when installing
                           // modules that have no install path set
   std::string m_hostname;

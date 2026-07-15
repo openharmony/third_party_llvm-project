@@ -1300,7 +1300,11 @@ INTERCEPTOR(int, prctl, int option, unsigned long arg2, unsigned long arg3,
   static const int PR_SET_SECCOMP = 22;
   static const int SECCOMP_MODE_FILTER = 2;
 #  endif
+#ifndef OHOS_LLVM
+  if (option == PR_SET_VMA && arg2 == 0UL) {
+#else /* OHOS_LLVM */
   if (option == PR_SET_VMA && arg2 == 0UL && arg5) {
+#endif /* OHOS_LLVM */
     char *name = (char *)arg5;
     COMMON_INTERCEPTOR_READ_RANGE(ctx, name, internal_strlen(name) + 1);
   }
@@ -1332,12 +1336,22 @@ INTERCEPTOR(int, prctl, int option, unsigned long arg2, unsigned long arg3,
 #endif  // SANITIZER_INTERCEPT_PRCTL
 
 #if SANITIZER_INTERCEPT_TIME
+#ifndef OHOS_LLVM
+INTERCEPTOR(unsigned long, time, unsigned long *t) {
+#else /* OHOS_LLVM */
 INTERCEPTOR(__sanitizer_time_t, time, __sanitizer_time_t *t) {
+#endif /* OHOS_LLVM */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, time, t);
+#ifndef OHOS_LLVM
+  unsigned long local_t;
+  unsigned long res = REAL(time)(&local_t);
+  if (t && res != (unsigned long)-1) {
+#else /* OHOS_LLVM */
   __sanitizer_time_t local_t;
   __sanitizer_time_t res = REAL(time)(&local_t);
   if (t && res != -1) {
+#endif /* OHOS_LLVM */
     COMMON_INTERCEPTOR_WRITE_RANGE(ctx, t, sizeof(*t));
     *t = local_t;
   }
@@ -1361,7 +1375,11 @@ static void unpoison_tm(void *ctx, __sanitizer_tm *tm) {
   }
 #endif
 }
+#ifndef OHOS_LLVM
+INTERCEPTOR(__sanitizer_tm *, localtime, unsigned long *timep) {
+#else /* OHOS_LLVM */
 INTERCEPTOR(__sanitizer_tm *, localtime, __sanitizer_time_t *timep) {
+#endif /* OHOS_LLVM */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, localtime, timep);
   __sanitizer_tm *res = REAL(localtime)(timep);
@@ -1371,7 +1389,11 @@ INTERCEPTOR(__sanitizer_tm *, localtime, __sanitizer_time_t *timep) {
   }
   return res;
 }
+#ifndef OHOS_LLVM
+INTERCEPTOR(__sanitizer_tm *, localtime_r, unsigned long *timep, void *result) {
+#else /* OHOS_LLVM */
 INTERCEPTOR(__sanitizer_tm *, localtime_r, __sanitizer_time_t *timep, void *result) {
+#endif /* OHOS_LLVM */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, localtime_r, timep, result);
   __sanitizer_tm *res = REAL(localtime_r)(timep, result);
@@ -1381,7 +1403,11 @@ INTERCEPTOR(__sanitizer_tm *, localtime_r, __sanitizer_time_t *timep, void *resu
   }
   return res;
 }
+#ifndef OHOS_LLVM
+INTERCEPTOR(__sanitizer_tm *, gmtime, unsigned long *timep) {
+#else /* OHOS_LLVM */
 INTERCEPTOR(__sanitizer_tm *, gmtime, __sanitizer_time_t *timep) {
+#endif /* OHOS_LLVM */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, gmtime, timep);
   __sanitizer_tm *res = REAL(gmtime)(timep);
@@ -1391,7 +1417,11 @@ INTERCEPTOR(__sanitizer_tm *, gmtime, __sanitizer_time_t *timep) {
   }
   return res;
 }
+#ifndef OHOS_LLVM
+INTERCEPTOR(__sanitizer_tm *, gmtime_r, unsigned long *timep, void *result) {
+#else /* OHOS_LLVM */
 INTERCEPTOR(__sanitizer_tm *, gmtime_r, __sanitizer_time_t *timep, void *result) {
+#endif /* OHOS_LLVM */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, gmtime_r, timep, result);
   __sanitizer_tm *res = REAL(gmtime_r)(timep, result);
@@ -1401,7 +1431,11 @@ INTERCEPTOR(__sanitizer_tm *, gmtime_r, __sanitizer_time_t *timep, void *result)
   }
   return res;
 }
+#ifndef OHOS_LLVM
+INTERCEPTOR(char *, ctime, unsigned long *timep) {
+#else /* OHOS_LLVM */
 INTERCEPTOR(char *, ctime, __sanitizer_time_t *timep) {
+#endif /* OHOS_LLVM */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, ctime, timep);
   // FIXME: under ASan the call below may write to freed memory and corrupt
@@ -1414,7 +1448,11 @@ INTERCEPTOR(char *, ctime, __sanitizer_time_t *timep) {
   }
   return res;
 }
+#ifndef OHOS_LLVM
+INTERCEPTOR(char *, ctime_r, unsigned long *timep, char *result) {
+#else /* OHOS_LLVM */
 INTERCEPTOR(char *, ctime_r, __sanitizer_time_t *timep, char *result) {
+#endif /* OHOS_LLVM */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, ctime_r, timep, result);
   // FIXME: under ASan the call below may write to freed memory and corrupt
@@ -1453,7 +1491,11 @@ INTERCEPTOR(char *, asctime_r, __sanitizer_tm *tm, char *result) {
   }
   return res;
 }
+#ifndef OHOS_LLVM
+INTERCEPTOR(long, mktime, __sanitizer_tm *tm) {
+#else /* OHOS_LLVM */
 INTERCEPTOR(__sanitizer_time_t, mktime, __sanitizer_tm *tm) {
+#endif /* OHOS_LLVM */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, mktime, tm);
   COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_sec, sizeof(tm->tm_sec));
@@ -1463,8 +1505,13 @@ INTERCEPTOR(__sanitizer_time_t, mktime, __sanitizer_tm *tm) {
   COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_mon, sizeof(tm->tm_mon));
   COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_year, sizeof(tm->tm_year));
   COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_isdst, sizeof(tm->tm_isdst));
+#ifndef OHOS_LLVM
+  long res = REAL(mktime)(tm);
+  if (res != -1) unpoison_tm(ctx, tm);
+#else /* OHOS_LLVM */
   __sanitizer_time_t res = REAL(mktime)(tm);
   if (res != (__sanitizer_time_t)-1) unpoison_tm(ctx, tm);
+#endif /* OHOS_LLVM */
   return res;
 }
 #define INIT_LOCALTIME_AND_FRIENDS        \
@@ -2270,7 +2317,7 @@ INTERCEPTOR(int, clock_gettime, u32 clk_id, void *tp) {
 #if SANITIZER_GLIBC
 namespace __sanitizer {
 extern "C" {
-#if !SANITIZER_OHOS
+#if !defined(OHOS_LLVM) || !SANITIZER_OHOS
 int real_clock_gettime(u32 clk_id, void *tp) {
   if (COMMON_INTERCEPTOR_NOTHING_IS_INITIALIZED)
     return internal_clock_gettime(clk_id, tp);
@@ -2760,7 +2807,7 @@ INTERCEPTOR(int, wait3, int *status, int options, void *rusage) {
   }
   return res;
 }
-#if SANITIZER_ANDROID || SANITIZER_OHOS
+#if SANITIZER_ANDROID || (defined(OHOS_LLVM) && SANITIZER_OHOS)
 INTERCEPTOR(int, __wait4, int pid, int *status, int options, void *rusage) {
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, __wait4, pid, status, options, rusage);
@@ -4094,7 +4141,7 @@ INTERCEPTOR(char *, strerror, int errnum) {
 //    static storage.
 #if ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE) || \
     SANITIZER_APPLE || SANITIZER_ANDROID || SANITIZER_NETBSD ||                 \
-    SANITIZER_FREEBSD || SANITIZER_OHOS
+    SANITIZER_FREEBSD || (defined(OHOS_LLVM) && SANITIZER_OHOS)
 // POSIX version. Spec is not clear on whether buf is NULL-terminated.
 // At least on OSX, buf contents are valid even when the call fails.
 INTERCEPTOR(int, strerror_r, int errnum, char *buf, SIZE_T buflen) {

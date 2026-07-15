@@ -1,8 +1,16 @@
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 lldb_tablegen(ProcessGDBRemoteProperties.inc -gen-lldb-property-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE ProcessGDBRemoteProperties.td
   TARGET LLDBPluginProcessGDBRemotePropertiesGen)
 
 lldb_tablegen(ProcessGDBRemotePropertiesEnum.inc -gen-lldb-property-enum-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE ProcessGDBRemoteProperties.td
   TARGET LLDBPluginProcessGDBRemotePropertiesEnumGen)
 

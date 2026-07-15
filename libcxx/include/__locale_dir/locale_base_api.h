@@ -119,7 +119,9 @@
 #    include <__locale_dir/support/windows.h>
 #  elif defined(__Fuchsia__)
 #    include <__locale_dir/support/fuchsia.h>
-#  elif defined(__linux__) && !defined(__LITEOS__) && !defined(__OHOS__) && !defined(__OHOS_FAMILY__)
+#  elif defined(__linux__) &&                                                      \
+      (!defined(OHOS_LLVM) ||                                                      \
+       (!defined(__LITEOS__) && !defined(__OHOS__) && !defined(__OHOS_FAMILY__)))
 #    include <__locale_dir/support/linux.h>
 #  else
 
@@ -133,8 +135,9 @@
 #      include <__locale_dir/locale_base_api/android.h>
 #    elif defined(__OpenBSD__)
 #      include <__locale_dir/locale_base_api/openbsd.h>
-#    elif defined(__wasi__) || _LIBCPP_HAS_MUSL_LIBC || defined(__LITEOS__) || defined(__OHOS__) || \
-        defined(__OHOS_FAMILY__)
+#    elif defined(__wasi__) || _LIBCPP_HAS_MUSL_LIBC ||                             \
+         (defined(OHOS_LLVM) &&                                                    \
+          (defined(__LITEOS__) || defined(__OHOS__) || defined(__OHOS_FAMILY__)))
 #      include <__locale_dir/locale_base_api/musl.h>
 #    endif
 

@@ -1,4 +1,11 @@
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 lldb_tablegen(TraceExporterCTFCommandOptions.inc -gen-lldb-option-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE TraceExporterCTFOptions.td
   TARGET TraceExporterCTFOptionsGen)
 

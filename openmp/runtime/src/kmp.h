@@ -57,8 +57,11 @@
 #define KMP_CANCEL_THREADS
 #define KMP_THREAD_ATTR
 
+// Android does not have pthread_cancel.  Undefine KMP_CANCEL_THREADS if being
 // built on Android
-#if defined(__ANDROID__) || defined(__OHOS__)
+#if defined(__ANDROID__) || (defined(OHOS_LLVM) && defined(__OHOS__))
+// OHOS do not have pthread_cancel.  Undefine KMP_CANCEL_THREADS if being
+// built on OHOS
 #undef KMP_CANCEL_THREADS
 #endif
 

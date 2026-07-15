@@ -59,9 +59,11 @@ public:
     m_sdk_build = std::move(sdk_build);
   }
 
+#ifdef OHOS_LLVM
   bool GetContainer() const { return m_container; }
 
   void SetContainer(bool b_container) { m_container = b_container; }
+#endif /* OHOS_LLVM */
 
   bool PlatformMatches(const lldb::PlatformSP &platform_sp) const;
 
@@ -69,7 +71,9 @@ protected:
   std::string m_platform_name;
   std::string m_sdk_sysroot;
   std::string m_sdk_build;
+#ifdef OHOS_LLVM
   bool m_container{};
+#endif /* OHOS_LLVM */
   llvm::VersionTuple m_os_version;
   bool m_include_platform_option;
 };

@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //=- AArch64ArkGcCallingConv.td - Calling Conventions for AArch64 -*- tablegen -*-=//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -304,7 +305,6 @@ def RetCC_AArch64_WebKit_JS : CallingConv<[
   CCIfType<[f64], CCAssignToReg<[D0, D1, D2, D3, D4, D5, D6, D7]>>
 ]>;
 
-// OHOS_LOCAL begin
 // Ark Conventions
 let Entry = 1 in
 def CC_AArch64_ArkInt : CallingConv<[
@@ -368,7 +368,6 @@ def RetCC_AArch64_ArkResolver : CallingConv<[
   CCIfType<[i32], CCAssignToRegWithShadow<[W16], [X16]>>,
   CCIfType<[i64], CCAssignToRegWithShadow<[X16], [W16]>>,
 ]>;
-// OHOS_LOCAL end
 
 //===----------------------------------------------------------------------===//
 // ARM64 Calling Convention for GHC
@@ -501,7 +500,6 @@ def CSR_AArch64_StackProbe_Windows
                            (sequence "X%u", 18, 28), FP, SP,
                            (sequence "Q%u", 0, 31))>;
 
-// OHOS_LOCAL begin
 def CSR_AArch64_ArkInt : CalleeSavedRegs<(add FP)>;
 
 def CSR_AArch64_ArkFast5
@@ -523,7 +521,6 @@ def CSR_AArch64_ArkFast0
     : CalleeSavedRegs<(add CSR_AArch64_ArkFast1, X0)>;
 
 def CSR_AArch64_ArkMethod : CalleeSavedRegs<(add LR, FP)>;
-// OHOS_LOCAL end
 
 // Darwin variants of AAPCS.
 // Darwin puts the frame-record at the top of the callee-save area.
@@ -589,3 +586,4 @@ def CSR_AArch64_SVE_AAPCS_SCS
     : CalleeSavedRegs<(add CSR_AArch64_SVE_AAPCS, X18)>;
 def CSR_AArch64_AAPCS_SCS
     : CalleeSavedRegs<(add CSR_AArch64_AAPCS, X18)>;
+#endif /* OHOS_LLVM */

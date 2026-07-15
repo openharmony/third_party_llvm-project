@@ -27,6 +27,7 @@ static const char *VNamesFirst = NULL;
 static const char *VNamesLast = NULL;
 static char *CountersFirst = NULL;
 static char *CountersLast = NULL;
+/* OHOS_LOCAL: Bitmap bounds for platforms without linker section magic. */
 static char *BitmapFirst = NULL;
 static char *BitmapLast = NULL;
 

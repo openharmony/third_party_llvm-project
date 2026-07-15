@@ -1,3 +1,9 @@
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 set(LLVM_LINK_COMPONENTS
   AllTargetsDescs
   AllTargetsDisassemblers
@@ -17,11 +23,13 @@ set(LLVM_LINK_COMPONENTS
   )
 
 set(LLVM_TARGET_DEFINITIONS ObjdumpOpts.td)
-tablegen(LLVM ObjdumpOpts.inc -gen-opt-parser-defs)
+tablegen(LLVM ObjdumpOpts.inc -gen-opt-parser-defs ${EXTRA_FEAT_LIST}
+  )
 add_public_tablegen_target(ObjdumpOptsTableGen)
 
 set(LLVM_TARGET_DEFINITIONS OtoolOpts.td)
-tablegen(LLVM OtoolOpts.inc -gen-opt-parser-defs)
+tablegen(LLVM OtoolOpts.inc -gen-opt-parser-defs ${EXTRA_FEAT_LIST}
+  )
 add_public_tablegen_target(OtoolOptsTableGen)
 
 add_llvm_tool(llvm-objdump

@@ -10,13 +10,21 @@ set(LLVM_LINK_COMPONENTS
 # FIXME: the entry points to the interpreter should be moved out of clangAST
 # into the parser or Sema in order to allow the interpreter to be moved to
 # another library which depends on clangAST.
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 clang_tablegen(Opcodes.inc
   -gen-clang-opcodes
+  ${EXTRA_FEAT_LIST}
   SOURCE ByteCode/Opcodes.td
   TARGET Opcodes)
 
 clang_tablegen(AttrDocTable.inc -gen-clang-attr-doc-table
   -I ${CMAKE_CURRENT_SOURCE_DIR}/../../include/
+  ${EXTRA_FEAT_LIST}
   SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/../../include/clang/Basic/Attr.td
   TARGET ClangAttrDocTable)
 

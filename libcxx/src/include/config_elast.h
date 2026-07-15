@@ -31,7 +31,7 @@
 // No _LIBCPP_ELAST needed on Fuchsia
 #elif defined(__wasi__)
 // No _LIBCPP_ELAST needed on WASI
-#elif defined(__OHOS_FAMILY__)
+#elif defined(OHOS_LLVM) && defined(__OHOS_FAMILY__)
 // No _LIBCPP_ELAST needed on OHOS
 #elif defined(__EMSCRIPTEN__)
 // No _LIBCPP_ELAST needed on Emscripten

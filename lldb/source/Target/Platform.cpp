@@ -233,8 +233,12 @@ ArchSpec Platform::GetAugmentedArchSpec(Platform *platform, llvm::StringRef trip
 /// Default Constructor
 Platform::Platform(bool is_host)
     : m_is_host(is_host), m_os_version_set_while_connected(false),
+#ifndef OHOS_LLVM
+      m_system_arch_set_while_connected(false), m_max_uid_name_len(0),
+#else /* OHOS_LLVM */
       m_system_arch_set_while_connected(false), m_container(false),
       m_max_uid_name_len(0),
+#endif /* OHOS_LLVM */
       m_max_gid_name_len(0), m_supports_rsync(false), m_rsync_opts(),
       m_rsync_prefix(), m_supports_ssh(false), m_ssh_opts(),
       m_ignores_remote_hostname(false), m_trap_handlers(),
@@ -272,11 +276,15 @@ void Platform::GetStatus(Stream &strm) {
     strm.Printf("  Hostname: %s\n", GetHostname());
   } else {
     const bool is_connected = IsConnected();
+#ifdef OHOS_LLVM
     const bool is_container = GetContainer();
+#endif /* OHOS_LLVM */
     if (is_connected)
       strm.Printf("  Hostname: %s\n", GetHostname());
     strm.Printf(" Connected: %s\n", is_connected ? "yes" : "no");
+#ifdef OHOS_LLVM
     strm.Printf(" Container: %s\n", is_container ? "yes" : "no");
+#endif /* OHOS_LLVM */
   }
 
   if (const std::string &sdk_root = GetSDKRootDirectory(); !sdk_root.empty())
@@ -1230,9 +1238,11 @@ Status Platform::Unlink(const FileSpec &path) {
   return Status::FromErrorString("unimplemented");
 }
 
+#ifdef OHOS_LLVM
 ConstString Platform::GetMmapSymbolName(const ArchSpec &) {
   return ConstString("mmap");
 }
+#endif /* OHOS_LLVM */
 
 MmapArgList Platform::GetMmapArgumentList(const ArchSpec &arch, addr_t addr,
                                           addr_t length, unsigned prot,

@@ -9,8 +9,10 @@
 #include "lldb/Symbol/LineEntry.h"
 #include "lldb/Symbol/CompileUnit.h"
 #include "lldb/Target/Process.h"
-#include "lldb/Target/Target.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+#include "lldb/Target/Target.h"
 
 using namespace lldb_private;
 
@@ -182,7 +184,9 @@ int LineEntry::Compare(const LineEntry &a, const LineEntry &b) {
 
 AddressRange LineEntry::GetSameLineContiguousAddressRange(
     bool include_inlined_functions) const {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_SYMBOLS);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   // Add each LineEntry's range to complete_line_range until we find a
   // different file / line number.
   AddressRange complete_line_range = range;

@@ -278,11 +278,21 @@ ValueObjectSP ForwardListFrontEnd::GetChildAtIndex(uint32_t idx) {
 
   // we need to copy current_sp into a new object otherwise we will end up with
   // all items named __value_
-  // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+  DataExtractor data;
+  Status error;
+  current_sp->GetData(data, error);
+  if (error.Fail())
+    return nullptr;
+
+  return CreateValueObjectFromData(llvm::formatv("[{0}]", idx).str(), data,
+                                   m_backend.GetExecutionContextRef(),
+                                   m_element_type);
+#else /* OHOS_LLVM */
   StreamString name;
   name.Printf("[%" PRIu64 "]", (uint64_t)idx);
   return current_sp->Clone(ConstString(name.GetString()));
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 }
 
 lldb::ChildCacheState ForwardListFrontEnd::Update() {
@@ -395,10 +405,24 @@ lldb::ValueObjectSP ListFrontEnd::GetChildAtIndex(uint32_t idx) {
 
   // we need to copy current_sp into a new object otherwise we will end up with
   // all items named __value_
+#ifndef OHOS_LLVM
+  DataExtractor data;
+  Status error;
+  current_sp->GetData(data, error);
+  if (error.Fail())
+    return lldb::ValueObjectSP();
+
+  StreamString name;
+  name.Printf("[%" PRIu64 "]", (uint64_t)idx);
+  return CreateValueObjectFromData(name.GetString(), data,
+                                   m_backend.GetExecutionContextRef(),
+                                   m_element_type);
+#else /* OHOS_LLVM */
   StreamString name;
   name.Printf("[%" PRIu64 "]", (uint64_t)idx);
   // OHOS_LOCAL
   return current_sp->Clone(ConstString(name.GetString()));
+#endif /* OHOS_LLVM */
 }
 
 lldb::ChildCacheState ListFrontEnd::Update() {

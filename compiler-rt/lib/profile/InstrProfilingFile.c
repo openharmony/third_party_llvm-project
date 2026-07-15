@@ -1212,9 +1212,10 @@ int __llvm_profile_dump(void) {
   return rc;
 }
 
-#if defined(__OHOS__)
+#if defined(OHOS_LLVM) && defined(__OHOS__)
 __attribute__((destructor(0)))
 #endif
+
 static void writeFileWithoutReturn(void) { __llvm_profile_write_file(); }
 
 COMPILER_RT_VISIBILITY
@@ -1228,7 +1229,7 @@ int __llvm_profile_register_write_file_atexit(void) {
 
   HasBeenRegistered = 1;
 
-#if defined(__OHOS__)
+#if defined(OHOS_LLVM) && defined(__OHOS__)
   return 0;
 #endif
 

@@ -84,6 +84,7 @@ class OHOSAarch64ToolchainBuilder(CrossToolchainBuilder):
             }
         )
 
+        self._llvm_defines["OHOS_LLVM"] = "ON"
         if self._build_config.enable_assertions:
             self._llvm_defines["LLVM_ENABLE_ASSERTIONS"] = "ON"
 

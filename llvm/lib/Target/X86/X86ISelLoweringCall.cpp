@@ -1296,7 +1296,7 @@ static bool mayTailCallThisCC(CallingConv::ID CC) {
   case CallingConv::X86_FastCall:
   // Swift:
   case CallingConv::Swift:
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   case CallingConv::ArkInt:
   case CallingConv::ArkFast0:
   case CallingConv::ArkFast1:
@@ -1304,7 +1304,7 @@ static bool mayTailCallThisCC(CallingConv::ID CC) {
   case CallingConv::ArkFast3:
   case CallingConv::ArkFast4:
   case CallingConv::ArkFast5:
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
     return true;
   default:
     return canGuaranteeTCO(CC);
@@ -1567,10 +1567,12 @@ void VarArgsLoweringHelper::createVarArgAreaAndStoreRegisters(
     if (isWin64()) {
       // Get to the caller-allocated home save location.  Add 8 to account
       // for the return address.
-      // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+      int HomeOffset = FrameLowering.getOffsetOfLocalArea() + 8;
+#else /* OHOS_LLVM */
       auto CC = TheMachineFunction.getFunction().getCallingConv();
       int HomeOffset = FrameLowering.getOffsetOfLocalArea(CC) + 8;
-      // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
       FuncInfo->setRegSaveFrameIndex(
           FrameInfo.CreateFixedObject(1, NumIntRegs * 8 + HomeOffset, false));
       // Fixup to set vararg frame on shadow area (4 x i64).
@@ -2125,7 +2127,7 @@ X86TargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
     report_fatal_error("failed to perform tail call elimination on a call "
                        "site marked musttail");
 
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
   assert(!(isVarArg && canGuaranteeTCO(CallConv) &&
            (CallConv != CallingConv::GHC)) &&
          "Var args not supported with calling convention fastcc, ghc or hipe");

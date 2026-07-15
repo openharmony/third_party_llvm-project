@@ -1403,7 +1403,8 @@ def ADDlowTLS
 
 } // isReMaterializable, isCodeGenOnly
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
+
 //===----------------------------------------------------------------------===//
 // Pseudo instruction used by stack protector ret for backward cfi
 let isCodeGenOnly = 1, hasNoSchedulingInfo = 1 in {
@@ -1411,7 +1412,7 @@ let isCodeGenOnly = 1, hasNoSchedulingInfo = 1 in {
     def SSP_RET_TRAP: Pseudo<(outs), (ins GPR64:$reg), []>;
     }
 }
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 def : Pat<(AArch64LOADgot tglobaltlsaddr:$addr),
           (LOADgot tglobaltlsaddr:$addr)>;

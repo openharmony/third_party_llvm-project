@@ -90,7 +90,7 @@ bool X86FrameLowering::needsFrameIndexResolution(
          MF.getInfo<X86MachineFunctionInfo>()->getHasPushSequences();
 }
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
 int
 X86FrameLowering::getArkFrameAdaptationOffset(const MachineFunction &MF) const {
   const auto &F = MF.getFunction();
@@ -99,7 +99,7 @@ X86FrameLowering::getArkFrameAdaptationOffset(const MachineFunction &MF) const {
   // FP + LR
   return 0x10;
 }
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 /// hasFPImpl - Return true if the specified function should have a dedicated
 /// frame pointer register.  This is true if the function has variable sized
@@ -1595,7 +1595,7 @@ static bool isOpcodeRep(unsigned Opcode) {
   - for 32-bit code, substitute %e?? registers for %r??
 */
 
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 Triple::ArchType X86FrameLowering::GetArkSupportTarget() const
 {
     return Is64Bit ? Triple::x86_64 : Triple::x86;
@@ -1972,7 +1972,7 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
     else
       MFI.setOffsetAdjustment(-StackSize);
   }
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
     // push marker
     if (MF.getFunction().hasFnAttribute("frame-reserved-slots"))
     {
@@ -2539,7 +2539,7 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
   // AfterPop is the position to insert .cfi_restore.
   MachineBasicBlock::iterator AfterPop = MBBI;
   if (HasFP) {
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
     if (MF.getFunction().hasFnAttribute("frame-reserved-slots"))
     {
 
@@ -2749,10 +2749,12 @@ StackOffset X86FrameLowering::getFrameIndexReference(const MachineFunction &MF,
   // object.
   // We need to factor in additional offsets applied during the prologue to the
   // frame, base, and stack pointer depending on which is used.
-  // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+  int Offset = MFI.getObjectOffset(FI) - getOffsetOfLocalArea();
+#else /* OHOS_LLVM */
   auto CC = MF.getFunction().getCallingConv();
   int Offset = MFI.getObjectOffset(FI) - getOffsetOfLocalArea(CC);
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   const X86MachineFunctionInfo *X86FI = MF.getInfo<X86MachineFunctionInfo>();
   unsigned CSSize = X86FI->getCalleeSavedFrameSize();
   uint64_t StackSize = MFI.getStackSize();
@@ -2763,11 +2765,16 @@ StackOffset X86FrameLowering::getFrameIndexReference(const MachineFunction &MF,
   // address from any stack object allocated in the caller's frame. Interrupts
   // do not have a standard return address. Fixed objects in the current frame,
   // such as SSE register spills, should not get this treatment.
-  // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+  if (MF.getFunction().getCallingConv() == CallingConv::X86_INTR &&
+      Offset >= 0) {
+    Offset += getOffsetOfLocalArea();
+  }
+#else /* OHOS_LLVM */
   if (CC == CallingConv::X86_INTR && Offset >= 0) {
     Offset += getOffsetOfLocalArea(CC);
   }
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   if (IsWin64Prologue) {
     assert(!MFI.hasCalls() || (StackSize % 16) == 8);
@@ -2837,11 +2844,14 @@ X86FrameLowering::getFrameIndexReferenceSP(const MachineFunction &MF, int FI,
                                            int Adjustment) const {
   const MachineFrameInfo &MFI = MF.getFrameInfo();
   FrameReg = TRI->getStackRegister();
-  // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+  return StackOffset::getFixed(MFI.getObjectOffset(FI) -
+                               getOffsetOfLocalArea() + Adjustment);
+#else /* OHOS_LLVM */
   auto CC = MF.getFunction().getCallingConv();
   return StackOffset::getFixed(MFI.getObjectOffset(FI) -
                                getOffsetOfLocalArea(CC) + Adjustment);
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 }
 
 StackOffset
@@ -2936,10 +2946,12 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
   unsigned CalleeSavedFrameSize = 0;
   unsigned XMMCalleeSavedFrameSize = 0;
   auto &WinEHXMMSlotInfo = X86FI->getWinEHXMMSlotInfo();
-  // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+  int SpillSlotOffset = getOffsetOfLocalArea() + X86FI->getTCReturnAddrDelta();
+#else /* OHOS_LLVM */
   auto CC = MF.getFunction().getCallingConv();
   int SpillSlotOffset = getOffsetOfLocalArea(CC) + X86FI->getTCReturnAddrDelta();
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   int64_t TailCallReturnAddrDelta = X86FI->getTCReturnAddrDelta();
 
@@ -3017,12 +3029,11 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
     }
   }
 
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
   int reserveSize = GetFrameReserveSize(MF);
   SpillSlotOffset -= reserveSize; // skip frame reserved
   CalleeSavedFrameSize += reserveSize;
 #endif
-
   // Assign slots for GPRs. It increases frame size.
   for (CalleeSavedInfo &I : llvm::reverse(CSI)) {
     MCRegister Reg = I.getReg();
@@ -3299,12 +3310,12 @@ void X86FrameLowering::determineCalleeSaves(MachineFunction &MF,
     SavedRegs.set(BasePtr);
   }
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   if (MF.getSubtarget<X86Subtarget>().is64Bit()) {
     for (auto Reg : MF.getSubtarget<X86Subtarget>().getRRegReservation())
       SavedRegs.reset(Reg);
   }
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 }
 
 static bool HasNestArgument(const MachineFunction *MF) {
@@ -4369,7 +4380,7 @@ void X86FrameLowering::processFunctionBeforeFrameIndicesReplaced(
     MachineFunction &MF, RegScavenger *RS) const {
   auto *X86FI = MF.getInfo<X86MachineFunctionInfo>();
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   auto &MFI = MF.getFrameInfo();
   int ArkSpillNo = 0;
   for (int I = 0, E = MFI.getObjectIndexEnd(); I != E; ++I)
@@ -4377,7 +4388,7 @@ void X86FrameLowering::processFunctionBeforeFrameIndicesReplaced(
       MFI.setObjectOffset(I, MF.getArkSpillOffset(ArkSpillNo));
       ArkSpillNo++;
     }
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   if (STI.is32Bit() && MF.hasEHFunclets())
     restoreWinEHStackPointersInParent(MF);
@@ -4404,12 +4415,12 @@ void X86FrameLowering::restoreWinEHStackPointersInParent(
   }
 }
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
 int X86FrameLowering::getOffsetOfLocalArea(CallingConv::ID CC) const {
   return CC == CallingConv::ArkInt ? 0
                                    : TargetFrameLowering::getOffsetOfLocalArea();
 }
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 // Compute the alignment gap between current SP after spilling FP/BP and the
 // next properly aligned stack offset.

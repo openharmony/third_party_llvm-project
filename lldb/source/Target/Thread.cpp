@@ -50,8 +50,10 @@
 #include "lldb/Utility/StreamString.h"
 #include "lldb/ValueObject/ValueObject.h"
 #include "lldb/ValueObject/ValueObjectConstResult.h"
-#include "lldb/lldb-enumerations.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+#include "lldb/lldb-enumerations.h"
 
 #include <memory>
 #include <optional>
@@ -686,7 +688,9 @@ bool Thread::SetupToStepOverBreakpointIfNeeded(RunDirection direction) {
 }
 
 bool Thread::ShouldResume(StateType resume_state) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   // At this point clear the completed plan stack.
   GetPlans().WillResume();
   m_override_should_notify = eLazyBoolCalculate;
@@ -1058,7 +1062,9 @@ Vote Thread::ShouldReportStop(Event *event_ptr) {
 }
 
 Vote Thread::ShouldReportRun(Event *event_ptr) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   StateType thread_state = GetResumeState();
 
   if (thread_state == eStateSuspended || thread_state == eStateInvalid) {
@@ -1192,7 +1198,9 @@ ThreadPlan *Thread::GetPreviousPlan(ThreadPlan *current_plan) const{
 
 Status Thread::QueueThreadPlan(ThreadPlanSP &thread_plan_sp,
                                bool abort_other_plans) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_THREAD);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   Status status;
   StreamString s;
   if (!thread_plan_sp->ValidatePlan(&s)) {
@@ -1291,7 +1299,9 @@ ThreadPlanSP Thread::QueueThreadPlanForStepOverRange(
     bool abort_other_plans, const AddressRange &range,
     const SymbolContext &addr_context, lldb::RunMode stop_other_threads,
     Status &status, LazyBool step_out_avoids_code_withoug_debug_info) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_THREAD);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   ThreadPlanSP thread_plan_sp;
   thread_plan_sp = std::make_shared<ThreadPlanStepOverRange>(
       *this, range, addr_context, stop_other_threads,
@@ -1307,7 +1317,9 @@ ThreadPlanSP Thread::QueueThreadPlanForStepOverRange(
     bool abort_other_plans, const LineEntry &line_entry,
     const SymbolContext &addr_context, lldb::RunMode stop_other_threads,
     Status &status, LazyBool step_out_avoids_code_withoug_debug_info) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_THREAD);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   const bool include_inlined_functions = true;
   auto address_range =
       line_entry.GetSameLineContiguousAddressRange(include_inlined_functions);
@@ -1351,7 +1363,9 @@ ThreadPlanSP Thread::QueueThreadPlanForStepOut(
     bool stop_other_threads, Vote report_stop_vote, Vote report_run_vote,
     uint32_t frame_idx, Status &status,
     LazyBool step_out_avoids_code_without_debug_info) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_THREAD);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   ThreadPlanSP thread_plan_sp(new ThreadPlanStepOut(
       *this, addr_context, first_insn, stop_other_threads, report_stop_vote,
       report_run_vote, frame_idx, step_out_avoids_code_without_debug_info));
@@ -1672,7 +1686,9 @@ bool Thread::DumpUsingFormat(Stream &strm, uint32_t frame_idx,
 
 void Thread::DumpUsingSettingsFormat(Stream &strm, uint32_t frame_idx,
                                      bool stop_format) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_THREAD);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   ExecutionContext exe_ctx(shared_from_this());
 
   const FormatEntity::Entry *thread_format;
@@ -1789,7 +1805,9 @@ std::string Thread::RunModeAsString(lldb::RunMode mode) {
 size_t Thread::GetStatus(Stream &strm, uint32_t start_frame,
                          uint32_t num_frames, uint32_t num_frames_with_source,
                          bool stop_format, bool show_hidden, bool only_stacks) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_THREAD);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
   if (!only_stacks) {
     ExecutionContext exe_ctx(shared_from_this());

@@ -3,7 +3,8 @@ set_property(DIRECTORY PROPERTY LLDB_ACCEPTABLE_PLUGIN_DEPENDENCIES ObjectFile)
 # This dependency is part of a loop (Process<->DynamicLoader).
 set_property(DIRECTORY PROPERTY LLDB_TOLERATED_PLUGIN_DEPENDENCIES DynamicLoader)
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux|Android|OHOS")
+if (CMAKE_SYSTEM_NAME MATCHES "Linux|Android" OR
+     (OHOS_LLVM AND CMAKE_SYSTEM_NAME MATCHES "OHOS"))
   add_subdirectory(Linux)
   add_subdirectory(POSIX)
 elseif (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")

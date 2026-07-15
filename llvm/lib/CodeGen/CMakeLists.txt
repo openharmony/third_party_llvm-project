@@ -22,6 +22,15 @@ if (DEFINED LLVM_HAVE_TF_AOT OR LLVM_HAVE_TFLITE)
   endif()
 endif()
 
+# OHOS_LOCAL begin
+set(OHOS_CODEGEN_SOURCES)
+if(OHOS_LLVM)
+  list(APPEND OHOS_CODEGEN_SOURCES StackProtectorRetLowering.cpp)
+else()
+  set(LLVM_OPTIONAL_SOURCES StackProtectorRetLowering.cpp)
+endif()
+# OHOS_LOCAL end
+
 add_llvm_component_library(LLVMCodeGen
   AggressiveAntiDepBreaker.cpp
   AllocationOrder.cpp
@@ -226,7 +235,7 @@ add_llvm_component_library(LLVMCodeGen
   StackMapLivenessAnalysis.cpp
   StackMaps.cpp
   StackProtector.cpp
-  StackProtectorRetLowering.cpp # OHOS_LOCAL
+  ${OHOS_CODEGEN_SOURCES} # OHOS_LOCAL
   StackSlotColoring.cpp
   StaticDataSplitter.cpp
   StaticDataAnnotator.cpp

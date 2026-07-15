@@ -149,7 +149,11 @@ public:
       : CommandObjectParsed(interpreter, "platform select",
                             "Create a platform if needed and select it as the "
                             "current platform.",
+#ifndef OHOS_LLVM
+                            "platform select <platform-name>", 0),
+#else /* OHOS_LLVM */
                             "platform select <platform-name> [inner]", 0),
+#endif /* OHOS_LLVM */
         m_platform_options(
             false) // Don't include the "--platform" option by passing false
   {
@@ -169,16 +173,22 @@ public:
 
 protected:
   void DoExecute(Args &args, CommandReturnObject &result) override {
+#ifndef OHOS_LLVM
+    if (args.GetArgumentCount() == 1) {
+#else /* OHOS_LLVM */
     if (args.GetArgumentCount() >= 1) {
+#endif /* OHOS_LLVM */
       const char *platform_name = args.GetArgumentAtIndex(0);
       if (platform_name && platform_name[0]) {
         const bool select = true;
         m_platform_options.SetPlatformName(platform_name);
+#ifdef OHOS_LLVM
         if (args.GetArgumentCount() == 2) {
           std::string inner(args.GetArgumentAtIndex(1));
           if (inner == "inner")
             m_platform_options.SetContainer(true);
         }
+#endif /* OHOS_LLVM */
         Status error;
         ArchSpec platform_arch;
         PlatformSP platform_sp(m_platform_options.CreatePlatformWithOptions(

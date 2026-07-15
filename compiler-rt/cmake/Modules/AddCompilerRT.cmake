@@ -275,6 +275,10 @@ function(add_compiler_rt_runtime name type)
          NOT name STREQUAL "clang_rt.builtins")
         get_compiler_rt_target(${arch} target)
         find_compiler_rt_library(builtins builtins_${libname} TARGET ${target})
+        # OHOS_LOCAL: skip FATAL when OHOS_LLVM (builtins may not be ready yet).
+        if(NOT OHOS_LLVM AND (builtins_${libname} STREQUAL "NOTFOUND"))
+          message(FATAL_ERROR "Cannot find builtins library for the target architecture")
+        endif()
       endif()
       set(sources_${libname} ${LIB_SOURCES})
       format_object_libs(sources_${libname} ${arch} ${LIB_OBJECT_LIBS})
@@ -682,6 +686,7 @@ macro(add_custom_libcxx name prefix)
     Python3_EXECUTABLE
     Python2_EXECUTABLE
     CMAKE_SYSTEM_NAME)
+  list(APPEND PASSTHROUGH_VARIABLES OHOS_LLVM)
   foreach(variable ${PASSTHROUGH_VARIABLES})
     get_property(is_value_set CACHE ${variable} PROPERTY VALUE SET)
     if(${is_value_set})

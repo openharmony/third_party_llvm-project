@@ -63,9 +63,9 @@ public:
   // options.
   void init(const options::Options &Opts);
   void uninitTestOnly();
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   bool hasFreeMem();
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   // Functions exported for libmemunreachable's use on Android. disable()
   // installs a lock in the allocator that prevents any thread from being able

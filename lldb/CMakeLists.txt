@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.20.0)
 
 # OHOS_LOCAL begin
-option(LLDB_ENABLE_PERFORMANCE "Enable lldb performance monitoring" OFF)
-if(LLDB_ENABLE_PERFORMANCE)
-  add_definitions(-DLLDB_ENABLE_PERFORMANCE_MONITORING)
+if(OHOS_LLVM)
+  option(LLDB_ENABLE_PERFORMANCE "Enable lldb performance monitoring" OFF)
+  if(LLDB_ENABLE_PERFORMANCE)
+    add_definitions(-DLLDB_ENABLE_PERFORMANCE_MONITORING)
+  endif()
 endif()
 # OHOS_LOCAL end
 

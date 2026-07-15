@@ -3508,10 +3508,10 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
 
   if (Arg *A = Args.getLastArg(options::OPT_fno_stack_protector,
                                options::OPT_fstack_protector_all,
-                               // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
                                options::OPT_fstack_protector_ret_all,
                                options::OPT_fstack_protector_ret_strong,
-                               // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
                                options::OPT_fstack_protector_strong,
                                options::OPT_fstack_protector)) {
     if (A->getOption().matches(options::OPT_fstack_protector))
@@ -3519,12 +3519,12 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
           std::max<>(LangOptions::SSPOn, DefaultStackProtectorLevel);
     else if (A->getOption().matches(options::OPT_fstack_protector_strong))
       StackProtectorLevel = LangOptions::SSPStrong;
-    // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
     else if (A->getOption().matches(options::OPT_fstack_protector_ret_strong))
       StackProtectorLevel = LangOptions::SSPRetStrong;
     else if (A->getOption().matches(options::OPT_fstack_protector_ret_all))
       StackProtectorLevel = LangOptions::SSPRetReq;
-    // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
     else if (A->getOption().matches(options::OPT_fstack_protector_all))
       StackProtectorLevel = LangOptions::SSPReq;
 
@@ -3542,7 +3542,7 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
     CmdArgs.push_back(Args.MakeArgString(Twine(StackProtectorLevel)));
   }
 
-  // --param ssp-buffer-size= && ssp-ret-cookie-size=, OHOS_LOCAL
+  // --param ssp-buffer-size=
   for (const Arg *A : Args.filtered(options::OPT__param)) {
     StringRef Str(A->getValue());
     if (Str.consume_front("ssp-buffer-size=")) {
@@ -3553,7 +3553,8 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
       }
       A->claim();
     }
-    // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
+    // Also handle ssp-ret-cookie-size=
     if (Str.starts_with("ssp-ret-cookie-size=")) {
       unsigned int SSPRetCookieSize = 0;
       size_t CookieSizePrefixLen = sizeof("ssp-ret-cookie-size=") - 1;
@@ -3579,7 +3580,7 @@ static void RenderSSPOptions(const Driver &D, const ToolChain &TC,
       }
       A->claim();
     }
-    // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   }
 
   const std::string &TripleStr = EffectiveTriple.getTriple();
@@ -6928,8 +6929,10 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
 
   Args.AddLastArg(CmdArgs, options::OPT_fstrict_flex_arrays_EQ);
 
+#ifdef OHOS_LLVM
   if (Args.hasArg(options::OPT_fenable_merge_functions))
     CmdArgs.push_back(Args.MakeArgString("-fmerge-functions"));
+#endif /* OHOS_LLVM */
 
   Args.AddLastArg(CmdArgs, options::OPT_pthread);
 

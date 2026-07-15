@@ -20,8 +20,10 @@
 #include "lldb/Utility/DataExtractor.h"
 #include "lldb/Utility/State.h"
 #include "lldb/Utility/StreamString.h"
-#include "lldb/Utility/StringExtractorGDBRemote.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+#include "lldb/Utility/StringExtractorGDBRemote.h"
 
 #include "ProcessGDBRemote.h"
 #include "ProcessGDBRemoteLog.h"
@@ -235,7 +237,9 @@ StructuredData::ObjectSP ThreadGDBRemote::FetchThreadExtendedInfo() {
 }
 
 void ThreadGDBRemote::WillResume(StateType resume_state) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   int signo = GetResumeSignal();
   const lldb::user_id_t tid = GetProtocolID();
   Log *log = GetLog(GDBRLog::Thread);

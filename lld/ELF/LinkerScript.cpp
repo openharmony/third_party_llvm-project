@@ -109,7 +109,11 @@ StringRef LinkerScript::getOutputSectionName(const InputSectionBase *s) const {
                       ".init_array",  ".fini_array", ".tbss",
                       ".tdata",       ".ARM.exidx",  ".ARM.extab",
                       ".ctors",       ".dtors",      ".sbss",
+#ifndef OHOS_LLVM
+                      ".sdata",       ".srodata"})
+#else /* OHOS_LLVM */
                       ".sdata",       ".srodata",    ".ohos.randomdata"}) // OHOS_LOCAL
+#endif /* OHOS_LLVM */
     if (isSectionPrefix(v, s->name))
       return v;
 

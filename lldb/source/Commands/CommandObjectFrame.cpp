@@ -30,7 +30,9 @@
 #include "lldb/Target/Thread.h"
 #include "lldb/Utility/Args.h"
 #include "lldb/ValueObject/ValueObject.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/LLDBLog.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
 #include <memory>
 #include <optional>
@@ -724,7 +726,9 @@ protected:
       target_stats.GetFrameVariableStats().NotifySuccess();
     else
       target_stats.GetFrameVariableStats().NotifyFailure();
+#ifdef OHOS_LLVM
     LLDB_PERFORMANCE_LOG("Completed frame variable.");     // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   }
 
   OptionGroupOptions m_option_group;

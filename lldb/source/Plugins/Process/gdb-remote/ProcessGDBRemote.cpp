@@ -1083,7 +1083,9 @@ void ProcessGDBRemote::DidLaunch() {
 
 Status ProcessGDBRemote::DoAttachToProcessWithID(
     lldb::pid_t attach_pid, const ProcessAttachInfo &attach_info) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   Log *log = GetLog(GDBRLog::Process);
   Status error;
 
@@ -1176,7 +1178,9 @@ void ProcessGDBRemote::DidExit() {
 }
 
 void ProcessGDBRemote::DidAttach(ArchSpec &process_arch) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   // If you can figure out what the architecture is, fill it in here.
   process_arch.Clear();
   DidLaunchOrAttach(process_arch);
@@ -2637,7 +2641,9 @@ addr_t ProcessGDBRemote::GetImageInfoAddress() {
 }
 
 void ProcessGDBRemote::WillPublicStop() {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   // See if the GDB remote client supports the JSON threads info. If so, we
   // gather stop info for all threads, expedited registers, expedited memory,
   // runtime queue information (iOS and MacOSX only), and more. Expediting
@@ -2664,7 +2670,9 @@ void ProcessGDBRemote::WillPublicStop() {
 // Process Memory
 size_t ProcessGDBRemote::DoReadMemory(addr_t addr, void *buf, size_t size,
                                       Status &error) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   using xPacketState = GDBRemoteCommunicationClient::xPacketState;
 
   GetMaxMemorySize();
@@ -3080,7 +3088,9 @@ size_t ProcessGDBRemote::PutSTDIN(const char *src, size_t src_len,
 }
 
 Status ProcessGDBRemote::EnableBreakpointSite(BreakpointSite *bp_site) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   Status error;
   assert(bp_site != nullptr);
 
@@ -3664,7 +3674,9 @@ void ProcessGDBRemote::DebuggerInitialize(Debugger &debugger) {
 }
 
 bool ProcessGDBRemote::StartAsyncThread() {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   Log *log = GetLog(GDBRLog::Process);
 
   LLDB_LOGF(log, "ProcessGDBRemote::%s ()", __FUNCTION__);

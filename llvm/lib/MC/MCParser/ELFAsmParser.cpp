@@ -520,8 +520,12 @@ bool ELFAsmParser::parseSectionArguments(bool IsPush, SMLoc loc) {
            hasPrefix(SectionName, ".bss") ||
            hasPrefix(SectionName, ".init_array") ||
            hasPrefix(SectionName, ".fini_array") ||
+#ifndef OHOS_LLVM
+           hasPrefix(SectionName, ".preinit_array"))
+#else /* OHOS_LLVM */
            hasPrefix(SectionName, ".preinit_array") ||
            SectionName == ".ohos.randomdata") // OHOS_LOCAL
+#endif /* OHOS_LLVM */
     Flags |= ELF::SHF_ALLOC | ELF::SHF_WRITE;
   else if (hasPrefix(SectionName, ".tdata") || hasPrefix(SectionName, ".tbss"))
     Flags |= ELF::SHF_ALLOC | ELF::SHF_WRITE | ELF::SHF_TLS;
@@ -604,10 +608,10 @@ EndStmt:
       Type = ELF::SHT_FINI_ARRAY;
     else if (hasPrefix(SectionName, ".preinit_array"))
       Type = ELF::SHT_PREINIT_ARRAY;
-    // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
     else if (hasPrefix(SectionName, ".ohos.randomdata"))
       Type = ELF::SHT_NOBITS;
-    // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   } else {
     if (TypeName == "init_array")
       Type = ELF::SHT_INIT_ARRAY;

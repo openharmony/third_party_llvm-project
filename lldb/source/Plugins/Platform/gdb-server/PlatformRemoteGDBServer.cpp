@@ -27,8 +27,10 @@
 #include "lldb/Utility/ProcessInfo.h"
 #include "lldb/Utility/Status.h"
 #include "lldb/Utility/StreamString.h"
-#include "lldb/Utility/UriParser.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+#include "lldb/Utility/UriParser.h"
 #include "llvm/ADT/StringSet.h"
 #include "llvm/Support/FormatAdapters.h"
 
@@ -487,7 +489,9 @@ lldb::ProcessSP PlatformRemoteGDBServer::Attach(
     Target *target, // Can be NULL, if NULL create a new target, else use
                     // existing one
     Status &error) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   lldb::ProcessSP process_sp;
   if (IsRemote()) {
     if (IsConnected()) {

@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //== NapiWrapParamChecker.cpp ------------------------------*- C++ -*--==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -100,3 +101,4 @@ void ento::registerNapiWrapParamChecker(CheckerManager &mgr) {
 bool ento::shouldRegisterNapiWrapParamChecker(const CheckerManager &mgr) {
   return true;
 }
+#endif /* OHOS_LLVM */

@@ -668,6 +668,7 @@ class BuildUtils(object):
         defines['LIBUNWIND_USE_FRAME_HEADER_CACHE'] = 'ON'
         defines['OPENMP_ENABLE_LIBOMPTARGET'] = 'OFF'
         defines['LIBOMP_INSTALL_ALIASES'] = 'False'
+        defines['OHOS_LLVM'] = 'ON'
         return defines
 
     def get_python_dir(self):
@@ -2074,6 +2075,7 @@ class LlvmLibs(BuildUtils):
         cmake_defines['LLVM_ENABLE_ASSERTIONS'] = 'ON' if enable_assertions else 'OFF'
         cmake_defines['Python3_EXECUTABLE'] = os.path.join(self.get_python_dir(), 'bin',
             self.build_config.LLDB_PYTHON)
+        cmake_defines['OHOS_LLVM'] = 'ON'
 
         out_path = self.merge_out_path('lib', 'windows-runtimes')
         cmake_path = os.path.abspath(os.path.join(self.build_config.LLVM_PROJECT_DIR, 'runtimes'))

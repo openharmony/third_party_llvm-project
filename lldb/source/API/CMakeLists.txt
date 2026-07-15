@@ -41,13 +41,13 @@ add_custom_target(lldb-sbapi-dwarf-enums
 set_target_properties(lldb-sbapi-dwarf-enums PROPERTIES FOLDER "LLDB/Tablegenning")
 
 # OHOS_LOCAL begin
-if(CMAKE_SYSTEM_NAME MATCHES "OHOS")
+if(OHOS_LLVM AND CMAKE_SYSTEM_NAME MATCHES "OHOS")
   list(APPEND LLDB_ALL_PLUGINS lldbPluginProcessPOSIX)
 endif()
 
 option(LIBLLDB_BUILD_STATIC "Build liblldb as a static library" OFF)
 
-if (LIBLLDB_BUILD_STATIC)
+if (OHOS_LLVM AND LIBLLDB_BUILD_STATIC)
   set(LIBLLDB_LIB_TYPE STATIC)
 else()
   set(LIBLLDB_LIB_TYPE SHARED)

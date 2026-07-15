@@ -210,10 +210,12 @@ void MachineFrameInfo::print(const MachineFunction &MF, raw_ostream &OS) const{
   if (Objects.empty()) return;
 
   const TargetFrameLowering *FI = MF.getSubtarget().getFrameLowering();
-  // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+  int ValOffset = (FI ? FI->getOffsetOfLocalArea() : 0);
+#else /* OHOS_LLVM */
   auto CC = MF.getFunction().getCallingConv();
   int ValOffset = (FI ? FI->getOffsetOfLocalArea(CC) : 0);
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   OS << "Frame Objects:\n";
 
@@ -233,6 +235,10 @@ void MachineFrameInfo::print(const MachineFunction &MF, raw_ostream &OS) const{
     else
       OS << "size=" << SO.Size;
     OS << ", align=" << SO.Alignment.value();
+#ifdef OHOS_LLVM
+    if (SO.isArkSpillSlot)
+      OS << ", arkSpillObject";
+#endif /* OHOS_LLVM */
 
     if (i < NumFixedObjects)
       OS << ", fixed";

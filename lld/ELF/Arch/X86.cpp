@@ -28,9 +28,9 @@ public:
   int64_t getImplicitAddend(const uint8_t *buf, RelType type) const override;
   void writeGotPltHeader(uint8_t *buf) const override;
   RelType getDynRel(RelType type) const override;
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   bool convertAbsRelToPC(RelType &type) const override;
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   void writeGotPlt(uint8_t *buf, const Symbol &s) const override;
   void writeIgotPlt(uint8_t *buf, const Symbol &s) const override;
   void writePltHeader(uint8_t *buf) const override;
@@ -194,7 +194,7 @@ RelType X86::getDynRel(RelType type) const {
   return type;
 }
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
 
 bool X86::convertAbsRelToPC(RelType &type) const {
   if (type == R_386_32) {
@@ -204,7 +204,7 @@ bool X86::convertAbsRelToPC(RelType &type) const {
   return false;
 }
 
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 void X86::writePltHeader(uint8_t *buf) const {
   if (ctx.arg.isPic) {

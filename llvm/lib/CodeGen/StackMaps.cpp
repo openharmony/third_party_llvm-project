@@ -28,7 +28,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 #include "llvm/Target/TargetMachine.h"
 #endif
 #include <algorithm>
@@ -607,11 +607,14 @@ void StackMaps::emitFunctionFrameRecords(MCStreamer &OS) {
   // Function Frame records.
   LLVM_DEBUG(dbgs() << WSMP << "functions:\n");
   for (auto const &FR : FnInfos) {
-    #ifdef ARK_GC_SUPPORT
-      OS.emitSymbolValue(FR.first, AP.TM.getProgramPointerSize());
-    #else
-      OS.emitSymbolValue(FR.first, 8);
-    #endif
+    LLVM_DEBUG(dbgs() << WSMP << "function addr: " << FR.first
+                      << " frame size: " << FR.second.StackSize
+                      << " callsite count: " << FR.second.RecordCount << '\n');
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+    OS.emitSymbolValue(FR.first, AP.TM.getProgramPointerSize());
+#else
+    OS.emitSymbolValue(FR.first, 8);
+#endif
     OS.emitIntValue(FR.second.StackSize, 8);
     OS.emitIntValue(FR.second.RecordCount, 8);
   }

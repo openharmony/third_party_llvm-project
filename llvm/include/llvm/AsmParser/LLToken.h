@@ -186,7 +186,7 @@ enum Kind {
   kw_graalcc,
   kw_riscv_vector_cc,
   kw_riscv_vls_cc,
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   kw_arkintcc,
   kw_arkfast0cc,
   kw_arkfast1cc,
@@ -197,7 +197,7 @@ enum Kind {
   kw_arkmethodcc,
   kw_arkresolvercc,
   kw_arkpltcc,
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   // Attributes:
   kw_attributes,

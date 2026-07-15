@@ -53,7 +53,7 @@ extern "C" {
 }
 
 namespace {
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 // We put information about the JITed function in this global, which the
 // debugger reads.  Make sure to specify the version statically, because the
 // debugger checks the version before we can set it during runtime.
@@ -68,7 +68,8 @@ LLVM_ATTRIBUTE_NOINLINE void __jit_debug_register_code() {
   asm volatile("" ::: "memory");
 #endif
 }
-#endif
+#endif /* OHOS_LLVM && ARK_GC_SUPPORT */
+
 // FIXME: lli aims to provide both, RuntimeDyld and JITLink, as the dynamic
 // loaders for its JIT implementations. And they both offer debugging via the
 // GDB JIT interface, which builds on the two well-known symbol names below.

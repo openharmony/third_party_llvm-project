@@ -799,10 +799,10 @@ enum AttributeKindCodes {
   ATTR_KIND_SANITIZE_TYPE = 101,
   ATTR_KIND_CAPTURES = 102,
   ATTR_KIND_DEAD_ON_RETURN = 103,
-  /// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   ATTR_KIND_STACK_PROTECT_RET_REQ = 104,
   ATTR_KIND_STACK_PROTECT_RET_STRONG = 105,
-  /// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 };
 
 enum ComdatSelectionKindCodes {

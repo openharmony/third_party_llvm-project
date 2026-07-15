@@ -39,7 +39,6 @@ public:
   UnwindLibType GetUnwindLibType(const llvm::opt::ArgList &Args) const override;
   UnwindLibType GetDefaultUnwindLibType() const override { return UNW_CompilerRT; }
 
-
   RuntimeLibType
   GetRuntimeLibType(const llvm::opt::ArgList &Args) const override;
   CXXStdlibType
@@ -74,7 +73,9 @@ public:
 
   path_list getRuntimePaths() const;
 
+#ifdef OHOS_LLVM
   std::optional<std::string> getRuntimePath() const override; // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
 protected:
   std::string getMultiarchTriple(const llvm::Triple &T) const;

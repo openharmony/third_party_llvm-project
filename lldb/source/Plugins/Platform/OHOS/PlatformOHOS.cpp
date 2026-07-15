@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //===-- PlatformOHOS.cpp ----------------------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -337,3 +338,4 @@ MmapArgList PlatformOHOS::GetMmapArgumentList(const ArchSpec &arch,
   MmapArgList args({addr, length, prot, flags_platform, fd, offset});
   return args;
 }
+#endif /* OHOS_LLVM */

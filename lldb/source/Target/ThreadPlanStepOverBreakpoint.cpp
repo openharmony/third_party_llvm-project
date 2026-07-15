@@ -13,13 +13,34 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/Stream.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
 using namespace lldb;
 using namespace lldb_private;
 
 // ThreadPlanStepOverBreakpoint: Single steps over a breakpoint bp_site_sp at
 // the pc.
+#ifndef OHOS_LLVM
+
+ThreadPlanStepOverBreakpoint::ThreadPlanStepOverBreakpoint(Thread &thread)
+    : ThreadPlan(
+          ThreadPlan::eKindStepOverBreakpoint, "Step over breakpoint trap",
+          thread, eVoteNo,
+          eVoteNoOpinion), // We need to report the run since this happens
+                           // first in the thread plan stack when stepping over
+                           // a breakpoint
+      m_breakpoint_addr(LLDB_INVALID_ADDRESS),
+      m_auto_continue(false), m_reenabled_breakpoint_site(false)
+
+{
+  m_breakpoint_addr = thread.GetRegisterContext()->GetPC();
+  m_breakpoint_site_id =
+      thread.GetProcess()->GetBreakpointSiteList().FindIDByAddress(
+          m_breakpoint_addr);
+}
+#else /* OHOS_LLVM */
 // Current behavior is to skip signal handlers, if a signal is received, so that
 // signals in the background do not interrupt our stepping (otherwise a
 // breakpoint can be seen as hit multiple times in a row, even though the
@@ -43,6 +64,7 @@ ThreadPlanStepOverBreakpoint::ThreadPlanStepOverBreakpoint(Thread &thread)
       thread.GetProcess()->GetBreakpointSiteList().FindIDByAddress(
           m_breakpoint_addr);
 }
+#endif /* OHOS_LLVM */
 
 ThreadPlanStepOverBreakpoint::~ThreadPlanStepOverBreakpoint() = default;
 
@@ -66,7 +88,11 @@ bool ThreadPlanStepOverBreakpoint::DoPlanExplainsStop(Event *event_ptr) {
     switch (reason) {
       case eStopReasonTrace:
       case eStopReasonNone:
+#ifndef OHOS_LLVM
+        return true;
+#else /* OHOS_LLVM */
         return !m_handling_signal;
+#endif /* OHOS_LLVM */
       case eStopReasonBreakpoint:
       {
         // It's a little surprising that we stop here for a breakpoint hit.
@@ -87,6 +113,7 @@ bool ThreadPlanStepOverBreakpoint::DoPlanExplainsStop(Event *event_ptr) {
         lldb::addr_t pc_addr = GetThread().GetRegisterContext()->GetPC();
 
         if (pc_addr == m_breakpoint_addr) {
+#ifdef OHOS_LLVM
           // If we came from a signal handler, just reset the flag and try again.
           m_handling_signal = false;
           LLDB_LOGF(log,
@@ -94,9 +121,16 @@ bool ThreadPlanStepOverBreakpoint::DoPlanExplainsStop(Event *event_ptr) {
                     " hasn't changed, resetting m_handling_signal."
                     " If we came from a signal handler, trying again.",
                     pc_addr);
+#else /* !OHOS_LLVM */
+          LLDB_LOGF(log,
+                    "Got breakpoint stop reason but pc: 0x%" PRIx64
+                    "hasn't changed.",
+                    pc_addr);
+#endif /* OHOS_LLVM */
           return true;
         }
 
+#ifdef OHOS_LLVM
         if (m_handling_signal) {
           LLDB_LOG(log,
                    "Got breakpoint stop reason inside a signal handler, "
@@ -106,9 +140,11 @@ bool ThreadPlanStepOverBreakpoint::DoPlanExplainsStop(Event *event_ptr) {
           m_is_stale = true;
         }
 
+#endif /* OHOS_LLVM */
         SetAutoContinue(false);
         return false;
       }
+#ifdef OHOS_LLVM
       case eStopReasonSignal:
         if (!m_handling_signal) {
           // Next stop may be a signal handler.
@@ -116,6 +152,7 @@ bool ThreadPlanStepOverBreakpoint::DoPlanExplainsStop(Event *event_ptr) {
           m_handling_signal = true;
         }
         return false;
+#endif /* OHOS_LLVM */
       default:
         return false;
     }
@@ -137,12 +174,14 @@ bool ThreadPlanStepOverBreakpoint::StopOthers() { return true; }
 bool ThreadPlanStepOverBreakpoint::SupportsResumeOthers() { return false; }
 
 StateType ThreadPlanStepOverBreakpoint::GetPlanRunState() {
+#ifdef OHOS_LLVM
   if (m_handling_signal) {
     // Resume & wait to hit our initial breakpoint
     Log *log = GetLog(LLDBLog::Step);
     LLDB_LOG(log, "Step over breakpoint resuming through a potential signal handler.");
     return eStateRunning;
   }
+#endif /* OHOS_LLVM */
   return eStateStepping;
 }
 
@@ -151,6 +190,12 @@ bool ThreadPlanStepOverBreakpoint::DoWillResume(StateType resume_state,
   if (current_plan) {
     BreakpointSiteSP bp_site_sp(
         m_process.GetBreakpointSiteList().FindByAddress(m_breakpoint_addr));
+#ifndef OHOS_LLVM
+    if (bp_site_sp && bp_site_sp->IsEnabled()) {
+      m_process.DisableBreakpointSite(bp_site_sp.get());
+      m_reenabled_breakpoint_site = false;
+    }
+#else /* OHOS_LLVM */
     if (bp_site_sp) {
       Log *log = GetLog(LLDBLog::Step);
       if (m_handling_signal) {
@@ -165,6 +210,7 @@ bool ThreadPlanStepOverBreakpoint::DoWillResume(StateType resume_state,
         m_reenabled_breakpoint_site = false;
       }
     }
+#endif /* OHOS_LLVM */
   }
   return true;
 }
@@ -177,12 +223,20 @@ bool ThreadPlanStepOverBreakpoint::WillStop() {
 void ThreadPlanStepOverBreakpoint::DidPop() { ReenableBreakpointSite(); }
 
 bool ThreadPlanStepOverBreakpoint::MischiefManaged() {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   lldb::addr_t pc_addr = GetThread().GetRegisterContext()->GetPC();
 
+#ifndef OHOS_LLVM
+  if (pc_addr == m_breakpoint_addr) {
+    // If we are still at the PC of our breakpoint, then for some reason we
+    // didn't get a chance to run.
+#else /* OHOS_LLVM */
   if (pc_addr == m_breakpoint_addr || m_handling_signal) {
     // If we are still at the PC of our breakpoint, then for some reason we
     // didn't get a chance to run, or we received a signal and want to try again.
+#endif /* OHOS_LLVM */
     return false;
   } else {
     Log *log = GetLog(LLDBLog::Step);
@@ -214,6 +268,7 @@ void ThreadPlanStepOverBreakpoint::SetAutoContinue(bool do_it) {
 }
 
 bool ThreadPlanStepOverBreakpoint::ShouldAutoContinue(Event *event_ptr) {
+#ifdef OHOS_LLVM
   lldb::addr_t pc_addr = GetThread().GetRegisterContext()->GetPC();
 
   if (pc_addr == m_breakpoint_addr) {
@@ -222,12 +277,15 @@ bool ThreadPlanStepOverBreakpoint::ShouldAutoContinue(Event *event_ptr) {
     LLDB_LOG(log, "Stopped step over breakpoint plan on its own breakpoint, auto-continue.");
     return true;
   }
+#endif /* OHOS_LLVM */
   return m_auto_continue;
 }
 
 bool ThreadPlanStepOverBreakpoint::IsPlanStale() {
+#ifdef OHOS_LLVM
   if (m_handling_signal) {
     return m_is_stale;
   }
+#endif /* OHOS_LLVM */
   return GetThread().GetRegisterContext()->GetPC() != m_breakpoint_addr;
 }

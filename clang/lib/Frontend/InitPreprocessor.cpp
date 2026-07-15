@@ -1415,12 +1415,12 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
     Builder.defineMacro("__SSP_STRONG__", "2");
   else if (LangOpts.getStackProtector() == LangOptions::SSPReq)
     Builder.defineMacro("__SSP_ALL__", "3");
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   else if (LangOpts.getStackProtector() == LangOptions::SSPRetStrong)
     Builder.defineMacro("__SSP_RET_STRONG__", "4");
   else if (LangOpts.getStackProtector() == LangOptions::SSPRetReq)
     Builder.defineMacro("__SSP_RET_ALL__", "5");
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   if (PPOpts.SetUpStaticAnalyzer)
     Builder.defineMacro("__clang_analyzer__");

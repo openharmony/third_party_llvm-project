@@ -22,9 +22,18 @@
 #include <cstdlib>
 #include <cwchar>
 
-#ifdef __cplusplus
+#ifndef OHOS_LLVM
+inline _LIBCPP_HIDE_FROM_ABI long long strtoll_l(const char* __nptr, char** __endptr, int __base, locale_t) {
+  return ::strtoll(__nptr, __endptr, __base);
+}
+
+inline _LIBCPP_HIDE_FROM_ABI unsigned long long strtoull_l(const char* __nptr, char** __endptr, int __base, locale_t) {
+  return ::strtoull(__nptr, __endptr, __base);
+}
+#else /* OHOS_LLVM */
+#  ifdef __cplusplus
 extern "C" {
-#endif
+#  endif
 
 inline _LIBCPP_HIDE_FROM_ABI long long strtoll_l(const char* __nptr, char** __endptr, int __base, locale_t) {
   return ::strtoll(__nptr, __endptr, __base);
@@ -34,22 +43,24 @@ inline _LIBCPP_HIDE_FROM_ABI unsigned long long strtoull_l(const char* __nptr, c
   return ::strtoull(__nptr, __endptr, __base);
 }
 
-#if _LIBCPP_HAS_WIDE_CHARACTERS
+#  if _LIBCPP_HAS_WIDE_CHARACTERS
 inline _LIBCPP_HIDE_FROM_ABI long long wcstoll_l(const wchar_t* __nptr, wchar_t** __endptr, int __base, locale_t) {
   return ::wcstoll(__nptr, __endptr, __base);
 }
 
-inline _LIBCPP_HIDE_FROM_ABI unsigned long long wcstoull_l(const wchar_t* __nptr, wchar_t** __endptr, int __base, locale_t) {
+inline _LIBCPP_HIDE_FROM_ABI unsigned long long
+wcstoull_l(const wchar_t* __nptr, wchar_t** __endptr, int __base, locale_t) {
   return ::wcstoull(__nptr, __endptr, __base);
 }
 
 inline _LIBCPP_HIDE_FROM_ABI long double wcstold_l(const wchar_t* __nptr, wchar_t** __endptr, locale_t) {
   return ::wcstold(__nptr, __endptr);
 }
-#endif
+#  endif
 
-#ifdef __cplusplus
+#  ifdef __cplusplus
 }
-#endif
+#  endif
+#endif /* OHOS_LLVM */
 
 #endif // _LIBCPP___LOCALE_DIR_LOCALE_BASE_API_MUSL_H

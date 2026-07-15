@@ -141,7 +141,7 @@ inline void ReleaseMemoryPagesToOSAndZeroFill(uptr beg, uptr end) {
   ReleaseMemoryPagesToOS(beg, end);
 }
 
-#  if SANITIZER_ANDROID  || SANITIZER_OHOS
+#  if SANITIZER_ANDROID || (defined(OHOS_LLVM) && SANITIZER_OHOS)
 
 #    if defined(__aarch64__)
 #      define __get_tls()                           \
@@ -205,7 +205,7 @@ ALWAYS_INLINE uptr *get_android_tls_ptr() {
   return reinterpret_cast<uptr *>(&__get_tls()[TLS_SLOT_SANITIZER]);
 }
 
-#  endif  // SANITIZER_ANDROID
+#  endif  // SANITIZER_ANDROID || (defined(OHOS_LLVM) && SANITIZER_OHOS)
 
 }  // namespace __sanitizer
 

@@ -438,7 +438,7 @@ def RetCC_X86_64_AnyReg : CallingConv<[
   CCCustom<"CC_X86_AnyReg_Error">
 ]>;
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
 def RetCC_X86_64_ARK_INTERPRETER: CallingConv<[
 ]>;
 def RetCC_X86_64_ARK_FAST_PATH: CallingConv<[
@@ -449,7 +449,7 @@ def RetCC_X86_64_ARK_RESOLVER: CallingConv<[
   CCIfType<[i1, i8, i16, i32], CCPromoteToType<i64>>,
   CCIfType<[i64], CCAssignToReg<[R12]>>
 ]>;
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 defm X86_32_RegCall :
 	 X86_RegCall_base<RC_X86_32_RegCall>;
@@ -498,7 +498,8 @@ def RetCC_X86_64 : CallingConv<[
   // Handle Vectorcall CC
   CCIfCC<"CallingConv::X86_VectorCall", CCDelegateTo<RetCC_X86_64_Vectorcall>>,
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
+
   CCIfCC<"CallingConv::ArkInt", CCDelegateTo<RetCC_X86_64_ARK_INTERPRETER>>,
   CCIfCC<"CallingConv::ArkFast0", CCDelegateTo<RetCC_X86_64_ARK_FAST_PATH>>,
   CCIfCC<"CallingConv::ArkFast1", CCDelegateTo<RetCC_X86_64_ARK_FAST_PATH>>,
@@ -508,7 +509,7 @@ def RetCC_X86_64 : CallingConv<[
   CCIfCC<"CallingConv::ArkFast5", CCDelegateTo<RetCC_X86_64_ARK_FAST_PATH>>,
   CCIfCC<"CallingConv::ArkMethod", CCDelegateTo<RetCC_X86_64_C>>,
   CCIfCC<"CallingConv::ArkResolver", CCDelegateTo<RetCC_X86_64_ARK_RESOLVER>>,
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   CCIfCC<"CallingConv::X86_RegCall",
     CCIfSubtarget<"isTargetWin64()", CCIfRegCallv4<CCDelegateTo<RetCC_X86_Win64_RegCallv4>>>>,
@@ -746,7 +747,8 @@ def CC_X86_64_HiPE : CallingConv<[
   CCIfType<[i32, i64, f32, f64], CCAssignToStack<8, 8>>
 ]>;
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
+
 def CC_X86_64_ARK_INTERPRETER : CallingConv<[
   CCIfType<[i1, i8, i16, i32], CCPromoteToType<i64>>,
   CCIfType<[i64], CCAssignToReg<[R10, RBX, R11, R9, R8, R15, RBP]>>
@@ -781,7 +783,7 @@ def CC_X86_64_ARK_RESOLVER : CallingConv<[
   CCIfType<[i1, i8, i16, i32], CCPromoteToType<i64>>,
   CCIfType<[i64], CCAssignToReg<[R12]>>
 ]>;
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 // No explicit register is specified for the AnyReg calling convention. The
 // register allocator may assign the arguments to any free register.
@@ -1153,7 +1155,7 @@ def CC_X86_64 : CallingConv<[
   CCIfCC<"CallingConv::X86_RegCall", CCDelegateTo<CC_X86_SysV64_RegCall>>,
   CCIfCC<"CallingConv::PreserveNone", CCDelegateTo<CC_X86_64_Preserve_None>>,
   CCIfCC<"CallingConv::X86_INTR", CCCustom<"CC_X86_Intr">>,
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   CCIfCC<"CallingConv::ArkInt", CCDelegateTo<CC_X86_64_ARK_INTERPRETER>>,
   CCIfCC<"CallingConv::ArkFast0", CCDelegateTo<CC_X86_64_ARK_FAST_0>>,
   CCIfCC<"CallingConv::ArkFast1", CCDelegateTo<CC_X86_64_ARK_FAST_1>>,
@@ -1163,7 +1165,7 @@ def CC_X86_64 : CallingConv<[
   CCIfCC<"CallingConv::ArkFast5", CCDelegateTo<CC_X86_64_ARK_FAST_5>>,
   CCIfCC<"CallingConv::ArkMethod", CCDelegateTo<CC_X86_64_C>>,
   CCIfCC<"CallingConv::ArkResolver", CCDelegateTo<CC_X86_64_ARK_RESOLVER>>,
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   // Mingw64 and native Win64 use Win64 CC
   CCIfSubtarget<"isTargetWin64()", CCDelegateTo<CC_X86_Win64_C>>,
@@ -1296,7 +1298,7 @@ def CSR_SysV64_RegCall_NoSSE : CalleeSavedRegs<(add RBX, RBP,
 def CSR_SysV64_RegCall       : CalleeSavedRegs<(add CSR_SysV64_RegCall_NoSSE,               
                                                (sequence "XMM%u", 8, 15))>;
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
 def CSR_ArkFast0 : CalleeSavedRegs<(add RAX, RDI, RSI, RDX, RCX, R8, R9, R10, R11)>;
 def CSR_ArkFast1 : CalleeSavedRegs<(sub CSR_ArkFast0, RDI)>;
 def CSR_ArkFast2 : CalleeSavedRegs<(sub CSR_ArkFast1, RSI)>;
@@ -1307,4 +1309,4 @@ def CSR_ArkFast5 : CalleeSavedRegs<(sub CSR_ArkFast4, R8)>;
 def CSR_ArkMethod : CalleeSavedRegs<(add RBP)>;
 def CSR_ArkResolver : CalleeSavedRegs<(sub CSR_64, R12, R13)>;
 def CSR_ArkPlt : CalleeSavedRegs<(sub CSR_64, R12)>;
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */

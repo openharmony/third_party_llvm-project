@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //=- AArch64ArkGc.td - Describe the AArch64 Target Machine --------*- tablegen -*-=//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -1289,3 +1290,4 @@ def AArch64 : Target {
 //===----------------------------------------------------------------------===//
 
 include "AArch64PfmCounters.td"
+#endif /* OHOS_LLVM */

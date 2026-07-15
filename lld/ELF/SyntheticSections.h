@@ -22,7 +22,9 @@
 
 #include "Config.h"
 #include "DWARF.h"
+#ifdef OHOS_LLVM
 #include "EhFrame.h"
+#endif /* OHOS_LLVM */
 #include "InputSection.h"
 #include "Symbols.h"
 #include "llvm/ADT/DenseSet.h"
@@ -45,7 +47,9 @@ class SymbolTableBaseSection;
 
 struct CieRecord {
   EhSectionPiece *cie = nullptr;
+#ifdef OHOS_LLVM
   EhPointerEncodings encodings; // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   SmallVector<EhSectionPiece *, 0> fdes;
 };
 

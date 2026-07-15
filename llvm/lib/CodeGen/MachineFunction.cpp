@@ -257,7 +257,8 @@ MachineFunction::~MachineFunction() {
   clear();
 }
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
+
 unsigned MachineFunction::getMaxArkSpills() const {
   const auto *TFI = getSubtarget().getFrameLowering();
   if (!TFI->supportsArkSpills())
@@ -301,7 +302,7 @@ int MachineFunction::getArkFrameSize() const {
   constexpr auto ArkInfoFrameSizeIdx = 2U;
   return getConstantFromArkFrameMeta(ArkFrameInfoMd, ArkInfoFrameSizeIdx, 0);
 }
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 void MachineFunction::clear() {
   Properties.reset();

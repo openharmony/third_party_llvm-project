@@ -19,7 +19,9 @@
 #include "X86SelectionDAGInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/CallingConv.h"
+#ifdef OHOS_LLVM
 #include "llvm/ADT/SmallSet.h"
+#endif /* OHOS_LLVM */
 #include "llvm/TargetParser/Triple.h"
 #include <climits>
 #include <memory>
@@ -189,10 +191,10 @@ public:
     return hasCX16() && is64Bit();
   }
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   // Reserved registers features
   SmallSet<Register, 8> getRRegReservation() const;
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   // SSE codegen depends on cmovs, and all SSE1+ processors support them.
   // All 64-bit processors support cmov.

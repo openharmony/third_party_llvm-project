@@ -1714,8 +1714,10 @@ unsigned ScriptParser::readPhdrType() {
                      .Case("PT_OPENBSD_RANDOMIZE", PT_OPENBSD_RANDOMIZE)
                      .Case("PT_OPENBSD_SYSCALLS", PT_OPENBSD_SYSCALLS)
                      .Case("PT_OPENBSD_WXNEEDED", PT_OPENBSD_WXNEEDED)
-                     .Case("PT_OPENBSD_BOOTDATA", PT_OPENBSD_BOOTDATA)
+#ifdef OHOS_LLVM
                      .Case("PT_OHOS_RANDOMDATA", PT_OHOS_RANDOMDATA) // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+                     .Case("PT_OPENBSD_BOOTDATA", PT_OPENBSD_BOOTDATA)
                      .Default(-1);
 
   if (ret == (unsigned)-1) {

@@ -38,8 +38,10 @@
 #include "lldb/ValueObject/ValueObjectMemory.h"
 #include "lldb/ValueObject/ValueObjectVariable.h"
 
-#include "lldb/lldb-enumerations.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+#include "lldb/lldb-enumerations.h"
 
 #include <memory>
 
@@ -303,7 +305,9 @@ Block *StackFrame::GetFrameBlock() {
 // one will ever have to look things up manually.
 const SymbolContext &
 StackFrame::GetSymbolContext(SymbolContextItem resolve_scope) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_THREAD);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   std::lock_guard<std::recursive_mutex> guard(m_mutex);
   // Copy our internal symbol context into "sc".
   if ((m_flags.Get() & resolve_scope) != resolve_scope) {
@@ -429,7 +433,9 @@ StackFrame::GetSymbolContext(SymbolContextItem resolve_scope) {
 
 VariableList *StackFrame::GetVariableList(bool get_file_globals,
                                           Status *error_ptr) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_THREAD);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   std::lock_guard<std::recursive_mutex> guard(m_mutex);
   if (m_flags.IsClear(RESOLVED_VARIABLES)) {
     m_flags.Set(RESOLVED_VARIABLES);

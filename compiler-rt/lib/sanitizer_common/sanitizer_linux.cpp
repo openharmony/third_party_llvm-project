@@ -80,7 +80,7 @@
 #    include <sys/utsname.h>
 #  endif
 
-#  if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
+#  if SANITIZER_LINUX && !SANITIZER_ANDROID && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
 #    include <sys/personality.h>
 #  endif
 
@@ -190,9 +190,13 @@ void SetSigProcMask(__sanitizer_sigset_t *set, __sanitizer_sigset_t *oldset) {
 static void KeepUnblocked(__sanitizer_sigset_t &newset,
                           __sanitizer_sigset_t &oldset, int signum) {
   // FIXME: https://github.com/google/sanitizers/issues/1816
+#if defined(OHOS_LLVM)
   // OHOS_LOCAL: BlockSignals skips filling oldset on OHOS.
   if (SANITIZER_ANDROID || SANITIZER_OHOS ||
       !internal_sigismember(&oldset, signum))
+#else /* OHOS_LLVM */
+  if (SANITIZER_ANDROID || !internal_sigismember(&oldset, signum))
+#endif /* OHOS_LLVM */
     internal_sigdelset(&newset, signum);
 }
 #  endif
@@ -205,7 +209,7 @@ void BlockSignals(__sanitizer_sigset_t *oldset) {
 #  if SANITIZER_LINUX
   __sanitizer_sigset_t currentset;
 
-#    if !SANITIZER_ANDROID && !SANITIZER_OHOS
+#    if !SANITIZER_ANDROID && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
   // FIXME: https://github.com/google/sanitizers/issues/1816
   SetSigProcMask(NULL, &currentset);
 
@@ -213,14 +217,14 @@ void BlockSignals(__sanitizer_sigset_t *oldset) {
   // on any thread, setuid call hangs.
   // See test/sanitizer_common/TestCases/Linux/setuid.c.
   KeepUnblocked(newset, currentset, 33);
-#    endif  // !SANITIZER_ANDROID && !SANITIZER_OHOS
+#    endif  // !SANITIZER_ANDROID && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
 
   // Seccomp-BPF-sandboxed processes rely on SIGSYS to handle trapped syscalls.
   // If this signal is blocked, such calls cannot be handled and the process may
   // hang.
   KeepUnblocked(newset, currentset, 31);
 
-#    if !SANITIZER_ANDROID && !SANITIZER_OHOS
+#    if !SANITIZER_ANDROID && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
   // Don't block synchronous signals
   // but also don't unblock signals that the user had deliberately blocked.
   // FIXME: https://github.com/google/sanitizers/issues/1816
@@ -231,7 +235,7 @@ void BlockSignals(__sanitizer_sigset_t *oldset) {
   KeepUnblocked(newset, currentset, SIGABRT);
   KeepUnblocked(newset, currentset, SIGFPE);
   KeepUnblocked(newset, currentset, SIGPIPE);
-#    endif  // !SANITIZER_ANDROID && !SANITIZER_OHOS
+#    endif  // !SANITIZER_ANDROID && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
 
 #  endif  // SANITIZER_LINUX
 
@@ -346,8 +350,8 @@ uptr internal_ftruncate(fd_t fd, uptr size) {
   return res;
 }
 
-#    if (!SANITIZER_LINUX_USES_64BIT_SYSCALLS || SANITIZER_SPARC || \
-         SANITIZER_OHOS) &&                                         \
+#    if (!SANITIZER_LINUX_USES_64BIT_SYSCALLS ||                    \
+         (defined(OHOS_LLVM) && (SANITIZER_SPARC || SANITIZER_OHOS))) && \
         SANITIZER_LINUX
 static void stat64_to_stat(struct stat64 *in, struct stat *out) {
   internal_memset(out, 0, sizeof(*out));
@@ -456,7 +460,7 @@ uptr internal_stat(const char *path, void *buf) {
 #      elif (                                                                \
           SANITIZER_WORDSIZE == 64 || SANITIZER_X32 ||                       \
           (defined(__mips__) && defined(_ABIN32) && _MIPS_SIM == _ABIN32 &&  \
-           !SANITIZER_OHOS)) &&                                                \
+           (!defined(OHOS_LLVM) || !SANITIZER_OHOS))) &&                     \
           !SANITIZER_SPARC
   return internal_syscall(SYSCALL(newfstatat), AT_FDCWD, (uptr)path, (uptr)buf,
                           0);
@@ -496,7 +500,7 @@ uptr internal_lstat(const char *path, void *buf) {
 #      elif (                                                                \
           defined(_LP64) || SANITIZER_X32 ||                                 \
           (defined(__mips__) && defined(_ABIN32) && _MIPS_SIM == _ABIN32 &&  \
-           !SANITIZER_OHOS)) &&                                                \
+           (!defined(OHOS_LLVM) || !SANITIZER_OHOS))) &&                     \
           !SANITIZER_SPARC
   return internal_syscall(SYSCALL(newfstatat), AT_FDCWD, (uptr)path, (uptr)buf,
                           AT_SYMLINK_NOFOLLOW);
@@ -1007,7 +1011,7 @@ int internal_sigaction_norestorer(int signum, const void *act, void *oldact) {
     // rt_sigaction, so we need to do the same (we'll need to reimplement the
     // restorers; for x86_64 the restorer address can be obtained from
     // oldact->sa_restorer upon a call to sigaction(xxx, NULL, oldact).
-#      if (!SANITIZER_ANDROID && !SANITIZER_OHOS) || !SANITIZER_MIPS32
+#      if (!SANITIZER_ANDROID && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)) || !SANITIZER_MIPS32
     k_act.sa_restorer = u_act->sa_restorer;
 #      endif
   }
@@ -1023,7 +1027,7 @@ int internal_sigaction_norestorer(int signum, const void *act, void *oldact) {
     internal_memcpy(&u_oldact->sa_mask, &k_oldact.sa_mask,
                     sizeof(__sanitizer_kernel_sigset_t));
     u_oldact->sa_flags = k_oldact.sa_flags;
-#      if (!SANITIZER_ANDROID && !SANITIZER_OHOS) || !SANITIZER_MIPS32
+#      if (!SANITIZER_ANDROID && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)) || !SANITIZER_MIPS32
     u_oldact->sa_restorer = k_oldact.sa_restorer;
 #      endif
   }
@@ -1196,7 +1200,7 @@ static uptr GetKernelAreaSize() {
       return 0;
   }
 
-#      if !SANITIZER_ANDROID  && !SANITIZER_OHOS
+#      if !SANITIZER_ANDROID  && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
   // Even if nothing is mapped, top Gb may still be accessible
   // if we are running on 64-bit kernel.
   // Uname may report misleading results if personality type
