@@ -34,8 +34,10 @@
 #include "ProcessGDBRemote.h"
 #include "ProcessGDBRemoteLog.h"
 #include "lldb/Host/Config.h"
-#include "lldb/Utility/StringExtractorGDBRemote.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+#include "lldb/Utility/StringExtractorGDBRemote.h"
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringSwitch.h"
@@ -1574,7 +1576,9 @@ Status GDBRemoteCommunicationClient::Detach(bool keep_stopped,
 
 Status GDBRemoteCommunicationClient::GetMemoryRegionInfo(
     lldb::addr_t addr, lldb_private::MemoryRegionInfo &region_info) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   Status error;
   region_info.Clear();
 
@@ -2831,7 +2835,9 @@ bool GDBRemoteCommunicationClient::GetThreadStopInfo(
 uint8_t GDBRemoteCommunicationClient::SendGDBStoppointTypePacket(
     GDBStoppointType type, bool insert, addr_t addr, uint32_t length,
     std::chrono::seconds timeout) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   Log *log = GetLog(LLDBLog::Breakpoints);
   LLDB_LOGF(log, "GDBRemoteCommunicationClient::%s() %s at addr = 0x%" PRIx64,
             __FUNCTION__, insert ? "add" : "remove", addr);
@@ -3537,7 +3543,9 @@ bool GDBRemoteCommunicationClient::AvoidGPackets(ProcessGDBRemote *process) {
 
 DataBufferSP GDBRemoteCommunicationClient::ReadRegister(lldb::tid_t tid,
                                                         uint32_t reg) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_GDBREMOTE);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   StreamString payload;
   payload.Printf("p%x", reg);
   StringExtractorGDBRemote response;

@@ -22,7 +22,9 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/Stream.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
 using namespace lldb;
 using namespace lldb_private;
@@ -210,12 +212,14 @@ bool ThreadPlanStepRange::InSymbol() {
   return false;
 }
 
+#ifdef OHOS_LLVM
 // TODO: Limit this function scope to OHOS targets
 bool ThreadPlanStepRange::MaybeAArch32Or64FunctionTail() {
   const llvm::Triple &triple = GetTarget().GetArchitecture().GetTriple();
   const bool isArm32or64 = triple.isAArch64() || triple.isARM();
   return isArm32or64 && InSymbol() && InRange();
 }
+#endif /* OHOS_LLVM */
 
 // FIXME: This should also handle inlining if we aren't going to do inlining in
 // the
@@ -508,7 +512,9 @@ StateType ThreadPlanStepRange::GetPlanRunState() {
 }
 
 bool ThreadPlanStepRange::MischiefManaged() {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   // If we have pushed some plans between ShouldStop & MischiefManaged, then
   // we're not done...
   // I do this check first because we might have stepped somewhere that will
@@ -535,7 +541,9 @@ bool ThreadPlanStepRange::MischiefManaged() {
     LLDB_LOGF(log, "Completed step through range plan.");
     ClearNextBranchBreakpoint();
     ThreadPlan::MischiefManaged();
+#ifdef OHOS_LLVM
     LLDB_PERFORMANCE_LOG("Completed step through range.");    // OHOS_LOCAL
+#endif /* OHOS_LLVM */
     return true;
   } else {
     return false;

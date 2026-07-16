@@ -1003,6 +1003,7 @@ static std::pair<bool, bool> getPackDynRelocs(Ctx &ctx,
   return {false, false};
 }
 
+#ifdef OHOS_LLVM
 static std::pair<unsigned, unsigned>
 parseLTOOptArg(Ctx &ctx, opt::InputArgList &args, unsigned key,
                StringRef defaultValue) {
@@ -1040,6 +1041,7 @@ parseLTOOptArg(Ctx &ctx, opt::InputArgList &args, unsigned key,
 
   return {optLevel, sizeLevel};
 }
+#endif /* OHOS_LLVM */
 
 static void readCallGraph(Ctx &ctx, MemoryBufferRef mb) {
   // Build a map from symbol name to section
@@ -1492,9 +1494,15 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
   ctx.arg.ltoValidateAllVtablesHaveTypeInfos =
       args.hasFlag(OPT_lto_validate_all_vtables_have_type_infos,
                    OPT_no_lto_validate_all_vtables_have_type_infos, false);
+#ifndef OHOS_LLVM
+  ctx.arg.ltoo = args::getInteger(args, OPT_lto_O, 2);
+  if (ctx.arg.ltoo > 3)
+    ErrAlways(ctx) << "invalid optimization level for LTO: " << ctx.arg.ltoo;
+#else /* OHOS_LLVM */
   std::tie(ctx.arg.ltoo, ctx.arg.ltos) =
       parseLTOOptArg(ctx, args, OPT_lto_O, "2");
   ctx.arg.mergeFunctions = args.hasArg(OPT_lto_mf);
+#endif /* OHOS_LLVM */
   unsigned ltoCgo =
       args::getInteger(args, OPT_lto_CGO, args::getCGOptLevel(ctx.arg.ltoo));
   if (auto level = CodeGenOpt::getLevel(ltoCgo))

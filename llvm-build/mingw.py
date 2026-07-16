@@ -98,6 +98,7 @@ class LlvmMingw():
         self.cmake_defines['LLVM_ENABLE_THREADS'] = 'ON'
         self.cmake_defines['LLVM_USE_NEWPM'] = 'ON'
         self.cmake_defines['COMPILER_RT_BUILD_XRAY'] = 'OFF'
+        self.cmake_defines['OHOS_LLVM'] = 'ON'
         return self.cmake_defines
 
     @staticmethod

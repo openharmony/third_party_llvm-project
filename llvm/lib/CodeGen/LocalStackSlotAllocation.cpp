@@ -28,7 +28,9 @@
 #include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
+#ifdef OHOS_LLVM
 #include "llvm/IR/Function.h" // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 #include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
@@ -214,9 +216,10 @@ void LocalStackSlotImpl::calculateFrameObjectOffsets(MachineFunction &Fn) {
 
   // Make sure that the stack protector comes before the local variables on the
   // stack.
+#ifdef OHOS_LLVM
   Function &F = Fn.getFunction(); // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   SmallSet<int, 16> ProtectedObjs;
-
   if (MFI.hasStackProtectorIndex()) {
     int StackProtectorFI = MFI.getStackProtectorIndex();
 
@@ -261,13 +264,14 @@ void LocalStackSlotImpl::calculateFrameObjectOffsets(MachineFunction &Fn) {
       }
       llvm_unreachable("Unexpected SSPLayoutKind.");
     }
+
     AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
     AssignProtectedObjSet(SmallArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
     AssignProtectedObjSet(AddrOfObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
-  /// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   } else if (F.hasFnAttribute(Attribute::StackProtectRetReq) ||
              F.hasFnAttribute(Attribute::StackProtectRetStrong)) {
     StackObjSet LargeArrayObjs;
@@ -300,7 +304,7 @@ void LocalStackSlotImpl::calculateFrameObjectOffsets(MachineFunction &Fn) {
                           Offset, MaxAlign);
     AssignProtectedObjSet(AddrOfObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
-  /// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   }
 
   // Then assign frame offsets to stack objects that are not used to spill

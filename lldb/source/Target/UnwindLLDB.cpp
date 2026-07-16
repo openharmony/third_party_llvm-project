@@ -18,8 +18,10 @@
 #include "lldb/Target/Target.h"
 #include "lldb/Target/Thread.h"
 #include "lldb/Utility/LLDBLog.h"
-#include "lldb/Utility/Log.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+#include "lldb/Utility/Log.h"
 
 using namespace lldb;
 using namespace lldb_private;
@@ -397,7 +399,9 @@ bool UnwindLLDB::AddOneMoreFrame(ABI *abi) {
 
 bool UnwindLLDB::DoGetFrameInfoAtIndex(uint32_t idx, addr_t &cfa, addr_t &pc,
                                        bool &behaves_like_zeroth_frame) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_UNWIND);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   if (m_frames.size() == 0) {
     if (!AddFirstFrame())
       return false;

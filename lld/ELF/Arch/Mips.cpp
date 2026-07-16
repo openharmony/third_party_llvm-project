@@ -27,9 +27,9 @@ public:
                      const uint8_t *loc) const override;
   int64_t getImplicitAddend(const uint8_t *buf, RelType type) const override;
   RelType getDynRel(RelType type) const override;
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   bool convertAbsRelToPC(RelType &type) const override;
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   void writeGotPlt(uint8_t *buf, const Symbol &s) const override;
   void writePltHeader(uint8_t *buf) const override;
   void writePlt(uint8_t *buf, const Symbol &sym,
@@ -204,7 +204,7 @@ template <class ELFT> RelType MIPS<ELFT>::getDynRel(RelType type) const {
   return R_MIPS_NONE;
 }
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
 
 template <class ELFT> bool MIPS<ELFT>::convertAbsRelToPC(RelType &type) const {
   switch (type) {
@@ -218,7 +218,7 @@ template <class ELFT> bool MIPS<ELFT>::convertAbsRelToPC(RelType &type) const {
   return false;
 }
 
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 template <class ELFT>
 void MIPS<ELFT>::writeGotPlt(uint8_t *buf, const Symbol &) const {

@@ -1,8 +1,16 @@
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 lldb_tablegen(InterpreterProperties.inc -gen-lldb-property-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE InterpreterProperties.td
   TARGET LLDBInterpreterPropertiesGen)
 
 lldb_tablegen(InterpreterPropertiesEnum.inc -gen-lldb-property-enum-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE InterpreterProperties.td
   TARGET LLDBInterpreterPropertiesEnumGen)
 

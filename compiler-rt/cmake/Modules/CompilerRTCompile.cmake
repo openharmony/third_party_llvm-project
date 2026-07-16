@@ -71,6 +71,13 @@ function(clang_compile object_file source)
   if (TARGET CompilerRTUnitTestCheckCxx)
     list(APPEND SOURCE_DEPS CompilerRTUnitTestCheckCxx)
   endif()
+
+  set(EXTRA_FEAT_LIST)
+
+  if (OHOS_LLVM)
+    list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+  endif()
+
   string(REGEX MATCH "[.](cc|cpp)$" is_cxx ${source_rpath})
   if (is_cxx)
     set(compiler ${COMPILER_RT_TEST_CXX_COMPILER})
@@ -96,9 +103,9 @@ function(clang_compile object_file source)
     # Ignore unknown warnings. CMAKE_CXX_FLAGS may contain GCC-specific options
     # which are not supported by Clang.
     list(APPEND global_flags -Wno-unknown-warning-option)
-    set(compile_flags ${global_flags} ${SOURCE_CFLAGS})
+    set(compile_flags ${global_flags} ${SOURCE_CFLAGS} ${EXTRA_FEAT_LIST})
   else()
-    set(compile_flags ${SOURCE_CFLAGS})
+    set(compile_flags ${SOURCE_CFLAGS} ${EXTRA_FEAT_LIST})
   endif()
 
   string(REGEX MATCH "[.](m|mm)$" is_objc ${source_rpath})

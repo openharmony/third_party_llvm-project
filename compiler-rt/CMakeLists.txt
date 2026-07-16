@@ -32,6 +32,15 @@ list(INSERT CMAKE_MODULE_PATH 0
   "${LLVM_COMMON_CMAKE_UTILS}/Modules"
   )
 
+# OHOS_LOCAL begin
+# Standalone CRT builds receive -DOHOS_LLVM=ON as a CMake option; propagate to
+# the preprocessor so #ifdef OHOS_LLVM in sanitizer/profile sources works.
+option(OHOS_LLVM "Enable OHOS features" OFF)
+if(OHOS_LLVM)
+  add_definitions(-DOHOS_LLVM)
+endif()
+# OHOS_LOCAL end
+
 if(CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_CFG_RESOLVED_INTDIR "${CMAKE_CFG_INTDIR}/")
 else()
@@ -158,12 +167,14 @@ if ("${COMPILER_RT_DEFAULT_TARGET_TRIPLE}" MATCHES ".*android.*")
 endif()
 
 # We define OHOS for ohos targets for now
-if (OHOS)
+if (OHOS_LLVM AND OHOS)
   set(OHOS_FAMILY 1)
 endif()
 
 pythonize_bool(ANDROID)
+if (OHOS_LLVM)
 pythonize_bool(OHOS_FAMILY)
+endif()
 
 set(COMPILER_RT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(COMPILER_RT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -174,7 +185,7 @@ pythonize_bool(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR)
 # and target a UNIX-like system or Windows.
 # We can run tests on Android even when we are cross-compiling.
 if((NOT "${CMAKE_CROSSCOMPILING}" AND (UNIX OR WIN32))
-    OR ANDROID OR COMPILER_RT_EMULATOR OR OHOS)
+    OR ANDROID OR COMPILER_RT_EMULATOR OR (OHOS_LLVM AND OHOS))
   option(COMPILER_RT_CAN_EXECUTE_TESTS "Can we execute instrumented tests" ON)
 else()
   option(COMPILER_RT_CAN_EXECUTE_TESTS "Can we execute instrumented tests" OFF)
@@ -305,7 +316,7 @@ cmake_dependent_option(COMPILER_RT_STATIC_CXX_LIBRARY
   "COMPILER_RT_CXX_LIBRARY" OFF)
 
 set(DEFAULT_COMPILER_RT_USE_BUILTINS_LIBRARY OFF)
-if (FUCHSIA OR OHOS)
+if (FUCHSIA OR (OHOS_LLVM AND OHOS))
   set(DEFAULT_COMPILER_RT_USE_BUILTINS_LIBRARY ON)
 endif()
 
@@ -591,7 +602,7 @@ if (SANITIZER_NO_UNDEFINED_SYMBOLS)
   list(APPEND SANITIZER_COMMON_LINK_FLAGS -Wl,-z,defs)
 endif()
 
-if (OHOS)
+if (OHOS_LLVM AND OHOS)
   list(APPEND SANITIZER_COMMON_LINK_LIBS unwind)
 endif()
 
@@ -658,7 +669,7 @@ endif()
 
 # OHOS: link compiler-rt libunwind for scudo standalone on arm when LLVM unwinder
 # is not used (see gitcode 750fb65e, adapted as -lunwind in 39a73c5).
-if (COMPILER_RT_HAS_SCUDO_STANDALONE AND
+if (OHOS_LLVM AND COMPILER_RT_HAS_SCUDO_STANDALONE AND
     NOT COMPILER_RT_USE_LLVM_UNWINDER AND
     COMPILER_RT_DEFAULT_TARGET_TRIPLE MATCHES "^arm-.*")
   list(APPEND COMPILER_RT_UNWINDER_LINK_LIBS "-lunwind")
@@ -837,7 +848,7 @@ if (LINKER_IS_LLD OR LLVM_TOOL_LLD_BUILD)
   endif()
 endif()
 
-if(ANDROID OR OHOS)
+if(ANDROID OR (OHOS_LLVM AND OHOS))
   set(COMPILER_RT_HAS_LLD TRUE)
   set(COMPILER_RT_TEST_USE_LLD TRUE)
   append_list_if(COMPILER_RT_HAS_FUSE_LD_LLD_FLAG -fuse-ld=lld SANITIZER_COMMON_LINK_FLAGS)

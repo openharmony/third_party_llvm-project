@@ -2367,7 +2367,11 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
       "x86_64-pc-linux-gnu",    "x86_64-redhat-linux6E",
       "x86_64-redhat-linux",    "x86_64-suse-linux",
       "x86_64-manbo-linux-gnu", "x86_64-slackware-linux",
+#ifndef OHOS_LLVM
+      "x86_64-unknown-linux",   "x86_64-amazon-linux"};
+#else /* OHOS_LLVM */
       "x86_64-unknown-linux",   "x86_64-amazon-linux",    "x86_64-linux-ohos"};
+#endif /* OHOS_LLVM */
   static const char *const X32Triples[] = {"x86_64-linux-gnux32",
                                            "x86_64-pc-linux-gnux32"};
   static const char *const X32LibDirs[] = {"/libx32", "/lib"};
@@ -2392,8 +2396,12 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
       "mips-img-linux-gnu", "mipsisa32r6-linux-gnu"};
   static const char *const MIPSELLibDirs[] = {"/libo32", "/lib"};
   static const char *const MIPSELTriples[] = {"mipsel-linux-gnu",
+#ifndef OHOS_LLVM
+                                              "mips-img-linux-gnu"};
+#else /* OHOS_LLVM */
                                               "mips-img-linux-gnu",
                                               "mipsel-linux-ohos"};
+#endif /* OHOS_LLVM */
 
   static const char *const MIPS64LibDirs[] = {"/lib64", "/lib"};
   static const char *const MIPS64Triples[] = {

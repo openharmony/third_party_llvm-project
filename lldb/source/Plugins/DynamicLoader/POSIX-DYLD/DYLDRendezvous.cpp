@@ -16,8 +16,10 @@
 #include "lldb/Utility/ArchSpec.h"
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
-#include "lldb/Utility/Status.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+#include "lldb/Utility/Status.h"
 
 #include "llvm/Support/Path.h"
 
@@ -140,7 +142,9 @@ addr_t DYLDRendezvous::ResolveRendezvousAddress() {
 }
 
 void DYLDRendezvous::UpdateExecutablePath() {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_DYNAMICLOADER);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   if (m_process) {
     Log *log = GetLog(LLDBLog::DynamicLoader);
     Module *exe_mod = m_process->GetTarget().GetExecutableModulePointer();
@@ -165,7 +169,9 @@ void DYLDRendezvous::Rendezvous::DumpToLog(Log *log, const char *label) {
 }
 
 bool DYLDRendezvous::Resolve() {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_DYNAMICLOADER);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   Log *log = GetLog(LLDBLog::DynamicLoader);
 
   const size_t word_size = 4;

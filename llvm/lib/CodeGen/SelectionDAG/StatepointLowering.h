@@ -85,12 +85,14 @@ public:
   // TODO: Should add consistency tracking to ensure we encounter
   // expected gc_result calls too.
 
-  // OHOS_LOCAL begin
   /// Get a stack slot we can use to store an value of type ValueType.  This
   /// will hopefully be a recylced slot from another statepoint.
+#ifndef OHOS_LLVM
+  SDValue allocateStackSlot(EVT ValueType, SelectionDAGBuilder &Builder);
+#else /* OHOS_LLVM */
   SDValue allocateStackSlot(EVT ValueType, SelectionDAGBuilder &Builder,
                             bool ArkSpill = false);
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   void reserveStackSlot(int Offset) {
     assert(Offset >= 0 && Offset < (int)AllocatedStackSlots.size() &&
@@ -106,7 +108,7 @@ public:
     return AllocatedStackSlots.test(Offset);
   }
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   int getArkSpillsCount() const {
     return ArkFrameIndices.size();
   }
@@ -118,8 +120,8 @@ public:
   void dropArkSpills() {
     ArkFrameIndices.clear();
   }
-  // OHOS_LOCAL end
 
+#endif /* OHOS_LLVM */
 private:
   /// Maps pre-relocation value (gc pointer directly incoming into statepoint)
   /// into it's location (currently only stack slots)
@@ -134,11 +136,11 @@ private:
   /// Points just beyond the last slot known to have been allocated
   unsigned NextSlotToAllocate = 0;
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   /// A list for allocated spill slots that points into Ark Frame
   SmallVector<int, 6> ArkFrameIndices;
-  // OHOS_LOCAL end
 
+#endif /* OHOS_LLVM */
   /// Keep track of pending gcrelocate calls for consistency check
   SmallVector<const GCRelocateInst *, 10> PendingGCRelocateCalls;
 };

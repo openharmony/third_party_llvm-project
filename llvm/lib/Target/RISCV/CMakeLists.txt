@@ -1,31 +1,37 @@
 add_llvm_component_group(RISCV)
 
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 set(LLVM_TARGET_DEFINITIONS RISCV.td)
 
-tablegen(LLVM RISCVGenAsmMatcher.inc -gen-asm-matcher)
-tablegen(LLVM RISCVGenAsmWriter.inc -gen-asm-writer)
-tablegen(LLVM RISCVGenCompressInstEmitter.inc -gen-compress-inst-emitter)
-tablegen(LLVM RISCVGenMacroFusion.inc -gen-macro-fusion-pred)
-tablegen(LLVM RISCVGenDAGISel.inc -gen-dag-isel)
-tablegen(LLVM RISCVGenDisassemblerTables.inc -gen-disassembler)
-tablegen(LLVM RISCVGenInstrInfo.inc -gen-instr-info)
-tablegen(LLVM RISCVGenMCCodeEmitter.inc -gen-emitter)
-tablegen(LLVM RISCVGenMCPseudoLowering.inc -gen-pseudo-lowering)
-tablegen(LLVM RISCVGenRegisterBank.inc -gen-register-bank)
-tablegen(LLVM RISCVGenRegisterInfo.inc -gen-register-info)
-tablegen(LLVM RISCVGenSearchableTables.inc -gen-searchable-tables)
-tablegen(LLVM RISCVGenSubtargetInfo.inc -gen-subtarget)
-tablegen(LLVM RISCVGenExegesis.inc -gen-exegesis)
-tablegen(LLVM RISCVGenSDNodeInfo.inc -gen-sd-node-info)
+tablegen(LLVM RISCVGenAsmMatcher.inc -gen-asm-matcher ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenAsmWriter.inc -gen-asm-writer ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenCompressInstEmitter.inc -gen-compress-inst-emitter ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenMacroFusion.inc -gen-macro-fusion-pred ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenDAGISel.inc -gen-dag-isel ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenDisassemblerTables.inc -gen-disassembler ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenInstrInfo.inc -gen-instr-info ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenMCCodeEmitter.inc -gen-emitter ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenMCPseudoLowering.inc -gen-pseudo-lowering ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenRegisterBank.inc -gen-register-bank ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenRegisterInfo.inc -gen-register-info ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenSearchableTables.inc -gen-searchable-tables ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenSubtargetInfo.inc -gen-subtarget ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenExegesis.inc -gen-exegesis ${EXTRA_FEAT_LIST})
+tablegen(LLVM RISCVGenSDNodeInfo.inc -gen-sd-node-info ${EXTRA_FEAT_LIST})
 
 set(LLVM_TARGET_DEFINITIONS RISCVGISel.td)
-tablegen(LLVM RISCVGenGlobalISel.inc -gen-global-isel)
+tablegen(LLVM RISCVGenGlobalISel.inc -gen-global-isel ${EXTRA_FEAT_LIST})
 tablegen(LLVM RISCVGenO0PreLegalizeGICombiner.inc -gen-global-isel-combiner
-              -combiners="RISCVO0PreLegalizerCombiner")
+              -combiners="RISCVO0PreLegalizerCombiner" ${EXTRA_FEAT_LIST})
 tablegen(LLVM RISCVGenPreLegalizeGICombiner.inc -gen-global-isel-combiner
-              -combiners="RISCVPreLegalizerCombiner")
+              -combiners="RISCVPreLegalizerCombiner" ${EXTRA_FEAT_LIST})
 tablegen(LLVM RISCVGenPostLegalizeGICombiner.inc -gen-global-isel-combiner
-              -combiners="RISCVPostLegalizerCombiner")
+              -combiners="RISCVPostLegalizerCombiner" ${EXTRA_FEAT_LIST})
 
 add_public_tablegen_target(RISCVCommonTableGen)
 

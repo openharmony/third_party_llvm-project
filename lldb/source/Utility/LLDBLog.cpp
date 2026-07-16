@@ -67,7 +67,9 @@ static constexpr Log::Category g_categories[] = {
     {{"disassembler"},
      {"log disassembler related activities"},
      LLDBLog::Disassembler},
+#ifdef OHOS_LLVM
     {{"performance"}, {"log performance monitoring point"}, LLDBLog::Performance}, // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 };
 
 static Log::Channel g_log_channel(g_categories,
@@ -76,8 +78,12 @@ static Log::Channel g_log_channel(g_categories,
                                       LLDBLog::Breakpoints |
                                       LLDBLog::Watchpoints | LLDBLog::Step |
                                       LLDBLog::State | LLDBLog::Symbols |
+#ifndef OHOS_LLVM
+                                      LLDBLog::Target | LLDBLog::Commands);
+#else /* OHOS_LLVM */
                                       LLDBLog::Target | LLDBLog::Commands |
                                       LLDBLog::Performance); // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
 template <> Log::Channel &lldb_private::LogChannelFor<LLDBLog>() {
   return g_log_channel;

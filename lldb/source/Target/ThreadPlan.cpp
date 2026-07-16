@@ -14,8 +14,10 @@
 #include "lldb/Target/Thread.h"
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
-#include "lldb/Utility/State.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+#include "lldb/Utility/State.h"
 
 using namespace lldb;
 using namespace lldb_private;
@@ -93,7 +95,9 @@ Vote ThreadPlan::ShouldReportStop(Event *event_ptr) {
 }
 
 Vote ThreadPlan::ShouldReportRun(Event *event_ptr) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_THREAD);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   if (m_report_run_vote == eVoteNoOpinion) {
     ThreadPlan *prev_plan = GetPreviousPlan();
     if (prev_plan)
@@ -116,7 +120,9 @@ void ThreadPlan::SetStopOthers(bool new_value) {
 }
 
 bool ThreadPlan::WillResume(StateType resume_state, bool current_plan) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_STEP);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   m_cached_plan_explains_stop = eLazyBoolCalculate;
 
   if (current_plan) {

@@ -684,7 +684,7 @@ lltok::Kind LLLexer::LexIdentifier() {
   KEYWORD(graalcc);
   KEYWORD(riscv_vector_cc);
   KEYWORD(riscv_vls_cc);
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   KEYWORD(arkintcc);
   KEYWORD(arkfast0cc);
   KEYWORD(arkfast1cc);
@@ -695,7 +695,7 @@ lltok::Kind LLLexer::LexIdentifier() {
   KEYWORD(arkmethodcc);
   KEYWORD(arkresolvercc);
   KEYWORD(arkpltcc);
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   KEYWORD(cc);
   KEYWORD(c);

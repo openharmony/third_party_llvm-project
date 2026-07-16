@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //===-- PlatformHOSRemoteGDBServer.cpp -------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -302,3 +303,4 @@ lldb::ProcessSP PlatformHOSRemoteGDBServer::ConnectProcess(
   return PlatformRemoteGDBServer::ConnectProcess(new_connect_url, plugin_name,
                                                  debugger, target, error);
 }
+#endif /* OHOS_LLVM */

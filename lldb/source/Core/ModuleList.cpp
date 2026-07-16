@@ -36,7 +36,9 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Threading.h"
 #include "llvm/Support/raw_ostream.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
 #include <chrono>
 #include <memory>
@@ -791,7 +793,9 @@ ModuleList::GetSharedModule(const ModuleSpec &module_spec, ModuleSP &module_sp,
                             const FileSpecList *module_search_paths_ptr,
                             llvm::SmallVectorImpl<lldb::ModuleSP> *old_modules,
                             bool *did_create_ptr, bool always_create) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_MODULES);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   ModuleList &shared_module_list = GetSharedModuleList();
   std::lock_guard<std::recursive_mutex> guard(
       shared_module_list.m_modules_mutex);

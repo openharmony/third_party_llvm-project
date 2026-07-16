@@ -1,3 +1,9 @@
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 # Dbghelp is used on windows for writing minidump files.
 if(WIN32)
   set(DBGHELP_LINK_FILES dbghelp)
@@ -6,10 +12,12 @@ else()
 endif()
 
 lldb_tablegen(ObjectFilePECOFFProperties.inc -gen-lldb-property-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE ObjectFilePECOFFProperties.td
   TARGET LLDBPluginObjectFilePECOFFPropertiesGen)
 
 lldb_tablegen(ObjectFilePECOFFPropertiesEnum.inc -gen-lldb-property-enum-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE ObjectFilePECOFFProperties.td
   TARGET LLDBPluginObjectFilePECOFFPropertiesEnumGen)
 

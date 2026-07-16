@@ -4,6 +4,23 @@ set(LLVM_LINK_COMPONENTS
   TargetParser
   )
 
+set(OHOS_CHECKER_SOURCES)
+if (OHOS_LLVM)
+  list(APPEND OHOS_CHECKER_SOURCES
+    OpenHarmony/UnixAPIArgsChecker.cpp
+    OpenHarmony/MemcpyChecker.cpp
+    OpenHarmony/PrintSensitiveInfoChecker.cpp
+    OpenHarmony/SignalHandlerChecker.cpp
+    OpenHarmony/RefBaseDeleteChecker.cpp
+    OpenHarmony/OHPtrImplicitConversionChecker.cpp
+    OpenHarmony/NotHeapObjChecker.cpp
+    OpenHarmony/OHPtrNotInitChecker.cpp
+    OpenHarmony/NapiScopeManagerChecker.cpp
+    OpenHarmony/NapiGetArrBufferDataChecker.cpp
+    OpenHarmony/NapiWrapParamChecker.cpp
+  )
+endif()
+
 add_clang_library(clangStaticAnalyzerCheckers
   AnalysisOrderChecker.cpp
   AnalyzerStatsChecker.cpp
@@ -139,17 +156,7 @@ add_clang_library(clangStaticAnalyzerCheckers
   WebKit/RawPtrRefLambdaCapturesChecker.cpp
   WebKit/RawPtrRefLocalVarsChecker.cpp
   WebKit/RawPtrRefMemberChecker.cpp
-  OpenHarmony/UnixAPIArgsChecker.cpp
-  OpenHarmony/MemcpyChecker.cpp
-  OpenHarmony/PrintSensitiveInfoChecker.cpp
-  OpenHarmony/SignalHandlerChecker.cpp
-  OpenHarmony/RefBaseDeleteChecker.cpp
-  OpenHarmony/OHPtrImplicitConversionChecker.cpp
-  OpenHarmony/NotHeapObjChecker.cpp
-  OpenHarmony/OHPtrNotInitChecker.cpp
-  OpenHarmony/NapiScopeManagerChecker.cpp
-  OpenHarmony/NapiGetArrBufferDataChecker.cpp
-  OpenHarmony/NapiWrapParamChecker.cpp
+  ${OHOS_CHECKER_SOURCES} # OHOS_LOCAL
 
   LINK_LIBS
   clangAST

@@ -47,8 +47,10 @@ private:
   lldb::user_id_t m_breakpoint_site_id;
   bool m_auto_continue;
   bool m_reenabled_breakpoint_site;
+#ifdef OHOS_LLVM
   bool m_handling_signal;
   bool m_is_stale;
+#endif /* OHOS_LLVM */
 
   ThreadPlanStepOverBreakpoint(const ThreadPlanStepOverBreakpoint &) = delete;
   const ThreadPlanStepOverBreakpoint &

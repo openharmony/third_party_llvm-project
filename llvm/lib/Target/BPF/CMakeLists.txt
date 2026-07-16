@@ -1,18 +1,24 @@
 add_llvm_component_group(BPF)
 
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 set(LLVM_TARGET_DEFINITIONS BPF.td)
 
-tablegen(LLVM BPFGenAsmMatcher.inc -gen-asm-matcher)
-tablegen(LLVM BPFGenAsmWriter.inc -gen-asm-writer)
-tablegen(LLVM BPFGenCallingConv.inc -gen-callingconv)
-tablegen(LLVM BPFGenDAGISel.inc -gen-dag-isel)
-tablegen(LLVM BPFGenDisassemblerTables.inc -gen-disassembler)
-tablegen(LLVM BPFGenInstrInfo.inc -gen-instr-info)
-tablegen(LLVM BPFGenMCCodeEmitter.inc -gen-emitter)
-tablegen(LLVM BPFGenRegisterInfo.inc -gen-register-info)
-tablegen(LLVM BPFGenSubtargetInfo.inc -gen-subtarget)
-tablegen(LLVM BPFGenGlobalISel.inc -gen-global-isel)
-tablegen(LLVM BPFGenRegisterBank.inc -gen-register-bank)
+tablegen(LLVM BPFGenAsmMatcher.inc -gen-asm-matcher ${EXTRA_FEAT_LIST})
+tablegen(LLVM BPFGenAsmWriter.inc -gen-asm-writer ${EXTRA_FEAT_LIST})
+tablegen(LLVM BPFGenCallingConv.inc -gen-callingconv ${EXTRA_FEAT_LIST})
+tablegen(LLVM BPFGenDAGISel.inc -gen-dag-isel ${EXTRA_FEAT_LIST})
+tablegen(LLVM BPFGenDisassemblerTables.inc -gen-disassembler ${EXTRA_FEAT_LIST})
+tablegen(LLVM BPFGenInstrInfo.inc -gen-instr-info ${EXTRA_FEAT_LIST})
+tablegen(LLVM BPFGenMCCodeEmitter.inc -gen-emitter ${EXTRA_FEAT_LIST})
+tablegen(LLVM BPFGenRegisterInfo.inc -gen-register-info ${EXTRA_FEAT_LIST})
+tablegen(LLVM BPFGenSubtargetInfo.inc -gen-subtarget ${EXTRA_FEAT_LIST})
+tablegen(LLVM BPFGenGlobalISel.inc -gen-global-isel ${EXTRA_FEAT_LIST})
+tablegen(LLVM BPFGenRegisterBank.inc -gen-register-bank ${EXTRA_FEAT_LIST})
 
 add_public_tablegen_target(BPFCommonTableGen)
 

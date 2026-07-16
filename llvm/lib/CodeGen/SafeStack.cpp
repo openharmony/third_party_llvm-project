@@ -824,11 +824,13 @@ bool SafeStack::run() {
   // FIXME: implement weaker forms of stack protector.
   if (F.hasFnAttribute(Attribute::StackProtect) ||
       F.hasFnAttribute(Attribute::StackProtectStrong) ||
+#ifndef OHOS_LLVM
+      F.hasFnAttribute(Attribute::StackProtectReq)) {
+#else /* OHOS_LLVM */
       F.hasFnAttribute(Attribute::StackProtectReq) ||
-      // OHOS_LOCAL begin
       F.hasFnAttribute(Attribute::StackProtectRetStrong) ||
       F.hasFnAttribute(Attribute::StackProtectRetReq)) {
-      // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
     Value *StackGuard = getStackGuard(IRB, F);
     StackGuardSlot = IRB.CreateAlloca(StackPtrTy, nullptr);
     IRB.CreateStore(StackGuard, StackGuardSlot);

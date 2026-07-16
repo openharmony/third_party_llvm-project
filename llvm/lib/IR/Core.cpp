@@ -4306,7 +4306,7 @@ LLVMBuildCallWithOperandBundles(LLVMBuilderRef B, LLVMTypeRef Ty,
       FTy, unwrap(Fn), ArrayRef(unwrap(Args), NumArgs), OBs, Name));
 }
 
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 LLVMValueRef LLVMBuildCall3(LLVMBuilderRef B, LLVMTypeRef Ty, LLVMValueRef Fn,
                             LLVMValueRef *Args, unsigned NumArgs,
                             const char *Name, LLVMValueRef *deoptVals,
@@ -4323,7 +4323,7 @@ LLVMValueRef LLVMBuildCall3(LLVMBuilderRef B, LLVMTypeRef Ty, LLVMValueRef Fn,
                                     {deoptBundle}, // ArrayRef<OperandBundleDef>
                                     Name));
 }
-#endif
+#endif /* OHOS_LLVM && ARK_GC_SUPPORT */
 
 LLVMValueRef LLVMBuildSelect(LLVMBuilderRef B, LLVMValueRef If,
                              LLVMValueRef Then, LLVMValueRef Else,

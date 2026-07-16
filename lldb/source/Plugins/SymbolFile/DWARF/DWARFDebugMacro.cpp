@@ -13,18 +13,22 @@
 
 #include "DWARFDataExtractor.h"
 
+#ifdef OHOS_LLVM
 #include <cassert>
+#endif /* OHOS_LLVM */
 
 using namespace lldb_private;
 using namespace lldb_private::dwarf;
 using namespace lldb_private::plugin::dwarf;
 
+#ifdef OHOS_LLVM
 uint64_t DWARFStrOffsetsInfo::GetOffset(uint64_t index) const {
   assert(IsValid());
   // LLDB doesn't support DWARF64, so we always have item size of 4.
   uint64_t offset = cu_offset + 4 * index;
   return data->GetU32(&offset);
 }
+#endif /* OHOS_LLVM */
 
 DWARFDebugMacroHeader
 DWARFDebugMacroHeader::ParseHeader(const DWARFDataExtractor &debug_macro_data,
@@ -67,6 +71,76 @@ void DWARFDebugMacroHeader::SkipOperandTable(
   }
 }
 
+#ifndef OHOS_LLVM
+void DWARFDebugMacroEntry::ReadMacroEntries(
+    const DWARFDataExtractor &debug_macro_data,
+    const DWARFDataExtractor &debug_str_data, const bool offset_is_64_bit,
+    lldb::offset_t *offset, SymbolFileDWARF *sym_file_dwarf,
+    DebugMacrosSP &debug_macros_sp) {
+  llvm::dwarf::MacroEntryType type =
+      static_cast<llvm::dwarf::MacroEntryType>(debug_macro_data.GetU8(offset));
+  while (type != 0) {
+    lldb::offset_t new_offset = 0, str_offset = 0;
+    uint32_t line = 0;
+    const char *macro_str = nullptr;
+    uint32_t debug_line_file_idx = 0;
+
+    switch (type) {
+    case DW_MACRO_define:
+    case DW_MACRO_undef:
+      line = debug_macro_data.GetULEB128(offset);
+      macro_str = debug_macro_data.GetCStr(offset);
+      if (type == DW_MACRO_define)
+        debug_macros_sp->AddMacroEntry(
+            DebugMacroEntry::CreateDefineEntry(line, macro_str));
+      else
+        debug_macros_sp->AddMacroEntry(
+            DebugMacroEntry::CreateUndefEntry(line, macro_str));
+      break;
+    case DW_MACRO_define_strp:
+    case DW_MACRO_undef_strp:
+      line = debug_macro_data.GetULEB128(offset);
+      if (offset_is_64_bit)
+        str_offset = debug_macro_data.GetU64(offset);
+      else
+        str_offset = debug_macro_data.GetU32(offset);
+      macro_str = debug_str_data.GetCStr(&str_offset);
+      if (type == DW_MACRO_define_strp)
+        debug_macros_sp->AddMacroEntry(
+            DebugMacroEntry::CreateDefineEntry(line, macro_str));
+      else
+        debug_macros_sp->AddMacroEntry(
+            DebugMacroEntry::CreateUndefEntry(line, macro_str));
+      break;
+    case DW_MACRO_start_file:
+      line = debug_macro_data.GetULEB128(offset);
+      debug_line_file_idx = debug_macro_data.GetULEB128(offset);
+      debug_macros_sp->AddMacroEntry(
+          DebugMacroEntry::CreateStartFileEntry(line, debug_line_file_idx));
+      break;
+    case DW_MACRO_end_file:
+      // This operation has no operands.
+      debug_macros_sp->AddMacroEntry(DebugMacroEntry::CreateEndFileEntry());
+      break;
+    case DW_MACRO_import:
+      if (offset_is_64_bit)
+        new_offset = debug_macro_data.GetU64(offset);
+      else
+        new_offset = debug_macro_data.GetU32(offset);
+      debug_macros_sp->AddMacroEntry(DebugMacroEntry::CreateIndirectEntry(
+          sym_file_dwarf->ParseDebugMacros(&new_offset)));
+      break;
+    default:
+      // TODO: Add support for other standard operations.
+      // TODO: Provide mechanism to hook handling of non-standard/extension
+      // operands.
+      return;
+    }
+    type = static_cast<llvm::dwarf::MacroEntryType>(
+        debug_macro_data.GetU8(offset));
+  }
+}
+#else /* OHOS_LLVM */
 void DWARFDebugMacroEntry::ReadMacroEntries(
     const DWARFDataExtractor &debug_macro_data,
     const DWARFDataExtractor &debug_str_data,
@@ -152,3 +226,4 @@ void DWARFDebugMacroEntry::ReadMacroEntries(
         debug_macro_data.GetU8(offset));
   }
 }
+#endif /* OHOS_LLVM */

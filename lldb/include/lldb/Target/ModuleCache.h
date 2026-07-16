@@ -17,7 +17,9 @@
 #include "lldb/Utility/Status.h"
 
 #include <functional>
+#ifdef OHOS_LLVM
 #include <mutex>
+#endif /* OHOS_LLVM */
 #include <string>
 #include <unordered_map>
 
@@ -68,7 +70,9 @@ private:
              bool *did_create_ptr);
 
   std::unordered_map<std::string, lldb::ModuleWP> m_loaded_modules;
+#ifdef OHOS_LLVM
   std::recursive_mutex m_cache_mutex;
+#endif /* OHOS_LLVM */
 };
 
 } // namespace lldb_private

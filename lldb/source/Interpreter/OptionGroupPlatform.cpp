@@ -30,8 +30,10 @@ PlatformSP OptionGroupPlatform::CreatePlatformWithOptions(
           m_platform_name);
     }
     if (platform_sp) {
+#ifdef OHOS_LLVM
       if (GetContainer())
         platform_sp->SetContainer(true);
+#endif /* OHOS_LLVM */
       if (platform_arch.IsValid() &&
           !platform_sp->IsCompatibleArchitecture(
               arch, {}, ArchSpec::CompatibleMatch, &platform_arch)) {
@@ -65,10 +67,12 @@ PlatformSP OptionGroupPlatform::CreatePlatformWithOptions(
 void OptionGroupPlatform::OptionParsingStarting(
     ExecutionContext *execution_context) {
   m_platform_name.clear();
+#ifdef OHOS_LLVM
+  m_container = false;
+#endif /* OHOS_LLVM */
   m_sdk_sysroot.clear();
   m_sdk_build.clear();
   m_os_version = llvm::VersionTuple();
-  m_container = false;
 }
 
 static constexpr OptionDefinition g_option_table[] = {
@@ -144,10 +148,12 @@ bool OptionGroupPlatform::PlatformMatches(
       platform_sp->GetSDKRootDirectory() != m_sdk_sysroot)
     return false;
 
-  if (!m_os_version.empty() && platform_sp->GetOSVersion() != m_os_version)
-    return false;
-
+#ifdef OHOS_LLVM
   if (m_container != platform_sp->GetContainer())
+    return false;
+#endif /* OHOS_LLVM */
+
+  if (!m_os_version.empty() && platform_sp->GetOSVersion() != m_os_version)
     return false;
 
   return true;

@@ -485,7 +485,7 @@ bool X86TargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
       HasCRC32 = true;
     } else if (Feature == "+x87") {
       HasX87 = true;
-      // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
     } else if (Feature == "+fixed-r8") {
       ReservedRRegs.insert("r8");
     } else if (Feature == "+fixed-r9") {
@@ -502,7 +502,7 @@ bool X86TargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
       ReservedRRegs.insert("r14");
     } else if (Feature == "+fixed-r15") {
       ReservedRRegs.insert("r15");
-      // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
     } else if (Feature == "+fullbf16") {
       HasFullBFloat16 = true;
     } else if (Feature == "+egpr") {
@@ -1253,7 +1253,7 @@ bool X86TargetInfo::isValidFeatureName(StringRef Name) const {
       .Case("nf", true)
       .Case("cf", true)
       .Case("zu", true)
-      // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
       .Case("fixed-r8", getTriple().getArch() == llvm::Triple::x86_64)
       .Case("fixed-r9", getTriple().getArch() == llvm::Triple::x86_64)
       .Case("fixed-r10", getTriple().getArch() == llvm::Triple::x86_64)
@@ -1262,7 +1262,7 @@ bool X86TargetInfo::isValidFeatureName(StringRef Name) const {
       .Case("fixed-r13", getTriple().getArch() == llvm::Triple::x86_64)
       .Case("fixed-r14", getTriple().getArch() == llvm::Triple::x86_64)
       .Case("fixed-r15", getTriple().getArch() == llvm::Triple::x86_64)
-      // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
       .Default(false);
 }
 
@@ -1390,7 +1390,7 @@ bool X86TargetInfo::hasFeature(StringRef Feature) const {
       .Case("nf", HasNF)
       .Case("cf", HasCF)
       .Case("zu", HasZU)
-      // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
       .Case("fixed-r8", ReservedRRegs.contains("r8"))
       .Case("fixed-r9", ReservedRRegs.contains("r9"))
       .Case("fixed-r10", ReservedRRegs.contains("r10"))
@@ -1399,7 +1399,7 @@ bool X86TargetInfo::hasFeature(StringRef Feature) const {
       .Case("fixed-r13", ReservedRRegs.contains("r13"))
       .Case("fixed-r14", ReservedRRegs.contains("r14"))
       .Case("fixed-r15", ReservedRRegs.contains("r15"))
-      // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
       .Case("branch-hint", HasBranchHint)
       .Default(false);
 }

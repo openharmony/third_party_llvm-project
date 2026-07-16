@@ -1,8 +1,16 @@
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 lldb_tablegen(StructuredDataDarwinLogProperties.inc -gen-lldb-property-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE StructuredDataDarwinLogProperties.td
   TARGET LLDBPluginStructuredDataDarwinLogPropertiesGen)
 
 lldb_tablegen(StructuredDataDarwinLogPropertiesEnum.inc -gen-lldb-property-enum-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE StructuredDataDarwinLogProperties.td
   TARGET LLDBPluginStructuredDataDarwinLogPropertiesEnumGen)
 

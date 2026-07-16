@@ -71,8 +71,10 @@
 #include "llvm/Support/Process.h"
 #include "llvm/Support/ThreadPool.h"
 #include "llvm/Support/Threading.h"
-#include "llvm/Support/raw_ostream.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+#include "llvm/Support/raw_ostream.h"
 
 #include <chrono>
 #include <cstdio>
@@ -358,7 +360,9 @@ FormatEntity::Entry Debugger::GetThreadFormat() const {
 }
 
 FormatEntity::Entry Debugger::GetThreadStopFormat() const {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_DEBUGGER);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   constexpr uint32_t idx = ePropertyThreadStopFormat;
   return GetPropertyAtIndexAs<FormatEntity::Entry>(idx, {});
 }
@@ -2119,7 +2123,9 @@ lldb::thread_result_t Debugger::DefaultEventHandler() {
   while (!done) {
     EventSP event_sp;
     if (listener_sp->GetEvent(event_sp, std::nullopt)) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_DEBUGGER);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
       if (event_sp) {
         Broadcaster *broadcaster = event_sp->GetBroadcaster();
         if (broadcaster) {

@@ -56,11 +56,15 @@ TargetFrameLowering::getFrameIndexReference(const MachineFunction &MF, int FI,
   // something different.
   FrameReg = RI->getFrameRegister(MF);
 
-  // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+  return StackOffset::getFixed(MFI.getObjectOffset(FI) + MFI.getStackSize() -
+                               getOffsetOfLocalArea() +
+                               MFI.getOffsetAdjustment());
+#else /* OHOS_LLVM */
   return StackOffset::getFixed(MFI.getObjectOffset(FI) + MFI.getStackSize() -
                                getOffsetOfLocalArea(MF.getFunction().getCallingConv()) +
                                MFI.getOffsetAdjustment());
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 }
 
 /// Returns the offset from the stack pointer to the slot of the specified
@@ -220,7 +224,7 @@ void TargetFrameLowering::restoreCalleeSavedRegister(
   }
 }
 
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 int TargetFrameLowering::GetFrameReserveSize(MachineFunction &MF) const
 {
     int slotSize = sizeof(uint64_t);

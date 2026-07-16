@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //===-- HostInfoOHOS.h ---------------------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -30,3 +31,4 @@ protected:
 } // end of namespace lldb_private
 
 #endif // #ifndef lldb_Host_ohos_HostInfoOHOS_h_
+#endif /* OHOS_LLVM */

@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //===-- AArch64StackProtectorRetLowering.cpp --------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -11,7 +12,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-/// OHOS_LOCAL begin
 #include "AArch64InstrInfo.h"
 #include "AArch64MachineFunctionInfo.h"
 #include "AArch64RegisterInfo.h"
@@ -110,4 +110,4 @@ void AArch64StackProtectorRetLowering::saveStackProtectorRetRegister(
 
   CSI.insert(CSI.begin(), CalleeSavedInfo(Reg));
 }
-/// OHOS_LOCAL end
+#endif /* OHOS_LLVM */

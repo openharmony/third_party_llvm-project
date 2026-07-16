@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //===-- StackProtectorRetLowering.cpp ---------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -13,7 +14,6 @@
 // 
 //===----------------------------------------------------------------------===//
 
-/// OHOS_LOCAL begin
 #include "llvm/CodeGen/StackProtectorRetLowering.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
@@ -117,4 +117,4 @@ void StackProtectorRetLowering::insertStackProtectorRets(MachineFunction &MF) co
     MF.front().addLiveIn(Reg);
   }
 }
-/// OHOS_LOCAL end
+#endif /* OHOS_LLVM */

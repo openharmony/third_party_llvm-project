@@ -65,11 +65,10 @@
 #include <utility>
 #include <vector>
 
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 #include <string>
 #include <climits>
 #endif
-
 using namespace llvm;
 
 #define DEBUG_TYPE "prologepilog"
@@ -109,7 +108,7 @@ class PEIImpl {
 
   void calculateCallFrameInfo(MachineFunction &MF);
   void calculateSaveRestoreBlocks(MachineFunction &MF);
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
   void RecordCalleeSaveRegisterAndOffset(MachineFunction &MF, const std::vector<CalleeSavedInfo> &CSI);
 #endif
   void spillCalleeSavedRegs(MachineFunction &MF);
@@ -232,11 +231,11 @@ bool PEIImpl::run(MachineFunction &MF) {
   const TargetRegisterInfo *TRI = MF.getSubtarget().getRegisterInfo();
   const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   const StackProtectorRetLowering *SPRL = TFI->getStackProtectorRet();
   if (SPRL)
     SPRL->setupStackProtectorRet(MF);
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   RS = TRI->requiresRegisterScavenging(MF) ? new RegScavenger() : nullptr;
   FrameIndexVirtualScavenging = TRI->requiresFrameIndexScavenging(MF);
@@ -278,11 +277,11 @@ bool PEIImpl::run(MachineFunction &MF) {
   if (!F.hasFnAttribute(Attribute::Naked))
     insertPrologEpilogCode(MF);
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   // Add StackProtectorRets if using them
   if (SPRL)
     SPRL->insertStackProtectorRets(MF);
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   // Reinsert stashed debug values at the start of the entry blocks.
   for (auto &I : EntryDbgValues)
@@ -373,7 +372,7 @@ bool PEIImpl::run(MachineFunction &MF) {
   RestoreBlocks.clear();
   MFI.setSavePoint(nullptr);
   MFI.setRestorePoint(nullptr);
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
   std::vector<CalleeSavedInfo> &CSI = MFI.getCalleeSavedInfo();
   RecordCalleeSaveRegisterAndOffset(MF, CSI);
 #endif
@@ -446,11 +445,13 @@ void PEIImpl::calculateCallFrameInfo(MachineFunction &MF) {
 /// Compute the sets of entry and return blocks for saving and restoring
 /// callee-saved registers, and placing prolog and epilog code.
 void PEIImpl::calculateSaveRestoreBlocks(MachineFunction &MF) {
-  // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+  const MachineFrameInfo &MFI = MF.getFrameInfo();
+#else /* OHOS_LLVM */
   MachineFrameInfo &MFI = MF.getFrameInfo();
   const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
   const StackProtectorRetLowering *SPRL = TFI->getStackProtectorRet();
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   // Even when we do not change any CSR, we still want to insert the
   // prologue and epilogue of the function.
@@ -467,7 +468,9 @@ void PEIImpl::calculateSaveRestoreBlocks(MachineFunction &MF) {
     if (!RestoreBlock->succ_empty() || RestoreBlock->isReturnBlock())
       RestoreBlocks.push_back(RestoreBlock);
 
-    // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+    return;
+#else /* OHOS_LLVM */
     // If we are adding stack-protector-rets ensure we can find a available
     // register for CFI verification.
     if (SPRL && !SPRL->determineStackProtectorRetRegister(MF)) {
@@ -477,9 +480,9 @@ void PEIImpl::calculateSaveRestoreBlocks(MachineFunction &MF) {
       MFI.setSavePoint(nullptr);
       MFI.setRestorePoint(nullptr);
     } else {
-    // OHOS_LOCAL end
       return;
-    } // OHOS_LOCAL
+    }
+#endif /* OHOS_LLVM */
   }
 
   // Save refs to entry and return blocks.
@@ -491,10 +494,10 @@ void PEIImpl::calculateSaveRestoreBlocks(MachineFunction &MF) {
       RestoreBlocks.push_back(&MBB);
   }
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   if (SPRL)
     SPRL->determineStackProtectorRetRegister(MF);
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 }
 
 static void assignCalleeSavedSpillSlots(MachineFunction &F,
@@ -532,10 +535,11 @@ static void assignCalleeSavedSpillSlots(MachineFunction &F,
 
   const TargetFrameLowering *TFI = F.getSubtarget().getFrameLowering();
   MachineFrameInfo &MFI = F.getFrameInfo();
-  // OHOS_LOCAL begin
+
+#ifdef OHOS_LLVM
   if (TFI->getStackProtectorRet())
     TFI->getStackProtectorRet()->saveStackProtectorRetRegister(F, CSI);
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   if (!TFI->assignCalleeSavedSpillSlots(F, RegInfo, CSI, MinCSFrameIndex,
                                         MaxCSFrameIndex)) {
     // If target doesn't implement this, use generic code.
@@ -702,7 +706,7 @@ static void insertCSRRestores(MachineBasicBlock &RestoreBlock,
   }
 }
 
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 void PEIImpl::RecordCalleeSaveRegisterAndOffset(
     MachineFunction &MF, const std::vector<CalleeSavedInfo> &CSI) {
   MachineModuleInfo &MMI = MF.getMMI();
@@ -787,14 +791,14 @@ void PEIImpl::spillCalleeSavedRegs(MachineFunction &MF) {
   // Assign stack slots for any callee-saved registers that must be spilled.
   assignCalleeSavedSpillSlots(MF, SavedRegs, MinCSFrameIndex, MaxCSFrameIndex);
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   bool NeedPadding = F.getMetadata("use-ark-frame") != nullptr;
   NeedPadding &= TFI->supportsArkSpills();
   if (NeedPadding) {
     auto FrameSize = MF.getArkFrameSize();
     MFI.CreateFixedObject(FrameSize, -FrameSize, false);
   }
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   // Add the code to save and restore the callee saved registers.
   if (!F.hasFnAttribute(Attribute::Naked)) {
@@ -978,10 +982,12 @@ void PEIImpl::calculateFrameObjectOffsets(MachineFunction &MF) {
   // Start at the beginning of the local area.
   // The Offset is the distance from the stack top in the direction
   // of stack growth -- so it's always nonnegative.
-  // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+  int LocalAreaOffset = TFI.getOffsetOfLocalArea();
+#else /* OHOS_LLVM */
   auto CC = MF.getFunction().getCallingConv();
   int LocalAreaOffset = TFI.getOffsetOfLocalArea(CC);
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   if (StackGrowsDown)
     LocalAreaOffset = -LocalAreaOffset;
   assert(LocalAreaOffset >= 0
@@ -1047,7 +1053,7 @@ void PEIImpl::calculateFrameObjectOffsets(MachineFunction &MF) {
   // stack area.
   int64_t FixedCSEnd = Offset;
 
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
   int CalleeSavedFrameSize = 0;
   Triple::ArchType archType = TFI.GetArkSupportTarget();
   if (archType == Triple::aarch64 && TFI.hasFP(MF)) {
@@ -1174,7 +1180,9 @@ void PEIImpl::calculateFrameObjectOffsets(MachineFunction &MF) {
 
   // Make sure that the stack protector comes before the local variables on the
   // stack.
+#ifdef OHOS_LLVM
   Function &F = MF.getFunction(); // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   SmallSet<int, 16> ProtectedObjs;
   if (MFI.hasStackProtectorIndex()) {
     int StackProtectorFI = MFI.getStackProtectorIndex();
@@ -1244,13 +1252,13 @@ void PEIImpl::calculateFrameObjectOffsets(MachineFunction &MF) {
       llvm_unreachable("Found protected stack objects not pre-allocated by "
                        "LocalStackSlotPass.");
 
-    // OHOS_LOCAL begin
     AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
     AssignProtectedObjSet(SmallArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
     AssignProtectedObjSet(AddrOfObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
+#ifdef OHOS_LLVM
   } else if (F.hasFnAttribute(Attribute::StackProtectRetReq) ||
              F.hasFnAttribute(Attribute::StackProtectRetStrong)) {
     StackObjSet LargeArrayObjs;
@@ -1286,7 +1294,6 @@ void PEIImpl::calculateFrameObjectOffsets(MachineFunction &MF) {
       }
       llvm_unreachable("Unexpected SSPLayoutKind.");
     }
-    // OHOS_LOCAL end
 
     AssignProtectedObjSet(LargeArrayObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
@@ -1294,6 +1301,7 @@ void PEIImpl::calculateFrameObjectOffsets(MachineFunction &MF) {
                           Offset, MaxAlign);
     AssignProtectedObjSet(AddrOfObjs, ProtectedObjs, MFI, StackGrowsDown,
                           Offset, MaxAlign);
+#endif /* OHOS_LLVM */
   }
 
   SmallVector<int, 8> ObjectsToAllocate;
@@ -1313,10 +1321,11 @@ void PEIImpl::calculateFrameObjectOffsets(MachineFunction &MF) {
       continue;
     if (ProtectedObjs.count(i))
       continue;
-    // OHOS_LOCAL begin
+
+#ifdef OHOS_LLVM
     if (MFI.isArkSpillSlotObjectIndex(i))
       continue;
-    // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
     // Only allocate objects on the default stack.
     if (MFI.getStackID(i) != TargetStackID::Default)
       continue;
@@ -1710,9 +1719,15 @@ bool PEIImpl::replaceFrameIndexDebugInstr(MachineFunction &MF, MachineInstr &MI,
            "DBG_VALUE machine instruction");
     Register Reg;
     MachineOperand &Offset = MI.getOperand(OpIdx + 1);
+#ifndef OHOS_LLVM
+    StackOffset refOffset = TFI->getFrameIndexReferencePreferSP(
+        MF, MI.getOperand(OpIdx).getIndex(), Reg, /*IgnoreSPUpdates*/ false);
+    assert(!refOffset.getScalable() &&
+           "Frame offsets with a scalable component are not supported");
+    Offset.setImm(Offset.getImm() + refOffset.getFixed() + SPAdj);
+#else /* OHOS_LLVM */
     MachineFrameInfo &MFI = MF.getFrameInfo(); // OHOS_LOCAL
     int FI = MI.getOperand(OpIdx).getIndex();
-    // OHOS_LOCAL begin
     if (!MFI.isArkSpillSlotObjectIndex(FI) || !TFI->supportsArkSpills()) {
       StackOffset refOffset = TFI->getFrameIndexReferencePreferSP(
           MF, FI, Reg, /*IgnoreSPUpdates*/ false);
@@ -1725,7 +1740,7 @@ bool PEIImpl::replaceFrameIndexDebugInstr(MachineFunction &MF, MachineInstr &MI,
       auto Adaptation = TFI->getArkFrameAdaptationOffset(MF);
       Offset.setImm(MFI.getObjectOffset(FI) + Adaptation);
     }
-    // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
     MI.getOperand(OpIdx).ChangeToRegister(Reg, false /*isDef*/);
     return true;
   }

@@ -1,8 +1,16 @@
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 lldb_tablegen(SymbolFileDWARFProperties.inc -gen-lldb-property-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE SymbolFileDWARFProperties.td
   TARGET LLDBPluginSymbolFileDWARFPropertiesGen)
 
 lldb_tablegen(SymbolFileDWARFPropertiesEnum.inc -gen-lldb-property-enum-defs
+  ${EXTRA_FEAT_LIST}
   SOURCE SymbolFileDWARFProperties.td
   TARGET LLDBPluginSymbolFileDWARFPropertiesEnumGen)
 

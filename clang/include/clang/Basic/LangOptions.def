@@ -358,9 +358,14 @@ ENUM_LANGOPT(ExternDeclNoDLLStorageClassVisibility, VisibilityFromDLLStorageClas
 LANGOPT(SemanticInterposition        , 1, 0, Benign, "semantic interposition")
 LANGOPT(HalfNoSemanticInterposition, 1, 0, Benign,
         "Like -fno-semantic-interposition but don't use local aliases")
+#ifdef OHOS_LLVM
 /// OHOS_LOCAL
 ENUM_LANGOPT(StackProtector, StackProtectorMode, 3, SSPOff, NotCompatible,
              "stack protector mode")
+#else
+ENUM_LANGOPT(StackProtector, StackProtectorMode, 2, SSPOff, NotCompatible,
+             "stack protector mode")
+#endif
 ENUM_LANGOPT(TrivialAutoVarInit, TrivialAutoVarInitKind, 2, TrivialAutoVarInitKind::Uninitialized, Benign,
              "trivial automatic variable initialization")
 VALUE_LANGOPT(TrivialAutoVarInitStopAfter, 32, 0, Benign,

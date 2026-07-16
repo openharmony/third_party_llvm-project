@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //== PrintSensitiveInfoChecker.cpp ------------------------------*- C++ -*--==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -309,3 +310,4 @@ void ento::registerPrintSensitiveInfoChecker(CheckerManager &mgr) {
 bool ento::shouldRegisterPrintSensitiveInfoChecker(const CheckerManager &mgr) {
     return true;
 }
+#endif /* OHOS_LLVM */

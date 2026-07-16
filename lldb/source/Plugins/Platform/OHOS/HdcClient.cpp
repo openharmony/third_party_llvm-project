@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //===-- HdcClient.cpp -------------------------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -30,7 +31,9 @@
 #include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/StreamString.h"
 #include "lldb/Utility/Timeout.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 #if defined(_WIN32)
 #include <winsock.h>
 #else
@@ -288,7 +291,9 @@ Status HdcClient::DeletePortForwarding(const uint16_t local_port,
 
 Status HdcClient::LocalTransferFile(const char *direction, const FileSpec &src,
                                     const FileSpec &dst) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_HDC);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 #if defined(__OHOS__)
   Log *log = GetLog(LLDBLog::Platform);
   LLDB_LOGF(log, "HdcClient::LocalTransferFile src is %s, dst is %s ",
@@ -954,3 +959,4 @@ Status HdcClient::Shell(const char *command, milliseconds timeout,
   (*output) = std::string(message.data(), message.size());
   return error;
 }
+#endif /* OHOS_LLVM */

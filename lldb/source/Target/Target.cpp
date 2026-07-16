@@ -294,7 +294,9 @@ const lldb::ProcessSP &Target::CreateProcess(ListenerSP listener_sp,
                                              llvm::StringRef plugin_name,
                                              const FileSpec *crash_file,
                                              bool can_connect) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_TARGET);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   if (!listener_sp)
     listener_sp = GetDebugger().GetListener();
   DeleteCurrentProcess();
@@ -485,7 +487,9 @@ BreakpointSP Target::CreateBreakpoint(const FileSpecList *containingModules,
                                       LazyBool skip_prologue, bool internal,
                                       bool hardware,
                                       LazyBool move_to_nearest_code) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_BREAKPOINTS);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   FileSpec remapped_file;
   std::optional<llvm::StringRef> removed_prefix_opt =
       GetSourcePathMap().ReverseRemapPath(file, remapped_file);
@@ -539,7 +543,9 @@ BreakpointSP Target::CreateBreakpoint(const FileSpecList *containingModules,
 
 BreakpointSP Target::CreateBreakpoint(lldb::addr_t addr, bool internal,
                                       bool hardware) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_BREAKPOINTS);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   Address so_addr;
 
   // Check for any reason we want to move this breakpoint to other address.
@@ -560,7 +566,9 @@ BreakpointSP Target::CreateBreakpoint(lldb::addr_t addr, bool internal,
 
 BreakpointSP Target::CreateBreakpoint(const Address &addr, bool internal,
                                       bool hardware) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_BREAKPOINTS);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   SearchFilterSP filter_sp(
       new SearchFilterForUnconstrainedSearches(shared_from_this()));
   BreakpointResolverSP resolver_sp(
@@ -572,7 +580,9 @@ lldb::BreakpointSP
 Target::CreateAddressInModuleBreakpoint(lldb::addr_t file_addr, bool internal,
                                         const FileSpec &file_spec,
                                         bool request_hardware) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_BREAKPOINTS);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   SearchFilterSP filter_sp(
       new SearchFilterForUnconstrainedSearches(shared_from_this()));
   BreakpointResolverSP resolver_sp(new BreakpointResolverAddress(
@@ -796,7 +806,9 @@ BreakpointSP Target::CreateBreakpoint(SearchFilterSP &filter_sp,
 }
 
 void Target::AddBreakpoint(lldb::BreakpointSP bp_sp, bool internal) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_BREAKPOINTS);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   if (!bp_sp)
     return;
   if (internal)
@@ -1098,7 +1110,9 @@ void Target::EnableAllowedBreakpoints() {
 }
 
 bool Target::RemoveBreakpointByID(break_id_t break_id) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_BREAKPOINTS);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   Log *log = GetLog(LLDBLog::Breakpoints);
   LLDB_LOGF(log, "Target::%s (break_id = %i, internal = %s)\n", __FUNCTION__,
             break_id, LLDB_BREAK_ID_IS_INTERNAL(break_id) ? "yes" : "no");
@@ -1517,7 +1531,9 @@ bool Target::IgnoreWatchpointByID(lldb::watch_id_t watch_id,
 }
 
 ModuleSP Target::GetExecutableModule() {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_TARGET);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   std::lock_guard<std::recursive_mutex> lock(m_images.GetMutex());
 
   // Search for the first executable in the module list.
@@ -1852,7 +1868,9 @@ void Target::NotifyModulesRemoved(lldb_private::ModuleList &module_list) {
 }
 
 void Target::ModulesDidLoad(ModuleList &module_list) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_TARGET);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   const size_t num_images = module_list.GetSize();
   if (m_valid && num_images) {
     for (size_t idx = 0; idx < num_images; ++idx) {
@@ -3558,7 +3576,9 @@ llvm::Expected<TraceSP> Target::GetTraceOrCreate() {
 }
 
 Status Target::Attach(ProcessAttachInfo &attach_info, Stream *stream) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_TARGET);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   Progress attach_progress("Waiting to attach to process");
   m_stats.SetLaunchOrAttachTime();
   auto state = eStateInvalid;
@@ -3788,7 +3808,9 @@ bool Target::ResetSignalFromDummy(UnixSignalsSP signals_sp,
 
 void Target::UpdateSignalsFromDummy(UnixSignalsSP signals_sp,
                                     StreamSP warning_stream_sp) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_TARGET);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   if (!signals_sp)
     return;
 

@@ -12,8 +12,7 @@
 #include "llvm/ExecutionEngine/Orc/Shared/OrcRTBridge.h"
 #include "llvm/Support/WindowsError.h"
 
-// OHOS_LOCAL
-#if defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)
+#if defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && (!defined(OHOS_LLVM) || !defined(__OHOS__))
 #include <fcntl.h>
 #include <sys/mman.h>
 #if defined(__MVS__)
@@ -207,16 +206,14 @@ InProcessMemoryMapper::~InProcessMemoryMapper() {
 SharedMemoryMapper::SharedMemoryMapper(ExecutorProcessControl &EPC,
                                        SymbolAddrs SAs, size_t PageSize)
     : EPC(EPC), SAs(SAs), PageSize(PageSize) {
-// OHOS_LOCAL
-#if (!defined(LLVM_ON_UNIX) || defined(__ANDROID__) || defined(__OHOS__)) && !defined(_WIN32)
+#if (!defined(LLVM_ON_UNIX) || defined(__ANDROID__) || (defined(OHOS_LLVM) && defined(__OHOS__))) && !defined(_WIN32)
   llvm_unreachable("SharedMemoryMapper is not supported on this platform yet");
 #endif
 }
 
 Expected<std::unique_ptr<SharedMemoryMapper>>
 SharedMemoryMapper::Create(ExecutorProcessControl &EPC, SymbolAddrs SAs) {
-// OHOS_LOCAL
-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)) || defined(_WIN32)
+#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && (!defined(OHOS_LLVM) || !defined(__OHOS__))) || defined(_WIN32)
   auto PageSize = sys::Process::getPageSize();
   if (!PageSize)
     return PageSize.takeError();
@@ -231,8 +228,7 @@ SharedMemoryMapper::Create(ExecutorProcessControl &EPC, SymbolAddrs SAs) {
 
 void SharedMemoryMapper::reserve(size_t NumBytes,
                                  OnReservedFunction OnReserved) {
-// OHOS_LOCAL
-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)) || defined(_WIN32)
+#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && (!defined(OHOS_LLVM) || !defined(__OHOS__))) || defined(_WIN32)
 
   int SharedMemoryId = -1;
   EPC.callSPSWrapperAsync<
@@ -401,8 +397,7 @@ void SharedMemoryMapper::deinitialize(
 
 void SharedMemoryMapper::release(ArrayRef<ExecutorAddr> Bases,
                                  OnReleasedFunction OnReleased) {
-// OHOS_LOCAL
-#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)) || defined(_WIN32)
+#if (defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && (!defined(OHOS_LLVM) || !defined(__OHOS__))) || defined(_WIN32)
   Error Err = Error::success();
 
   {
@@ -458,8 +453,7 @@ SharedMemoryMapper::~SharedMemoryMapper() {
   std::lock_guard<std::mutex> Lock(Mutex);
   for (const auto &R : Reservations) {
 
-// OHOS_LOCAL
-#if defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && !defined(__OHOS__)
+#if defined(LLVM_ON_UNIX) && !defined(__ANDROID__) && (!defined(OHOS_LLVM) || !defined(__OHOS__))
 
 #if defined(__MVS__)
     shmdt(R.second.LocalAddr);

@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //== SignalHandlerChecker.cpp ------------------------------*- C++ -*--==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -249,3 +250,4 @@ void ento::registerSignalHandlerChecker(CheckerManager &mgr) {
 bool ento::shouldRegisterSignalHandlerChecker(const CheckerManager &mgr) {
     return true;
 }
+#endif /* OHOS_LLVM */

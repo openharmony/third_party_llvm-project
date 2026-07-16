@@ -44,7 +44,9 @@ protected:
   bool InRange();
   lldb::FrameComparison CompareCurrentFrameToStartFrame();
   bool InSymbol();
+#ifdef OHOS_LLVM
   bool MaybeAArch32Or64FunctionTail();
+#endif /* OHOS_LLVM */
   void DumpRanges(Stream *s);
 
   Disassembler *GetDisassembler();

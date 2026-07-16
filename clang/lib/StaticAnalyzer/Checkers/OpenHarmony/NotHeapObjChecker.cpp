@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //== NotHeapObjChecker.cpp ------------------------------*- C++ -*--==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -124,3 +125,4 @@ void ento::registerNotHeapObjChecker(CheckerManager &Mgr) {
 bool ento::shouldRegisterNotHeapObjChecker(const CheckerManager &mgr) {
   return true;
 }
+#endif /* OHOS_LLVM */

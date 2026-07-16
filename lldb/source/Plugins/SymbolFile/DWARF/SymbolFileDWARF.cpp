@@ -1283,8 +1283,12 @@ bool SymbolFileDWARF::ParseLineTable(CompileUnit &comp_unit) {
 }
 
 lldb_private::DebugMacrosSP
+#ifndef OHOS_LLVM
+SymbolFileDWARF::ParseDebugMacros(lldb::offset_t *offset) {
+#else /* OHOS_LLVM */
 SymbolFileDWARF::ParseDebugMacros(lldb::offset_t *offset,
                                   const DWARFStrOffsetsInfo &str_offsets_info) {
+#endif /* OHOS_LLVM */
   auto iter = m_debug_macros_map.find(*offset);
   if (iter != m_debug_macros_map.end())
     return iter->second;
@@ -1299,9 +1303,15 @@ SymbolFileDWARF::ParseDebugMacros(lldb::offset_t *offset,
 
   const DWARFDebugMacroHeader &header =
       DWARFDebugMacroHeader::ParseHeader(debug_macro_data, offset);
+#ifndef OHOS_LLVM
+  DWARFDebugMacroEntry::ReadMacroEntries(
+      debug_macro_data, m_context.getOrLoadStrData(), header.OffsetIs64Bit(),
+      offset, this, debug_macros_sp);
+#else /* OHOS_LLVM */
   DWARFDebugMacroEntry::ReadMacroEntries(
       debug_macro_data, m_context.getOrLoadStrData(), str_offsets_info,
       header.OffsetIs64Bit(), offset, this, debug_macros_sp);
+#endif /* OHOS_LLVM */
 
   return debug_macros_sp;
 }
@@ -1313,7 +1323,9 @@ bool SymbolFileDWARF::ParseDebugMacros(CompileUnit &comp_unit) {
   if (dwarf_cu == nullptr)
     return false;
 
+#ifdef OHOS_LLVM
   dwarf_cu = &dwarf_cu->GetNonSkeletonUnit();
+#endif /* OHOS_LLVM */
 
   const DWARFBaseDIE dwarf_cu_die = dwarf_cu->GetUnitDIEOnly();
   if (!dwarf_cu_die)
@@ -1327,6 +1339,9 @@ bool SymbolFileDWARF::ParseDebugMacros(CompileUnit &comp_unit) {
   if (sect_offset == DW_INVALID_OFFSET)
     return false;
 
+#ifndef OHOS_LLVM
+  comp_unit.SetDebugMacros(ParseDebugMacros(&sect_offset));
+#else /* OHOS_LLVM */
   DWARFStrOffsetsInfo str_offsets_info = {};
   str_offsets_info.cu_offset = dwarf_cu->GetStrOffsetsBase();
   SymbolFileDWARF &symfile = dwarf_cu->GetSymbolFileDWARF();
@@ -1337,6 +1352,7 @@ bool SymbolFileDWARF::ParseDebugMacros(CompileUnit &comp_unit) {
 
   comp_unit.SetDebugMacros(
       symfile.ParseDebugMacros(&sect_offset, str_offsets_info));
+#endif /* OHOS_LLVM */
 
   return true;
 }

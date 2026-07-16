@@ -26,7 +26,7 @@ if(COMPILER_RT_DEBUG)
   endif()
 endif()
 
-if(ANDROID OR OHOS)
+if(ANDROID OR (OHOS_LLVM AND OHOS))
   # OHOS currently uses TSD_EXCLUSIVE with TLS storage in scudo, so disable EmuTLS
   list(APPEND SCUDO_UNITTEST_CFLAGS -fno-emulated-tls)
 endif()

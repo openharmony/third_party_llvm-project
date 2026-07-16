@@ -1,3 +1,9 @@
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 set(LLVM_LINK_COMPONENTS
   BinaryFormat
   DebugInfoCodeView
@@ -10,7 +16,8 @@ set(LLVM_LINK_COMPONENTS
   )
 
 set(LLVM_TARGET_DEFINITIONS Opts.td)
-tablegen(LLVM Opts.inc -gen-opt-parser-defs)
+tablegen(LLVM Opts.inc -gen-opt-parser-defs ${EXTRA_FEAT_LIST}
+  )
 add_public_tablegen_target(ReadobjOptsTableGen)
 
 add_llvm_tool(llvm-readobj

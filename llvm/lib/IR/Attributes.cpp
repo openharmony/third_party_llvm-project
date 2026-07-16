@@ -2556,13 +2556,29 @@ static void adjustCallerSSPLevel(Function &Caller, const Function &Callee) {
   // Having multiple SSP attributes doesn't actually hurt, but it adds useless
   // clutter to the IR.
   AttributeMask OldSSPAttr;
+#ifndef OHOS_LLVM
   OldSSPAttr.addAttribute(Attribute::StackProtect)
       .addAttribute(Attribute::StackProtectStrong)
-      .addAttribute(Attribute::StackProtectRetStrong) // OHOS_LOCAL
-      .addAttribute(Attribute::StackProtectReq)
-      .addAttribute(Attribute::StackProtectRetReq); // OHOS_LOCAL
+      .addAttribute(Attribute::StackProtectReq);
 
-  // OHOS_LOCAL begin
+  if (Callee.hasFnAttribute(Attribute::StackProtectReq)) {
+    Caller.removeFnAttrs(OldSSPAttr);
+    Caller.addFnAttr(Attribute::StackProtectReq);
+  } else if (Callee.hasFnAttribute(Attribute::StackProtectStrong) &&
+             !Caller.hasFnAttribute(Attribute::StackProtectReq)) {
+    Caller.removeFnAttrs(OldSSPAttr);
+    Caller.addFnAttr(Attribute::StackProtectStrong);
+  } else if (Callee.hasFnAttribute(Attribute::StackProtect) &&
+             !Caller.hasFnAttribute(Attribute::StackProtectReq) &&
+             !Caller.hasFnAttribute(Attribute::StackProtectStrong))
+    Caller.addFnAttr(Attribute::StackProtect);
+#else /* OHOS_LLVM */
+  OldSSPAttr.addAttribute(Attribute::StackProtect)
+      .addAttribute(Attribute::StackProtectStrong)
+      .addAttribute(Attribute::StackProtectRetStrong)
+      .addAttribute(Attribute::StackProtectReq)
+      .addAttribute(Attribute::StackProtectRetReq);
+
   // sspretreq > sspreq > sspretstrong > sspstrong > ssp
   if (Callee.hasFnAttribute(Attribute::StackProtectRetReq)) {
     Caller.removeFnAttrs(OldSSPAttr);
@@ -2588,7 +2604,7 @@ static void adjustCallerSSPLevel(Function &Caller, const Function &Callee) {
              !Caller.hasFnAttribute(Attribute::StackProtectRetReq) &&
              !Caller.hasFnAttribute(Attribute::StackProtectRetStrong))
     Caller.addFnAttr(Attribute::StackProtect);
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 }
 
 /// If the inlined function required stack probes, then ensure that

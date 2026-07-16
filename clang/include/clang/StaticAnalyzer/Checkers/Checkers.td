@@ -124,7 +124,9 @@ def FuchsiaAlpha : Package<"fuchsia">, ParentPackage<Alpha>;
 def WebKit : Package<"webkit">;
 def WebKitAlpha : Package<"webkit">, ParentPackage<Alpha>;
 
+#ifdef OHOS_LLVM
 def OpenHarmony : Package<"openharmony">;
+#endif /* OHOS_LLVM */
 
 //===----------------------------------------------------------------------===//
 // Core Checkers.
@@ -1795,6 +1797,7 @@ def RetainPtrCtorAdoptChecker : Checker<"RetainPtrCtorAdoptChecker">,
 
 } // end alpha.webkit
 
+#ifdef OHOS_LLVM
 //===----------------------------------------------------------------------===//
 // OpenHarmony checkers.
 //===----------------------------------------------------------------------===//
@@ -1858,3 +1861,4 @@ def NapiWrapParamChecker : Checker<"Napi.Wrap">,
   HelpText<"Check the use of napi_wrap">,
   Documentation<HasDocumentation>;
 }
+#endif /* OHOS_LLVM */

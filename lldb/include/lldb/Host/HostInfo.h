@@ -39,7 +39,7 @@
 #if defined(__ANDROID__)
 #include "lldb/Host/android/HostInfoAndroid.h"
 #define HOST_INFO_TYPE HostInfoAndroid
-#elif defined(__OHOS_FAMILY__)
+#elif defined(OHOS_LLVM) && defined(__OHOS_FAMILY__)
 #include "lldb/Host/ohos/HostInfoOHOS.h"
 #define HOST_INFO_TYPE HostInfoOHOS
 #else

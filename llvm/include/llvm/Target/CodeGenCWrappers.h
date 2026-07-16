@@ -60,7 +60,7 @@ inline LLVMCodeModel wrap(CodeModel::Model Model) {
   llvm_unreachable("Bad CodeModel!");
 }
 
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 inline Reloc::Model unwrap(LLVMRelocMode Model) {
   switch (Model) {
   case LLVMRelocDefault:
@@ -89,7 +89,7 @@ inline LLVMRelocMode unwrap(Reloc::Model Model) {
   }
   llvm_unreachable("Invalid Reloc::Model!");
 }
-#endif
+#endif /* OHOS_LLVM && ARK_GC_SUPPORT */
 } // namespace llvm
 
 #endif

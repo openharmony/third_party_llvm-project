@@ -23,11 +23,15 @@
 
 // mingw-w64 tends to define it as 0x0502 in its headers.
 #undef _WIN32_WINNT
+#ifdef OHOS_LLVM
 #undef _WIN32_IE
+#endif /* OHOS_LLVM */
 
 // Require at least Windows 7 API.
 #define _WIN32_WINNT 0x0601
+#ifdef OHOS_LLVM
 #define _WIN32_IE    0x0800 // MinGW at it again. FIXME: verify if still needed.
+#endif /* OHOS_LLVM */
 #define WIN32_LEAN_AND_MEAN
 #ifndef NOMINMAX
 #define NOMINMAX

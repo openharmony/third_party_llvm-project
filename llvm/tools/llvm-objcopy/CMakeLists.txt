@@ -1,3 +1,9 @@
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 set(LLVM_LINK_COMPONENTS
   Object
   ObjCopy
@@ -9,19 +15,23 @@ set(LLVM_LINK_COMPONENTS
   )
 
 set(LLVM_TARGET_DEFINITIONS ObjcopyOpts.td)
-tablegen(LLVM ObjcopyOpts.inc -gen-opt-parser-defs)
+tablegen(LLVM ObjcopyOpts.inc -gen-opt-parser-defs ${EXTRA_FEAT_LIST}
+  )
 add_public_tablegen_target(ObjcopyOptsTableGen)
 
 set(LLVM_TARGET_DEFINITIONS InstallNameToolOpts.td)
-tablegen(LLVM InstallNameToolOpts.inc -gen-opt-parser-defs)
+tablegen(LLVM InstallNameToolOpts.inc -gen-opt-parser-defs ${EXTRA_FEAT_LIST}
+  )
 add_public_tablegen_target(InstallNameToolOptsTableGen)
 
 set(LLVM_TARGET_DEFINITIONS BitcodeStripOpts.td)
-tablegen(LLVM BitcodeStripOpts.inc -gen-opt-parser-defs)
+tablegen(LLVM BitcodeStripOpts.inc -gen-opt-parser-defs ${EXTRA_FEAT_LIST}
+  )
 add_public_tablegen_target(BitcodeStripOptsTableGen)
 
 set(LLVM_TARGET_DEFINITIONS StripOpts.td)
-tablegen(LLVM StripOpts.inc -gen-opt-parser-defs)
+tablegen(LLVM StripOpts.inc -gen-opt-parser-defs ${EXTRA_FEAT_LIST}
+  )
 add_public_tablegen_target(StripOptsTableGen)
 
 add_llvm_tool(llvm-objcopy

@@ -49,7 +49,9 @@ static bool findOHOSMuslMultilibs(const Driver &D,
       Multilib("/a7_hard_neon-vfpv4", {}, {},
                {"-mcpu=cortex-a7", "-mfloat-abi=hard", "-mfpu=neon-vfpv4"}));
 
+#ifdef OHOS_LLVM
   Multilibs.push_back(Multilib("/nanlegacy", {}, {}, {"-mnan=legacy"}));
+#endif /* OHOS_LLVM */
 
   if (Multilibs.select(D, Flags, Result.SelectedMultilibs)) {
     Result.Multilibs = Multilibs;
@@ -82,10 +84,12 @@ static bool findOHOSMultilibs(const Driver &D,
   addMultilibFlag((ARMFloatABI == tools::arm::FloatABI::Hard),
                   "-mfloat-abi=hard", Flags);
 
+#ifdef OHOS_LLVM
   bool IsLegacy = false;
   if (const Arg *A = Args.getLastArg(options::OPT_mnan_EQ))
     IsLegacy = A->getValue() != StringRef("2008");
   addMultilibFlag(IsLegacy, "-mnan=legacy", Flags);
+#endif /* OHOS_LLVM */
 
   return findOHOSMuslMultilibs(D, Flags, Result);
 }
@@ -179,7 +183,6 @@ OHOS::OHOS(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
       Paths);
 }
 
-
 ToolChain::RuntimeLibType OHOS::GetRuntimeLibType(
     const ArgList &Args) const {
   if (Arg *A = Args.getLastArg(clang::driver::options::OPT_rtlib_EQ)) {
@@ -258,15 +261,13 @@ void OHOS::AddClangCXXStdlibIncludeArgs(const ArgList &DriverArgs,
       addSystemInclude(DriverArgs, CC1Args, IncTargetPath);
     }
 
-    // OHOS_LOCAL begin
-
+#ifdef OHOS_LLVM
     std::string IncOHOSPath =
         makePath({IncPath, "libcxx-ohos", "include", "c++", "v1"});
     if (getVFS().exists(IncOHOSPath)) {
       addSystemInclude(DriverArgs, CC1Args, IncOHOSPath);
     }
-
-    // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
     break;
   }
@@ -295,11 +296,19 @@ std::string OHOS::computeSysRoot() const {
       !getDriver().SysRoot.empty()
           ? getDriver().SysRoot
           : makePath({getDriver().Dir, "..", "..", "sysroot"});
+#ifndef OHOS_LLVM
+  if (!llvm::sys::fs::exists(SysRoot))
+#else /* OHOS_LLVM */
   if (!getVFS().exists(SysRoot))
+#endif /* OHOS_LLVM */
     return std::string();
 
   std::string ArchRoot = makePath({SysRoot, getMultiarchTriple(getTriple())});
+#ifndef OHOS_LLVM
+  return llvm::sys::fs::exists(ArchRoot) ? ArchRoot : SysRoot;
+#else /* OHOS_LLVM */
   return getVFS().exists(ArchRoot) ? ArchRoot : SysRoot;
+#endif /* OHOS_LLVM */
 }
 
 ToolChain::path_list OHOS::getRuntimePaths() const {
@@ -327,6 +336,7 @@ ToolChain::path_list OHOS::getRuntimePaths() const {
   return Paths;
 }
 
+#ifdef OHOS_LLVM
 std::optional<std::string> OHOS::getRuntimePath() const {
   path_list Paths = getRuntimePaths();
   if (Paths.empty())
@@ -336,6 +346,7 @@ std::optional<std::string> OHOS::getRuntimePath() const {
       return Path;
   return std::nullopt;
 }
+#endif /* OHOS_LLVM */
 
 std::string OHOS::getDynamicLinker(const ArgList &Args) const {
   const llvm::Triple &Triple = getTriple();
@@ -409,9 +420,11 @@ void OHOS::addExtraOpts(llvm::opt::ArgStringList &CmdArgs) const {
 }
 
 SanitizerMask OHOS::getSupportedSanitizers() const {
+#ifdef OHOS_LLVM
   const llvm::Triple::ArchType Arch = getArch();
   const bool IsAArch64 =
       Arch == llvm::Triple::aarch64 || Arch == llvm::Triple::aarch64_be;
+#endif /* OHOS_LLVM */
 
   SanitizerMask Res = ToolChain::getSupportedSanitizers();
   Res |= SanitizerKind::Address;
@@ -423,10 +436,15 @@ SanitizerMask OHOS::getSupportedSanitizers() const {
   Res |= SanitizerKind::Vptr;
   Res |= SanitizerKind::SafeStack;
   Res |= SanitizerKind::Scudo;
+#ifdef OHOS_LLVM
   // OHOS_LOCAL
   if (IsAArch64)
     Res |= SanitizerKind::HWAddress;
   // TODO: Support TSAN and update mask.
+#else /* OHOS_LLVM */
+  // TODO: kASAN for liteos ??
+  // TODO: Support TSAN and HWASAN and update mask.
+#endif /* OHOS_LLVM */
   return Res;
 }
 

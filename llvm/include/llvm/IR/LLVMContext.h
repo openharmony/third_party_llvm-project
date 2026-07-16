@@ -72,8 +72,10 @@ public:
   LLVMContext(const LLVMContext &) = delete;
   LLVMContext &operator=(const LLVMContext &) = delete;
   LLVM_ABI ~LLVMContext();
+#ifdef OHOS_LLVM
 
   LLVM_ABI static const char *getLLVMVersion(); // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
   // Pinned metadata names, which always have the same value.  This is a
   // compile-time performance optimization, not a correctness optimization.

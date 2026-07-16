@@ -197,9 +197,9 @@ LLVMBool LLVMCreateMCJITCompilerForModule(
   builder.setEngineKind(EngineKind::JIT)
       .setErrorStr(&Error)
       .setOptLevel((CodeGenOptLevel)options.OptLevel)
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
       .setRelocationModel(unwrap(options.RelMode))
-#endif
+#endif /* OHOS_LLVM && ARK_GC_SUPPORT */
       .setTargetOptions(targetOptions);
   bool JIT;
   if (std::optional<CodeModel::Model> CM = unwrap(options.CodeModel, JIT))

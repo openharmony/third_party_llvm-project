@@ -32,7 +32,9 @@
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/StreamString.h"
 #include "lldb/ValueObject/ValueObject.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 #include "llvm/ADT/ScopeExit.h"
 #include <optional>
 
@@ -370,7 +372,9 @@ Status PlatformPOSIX::DisconnectRemote() {
 lldb::ProcessSP PlatformPOSIX::Attach(ProcessAttachInfo &attach_info,
                                       Debugger &debugger, Target *target,
                                       Status &error) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PLATFORM);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   lldb::ProcessSP process_sp;
   Log *log = GetLog(LLDBLog::Platform);
 

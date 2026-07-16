@@ -17,7 +17,9 @@
 #include <cstring>
 #if !defined(_WIN32)
 #include <sys/wait.h>
+#ifdef OHOS_LLVM
 #include <unistd.h>
+#endif /* OHOS_LLVM */
 #endif
 #include <fstream>
 #include <optional>
@@ -38,7 +40,9 @@
 #include "lldb/Host/OptionParser.h"
 #include "lldb/Host/Socket.h"
 #include "lldb/Host/common/TCPSocket.h"
+#ifdef OHOS_LLVM
 #include "lldb/Host/Config.h" // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 #if LLDB_ENABLE_POSIX
 #include "lldb/Host/posix/DomainSocket.h"
 #endif
@@ -61,7 +65,9 @@ static const int socket_error = -1;
 static int g_debug = 0;
 static int g_verbose = 0;
 static int g_server = 0;
+#ifdef OHOS_LLVM
 static int g_timeout_sec = 300;
+#endif /* OHOS_LLVM */
 
 // option descriptors for getopt_long_only()
 static struct option g_long_options[] = {
@@ -96,8 +102,7 @@ static void signal_handler(int signo) {
     llvm::errs() << "SIGHUP received, exiting lldb-server...\n";
     abort();
     break;
-  // OHOS_LOCAL begin
-#if LLDB_ENABLE_TIMEOUT
+#if defined(OHOS_LLVM) && LLDB_ENABLE_TIMEOUT
   case SIGALRM:
     llvm::errs() << llvm::formatv(
         "In non-server mode with a timeout of {0}s. "
@@ -105,8 +110,7 @@ static void signal_handler(int signo) {
         g_timeout_sec);
     exit(-1);
     break;
-#endif
-    // OHOS_LOCAL end
+#endif /* OHOS_LLVM && LLDB_ENABLE_TIMEOUT */
   }
 }
 #endif
@@ -384,10 +388,10 @@ int main_platform(int argc, char *argv[]) {
 #if !defined(_WIN32)
   signal(SIGPIPE, SIG_IGN);
   signal(SIGHUP, signal_handler);
+#if defined(OHOS_LLVM) && LLDB_ENABLE_TIMEOUT
   // OHOS_LOCAL
-#if LLDB_ENABLE_TIMEOUT
   signal(SIGALRM, signal_handler);
-#endif
+#endif /* OHOS_LLVM && LLDB_ENABLE_TIMEOUT */
 #endif
   int long_option_index = 0;
   Status error;
@@ -597,11 +601,9 @@ int main_platform(int argc, char *argv[]) {
             main_loop, [progname, gdbserver_port, &inferior_arguments, log_file,
                         log_channels, &main_loop,
                         &platform_handles](std::unique_ptr<Socket> sock_up) {
-              // OHOS_LOCAL begin
-#if !defined(_WIN32) && LLDB_ENABLE_TIMEOUT
+#if defined(OHOS_LLVM) && !defined(_WIN32) && LLDB_ENABLE_TIMEOUT
               alarm(0);
-#endif
-              // OHOS_LOCAL end
+#endif /* OHOS_LLVM && LLDB_ENABLE_TIMEOUT */
               printf("Connection established.\n");
               Status error = spawn_process(
                   progname, HostInfo::GetProgramFileSpec(), sock_up.get(),
@@ -634,8 +636,7 @@ int main_platform(int argc, char *argv[]) {
       return socket_error;
     }
 
-    // OHOS_LOCAL begin
-#if !defined(_WIN32) && LLDB_ENABLE_TIMEOUT
+#if defined(OHOS_LLVM) && !defined(_WIN32) && LLDB_ENABLE_TIMEOUT
     char *lldb_server_listimeout = getenv("LLDB_SERVER_LISTIMEOUT");
     if (!g_server && lldb_server_listimeout != nullptr) {
       if (!llvm::to_integer(lldb_server_listimeout, g_timeout_sec) ||
@@ -647,8 +648,7 @@ int main_platform(int argc, char *argv[]) {
       }
       alarm(g_timeout_sec);
     }
-#endif
-    // OHOS_LOCAL end
+#endif /* OHOS_LLVM && LLDB_ENABLE_TIMEOUT */
 
     main_loop.Run();
   }

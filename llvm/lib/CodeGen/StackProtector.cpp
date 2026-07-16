@@ -48,7 +48,9 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#ifdef OHOS_LLVM
 #include <functional>
+#endif /* OHOS_LLVM */
 #include <optional>
 #include <utility>
 
@@ -182,12 +184,12 @@ bool StackProtector::runOnFunction(Function &Fn) {
   LayoutInfo.SSPBufferSize = Fn.getFnAttributeAsParsedInteger(
       "stack-protector-buffer-size", SSPLayoutInfo::DefaultSSPBufferSize);
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   SSPRetCookieSize = Fn.getFnAttributeAsParsedInteger(
       "stack-protector-ret-cookie-size", 1);
   if (!SSPRetCookieSize)
     return false;
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   if (!requiresStackProtector(F, &LayoutInfo.Layout))
     return false;
@@ -202,7 +204,7 @@ bool StackProtector::runOnFunction(Function &Fn) {
 
   ++NumFunProtected;
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   if (Fn.hasFnAttribute(Attribute::StackProtectRetReq) ||
       Fn.hasFnAttribute(Attribute::StackProtectRetStrong)) {
     LayoutInfo.HasIRCheck = true;
@@ -211,7 +213,7 @@ bool StackProtector::runOnFunction(Function &Fn) {
     // cfi.
     return false;
   }
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   bool Changed =
       InsertStackProtectors(TM, F, DTU ? &*DTU : nullptr,
@@ -225,7 +227,7 @@ bool StackProtector::runOnFunction(Function &Fn) {
   return Changed;
 }
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
 bool StackProtector::CreateSSPRetCookie() {
   Type *cookietype = PointerType::getUnqual(M->getContext());
   std::hash<std::string> hasher;
@@ -246,7 +248,7 @@ bool StackProtector::CreateSSPRetCookie() {
 
   return true;
 }
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 /// \param [out] IsLarge is set to true if a protectable array is found and
 /// it is "large" ( >= ssp-buffer-size).  In the case of a structure with
@@ -468,13 +470,14 @@ bool SSPLayoutAnalysis::requiresStackProtector(Function *F,
     });
     NeedsProtector = true;
     Strong = true; // Use the same heuristic as strong to determine SSPLayout
-  // OHOS_LOCAL begin
+
+#ifdef OHOS_LLVM
   } else if (F->hasFnAttribute(Attribute::StackProtectRetReq)) {
     NeedsProtector = true;
     Strong = true;
   } else if (F->hasFnAttribute(Attribute::StackProtectRetStrong)) {
     Strong = true;
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   } else if (F->hasFnAttribute(Attribute::StackProtectStrong))
     Strong = true;
   else if (!F->hasFnAttribute(Attribute::StackProtect))

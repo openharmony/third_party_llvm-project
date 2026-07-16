@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //== OHPtrNotInitChecker.cpp ------------------------------*- C++ -*--==//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -188,3 +189,4 @@ void ento::registerOHPtrNotInitChecker(CheckerManager &Mgr) {
 bool ento::shouldRegisterOHPtrNotInitChecker(const CheckerManager &mgr) {
   return true;
 }
+#endif /* OHOS_LLVM */

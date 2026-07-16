@@ -78,7 +78,7 @@ AArch64RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
     return CSR_AArch64_NoRegs_SaveList;
   if (MF->getFunction().getCallingConv() == CallingConv::PreserveNone)
     return CSR_AArch64_NoneRegs_SaveList;
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   if (MF->getFunction().getCallingConv() == CallingConv::ArkInt)
     return CSR_AArch64_ArkInt_SaveList;
   if (MF->getFunction().getCallingConv() == CallingConv::ArkFast0)
@@ -95,7 +95,7 @@ AArch64RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
     return CSR_AArch64_ArkFast5_SaveList;
   if (MF->getFunction().getCallingConv() == CallingConv::ArkMethod)
     return CSR_AArch64_ArkMethod_SaveList;
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   if (MF->getFunction().getCallingConv() == CallingConv::AnyReg)
     return CSR_AArch64_AllRegs_SaveList;
 
@@ -312,7 +312,7 @@ AArch64RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
   if (CC == CallingConv::PreserveNone)
     return SCS ? CSR_AArch64_NoneRegs_SCS_RegMask
                : CSR_AArch64_NoneRegs_RegMask;
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   if (CC == CallingConv::ArkInt)
     return CSR_AArch64_ArkInt_RegMask;
   if (CC == CallingConv::ArkFast0)
@@ -329,7 +329,7 @@ AArch64RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
     return CSR_AArch64_ArkFast5_RegMask;
   if (CC == CallingConv::ArkMethod)
     return CSR_AArch64_ArkMethod_RegMask;
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   if (CC == CallingConv::AnyReg)
     return SCS ? CSR_AArch64_AllRegs_SCS_RegMask : CSR_AArch64_AllRegs_RegMask;
 
@@ -492,7 +492,7 @@ AArch64RegisterInfo::getStrictlyReservedRegs(const MachineFunction &MF) const {
       markSuperRegs(Reserved, i);
   }
 
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
   if (MF.getFunction().getCallingConv() == CallingConv::GHC) {
     markSuperRegs(Reserved, AArch64::W29);
     markSuperRegs(Reserved, AArch64::W30);

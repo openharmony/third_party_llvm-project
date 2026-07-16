@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //===-- PlatformHOS.h -----------------------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -86,3 +87,4 @@ private:
 } // namespace lldb_private
 
 #endif // liblldb_PlatformHOS_h_
+#endif /* OHOS_LLVM */

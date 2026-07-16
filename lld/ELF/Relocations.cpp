@@ -1601,7 +1601,7 @@ void RelocationScanner::scanOne(typename Relocs<RelTy>::const_iterator &i) {
     }
   }
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   if (ctx.arg.isPic && isa<EhInputSection>(sec) && expr == R_ABS) {
     expr = R_PC;
     if (!ctx.target->convertAbsRelToPC(type)) {
@@ -1615,8 +1615,8 @@ void RelocationScanner::scanOne(typename Relocs<RelTy>::const_iterator &i) {
       return;
     }
   }
-  // OHOS_LOCAL end
 
+#endif /* OHOS_LLVM */
   processAux(expr, type, offset, sym, addend);
 }
 

@@ -211,12 +211,9 @@ void InitializeCoverage(bool enabled, const char *dir) {
   if (coverage_enabled)
     return;  // May happen if two sanitizer enable coverage in the same process.
   coverage_enabled = enabled;
-
-// OHOS_LOCAL begin
-#if !SANITIZER_OHOS
+#if !defined(OHOS_LLVM) || !SANITIZER_OHOS
   Atexit(__sanitizer_cov_dump);
-#endif // !SANITIZER_OHOS
-// OHOS_LOCAL end
+#endif // !defined(OHOS_LLVM) || !SANITIZER_OHOS
 
   AddDieCallback(__sanitizer_cov_dump);
 }
@@ -249,14 +246,11 @@ SANITIZER_INTERFACE_ATTRIBUTE void __sanitizer_cov_dump() {
 SANITIZER_INTERFACE_ATTRIBUTE void __sanitizer_cov_reset() {
   __sancov::pc_guard_controller.Reset();
 }
-
-// OHOS_LOCAL begin
-#if SANITIZER_OHOS
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
 SANITIZER_INTERFACE_ATTRIBUTE void __at_fini() {
   __sanitizer_cov_dump();
 }
-#endif // SANITIZER_OHOS
-// OHOS_LOCAL end
+#endif // defined(OHOS_LLVM) && SANITIZER_OHOS
 
 // Default implementations (weak).
 // Either empty or very simple.

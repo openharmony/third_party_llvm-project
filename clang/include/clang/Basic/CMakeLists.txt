@@ -1,21 +1,31 @@
+set(EXTRA_FEAT_LIST)
+
+if (OHOS_LLVM)
+  list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+endif()
+
 macro(clang_diag_gen component)
   clang_tablegen(Diagnostic${component}Kinds.inc
     -gen-clang-diags-defs -clang-component=${component}
+    ${EXTRA_FEAT_LIST}
     SOURCE Diagnostic.td
     TARGET ClangDiagnostic${component})
 
   clang_tablegen(Diagnostic${component}Enums.inc
     -gen-clang-diags-enums -clang-component=${component}
+    ${EXTRA_FEAT_LIST}
     SOURCE Diagnostic.td
     TARGET ClangDiagnostic${component}Enums)
 
   clang_tablegen(Diagnostic${component}CompatIDs.inc
     -gen-clang-diags-compat-ids -clang-component=${component}
+    ${EXTRA_FEAT_LIST}
     SOURCE Diagnostic.td
     TARGET ClangDiagnostic${component}CompatIDs)
 
   clang_tablegen(Diagnostic${component}Interface.inc
     -gen-clang-diags-iface -clang-component=${component}
+    ${EXTRA_FEAT_LIST}
     SOURCE Diagnostic.td
     TARGET ClangDiagnostic${component}Interface)
 endmacro(clang_diag_gen)
@@ -34,193 +44,245 @@ clang_diag_gen(Refactoring)
 clang_diag_gen(Sema)
 clang_diag_gen(Serialization)
 clang_tablegen(DiagnosticGroups.inc -gen-clang-diag-groups
+  ${EXTRA_FEAT_LIST}
   SOURCE Diagnostic.td
   TARGET ClangDiagnosticGroups)
 
 clang_tablegen(DiagnosticIndexName.inc -gen-clang-diags-index-name
+  ${EXTRA_FEAT_LIST}
   SOURCE Diagnostic.td
   TARGET ClangDiagnosticIndexName)
 
 clang_tablegen(DiagnosticAllCompatIDs.inc
+  ${EXTRA_FEAT_LIST}
   -gen-clang-diags-compat-ids
   SOURCE Diagnostic.td
   TARGET ClangDiagnosticAllCompatIDs)
 
 clang_tablegen(AttrList.inc -gen-clang-attr-list
   -I ${CMAKE_CURRENT_SOURCE_DIR}/../../
+  ${EXTRA_FEAT_LIST}
   SOURCE Attr.td
   TARGET ClangAttrList)
 
 clang_tablegen(AttrParsedAttrList.inc -gen-clang-attr-parsed-attr-list
   -I ${CMAKE_CURRENT_SOURCE_DIR}/../../
+  ${EXTRA_FEAT_LIST}
   SOURCE Attr.td
   TARGET ClangAttrParsedAttrList)
 
 clang_tablegen(AttrSubMatchRulesList.inc -gen-clang-attr-subject-match-rule-list
   -I ${CMAKE_CURRENT_SOURCE_DIR}/../../
+  ${EXTRA_FEAT_LIST}  
   SOURCE Attr.td
   TARGET ClangAttrSubjectMatchRuleList)
 
 clang_tablegen(RegularKeywordAttrInfo.inc -gen-clang-regular-keyword-attr-info
   -I ${CMAKE_CURRENT_SOURCE_DIR}/../../
+  ${EXTRA_FEAT_LIST}
   SOURCE Attr.td
   TARGET ClangRegularKeywordAttrInfo
   )
 
 clang_tablegen(AttrHasAttributeImpl.inc -gen-clang-attr-has-attribute-impl
   -I ${CMAKE_CURRENT_SOURCE_DIR}/../../
+  ${EXTRA_FEAT_LIST}
   SOURCE Attr.td
   TARGET ClangAttrHasAttributeImpl
   )
 
 clang_tablegen(CXX11AttributeInfo.inc -gen-cxx11-attribute-info
   -I ${CMAKE_CURRENT_SOURCE_DIR}/../../
+  ${EXTRA_FEAT_LIST}
   SOURCE Attr.td
   TARGET CXX11AttributeInfo
   )
 
   clang_tablegen(AttributeSpellingList.inc -gen-attribute-spelling-list
   -I ${CMAKE_CURRENT_SOURCE_DIR}/../../
+  ${EXTRA_FEAT_LIST}
   SOURCE Attr.td
   TARGET AttributeSpellingList
   )
 
 clang_tablegen(Builtins.inc -gen-clang-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE Builtins.td
   TARGET ClangBuiltins)
 
 clang_tablegen(BuiltinsBPF.inc -gen-clang-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE BuiltinsBPF.td
   TARGET ClangBuiltinsBPF)
 
 clang_tablegen(BuiltinsDirectX.inc -gen-clang-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE BuiltinsDirectX.td
   TARGET ClangBuiltinsDirectX)
 
 clang_tablegen(BuiltinsHexagon.inc -gen-clang-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE BuiltinsHexagon.td
   TARGET ClangBuiltinsHexagon)
 
 clang_tablegen(BuiltinsNVPTX.inc -gen-clang-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE BuiltinsNVPTX.td
   TARGET ClangBuiltinsNVPTX)
 
 clang_tablegen(BuiltinsRISCV.inc -gen-clang-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE BuiltinsRISCV.td
   TARGET ClangBuiltinsRISCV)
 
 clang_tablegen(BuiltinsSPIRVCommon.inc -gen-clang-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE BuiltinsSPIRVCommon.td
   TARGET ClangBuiltinsSPIRVCommon)
 
 clang_tablegen(BuiltinsSPIRVVK.inc -gen-clang-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE BuiltinsSPIRVVK.td
   TARGET ClangBuiltinsSPIRVVK)
 
 clang_tablegen(BuiltinsSPIRVCL.inc -gen-clang-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE BuiltinsSPIRVCL.td
   TARGET ClangBuiltinsSPIRVCL)
 
 clang_tablegen(BuiltinsX86.inc -gen-clang-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE BuiltinsX86.td
   TARGET ClangBuiltinsX86)
 
 clang_tablegen(BuiltinsX86_64.inc -gen-clang-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE BuiltinsX86_64.td
   TARGET ClangBuiltinsX86_64)
 
 clang_tablegen(BuiltinTemplates.inc -gen-clang-builtin-templates
+  ${EXTRA_FEAT_LIST}
   SOURCE BuiltinTemplates.td
   TARGET ClangBuiltinTemplates)
 
 # ARM NEON and MVE
 clang_tablegen(arm_neon.inc -gen-arm-neon-sema
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_neon.td
   TARGET ClangARMNeon)
 clang_tablegen(arm_fp16.inc -gen-arm-neon-sema
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_fp16.td
   TARGET ClangARMFP16)
 clang_tablegen(arm_immcheck_types.inc -gen-arm-immcheck-types
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_sve.td
   TARGET ClangARMImmChecks)
 clang_tablegen(arm_mve_builtins.inc -gen-arm-mve-builtin-def
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_mve.td
   TARGET ClangARMMveBuiltinsDef)
 clang_tablegen(arm_mve_builtin_cg.inc -gen-arm-mve-builtin-codegen
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_mve.td
   TARGET ClangARMMveBuiltinCG)
 clang_tablegen(arm_mve_builtin_sema.inc -gen-arm-mve-builtin-sema
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_mve.td
   TARGET ClangARMMveBuiltinSema)
 clang_tablegen(arm_mve_builtin_aliases.inc -gen-arm-mve-builtin-aliases
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_mve.td
   TARGET ClangARMMveBuiltinAliases)
 clang_tablegen(arm_sve_builtins.inc -gen-arm-sve-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_sve.td
   TARGET ClangARMSveBuiltins)
 clang_tablegen(arm_sve_builtin_cg.inc -gen-arm-sve-builtin-codegen
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_sve.td
   TARGET ClangARMSveBuiltinCG)
 clang_tablegen(arm_sve_typeflags.inc -gen-arm-sve-typeflags
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_sve.td
   TARGET ClangARMSveTypeFlags)
 clang_tablegen(arm_sve_sema_rangechecks.inc -gen-arm-sve-sema-rangechecks
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_sve.td
   TARGET ClangARMSveSemaRangeChecks)
 clang_tablegen(arm_sve_streaming_attrs.inc -gen-arm-sve-streaming-attrs
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_sve.td
   TARGET ClangARMSveStreamingAttrs)
 clang_tablegen(arm_sme_builtins.inc -gen-arm-sme-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_sme.td
   TARGET ClangARMSmeBuiltins)
 clang_tablegen(arm_sme_builtin_cg.inc -gen-arm-sme-builtin-codegen
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_sme.td
   TARGET ClangARMSmeBuiltinCG)
 clang_tablegen(arm_sme_sema_rangechecks.inc -gen-arm-sme-sema-rangechecks
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_sme.td
   TARGET ClangARMSmeSemaRangeChecks)
 clang_tablegen(arm_sme_streaming_attrs.inc -gen-arm-sme-streaming-attrs
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_sme.td
   TARGET ClangARMSmeStreamingAttrs)
 clang_tablegen(arm_sme_builtins_za_state.inc -gen-arm-sme-builtin-za-state
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_sme.td
   TARGET ClangARMSmeBuiltinsZAState)
 clang_tablegen(arm_cde_builtins.inc -gen-arm-cde-builtin-def
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_cde.td
   TARGET ClangARMCdeBuiltinsDef)
 clang_tablegen(arm_cde_builtin_cg.inc -gen-arm-cde-builtin-codegen
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_cde.td
   TARGET ClangARMCdeBuiltinCG)
 clang_tablegen(arm_cde_builtin_sema.inc -gen-arm-cde-builtin-sema
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_cde.td
   TARGET ClangARMCdeBuiltinSema)
 clang_tablegen(arm_cde_builtin_aliases.inc -gen-arm-cde-builtin-aliases
+  ${EXTRA_FEAT_LIST}
   SOURCE arm_cde.td
   TARGET ClangARMCdeBuiltinAliases)
 clang_tablegen(riscv_vector_builtins.inc -gen-riscv-vector-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE riscv_vector.td
   TARGET ClangRISCVVectorBuiltins)
 clang_tablegen(riscv_vector_builtin_cg.inc -gen-riscv-vector-builtin-codegen
+  ${EXTRA_FEAT_LIST}
   SOURCE riscv_vector.td
   TARGET ClangRISCVVectorBuiltinCG)
 clang_tablegen(riscv_vector_builtin_sema.inc -gen-riscv-vector-builtin-sema
+  ${EXTRA_FEAT_LIST}
   SOURCE riscv_vector.td
   TARGET ClangRISCVVectorBuiltinSema)
 clang_tablegen(riscv_sifive_vector_builtins.inc -gen-riscv-sifive-vector-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE riscv_sifive_vector.td
   TARGET ClangRISCVSiFiveVectorBuiltins)
 clang_tablegen(riscv_sifive_vector_builtin_cg.inc -gen-riscv-sifive-vector-builtin-codegen
+  ${EXTRA_FEAT_LIST}
   SOURCE riscv_sifive_vector.td
   TARGET ClangRISCVSiFiveVectorBuiltinCG)
 clang_tablegen(riscv_sifive_vector_builtin_sema.inc -gen-riscv-sifive-vector-builtin-sema
+  ${EXTRA_FEAT_LIST}
   SOURCE riscv_sifive_vector.td
   TARGET ClangRISCVSiFiveVectorBuiltinSema)
 clang_tablegen(riscv_andes_vector_builtins.inc -gen-riscv-andes-vector-builtins
+  ${EXTRA_FEAT_LIST}
   SOURCE riscv_andes_vector.td
   TARGET ClangRISCVAndesVectorBuiltins)
 clang_tablegen(riscv_andes_vector_builtin_cg.inc -gen-riscv-andes-vector-builtin-codegen
+  ${EXTRA_FEAT_LIST}
   SOURCE riscv_andes_vector.td
   TARGET ClangRISCVAndesVectorBuiltinCG)
 clang_tablegen(riscv_andes_vector_builtin_sema.inc -gen-riscv-andes-vector-builtin-sema
+  ${EXTRA_FEAT_LIST}
   SOURCE riscv_andes_vector.td
   TARGET ClangRISCVAndesVectorBuiltinSema)

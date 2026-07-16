@@ -13,10 +13,12 @@
 #include "llvm/Support/Chrono.h"
 #include <atomic>
 #include <cstdint>
+#ifdef OHOS_LLVM
 #ifdef LLDB_ENABLE_PERFORMANCE_MONITORING
 #include "llvm/ADT/Twine.h"
 #include <string>
 #endif
+#endif /* OHOS_LLVM */
 
 namespace lldb_private {
 class Stream;
@@ -79,7 +81,7 @@ private:
   Timer(const Timer &) = delete;
   const Timer &operator=(const Timer &) = delete;
 };
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
 namespace LLDBPerformanceTagName {
 const char *const TAG_DYNAMICLOADER = "LLDB_Performance_DynamicLoader";
 const char *const TAG_BREAKPOINTS = "LLDB_Performance_Breakpoints";
@@ -98,7 +100,7 @@ const char *const TAG_THREAD = "LLDB_Performance_Thread";
 const char *const TAG_STEP = "LLDB_Performance_Step";
 const char *const TAG_HDC = "LLDB_Performance_HDC";
 } // namespace LLDBPerformanceTagName
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 } // namespace lldb_private
 
@@ -111,7 +113,7 @@ const char *const TAG_HDC = "LLDB_Performance_HDC";
   static ::lldb_private::Timer::Category _cat(LLVM_PRETTY_FUNCTION);           \
   ::lldb_private::Timer _scoped_timer(_cat, __VA_ARGS__)
 
-// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
 #ifdef LLDB_ENABLE_PERFORMANCE_MONITORING
 #define LLDB_MODULE_TIMER(tag)                                                 \
   static std::string _tag_str =                                                \
@@ -122,6 +124,6 @@ const char *const TAG_HDC = "LLDB_Performance_HDC";
 #else
 #define LLDB_MODULE_TIMER(tag)
 #endif
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 #endif // LLDB_UTILITY_TIMER_H

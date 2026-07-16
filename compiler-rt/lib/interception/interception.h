@@ -19,8 +19,8 @@
 
 #if !SANITIZER_LINUX && !SANITIZER_FREEBSD && !SANITIZER_APPLE &&    \
     !SANITIZER_NETBSD && !SANITIZER_WINDOWS && !SANITIZER_FUCHSIA && \
-    !SANITIZER_SOLARIS && !SANITIZER_HAIKU && !SANITIZER_AIX && \
-    !SANITIZER_OHOS
+    !SANITIZER_SOLARIS && !SANITIZER_HAIKU && !SANITIZER_AIX &&      \
+    (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
 #  error "Interception doesn't work on this operating system."
 #endif
 

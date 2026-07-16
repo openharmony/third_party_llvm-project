@@ -59,7 +59,7 @@ mark_as_advanced(LLDB_LIBXML2_VERSION)
 add_optional_dependency(LLDB_ENABLE_SWIG "Enable SWIG to generate LLDB bindings" SWIG SWIG_FOUND VERSION 4)
 add_optional_dependency(LLDB_ENABLE_LIBEDIT "Enable editline support in LLDB" LibEdit LibEdit_FOUND)
 add_optional_dependency(LLDB_ENABLE_CURSES "Enable curses support in LLDB" CursesAndPanel CURSESANDPANEL_FOUND)
-if (NOT LLDB_ENABLE_LZMA_7ZIP)  # OHOS_LOCAL
+if (NOT OHOS_LLVM OR NOT LLDB_ENABLE_LZMA_7ZIP)  # OHOS_LOCAL
 add_optional_dependency(LLDB_ENABLE_LZMA "Enable LZMA compression support in LLDB" LibLZMA LIBLZMA_FOUND)
 # OHOS_LOCAL begin
 else()
@@ -315,7 +315,8 @@ endif()
 
 # Figure out if lldb could use lldb-server.  If so, then we'll
 # ensure we build lldb-server when an lldb target is being built.
-if (CMAKE_SYSTEM_NAME MATCHES "AIX|Android|Darwin|FreeBSD|Linux|NetBSD|OpenBSD|Windows|OHOS")
+if (CMAKE_SYSTEM_NAME MATCHES "AIX|Android|Darwin|FreeBSD|Linux|NetBSD|OpenBSD|Windows" OR
+    (OHOS_LLVM AND CMAKE_SYSTEM_NAME MATCHES "OHOS"))
   set(LLDB_CAN_USE_LLDB_SERVER ON)
 else()
   set(LLDB_CAN_USE_LLDB_SERVER OFF)

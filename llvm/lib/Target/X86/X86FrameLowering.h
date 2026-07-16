@@ -75,11 +75,11 @@ public:
 
   /// emitProlog/emitEpilog - These methods insert prolog and epilog code into
   /// the function.
-#ifdef ARK_GC_SUPPORT
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
   Triple::ArchType GetArkSupportTarget() const override;
   int GetFixedFpPosition() const override;
   int GetFrameReserveSize(MachineFunction &MF) const override;
-#endif
+#endif /* OHOS_LLVM && ARK_GC_SUPPORT */
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
 
@@ -110,13 +110,14 @@ public:
 
   void spillFPBP(MachineFunction &MF) const override;
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
+
   bool supportsArkSpills() const override {
     return true;
   }
 
   int getArkFrameAdaptationOffset(const MachineFunction &MF) const override;
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   bool hasReservedCallFrame(const MachineFunction &MF) const override;
   bool canSimplifyCallFramePseudos(const MachineFunction &MF) const override;
@@ -351,9 +352,10 @@ private:
   bool skipSpillFPBP(MachineFunction &MF,
                      MachineBasicBlock::reverse_iterator &MI) const;
 
-  // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
+
   int getOffsetOfLocalArea(CallingConv::ID CC = CallingConv::C) const override;
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 };
 
 } // End llvm namespace

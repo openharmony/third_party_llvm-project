@@ -6,6 +6,7 @@ set(LLVM_COMMON_CMAKE_UTILS ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 # Add path for custom modules
 list(INSERT CMAKE_MODULE_PATH 0
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../llvm/cmake/modules"
   "${LLVM_COMMON_CMAKE_UTILS}/Modules"
   )
 
@@ -91,6 +92,7 @@ endif()
 # Check and set up common compiler flags.
 include(config-ix)
 include(HandleOpenMPOptions)
+include(HandleOHOSOptions)
 
 # Set up testing infrastructure.
 include(OpenMPTesting)

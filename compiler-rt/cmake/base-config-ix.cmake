@@ -209,7 +209,7 @@ macro(test_targets)
     # Examine compiler output to determine target architecture.
     detect_target_arch()
     set(COMPILER_RT_OS_SUFFIX "-android")
-  elseif(OHOS)
+  elseif(OHOS_LLVM AND OHOS)
     detect_target_arch()
     set(COMPILER_RT_OS_SUFFIX "")
   elseif(NOT APPLE) # Supported archs for Apple platforms are generated later

@@ -34,7 +34,9 @@
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/DebugInfo/DWARF/DWARFAcceleratorTable.h"
 #include "llvm/DebugInfo/DWARF/DWARFDebugPubTable.h"
+#ifdef OHOS_LLVM
 #include "llvm/DebugInfo/DWARF/LowLevel/DWARFDataExtractorSimple.h"
+#endif /* OHOS_LLVM */
 #include "llvm/Support/DJB.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/LEB128.h"
@@ -524,8 +526,8 @@ static void writeCieFde(Ctx &ctx, uint8_t *buf, ArrayRef<uint8_t> d) {
   // Fix the size field. -4 since size does not include the size field itself.
   write32(ctx, buf, d.size() - 4);
 }
+#ifdef OHOS_LLVM
 
-// OHOS_LOCAL begin
 
 static void convertCieAbsEncodingsToPcrel(Ctx &ctx, CieRecord *rec) {
   rec->encodings = getEhPointerEncodings(*rec->cie);
@@ -550,7 +552,7 @@ static uint8_t getFdeEncoding(Ctx &ctx, const CieRecord &cie) {
   return DW_EH_PE_absptr;
 }
 
-// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
 void EhFrameSection::finalizeContents() {
   assert(!this->size); // Not finalized.
@@ -581,8 +583,10 @@ void EhFrameSection::finalizeContents() {
     rec->cie->outputOff = off;
     off += rec->cie->size;
 
+#ifdef OHOS_LLVM
     convertCieAbsEncodingsToPcrel(ctx, rec); // OHOS_LOCAL
 
+#endif /* OHOS_LLVM */
     for (EhSectionPiece *fde : rec->fdes) {
       fde->outputOff = off;
       off += fde->size;
@@ -607,7 +611,11 @@ SmallVector<EhFrameSection::FdeData, 0> EhFrameSection::getFdeData() const {
 
   uint64_t va = getPartition(ctx).ehFrameHdr->getVA();
   for (CieRecord *rec : cieRecords) {
+#ifndef OHOS_LLVM
+    uint8_t enc = getFdeEncoding(rec->cie);
+#else /* OHOS_LLVM */
     uint8_t enc = getFdeEncoding(ctx, *rec); // OHOS_LOCAL
+#endif /* OHOS_LLVM */
     for (EhSectionPiece *fde : rec->fdes) {
       uint64_t pc = getFdePc(buf, fde->outputOff, enc);
       uint64_t fdeVA = getParent()->addr + fde->outputOff;
@@ -635,8 +643,28 @@ SmallVector<EhFrameSection::FdeData, 0> EhFrameSection::getFdeData() const {
   return ret;
 }
 
+#ifndef OHOS_LLVM
+static uint64_t readFdeAddr(Ctx &ctx, uint8_t *buf, int size) {
+  switch (size) {
+  case DW_EH_PE_udata2:
+    return read16(ctx, buf);
+  case DW_EH_PE_sdata2:
+    return (int16_t)read16(ctx, buf);
+  case DW_EH_PE_udata4:
+    return read32(ctx, buf);
+  case DW_EH_PE_sdata4:
+    return (int32_t)read32(ctx, buf);
+  case DW_EH_PE_udata8:
+  case DW_EH_PE_sdata8:
+    return read64(ctx, buf);
+  case DW_EH_PE_absptr:
+    return readUint(ctx, buf);
+  }
+  Err(ctx) << "unknown FDE size encoding";
+  return 0;
+}
+#else /* OHOS_LLVM */
 static uint64_t readFdeAddr(Ctx &ctx, uint8_t *buf, uint8_t enc) {
-  // OHOS_LOCAL begin
   DWARFDataExtractorSimple dataExtractor(
       ArrayRef<uint8_t>(buf, size_t(-1)), ctx.arg.isLE, ctx.arg.wordsize);
   uint64_t offset = 0;
@@ -647,8 +675,8 @@ static uint64_t readFdeAddr(Ctx &ctx, uint8_t *buf, uint8_t enc) {
     return 0;
   }
   return *fdeAddr;
-  // OHOS_LOCAL end
 }
+#endif /* OHOS_LLVM */
 
 // Returns the VA to which a given FDE (on a mmap'ed buffer) is applied to.
 // We need it to create .eh_frame_hdr section.
@@ -658,11 +686,13 @@ uint64_t EhFrameSection::getFdePc(uint8_t *buf, size_t fdeOff,
   // stored at FDE + 8 byte. And this offset is within
   // the .eh_frame section.
   size_t off = fdeOff + 8;
+#ifndef OHOS_LLVM
+  uint64_t addr = readFdeAddr(ctx, buf + off, enc & 0xf);
+#else /* OHOS_LLVM */
   uint64_t addr = readFdeAddr(ctx, buf + off, enc); // OHOS_LOCAL
-  // OHOS_LOCAL begin
   if (ctx.arg.isPic)
     assert((enc & 0x70) != DW_EH_PE_absptr);
-  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
   if ((enc & 0x70) == DW_EH_PE_absptr)
     return ctx.arg.is64 ? addr : uint32_t(addr);
   if ((enc & 0x70) == DW_EH_PE_pcrel)
@@ -677,7 +707,7 @@ void EhFrameSection::writeTo(uint8_t *buf) {
     size_t cieOffset = rec->cie->outputOff;
     writeCieFde(ctx, buf + cieOffset, rec->cie->data());
 
-    // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
     if (ctx.arg.isPic) {
       auto helper = [buf, cieOffset](EhPointerEncoding encoding) {
         if (encoding.offsetInCie != size_t(-1))
@@ -687,8 +717,8 @@ void EhFrameSection::writeTo(uint8_t *buf) {
       helper(rec->encodings.fdeEncoding);
       helper(rec->encodings.lsdaEncoding);
     }
-    // OHOS_LOCAL end
 
+#endif /* OHOS_LLVM */
     for (EhSectionPiece *fde : rec->fdes) {
       size_t off = fde->outputOff;
       writeCieFde(ctx, buf + off, fde->data());

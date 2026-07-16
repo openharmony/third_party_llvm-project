@@ -57,7 +57,11 @@ private:
                                    pint_t initialStackValue);
   static pint_t getSavedRegister(A &addressSpace, const R &registers,
                                  pint_t cfa, const RegisterLocation &savedReg);
+#ifndef OHOS_LLVM
+  static double getSavedFloatRegister(A &addressSpace, const R &registers,
+#else /* OHOS_LLVM */
   static unw_fpreg_t getSavedFloatRegister(A &addressSpace, const R &registers,
+#endif /* OHOS_LLVM */
                                   pint_t cfa, const RegisterLocation &savedReg);
   static v128 getSavedVectorRegister(A &addressSpace, const R &registers,
                                   pint_t cfa, const RegisterLocation &savedReg);
@@ -122,7 +126,11 @@ typename A::pint_t DwarfInstructions<A, R>::getSavedRegister(
 }
 
 template <typename A, typename R>
+#ifndef OHOS_LLVM
+double DwarfInstructions<A, R>::getSavedFloatRegister(
+#else /* OHOS_LLVM */
 unw_fpreg_t DwarfInstructions<A, R>::getSavedFloatRegister(
+#endif /* OHOS_LLVM */
     A &addressSpace, const R &registers, pint_t cfa,
     const RegisterLocation &savedReg) {
   switch (savedReg.location) {

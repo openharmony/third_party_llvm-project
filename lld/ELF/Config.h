@@ -447,8 +447,10 @@ struct Config {
   uint64_t zStackSize;
   unsigned ltoPartitions;
   unsigned ltoo;
+#ifdef OHOS_LLVM
   unsigned ltos = 0;
   bool mergeFunctions = false;
+#endif /* OHOS_LLVM */
   llvm::CodeGenOptLevel ltoCgo;
   unsigned optimize;
   StringRef thinLTOJobs;

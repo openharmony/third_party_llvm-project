@@ -1,3 +1,4 @@
+#ifdef OHOS_LLVM
 //===-- PlatformHOSRemoteGDBServer.h ---------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -67,3 +68,4 @@ private:
 } // namespace lldb_private
 
 #endif // liblldb_PlatformHOSRemoteGDBServer_h_
+#endif /* OHOS_LLVM */

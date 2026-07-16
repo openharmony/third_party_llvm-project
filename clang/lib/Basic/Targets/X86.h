@@ -17,9 +17,13 @@
 #include "clang/Basic/BitmaskEnum.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/TargetOptions.h"
+#ifdef OHOS_LLVM
 #include "llvm/ADT/StringSet.h" // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 #include "llvm/Support/Compiler.h"
+#ifdef OHOS_LLVM
 #include <algorithm>
+#endif /* OHOS_LLVM */
 #include "llvm/TargetParser/Triple.h"
 #include "llvm/TargetParser/X86TargetParser.h"
 #include <optional>
@@ -190,7 +194,9 @@ protected:
 
   enum FPMathKind { FP_Default, FP_SSE, FP_387 } FPMath = FP_Default;
 
+#ifdef OHOS_LLVM
   llvm::StringSet<> ReservedRRegs; // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
 public:
   X86TargetInfo(const llvm::Triple &Triple, const TargetOptions &)
@@ -829,7 +835,7 @@ public:
       return true;
     }
 
-    // OHOS_LOCAL begin
+#ifdef OHOS_LLVM
     // callee saved registers r8-r15 if they are set as reserved
     // via -mfixed-r# flag
     const StringRef RRegsNames[] = {
@@ -851,7 +857,7 @@ public:
       HasSizeMismatch = RegSize != ReadedRegSize;
       return true;
     }
-    // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
     // Check if the register is a 32-bit register the backend can handle.
     return X86TargetInfo::validateGlobalRegisterVariable(RegName, RegSize,

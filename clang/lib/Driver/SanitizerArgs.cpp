@@ -1016,8 +1016,12 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
         << A->getSpelling() << TC.getTriple().str();
   }
 
+#ifndef OHOS_LLVM
+  ImplicitCfiRuntime = TC.getTriple().isAndroid();
+#else /* OHOS_LLVM */
   ImplicitCfiRuntime = TC.getTriple().isAndroid() ||
                        TC.getTriple().isOHOSFamily();
+#endif /* OHOS_LLVM */
 
   if (AllAddedKinds & SanitizerKind::Address) {
     NeedPIE |= TC.getTriple().isOSFuchsia();

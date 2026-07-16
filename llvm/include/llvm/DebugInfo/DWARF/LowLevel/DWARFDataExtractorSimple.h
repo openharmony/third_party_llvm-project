@@ -102,7 +102,78 @@ public:
     return getInitialLength(&getOffset(C), &getError(C));
   }
 
-  // OHOS_LOCAL begin
+#ifndef OHOS_LLVM
+  /// Extracts a DWARF-encoded pointer in \p Offset using \p Encoding.
+  /// There is a DWARF encoding that uses a PC-relative adjustment.
+  /// For these values, \p AbsPosOffset is used to fix them, which should
+  /// reflect the absolute address of this pointer.
+  std::optional<uint64_t> getEncodedPointer(uint64_t *Offset, uint8_t Encoding,
+                                            uint64_t PCRelOffset) const {
+    if (Encoding == dwarf::DW_EH_PE_omit)
+      return std::nullopt;
+
+    uint64_t Result = 0;
+    uint64_t OldOffset = *Offset;
+    // First get value
+    switch (Encoding & 0x0F) {
+    case dwarf::DW_EH_PE_absptr:
+      switch (getAddressSize()) {
+      case 2:
+      case 4:
+      case 8:
+        Result = getUnsigned(Offset, getAddressSize());
+        break;
+      default:
+        return std::nullopt;
+      }
+      break;
+    case dwarf::DW_EH_PE_uleb128:
+      Result = getULEB128(Offset);
+      break;
+    case dwarf::DW_EH_PE_sleb128:
+      Result = getSLEB128(Offset);
+      break;
+    case dwarf::DW_EH_PE_udata2:
+      Result = getUnsigned(Offset, 2);
+      break;
+    case dwarf::DW_EH_PE_udata4:
+      Result = getUnsigned(Offset, 4);
+      break;
+    case dwarf::DW_EH_PE_udata8:
+      Result = getUnsigned(Offset, 8);
+      break;
+    case dwarf::DW_EH_PE_sdata2:
+      Result = getSigned(Offset, 2);
+      break;
+    case dwarf::DW_EH_PE_sdata4:
+      Result = SignExtend64<32>(getRelocatedValue(4, Offset));
+      break;
+    case dwarf::DW_EH_PE_sdata8:
+      Result = getRelocatedValue(8, Offset);
+      break;
+    default:
+      return std::nullopt;
+    }
+    // Then add relative offset, if required
+    switch (Encoding & 0x70) {
+    case dwarf::DW_EH_PE_absptr:
+      // do nothing
+      break;
+    case dwarf::DW_EH_PE_pcrel:
+      Result += PCRelOffset;
+      break;
+    case dwarf::DW_EH_PE_datarel:
+    case dwarf::DW_EH_PE_textrel:
+    case dwarf::DW_EH_PE_funcrel:
+    case dwarf::DW_EH_PE_aligned:
+    default:
+      *Offset = OldOffset;
+      return std::nullopt;
+    }
+
+    return Result;
+  }
+#else /* OHOS_LLVM */
 
   /// Extracts a DWARF-encoded pointer without a PC-relative adjustment.
   std::optional<uint64_t> getRawEncodedPointer(Cursor &C,
@@ -157,7 +228,6 @@ public:
     return Ret;
   }
 
-  // OHOS_LOCAL end
 
   /// Extracts a DWARF-encoded pointer in \p Offset using \p Encoding.
   /// There is a DWARF encoding that uses a PC-relative adjustment.
@@ -190,6 +260,7 @@ public:
 
     return Result;
   }
+#endif /* OHOS_LLVM */
 };
 
 // Non relocating, low-level dwarf-data extractor. Suitable for use from

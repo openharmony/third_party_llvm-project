@@ -34,12 +34,12 @@
 #if (defined(__aarch64__) || defined(__powerpc64__) || \
      SANITIZER_RISCV64 || SANITIZER_LOONGARCH64) &&    \
      !SANITIZER_ANDROID
-// GLIBC 2.20+ sys/user does not include asm/ptrace.h
-#if SANITIZER_OHOS
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
 // Do not include asm/sigcontext.h on behalf of asm/ptrace.h
 // to avoid multiple definiton errors.
 #define __ASM_SIGCONTEXT_H 1
 #endif
+// GLIBC 2.20+ sys/user does not include asm/ptrace.h
 # include <asm/ptrace.h>
 #endif
 #include <sys/user.h>  // for user_regs_struct

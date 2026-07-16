@@ -104,12 +104,14 @@ private:
 
   SSPLayoutInfo LayoutInfo;
 
-  /// OHOS_LOCAL begin
+#ifdef OHOS_LLVM
   /// The total of cookies that -fstack-protector-ret used.
   unsigned SSPRetCookieSize = 1;
-  /// OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
+#ifdef OHOS_LLVM
   bool CreateSSPRetCookie(); // OHOS_LOCAL
+#endif /* OHOS_LLVM */
 
 public:
   static char ID; // Pass identification, replacement for typeid.

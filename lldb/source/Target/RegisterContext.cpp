@@ -18,8 +18,10 @@
 #include "lldb/Utility/DataExtractor.h"
 #include "lldb/Utility/Endian.h"
 #include "lldb/Utility/RegisterValue.h"
-#include "lldb/Utility/Scalar.h"
+#ifdef OHOS_LLVM
 #include "lldb/Utility/Timer.h"   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
+#include "lldb/Utility/Scalar.h"
 
 using namespace lldb;
 using namespace lldb_private;
@@ -305,7 +307,9 @@ bool RegisterContext::HardwareSingleStep(bool enable) { return false; }
 Status RegisterContext::ReadRegisterValueFromMemory(
     const RegisterInfo *reg_info, lldb::addr_t src_addr, uint32_t src_len,
     RegisterValue &reg_value) {
+#ifdef OHOS_LLVM
   LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_TARGET);   // OHOS_LOCAL
+#endif /* OHOS_LLVM */
   Status error;
   if (!reg_info)
     return Status::FromErrorString("invalid register info argument.");

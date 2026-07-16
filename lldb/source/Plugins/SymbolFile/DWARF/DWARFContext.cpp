@@ -94,8 +94,13 @@ const DWARFDataExtractor &DWARFContext::getOrLoadLocListsData() {
 }
 
 const DWARFDataExtractor &DWARFContext::getOrLoadMacroData() {
+#ifndef OHOS_LLVM
+  return LoadOrGetSection(eSectionTypeDWARFDebugMacro, std::nullopt,
+                          m_data_debug_macro);
+#else /* OHOS_LLVM */
   return LoadOrGetSection(eSectionTypeDWARFDebugMacro,
                           eSectionTypeDWARFDebugMacro, m_data_debug_macro);
+#endif /* OHOS_LLVM */
 }
 
 const DWARFDataExtractor &DWARFContext::getOrLoadRangesData() {

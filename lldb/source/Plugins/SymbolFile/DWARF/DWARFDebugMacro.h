@@ -24,6 +24,7 @@ namespace lldb_private::plugin {
 namespace dwarf {
 class SymbolFileDWARF;
 
+#ifdef OHOS_LLVM
 struct DWARFStrOffsetsInfo {
   lldb::offset_t cu_offset = 0;
   const lldb_private::DWARFDataExtractor *data = nullptr;
@@ -31,6 +32,7 @@ struct DWARFStrOffsetsInfo {
   bool IsValid() const { return cu_offset && cu_offset != DW_INVALID_OFFSET; }
   uint64_t GetOffset(uint64_t index) const;
 };
+#endif /* OHOS_LLVM */
 
 class DWARFDebugMacroHeader {
 public:
@@ -57,6 +59,14 @@ private:
 
 class DWARFDebugMacroEntry {
 public:
+#ifndef OHOS_LLVM
+  static void ReadMacroEntries(const DWARFDataExtractor &debug_macro_data,
+                               const DWARFDataExtractor &debug_str_data,
+                               const bool offset_is_64_bit,
+                               lldb::offset_t *sect_offset,
+                               SymbolFileDWARF *sym_file_dwarf,
+                               DebugMacrosSP &debug_macros_sp);
+#else /* OHOS_LLVM */
   static void ReadMacroEntries(const DWARFDataExtractor &debug_macro_data,
                                const DWARFDataExtractor &debug_str_data,
                                const DWARFStrOffsetsInfo &str_offsets_info,
@@ -64,6 +74,7 @@ public:
                                lldb::offset_t *sect_offset,
                                SymbolFileDWARF *sym_file_dwarf,
                                DebugMacrosSP &debug_macros_sp);
+#endif /* OHOS_LLVM */
 };
 } // namespace dwarf
 } // namespace lldb_private::plugin

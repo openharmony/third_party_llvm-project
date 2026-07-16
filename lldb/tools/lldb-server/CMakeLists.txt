@@ -4,7 +4,8 @@ add_public_tablegen_target(LLGSOptionsTableGen)
 
 set(LLDB_PLUGINS)
 
-if(CMAKE_SYSTEM_NAME MATCHES "Linux|Android|OHOS")
+if(CMAKE_SYSTEM_NAME MATCHES "Linux|Android" OR
+     (OHOS_LLVM AND CMAKE_SYSTEM_NAME MATCHES "OHOS"))
   list(APPEND LLDB_PLUGINS lldbPluginProcessLinux)
 endif()
 
