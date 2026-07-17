@@ -10277,6 +10277,14 @@ AArch64InstrInfo::getTailDuplicateSize(CodeGenOptLevel OptLevel) const {
   return OptLevel >= CodeGenOptLevel::Aggressive ? 6 : 2;
 }
 
+#ifdef OHOS_LLVM
+bool AArch64InstrInfo::preservesZeroValueInReg(
+    const MachineInstr *MI, const Register NullValueReg,
+    const TargetRegisterInfo *TRI) const {
+  return !MI->modifiesRegister(NullValueReg, TRI);
+}
+#endif
+
 bool AArch64InstrInfo::isLegalAddressingMode(unsigned NumBytes, int64_t Offset,
                                              unsigned Scale) const {
   if (Offset && Scale)

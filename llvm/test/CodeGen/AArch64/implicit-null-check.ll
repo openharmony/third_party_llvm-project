@@ -224,11 +224,13 @@ define i32 @imp_null_check_add_result(ptr %x, i32 %p) {
 define i32 @imp_null_check_hoist_over_udiv(ptr %x, i32 %a, i32 %b) {
 ; CHECK-LABEL: imp_null_check_hoist_over_udiv:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    cbz x0, .LBB9_2
+;; OHOS_LOCAL begin
+; CHECK-NEXT:  .Ltmp6:
+; CHECK-NEXT:    ldr w9, [x0] // on-fault: .LBB9_2
 ; CHECK-NEXT:  // %bb.1: // %not_null
 ; CHECK-NEXT:    udiv w8, w1, w2
-; CHECK-NEXT:    ldr w9, [x0]
 ; CHECK-NEXT:    add w0, w9, w8
+;; OHOS_LOCAL end
 ; CHECK-NEXT:    ret
 ; CHECK-NEXT:  .LBB9_2:
 ; CHECK-NEXT:    mov w0, #42
@@ -248,20 +250,20 @@ define i32 @imp_null_check_hoist_over_udiv(ptr %x, i32 %a, i32 %b) {
 }
 
 
-; TODO: We should be able to hoist this - we can on x86, why isn't this
-; working for aarch64?  Aliasing?
 define i32 @imp_null_check_hoist_over_unrelated_load(ptr %x, ptr %y, ptr %z) {
+;; OHOS_LOCAL begin
 ; CHECK-LABEL: imp_null_check_hoist_over_unrelated_load:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    cbz x0, .LBB10_2
+; CHECK-NEXT:  .Ltmp7:
+; CHECK-NEXT:    ldr w0, [x0] // on-fault: .LBB10_2
 ; CHECK-NEXT:  // %bb.1: // %not_null
 ; CHECK-NEXT:    ldr w8, [x1]
-; CHECK-NEXT:    ldr w0, [x0]
 ; CHECK-NEXT:    str w8, [x2]
 ; CHECK-NEXT:    ret
 ; CHECK-NEXT:  .LBB10_2:
 ; CHECK-NEXT:    mov w0, #42
 ; CHECK-NEXT:    ret
+;; OHOS_LOCAL end
  entry:
   %c = icmp eq ptr %x, null
   br i1 %c, label %is_null, label %not_null, !make.implicit !0
@@ -279,7 +281,9 @@ define i32 @imp_null_check_hoist_over_unrelated_load(ptr %x, ptr %y, ptr %z) {
 define i32 @imp_null_check_gep_load_with_use_dep(ptr %x, i32 %a) {
 ; CHECK-LABEL: imp_null_check_gep_load_with_use_dep:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:  .Ltmp6:
+;; OHOS_LOCAL begin
+; CHECK-NEXT:  .Ltmp8:
+;; OHOS_LOCAL end
 ; CHECK-NEXT:    ldr w8, [x0] // on-fault: .LBB11_2
 ; CHECK-NEXT:  // %bb.1: // %not_null
 ; CHECK-NEXT:    add w9, w0, w1
@@ -357,14 +361,15 @@ not_null:
   ret i32 %t
 }
 
-; TODO: We can fold to implicit null here, not sure why this isn't working
 define void @imp_null_check_store(ptr %x) {
+;; OHOS_LOCAL begin
 ; CHECK-LABEL: imp_null_check_store:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    cbz x0, .LBB14_2
-; CHECK-NEXT:  // %bb.1: // %not_null
 ; CHECK-NEXT:    mov w8, #1
-; CHECK-NEXT:    str w8, [x0]
+; CHECK-NEXT:  .Ltmp9:
+; CHECK-NEXT:    str w8, [x0] // on-fault: .LBB14_2
+; CHECK-NEXT:  // %bb.1: // %not_null
+;; OHOS_LOCAL end
 ; CHECK-NEXT:  .LBB14_2: // %common.ret
 ; CHECK-NEXT:    ret
  entry:
@@ -379,14 +384,15 @@ define void @imp_null_check_store(ptr %x) {
   ret void
 }
 
-;; TODO: can be implicit
 define void @imp_null_check_unordered_store(ptr %x) {
+;; OHOS_LOCAL begin
 ; CHECK-LABEL: imp_null_check_unordered_store:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    cbz x0, .LBB15_2
-; CHECK-NEXT:  // %bb.1: // %not_null
 ; CHECK-NEXT:    mov w8, #1
-; CHECK-NEXT:    str w8, [x0]
+; CHECK-NEXT:  .Ltmp10:
+; CHECK-NEXT:    str w8, [x0] // on-fault: .LBB15_2
+; CHECK-NEXT:  // %bb.1: // %not_null
+;; OHOS_LOCAL end
 ; CHECK-NEXT:  .LBB15_2: // %common.ret
 ; CHECK-NEXT:    ret
  entry:
@@ -404,7 +410,9 @@ define void @imp_null_check_unordered_store(ptr %x) {
 define i32 @imp_null_check_neg_gep_load(ptr %x) {
 ; CHECK-LABEL: imp_null_check_neg_gep_load:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:  .Ltmp7:
+;; OHOS_LOCAL begin
+; CHECK-NEXT:  .Ltmp11:
+;; OHOS_LOCAL end
 ; CHECK-NEXT:    ldur w0, [x0, #-128] // on-fault: .LBB16_2
 ; CHECK-NEXT:  // %bb.1: // %not_null
 ; CHECK-NEXT:    ret
@@ -423,5 +431,34 @@ define i32 @imp_null_check_neg_gep_load(ptr %x) {
   %t = load i32, ptr %x.gep
   ret i32 %t
 }
+
+;; OHOS_LOCAL begin
+;; LLVM does not support implicit null checks for ldp and stp
+;; The test must be fixed, when such is introduced
+define i64 @imp_null_check_load_pair(ptr %array) {
+; CHECK-LABEL: imp_null_check_load_pair:
+; CHECK:       // %bb.0:                               // %entry
+; CHECK-NEXT:    cbz     x0, .LBB17_2
+; CHECK-NEXT:  // %bb.1:                               // %if.end
+; CHECK-NEXT:    ldp     x8, x9, [x0]
+; CHECK-NEXT:    add     x0, x9, x8
+; CHECK-NEXT:  .LBB17_2:                               // %return
+; CHECK-NEXT:    ret
+entry:
+  %cmp = icmp eq ptr %array, null
+  br i1 %cmp, label %return, label %if.end, !make.implicit !0
+
+if.end:                                           ; preds = %entry
+  %0 = load i64, ptr %array, align 8
+  %arrayidx1 = getelementptr inbounds i64, ptr %array, i64 1
+  %1 = load i64, ptr %arrayidx1, align 8
+  %add = add nsw i64 %1, %0
+  br label %return
+
+return:                                           ; preds = %entry, %if.end
+  %retval.0 = phi i64 [ %add, %if.end ], [ 0, %entry ]
+  ret i64 %retval.0
+}
+;; OHOS_LOCAL end
 
 !0 = !{}
