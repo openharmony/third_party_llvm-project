@@ -1038,6 +1038,9 @@ static bool ShouldLogAfterPrintf() {
 }
 
 extern "C" SANITIZER_WEAK_ATTRIBUTE int musl_log(const char *fmt, ...);
+extern "C" SANITIZER_WEAK_ATTRIBUTE int ohos_dfx_log(const char *str,
+                                                      const char *path);
+static thread_local bool safe_to_call_ohos_dfx_log = true;
 
 void WriteOneLineToSyslog(const char *s) {
   if (&musl_log)
@@ -1058,6 +1061,15 @@ void SetAbortMessage(const char *str) {}
 #    endif  // SANITIZER_ANDROID
 
 void LogMessageOnPrintf(const char *str) {
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  // Preserve newlines for the OHOS report aggregator before syslog splits
+  // the message into individual lines.
+  if (&ohos_dfx_log && safe_to_call_ohos_dfx_log) {
+    safe_to_call_ohos_dfx_log = false;
+    ohos_dfx_log(str, common_flags()->log_path);
+    safe_to_call_ohos_dfx_log = true;
+  }
+#endif
   if (common_flags()->log_to_syslog && ShouldLogAfterPrintf())
     WriteToSyslog(str);
 }
