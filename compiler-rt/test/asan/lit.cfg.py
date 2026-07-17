@@ -125,7 +125,7 @@ config.substitutions.append(
     ("%clangxx_asan_lto ", build_invocation(clang_asan_cxxflags, True))
 )
 if config.asan_dynamic:
-    if config.host_os in ["Linux", "FreeBSD", "NetBSD", "SunOS"]:
+    if config.host_os in ["Linux", "FreeBSD", "NetBSD", "SunOS", "OHOS"]:
         shared_libasan_path = os.path.join(
             config.compiler_rt_libdir,
             "libclang_rt.asan{}.so".format(config.target_suffix),

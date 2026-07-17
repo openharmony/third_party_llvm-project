@@ -61,7 +61,7 @@ def build_env():
     has_ld_library_path = False
     for key, value in os.environ.items():
         san_opt = key.endswith("SAN_OPTIONS")
-        if san_opt:
+        if san_opt and "abort_on_error=1" not in value:
             value += ":abort_on_error=0"
         if (
             key in ["ASAN_ACTIVATION_OPTIONS", "SCUDO_OPTIONS"]

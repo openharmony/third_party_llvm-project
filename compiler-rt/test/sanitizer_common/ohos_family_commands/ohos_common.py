@@ -14,7 +14,7 @@ def host_to_device_path(path):
 
 def hdc_output(args):
     command = hdc_constants.get_hdc_cmd_prefix() + args
-    return subprocess.check_output(command, stderr=subprocess.STDOUT)
+    return subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=300)
 
 
 def hdc(args, attempts=1, check_stdout=""):
@@ -32,6 +32,9 @@ def hdc(args, attempts=1, check_stdout=""):
         except subprocess.CalledProcessError as error:
             output = error.output
             ret = error.returncode or 255
+        except subprocess.TimeoutExpired as error:
+            output = error.output or b""
+            ret = 255
     if ret != 0:
         print("hdc command failed", args)
         print(output.decode(errors="replace"))
