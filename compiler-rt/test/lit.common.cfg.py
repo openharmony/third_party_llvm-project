@@ -500,13 +500,16 @@ elif config.host_os == "Darwin" and config.apple_platform != "osx":
 elif is_ohos_family_mobile():
     config.available_features.add("ohos_family")
     config.available_features.add("android")
+    compile_wrapper_name = (
+        "ohos_host_compile.py" if config.ohos_host else "ohos_compile.py"
+    )
     compile_wrapper = (
         os.path.join(
             config.compiler_rt_src_root,
             "test",
             "sanitizer_common",
             "ohos_family_commands",
-            "ohos_compile.py",
+            compile_wrapper_name,
         )
         + " "
     )
@@ -764,35 +767,45 @@ if config.android:
     for file in config.android_files_to_push:
         subprocess.check_call([adb, "push", file, android_tmpdir], env=env)
 elif config.host_os == "OHOS":
-    for var in [
-        "HDC",
-        "HDC_SERVER_IP_PORT",
-        "HDC_UTID",
-        "OHOS_REMOTE_TMP_DIR",
-        "OHOS_REMOTE_DYN_LINKER",
-    ]:
-        if var in os.environ:
-            config.environment[var] = os.environ[var]
+    if config.ohos_host:
+        config.substitutions.append(("%device_rundir/", ""))
+        config.substitutions.append(("%push_to_device", "echo "))
+        config.substitutions.append(("%adb_shell ", ""))
+        config.substitutions.append(("%device_rm", "rm "))
+    else:
+        for var in [
+            "HDC",
+            "HDC_SERVER_IP_PORT",
+            "HDC_UTID",
+            "OHOS_REMOTE_TMP_DIR",
+            "OHOS_REMOTE_DYN_LINKER",
+        ]:
+            if var in os.environ:
+                config.environment[var] = os.environ[var]
 
-    hdc_impl = os.path.join(
-        os.path.dirname(__file__), "sanitizer_common", "ohos_family_commands"
-    )
-    sys.path.append(hdc_impl)
-    import hdc_constants
+        hdc_impl = os.path.join(
+            os.path.dirname(__file__), "sanitizer_common", "ohos_family_commands"
+        )
+        sys.path.append(hdc_impl)
+        import hdc_constants
 
-    env = os.environ.copy()
-    config.substitutions.append(
-        ("%device_rundir/", hdc_constants.TMPDIR.rstrip("/") + "/")
-    )
-    prefix = hdc_constants.get_hdc_cmd_prefix()
-    prefix_str = " ".join(prefix)
-    config.substitutions.append(("%push_to_device", "%s file send " % prefix_str))
-    config.substitutions.append(("%adb_shell ", "%s shell " % prefix_str))
-    config.substitutions.append(("%device_rm", "%s shell 'rm ' " % prefix_str))
-    subprocess.check_call(prefix + ["tconn"], env=env)
-    subprocess.check_call(
-        prefix + ["shell", "mkdir", "-p", hdc_constants.TMPDIR], env=env
-    )
+        env = os.environ.copy()
+        config.substitutions.append(
+            ("%device_rundir/", hdc_constants.TMPDIR.rstrip("/") + "/")
+        )
+        prefix = hdc_constants.get_hdc_cmd_prefix()
+        prefix_str = " ".join(prefix)
+        config.substitutions.append(
+            ("%push_to_device", "%s file send " % prefix_str)
+        )
+        config.substitutions.append(("%adb_shell ", "%s shell " % prefix_str))
+        config.substitutions.append(
+            ("%device_rm", "%s shell 'rm ' " % prefix_str)
+        )
+        subprocess.check_call(prefix + ["tconn"], env=env)
+        subprocess.check_call(
+            prefix + ["shell", "mkdir", "-p", hdc_constants.TMPDIR], env=env
+        )
 else:
     config.substitutions.append(("%device_rundir/", ""))
     config.substitutions.append(("%push_to_device", "echo "))
