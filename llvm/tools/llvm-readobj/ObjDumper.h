@@ -128,6 +128,9 @@ public:
   virtual void printVersionInfo() {}
   virtual void printGroupSections() {}
   virtual void printHashHistograms() {}
+#ifdef OHOS_LLVM
+  virtual void printAdltSection() {}
+#endif
   virtual void printCGProfile() {}
   // If PrettyPGOAnalysis is true, prints BFI as relative frequency and BPI as
   // percentage. Otherwise raw values are displayed.

@@ -1578,7 +1578,7 @@ enum {
 
 #ifdef OHOS_LLVM
   PT_OHOS_RANDOMDATA = 0x6788FC60, // Fill with random data. OHOS_LOCAL
-
+  PT_ADLT = 0x6788FC61,            // Adlt information.
 #endif /* OHOS_LLVM */
   // ARM program header types.
   PT_ARM_ARCHEXT = 0x70000000, // Platform architecture compatibility info
