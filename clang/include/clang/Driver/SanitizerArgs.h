@@ -42,6 +42,9 @@ class SanitizerArgs {
   bool MsanUseAfterDtor = true;
   bool MsanParamRetval = true;
   bool CfiCrossDso = false;
+#ifdef OHOS_LLVM
+  bool CfiCrossDsoReq = false;
+#endif /* OHOS_LLVM */
   bool CfiICallGeneralizePointers = false;
   bool CfiICallNormalizeIntegers = false;
   bool CfiCanonicalJumpTables = false;
