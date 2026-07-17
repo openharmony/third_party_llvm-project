@@ -697,9 +697,21 @@ void GetThreadStackAndTls(bool main, uptr *stk_begin, uptr *stk_end,
   if (!main) {
     // If stack and tls intersect, make them non-intersecting.
     if (*tls_begin > *stk_begin && *tls_begin < *stk_end) {
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+      // Keep the original stack bounds when TLS extends past the stack end.
+      // Shrinking the stack in that case breaks frame-pointer unwinding on
+      // OHOS by making valid frame pointers appear out of bounds.
+      if (*stk_end < *tls_end) {
+        *tls_begin = *stk_end;
+      } else {
+        *tls_end = *stk_end;
+        *stk_end = *tls_begin;
+      }
+#else
       if (*stk_end < *tls_end)
         *tls_end = *stk_end;
       *stk_end = *tls_begin;
+#endif
     }
   }
 #  endif
