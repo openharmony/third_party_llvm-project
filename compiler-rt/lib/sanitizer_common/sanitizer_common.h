@@ -840,6 +840,9 @@ class LoadedModule {
     ranges_.clear();
   }
   void set(const char *module_name, uptr base_address);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  void set(const char *module_name, uptr base_address, bool instrumented);
+#endif
   void set(const char *module_name, uptr base_address, ModuleArch arch,
            u8 uuid[kModuleUUIDSize], bool instrumented);
   void setUuid(const char *uuid, uptr size);

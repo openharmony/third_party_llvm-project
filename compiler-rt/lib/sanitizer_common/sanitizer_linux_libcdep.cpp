@@ -726,12 +726,124 @@ struct DlIteratePhdrData {
   bool first;
 };
 
+#  if defined(OHOS_LLVM) && SANITIZER_OHOS
+class DynamicSegment {
+ public:
+  DynamicSegment(ElfW(Addr) base_addr, ElfW(Addr) segment_addr)
+      : base_addr_(base_addr),
+        symbol_count_(0),
+        symbol_table_(nullptr),
+        string_table_(nullptr) {
+    Initialize(segment_addr);
+  }
+
+  uptr symbol_count() const {
+    return symbol_table_ && string_table_ ? symbol_count_ : 0;
+  }
+
+  const char *symbol_name(uptr index) const {
+    return &string_table_[symbol_table_[index].st_name];
+  }
+
+ private:
+  template <typename T> T *ToPtr(ElfW(Addr) addr_or_offset) const {
+    ElfW(Addr) addr = addr_or_offset < base_addr_
+                          ? base_addr_ + addr_or_offset
+                          : addr_or_offset;
+    return reinterpret_cast<T *>(addr);
+  }
+
+  void Initialize(ElfW(Addr) segment_addr) {
+    for (ElfW(Dyn) *entry = ToPtr<ElfW(Dyn)>(segment_addr);
+         entry->d_tag != DT_NULL; ++entry) {
+      ElfW(Addr) addr = entry->d_un.d_ptr;
+      switch (entry->d_tag) {
+        case DT_HASH:
+          symbol_count_ = SymbolCountFromHash(addr);
+          break;
+        case DT_GNU_HASH:
+          if (symbol_count_ == 0)
+            symbol_count_ = SymbolCountFromGnuHash(addr);
+          break;
+        case DT_SYMTAB:
+          symbol_table_ = ToPtr<ElfW(Sym)>(addr);
+          break;
+        case DT_STRTAB:
+          string_table_ = ToPtr<const char>(addr);
+          break;
+      }
+    }
+  }
+
+  uptr SymbolCountFromHash(ElfW(Addr) hash_addr) const {
+    struct HashHeader {
+      u32 bucket_count;
+      u32 chain_count;
+    };
+    return ToPtr<HashHeader>(hash_addr)->chain_count;
+  }
+
+  uptr SymbolCountFromGnuHash(ElfW(Addr) hash_addr) const {
+    struct GnuHashHeader {
+      u32 bucket_count;
+      u32 symbol_offset;
+      u32 bloom_size;
+      u32 bloom_shift;
+    };
+
+    const GnuHashHeader *header = ToPtr<GnuHashHeader>(hash_addr);
+    const uptr word_size = FIRST_32_SECOND_64(sizeof(u32), sizeof(u64));
+    const ElfW(Addr) buckets_addr =
+        hash_addr + sizeof(GnuHashHeader) + word_size * header->bloom_size;
+    const u32 *buckets = ToPtr<u32>(buckets_addr);
+    const ElfW(Addr) chains_addr =
+        buckets_addr + header->bucket_count * sizeof(buckets[0]);
+    const u32 *chains = ToPtr<u32>(chains_addr);
+
+    u32 last_symbol = 0;
+    for (u32 i = 0; i < header->bucket_count; ++i)
+      last_symbol = Max(last_symbol, buckets[i]);
+    if (last_symbol == 0 || last_symbol < header->symbol_offset)
+      return 0;
+
+    u32 chain_entry;
+    do {
+      chain_entry = chains[last_symbol - header->symbol_offset];
+      ++last_symbol;
+    } while ((chain_entry & 1) == 0);
+    return last_symbol;
+  }
+
+  ElfW(Addr) base_addr_;
+  uptr symbol_count_;
+  ElfW(Sym) *symbol_table_;
+  const char *string_table_;
+};
+
+static bool IsModuleInstrumented(dl_phdr_info *info) {
+  for (uptr i = 0; i < info->dlpi_phnum; ++i) {
+    if (info->dlpi_phdr[i].p_type != PT_DYNAMIC)
+      continue;
+    DynamicSegment segment(info->dlpi_addr, info->dlpi_phdr[i].p_vaddr);
+    for (uptr symbol = 0; symbol < segment.symbol_count(); ++symbol) {
+      if (internal_strcmp(segment.symbol_name(symbol), "__tsan_init") == 0)
+        return true;
+    }
+  }
+  return false;
+}
+#  endif
+
 static int AddModuleSegments(const char *module_name, dl_phdr_info *info,
                              InternalMmapVectorNoCtor<LoadedModule> *modules) {
   if (module_name[0] == '\0')
     return 0;
   LoadedModule cur_module;
+#  if defined(OHOS_LLVM) && SANITIZER_OHOS
+  cur_module.set(module_name, info->dlpi_addr, IsModuleInstrumented(info));
+#  else
   cur_module.set(module_name, info->dlpi_addr);
+#  endif
   for (int i = 0; i < (int)info->dlpi_phnum; i++) {
     const Elf_Phdr *phdr = &info->dlpi_phdr[i];
     if (phdr->p_type == PT_LOAD) {
