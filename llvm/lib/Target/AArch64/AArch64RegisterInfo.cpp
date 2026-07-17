@@ -93,6 +93,8 @@ AArch64RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
     return CSR_AArch64_ArkFast4_SaveList;
   if (MF->getFunction().getCallingConv() == CallingConv::ArkFast5)
     return CSR_AArch64_ArkFast5_SaveList;
+  if (MF->getFunction().getCallingConv() == CallingConv::ArkFast6)
+    return CSR_AArch64_ArkFast6_SaveList;
   if (MF->getFunction().getCallingConv() == CallingConv::ArkMethod)
     return CSR_AArch64_ArkMethod_SaveList;
 #endif /* OHOS_LLVM */
@@ -327,6 +329,8 @@ AArch64RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
     return CSR_AArch64_ArkFast4_RegMask;
   if (CC == CallingConv::ArkFast5)
     return CSR_AArch64_ArkFast5_RegMask;
+  if (CC == CallingConv::ArkFast6)
+    return CSR_AArch64_ArkFast6_RegMask;
   if (CC == CallingConv::ArkMethod)
     return CSR_AArch64_ArkMethod_RegMask;
 #endif /* OHOS_LLVM */

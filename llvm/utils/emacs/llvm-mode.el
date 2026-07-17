@@ -83,7 +83,7 @@
          "cxx_fast_tlscc" "swiftcc" "tailcc" "swifttailcc" "cfguard_checkcc"
          ;; OHOS_LOCAL begin
          "arkintcc" "arkfast0cc" "arkfast1cc" "arkfast2cc" "arkfast3cc"
-         "arkfast4cc" "arkfast5cc" "arkmethodcc" "arkresolvercc" "arkpltcc"
+         "arkfast4cc" "arkfast5cc" "arkfast6cc" "arkmethodcc" "arkresolvercc" "arkpltcc"
          ;; OHOS_LOCAL end
          ;; Visibility styles
          "default" "hidden" "protected"

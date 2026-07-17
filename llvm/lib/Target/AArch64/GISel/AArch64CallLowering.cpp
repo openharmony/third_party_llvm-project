@@ -861,6 +861,7 @@ static bool mayTailCallThisCC(CallingConv::ID CC) {
   case CallingConv::ArkFast3:
   case CallingConv::ArkFast4:
   case CallingConv::ArkFast5:
+  case CallingConv::ArkFast6:
 #endif /* OHOS_LLVM */
     return true;
   default:

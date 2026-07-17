@@ -30,6 +30,7 @@
 #include "llvm/CodeGen/SelectionDAGNodes.h"
 #include "llvm/CodeGen/StackMaps.h"
 #ifdef OHOS_LLVM
+#include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetFrameLowering.h" // OHOS_LOCAL
 #endif /* OHOS_LLVM */
 #include "llvm/CodeGen/TargetLowering.h"
@@ -79,14 +80,6 @@ static cl::opt<unsigned> MaxRegistersForGCPointers(
     "max-registers-for-gc-values", cl::Hidden, cl::init(0),
     cl::desc("Max number of VRegs allowed to pass GC pointer meta args in"));
 
-#ifdef OHOS_LLVM
-// Useful when gc managed references are 32-bit wide but runtime supports only
-// 64-bit slots
-static cl::opt<unsigned> SpillSlotMinSize("spill-slot-min-size-bytes", cl::Hidden,
-                                          cl::init(1),
-                                          cl::desc("Minimum size of a spill slot"));
-
-#endif /* OHOS_LLVM */
 typedef FunctionLoweringInfo::StatepointRelocationRecord RecordType;
 
 static void pushStackMapConstant(SmallVectorImpl<SDValue>& Ops,
@@ -762,6 +755,11 @@ lowerStatepointMetaArgs(SmallVectorImpl<SDValue> &Ops,
     return !willLowerDirectly(SD);
   };
 
+#ifdef OHOS_LLVM
+  auto StatepointInst = dyn_cast_or_null<GCStatepointInst>(SI.StatepointInstr);
+  auto AssignedArkSlots = tryAssignStackSlots(Builder, StatepointInst);
+#endif /* OHOS_LLVM */
+
   auto processGCPtr = [&](const Value *V) {
     SDValue PtrSD = Builder.getValue(V);
     if (!LoweredGCPtrs.insert(PtrSD))
@@ -771,6 +769,10 @@ lowerStatepointMetaArgs(SmallVectorImpl<SDValue> &Ops,
 #endif /* OHOS_LLVM */
     GCPtrIndexMap[PtrSD] = LoweredGCPtrs.size() - 1;
 
+#ifdef OHOS_LLVM
+    if (AssignedArkSlots.count(V))
+      return; // we need to assign these to stack
+#endif /* OHOS_LLVM */
     assert(!LowerAsVReg.count(PtrSD) && "must not have been seen");
     if (LowerAsVReg.size() == MaxVRegPtrs)
       return;
@@ -801,11 +803,6 @@ lowerStatepointMetaArgs(SmallVectorImpl<SDValue> &Ops,
     return !(LiveInDeopt || UseRegistersForDeoptValues);
   };
 
-#ifdef OHOS_LLVM
-  auto StatepointInst = dyn_cast_or_null<GCStatepointInst>(SI.StatepointInstr);
-  auto AssignedArkSlots = tryAssignStackSlots(Builder, StatepointInst);
-
-#endif /* OHOS_LLVM */
   // Before we actually start lowering (and allocating spill slots for values),
   // reserve any stack slots which we judge to be profitable to reuse for a
   // particular value.  This is purely an optimization over the code below and

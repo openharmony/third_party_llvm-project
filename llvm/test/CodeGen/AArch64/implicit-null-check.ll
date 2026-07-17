@@ -437,12 +437,12 @@ define i32 @imp_null_check_neg_gep_load(ptr %x) {
 ;; The test must be fixed, when such is introduced
 define i64 @imp_null_check_load_pair(ptr %array) {
 ; CHECK-LABEL: imp_null_check_load_pair:
-; CHECK:       // %bb.0:                               // %entry
-; CHECK-NEXT:    cbz     x0, .LBB17_2
-; CHECK-NEXT:  // %bb.1:                               // %if.end
-; CHECK-NEXT:    ldp     x8, x9, [x0]
-; CHECK-NEXT:    add     x0, x9, x8
-; CHECK-NEXT:  .LBB17_2:                               // %return
+; CHECK:       // %bb.0: // %entry
+; CHECK-NEXT:    cbz x0, .LBB17_2
+; CHECK-NEXT:  // %bb.1: // %if.end
+; CHECK-NEXT:    ldp x8, x9, [x0]
+; CHECK-NEXT:    add x0, x9, x8
+; CHECK-NEXT:  .LBB17_2: // %return
 ; CHECK-NEXT:    ret
 entry:
   %cmp = icmp eq ptr %array, null

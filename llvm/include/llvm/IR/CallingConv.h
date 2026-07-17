@@ -114,14 +114,17 @@ namespace CallingConv {
     // Ark Itroc calling convention for FastPath handlers with five arguments
     ArkFast5 = 28,
 
+    // Ark Itroc calling convention for FastPath handlers with six arguments
+    ArkFast6 = 29,
+
     // Ark AOT method calling convention with frame adaptation
-    ArkMethod = 29,
+    ArkMethod = 30,
 
     // Ark AOT calling convention for special class resolvers
-    ArkResolver = 30,
+    ArkResolver = 31,
 
     // Ark AOT calling convention for static calls through special PLT resolver
-    ArkPlt = 31,
+    ArkPlt = 32,
 #endif /* OHOS_LLVM */
 
     /// This is the start of the target-specific calling conventions, e.g.
