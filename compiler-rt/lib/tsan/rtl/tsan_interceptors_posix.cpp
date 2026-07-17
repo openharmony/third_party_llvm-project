@@ -1188,7 +1188,7 @@ TSAN_INTERCEPTOR(void, pthread_exit, void *retval) {
   REAL(pthread_exit)(retval);
 }
 
-#if SANITIZER_LINUX
+#if SANITIZER_LINUX && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
 TSAN_INTERCEPTOR(int, pthread_tryjoin_np, void *th, void **ret) {
   SCOPED_INTERCEPTOR_RAW(pthread_tryjoin_np, th, ret);
   Tid tid = ThreadConsumeTid(thr, pc, (uptr)th);
@@ -3019,10 +3019,10 @@ void InitializeInterceptors() {
   TSAN_INTERCEPT(pthread_join);
   TSAN_INTERCEPT(pthread_detach);
   TSAN_INTERCEPT(pthread_exit);
-  #if SANITIZER_LINUX
+#if SANITIZER_LINUX && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
   TSAN_INTERCEPT(pthread_tryjoin_np);
   TSAN_INTERCEPT(pthread_timedjoin_np);
-  #endif
+#endif
 
   TSAN_INTERCEPT_VER(pthread_cond_init, PTHREAD_ABI_BASE);
   TSAN_INTERCEPT_VER(pthread_cond_signal, PTHREAD_ABI_BASE);

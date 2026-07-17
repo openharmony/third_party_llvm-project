@@ -234,6 +234,10 @@ if(HAIKU)
 endif()
 set(SANITIZER_CFLAGS ${SANITIZER_COMMON_CFLAGS})
 
+if(OHOS_LLVM AND OHOS)
+  list(APPEND SANITIZER_CFLAGS -fno-emulated-tls)
+endif()
+
 # Too many existing bugs, needs cleanup.
 append_list_if(COMPILER_RT_HAS_WNO_FORMAT -Wno-format SANITIZER_CFLAGS)
 
