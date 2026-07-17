@@ -11,8 +11,8 @@
 // Some aarch64 kernels do not support non executable write pages
 // REQUIRES: stable-runtime
 
-// OHOS_LOCAL
-// dlopen not intercepted on OHOS
+// LLVM 21 handles library unloads, so this test's expected unload failure does
+// not apply on OHOS.
 // UNSUPPORTED: ohos_family
 
 #ifndef LIB

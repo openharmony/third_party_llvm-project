@@ -12,6 +12,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "sanitizer_platform.h"
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#  include "sanitizer_interface_internal.h"
+#endif
 
 #if SANITIZER_FREEBSD || SANITIZER_LINUX || SANITIZER_NETBSD || \
     SANITIZER_SOLARIS || SANITIZER_HAIKU
@@ -2779,7 +2782,45 @@ static void GetPcSpBp(void *context, uptr *pc, uptr *sp, uptr *bp) {
 
 void SignalContext::InitPcSpBp() { GetPcSpBp(context, &pc, &sp, &bp); }
 
-void InitializePlatformEarly() { InitTlsSize(); }
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+static bool ShouldVerifyDlopenImplInterceptor() {
+  return internal_strcmp(SanitizerToolName, "AddressSanitizer") == 0 ||
+         internal_strcmp(SanitizerToolName, "ThreadSanitizer") == 0;
+}
+
+static void VerifyDlopenImplInterceptor() {
+  if (!common_flags()->verify_interceptors ||
+      !ShouldVerifyDlopenImplInterceptor())
+    return;
+
+  void *default_symbol = dlsym(RTLD_DEFAULT, "dlopen_impl");
+  void *next_symbol = dlsym(RTLD_NEXT, "dlopen_impl");
+  RAW_CHECK(default_symbol && next_symbol);
+
+  Dl_info default_info = {};
+  Dl_info next_info = {};
+  Dl_info runtime_info = {};
+  RAW_CHECK(dladdr(default_symbol, &default_info));
+  RAW_CHECK(dladdr(next_symbol, &next_info));
+  RAW_CHECK(dladdr((void *)__sanitizer_report_error_summary, &runtime_info));
+
+  if (internal_strcmp(default_info.dli_fname, runtime_info.dli_fname) == 0)
+    return;
+  Report(
+      "ERROR: dlopen_impl interceptor is not working; %s may have been "
+      "loaded too late. first=%p (%s), next=%p (%s)\n",
+      runtime_info.dli_fname, default_info.dli_saddr, default_info.dli_fname,
+      next_info.dli_saddr, next_info.dli_fname);
+  RAW_CHECK("interceptors not installed" && false);
+}
+#endif
+
+void InitializePlatformEarly() {
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  VerifyDlopenImplInterceptor();
+#endif
+  InitTlsSize();
+}
 
 void CheckASLR() {
 #  if SANITIZER_NETBSD

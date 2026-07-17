@@ -281,6 +281,18 @@ extern const short *_tolower_tab_;
   ({ CheckNoDeepBind(filename, flag); REAL(dlopen)(filename, flag); })
 #endif
 
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#  ifndef COMMON_INTERCEPTOR_DLOPEN_IMPL
+#    define COMMON_INTERCEPTOR_DLOPEN_IMPL(                            \
+        filename, flag, dl_namespace, caller_addr, extinfo)           \
+      ({                                                               \
+        CheckNoDeepBind(filename, flag);                               \
+        REAL(dlopen_impl)(filename, flag, dl_namespace, caller_addr,   \
+                          extinfo);                                    \
+      })
+#  endif
+#endif
+
 #ifndef COMMON_INTERCEPTOR_GET_TLS_RANGE
 #define COMMON_INTERCEPTOR_GET_TLS_RANGE(begin, end) *begin = *end = 0;
 #endif
@@ -6532,6 +6544,22 @@ INTERCEPTOR(int, fclose, __sanitizer_FILE *fp) {
 #endif
 
 #if SANITIZER_INTERCEPT_DLOPEN_DLCLOSE
+#  if defined(OHOS_LLVM) && SANITIZER_OHOS
+INTERCEPTOR(void *, dlopen_impl, const char *filename, int flag,
+            const char *dl_namespace, const void *caller_addr,
+            const void *extinfo) {
+  void *ctx;
+  COMMON_INTERCEPTOR_ENTER_NOIGNORE(ctx, dlopen_impl, filename, flag,
+                                    dl_namespace, caller_addr, extinfo);
+  if (filename)
+    COMMON_INTERCEPTOR_READ_STRING(ctx, filename, 0);
+  void *res = COMMON_INTERCEPTOR_DLOPEN_IMPL(
+      filename, flag, dl_namespace, caller_addr, extinfo);
+  Symbolizer::GetOrInit()->InvalidateModuleList();
+  COMMON_INTERCEPTOR_LIBRARY_LOADED(filename, res);
+  return res;
+}
+#  else
 INTERCEPTOR(void*, dlopen, const char *filename, int flag) {
   void *ctx;
   COMMON_INTERCEPTOR_ENTER_NOIGNORE(ctx, dlopen, filename, flag);
@@ -6570,6 +6598,7 @@ INTERCEPTOR(void*, dlopen, const char *filename, int flag) {
   COMMON_INTERCEPTOR_LIBRARY_LOADED(filename, res);
   return res;
 }
+#  endif
 
 INTERCEPTOR(int, dlclose, void *handle) {
   void *ctx;
@@ -6579,9 +6608,15 @@ INTERCEPTOR(int, dlclose, void *handle) {
   COMMON_INTERCEPTOR_LIBRARY_UNLOADED();
   return res;
 }
-#define INIT_DLOPEN_DLCLOSE          \
-  COMMON_INTERCEPT_FUNCTION(dlopen); \
-  COMMON_INTERCEPT_FUNCTION(dlclose);
+#  if defined(OHOS_LLVM) && SANITIZER_OHOS
+#    define INIT_DLOPEN_DLCLOSE               \
+      COMMON_INTERCEPT_FUNCTION(dlopen_impl); \
+      COMMON_INTERCEPT_FUNCTION(dlclose);
+#  else
+#    define INIT_DLOPEN_DLCLOSE        \
+      COMMON_INTERCEPT_FUNCTION(dlopen); \
+      COMMON_INTERCEPT_FUNCTION(dlclose);
+#  endif
 #else
 #define INIT_DLOPEN_DLCLOSE
 #endif

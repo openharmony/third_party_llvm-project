@@ -2548,6 +2548,18 @@ static void HandleRecvmsg(ThreadState *thr, uptr pc,
     ThreadIgnoreEnd(thr);                         \
     res;                                          \
   })
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#  define COMMON_INTERCEPTOR_DLOPEN_IMPL(                              \
+      filename, flag, dl_namespace, caller_addr, extinfo)             \
+    ({                                                                 \
+      CheckNoDeepBind(filename, flag);                                 \
+      ThreadIgnoreBegin(thr, 0);                                       \
+      void *res = REAL(dlopen_impl)(filename, flag, dl_namespace,      \
+                                    caller_addr, extinfo);             \
+      ThreadIgnoreEnd(thr);                                            \
+      res;                                                             \
+    })
+#endif
 
 // Ignore interceptors in OnLibraryLoaded()/Unloaded().  These hooks use code
 // (ListOfModules::init, MemoryMappingLayout::DumpListOfModules) that make
