@@ -76,6 +76,7 @@ config.suffixes = [".c", ".cpp", ".m"]
 # Check that the host supports UndefinedBehaviorSanitizer tests
 if config.host_os not in [
     "Linux",
+    "OHOS",
     "Darwin",
     "FreeBSD",
     "Windows",

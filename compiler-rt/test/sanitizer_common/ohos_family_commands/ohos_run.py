@@ -68,8 +68,8 @@ def build_env():
             or san_opt
             or key == "LD_LIBRARY_PATH"
         ):
-            if key == "TSAN_OPTIONS":
-                # Map the TSan suppressions file to the device.
+            if key in ["TSAN_OPTIONS", "UBSAN_OPTIONS"]:
+                # Map sanitizer suppressions files to the device.
                 value = map_list(
                     value,
                     ":",
