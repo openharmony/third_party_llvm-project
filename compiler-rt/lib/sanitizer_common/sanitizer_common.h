@@ -950,6 +950,10 @@ inline void LogMessageOnPrintf(const char *str) {}
 #if SANITIZER_LINUX || SANITIZER_WIN_TRACE
 // Initialize Android logging. Any writes before this are silently lost.
 void AndroidLogInit();
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+// Initialize OHOS logging. Any writes before this are silently lost.
+void OhosLogInit();
+#endif
 void SetAbortMessage(const char *);
 #else
 inline void AndroidLogInit() {}

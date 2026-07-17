@@ -381,6 +381,9 @@ __attribute__((constructor(0))) void __hwasan_init() {
   SetPrintfAndReportCallback(AppendToErrorMessageBuffer);
   // This may call libc -> needs initialized shadow.
   AndroidLogInit();
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  OhosLogInit();
+#endif
 
   InitializeInterceptors();
   InstallDeadlySignalHandlers(HwasanOnDeadlySignal);

@@ -46,6 +46,9 @@ static void CommonStandaloneInit() {
   __sanitizer_set_report_path(common_flags()->log_path);
   __sanitizer::InitializePlatformEarly();
   AndroidLogInit();
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  OhosLogInit();
+#endif
   InitializeCoverage(common_flags()->coverage, common_flags()->coverage_dir);
   CommonInit();
 
