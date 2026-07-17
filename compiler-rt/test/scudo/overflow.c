@@ -8,6 +8,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+// OHOS_LOCAL begin
+#ifdef __OHOS__
+#include <sys/types.h>
+#endif
+// OHOS_LOCAL end
+
 int main(int argc, char **argv) {
   ssize_t offset = sizeof(void *) == 8 ? 8 : 0;
 

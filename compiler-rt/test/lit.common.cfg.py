@@ -8,6 +8,7 @@ import platform
 import re
 import shlex
 import subprocess
+import sys
 import json
 
 import lit.formats
@@ -495,16 +496,6 @@ elif is_ohos_family_mobile():
     config.compile_wrapper = compile_wrapper
     config.substitutions.append(("%run", ""))
     config.substitutions.append(("%env ", "env "))
-    # OHOS_LOCAL begin
-    env = os.environ.copy()
-    adb = os.environ.get("ADB", "adb")
-    device_tmpdir = "/data/local/tmp/Output/"
-    config.substitutions.append(("%device_rundir/", device_tmpdir))
-    config.substitutions.append(("%push_to_device", "%s push " % adb))
-    config.substitutions.append(("%adb_shell ", "%s shell " % adb))
-    config.substitutions.append(("%device_rm", "%s shell 'rm ' " % adb))
-    subprocess.check_call([adb, "shell", "mkdir", "-p", device_tmpdir], env=env)
-    # OHOS_LOCAL end
 elif config.android:
     config.available_features.add("android")
     compile_wrapper = (
@@ -733,6 +724,26 @@ if config.android:
     subprocess.check_call([adb, "shell", "mkdir", "-p", android_tmpdir], env=env)
     for file in config.android_files_to_push:
         subprocess.check_call([adb, "push", file, android_tmpdir], env=env)
+elif config.host_os == "OHOS":
+    hdc_impl = os.path.join(
+        os.path.dirname(__file__), "sanitizer_common", "ohos_family_commands"
+    )
+    sys.path.append(hdc_impl)
+    import hdc_constants
+
+    env = os.environ.copy()
+    config.substitutions.append(
+        ("%device_rundir/", hdc_constants.TMPDIR.rstrip("/") + "/")
+    )
+    prefix = hdc_constants.get_hdc_cmd_prefix()
+    prefix_str = " ".join(prefix)
+    config.substitutions.append(("%push_to_device", "%s file send " % prefix_str))
+    config.substitutions.append(("%adb_shell ", "%s shell " % prefix_str))
+    config.substitutions.append(("%device_rm", "%s shell 'rm ' " % prefix_str))
+    subprocess.check_call(prefix + ["tconn"], env=env)
+    subprocess.check_call(
+        prefix + ["shell", "mkdir", "-p", hdc_constants.TMPDIR], env=env
+    )
 else:
     config.substitutions.append(("%device_rundir/", ""))
     config.substitutions.append(("%push_to_device", "echo "))
@@ -980,7 +991,11 @@ elif config.android:
 
 # Allow tests to use REQUIRES=stable-runtime.  For use when you cannot use XFAIL
 # because the test hangs or fails on one configuration and not the other.
-if config.android or (config.target_arch not in ["arm", "armhf", "aarch64"]):
+if (
+    config.android
+    or config.host_os == "OHOS"
+    or config.target_arch not in ["arm", "armhf", "aarch64"]
+):
     config.available_features.add("stable-runtime")
 
 if config.asan_shadow_scale:

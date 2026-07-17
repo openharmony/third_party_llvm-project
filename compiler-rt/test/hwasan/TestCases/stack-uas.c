@@ -24,6 +24,10 @@
 #  define BUFFER_SIZE 0x800
 #endif
 
+// OHOS_LOCAL
+// Return value is undefined on OHOS
+// XFAIL: ohos_family
+
 void USE(void *x) { // pretend_to_do_something(void *x)
   __asm__ __volatile__(""
                        :
