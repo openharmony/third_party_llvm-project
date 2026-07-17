@@ -2,17 +2,12 @@ import os
 
 # TODO: Move this to CMake.
 HDC = os.environ.get("HDC", "hdc")
+# Set HDC_SERVER_IP_PORT and HDC_UTID to pass remote connection options when
+# needed.
 HDC_SERVER_IP_PORT = os.environ.get("HDC_SERVER_IP_PORT")
 HDC_UTID = os.environ.get("HDC_UTID")
 TMPDIR = os.environ.get("OHOS_REMOTE_TMP_DIR", "/data/local/tmp/Output")
 DYN_LINKER = os.environ.get("OHOS_REMOTE_DYN_LINKER")
-
-# emit warning on import if some required constants are not set
-if not HDC_SERVER_IP_PORT or not HDC_UTID:
-    print(
-        'Please set "HDC_SERVER_IP_PORT" and "HDC_UTID" environment variables '
-        "to be able to debug on remote device"
-    )
 
 
 def get_hdc_cmd_prefix():
