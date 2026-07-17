@@ -558,6 +558,9 @@ static void SetJmp(ThreadState *thr, uptr sp) {
   JmpBuf *buf = thr->jmp_bufs.PushBack();
   buf->sp = sp;
   buf->shadow_stack_pos = thr->shadow_stack_pos;
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  buf->ignore_reads_and_writes = thr->ignore_reads_and_writes;
+#endif
   ThreadSignalContext *sctx = SigCtx(thr);
   buf->int_signal_send = sctx ? sctx->int_signal_send : 0;
   buf->oldset_stack_size = sctx ? sctx->oldset.Size() : 0;
@@ -584,6 +587,13 @@ static void LongJmp(ThreadState *thr, uptr *env) {
       }
       atomic_store(&thr->in_blocking_func, buf->in_blocking_func,
           memory_order_relaxed);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+      thr->ignore_reads_and_writes = buf->ignore_reads_and_writes;
+      if (buf->ignore_reads_and_writes)
+        thr->fast_state.SetIgnoreBit();
+      else
+        thr->fast_state.ClearIgnoreBit();
+#endif
       atomic_store(&thr->in_signal_handler, buf->in_signal_handler,
           memory_order_relaxed);
       JmpBufGarbageCollect(thr, buf->sp - 1);  // do not collect buf->sp
