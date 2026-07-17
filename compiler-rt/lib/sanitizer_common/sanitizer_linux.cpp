@@ -697,6 +697,20 @@ u64 NanoTime() {
 }
 #  endif
 
+#  if defined(OHOS_LLVM) && SANITIZER_OHOS
+static const char *GetEnvFromEnviron(const char *name) {
+  if (::environ != nullptr) {
+    uptr name_len = internal_strlen(name);
+    for (char **env = ::environ; *env != nullptr; ++env) {
+      if (internal_strncmp(*env, name, name_len) == 0 &&
+          (*env)[name_len] == '=')
+        return *env + name_len + 1;
+    }
+  }
+  return nullptr;
+}
+#  endif
+
 // Like getenv, but reads env directly from /proc (on Linux) or parses the
 // 'environ' array (on some others) and does not use libc. This function
 // should be called first inside __asan_init.
@@ -721,8 +735,13 @@ const char *GetEnv(const char *name) {
     if (!ReadFileToBuffer("/proc/self/environ", &environ, &environ_size, &len))
       environ = nullptr;
   }
-  if (!environ || len == 0)
+  if (!environ || len == 0) {
+#    if defined(OHOS_LLVM) && SANITIZER_OHOS
+    return GetEnvFromEnviron(name);
+#    else
     return nullptr;
+#    endif
+  }
   uptr namelen = internal_strlen(name);
   const char *p = environ;
   while (*p != '\0') {  // will happen at the \0\0 that terminates the buffer
