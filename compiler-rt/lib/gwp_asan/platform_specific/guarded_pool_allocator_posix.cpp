@@ -114,7 +114,11 @@ void GuardedPoolAllocator::installAtFork() {
   };
   auto Enable = []() {
     if (auto *S = getSingleton())
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+      S->enableAtFork();
+#else
       S->enable();
+#endif
   };
   pthread_atfork(Disable, Enable, Enable);
 }
