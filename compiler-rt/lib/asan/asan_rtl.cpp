@@ -63,6 +63,9 @@ static void AsanDie() {
         UnmapOrDie((void*)kLowShadowBeg, kHighShadowEnd - kLowShadowBeg);
     }
   }
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  Report("End Asan report (AsanDie)\n");
+#endif
 }
 
 static void CheckUnwind() {

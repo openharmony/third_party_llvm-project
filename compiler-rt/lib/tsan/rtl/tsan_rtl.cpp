@@ -820,6 +820,9 @@ int Finalize(ThreadState *thr) {
     PrintMatchedSuppressions();
 
   failed = OnFinalize(failed);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  Report("End Tsan report (Finalize)\n");
+#endif
 
   return failed ? common_flags()->exitcode : 0;
 }

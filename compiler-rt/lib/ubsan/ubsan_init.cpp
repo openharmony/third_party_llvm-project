@@ -37,6 +37,9 @@ static void CommonInit() {
 static void UbsanDie() {
   if (common_flags()->print_module_map >= 1)
     DumpProcessMap();
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  Report("End CFI report (UbsanDie)\n");
+#endif
 }
 
 static void CommonStandaloneInit() {

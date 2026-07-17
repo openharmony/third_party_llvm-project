@@ -59,6 +59,9 @@ class ScopedReport {
     if (common_flags()->print_module_map >= 2 ||
         (fatal && common_flags()->print_module_map))
       DumpProcessMap();
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+    Report("End Hwasan report\n");
+#endif
     if (fatal)
       Die();
   }

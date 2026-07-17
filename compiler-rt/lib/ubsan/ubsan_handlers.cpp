@@ -928,6 +928,9 @@ void __ubsan::__ubsan_handle_cfi_check_fail(CFICheckFailData *Data,
     handleCFIBadIcall(Data, Value, Opts);
   else
     __ubsan_handle_cfi_bad_type(Data, Value, ValidVtable, Opts);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  Report("End CFI report\n");
+#endif
 }
 
 void __ubsan::__ubsan_handle_cfi_check_fail_abort(CFICheckFailData *Data,
