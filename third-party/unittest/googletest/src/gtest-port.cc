@@ -1052,7 +1052,7 @@ class CapturedStream {
     // directory, so we create the temporary file in a temporary directory.
     std::string name_template;
 
-#ifdef GTEST_OS_LINUX_ANDROID || GTEST_OS_LINUX_OHOS_FAMILY
+#if GTEST_OS_LINUX_ANDROID || GTEST_OS_LINUX_OHOS_FAMILY
     // Note: Android applications are expected to call the framework's
     // Context.getExternalStorageDirectory() method through JNI to get
     // the location of the world-writable SD Card directory. However,
