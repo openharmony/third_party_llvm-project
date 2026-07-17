@@ -358,6 +358,9 @@ void PrintReport(const ReportDesc *rep) {
     DumpProcessMap();
 
   Printf("==================\n");
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  Printf("End Tsan report\n");
+#endif
 }
 
 #else  // #if !SANITIZER_GO
