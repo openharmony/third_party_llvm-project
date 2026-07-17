@@ -4,13 +4,15 @@ import os
 import subprocess
 import sys
 
-from ohos_common import hdc, host_to_device_path, push_to_device
+import hdc_constants
+from ohos_common import push_to_device
 
 here = os.path.abspath(os.path.dirname(sys.argv[0]))
 ohos_run = os.path.join(here, "ohos_run.py")
 
 output = None
 output_type = "executable"
+append_args = []
 args = sys.argv[1:]
 while args:
     arg = args.pop(0)
@@ -21,19 +23,20 @@ while args:
     elif arg == "-o":
         output = args.pop(0)
 
+if hdc_constants.DYN_LINKER:
+    append_args.append("-Wl,--dynamic-linker=" + hdc_constants.DYN_LINKER)
+
 if output is None:
     print("No output file name!", file=sys.stderr)
     sys.exit(1)
 
-with open(f"{output}.stderr", "w") as stderr:
-    ret = subprocess.call(sys.argv[1:], stderr=stderr)
+ret = subprocess.call(sys.argv[1:] + append_args)
 
 if ret != 0:
     sys.exit(ret)
 
 if output_type in ["executable", "shared"]:
     push_to_device(output)
-    hdc(["shell", "chmod", "+x", host_to_device_path(output)])
 
 if output_type == "executable":
     os.rename(output, output + ".real")

@@ -1,13 +1,31 @@
 #!/usr/bin/env python3
 
 import os
+import re
 import signal
 import sys
 
 import hdc_constants
-from ohos_common import hdc, host_to_device_path, pull_from_device
+from ohos_common import hdc, host_to_device_path, pull_from_device, push_to_device
 
 device_binary = host_to_device_path(sys.argv[0])
+
+
+def map_path(path, do_push):
+    if os.path.exists(path):
+        if do_push:
+            push_to_device(path)
+        return host_to_device_path(path)
+    return path
+
+
+def map_list(value, sep, regex, get_path_and_do_push):
+    def repl(m):
+        path, do_push = get_path_and_do_push(m)
+        return map_path(path, do_push)
+
+    opts = value.split(sep)
+    return sep.join(re.sub(regex, repl, opt) for opt in opts)
 
 
 def build_env():
@@ -40,14 +58,39 @@ def build_env():
                 ),
             )
         )
-    # HOS linker ignores RPATH. Set LD_LIBRARY_PATH to Output dir.
-    args.append("LD_LIBRARY_PATH=%s" % hdc_constants.TMPDIR)
+    has_ld_library_path = False
     for key, value in os.environ.items():
         san_opt = key.endswith("SAN_OPTIONS")
         if san_opt:
             value += ":abort_on_error=0"
-        if key in ["ASAN_ACTIVATION_OPTIONS", "SCUDO_OPTIONS"] or san_opt:
+        if (
+            key in ["ASAN_ACTIVATION_OPTIONS", "SCUDO_OPTIONS"]
+            or san_opt
+            or key == "LD_LIBRARY_PATH"
+        ):
+            if key == "TSAN_OPTIONS":
+                # Map the TSan suppressions file to the device.
+                value = map_list(
+                    value,
+                    ":",
+                    r"(?<=suppressions=)(.+)",
+                    lambda match: (match.group(1), True),
+                )
+            elif key == "LD_LIBRARY_PATH":
+                # The OHOS linker ignores RPATH. Preserve the remote output
+                # directory and map host library paths to their device paths.
+                value = map_list(
+                    value,
+                    ":",
+                    r"(.+)",
+                    lambda match: (match.group(1), False),
+                )
+                value = ":".join(filter(None, [hdc_constants.TMPDIR, value]))
+                has_ld_library_path = True
+
             args.append('%s="%s"' % (key, value))
+    if not has_ld_library_path:
+        args.append("LD_LIBRARY_PATH=%s" % hdc_constants.TMPDIR)
     return " ".join(args)
 
 device_env = build_env()
@@ -71,6 +114,8 @@ if ret != 0:
 
 sys.stdout.write(pull_from_device(device_stdout))
 sys.stderr.write(pull_from_device(device_stderr))
+sys.stdout.flush()
+sys.stderr.flush()
 retcode = int(pull_from_device(device_exitcode))
 if retcode > 128:
     os.kill(os.getpid(), signal.SIGABRT)

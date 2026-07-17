@@ -13,6 +13,22 @@ import json
 
 import lit.formats
 import lit.util
+from lit.llvm import llvm_config
+from lit.llvm.subst import FindTool, ToolSubst
+
+
+class WrapTool(FindTool):
+    """Resolve a host tool and prefix it with an OHOS test wrapper."""
+
+    def __init__(self, name, wrapper):
+        super().__init__(name)
+        self.wrapper = wrapper
+
+    def resolve(self, config, dirs):
+        command = super().resolve(config, dirs)
+        if not command:
+            return None
+        return self.wrapper + " " + command
 
 
 def get_path_from_clang(args, allow_failure):
@@ -407,6 +423,7 @@ config.substitutions.append(
 )
 
 # Allow tests to be executed on a simulator or remotely.
+tools = []
 if emulator:
     config.substitutions.append(("%run", emulator))
     config.substitutions.append(("%env ", "env "))
@@ -496,6 +513,23 @@ elif is_ohos_family_mobile():
     config.compile_wrapper = compile_wrapper
     config.substitutions.append(("%run", ""))
     config.substitutions.append(("%env ", "env "))
+    tool_wrapper = (
+        os.path.join(
+            config.compiler_rt_src_root,
+            "test",
+            "sanitizer_common",
+            "ohos_family_commands",
+            "ohos_tool.py",
+        )
+        + " "
+    )
+    tools.append(
+        ToolSubst(
+            "llvm-objdump",
+            command=WrapTool("llvm-objdump", tool_wrapper),
+            unresolved="fatal",
+        )
+    )
 elif config.android:
     config.available_features.add("android")
     compile_wrapper = (
@@ -517,6 +551,11 @@ else:
     # When running locally %device_rm is a no-op.
     config.substitutions.append(("%device_rm", "echo "))
     config.compile_wrapper = ""
+
+llvm_config.add_tool_substitutions(
+    tools,
+    [config.llvm_tools_dir] + config.environment["PATH"].split(os.path.pathsep),
+)
 
 # Define CHECK-%os to check for OS-dependent output.
 config.substitutions.append(("CHECK-%os", ("CHECK-" + config.host_os)))
@@ -725,6 +764,16 @@ if config.android:
     for file in config.android_files_to_push:
         subprocess.check_call([adb, "push", file, android_tmpdir], env=env)
 elif config.host_os == "OHOS":
+    for var in [
+        "HDC",
+        "HDC_SERVER_IP_PORT",
+        "HDC_UTID",
+        "OHOS_REMOTE_TMP_DIR",
+        "OHOS_REMOTE_DYN_LINKER",
+    ]:
+        if var in os.environ:
+            config.environment[var] = os.environ[var]
+
     hdc_impl = os.path.join(
         os.path.dirname(__file__), "sanitizer_common", "ohos_family_commands"
     )

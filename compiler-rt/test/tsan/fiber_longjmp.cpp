@@ -1,6 +1,9 @@
 // RUN: %clang_tsan -O1 %s -o %t && %run %t 2>&1 | FileCheck %s
 // UNSUPPORTED: tvos, watchos
 // XFAIL: ios && !iossim
+// OHOS_LOCAL
+// The OHOS musl does not export the complete context-switching ABI.
+// UNSUPPORTED: ohos_family
 #include "sanitizer_common/sanitizer_ucontext.h"
 #include "test.h"
 #include <setjmp.h>
