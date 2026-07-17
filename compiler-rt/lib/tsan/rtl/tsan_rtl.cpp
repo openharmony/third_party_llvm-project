@@ -728,6 +728,9 @@ void Initialize(ThreadState *thr) {
   const char *options = GetEnv(env_name);
   CacheBinaryName();
   CheckASLR();
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  OhosLogInit();
+#endif
   InitializeFlags(&ctx->flags, options, env_name);
   AvoidCVE_2016_2143();
   __sanitizer::InitializePlatformEarly();
