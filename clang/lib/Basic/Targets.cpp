@@ -750,8 +750,19 @@ std::unique_ptr<TargetInfo> AllocateTarget(const llvm::Triple &Triple,
   case llvm::Triple::loongarch32:
     switch (os) {
     case llvm::Triple::Linux:
+#ifndef OHOS_LLVM
       return std::make_unique<LinuxTargetInfo<LoongArch32TargetInfo>>(Triple,
                                                                       Opts);
+#else /* OHOS_LLVM */
+      switch (Triple.getEnvironment()) {
+      default:
+        return std::make_unique<LinuxTargetInfo<LoongArch32TargetInfo>>(Triple,
+                                                                        Opts);
+      case llvm::Triple::OpenHOS:
+        return std::make_unique<OHOSTargetInfo<LoongArch32TargetInfo>>(Triple,
+                                                                       Opts);
+      }
+#endif /* OHOS_LLVM */
     default:
       return std::make_unique<LoongArch32TargetInfo>(Triple, Opts);
     }
