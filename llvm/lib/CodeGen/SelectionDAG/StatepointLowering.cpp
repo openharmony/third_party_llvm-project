@@ -642,7 +642,10 @@ tryAssignStackSlots(SelectionDAGBuilder &Builder, const GCStatepointInst *Inst) 
   using VInfo = std::tuple<const Value *, bool, bool>;
   SmallVector<VInfo, 6U> Args;
   for (const Value *Arg : Inst->actual_args()) {
-    auto idx = Args.size();
+    // actual_args() are CallBase operands starting at CallArgsBeginPos; param
+    // attributes (e.g. byval) are attached at that same CallBase index by
+    // RewriteStatepointsForGC, not at the 0-based actual-arg ordinal.
+    unsigned idx = Args.size() + GCStatepointInst::CallArgsBeginPos;
     bool byVal = Inst->paramHasAttr(idx, Attribute::ByVal);
     Args.emplace_back(Arg, isGCValue(Arg, Builder), byVal);
   }
