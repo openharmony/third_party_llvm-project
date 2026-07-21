@@ -20,7 +20,7 @@
 static int var = 5;
 
 int main(void) {
-    printf("%p is %d\n", (void*)&var, var); 
+    printf("%p is %d\n", (void*)&var, var);
 
     char exe[PATH_MAX] = {0};
     ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe)-1);

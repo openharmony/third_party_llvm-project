@@ -22,37 +22,96 @@
 
 using namespace lldb;
 using namespace lldb_private;
-static const char* BackTrace = "struct DebugResponse{ size_t size; char *response; }; (DebugResponse)GetJsBacktrace()";
-static const char* DebugResponse = "(DebugResponse)OperateJsDebugMessage(\"{0}\")";
+
+// New ArkTS-side interface: returns DebugResponse{ size_t size; char *response; }.
+static const char *kBacktraceNew =
+    "struct DebugResponse{ size_t size; char *response; }; "
+    "(DebugResponse)GetJsBacktraceV1()";
+
+static const char *kDebugMsgNewFmt =
+    "(DebugResponse)OperateJsDebugMessageV1(\"{0}\")";
+
+// Legacy ArkTS-side interface: returns a null-terminated C string (const char*).
+static const char *kBacktraceOld = "(const char*)GetJsBacktrace()";
+static const char *kDebugMsgOldFmt =
+    "(const char*)OperateJsDebugMessage(\"{0}\")";
 
 MixedArkTSDebugger::MixedArkTSDebugger(const TargetSP &target_sp)
     : MixedDebugger(target_sp) {}
 
 DataExtractorSP MixedArkTSDebugger::GetCurrentThreadBackTrace(Status &error) {
-  DataExtractorSP result = ExecuteAction(BackTrace, error);
-  if (!error.Success()) {
-    Log *log = GetLog(LLDBLog::MixedDebugger);
-    LLDB_LOGF(log, "[MixedArkTSDebugger::GetBackTrace] failed for %s",
-              error.AsCString());
+  Log *log = GetLog(LLDBLog::MixedDebugger);
+
+  // First try the new interface (DebugResponse).
+  Status new_err;
+  DataExtractorSP new_res = ExecuteAction(kBacktraceNew, new_err);
+  if (new_err.Success()) {
+    error = std::move(new_err);
+    return new_res;
   }
-  return result;
+
+  // Fallback to the legacy interface (const char*).
+  Status old_err;
+  DataExtractorSP old_res = ExecuteAction(kBacktraceOld, old_err);
+  if (old_err.Success()) {
+    error = std::move(old_err);
+    LLDB_LOGF(log,
+              "[MixedArkTSDebugger::GetBackTrace] new path failed, old path "
+              "succeeded. new_err=%s",
+              new_err.AsCString());
+    return old_res;
+  }
+
+  // Both attempts failed: keep the new interface error for diagnosis.
+  LLDB_LOGF(log,
+            "[MixedArkTSDebugger::GetBackTrace] both paths failed. new_err=%s, "
+            "old_err=%s",
+            new_err.AsCString(), old_err.AsCString());
+  error = std::move(new_err);
+  return new_res; // Likely empty; 'error' already contains failure info.
 }
 
 DataExtractorSP MixedArkTSDebugger::GetCurrentThreadOperateDebugMessageResult(const char *message, Status &error) {
+  Log *log = GetLog(LLDBLog::MixedDebugger);
+
   DataExtractorSP result(new DataExtractor());
   if (strchr(message, '"') || strchr(message, '\\') || strchr(message, '(') || strchr(message, ')')) {
     error = Status::FromErrorString("[OperateDebugMessage] Invalid characters in message");
     return result;
   }
-  std::string operateMessage =
-      "struct DebugResponse {size_t size; char *response; };" +
-      llvm::formatv(DebugResponse, message).str();
-  result = ExecuteAction(operateMessage.c_str(), error);
-  if (!error.Success()) {
-    Log *log = GetLog(LLDBLog::MixedDebugger);
-    LLDB_LOGF(log, "[MixedArkTSDebugger::OperateDebugMessage] failed for %s",
-              error.AsCString());
+
+  // Build both expressions (new and legacy).
+  std::string expr_new =
+      "struct DebugResponse{ size_t size; char *response; }; " +
+      llvm::formatv(kDebugMsgNewFmt, message).str();
+  std::string expr_old = llvm::formatv(kDebugMsgOldFmt, message).str();
+
+  // First try the new interface (DebugResponse).
+  Status new_err;
+  DataExtractorSP new_res = ExecuteAction(expr_new.c_str(), new_err);
+  if (new_err.Success()) {
+    error = std::move(new_err);
+    return new_res;
   }
-  return result;
+
+  // Fallback to the legacy interface (const char*).
+  Status old_err;
+  DataExtractorSP old_res = ExecuteAction(expr_old.c_str(), old_err);
+  if (old_err.Success()) {
+    error = std::move(old_err);
+    LLDB_LOGF(log,
+              "[MixedArkTSDebugger::OperateDebugMessage] new path failed, old "
+              "path succeeded. new_err=%s",
+              new_err.AsCString());
+    return old_res;
+  }
+
+  // Both attempts failed: keep the new interface error for diagnosis.
+  LLDB_LOGF(log,
+            "[MixedArkTSDebugger::OperateDebugMessage] both paths failed. "
+            "new_err=%s, old_err=%s",
+            new_err.AsCString(), old_err.AsCString());
+  error = std::move(new_err);
+  return new_res;
 }
 #endif /* OHOS_LLVM */

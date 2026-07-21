@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import unittest2
+import unittest
 import lldb
 from lldbsuite.test.decorators import *
 from lldbsuite.test.lldbtest import *
@@ -38,7 +38,7 @@ class MixedArkTSDebuggerTest(TestBase):
         # This should create a breakpoint in the main thread.
         lldbutil.run_break_set_by_file_and_line(
             self, "main.c", self.breakpoint, num_expected_locations=1)
-        
+
         # The breakpoint list should show 1 location.
         self.expect(
             "breakpoint list -f",
@@ -46,7 +46,7 @@ class MixedArkTSDebuggerTest(TestBase):
             substrs=[
                 "1: file = 'main.c', line = %d, exact_match = 0, locations = 1" %
                 self.breakpoint])
-        
+
         # Run the program.
         self.runCmd("run", RUN_SUCCEEDED)
 
@@ -54,7 +54,7 @@ class MixedArkTSDebuggerTest(TestBase):
         self.expect("thread list", STOPPED_DUE_TO_BREAKPOINT,
                     substrs=['stopped',
                              'stop reason = breakpoint'])
-        
+
         # Get the target and process
         target = self.dbg.GetSelectedTarget()
         process = target.GetProcess()
