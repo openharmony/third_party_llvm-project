@@ -6609,14 +6609,13 @@ INTERCEPTOR(int, dlclose, void *handle) {
   return res;
 }
 #  if defined(OHOS_LLVM) && SANITIZER_OHOS
-#    define INIT_DLOPEN_DLCLOSE               \
-      COMMON_INTERCEPT_FUNCTION(dlopen_impl); \
-      COMMON_INTERCEPT_FUNCTION(dlclose);
+#    define INIT_DLOPEN_INTERCEPTOR COMMON_INTERCEPT_FUNCTION(dlopen_impl);
 #  else
-#    define INIT_DLOPEN_DLCLOSE        \
-      COMMON_INTERCEPT_FUNCTION(dlopen); \
-      COMMON_INTERCEPT_FUNCTION(dlclose);
+#    define INIT_DLOPEN_INTERCEPTOR COMMON_INTERCEPT_FUNCTION(dlopen);
 #  endif
+#  define INIT_DLOPEN_DLCLOSE \
+    INIT_DLOPEN_INTERCEPTOR   \
+    COMMON_INTERCEPT_FUNCTION(dlclose);
 #else
 #define INIT_DLOPEN_DLCLOSE
 #endif

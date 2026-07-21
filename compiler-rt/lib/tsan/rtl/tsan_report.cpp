@@ -359,7 +359,7 @@ void PrintReport(const ReportDesc *rep) {
 
   Printf("==================\n");
 #if defined(OHOS_LLVM) && SANITIZER_OHOS
-  Printf("End Tsan report\n");
+  Report("End Tsan report\n");
 #endif
 }
 
