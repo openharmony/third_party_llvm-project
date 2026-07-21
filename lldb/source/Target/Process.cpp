@@ -2093,6 +2093,28 @@ lldb::addr_t Process::FindInMemory(const uint8_t *buf, uint64_t size,
   error.Clear();
   return matches[0].GetBaseAddress().GetLoadAddress(&target);
 }
+#ifdef OHOS_LLVM
+size_t Process::ShowMemory(addr_t addr, void *buf, size_t size, Status &error) {
+  if (ABISP abi_sp = GetABI())
+    addr = abi_sp->FixAnyAddress(addr);
+  LLDB_SCOPED_TIMER();
+  LLDB_MODULE_TIMER(LLDBPerformanceTagName::TAG_PROCESS);
+  if (buf == nullptr || size == 0) {
+    return 0;
+  }
+  size_t bytes_read = 0;
+  uint8_t *bytes = (uint8_t *)buf;
+  while (bytes_read < size) {
+    const size_t curr_size = size - bytes_read;
+    const size_t curr_bytes_read =
+        DoShowMemory(addr + bytes_read, bytes + bytes_read, curr_size, error);
+    bytes_read += curr_bytes_read;
+    if (curr_bytes_read == curr_size || curr_bytes_read == 0)
+      break;
+  }
+  return bytes_read;
+}
+#endif /* OHOS_LLVM */
 
 size_t Process::ReadCStringFromMemory(addr_t addr, std::string &out_str,
                                       Status &error) {

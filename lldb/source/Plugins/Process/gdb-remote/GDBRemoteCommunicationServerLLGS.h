@@ -195,6 +195,10 @@ protected:
 
   PacketResult Handle_interrupt(StringExtractorGDBRemote &packet);
 
+#ifdef OHOS_LLVM
+  PacketResult Handle_memory_show(StringExtractorGDBRemote &packet);
+#endif /* OHOS_LLVM */
+
   // Handles $m and $x packets.
   PacketResult Handle_memory_read(StringExtractorGDBRemote &packet);
 

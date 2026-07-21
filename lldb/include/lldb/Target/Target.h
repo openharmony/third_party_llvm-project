@@ -1119,6 +1119,11 @@ public:
                             Status &error, bool force_live_memory = false,
                             lldb::addr_t *load_addr_ptr = nullptr);
 
+#ifdef OHOS_LLVM
+  size_t ShowMemory(const Address &addr, void *dst, size_t dst_len,
+                    Status &error, lldb::addr_t *load_addr_ptr = nullptr);
+#endif /* OHOS_LLVM */
+
   size_t ReadCStringFromMemory(const Address &addr, std::string &out_str,
                                Status &error, bool force_live_memory = false);
 

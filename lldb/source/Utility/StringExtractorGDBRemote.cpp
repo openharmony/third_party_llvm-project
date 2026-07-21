@@ -280,6 +280,10 @@ StringExtractorGDBRemote::GetServerPacketType() const {
         return eServerPacketType_qSupported;
       if (PACKET_MATCHES("qSyncThreadStateSupported"))
         return eServerPacketType_qSyncThreadStateSupported;
+#ifdef OHOS_LLVM
+      if (PACKET_STARTS_WITH("qShowMem"))
+        return eServerPacketType_qShowMem;
+#endif /* OHOS_LLVM */
       break;
 
     case 'T':

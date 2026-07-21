@@ -181,6 +181,9 @@ public:
     eServerPacketType_vStopped,
     eServerPacketType_vCtrlC,
     eServerPacketType_vStdio,
+#ifdef OHOS_LLVM
+    eServerPacketType_qShowMem,
+#endif /* OHOS_LLVM */
   };
 
   ServerPacketType GetServerPacketType() const;

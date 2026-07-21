@@ -676,6 +676,17 @@ Status NativeProcessProtocol::ReadMemoryWithoutTrap(lldb::addr_t addr,
   return Status();
 }
 
+#ifdef OHOS_LLVM
+Status NativeProcessProtocol::ShowMemoryWithoutTrap(lldb::addr_t addr,
+                                                    void *buf, size_t size,
+                                                    size_t &bytes_read) {
+  Status error = ReadMemory(addr, buf, size, bytes_read);
+  if (error.Fail())
+    return error;
+  return Status();
+}
+#endif /* OHOS_LLVM */
+
 llvm::Expected<llvm::StringRef>
 NativeProcessProtocol::ReadCStringFromMemory(lldb::addr_t addr, char *buffer,
                                              size_t max_size,
