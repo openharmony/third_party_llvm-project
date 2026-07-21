@@ -483,7 +483,11 @@ static bool LoadValueFromConsecutiveGPRRegisters(
   std::optional<uint64_t> byte_size = llvm::expectedToOptional(
       value_type.GetByteSize(exe_ctx.GetBestExecutionContextScope()));
 
+#ifdef OHOS_LLVM
+  if (!byte_size || *byte_size == 0)
+#else /* OHOS_LLVM */
   if (byte_size || *byte_size == 0)
+#endif /* OHOS_LLVM */
     return false;
 
   std::unique_ptr<DataBufferHeap> heap_data_up(

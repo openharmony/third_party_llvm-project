@@ -1849,7 +1849,14 @@ Status NativeProcessLinux::GetLoadedModuleFileSpec(const char *module_path,
 
   file_spec.Clear();
   for (const auto &it : m_mem_region_cache) {
+#ifdef OHOS_LLVM
+    const bool dir_check =
+        !m_arch.GetTriple().isOHOSFamily() ||
+        it.second.GetDirectory() == module_file_spec.GetDirectory();
+    if (it.second.GetFilename() == module_file_spec.GetFilename() && dir_check) {
+#else /* OHOS_LLVM */
     if (it.second.GetFilename() == module_file_spec.GetFilename()) {
+#endif /* OHOS_LLVM */
       file_spec = it.second;
       return Status();
     }

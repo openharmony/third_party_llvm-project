@@ -17,6 +17,12 @@
 #include <unistd.h>
 #endif
 
+#ifdef OHOS_LLVM
+#ifdef __OHOS_FAMILY__
+#include <sys/syscall.h>
+#endif /* __OHOS_FAMILY__ */
+#endif /* OHOS_LLVM */
+
 #include "LLDBServerUtilities.h"
 #include "Plugins/Process/gdb-remote/GDBRemoteCommunicationServerLLGS.h"
 #include "Plugins/Process/gdb-remote/ProcessGDBRemoteLog.h"
@@ -339,7 +345,53 @@ DESCRIPTION
 };
 } // namespace
 
+#ifdef OHOS_LLVM
+#ifdef __OHOS_FAMILY__
+#ifndef SCHED_FLAG_UTIL_CLAMP_MIN
+#define SCHED_FLAG_UTIL_CLAMP_MIN 0x20
+#endif
+struct sched_attr {
+  uint32_t size;
+  uint32_t sched_policy;
+  uint64_t sched_flags;
+  int32_t sched_nice;
+  uint32_t sched_priority;
+  uint64_t sched_runtime;
+  uint64_t sched_deadline;
+  uint64_t sched_period;
+  uint32_t sched_util_min;
+  uint32_t sched_util_max;
+};
+
+static int sched_setattr(lldb::pid_t pid, const struct sched_attr *attr,
+                         unsigned int flags) {
+  return syscall(__NR_sched_setattr, pid, attr, flags);
+}
+
+static int sched_getattr(lldb::pid_t pid, struct sched_attr *attr,
+                         unsigned int size, unsigned int flags) {
+  return syscall(__NR_sched_getattr, pid, attr, size, flags);
+}
+#endif /* __OHOS_FAMILY__ */
+#endif /* OHOS_LLVM */
+
 int main_gdbserver(int argc, char *argv[]) {
+#ifdef OHOS_LLVM
+#ifdef __OHOS_FAMILY__
+  struct sched_attr attr;
+  int schret = sched_getattr(0, &attr, sizeof(sched_attr), 0);
+  if (schret != 0) {
+    llvm::errs() << llvm::format("lldb-server get sched failed: %d\n", errno);
+  } else {
+    attr.sched_flags = SCHED_FLAG_UTIL_CLAMP_MIN;
+    attr.sched_util_min = 512; // [0, 1024]. The higher, the more cpu supply.
+    schret = sched_setattr(0, &attr, 0);
+    if (schret != 0) {
+      llvm::errs() << llvm::format("lldb-server set sched failed: %d\n", errno);
+    }
+  }
+#endif /* __OHOS_FAMILY__ */
+#endif /* OHOS_LLVM */
   Status error;
   MainLoop mainloop;
 #ifndef _WIN32

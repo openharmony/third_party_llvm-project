@@ -186,11 +186,6 @@ void DynamicLoaderPOSIXDYLD::DidLaunch() {
     }
 
     LoadVDSO();
-#ifdef OHOS_LLVM
-    ModuleSP interpreter = m_interpreter_module.lock();
-    if (interpreter)
-      module_list.Append(interpreter);
-#endif /* OHOS_LLVM */
     m_process->GetTarget().ModulesDidLoad(module_list);
   }
 }
