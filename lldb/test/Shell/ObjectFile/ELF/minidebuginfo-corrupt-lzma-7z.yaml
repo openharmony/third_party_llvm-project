@@ -1,4 +1,4 @@
-# REQUIRES: lzma && !lzma-7zip
+# REQUIRES: lzma && lzma-7zip
 
 # This test checks that an error occurs when a corrupted
 # .gnu_debugdata section is trying to be xz uncompressed.
@@ -7,7 +7,7 @@
 
 # RUN: %lldb -b -o 'image dump symtab' %t.obj 2>&1 | FileCheck %s
 
-# CHECK: warning: (x86_64) {{.*}}.obj An error occurred while decompression the section .gnu_debugdata: lzma_stream_buffer_decode()=lzma error: LZMA_DATA_ERROR
+# CHECK: warning: (x86_64) {{.*}}.obj An error occurred while decompression the section .gnu_debugdata: XzUnpacker_Code()=lzma error: SZ_ERROR_DATA
 
 --- !ELF
 FileHeader:
