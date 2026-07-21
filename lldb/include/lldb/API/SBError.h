@@ -98,6 +98,9 @@ protected:
   friend class SBValue;
   friend class SBValueList;
   friend class SBWatchpoint;
+#ifdef OHOS_LLVM
+  friend class SBMixedArkTSDebugger;
+#endif /* OHOS_LLVM */
 
   friend class lldb_private::ScriptInterpreter;
   friend class lldb_private::python::SWIGBridge;

@@ -86,6 +86,9 @@ class LLDB_API SBLineEntry;
 class LLDB_API SBListener;
 class LLDB_API SBMemoryRegionInfo;
 class LLDB_API SBMemoryRegionInfoList;
+#ifdef OHOS_LLVM
+class LLDB_API SBMixedArkTSDebugger;
+#endif /* OHOS_LLVM */
 class LLDB_API SBModule;
 class LLDB_API SBModuleSpec;
 class LLDB_API SBModuleSpecList;

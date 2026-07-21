@@ -982,6 +982,9 @@ protected:
   friend class SBTypeStaticField;
   friend class SBValue;
   friend class SBVariablesOptions;
+#ifdef OHOS_LLVM
+  friend class SBMixedArkTSDebugger;
+#endif /* OHOS_LLVM */
 
   friend class lldb_private::python::SWIGBridge;
 

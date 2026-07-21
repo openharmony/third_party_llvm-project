@@ -129,6 +129,7 @@
 %include "lldb/API/SBListener.h"
 %include "lldb/API/SBMemoryRegionInfo.h"
 %include "lldb/API/SBMemoryRegionInfoList.h"
+%include "./interface/SBMixedArkTSDebugger.i"
 %include "lldb/API/SBModule.h"
 %include "lldb/API/SBModuleSpec.h"
 %include "lldb/API/SBMutex.h"

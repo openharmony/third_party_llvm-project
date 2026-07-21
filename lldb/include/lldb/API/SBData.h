@@ -153,6 +153,9 @@ private:
   friend class SBSection;
   friend class SBTarget;
   friend class SBValue;
+#ifdef OHOS_LLVM
+  friend class SBMixedArkTSDebugger;
+#endif /* OHOS_LLVM */
 
   friend class lldb_private::ScriptInterpreter;
 

@@ -54,6 +54,17 @@ else()
 endif()
 # OHOS_LOCAL end
 
+set(OHOS_API_SOURCES)
+if(OHOS_LLVM)
+  list(APPEND OHOS_API_SOURCES SBMixedArkTSDebugger.cpp)
+else()
+  # SBMixedArkTSDebugger.cpp is entirely #ifdef OHOS_LLVM-guarded and is only
+  # compiled when OHOS_LLVM is ON. Register it as optional so the LLVM
+  # source-list check still passes in builds that leave OHOS_LLVM off, such as
+  # the native cross-compile host sub-build auto-configured for lldb-server.
+  list(APPEND LLVM_OPTIONAL_SOURCES SBMixedArkTSDebugger.cpp)
+endif()
+
 add_lldb_library(liblldb ${LIBLLDB_LIB_TYPE} ${option_framework} # OHOS_LOCAL
   SBAddress.cpp
   SBAddressRange.cpp
@@ -93,6 +104,7 @@ add_lldb_library(liblldb ${LIBLLDB_LIB_TYPE} ${option_framework} # OHOS_LOCAL
   SBListener.cpp
   SBMemoryRegionInfo.cpp
   SBMemoryRegionInfoList.cpp
+  ${OHOS_API_SOURCES}
   SBModule.cpp
   SBModuleSpec.cpp
   SBMutex.cpp

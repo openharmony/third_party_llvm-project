@@ -1,7 +1,15 @@
 set(EXTRA_FEAT_LIST)
+set(OHOS_TARGET_SOURCES)
 
 if (OHOS_LLVM)
   list(APPEND EXTRA_FEAT_LIST "-DOHOS_LLVM")
+  list(APPEND OHOS_TARGET_SOURCES MixedArkTSDebugger.cpp MixedDebugger.cpp)
+else()
+  # MixedArkTSDebugger.cpp/MixedDebugger.cpp are entirely #ifdef OHOS_LLVM-guarded
+  # and are only compiled when OHOS_LLVM is ON. Register them as optional so the
+  # LLVM source-list check still passes in builds that leave OHOS_LLVM off, such
+  # as the native cross-compile host sub-build auto-configured for lldb-server.
+  list(APPEND LLVM_OPTIONAL_SOURCES MixedArkTSDebugger.cpp MixedDebugger.cpp)
 endif()
 
 lldb_tablegen(TargetProperties.inc -gen-lldb-property-defs
@@ -31,6 +39,7 @@ add_lldb_library(lldbTarget
   MemoryHistory.cpp
   MemoryRegionInfo.cpp
   MemoryTagMap.cpp
+  ${OHOS_TARGET_SOURCES}
   ModuleCache.cpp
   OperatingSystem.cpp
   PathMappingList.cpp
