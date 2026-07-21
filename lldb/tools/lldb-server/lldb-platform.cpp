@@ -74,6 +74,9 @@ static struct option g_long_options[] = {
     {"debug", no_argument, &g_debug, 1},
     {"verbose", no_argument, &g_verbose, 1},
     {"log-file", required_argument, nullptr, 'l'},
+#ifdef OHOS_LLVM
+    {"gdbserver-log-file", required_argument, nullptr, 'g'},
+#endif /* OHOS_LLVM */
     {"log-channels", required_argument, nullptr, 'c'},
     {"listen", required_argument, nullptr, 'L'},
     {"gdbserver-port", required_argument, nullptr, 'P'},
@@ -116,10 +119,18 @@ static void signal_handler(int signo) {
 #endif
 
 static void display_usage(const char *progname, const char *subcommand) {
+#ifndef OHOS_LLVM
   fprintf(stderr, "Usage:\n  %s %s [--log-file log-file-name] [--log-channels "
                   "log-channel-list] [--port-file port-file-path] --server "
                   "--listen port\n",
           progname, subcommand);
+#else /* OHOS_LLVM */
+  fprintf(stderr, "Usage:\n  %s %s [--log-file log-file-name] "
+                  "[--gdbserver-log-file log-file-name] [--log-channels "
+                  "log-channel-list] [--port-file port-file-path] --server "
+                  "--listen port\n",
+          progname, subcommand);
+#endif /* OHOS_LLVM */
   exit(0);
 }
 
@@ -399,6 +410,9 @@ int main_platform(int argc, char *argv[]) {
   int ch;
 
   std::string log_file;
+#ifdef OHOS_LLVM
+  std::string gdbserver_log_file;
+#endif /* OHOS_LLVM */
   StringRef
       log_channels; // e.g. "lldb process threads:gdb-remote default:linux all"
 
@@ -433,6 +447,13 @@ int main_platform(int argc, char *argv[]) {
       if (optarg && optarg[0])
         log_file.assign(optarg);
       break;
+
+#ifdef OHOS_LLVM
+    case 'g': // Set gdbserver Log File
+      if (optarg && optarg[0])
+        gdbserver_log_file.assign(optarg);
+      break;
+#endif /* OHOS_LLVM */
 
     case 'c': // Log Channels
       if (optarg && optarg[0])
@@ -480,6 +501,19 @@ int main_platform(int argc, char *argv[]) {
   if (!LLDBServerUtilities::SetupLogging(log_file, log_channels, 0))
     return -1;
 
+#ifdef OHOS_LLVM
+  // The environment variable LLDB_DEBUGSERVER_LOG_FILE is not set
+  // but --gdbserver-log-file is option when starting the lldb-server platform
+  if (!getenv("LLDB_DEBUGSERVER_LOG_FILE") && !gdbserver_log_file.empty()) {
+    setenv("LLDB_DEBUGSERVER_LOG_FILE", gdbserver_log_file.c_str(), true);
+  }
+
+  // The environment variable LLDB_SERVER_LOG_CHANNELS is not set
+  // but --log-channels is option when starting the lldb-server platform
+  if (!getenv("LLDB_SERVER_LOG_CHANNELS") && !log_channels.empty()) {
+    setenv("LLDB_SERVER_LOG_CHANNELS", log_channels.str().c_str(), true);
+  }
+#endif /* OHOS_LLVM */
   // Print usage and exit if no listening port is specified.
   if (listen_host_port.empty() && fd == SharedSocket::kInvalidFD)
     show_usage = true;
