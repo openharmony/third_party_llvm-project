@@ -860,7 +860,7 @@ typedef __char32_t char32_t;
 #  endif   // _LIBCPP_HAS_THREADS
 
 #  if _LIBCPP_HAS_THREAD_API_PTHREAD
-#    if defined(__ANDROID__) && __ANDROID_API__ >= 30
+#    if (defined(__ANDROID__) && __ANDROID_API__ >= 30) || (defined(OHOS_LLVM) && defined(__OHOS_FAMILY__))
 #      define _LIBCPP_HAS_COND_CLOCKWAIT 1
 #    elif defined(_LIBCPP_GLIBC_PREREQ)
 #      if _LIBCPP_GLIBC_PREREQ(2, 30)
