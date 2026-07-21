@@ -4271,6 +4271,12 @@ def ftrap_function_EQ : Joined<["-"], "ftrap-function=">, Group<f_Group>,
   Visibility<[ClangOption, CC1Option]>,
   HelpText<"Issue call to specified function rather than a trap instruction">,
   MarshallingInfoString<CodeGenOpts<"TrapFuncName">>;
+#ifdef OHOS_LLVM
+def fcfi_trap_function_EQ : Joined<["-"], "fcfi-trap-function=">, Group<f_Group>,
+  Visibility<[ClangOption, CC1Option]>,
+  HelpText<"Issue call to specified function rather than a trap instruction for failed cfi checks">,
+  MarshallingInfoString<CodeGenOpts<"CfiTrapFuncName">>;
+#endif /* OHOS_LLVM */
 def floop_interchange : Flag<["-"], "floop-interchange">, Group<f_Group>,
   HelpText<"Enable the loop interchange pass">, Visibility<[ClangOption, CC1Option, FlangOption, FC1Option]>;
 def fno_loop_interchange: Flag<["-"], "fno-loop-interchange">, Group<f_Group>,

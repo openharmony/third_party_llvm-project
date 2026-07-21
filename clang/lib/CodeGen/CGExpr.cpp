@@ -4051,6 +4051,18 @@ void CodeGenFunction::EmitTrapCheck(llvm::Value *Checked,
                                     bool NoMerge) {
   llvm::BasicBlock *Cont = createBasicBlock("cont");
 
+#ifdef OHOS_LLVM
+  std::string TrapFuncName = CGM.getCodeGenOpts().TrapFuncName;
+  switch (CheckHandlerID) {
+  case SanitizerHandler::CFICheckFail:
+    if (!CGM.getCodeGenOpts().CfiTrapFuncName.empty())
+      TrapFuncName = CGM.getCodeGenOpts().CfiTrapFuncName;
+    break;
+  default:
+    break;
+  }
+#endif /* OHOS_LLVM */
+
   // If we're optimizing, collapse all calls to trap down to just one per
   // check-type per function to save on code size.
   if ((int)TrapBBs.size() <= CheckHandlerID)
@@ -4080,11 +4092,19 @@ void CodeGenFunction::EmitTrapCheck(llvm::Value *Checked,
         Builder.CreateCall(CGM.getIntrinsic(llvm::Intrinsic::ubsantrap),
                            llvm::ConstantInt::get(CGM.Int8Ty, CheckHandlerID));
 
+#ifndef OHOS_LLVM
     if (!CGM.getCodeGenOpts().TrapFuncName.empty()) {
       auto A = llvm::Attribute::get(getLLVMContext(), "trap-func-name",
                                     CGM.getCodeGenOpts().TrapFuncName);
       TrapCall->addFnAttr(A);
     }
+#else /* OHOS_LLVM */
+    if (!TrapFuncName.empty()) {
+      auto A = llvm::Attribute::get(getLLVMContext(), "trap-func-name",
+                                    TrapFuncName);
+      TrapCall->addFnAttr(A);
+    }
+#endif /* OHOS_LLVM */
     if (NoMerge)
       TrapCall->addFnAttr(llvm::Attribute::NoMerge);
     TrapCall->setDoesNotReturn();

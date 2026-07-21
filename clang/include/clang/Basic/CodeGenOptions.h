@@ -277,6 +277,12 @@ public:
   /// function instead of to trap instructions.
   std::string TrapFuncName;
 
+#ifdef OHOS_LLVM
+  /// If not an empty string, cfi check fail trap intrinsics are lowered to
+  /// calls to this function instead of to trap instructions.
+  std::string CfiTrapFuncName;
+#endif /* OHOS_LLVM */
+
   /// A list of dependent libraries.
   std::vector<std::string> DependentLibraries;
 
