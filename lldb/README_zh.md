@@ -7,7 +7,7 @@ LLDB（Low Level Debugger）是新一代高性能调试器。当前OpenHarmony�
 
 > **说明**
 >
-> 在应用调试中，配合[hdc工具](https://gitee.com/openharmony/docs/blob/master/zh-cn/device-dev/subsystems/subsys-toolchain-hdc-guide.md)，实现远程调试。
+> 在应用调试中，配合[hdc工具](https://gitcode.com/openharmony/docs/blob/master/zh-cn/device-dev/subsystems/subsys-toolchain-hdc-guide.md)，实现远程调试。
 
 # 2. LLDB工具获取
 **LLDB工具获取方式：**
@@ -1442,7 +1442,7 @@ Process ... detached
 ```
 >  **说明：**
 >
-> 使用SDK编译源码参考[HOW TO USE NDK(windows)](https://gitee.com/openharmony/third_party_musl/wikis/HOW%20TO%20USE%20NDK%20(windows))或[HOW TO USE NDK(linux)](https://gitee.com/openharmony/third_party_musl/wikis/HOW%20TO%20USE%20NDK%20(linux))，也可以直接使用sdk中的clang或clang++编译器编译。
+> 使用SDK编译源码参考[HOW TO USE NDK(windows)](https://gitcode.com/openharmony/build/wiki/NDK%2FHOW%20TO%20USE%20NDK%20(windows).md)或[HOW TO USE NDK(linux)](https://gitcode.com/openharmony/build/wiki/NDK%2FHOW%20TO%20USE%20NDK%20(linux).md)，也可以直接使用sdk中的clang或clang++编译器编译。
 >
 > 如，编译ohos平台，arm架构的可执行文件：<clang distribution>`/bin/clang++ --target=arm-linux-ohos--gcc-toolchain=<toolchain distribution>  --sysroot=<sysroot distribution> -O0 -g <file> -o <outfile>`
 >
@@ -1528,7 +1528,7 @@ hdc shell aa start -a <ability-name> -b <bundle-name> -N && hdc shell pidof <bun
 >
 > aa工具中的-N参数表示使能应用启动调试，应用会停在appspawn阶段等待调试器连接。
 >
-> 更多aa功能使用说明，参考[aa工具](https://gitee.com/openharmony/docs/blob/master/zh-cn/application-dev/tools/aa-tool.md)。
+> 更多aa功能使用说明，参考[aa工具](https://gitcode.com/openharmony/docs/blob/master/zh-cn/application-dev/tools/aa-tool.md)。
 
 2）运行lldb-server。
 
@@ -1862,7 +1862,7 @@ Standalone调试区别于远程调试，无需配置远程连接，直接在设�
 
 该工具需要通过编译LLVM工程时增加`--build-lldb-static`参数获取。
 
-LLVM工程编译参考：[llvm-build](https://gitee.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md)
+LLVM工程编译参考：[llvm-build](https://gitcode.com/openharmony/third_party_llvm-project/blob/master/llvm-build/README.md)
 
 编译完成后，可通过如下路径获取到Standalone版本的工具：
 
