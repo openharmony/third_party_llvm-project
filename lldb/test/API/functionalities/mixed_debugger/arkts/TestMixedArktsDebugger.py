@@ -63,12 +63,20 @@ class MixedArkTSDebuggerTest(TestBase):
         arkdb = lldb.SBMixedArkTSDebugger(target)
         er = lldb.SBError()
         bt = arkdb.GetBackTrace(er)
+        message = ""
+        var = arkdb.OperateDebugMessage(message, er)
 
         # Check the result
         self.assertTrue(er.Success(), "ArkTS debugger get backtrace failed.")
         er.Clear()
         self.assertTrue(bt.GetString(er, 0) == 'This is a ArkTS backtrace',
                         'ArkTS debugger get wrong backtrace.')
+
+        # Check the arkTs variable result
+        self.assertTrue(er.Success(), "ArkTS debugger get operate debug message result failed.")
+        er.Clear()
+        self.assertTrue(var.GetString(er, 0) == 'This is a ArkTS operate debug message result',
+                        'ArkTS debugger get wrong operate debug message result.')
 
         # Run to completion
         self.runCmd("continue")

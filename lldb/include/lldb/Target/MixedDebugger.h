@@ -49,6 +49,8 @@ public:
 
   virtual lldb::DataExtractorSP GetCurrentThreadBackTrace(Status &error) = 0;
 
+  virtual lldb::DataExtractorSP GetCurrentThreadOperateDebugMessageResult(const char *message, Status &error) = 0;
+
 protected:
   lldb::TargetSP m_target_sp;
 

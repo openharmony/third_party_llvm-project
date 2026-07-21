@@ -24,6 +24,7 @@ using namespace lldb;
 using namespace lldb_private;
 
 static const char* BackTrace = "(const char*)GetJsBacktrace()";
+static const char* DebugMessage = "(const char*)OperateJsDebugMessage(\"{0}\")";
 
 MixedArkTSDebugger::MixedArkTSDebugger(const TargetSP &target_sp)
     : MixedDebugger(target_sp) {}
@@ -33,6 +34,21 @@ DataExtractorSP MixedArkTSDebugger::GetCurrentThreadBackTrace(Status &error) {
   if (!error.Success()) {
     Log *log = GetLog(LLDBLog::MixedDebugger);
     LLDB_LOGF(log, "[MixedArkTSDebugger::GetBackTrace] failed for %s",
+              error.AsCString());
+  }
+  return result;
+}
+
+DataExtractorSP MixedArkTSDebugger::GetCurrentThreadOperateDebugMessageResult(const char *message, Status &error) {
+  std::string operateMessage = llvm::formatv(DebugMessage, message).str();
+  if (strchr(message, '"') || strchr(message, '\\') || strchr(message, '(') || strchr(message, ')')) {
+    error = Status::FromErrorString("[OperateDebugMessage] Invalid characters in message");
+    return result;
+  }
+  DataExtractorSP result = ExecuteAction(operateMessage.c_str(), error);
+  if (!error.Success()) {
+    Log *log = GetLog(LLDBLog::MixedDebugger);
+    LLDB_LOGF(log, "[MixedArkTSDebugger::OperateDebugMessage] failed for %s",
               error.AsCString());
   }
   return result;
