@@ -175,6 +175,9 @@ endif()
 if(Python3_RPATH)
   set_property(TARGET liblldb APPEND PROPERTY INSTALL_RPATH "${Python3_RPATH}")
   set_property(TARGET liblldb APPEND PROPERTY BUILD_RPATH   "${Python3_RPATH}")
+  if(OHOS_LLVM AND CMAKE_SYSTEM_NAME MATCHES "OHOS")
+    set_property(TARGET liblldb APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-rpath,\'${Python3_RPATH}\'")
+  endif()
 endif()
 
 
