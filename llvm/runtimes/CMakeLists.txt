@@ -260,6 +260,12 @@ function(runtime_default_target)
 
   set_enable_per_target_runtime_dir()
 
+  if(OHOS_LLVM)
+    list(APPEND ARG_CMAKE_ARGS
+      -DSECURITY_LINKER_FLAGS_FOR_RUNTIMES=${SECURITY_LINKER_FLAGS_FOR_RUNTIMES}
+      -DSECURITY_COMPILE_FLAGS_FOR_RUNTIMES=${SECURITY_COMPILE_FLAGS_FOR_RUNTIMES})
+  endif()
+
   llvm_ExternalProject_Add(runtimes
                            ${CMAKE_CURRENT_SOURCE_DIR}/../../runtimes
                            DEPENDS ${ARG_DEPENDS}

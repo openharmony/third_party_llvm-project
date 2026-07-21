@@ -828,6 +828,13 @@ function(cxx_add_common_build_flags target)
   target_link_libraries(${target} PRIVATE cxx-sanitizer-flags)
 endfunction()
 
+if(OHOS_LLVM)
+  if(SECURITY_LINKER_FLAGS_FOR_RUNTIMES OR SECURITY_COMPILE_FLAGS_FOR_RUNTIMES)
+    list(APPEND LIBCXX_LINK_FLAGS ${SECURITY_LINKER_FLAGS_FOR_RUNTIMES})
+    list(APPEND LIBCXX_COMPILE_FLAGS ${SECURITY_COMPILE_FLAGS_FOR_RUNTIMES})
+  endif()
+endif()
+
 #===============================================================================
 # Setup Source Code And Tests
 #===============================================================================
