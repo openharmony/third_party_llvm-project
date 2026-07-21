@@ -1462,6 +1462,12 @@ public:
     return *this;
   }
 
+#ifdef OHOS_LLVM
+  intptr_t get_handler() {
+    return State->IterationHandle;
+  }
+#endif /* OHOS_LLVM */
+
   const directory_entry &operator*() const { return State->CurrentEntry; }
   const directory_entry *operator->() const { return &State->CurrentEntry; }
 
