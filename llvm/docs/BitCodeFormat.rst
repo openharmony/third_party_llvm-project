@@ -811,9 +811,10 @@ function. The operand fields are:
   * ``arkfast3cc`` : code 26
   * ``arkfast4cc`` : code 27
   * ``arkfast5cc`` : code 28
-  * ``arkmethodcc`` : code 29
-  * ``arkresolvercc`` : code 30
-  * ``arkpltcc`` : code 31
+  * ``arkfast6cc`` : code 29
+  * ``arkmethodcc`` : code 30
+  * ``arkresolvercc`` : code 31
+  * ``arkpltcc`` : code 32
 .. OHOS_LOCAL end
   * ``x86_stdcallcc``: code 64
   * ``x86_fastcallcc``: code 65

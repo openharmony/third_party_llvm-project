@@ -2634,6 +2634,16 @@ defm sanitize_cfi_cross_dso : BoolOption<"f", "sanitize-cfi-cross-dso",
           "Disable">,
   BothFlags<[], [ClangOption], " control flow integrity (CFI) checks for cross-DSO calls.">>,
   Group<f_clang_Group>;
+#ifdef OHOS_LLVM
+defm sanitize_cfi_cross_dso_req : BoolOption<"f", "sanitize-cfi-cross-dso-req",
+  CodeGenOpts<"SanitizeCfiCrossDsoReq">, DefaultFalse,
+  PosFlag<SetTrue, [], [ClangOption], "Enable">,
+  NegFlag<SetFalse, [], [ClangOption, CLOption],
+          "Disable">,
+  BothFlags<[], [ClangOption],
+            " the requirement for cross-DSO control flow integrity (CFI) checks for all LTO modules.">>,
+  Group<f_clang_Group>;
+#endif /* OHOS_LLVM */
 def fsanitize_cfi_icall_generalize_pointers : Flag<["-"], "fsanitize-cfi-icall-generalize-pointers">,
                                               Group<f_clang_Group>,
                                               HelpText<"Generalize pointers in CFI indirect call type signature checks">,

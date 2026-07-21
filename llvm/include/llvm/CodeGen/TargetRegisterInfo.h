@@ -31,6 +31,11 @@
 #include <cassert>
 #include <cstdint>
 
+#ifdef OHOS_LLVM
+#include "llvm/Support/CommandLine.h"
+extern llvm::cl::opt<unsigned> SpillSlotMinSize;
+#endif /* OHOS_LLVM */
+
 namespace llvm {
 
 class BitVector;
@@ -306,7 +311,14 @@ public:
   /// Return the minimum required alignment in bytes for a spill slot for
   /// a register of this class.
   Align getSpillAlign(const TargetRegisterClass &RC) const {
+#ifndef OHOS_LLVM
     return Align(getRegClassInfo(RC).SpillAlignment / 8);
+#else /* OHOS_LLVM */
+    auto align = getRegClassInfo(RC).SpillAlignment / 8;
+    if (align < SpillSlotMinSize)
+      align = SpillSlotMinSize;
+    return Align(align);
+#endif /* OHOS_LLVM */
   }
 
   /// Return true if the given TargetRegisterClass has the ValueType T.

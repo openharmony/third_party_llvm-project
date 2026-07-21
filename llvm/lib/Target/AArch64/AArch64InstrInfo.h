@@ -363,6 +363,12 @@ public:
   // with subreg operands to foldMemoryOperandImpl.
   bool isSubregFoldable() const override { return true; }
 
+#ifdef OHOS_LLVM
+  bool preservesZeroValueInReg(const MachineInstr *MI,
+                               const Register NullValueReg,
+                               const TargetRegisterInfo *TRI) const override;
+#endif
+
   using TargetInstrInfo::foldMemoryOperandImpl;
   MachineInstr *
   foldMemoryOperandImpl(MachineFunction &MF, MachineInstr &MI,

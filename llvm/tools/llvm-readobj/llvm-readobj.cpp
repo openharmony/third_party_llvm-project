@@ -126,6 +126,9 @@ static cl::boolOrDefault SectionMapping;
 static SmallVector<SortSymbolKeyTy> SortKeys;
 
 // ELF specific options.
+#ifdef OHOS_LLVM
+static bool AdltSection;
+#endif
 static bool DynamicTable;
 static bool ELFLinkerOptions;
 static bool GnuHashTable;
@@ -265,6 +268,9 @@ static void parseOptions(const opt::InputArgList &Args) {
             OutputStyleChoice + "'");
     }
   }
+#ifdef OHOS_LLVM
+  opts::AdltSection = Args.hasArg(OPT_adlt_section);
+#endif
   opts::GnuHashTable = Args.hasArg(OPT_gnu_hash_table);
   opts::HashSymbols = Args.hasArg(OPT_hash_symbols);
   opts::HashTable = Args.hasArg(OPT_hash_table);
@@ -468,6 +474,10 @@ static void dumpObject(ObjectFile &Obj, ScopedPrinter &Writer,
       Dumper->printGroupSections();
     if (opts::HashHistogram)
       Dumper->printHashHistograms();
+#ifdef OHOS_LLVM
+    if (opts::AdltSection)
+      Dumper->printAdltSection();
+#endif
     if (opts::CGProfile)
       Dumper->printCGProfile();
     if (opts::BBAddrMap)

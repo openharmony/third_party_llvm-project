@@ -49,6 +49,14 @@ static cl::opt<unsigned>
                               "high compile time cost in global splitting."),
                      cl::init(5000));
 
+#ifdef OHOS_LLVM
+// Useful when gc managed references are 32-bit wide but runtime supports only
+// 64-bit slots
+cl::opt<unsigned> SpillSlotMinSize(
+    "spill-slot-min-size-bytes", cl::Hidden, cl::init(1),
+    cl::desc("Minimum size and alignment of a spill slot"));
+#endif /* OHOS_LLVM */
+
 TargetRegisterInfo::TargetRegisterInfo(
     const TargetRegisterInfoDesc *ID, regclass_iterator RCB,
     regclass_iterator RCE, const char *const *SRINames,

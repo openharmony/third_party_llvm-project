@@ -1379,7 +1379,13 @@ Error IRLinker::linkModuleFlagsMetadata() {
       Metadata *FlagOps[] = {
           Op->getOperand(0), ID,
           ConstantAsMetadata::get(ConstantInt::get(V->getType(), 0))};
+#ifdef OHOS_LLVM
+      MDNode *Flag = MDNode::get(DstM.getContext(), FlagOps);
+      DstModFlags->setOperand(Idx, Flag);
+      Flags[ID].first = Flag;
+#else
       DstModFlags->setOperand(Idx, MDNode::get(DstM.getContext(), FlagOps));
+#endif /* OHOS_LLVM */
     }
   }
 

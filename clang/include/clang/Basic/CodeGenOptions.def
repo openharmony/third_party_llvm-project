@@ -264,6 +264,9 @@ CODEGENOPT(SanitizeMemoryParamRetval, 1, 0, Benign) ///< Enable detection of uni
 CODEGENOPT(SanitizeMemoryUseAfterDtor, 1, 0, Benign) ///< Enable use-after-delete detection
                                                      ///< in MemorySanitizer
 CODEGENOPT(SanitizeCfiCrossDso, 1, 0, Benign) ///< Enable cross-dso support in CFI.
+#ifdef OHOS_LLVM
+CODEGENOPT(SanitizeCfiCrossDsoReq, 1, 0, Benign) ///< Require cross-dso CFI support in all modules.
+#endif /* OHOS_LLVM */
 CODEGENOPT(SanitizeMinimalRuntime, 1, 0, Benign) ///< Use "_minimal" sanitizer runtime for
                                                  ///< diagnostics.
 CODEGENOPT(SanitizeCfiICallGeneralizePointers, 1, 0, Benign) ///< Generalize pointer types in

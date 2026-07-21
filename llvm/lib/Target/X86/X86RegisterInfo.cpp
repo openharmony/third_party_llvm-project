@@ -316,6 +316,8 @@ X86RegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
     return CSR_ArkFast4_SaveList;
   case CallingConv::ArkFast5:
     return CSR_ArkFast5_SaveList;
+  case CallingConv::ArkFast6:
+    return CSR_ArkFast6_SaveList;
   case CallingConv::ArkMethod:
     return CSR_ArkMethod_SaveList;
   case CallingConv::ArkResolver:
@@ -467,6 +469,8 @@ X86RegisterInfo::getCallPreservedMask(const MachineFunction &MF,
     return CSR_ArkFast4_RegMask;
   case CallingConv::ArkFast5:
     return CSR_ArkFast5_RegMask;
+  case CallingConv::ArkFast6:
+    return CSR_ArkFast6_RegMask;
   case CallingConv::ArkMethod:
     return CSR_ArkMethod_RegMask;
   case CallingConv::ArkResolver:

@@ -16,6 +16,10 @@
 extern "C" void android_set_abort_message(const char* msg);
 #endif // __BIONIC__ && (!defined(OHOS_LLVM) || !defined(__OHOS__))
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+extern "C" __attribute__((weak)) void set_fatal_message(const char *msg);
+#endif
+
 #if defined(__APPLE__) && __has_include(<CrashReporterClient.h>)
 #   include <CrashReporterClient.h>
 #   define _LIBCXXABI_USE_CRASHREPORTER_CLIENT
@@ -47,6 +51,16 @@ void __abort_message(const char* format, ...)
     va_end(list);
 
     CRSetCrashLogMessage(buffer);
+#elif defined(OHOS_LLVM) && defined(__OHOS__)
+    char* buffer;
+    va_list list;
+    va_start(list, format);
+    vasprintf(&buffer, format, list);
+    va_end(list);
+
+    if (&set_fatal_message) {
+        set_fatal_message(buffer);
+    }
 #elif defined(__BIONIC__) && (!defined(OHOS_LLVM) || !defined(__OHOS__))
     char* buffer;
     va_list list;
@@ -61,7 +75,7 @@ void __abort_message(const char* format, ...)
     openlog("libc++abi", 0, 0);
     syslog(LOG_CRIT, "%s", buffer);
     closelog();
-#endif // __BIONIC__
+#endif // __BIONIC__ || (OHOS_LLVM && __OHOS__)
 
     abort();
 }

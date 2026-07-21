@@ -74,6 +74,9 @@ bool CC_AArch64_ArkFast4(unsigned ValNo, MVT ValVT, MVT LocVT,
 bool CC_AArch64_ArkFast5(unsigned ValNo, MVT ValVT, MVT LocVT,
                          CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
                          CCState &State);
+bool CC_AArch64_ArkFast6(unsigned ValNo, MVT ValVT, MVT LocVT,
+                         CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,
+                         CCState &State);
 #endif /* OHOS_LLVM */
 bool CC_AArch64_GHC(unsigned ValNo, MVT ValVT, MVT LocVT,
                     CCValAssign::LocInfo LocInfo, ISD::ArgFlagsTy ArgFlags,

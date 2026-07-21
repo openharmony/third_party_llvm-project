@@ -507,6 +507,7 @@ def RetCC_X86_64 : CallingConv<[
   CCIfCC<"CallingConv::ArkFast3", CCDelegateTo<RetCC_X86_64_ARK_FAST_PATH>>,
   CCIfCC<"CallingConv::ArkFast4", CCDelegateTo<RetCC_X86_64_ARK_FAST_PATH>>,
   CCIfCC<"CallingConv::ArkFast5", CCDelegateTo<RetCC_X86_64_ARK_FAST_PATH>>,
+  CCIfCC<"CallingConv::ArkFast6", CCDelegateTo<RetCC_X86_64_ARK_FAST_PATH>>,
   CCIfCC<"CallingConv::ArkMethod", CCDelegateTo<RetCC_X86_64_C>>,
   CCIfCC<"CallingConv::ArkResolver", CCDelegateTo<RetCC_X86_64_ARK_RESOLVER>>,
 #endif /* OHOS_LLVM */
@@ -777,6 +778,10 @@ def CC_X86_64_ARK_FAST_4 : CallingConv<[
 def CC_X86_64_ARK_FAST_5 : CallingConv<[
   CCIfType<[i1, i8, i16, i32], CCPromoteToType<i64>>,
   CCIfType<[i64], CCAssignToReg<[RDI, RSI, RDX, RCX, R8, R15, RBP]>>
+]>;
+def CC_X86_64_ARK_FAST_6 : CallingConv<[
+  CCIfType<[i1, i8, i16, i32], CCPromoteToType<i64>>,
+  CCIfType<[i64], CCAssignToReg<[RDI, RSI, RDX, RCX, R8, R9, R15, RBP]>>
 ]>;
 
 def CC_X86_64_ARK_RESOLVER : CallingConv<[
@@ -1163,6 +1168,7 @@ def CC_X86_64 : CallingConv<[
   CCIfCC<"CallingConv::ArkFast3", CCDelegateTo<CC_X86_64_ARK_FAST_3>>,
   CCIfCC<"CallingConv::ArkFast4", CCDelegateTo<CC_X86_64_ARK_FAST_4>>,
   CCIfCC<"CallingConv::ArkFast5", CCDelegateTo<CC_X86_64_ARK_FAST_5>>,
+  CCIfCC<"CallingConv::ArkFast6", CCDelegateTo<CC_X86_64_ARK_FAST_6>>,
   CCIfCC<"CallingConv::ArkMethod", CCDelegateTo<CC_X86_64_C>>,
   CCIfCC<"CallingConv::ArkResolver", CCDelegateTo<CC_X86_64_ARK_RESOLVER>>,
 #endif /* OHOS_LLVM */
@@ -1305,8 +1311,9 @@ def CSR_ArkFast2 : CalleeSavedRegs<(sub CSR_ArkFast1, RSI)>;
 def CSR_ArkFast3 : CalleeSavedRegs<(sub CSR_ArkFast2, RDX)>;
 def CSR_ArkFast4 : CalleeSavedRegs<(sub CSR_ArkFast3, RCX)>;
 def CSR_ArkFast5 : CalleeSavedRegs<(sub CSR_ArkFast4, R8)>;
+def CSR_ArkFast6 : CalleeSavedRegs<(sub CSR_ArkFast5, R9)>;
 
 def CSR_ArkMethod : CalleeSavedRegs<(add RBP)>;
-def CSR_ArkResolver : CalleeSavedRegs<(sub CSR_64, R12, R13)>;
-def CSR_ArkPlt : CalleeSavedRegs<(sub CSR_64, R12)>;
+def CSR_ArkResolver : CalleeSavedRegs<(sub CSR_64, R12, R13, R14)>;
+def CSR_ArkPlt : CalleeSavedRegs<(sub CSR_64, R12, R13, R14)>;
 #endif /* OHOS_LLVM */
