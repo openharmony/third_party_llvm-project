@@ -1324,7 +1324,11 @@ ModuleList::GetSharedModule(const ModuleSpec &module_spec, ModuleSP &module_sp,
                 arch.GetArchitectureName());
         }
       } else {
+#ifdef OHOS_LLVM
+        error = Status::FromErrorStringWithFormat("'%s' does not exist or format error", path);
+#else
         error = Status::FromErrorStringWithFormat("'%s' does not exist", path);
+#endif
       }
       if (error.Fail())
         module_sp.reset();
