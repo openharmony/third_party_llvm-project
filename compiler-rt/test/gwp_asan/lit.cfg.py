@@ -66,6 +66,6 @@ config.substitutions.append(
     ("%env_scudo_options=", "env SCUDO_OPTIONS=" + default_gwp_asan_options)
 )
 
-# GWP-ASan tests are currently supported on Linux only.
-if config.host_os not in ["Linux"]:
+# GWP-ASan tests are currently supported on Linux and OHOS only.
+if config.host_os not in ["Linux", "OHOS"]:
     config.unsupported = True

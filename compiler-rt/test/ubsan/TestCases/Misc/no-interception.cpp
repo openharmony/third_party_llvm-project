@@ -10,6 +10,9 @@
 // RUN: %clangxx %s -lc -o %t %ld_flags_rpath_exe
 // RUN: %run %t 2>&1 | FileCheck %s
 
+// OHOS test commands fail at runtime with a missing symbol.
+// UNSUPPORTED: ohos_family
+
 #include <limits.h>
 
 int dso_function(int);

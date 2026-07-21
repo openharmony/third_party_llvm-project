@@ -37,6 +37,7 @@ config.suffixes = [".c", ".cpp"]
 # Check that the host supports UndefinedBehaviorSanitizerMinimal tests
 if config.host_os not in [
     "Linux",
+    "OHOS",
     "FreeBSD",
     "NetBSD",
     "Darwin",

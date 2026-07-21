@@ -130,6 +130,15 @@ void GuardedPoolAllocator::enable() {
   BacktraceMutex.unlock();
 }
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+// OHOS_LOCAL begin
+void GuardedPoolAllocator::enableAtFork() {
+  PoolMutex.unlockAtFork();
+  BacktraceMutex.unlockAtFork();
+}
+// OHOS_LOCAL end
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
+
 void GuardedPoolAllocator::iterate(void *Base, size_t Size, iterate_callback Cb,
                                    void *Arg) {
   uintptr_t Start = reinterpret_cast<uintptr_t>(Base);

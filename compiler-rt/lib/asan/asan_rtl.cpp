@@ -63,6 +63,9 @@ static void AsanDie() {
         UnmapOrDie((void*)kLowShadowBeg, kHighShadowEnd - kLowShadowBeg);
     }
   }
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  Report("End Asan report (AsanDie)\n");
+#endif
 }
 
 static void CheckUnwind() {
@@ -473,6 +476,9 @@ static bool AsanInitInternal() {
   // Doing this before interceptors are initialized crashes in:
   // AsanInitInternal -> android_log_write -> __interceptor_strcmp
   AndroidLogInit();
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  OhosLogInit();
+#endif
 
   ReplaceSystemMalloc();
 

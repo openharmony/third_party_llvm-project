@@ -161,6 +161,14 @@ void LoadedModule::set(const char *module_name, uptr base_address) {
   base_address_ = base_address;
 }
 
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+void LoadedModule::set(const char *module_name, uptr base_address,
+                       bool instrumented) {
+  set(module_name, base_address);
+  instrumented_ = instrumented;
+}
+#endif
+
 void LoadedModule::set(const char *module_name, uptr base_address,
                        ModuleArch arch, u8 uuid[kModuleUUIDSize],
                        bool instrumented) {

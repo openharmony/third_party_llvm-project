@@ -37,6 +37,9 @@ static void CommonInit() {
 static void UbsanDie() {
   if (common_flags()->print_module_map >= 1)
     DumpProcessMap();
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  Report("End CFI report (UbsanDie)\n");
+#endif
 }
 
 static void CommonStandaloneInit() {
@@ -46,6 +49,9 @@ static void CommonStandaloneInit() {
   __sanitizer_set_report_path(common_flags()->log_path);
   __sanitizer::InitializePlatformEarly();
   AndroidLogInit();
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  OhosLogInit();
+#endif
   InitializeCoverage(common_flags()->coverage, common_flags()->coverage_dir);
   CommonInit();
 

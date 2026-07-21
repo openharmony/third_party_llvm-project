@@ -99,6 +99,10 @@ struct ThreadSignalContext;
 struct JmpBuf {
   uptr sp;
   int int_signal_send;
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  // Restore the ignore state if longjmp escapes an ignored signal context.
+  int ignore_reads_and_writes;
+#endif
   bool in_blocking_func;
   uptr oldset_stack_size;
   uptr in_signal_handler;

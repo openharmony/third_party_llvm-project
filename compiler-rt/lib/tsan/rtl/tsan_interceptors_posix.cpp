@@ -558,6 +558,9 @@ static void SetJmp(ThreadState *thr, uptr sp) {
   JmpBuf *buf = thr->jmp_bufs.PushBack();
   buf->sp = sp;
   buf->shadow_stack_pos = thr->shadow_stack_pos;
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  buf->ignore_reads_and_writes = thr->ignore_reads_and_writes;
+#endif
   ThreadSignalContext *sctx = SigCtx(thr);
   buf->int_signal_send = sctx ? sctx->int_signal_send : 0;
   buf->oldset_stack_size = sctx ? sctx->oldset.Size() : 0;
@@ -584,6 +587,13 @@ static void LongJmp(ThreadState *thr, uptr *env) {
       }
       atomic_store(&thr->in_blocking_func, buf->in_blocking_func,
           memory_order_relaxed);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+      thr->ignore_reads_and_writes = buf->ignore_reads_and_writes;
+      if (buf->ignore_reads_and_writes)
+        thr->fast_state.SetIgnoreBit();
+      else
+        thr->fast_state.ClearIgnoreBit();
+#endif
       atomic_store(&thr->in_signal_handler, buf->in_signal_handler,
           memory_order_relaxed);
       JmpBufGarbageCollect(thr, buf->sp - 1);  // do not collect buf->sp
@@ -1188,7 +1198,7 @@ TSAN_INTERCEPTOR(void, pthread_exit, void *retval) {
   REAL(pthread_exit)(retval);
 }
 
-#if SANITIZER_LINUX
+#if SANITIZER_LINUX && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
 TSAN_INTERCEPTOR(int, pthread_tryjoin_np, void *th, void **ret) {
   SCOPED_INTERCEPTOR_RAW(pthread_tryjoin_np, th, ret);
   Tid tid = ThreadConsumeTid(thr, pc, (uptr)th);
@@ -2548,6 +2558,18 @@ static void HandleRecvmsg(ThreadState *thr, uptr pc,
     ThreadIgnoreEnd(thr);                         \
     res;                                          \
   })
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#  define COMMON_INTERCEPTOR_DLOPEN_IMPL(                              \
+      filename, flag, dl_namespace, caller_addr, extinfo)             \
+    ({                                                                 \
+      CheckNoDeepBind(filename, flag);                                 \
+      ThreadIgnoreBegin(thr, 0);                                       \
+      void *res = REAL(dlopen_impl)(filename, flag, dl_namespace,      \
+                                    caller_addr, extinfo);             \
+      ThreadIgnoreEnd(thr);                                            \
+      res;                                                             \
+    })
+#endif
 
 // Ignore interceptors in OnLibraryLoaded()/Unloaded().  These hooks use code
 // (ListOfModules::init, MemoryMappingLayout::DumpListOfModules) that make
@@ -3019,10 +3041,10 @@ void InitializeInterceptors() {
   TSAN_INTERCEPT(pthread_join);
   TSAN_INTERCEPT(pthread_detach);
   TSAN_INTERCEPT(pthread_exit);
-  #if SANITIZER_LINUX
+#if SANITIZER_LINUX && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
   TSAN_INTERCEPT(pthread_tryjoin_np);
   TSAN_INTERCEPT(pthread_timedjoin_np);
-  #endif
+#endif
 
   TSAN_INTERCEPT_VER(pthread_cond_init, PTHREAD_ABI_BASE);
   TSAN_INTERCEPT_VER(pthread_cond_signal, PTHREAD_ABI_BASE);

@@ -3,6 +3,9 @@
 // Data race randomly triggered.
 // UNSUPPORTED: target={{.*netbsd.*}}
 
+// OHOS musl closes all open streams at exit and can deadlock on this lock.
+// UNSUPPORTED: ohos_family
+
 // Make sure TSan doesn't deadlock on a file stream lock at program shutdown.
 // See https://github.com/google/sanitizers/issues/454
 

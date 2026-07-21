@@ -15,6 +15,10 @@ if(COMPILER_RT_TSAN_DEBUG_OUTPUT)
   list(APPEND TSAN_CFLAGS -DTSAN_DEBUG_OUTPUT=2)
 endif()
 
+if(OHOS_LLVM AND OHOS)
+  list(APPEND TSAN_CFLAGS -fno-emulated-tls)
+endif()
+
 # Add the actual runtime library.
 add_subdirectory(rtl)
 

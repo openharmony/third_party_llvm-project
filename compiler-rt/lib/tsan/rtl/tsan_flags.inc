@@ -42,6 +42,10 @@ TSAN_FLAG(
 TSAN_FLAG(bool, force_background_thread, false,
           "If set, eagerly launch a background thread for memory reclamation "
           "instead of waiting for a user call to pthread_create.")
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+TSAN_FLAG(bool, disable_background_thread, true,
+          "If set, never start the background thread.")
+#endif
 TSAN_FLAG(bool, halt_on_error, false, "Exit after first reported error.")
 TSAN_FLAG(int, atexit_sleep_ms, 1000,
           "Sleep in main thread before exiting for that many ms "
@@ -72,7 +76,11 @@ TSAN_FLAG(bool, die_after_fork, true,
 TSAN_FLAG(const char *, suppressions, "", "Suppressions file name.")
 TSAN_FLAG(bool, ignore_interceptors_accesses, SANITIZER_APPLE ? true : false,
           "Ignore reads and writes from all interceptors.")
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+TSAN_FLAG(bool, ignore_noninstrumented_modules, true,
+#else
 TSAN_FLAG(bool, ignore_noninstrumented_modules, SANITIZER_APPLE ? true : false,
+#endif
           "Interceptors should only detect races when called from instrumented "
           "modules.")
 TSAN_FLAG(bool, shared_ptr_interceptor, true,

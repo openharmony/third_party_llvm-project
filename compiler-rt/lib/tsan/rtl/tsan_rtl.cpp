@@ -460,6 +460,9 @@ static bool InitializeMemoryProfiler() {
 }
 
 static void *BackgroundThread(void *arg) {
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  VReport(1, "%s: Started BackgroundThread\n", SanitizerToolName);
+#endif
   // This is a non-initialized non-user thread, nothing to see here.
   // We don't use ScopedIgnoreInterceptors, because we want ignores to be
   // enabled even when the thread function exits (e.g. during pthread thread
@@ -507,6 +510,9 @@ static void *BackgroundThread(void *arg) {
       u64 last = atomic_load(&ctx->last_symbolize_time_ns,
                              memory_order_relaxed);
       if (last != 0 && last + flags()->flush_symbolizer_ms * kMs2Ns < now) {
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+        VReport(1, "ThreadSanitizer: flushing symbolizer\n");
+#endif
         Lock l(&ctx->report_mtx);
         ScopedErrorReportLock l2;
         SymbolizeFlush();
@@ -518,11 +524,19 @@ static void *BackgroundThread(void *arg) {
 }
 
 static void StartBackgroundThread() {
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  if (flags()->disable_background_thread)
+    return;
+#endif
   ctx->background_thread = internal_start_thread(&BackgroundThread, 0);
 }
 
 #ifndef __mips__
 static void StopBackgroundThread() {
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  if (flags()->disable_background_thread)
+    return;
+#endif
   atomic_store(&ctx->stop_background_thread, 1, memory_order_relaxed);
   internal_join_thread(ctx->background_thread);
   ctx->background_thread = 0;
@@ -714,6 +728,9 @@ void Initialize(ThreadState *thr) {
   const char *options = GetEnv(env_name);
   CacheBinaryName();
   CheckASLR();
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  OhosLogInit();
+#endif
   InitializeFlags(&ctx->flags, options, env_name);
   AvoidCVE_2016_2143();
   __sanitizer::InitializePlatformEarly();
@@ -820,6 +837,9 @@ int Finalize(ThreadState *thr) {
     PrintMatchedSuppressions();
 
   failed = OnFinalize(failed);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  Report("End Tsan report (Finalize)\n");
+#endif
 
   return failed ? common_flags()->exitcode : 0;
 }

@@ -28,6 +28,9 @@ void LibIgnore::AddIgnoredLibrary(const char *name_templ) {
            kMaxLibs);
     Die();
   }
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  VPrintf(2, "[Ignore] Add ignored library %s.\n", name_templ);
+#endif
   Lib *lib = &libs_[count_++];
   lib->templ = internal_strdup(name_templ);
   lib->name = nullptr;
@@ -80,6 +83,10 @@ void LibIgnore::OnLibraryLoaded(const char *name) {
         const uptr idx =
             atomic_load(&ignored_ranges_count_, memory_order_relaxed);
         CHECK_LT(idx, ARRAY_SIZE(ignored_code_ranges_));
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+        VReport(1, "[Ignore] Adding ignored range %p-%p from library '%s'\n",
+                (void *)range.beg, (void *)range.end, mod.full_name());
+#endif
         ignored_code_ranges_[idx].OnLoad(range.beg, range.end);
         // Record the index of the ignored range.
         lib->range_id = idx;
@@ -101,13 +108,23 @@ void LibIgnore::OnLibraryLoaded(const char *name) {
   // Track instrumented ranges.
   if (track_instrumented_libs_) {
     for (const auto &mod : modules) {
-      if (!mod.instrumented())
-        continue;
       for (const auto &range : mod.ranges()) {
         if (!range.executable)
           continue;
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+        if (!mod.instrumented()) {
+          UnloadOverlappingInstrumentedRanges(range.beg, range.end,
+                                               mod.full_name());
+          continue;
+        }
+        if (IsInstrumentedRangeLoaded(range.beg, range.end))
+          continue;
+#else
+        if (!mod.instrumented())
+          continue;
         if (IsPcInstrumented(range.beg) && IsPcInstrumented(range.end - 1))
           continue;
+#endif
         VReport(1, "Adding instrumented range %p-%p from library '%s'\n",
                 (void *)range.beg, (void *)range.end, mod.full_name());
         const uptr idx =
@@ -120,6 +137,33 @@ void LibIgnore::OnLibraryLoaded(const char *name) {
     }
   }
 }
+
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+bool LibIgnore::IsInstrumentedRangeLoaded(uptr beg, uptr end) const {
+  const uptr count =
+      atomic_load(&instrumented_ranges_count_, memory_order_acquire);
+  for (uptr i = 0; i < count; ++i) {
+    if (instrumented_code_ranges_[i].IsLoadedRange(beg, end))
+      return true;
+  }
+  return false;
+}
+
+void LibIgnore::UnloadOverlappingInstrumentedRanges(
+    uptr beg, uptr end, const char *module_name) {
+  const uptr count =
+      atomic_load(&instrumented_ranges_count_, memory_order_acquire);
+  for (uptr i = 0; i < count; ++i) {
+    if (!instrumented_code_ranges_[i].Overlaps(beg, end))
+      continue;
+    VReport(1,
+            "[Ignore] Invalidating instrumented range overlapping %p-%p "
+            "from library '%s'\n",
+            (void *)beg, (void *)end, module_name);
+    instrumented_code_ranges_[i].OnUnload();
+  }
+}
+#endif
 
 void LibIgnore::OnLibraryUnloaded() {
   OnLibraryLoaded(nullptr);

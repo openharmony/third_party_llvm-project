@@ -74,6 +74,17 @@ class LibIgnore {
 
     void OnUnload() { atomic_store(&end, 0, memory_order_release); }
 
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+    bool IsLoadedRange(uptr b, uptr e) const {
+      return begin == b && atomic_load(&end, memory_order_acquire) == e;
+    }
+
+    bool Overlaps(uptr b, uptr e) const {
+      uptr loaded_end = atomic_load(&end, memory_order_acquire);
+      return loaded_end != 0 && begin < e && b < loaded_end;
+    }
+#endif
+
    private:
     uptr begin;
     // A value of 0 means the associated module was unloaded.
@@ -92,6 +103,12 @@ class LibIgnore {
   uptr count_;
   Lib libs_[kMaxLibs];
   bool track_instrumented_libs_;
+
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  bool IsInstrumentedRangeLoaded(uptr beg, uptr end) const;
+  void UnloadOverlappingInstrumentedRanges(uptr beg, uptr end,
+                                           const char *module_name);
+#endif
 
   // Disallow copying of LibIgnore objects.
   LibIgnore(const LibIgnore&);  // not implemented

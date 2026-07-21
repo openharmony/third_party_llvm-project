@@ -8,9 +8,11 @@
 
 #include "gwp_asan/tests/harness.h"
 
+#include <sys/wait.h>
+
 constexpr size_t Size = 100;
 
-TEST_F(DefaultGuardedPoolAllocatorDeathTest, Fork) {
+TEST_F(DefaultGuardedPoolAllocator, Fork) {
   void *P;
   pid_t Pid = fork();
   EXPECT_GE(Pid, 0);
@@ -27,15 +29,28 @@ TEST_F(DefaultGuardedPoolAllocatorDeathTest, Fork) {
   memset(P, 0x42, Size);
   GPA.deallocate(P);
 
-  // fork should stall if the allocator has been disabled.
-  EXPECT_DEATH(
-      {
-        GPA.disable();
-        alarm(1);
-        Pid = fork();
-        EXPECT_GE(Pid, 0);
-      },
-      "");
+  // OHOS recursive mutexes let the atfork prepare handler acquire the already
+  // held locks. The post-fork handlers reset them, so both processes can keep
+  // using the allocator.
+  GPA.disable();
+  Pid = fork();
+  ASSERT_GE(Pid, 0);
+  if (Pid == 0) {
+    P = GPA.allocate(Size);
+    if (!P)
+      _exit(1);
+    memset(P, 0x42, Size);
+    GPA.deallocate(P);
+    _exit(0);
+  }
+  int Status = 0;
+  ASSERT_EQ(waitpid(Pid, &Status, 0), Pid);
+  ASSERT_TRUE(WIFEXITED(Status));
+  EXPECT_EQ(WEXITSTATUS(Status), 0);
+  P = GPA.allocate(Size);
+  ASSERT_NE(P, nullptr);
+  memset(P, 0x42, Size);
+  GPA.deallocate(P);
 }
 
 namespace {

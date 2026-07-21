@@ -12,6 +12,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "sanitizer_platform.h"
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#  include "sanitizer_interface_internal.h"
+#endif
 
 #if SANITIZER_FREEBSD || SANITIZER_LINUX || SANITIZER_NETBSD || \
     SANITIZER_SOLARIS || SANITIZER_HAIKU
@@ -697,6 +700,20 @@ u64 NanoTime() {
 }
 #  endif
 
+#  if defined(OHOS_LLVM) && SANITIZER_OHOS
+static const char *GetEnvFromEnviron(const char *name) {
+  if (::environ != nullptr) {
+    uptr name_len = internal_strlen(name);
+    for (char **env = ::environ; *env != nullptr; ++env) {
+      if (internal_strncmp(*env, name, name_len) == 0 &&
+          (*env)[name_len] == '=')
+        return *env + name_len + 1;
+    }
+  }
+  return nullptr;
+}
+#  endif
+
 // Like getenv, but reads env directly from /proc (on Linux) or parses the
 // 'environ' array (on some others) and does not use libc. This function
 // should be called first inside __asan_init.
@@ -721,8 +738,13 @@ const char *GetEnv(const char *name) {
     if (!ReadFileToBuffer("/proc/self/environ", &environ, &environ_size, &len))
       environ = nullptr;
   }
-  if (!environ || len == 0)
+  if (!environ || len == 0) {
+#    if defined(OHOS_LLVM) && SANITIZER_OHOS
+    return GetEnvFromEnviron(name);
+#    else
     return nullptr;
+#    endif
+  }
   uptr namelen = internal_strlen(name);
   const char *p = environ;
   while (*p != '\0') {  // will happen at the \0\0 that terminates the buffer
@@ -2220,7 +2242,11 @@ bool SignalContext::IsTrueFaultingAddress() const {
 UNUSED
 static const char *RegNumToRegName(int reg) {
   switch (reg) {
-#  if SANITIZER_LINUX && SANITIZER_GLIBC || SANITIZER_NETBSD
+#  if ((SANITIZER_LINUX &&                                               \
+        (SANITIZER_GLIBC ||                                              \
+         (defined(OHOS_LLVM) && SANITIZER_OHOS &&                        \
+          defined(__aarch64__)))) ||                                     \
+       SANITIZER_NETBSD)
 #    if defined(__x86_64__)
 #      if SANITIZER_NETBSD
 #        define REG_RAX _REG_RAX
@@ -2374,7 +2400,11 @@ static const char *RegNumToRegName(int reg) {
   return NULL;
 }
 
-#  if ((SANITIZER_LINUX && SANITIZER_GLIBC) || SANITIZER_NETBSD) && \
+#  if ((SANITIZER_LINUX &&                                               \
+        (SANITIZER_GLIBC ||                                              \
+         (defined(OHOS_LLVM) && SANITIZER_OHOS &&                        \
+          defined(__aarch64__)))) ||                                     \
+       SANITIZER_NETBSD) &&                                              \
       (defined(__arm__) || defined(__aarch64__))
 static uptr GetArmRegister(ucontext_t *ctx, int RegNum) {
   switch (RegNum) {
@@ -2428,7 +2458,11 @@ static uptr GetArmRegister(ucontext_t *ctx, int RegNum) {
 UNUSED
 static void DumpSingleReg(ucontext_t *ctx, int RegNum) {
   const char *RegName = RegNumToRegName(RegNum);
-#  if SANITIZER_LINUX && SANITIZER_GLIBC || SANITIZER_NETBSD
+#  if ((SANITIZER_LINUX &&                                               \
+        (SANITIZER_GLIBC ||                                              \
+         (defined(OHOS_LLVM) && SANITIZER_OHOS &&                        \
+          defined(__aarch64__)))) ||                                     \
+       SANITIZER_NETBSD)
 #    if defined(__x86_64__)
   Printf("%s%s = 0x%016llx  ", internal_strlen(RegName) == 2 ? " " : "",
          RegName,
@@ -2462,7 +2496,11 @@ static void DumpSingleReg(ucontext_t *ctx, int RegNum) {
 
 void SignalContext::DumpAllRegisters(void *context) {
   ucontext_t *ucontext = (ucontext_t *)context;
-#  if SANITIZER_LINUX && SANITIZER_GLIBC || SANITIZER_NETBSD
+#  if ((SANITIZER_LINUX &&                                               \
+        (SANITIZER_GLIBC ||                                              \
+         (defined(OHOS_LLVM) && SANITIZER_OHOS &&                        \
+          defined(__aarch64__)))) ||                                     \
+       SANITIZER_NETBSD)
 #    if defined(__x86_64__)
   Report("Register values:\n");
   DumpSingleReg(ucontext, REG_RAX);
@@ -2744,7 +2782,45 @@ static void GetPcSpBp(void *context, uptr *pc, uptr *sp, uptr *bp) {
 
 void SignalContext::InitPcSpBp() { GetPcSpBp(context, &pc, &sp, &bp); }
 
-void InitializePlatformEarly() { InitTlsSize(); }
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+static bool ShouldVerifyDlopenImplInterceptor() {
+  return internal_strcmp(SanitizerToolName, "AddressSanitizer") == 0 ||
+         internal_strcmp(SanitizerToolName, "ThreadSanitizer") == 0;
+}
+
+static void VerifyDlopenImplInterceptor() {
+  if (!common_flags()->verify_interceptors ||
+      !ShouldVerifyDlopenImplInterceptor())
+    return;
+
+  void *default_symbol = dlsym(RTLD_DEFAULT, "dlopen_impl");
+  void *next_symbol = dlsym(RTLD_NEXT, "dlopen_impl");
+  RAW_CHECK(default_symbol && next_symbol);
+
+  Dl_info default_info = {};
+  Dl_info next_info = {};
+  Dl_info runtime_info = {};
+  RAW_CHECK(dladdr(default_symbol, &default_info));
+  RAW_CHECK(dladdr(next_symbol, &next_info));
+  RAW_CHECK(dladdr((void *)__sanitizer_report_error_summary, &runtime_info));
+
+  if (internal_strcmp(default_info.dli_fname, runtime_info.dli_fname) == 0)
+    return;
+  Report(
+      "ERROR: dlopen_impl interceptor is not working; %s may have been "
+      "loaded too late. first=%p (%s), next=%p (%s)\n",
+      runtime_info.dli_fname, default_info.dli_saddr, default_info.dli_fname,
+      next_info.dli_saddr, next_info.dli_fname);
+  RAW_CHECK("interceptors not installed" && false);
+}
+#endif
+
+void InitializePlatformEarly() {
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  VerifyDlopenImplInterceptor();
+#endif
+  InitTlsSize();
+}
 
 void CheckASLR() {
 #  if SANITIZER_NETBSD

@@ -25,6 +25,9 @@ public:
   bool tryLock();
   // Unlock the mutex.
   void unlock();
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  void unlockAtFork(); // OHOS_LOCAL
+#endif
 };
 
 class ScopedLock {

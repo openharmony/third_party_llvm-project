@@ -651,6 +651,11 @@ bool OutputReport(ThreadState *thr, const ScopedReport &srep) {
     Lock lock(&ctx->fired_suppressions_mtx);
     FiredSuppression s = {srep.GetReport()->typ, pc_or_addr, supp};
     ctx->fired_suppressions.push_back(s);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+    if (supp)
+      VPrintf(2, "[Suppression] hit type:%s file:%s pc:0x%zx.\n", supp->type,
+              supp->templ, pc_or_addr);
+#endif
   }
   {
     bool suppressed = OnReport(rep, pc_or_addr != 0);
@@ -676,8 +681,13 @@ bool IsFiredSuppression(Context *ctx, ReportType type, StackTrace trace) {
     for (uptr j = 0; j < trace.size; j++) {
       FiredSuppression *s = &ctx->fired_suppressions[k];
       if (trace.trace[j] == s->pc_or_addr) {
-        if (s->supp)
+        if (s->supp) {
           atomic_fetch_add(&s->supp->hit_count, 1, memory_order_relaxed);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+          VPrintf(2, "[Suppression] fired type:%s file:%s pc:0x%zx.\n",
+                  s->supp->type, s->supp->templ, s->pc_or_addr);
+#endif
+        }
         return true;
       }
     }

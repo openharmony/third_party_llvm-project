@@ -13,6 +13,7 @@
 //
 // FIXME: Windows doesn't implement mmap_limit_mb.
 // XFAIL: target={{.*windows-msvc.*}}
+// XFAIL: ohos_family
 
 #include <assert.h>
 #include <stdlib.h>

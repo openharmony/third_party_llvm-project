@@ -23,7 +23,11 @@ int main() {
   iov[0].iov_len = 5;
   iov[1].iov_base = buf + 10;
   iov[1].iov_len = 2000;
+#if defined(__OHOS__)
+  int fd = open("/etc/resolv.conf", O_RDONLY);
+#else
   int fd = open("/etc/hosts", O_RDONLY);
+#endif
   assert(fd > 0);
   readv(fd, iov, 2);
   // CHECK: WRITE of size 5 at

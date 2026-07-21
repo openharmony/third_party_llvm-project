@@ -21,7 +21,8 @@ int main() {
   // CHECK-Windows:{{    #0 0x.* in operator delete\[\]}}
   // CHECK-FreeBSD:{{    #0 0x.* in operator delete\[\]}}
   // CHECK-Darwin: {{    #0 0x.* in .*_Zda}}
-  // CHECK-NEXT:   {{    #1 0x.* in main .*use-after-delete.cpp:}}[[@LINE-14]]
+  // CHECK-OHOS:   {{    #0 0x.* in operator delete\[\]}}
+  // CHECK-NEXT:   {{    #1 0x.* in main .*use-after-delete.cpp:}}[[@LINE-15]]
 
   // CHECK: {{previously allocated by thread T0 here:}}
   // CHECK-Linux:  {{    #0 0x.* in operator new\[\]}}
@@ -29,7 +30,8 @@ int main() {
   // CHECK-Windows:{{    #0 0x.* in operator new\[\]}}
   // CHECK-FreeBSD:{{    #0 0x.* in operator new\[\]}}
   // CHECK-Darwin: {{    #0 0x.* in .*_Zna}}
-  // CHECK-NEXT:   {{    #1 0x.* in main .*use-after-delete.cpp:}}[[@LINE-23]]
+  // CHECK-OHOS:   {{    #0 0x.* in operator new\[\]}}
+  // CHECK-NEXT:   {{    #1 0x.* in main .*use-after-delete.cpp:}}[[@LINE-25]]
 
 
   // CHECK: Shadow byte legend (one shadow byte represents {{[0-9]+}} application bytes):

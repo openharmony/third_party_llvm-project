@@ -47,4 +47,3 @@ int main(int argc, char **argv) {
 
 // CHECK-WITHSUPP-NOT: WARNING: ThreadSanitizer: data race
 // CHECK-WITHSUPP: OK
-

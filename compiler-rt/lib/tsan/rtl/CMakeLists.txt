@@ -16,6 +16,13 @@ set(TSAN_DYNAMIC_LINK_LIBS
   ${COMPILER_RT_UNWINDER_LINK_LIBS}
   ${SANITIZER_CXX_ABI_LIBRARIES}
   ${SANITIZER_COMMON_LINK_LIBS})
+set(TSAN_DYNAMIC_LINK_FLAGS ${SANITIZER_COMMON_LINK_FLAGS})
+
+if(OHOS_LLVM AND OHOS AND COMPILER_RT_HAS_Z_GLOBAL)
+  # Keep the TSan runtime in the global group so modules which do not link it
+  # directly can resolve __tsan_init.
+  list(APPEND TSAN_DYNAMIC_LINK_FLAGS -Wl,-z,global)
+endif()
 
 append_list_if(COMPILER_RT_HAS_LIBDL dl TSAN_DYNAMIC_LINK_LIBS)
 append_list_if(COMPILER_RT_HAS_LIBM m TSAN_DYNAMIC_LINK_LIBS)
@@ -147,7 +154,7 @@ if(APPLE)
                 RTSanitizerCommonSymbolizer
                 RTUbsan
     CFLAGS ${TSAN_RTL_CFLAGS}
-    LINK_FLAGS ${SANITIZER_COMMON_LINK_FLAGS} ${WEAK_SYMBOL_LINK_FLAGS}
+    LINK_FLAGS ${TSAN_DYNAMIC_LINK_FLAGS} ${WEAK_SYMBOL_LINK_FLAGS}
     LINK_LIBS ${TSAN_LINK_LIBS} objc
     PARENT_TARGET tsan)
   add_compiler_rt_object_libraries(RTTsan_dynamic
@@ -279,7 +286,7 @@ else()
       CFLAGS ${TSAN_RTL_DYNAMIC_CFLAGS}
       DEFS SANITIZER_SHARED
       LINK_LIBS ${TSAN_DYNAMIC_LINK_LIBS}
-      LINK_FLAGS ${SANITIZER_COMMON_LINK_FLAGS}
+      LINK_FLAGS ${TSAN_DYNAMIC_LINK_FLAGS}
       PARENT_TARGET tsan)
     add_sanitizer_rt_symbols(clang_rt.tsan
       ARCHS ${arch}
@@ -293,5 +300,4 @@ else()
                           clang_rt.tsan_cxx-${arch}-symbols)
   endforeach()
 endif()
-
 

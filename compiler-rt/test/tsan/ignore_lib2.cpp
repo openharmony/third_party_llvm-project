@@ -33,4 +33,3 @@ extern "C" void libfunc() {
 
 // CHECK: ThreadSanitizer: called_from_lib suppression 'ignore_lib2' is matched against 2 libraries
 // CHECK-NOT: OK
-

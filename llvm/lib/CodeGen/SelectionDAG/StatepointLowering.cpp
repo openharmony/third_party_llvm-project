@@ -493,13 +493,16 @@ spillIncomingStatepointValue(SDValue Incoming, SDValue Chain,
     MachineFrameInfo &MFI = Builder.DAG.getMachineFunction().getFrameInfo();
 #ifndef OHOS_LLVM
     assert((MFI.getObjectSize(Index) * 8) ==
-#else /* OHOS_LLVM */
-    // We allow spills of smaller values to larger slots
-    assert((MFI.getObjectSize(Index) * 8) >=
-#endif /* OHOS_LLVM */
                (-8 & (7 + // Round up modulo 8.
                       (int64_t)Incoming.getValueSizeInBits())) &&
            "Bad spill:  stack slot does not match!");
+#else /* OHOS_LLVM */
+    // We allow spills of smaller values to larger slots
+    assert((MFI.getObjectSize(Index) * 8) >=
+               (-8 & (7 + // Round up modulo 8.
+                      (int64_t)Incoming.getValueSizeInBits())) &&
+           "Bad spill:  stack slot does not match!");
+#endif /* OHOS_LLVM */
 
     // Note: Using the alignment of the spill slot (rather than the abi or
     // preferred alignment) is required for correctness when dealing with spill

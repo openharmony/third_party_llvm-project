@@ -54,7 +54,7 @@ config.substitutions.append(("%shared_minlibscudo", shared_minlibscudo))
 
 # Platform-specific default SCUDO_OPTIONS for lit tests.
 default_scudo_opts = ""
-if config.android:
+if config.android or config.host_os == "OHOS":
     # Android defaults to abort_on_error=1, which doesn't work for us.
     default_scudo_opts = "abort_on_error=0"
 
@@ -69,6 +69,6 @@ config.substitutions.append(
     ("%env_scudo_opts=", "env SCUDO_OPTIONS=" + default_scudo_opts)
 )
 
-# Hardened Allocator tests are currently supported on Linux only.
-if config.host_os not in ["Linux"]:
+# Hardened Allocator tests are currently supported on Linux and OHOS only.
+if config.host_os not in ["Linux", "OHOS"]:
     config.unsupported = True

@@ -128,10 +128,14 @@ bool CheckAndProtect(bool protect, bool ignore_heap, bool print_warnings) {
       break;
 
     // Debug output can break tests. Suppress this message in most cases.
-    if (print_warnings)
+    if (print_warnings) {
       Printf(
           "WARNING: ThreadSanitizer: unexpected memory mapping 0x%zx-0x%zx\n",
           segment.start, segment.end);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+      DumpProcessMap();
+#endif
+    }
 
     return false;
   }
