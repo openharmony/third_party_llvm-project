@@ -109,6 +109,9 @@ class HwasanChunkView {
   u32 GetAllocThreadId() const;
   bool FromSmallHeap() const;
   bool AddrIsInside(uptr addr) const;
+#ifdef OHOS_LLVM
+  int AllocatedByThread() const;
+#endif /* OHOS_LLVM */
 
  private:
   friend class __lsan::LsanMetadata;

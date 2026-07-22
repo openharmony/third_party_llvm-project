@@ -63,11 +63,17 @@ class Thread {
   void EnableTagging() { tagging_disabled_--; }
 
   u32 unique_id() const { return unique_id_; }
+#ifndef OHOS_LLVM
   void Announce() {
     if (announced_) return;
     announced_ = true;
     Print("Thread: ");
   }
+#else  /* OHOS_LLVM */
+  // Report uses OS tid; alias to existing os_id_ (no separate tid_ member).
+  int tid() const { return static_cast<int>(os_id_); }
+  void Announce() { Print("Thread: "); }
+#endif /* OHOS_LLVM */
 
   tid_t os_id() const { return os_id_; }
   void set_os_id(tid_t os_id) { os_id_ = os_id; }

@@ -68,6 +68,14 @@ u32 HwasanChunkView::GetAllocThreadId() const {
   return metadata_->GetAllocThreadId();
 }
 
+#ifdef OHOS_LLVM
+int HwasanChunkView::AllocatedByThread() const {
+  if (metadata_)
+    return static_cast<int>(metadata_->GetAllocThreadId());
+  return -1;
+}
+#endif /* OHOS_LLVM */
+
 uptr HwasanChunkView::ActualSize() const {
   return allocator.GetActuallyAllocatedSize(reinterpret_cast<void *>(block_));
 }
@@ -82,7 +90,12 @@ bool HwasanChunkView::AddrIsInside(uptr addr) const {
 
 inline void Metadata::SetAllocated(u32 stack, u64 size) {
   Thread *t = GetCurrentThread();
+#ifndef OHOS_LLVM
   u64 context = t ? t->unique_id() : kMainTid;
+#else  /* OHOS_LLVM */
+  // Keep sizeof(Metadata)==16: pack OS tid (not unique_id) into high 32 bits.
+  u64 context = t ? static_cast<u32>(t->tid()) : static_cast<u32>(-1);
+#endif /* OHOS_LLVM */
   context <<= 32;
   context += stack;
   requested_size_low = size & ((1ul << 32) - 1);

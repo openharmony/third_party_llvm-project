@@ -44,8 +44,13 @@ void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
 
   static atomic_uint64_t unique_id;
   unique_id_ = atomic_fetch_add(&unique_id, 1, memory_order_relaxed);
+#ifndef OHOS_LLVM
   if (!IsMainThread())
     os_id_ = GetTid();
+#else  /* OHOS_LLVM */
+  // Source set tid_=GetTid() for all threads incl. main; reuse os_id_.
+  os_id_ = GetTid();
+#endif /* OHOS_LLVM */
 
 #ifndef OHOS_LLVM
   if (auto sz = flags()->heap_history_size)
@@ -126,9 +131,15 @@ void Thread::Destroy() {
 }
 
 void Thread::Print(const char *Prefix) {
+#ifndef OHOS_LLVM
   Printf("%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p)\n", Prefix, unique_id_,
          (void *)this, stack_bottom(), stack_top(),
          stack_top() - stack_bottom(), tls_begin(), tls_end());
+#else  /* OHOS_LLVM */
+  Printf("%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p) tid: %d\n", Prefix,
+         unique_id_, (void *)this, stack_bottom(), stack_top(),
+         stack_top() - stack_bottom(), tls_begin(), tls_end(), tid());
+#endif /* OHOS_LLVM */
 }
 
 static u32 xorshift(u32 state) {

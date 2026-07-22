@@ -129,7 +129,11 @@ class SavedStackAllocations {
     void *storage =
         MmapAlignedOrDieOnFatalError(size, size * 2, "saved stack allocations");
     new (&rb_) StackAllocationsRingBuffer(*rb, storage);
+#ifndef OHOS_LLVM
     thread_id_ = t->unique_id();
+#else  /* OHOS_LLVM */
+    thread_id_ = static_cast<u32>(t->tid());
+#endif /* OHOS_LLVM */
   }
 
   ~SavedStackAllocations() {
@@ -525,6 +529,9 @@ class BaseReport {
     u32 stack_id = 0;
     bool from_small_heap = false;
     bool is_allocated = false;
+#ifdef OHOS_LLVM
+    u32 alloc_thread_id = 0;
+#endif /* OHOS_LLVM */
   };
 
   struct Shadow {
@@ -642,6 +649,9 @@ BaseReport::HeapChunk BaseReport::CopyHeapChunk() const {
     result.from_small_heap = chunk.FromSmallHeap();
     result.is_allocated = chunk.IsAllocated();
     result.stack_id = chunk.GetAllocStackId();
+#ifdef OHOS_LLVM
+    result.alloc_thread_id = chunk.GetAllocThreadId();
+#endif /* OHOS_LLVM */
   }
   return result;
 }
@@ -669,7 +679,11 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
         ha.ring_index = ring_index;
         ha.num_matching_addrs = num_matching_addrs;
         ha.num_matching_addrs_4b = num_matching_addrs_4b;
+#ifndef OHOS_LLVM
         ha.free_thread_id = t->unique_id();
+#else  /* OHOS_LLVM */
+        ha.free_thread_id = static_cast<u32>(t->tid());
+#endif /* OHOS_LLVM */
       }
     }
   });
@@ -744,7 +758,11 @@ void BaseReport::PrintHeapOrGlobalCandidate() const {
            candidate.heap.end - candidate.heap.begin, candidate.heap.begin,
            candidate.heap.end);
     Printf("%s", d.Allocation());
+#ifndef OHOS_LLVM
     Printf("allocated by thread T%u here:\n", candidate.heap.thread_id);
+#else  /* OHOS_LLVM */
+    Printf("allocated by thread %u here:\n", candidate.heap.thread_id);
+#endif /* OHOS_LLVM */
     Printf("%s", d.Default());
     GetStackTraceFromId(candidate.heap.stack_id).Print();
     return;
@@ -802,6 +820,7 @@ void BaseReport::PrintAddressDescription() const {
 
   // Print some very basic information about the address, if it's a heap.
   if (heap.begin) {
+#ifndef OHOS_LLVM
     Printf(
         "%s[%p,%p) is a %s %s heap chunk; "
         "size: %zd offset: %zd\n%s",
@@ -809,19 +828,31 @@ void BaseReport::PrintAddressDescription() const {
         heap.from_small_heap ? "small" : "large",
         heap.is_allocated ? "allocated" : "unallocated", heap.size,
         untagged_addr - heap.begin, d.Default());
-#ifdef OHOS_LLVM
+#else  /* OHOS_LLVM */
+    // Allocated By (OS tid) + Currently allocated here (alloc stack).
+    Printf(
+        "%s[%p,%p) is a %s %s heap chunk; "
+        "size: %zd offset: %zd, Allocated By %u\n%s",
+        d.Location(), heap.begin, heap.begin + heap.size,
+        heap.from_small_heap ? "small" : "large",
+        heap.is_allocated ? "allocated" : "unallocated", heap.size,
+        untagged_addr - heap.begin, heap.alloc_thread_id, d.Default());
     if (heap.is_allocated && heap.stack_id) {
       Printf("%s", d.Allocation());
       Printf("Currently allocated here:\n");
       Printf("%s", d.Default());
       GetStackTraceFromId(heap.stack_id).Print();
     }
-#endif
+#endif /* OHOS_LLVM */
   }
 
   auto announce_by_id = [](u32 thread_id) {
     hwasanThreadList().VisitAllLiveThreads([&](Thread *t) {
+#ifndef OHOS_LLVM
       if (thread_id == t->unique_id())
+#else  /* OHOS_LLVM */
+      if (thread_id == static_cast<u32>(t->tid()))
+#endif /* OHOS_LLVM */
         t->Announce();
     });
   };
@@ -832,8 +863,13 @@ void BaseReport::PrintAddressDescription() const {
     Printf("%s", d.Error());
     Printf("\nCause: stack tag-mismatch\n");
     Printf("%s", d.Location());
+#ifndef OHOS_LLVM
     Printf("Address %p is located in stack of thread T%zd\n", untagged_addr,
            sa.thread_id());
+#else  /* OHOS_LLVM */
+    Printf("Address %p is located in stack of thread %d\n", untagged_addr,
+           static_cast<int>(sa.thread_id()));
+#endif /* OHOS_LLVM */
     Printf("%s", d.Default());
     announce_by_id(sa.thread_id());
     PrintStackAllocations(sa.get(), ptr_tag, untagged_addr);
@@ -857,12 +893,21 @@ void BaseReport::PrintAddressDescription() const {
            har.requested_size, UntagAddr(har.tagged_addr),
            UntagAddr(har.tagged_addr) + har.requested_size);
     Printf("%s", d.Allocation());
+#ifndef OHOS_LLVM
     Printf("freed by thread T%u here:\n", ha.free_thread_id);
+#else  /* OHOS_LLVM */
+    Printf("freed by thread %d here:\n", static_cast<int>(ha.free_thread_id));
+#endif /* OHOS_LLVM */
     Printf("%s", d.Default());
     GetStackTraceFromId(har.free_context_id).Print();
 
     Printf("%s", d.Allocation());
+#ifndef OHOS_LLVM
     Printf("previously allocated by thread T%u here:\n", har.alloc_thread_id);
+#else  /* OHOS_LLVM */
+    Printf("previously allocated by thread %d here:\n",
+           static_cast<int>(har.alloc_thread_id));
+#endif /* OHOS_LLVM */
     Printf("%s", d.Default());
     GetStackTraceFromId(har.alloc_context_id).Print();
 
@@ -925,8 +970,13 @@ InvalidFreeReport::~InvalidFreeReport() {
   const char *bug_type = "invalid-free";
   const Thread *thread = GetCurrentThread();
   if (thread) {
+#ifndef OHOS_LLVM
     Report("ERROR: %s: %s on address %p at pc %p on thread T%zd\n",
            SanitizerToolName, bug_type, untagged_addr, pc, thread->unique_id());
+#else  /* OHOS_LLVM */
+    Report("ERROR: %s: %s on address %p at pc %p on thread %d\n",
+           SanitizerToolName, bug_type, untagged_addr, pc, thread->tid());
+#endif /* OHOS_LLVM */
   } else {
     Report("ERROR: %s: %s on address %p at pc %p on unknown thread\n",
            SanitizerToolName, bug_type, untagged_addr, pc);
@@ -1058,14 +1108,27 @@ TagMismatchReport::~TagMismatchReport() {
   if (mem_tag && mem_tag < kShadowAlignment) {
     tag_t short_tag =
         GetShortTagCopy(MemToShadow(untagged_addr + mismatch_offset));
+#ifndef OHOS_LLVM
     Printf(
         "%s of size %zu at %p tags: %02x/%02x(%02x) (ptr/mem) in thread T%zd\n",
         is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
         mem_tag, short_tag, t->unique_id());
+#else  /* OHOS_LLVM */
+    Printf(
+        "%s of size %zu at %p tags: %02x/%02x(%02x) (ptr/mem) in thread %d\n",
+        is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
+        mem_tag, short_tag, t->tid());
+#endif /* OHOS_LLVM */
   } else {
+#ifndef OHOS_LLVM
     Printf("%s of size %zu at %p tags: %02x/%02x (ptr/mem) in thread T%zd\n",
            is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
            mem_tag, t->unique_id());
+#else  /* OHOS_LLVM */
+    Printf("%s of size %zu at %p tags: %02x/%02x (ptr/mem) in thread %d\n",
+           is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
+           mem_tag, t->tid());
+#endif /* OHOS_LLVM */
   }
   if (mismatch_offset)
     Printf("Invalid access starting at offset %zu\n", mismatch_offset);
