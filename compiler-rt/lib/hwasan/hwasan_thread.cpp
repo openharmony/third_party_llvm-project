@@ -47,8 +47,14 @@ void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
   if (!IsMainThread())
     os_id_ = GetTid();
 
+#ifndef OHOS_LLVM
   if (auto sz = flags()->heap_history_size)
     heap_allocations_ = HeapAllocationsRingBuffer::New(sz);
+#else  /* OHOS_LLVM */
+  if (auto sz = IsMainThread() ? flags()->heap_history_size_main_thread
+                               : flags()->heap_history_size)
+    heap_allocations_ = HeapAllocationsRingBuffer::New(sz);
+#endif /* OHOS_LLVM */
 
 #if !SANITIZER_FUCHSIA
   // Do not initialize the stack ring buffer just yet on Fuchsia. Threads will
