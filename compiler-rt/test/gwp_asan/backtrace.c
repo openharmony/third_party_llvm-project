@@ -29,9 +29,9 @@ __attribute__((noinline)) void touch_mem(void *ptr) {
 
 int main() {
 #if defined(OHOS_LLVM) && defined(__OHOS__)
-  // Tested in OHOS, it can be detected with just one execution, without the
-  // need for multiple loops. If the number of loops is too high, it may cause
-  // all slots to be occupied.
+  // Tested in OHOS, it can be detected with just one execution, without the need
+  // for multiple loops. If the number of loops is too high, it may cause all
+  // slots to be occupied.
   void *ptr = allocate_mem();
   free_mem(ptr);
   touch_mem(ptr);

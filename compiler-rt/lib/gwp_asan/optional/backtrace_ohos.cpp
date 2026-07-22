@@ -21,9 +21,13 @@ extern "C" char **backtrace_symbols(void *const *trace, size_t len);
 
 #include "print_backtrace_linux_libc.inc"
 
+// Consistent with musl
 extern "C" GWP_ASAN_WEAK size_t
-libc_gwp_asan_unwind_fast(size_t *frame_buf, size_t max_record_stack,
-                          __attribute__((unused)) void *signal_context);
+libc_gwp_asan_unwind_fast(size_t *frame_buf, size_t max_record_stack);
+
+extern "C" GWP_ASAN_WEAK size_t
+libc_gwp_asan_unwind_segv(size_t *frame_buf, size_t max_record_stack,
+                          void *signal_context);
 
 namespace gwp_asan {
 namespace backtrace {
@@ -36,15 +40,15 @@ options::Backtrace_t getBacktraceFunction() {
          "libc_gwp_asan_unwind_fast wasn't provided from musl.");
   return [](uintptr_t *frame_buf, size_t max_record_stack) {
     return libc_gwp_asan_unwind_fast(reinterpret_cast<size_t *>(frame_buf),
-                                     max_record_stack, nullptr);
+                                     max_record_stack);
   };
 }
 PrintBacktrace_t getPrintBacktraceFunction() { return PrintBacktrace; }
 SegvBacktrace_t getSegvBacktraceFunction() {
-  assert(&libc_gwp_asan_unwind_fast &&
-         "libc_gwp_asan_unwind_fast wasn't provided from musl.");
+  assert(&libc_gwp_asan_unwind_segv &&
+         "libc_gwp_asan_unwind_segv wasn't provided from musl.");
   return [](uintptr_t *frame_buf, size_t Size, void *SignalContext) {
-    return libc_gwp_asan_unwind_fast(reinterpret_cast<size_t *>(frame_buf),
+    return libc_gwp_asan_unwind_segv(reinterpret_cast<size_t *>(frame_buf),
                                      Size, SignalContext);
   };
 }
