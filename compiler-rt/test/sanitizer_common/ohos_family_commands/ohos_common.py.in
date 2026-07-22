@@ -46,6 +46,7 @@ def build_remote_env():
         "TSAN",
         "UBSAN",
         "SCUDO",
+        "GWP_ASAN",  # OHOS_LOCAL
     )
     for sanitizer in sanitizers:
         options_name = "%s_OPTIONS" % sanitizer
@@ -65,7 +66,8 @@ def build_remote_env():
     has_ld_library_path = False
     for key, value in environment.items():
         sanitizer_option = key.endswith("SAN_OPTIONS")
-        if sanitizer_option:
+        # GWP_ASAN doesn't have abort_on_error option
+        if sanitizer_option and key != "GWP_ASAN_OPTIONS":
             value = _add_default_abort_on_error(value)
         if (
             key in ["ASAN_ACTIVATION_OPTIONS", "SCUDO_OPTIONS"]
@@ -106,12 +108,15 @@ def build_host_env(runtime_dir):
         "TSAN",
         "UBSAN",
         "SCUDO",
+        "GWP_ASAN",  # OHOS_LOCAL
     )
     symbolizer_path = environment.get("LLVM_SYMBOLIZER_PATH")
     for sanitizer in sanitizers:
         options_name = "%s_OPTIONS" % sanitizer
         options_value = environment.get(options_name, "")
-        if options_name.endswith("SAN_OPTIONS"):
+        san_opt = options_name.endswith("SAN_OPTIONS")
+        if san_opt and options_name != "GWP_ASAN_OPTIONS":
+            # GWP_ASAN doesn't have abort_on_error option
             options_value = _add_default_abort_on_error(options_value)
         environment[options_name] = options_value
         symbolizer_name = "%s_SYMBOLIZER_PATH" % sanitizer
