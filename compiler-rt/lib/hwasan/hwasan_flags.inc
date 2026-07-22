@@ -62,6 +62,15 @@ HWASAN_FLAG(
     "The number of heap (de)allocations remembered for the main thread. "
     "Affects the quality of heap-related reports, but not the ability "
     "to find bugs.")
+// Limits the size of the heap memory allocated to be recorded in order to
+// reduce the data. As a result, information may be missing. By default, the
+// minimum/maximum threshold is not set.
+HWASAN_FLAG(int, heap_record_min, 0,
+            "Only recording the heap memory allocation information that is >= "
+            "heap_record_min.")
+HWASAN_FLAG(int, heap_record_max, 0,
+            "Only recording the heap memory allocation information that is <= "
+            "heap_record_max.")
 #endif // OHOS_LLVM
 HWASAN_FLAG(bool, export_memory_stats, true,
             "Export up-to-date memory stats through /proc")

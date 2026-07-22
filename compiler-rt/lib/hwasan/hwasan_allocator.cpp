@@ -376,10 +376,23 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
   }
   if (t) {
     allocator.Deallocate(t->allocator_cache(), aligned_ptr);
+#ifndef OHOS_LLVM
     if (auto *ha = t->heap_allocations())
       ha->push({reinterpret_cast<uptr>(tagged_ptr), alloc_thread_id,
                 alloc_context_id, free_context_id,
                 static_cast<u32>(orig_size)});
+#else  /* OHOS_LLVM */
+    if (auto *ha = t->heap_allocations()) {
+      if ((flags()->heap_record_max == 0 ||
+           orig_size <= flags()->heap_record_max) &&
+          (flags()->heap_record_min == 0 ||
+           orig_size >= flags()->heap_record_min)) {
+        ha->push({reinterpret_cast<uptr>(tagged_ptr), alloc_thread_id,
+                  alloc_context_id, free_context_id,
+                  static_cast<u32>(orig_size)});
+      }
+    }
+#endif /* OHOS_LLVM */
   } else {
     SpinMutexLock l(&fallback_mutex);
     AllocatorCache *cache = &fallback_allocator_cache;
