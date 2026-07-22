@@ -1,82 +1,21 @@
+#!/usr/bin/env python3
+
 import os
 import re
-import subprocess
-import tempfile
 
-import hdc_constants
+from remote_interfaces.@REMOTE_DEVICE_INTERFACE@ import *
 
-verbose = os.environ.get("HOS_RUN_VERBOSE") == "1"
+os.environ["RUN_VERBOSE"] = os.environ.get("OHOS_RUN_VERBOSE", "0")
 
-
-def host_to_device_path(path):
-    rel = os.path.relpath(path, "/")
-    return os.path.join(hdc_constants.TMPDIR, rel)
-
-
-def hdc_output(args):
-    command = hdc_constants.get_hdc_cmd_prefix() + args
-    if verbose:
-        print("[CMD]:" + " ".join(command))
-    return subprocess.check_output(command, stderr=subprocess.STDOUT, timeout=300)
-
-
-def hdc(args, attempts=1, check_stdout=""):
-    ret = 255
-    output = b""
-    while attempts > 0 and ret != 0:
-        attempts -= 1
-        try:
-            output = hdc_output(args)
-            # Some hdc versions always return zero, so validate successful file
-            # transfers using their stdout marker.
-            ret = 0 if check_stdout in output.decode() else 255
-        except subprocess.CalledProcessError as error:
-            output = error.output
-            ret = error.returncode or 255
-        except subprocess.TimeoutExpired as error:
-            output = error.output or b""
-            ret = 255
-    if ret != 0:
-        print("hdc command failed", args)
-        print(output.decode(errors="replace"))
-    return ret
-
-
-def pull_from_device(path):
-    # hdc can't download empty files
-    file_sz = hdc_output(["shell", "du", path]).split()
-    if file_sz and file_sz[0] == b"0":
-        return ""
-
-    tmp = tempfile.mktemp()
-    hdc(
-        ["file", "recv", path, tmp],
-        attempts=5,
-        check_stdout="FileTransfer finish",
-    )
-    with open(tmp, "r") as inf:
-        text = inf.read()
-    os.unlink(tmp)
-    return text
-
-
-def push_to_device(path):
-    dst_path = host_to_device_path(path)
-    # hdc does not automatically create destination directories.
-    hdc(["shell", "mkdir", "-p", os.path.dirname(dst_path)])
-    hdc(
-        ["file", "send", path, dst_path],
-        attempts=5,
-        check_stdout="FileTransfer finish",
-    )
-    hdc(["shell", "chmod", "+x", dst_path])
+TMPDIR = os.environ.get("OHOS_REMOTE_TMP_DIR", "/data/local/tmp/Output")
+DYN_LINKER = os.environ.get("OHOS_REMOTE_DYN_LINKER")
 
 
 def map_path(path, do_push):
     if os.path.exists(path):
         if do_push:
-            push_to_device(path)
-        return host_to_device_path(path)
+            push_to_device(path, TMPDIR)
+        return host_to_device_path(path, TMPDIR)
     return path
 
 
@@ -118,7 +57,7 @@ def build_remote_env():
                 symbolizer_name,
                 environment.get(
                     "LLVM_SYMBOLIZER_PATH",
-                    os.path.join(hdc_constants.TMPDIR, "llvm-symbolizer-aarch64"),
+                    os.path.join(TMPDIR, "llvm-symbolizer-aarch64"),
                 ),
             )
         )
@@ -147,12 +86,12 @@ def build_remote_env():
                     r"(.+)",
                     lambda match: (match.group(1), False),
                 )
-                value = ":".join(filter(None, [hdc_constants.TMPDIR, value]))
+                value = ":".join(filter(None, [TMPDIR, value]))
                 has_ld_library_path = True
             args.append('%s="%s"' % (key, value))
 
     if not has_ld_library_path:
-        args.append("LD_LIBRARY_PATH=%s" % hdc_constants.TMPDIR)
+        args.append("LD_LIBRARY_PATH=%s" % TMPDIR)
     return " ".join(args)
 
 

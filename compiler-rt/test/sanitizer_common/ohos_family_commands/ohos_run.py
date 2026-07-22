@@ -4,10 +4,9 @@ import os
 import signal
 import sys
 
-import hdc_constants
-from ohos_common import build_remote_env, hdc, host_to_device_path, pull_from_device
+from ohos_common import *
 
-device_binary = host_to_device_path(sys.argv[0])
+device_binary = host_to_device_path(sys.argv[0], TMPDIR)
 device_env = build_remote_env()
 device_args = " ".join(sys.argv[1:])
 device_stdout = device_binary + ".stdout"
@@ -16,10 +15,10 @@ device_exitcode = device_binary + ".exitcode"
 
 # OHOS may set log_path in UBSAN_OPTIONS, while the tests expect output in
 # stdout/stderr. Unset it for the remote process.
-ret = hdc(
+ret = remote(
     [
         "shell",
-        f"unset UBSAN_OPTIONS && cd {hdc_constants.TMPDIR} && "
+        f"unset UBSAN_OPTIONS && cd {TMPDIR} && "
         f"{device_env} {device_binary} {device_args} "
         f">{device_stdout} 2>{device_stderr} ; echo $? >{device_exitcode}",
     ]

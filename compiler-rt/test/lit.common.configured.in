@@ -46,6 +46,9 @@ set_default("use_lto", config.use_thinlto)
 set_default("android", @ANDROID_PYBOOL@)
 set_default("ohos_family", @OHOS_FAMILY_PYBOOL@)
 set_default("ohos_host", @OHOS_HOST_PYBOOL@)
+# OHOS_LOCAL begin
+set_default("remote_interface", "@REMOTE_DEVICE_INTERFACE@")
+# OHOS_LOCAL end
 set_default("android_api_level", "@ANDROID_API_LEVEL@")
 set_default("android_serial", "@ANDROID_SERIAL_FOR_TESTING@")
 set_default("android_files_to_push", [])
@@ -62,6 +65,25 @@ set_default("has_no_default_config_flag", @COMPILER_RT_HAS_NO_DEFAULT_CONFIG_FLA
 # library paths differ.
 set_default("test_suite_supports_overriding_runtime_lib_path", False)
 config.available_features.add('target-is-%s' % config.target_arch)
+
+# OHOS_LOCAL begin
+# Module paths for remote_interfaces / generated ohos_common.py. Update both
+# sys.path (lit configure) and config.environment (test run).
+if config.remote_interface or config.ohos_family:
+  module_paths = (
+      f'{config.compiler_rt_src_root}/test/sanitizer_common',
+      f'{config.compiler_rt_obj_root}/test/sanitizer_common/ohos_family_commands')
+  config.environment['PYTHONPATH'] = (
+      f'{config.environment.get("PYTHONPATH", "")}:{":".join(module_paths)}')
+  import sys
+  sys.path.extend(module_paths)
+
+  # empty interface means local run
+  supported_interfaces = ('hdc', 'adb', '')
+  if config.remote_interface not in supported_interfaces:
+    raise RuntimeError(f'{config.remote_interface} is not supported, '
+                       f'must be one of {supported_interfaces}')
+# OHOS_LOCAL end
 
 if config.enable_per_target_runtime_dir:
   set_default("target_suffix", "")
