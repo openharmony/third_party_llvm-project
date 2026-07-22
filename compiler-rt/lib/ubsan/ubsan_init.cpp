@@ -38,7 +38,9 @@ static void UbsanDie() {
   if (common_flags()->print_module_map >= 1)
     DumpProcessMap();
 #if defined(OHOS_LLVM) && SANITIZER_OHOS
-  Report("End CFI report (UbsanDie)\n");
+  // A mark for DFX to identify ubsan log and synchronize the log file to
+  // Faultlog folder.
+  Report("End Ubsan report (UbsanDie)\n");
 #endif
 }
 
