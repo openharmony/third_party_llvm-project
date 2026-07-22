@@ -120,6 +120,14 @@ void GuardedPoolAllocator::installAtFork() {
       S->enable();
 #endif
   };
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  // We need to run the gwpasan handler to unlock first after the fork,
+  // otherwise other handlers may call gwpasan malloc to cause a deadlock.
+  // This interface will let the gwpasan handler to be executed first after the
+  // fork.
+  pthread_atfork_for_gwpasan(Disable, Enable, Enable);
+#else
   pthread_atfork(Disable, Enable, Enable);
+#endif
 }
 } // namespace gwp_asan
