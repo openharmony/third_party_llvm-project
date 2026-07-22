@@ -94,6 +94,9 @@ extern "C" SANITIZER_WEAK_ATTRIBUTE const char *strerrorname_np(int);
 #  endif
 
 #  if SANITIZER_LINUX && defined(__loongarch__)
+#    if defined(OHOS_LLVM)
+#      include <linux/stat.h>
+#    endif
 #    include <sys/sysmacros.h>
 #  endif
 
