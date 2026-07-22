@@ -761,6 +761,13 @@ if config.android:
     ):
         config.available_features.add("android-thread-properties-api")
 
+    # OHOS_LOCAL begin: OHOS remote lit via adb (ANDROID=1, not OHOS_FAMILY).
+    if "OHOS_REMOTE_DYN_LINKER" in os.environ:
+        config.environment["OHOS_REMOTE_DYN_LINKER"] = os.environ[
+            "OHOS_REMOTE_DYN_LINKER"
+        ]
+    # OHOS_LOCAL end
+
     # Prepare the device.
     android_tmpdir = "/data/local/tmp/Output"
     subprocess.check_call([adb, "shell", "mkdir", "-p", android_tmpdir], env=env)
