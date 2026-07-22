@@ -95,7 +95,12 @@ static void RecursiveCreateParentDirs(char *path) {
     if (!IsPathSeparator(path[i]))
       continue;
     path[i] = '\0';
+#ifndef OHOS_LLVM
     if (!DirExists(path) && !CreateDir(path)) {
+#else /* OHOS_LLVM */
+    if (common_flags()->check_log_path_on_init && !DirExists(path) &&
+        !CreateDir(path)) {
+#endif /* OHOS_LLVM */
       const char *ErrorMsgPrefix = "ERROR: Can't create directory: ";
       WriteToFile(kStderrFd, ErrorMsgPrefix, internal_strlen(ErrorMsgPrefix));
       WriteToFile(kStderrFd, path, internal_strlen(path));

@@ -55,6 +55,11 @@ COMMON_FLAG(
     const char *, log_path, nullptr,
     "Write logs to \"log_path.pid\". The special values are \"stdout\" and "
     "\"stderr\". If unspecified, defaults to \"stderr\".")
+#ifdef OHOS_LLVM
+COMMON_FLAG(
+    bool, check_log_path_on_init, true,
+    "If set, log_path will be checked during initialization.")
+#endif /* OHOS_LLVM */
 COMMON_FLAG(
     bool, log_exe_name, false,
     "Mention name of executable when reporting error and "
