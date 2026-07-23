@@ -19,9 +19,16 @@
 // in every __hwasan_check_* function, therefore reducing binary size. This is
 // particularly important as hwasan_check_* instances are duplicated in every
 // translation unit where HWASan is enabled.
+#if defined(OHOS_LLVM)
+// This function calls HwasanTagMismatch to step back into the C++ code that
+// completes the stack unwinding and error printing. Under OHOS_LLVM, when the
+// report is non-fatal (halt_on_error=0 and recoverable access), registers are
+// restored and control returns to the __hwasan_check_* caller.
+#else
 // This function calls HwasanTagMismatch to step back into the C++ code that
 // completes the stack unwinding and error printing. This function is is not
 // permitted to return.
+#endif
 
 
 // Frame from __hwasan_check_:
@@ -147,6 +154,27 @@ mismatch:
   mov x2, sp
 
   bl __hwasan_tag_mismatch4
+#if defined(OHOS_LLVM)
+  // Restore the shared __hwasan_check_* frame and return to the caller when
+  // HwasanTagMismatch does not abort (recoverable non-fatal report).
+  ldp     x2,  x3,  [sp, #16]
+  ldp     x4,  x5,  [sp, #32]
+  ldp     x6,  x7,  [sp, #48]
+  ldp     x8,  x9,  [sp, #64]
+  ldp     x10, x11, [sp, #80]
+  ldp     x12, x13, [sp, #96]
+  ldp     x14, x15, [sp, #112]
+  ldp     x16, x17, [sp, #128]
+  ldp     x18, x19, [sp, #144]
+  ldp     x20, x21, [sp, #160]
+  ldp     x22, x23, [sp, #176]
+  ldp     x24, x25, [sp, #192]
+  ldp     x26, x27, [sp, #208]
+  ldr     x28,      [sp, #224]
+  ldp     x29, x30, [sp, #232]
+  ldp     x0, x1, [sp], #256
+  ret
+#endif // defined(OHOS_LLVM)
   CFI_ENDPROC
 
 .Lfunc_end0:
