@@ -11,6 +11,9 @@
 #include "gwp_asan/crash_handler.h"
 #include "gwp_asan/options.h"
 #include "gwp_asan/utilities.h"
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+#include "sanitizer_common/sanitizer_common.h"
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
 #include <assert.h>
 #include <stddef.h>
@@ -61,6 +64,10 @@ void GuardedPoolAllocator::init(const options::Options &Opts) {
         "There's already a live GuardedPoolAllocator!");
   SingletonPtr = this;
   Backtrace = Opts.Backtrace;
+#ifdef OHOS_LLVM
+  MinSampleSize = Opts.MinSampleSize;
+  WhiteListPath = Opts.WhiteListPath;
+#endif /* OHOS_LLVM */
 
   State.VersionMagic = {{AllocatorVersionMagic::kAllocatorVersionMagic[0],
                          AllocatorVersionMagic::kAllocatorVersionMagic[1],
@@ -70,6 +77,10 @@ void GuardedPoolAllocator::init(const options::Options &Opts) {
                         0};
 
   State.MaxSimultaneousAllocations = Opts.MaxSimultaneousAllocations;
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  MUSL_LOG("[gwp_asan]: SlotLength %{public}d, SampleRate %{public}d",
+           Opts.MaxSimultaneousAllocations, Opts.SampleRate);
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
   const size_t PageSize = getPlatformPageSize();
   // getPageAddr() and roundUpTo() assume the page size to be a power of 2.
@@ -237,9 +248,15 @@ void *GuardedPoolAllocator::allocate(size_t Size, size_t Alignment) {
   if (Alignment == 0)
     Alignment = alignof(max_align_t);
 
+#ifndef OHOS_LLVM
   if (!isPowerOfTwo(Alignment) || Alignment > State.maximumAllocationSize() ||
       Size > State.maximumAllocationSize())
     return nullptr;
+#else
+  if (!isPowerOfTwo(Alignment) || Alignment > State.maximumAllocationSize() ||
+      Size > State.maximumAllocationSize() || Size < MinSampleSize)
+    return nullptr;
+#endif /* OHOS_LLVM */
 
   size_t BackingSize = getRequiredBackingSize(Size, Alignment, State.PageSize);
   if (BackingSize > State.maximumAllocationSize())
@@ -462,6 +479,26 @@ AllocationMetadata *GuardedPoolAllocator::addrToMetadata(uintptr_t Ptr) const {
   return &Metadata[State.getNearestSlot(Ptr)];
 }
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+size_t GuardedPoolAllocator::reserveSlot() {
+  accumulatePersistInterval(NumSampledAllocations - FreeSlotsLength);
+  // Avoid potential reuse of a slot before we have made at least a single
+  // allocation in each slot. Helps with our use-after-free detection.
+  if (NumSampledAllocations < State.MaxSimultaneousAllocations) {
+    ++ReserveCounter;
+    return NumSampledAllocations++;
+  }
+
+  if (FreeSlotsLength == 0)
+    return kInvalidSlotID;
+
+  size_t ReservedIndex = getRandomUnsigned32() % FreeSlotsLength;
+  size_t SlotIndex = FreeSlots[ReservedIndex];
+  ++ReserveCounter;
+  FreeSlots[ReservedIndex] = FreeSlots[--FreeSlotsLength];
+  return SlotIndex;
+}
+#else
 size_t GuardedPoolAllocator::reserveSlot() {
   // Avoid potential reuse of a slot before we have made at least a single
   // allocation in each slot. Helps with our use-after-free detection.
@@ -476,8 +513,12 @@ size_t GuardedPoolAllocator::reserveSlot() {
   FreeSlots[ReservedIndex] = FreeSlots[--FreeSlotsLength];
   return SlotIndex;
 }
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
 void GuardedPoolAllocator::freeSlot(size_t SlotIndex) {
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  accumulatePersistInterval(NumSampledAllocations - FreeSlotsLength);
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
   assert(FreeSlotsLength < State.MaxSimultaneousAllocations);
   FreeSlots[FreeSlotsLength++] = SlotIndex;
 }
@@ -490,4 +531,22 @@ uint32_t GuardedPoolAllocator::getRandomUnsigned32() {
   getThreadLocals()->RandomState = RandomState;
   return RandomState;
 }
+
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+// The reservedSlotsLength represents the number of slots currently in use by
+// GWP_ASan, while PersistInterval denotes the total accumulated duration of
+// persistent allocations. When NumSampledAllocations == 0, it indicates that
+// timing has not yet been initiated, requiring us to initialize the timestamp
+// to mark the starting point.
+void GuardedPoolAllocator::accumulatePersistInterval(
+    size_t reservedSlotsLength) {
+  size_t curTime = __sanitizer::NanoTime() / 1000;
+  if (NumSampledAllocations == 0) {
+    PreTime = curTime;
+    return;
+  }
+  PersistInterval += (curTime - PreTime) * reservedSlotsLength;
+  PreTime = curTime;
+}
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 } // namespace gwp_asan

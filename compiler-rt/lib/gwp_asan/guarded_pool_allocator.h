@@ -30,6 +30,16 @@
 // IWYU pragma: no_include <__stddef_wchar_t.h>
 // IWYU pragma: no_include <__stddef_wint_t.h>
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+#define PRINT_COUNTER 100000
+#define MUSL_LOG(fmt, ...)                                                     \
+  if (&musl_log) {                                                             \
+    musl_log(fmt, __VA_ARGS__);                                                \
+  }
+
+extern "C" GWP_ASAN_WEAK int musl_log(const char *fmt, ...);
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
+
 namespace gwp_asan {
 // This class is the primary implementation of the allocator portion of GWP-
 // ASan. It is the sole owner of the pool of sequentially allocated guarded
@@ -84,6 +94,15 @@ public:
 
   // Return whether the allocation should be randomly chosen for sampling.
   GWP_ASAN_ALWAYS_INLINE bool shouldSample() {
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+    Nmalloc++;
+    if (Nmalloc % PRINT_COUNTER == 0) {
+      MUSL_LOG("[gwp_asan]: AvgDuration %{public}u us, FreeSlotsLength "
+               "%{public}d\n",
+               PersistInterval / ReserveCounter, FreeSlotsLength);
+      Nmalloc = 0;
+    }
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
     // NextSampleCounter == 0 means we "should regenerate the counter".
     //                   == 1 means we "should sample this allocation".
     // AdjustedSampleRatePlusOne is designed to intentionally underflow. This
@@ -208,6 +227,10 @@ private:
   // Install a pthread_atfork handler.
   void installAtFork();
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  void accumulatePersistInterval(size_t reservedSlotsLength);
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
+
   gwp_asan::AllocatorState State;
 
   // A mutex to protect the guarded slot and metadata pool for this class.
@@ -243,6 +266,13 @@ private:
   // GWP-ASan is disabled, we wish to never spend wasted cycles recalculating
   // the sample rate.
   uint32_t AdjustedSampleRatePlusOne = 0;
+
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  size_t Nmalloc{0};
+  size_t PersistInterval{0};
+  size_t PreTime{0};
+  size_t ReserveCounter{0};
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
   // Additional platform specific data structure for the guarded pool mapping.
   PlatformSpecificMapData GuardedPagePoolPlatformData = {};
