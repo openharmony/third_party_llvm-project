@@ -21,6 +21,9 @@
 #include "hwasan_malloc_bisect.h"
 #include "hwasan_thread.h"
 #include "hwasan_report.h"
+#ifdef OHOS_LLVM
+#include "hwasan_thread_list.h"
+#endif /* OHOS_LLVM */
 #include "lsan/lsan_common.h"
 
 namespace __hwasan {
@@ -410,6 +413,19 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
   } else {
     SpinMutexLock l(&fallback_mutex);
     AllocatorCache *cache = &fallback_allocator_cache;
+#ifdef OHOS_LLVM
+    if (hwasanThreadList().AllowTracingHeapAllocation()) {
+      if ((flags()->heap_record_max == 0 ||
+           orig_size <= flags()->heap_record_max) &&
+          (flags()->heap_record_min == 0 ||
+           orig_size >= flags()->heap_record_min)) {
+        hwasanThreadList().RecordFallBack(
+            {reinterpret_cast<uptr>(tagged_ptr), alloc_thread_id,
+             alloc_context_id, free_context_id,
+             static_cast<u32>(orig_size)});
+      }
+    }
+#endif /* OHOS_LLVM */
     allocator.Deallocate(cache, aligned_ptr);
   }
 }

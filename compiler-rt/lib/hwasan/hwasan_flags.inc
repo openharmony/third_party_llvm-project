@@ -78,6 +78,11 @@ HWASAN_FLAG(
     bool, print_uaf_stacks_with_same_tag, true,
     "Control the output content of use-after-free, deciding whether to print "
     "all stack traces of matched allocations with the same tag restriction.")
+// Heap allocation information for freed threads
+HWASAN_FLAG(uptr, freed_threads_history_size, 100,
+            "The number of freed threads can be recorded.")
+HWASAN_FLAG(bool, verbose_freed_threads, false,
+            "Print the heap allocation information of freed threads.")
 // Set the quarantine area for freed heap, which is used to detect UAF-Write and
 // Overflow-Write. Provide the detection capability for dynamic libraries
 // compiled without hwasan option.

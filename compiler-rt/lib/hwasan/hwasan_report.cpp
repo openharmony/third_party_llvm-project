@@ -519,6 +519,8 @@ class BaseReport {
 #ifdef OHOS_LLVM
     // History size of the freeing thread (main vs non-main) for rb_distance.
     uptr heap_history_size = 0;
+    // True when matched from ThreadList freed-thread history (not a live tid).
+    bool from_freed_thread = false;
 #endif /* OHOS_LLVM */
   };
 
@@ -727,6 +729,41 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
     t->EnableTracingHeapAllocation();
 #endif /* OHOS_LLVM */
   });
+
+#ifdef OHOS_LLVM
+  // Strategy A: collect matching HARs from freed-thread history into the same
+  // storage so PrintAddressDescription can print them with live UAF path.
+  hwasanThreadList().VisitAllFreedRingBuffer([&](HeapAllocationsRingBuffer *rb) {
+    if (!rb)
+      return;
+    const uptr history_size = rb->size();
+    for (uptr i = 0, size = rb->realsize(); i < size; i++) {
+      if (heap_allocations_count >= ARRAY_SIZE(heap_allocations_storage))
+        break;
+      auto h = (*rb)[i];
+      record_searched_++;
+      bool matched = false;
+      if (flags()->print_uaf_stacks_with_same_tag) {
+        matched = h.tagged_addr <= tagged_addr &&
+                  h.tagged_addr + h.requested_size > tagged_addr;
+      } else {
+        uptr ha_untagged_addr = UntagAddr(h.tagged_addr);
+        matched = ha_untagged_addr <= untagged_addr &&
+                  ha_untagged_addr + h.requested_size > untagged_addr;
+      }
+      if (!matched)
+        continue;
+      record_matched_++;
+      auto &ha = heap_allocations_storage[heap_allocations_count++];
+      ha.har = h;
+      ha.ring_index = i;
+      // HAR has no free-tid field; Thread is already gone on this path.
+      ha.free_thread_id = 0;
+      ha.heap_history_size = history_size;
+      ha.from_freed_thread = true;
+    }
+  });
+#endif /* OHOS_LLVM */
 
   return {{stack_allocations_storage, stack_allocations_count},
           {heap_allocations_storage, heap_allocations_count}};
@@ -962,13 +999,23 @@ void BaseReport::PrintAddressDescription() const {
     Printf("%s", d.Error());
     Printf("\nPotential Cause: use-after-free\n");
     Printf("%s", d.Location());
-    Printf(
-        "%p (rb[%zd] tags:%02x) is located %zd bytes inside of %zd-byte "
-        "region [%p,%p)\n",
-        untagged_addr, ha.ring_index, GetTagFromPointer(har.tagged_addr),
-        untagged_addr - UntagAddr(har.tagged_addr), har.requested_size,
-        UntagAddr(har.tagged_addr),
-        UntagAddr(har.tagged_addr) + har.requested_size);
+    if (ha.from_freed_thread) {
+      uptr ha_untagged_addr = UntagAddr(har.tagged_addr);
+      Printf(
+          "%p (Previously freed thread ptr tags: %02x) is located %zd "
+          "bytes inside of %zd-byte region [%p,%p)\n",
+          untagged_addr, GetTagFromPointer(har.tagged_addr),
+          untagged_addr - ha_untagged_addr, har.requested_size, ha_untagged_addr,
+          ha_untagged_addr + har.requested_size);
+    } else {
+      Printf(
+          "%p (rb[%zd] tags:%02x) is located %zd bytes inside of %zd-byte "
+          "region [%p,%p)\n",
+          untagged_addr, ha.ring_index, GetTagFromPointer(har.tagged_addr),
+          untagged_addr - UntagAddr(har.tagged_addr), har.requested_size,
+          UntagAddr(har.tagged_addr),
+          UntagAddr(har.tagged_addr) + har.requested_size);
+    }
     Printf("%s", d.Allocation());
     Printf("freed by thread %d here:\n", static_cast<int>(ha.free_thread_id));
     Printf("%s", d.Default());
@@ -986,7 +1033,10 @@ void BaseReport::PrintAddressDescription() const {
            ha.heap_history_size);
 #endif /* OHOS_LLVM */
 
-    announce_by_id(ha.free_thread_id);
+#ifdef OHOS_LLVM
+    if (!ha.from_freed_thread)
+#endif /* OHOS_LLVM */
+      announce_by_id(ha.free_thread_id);
     // TODO: announce_by_id(har.alloc_thread_id);
     num_descriptions_printed++;
   }
@@ -1013,6 +1063,18 @@ void BaseReport::PrintAddressDescription() const {
     Printf("\n");
     hwasanThreadList().VisitAllLiveThreads([&](Thread *t) { t->Announce(); });
   }
+#ifdef OHOS_LLVM
+  hwasanThreadList().PrintFreedRingBufferSummary();
+  if (flags()->verbose_freed_threads) {
+    u32 freed_idx = 0;
+    hwasanThreadList().VisitAllFreedRingBuffer(
+        [&](HeapAllocationsRingBuffer *rb) {
+          if (!rb)
+            return;
+          Printf("RB %u: (%zd/%zu)\n", freed_idx++, rb->realsize(), rb->size());
+        });
+  }
+#endif /* OHOS_LLVM */
 
   if (!num_descriptions_printed)
     // We exhausted our possibilities. Bail out.
