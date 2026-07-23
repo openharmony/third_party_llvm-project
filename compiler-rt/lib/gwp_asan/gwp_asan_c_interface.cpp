@@ -9,6 +9,7 @@
 // OHOS_LOCAL: C API exported for OHOS musl / allocator integration.
 
 #include "gwp_asan/guarded_pool_allocator.h"
+#include "gwp_asan/optional/printf.h"
 #include "gwp_asan/optional/segv_handler.h"
 
 #include <signal.h>
@@ -36,6 +37,8 @@ void init_gwp_asan(void *init_options) {
   gwp_asan::options::Options opts;
   gwp_asan_option *input_opts =
       reinterpret_cast<gwp_asan_option *>(init_options);
+  // Wire allocator Printf before GPA init so check()/die() can report.
+  gwp_asan::Printf = input_opts->gwp_asan_printf;
   opts.help = input_opts->help;
   opts.Enabled = input_opts->enable;
   opts.MaxSimultaneousAllocations =
