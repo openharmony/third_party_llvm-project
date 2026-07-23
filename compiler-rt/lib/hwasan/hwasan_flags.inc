@@ -71,6 +71,10 @@ HWASAN_FLAG(int, heap_record_min, 0,
 HWASAN_FLAG(int, heap_record_max, 0,
             "Only recording the heap memory allocation information that is <= "
             "heap_record_max.")
+HWASAN_FLAG(
+    bool, print_uaf_stacks_with_same_tag, true,
+    "Control the output content of use-after-free, deciding whether to print "
+    "all stack traces of matched allocations with the same tag restriction.")
 #endif // OHOS_LLVM
 HWASAN_FLAG(bool, export_memory_stats, true,
             "Export up-to-date memory stats through /proc")

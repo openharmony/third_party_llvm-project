@@ -516,6 +516,10 @@ class BaseReport {
     uptr num_matching_addrs = 0;
     uptr num_matching_addrs_4b = 0;
     u32 free_thread_id = 0;
+#ifdef OHOS_LLVM
+    // History size of the freeing thread (main vs non-main) for rb_distance.
+    uptr heap_history_size = 0;
+#endif /* OHOS_LLVM */
   };
 
   struct Allocations {
@@ -553,6 +557,10 @@ class BaseReport {
 
   SavedStackAllocations stack_allocations_storage[16];
   HeapAllocation heap_allocations_storage[256];
+#ifdef OHOS_LLVM
+  uptr record_searched_ = 0;
+  uptr record_matched_ = 0;
+#endif /* OHOS_LLVM */
 
   const ScopedReport scoped_report;
   const StackTrace *stack = nullptr;
@@ -667,6 +675,7 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
       stack_allocations_storage[stack_allocations_count++].CopyFrom(t);
     }
 
+#ifndef OHOS_LLVM
     if (heap_allocations_count < ARRAY_SIZE(heap_allocations_storage)) {
       // Scan all threads' ring buffers to find if it's a heap-use-after-free.
       HeapAllocationRecord har;
@@ -679,13 +688,44 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
         ha.ring_index = ring_index;
         ha.num_matching_addrs = num_matching_addrs;
         ha.num_matching_addrs_4b = num_matching_addrs_4b;
-#ifndef OHOS_LLVM
         ha.free_thread_id = t->unique_id();
-#else  /* OHOS_LLVM */
-        ha.free_thread_id = static_cast<u32>(t->tid());
-#endif /* OHOS_LLVM */
       }
     }
+#else  /* OHOS_LLVM */
+    // Collect all matching UAF records (up to storage cap). Disable tracing
+    // while scanning to avoid re-entrant ring pushes from report printing.
+    auto *rb = t->heap_allocations();
+    if (!rb)
+      return;
+    t->DisableTracingHeapAllocation();
+    const uptr history_size =
+        t->IsMainThread() ? flags()->heap_history_size_main_thread
+                          : flags()->heap_history_size;
+    for (uptr i = 0, size = rb->realsize(); i < size; i++) {
+      if (heap_allocations_count >= ARRAY_SIZE(heap_allocations_storage))
+        break;
+      auto h = (*rb)[i];
+      record_searched_++;
+      bool matched = false;
+      if (flags()->print_uaf_stacks_with_same_tag) {
+        matched = h.tagged_addr <= tagged_addr &&
+                  h.tagged_addr + h.requested_size > tagged_addr;
+      } else {
+        uptr ha_untagged_addr = UntagAddr(h.tagged_addr);
+        matched = ha_untagged_addr <= untagged_addr &&
+                  ha_untagged_addr + h.requested_size > untagged_addr;
+      }
+      if (!matched)
+        continue;
+      record_matched_++;
+      auto &ha = heap_allocations_storage[heap_allocations_count++];
+      ha.har = h;
+      ha.ring_index = i;
+      ha.free_thread_id = static_cast<u32>(t->tid());
+      ha.heap_history_size = history_size;
+    }
+    t->EnableTracingHeapAllocation();
+#endif /* OHOS_LLVM */
   });
 
   return {{stack_allocations_storage, stack_allocations_count},
@@ -811,6 +851,9 @@ void BaseReport::PrintHeapOrGlobalCandidate() const {
 void BaseReport::PrintAddressDescription() const {
   Decorator d;
   int num_descriptions_printed = 0;
+#ifdef OHOS_LLVM
+  bool printed_close_overflow = false;
+#endif /* OHOS_LLVM */
 
   if (MemIsShadow(untagged_addr)) {
     Printf("%s%p is HWAsan shadow memory.\n%s", d.Location(), untagged_addr,
@@ -880,11 +923,17 @@ void BaseReport::PrintAddressDescription() const {
       candidate.is_close) {
     PrintHeapOrGlobalCandidate();
     num_descriptions_printed++;
+#ifdef OHOS_LLVM
+    // Mirror source clearing of close candidate so far overflow can still print
+    // after UAF (see end of this function).
+    printed_close_overflow = true;
+#endif /* OHOS_LLVM */
   }
 
   for (const auto &ha : allocations.heap) {
     const HeapAllocationRecord har = ha.har;
 
+#ifndef OHOS_LLVM
     Printf("%s", d.Error());
     Printf("\nCause: use-after-free\n");
     Printf("%s", d.Location());
@@ -893,21 +942,12 @@ void BaseReport::PrintAddressDescription() const {
            har.requested_size, UntagAddr(har.tagged_addr),
            UntagAddr(har.tagged_addr) + har.requested_size);
     Printf("%s", d.Allocation());
-#ifndef OHOS_LLVM
     Printf("freed by thread T%u here:\n", ha.free_thread_id);
-#else  /* OHOS_LLVM */
-    Printf("freed by thread %d here:\n", static_cast<int>(ha.free_thread_id));
-#endif /* OHOS_LLVM */
     Printf("%s", d.Default());
     GetStackTraceFromId(har.free_context_id).Print();
 
     Printf("%s", d.Allocation());
-#ifndef OHOS_LLVM
     Printf("previously allocated by thread T%u here:\n", har.alloc_thread_id);
-#else  /* OHOS_LLVM */
-    Printf("previously allocated by thread %d here:\n",
-           static_cast<int>(har.alloc_thread_id));
-#endif /* OHOS_LLVM */
     Printf("%s", d.Default());
     GetStackTraceFromId(har.alloc_context_id).Print();
 
@@ -918,16 +958,55 @@ void BaseReport::PrintAddressDescription() const {
     Printf("hwasan_dev_note_num_matching_addrs: %zd\n", ha.num_matching_addrs);
     Printf("hwasan_dev_note_num_matching_addrs_4b: %zd\n",
            ha.num_matching_addrs_4b);
+#else  /* OHOS_LLVM */
+    Printf("%s", d.Error());
+    Printf("\nPotential Cause: use-after-free\n");
+    Printf("%s", d.Location());
+    Printf(
+        "%p (rb[%zd] tags:%02x) is located %zd bytes inside of %zd-byte "
+        "region [%p,%p)\n",
+        untagged_addr, ha.ring_index, GetTagFromPointer(har.tagged_addr),
+        untagged_addr - UntagAddr(har.tagged_addr), har.requested_size,
+        UntagAddr(har.tagged_addr),
+        UntagAddr(har.tagged_addr) + har.requested_size);
+    Printf("%s", d.Allocation());
+    Printf("freed by thread %d here:\n", static_cast<int>(ha.free_thread_id));
+    Printf("%s", d.Default());
+    GetStackTraceFromId(har.free_context_id).Print();
+
+    Printf("%s", d.Allocation());
+    Printf("previously allocated by thread %d here:\n",
+           static_cast<int>(har.alloc_thread_id));
+    Printf("%s", d.Default());
+    GetStackTraceFromId(har.alloc_context_id).Print();
+
+    // Print a developer note: the index of this heap object
+    // in the thread's deallocation ring buffer.
+    Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ha.ring_index + 1,
+           ha.heap_history_size);
+#endif /* OHOS_LLVM */
 
     announce_by_id(ha.free_thread_id);
     // TODO: announce_by_id(har.alloc_thread_id);
     num_descriptions_printed++;
   }
 
+#ifndef OHOS_LLVM
   if (candidate.untagged_addr && num_descriptions_printed == 0) {
     PrintHeapOrGlobalCandidate();
     num_descriptions_printed++;
   }
+#else  /* OHOS_LLVM */
+  Printf("Searched %lu records, find %lu with same addr %p\n\n",
+         record_searched_, record_matched_, untagged_addr);
+  // Far overflow candidate: print after UAF even when UAF matched (source 707).
+  // Close candidate already printed above is skipped via printed_close_overflow.
+  if (allocations.stack.empty() && candidate.untagged_addr &&
+      !printed_close_overflow) {
+    PrintHeapOrGlobalCandidate();
+    num_descriptions_printed++;
+  }
+#endif /* OHOS_LLVM */
 
   // Print the remaining threads, as an extra information, 1 line per thread.
   if (flags()->print_live_threads_info) {

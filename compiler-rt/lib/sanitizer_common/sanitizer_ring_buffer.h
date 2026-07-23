@@ -35,11 +35,29 @@ class RingBuffer {
   uptr size() const {
     return last_ + 1 -
            reinterpret_cast<T *>(reinterpret_cast<uptr>(this) +
+#ifndef OHOS_LLVM
                                  2 * sizeof(T *));
+#else
+                                 sizeof(RingBuffer) - sizeof(T));
+#endif
   }
 
+#ifdef OHOS_LLVM
+  // Number of valid elements. Before the buffer wraps (full_==false), this is
+  // less than size(); after wrap, equals size().
+  uptr realsize() const {
+    if (full_)
+      return size();
+    return ((uptr)last_ - (uptr)next_) / sizeof(T);
+  }
+#endif
+
   static uptr SizeInBytes(uptr Size) {
+#ifndef OHOS_LLVM
     return Size * sizeof(T) + 2 * sizeof(T*);
+#else
+    return Size * sizeof(T) + sizeof(RingBuffer) - sizeof(T);
+#endif
   }
 
   uptr SizeInBytes() { return SizeInBytes(size()); }
@@ -50,8 +68,15 @@ class RingBuffer {
     static_assert((sizeof(T) % sizeof(T *)) == 0,
                   "The condition below works only if sizeof(T) is divisible by "
                   "sizeof(T*).");
+#ifndef OHOS_LLVM
     if (next_ <= reinterpret_cast<T*>(&next_))
       next_ = last_;
+#else
+    if (next_ <= reinterpret_cast<T *>(&next_)) {
+      next_ = last_;
+      full_ = true;
+    }
+#endif
   }
 
   T operator[](uptr Idx) const {
@@ -68,11 +93,21 @@ class RingBuffer {
   RingBuffer(const RingBuffer&) = delete;
 
   // Data layout:
+#ifndef OHOS_LLVM
   // LNDDDDDDDD
   // D: data elements.
   // L: last_, always points to the last data element.
   // N: next_, initially equals to last_, is decremented on every push,
   //    wraps around if it's less or equal than its own address.
+#else
+  // FLNDDDDDDDD
+  // F: indicates whether the ring buffer is full.
+  // D: data elements.
+  // L: last_, always points to the last data element.
+  // N: next_, initially equals to last_, is decremented on every push,
+  //    wraps around if it's less or equal than its own address.
+  bool full_;
+#endif
   T *last_;
   T *next_;
   T data_[1];  // flexible array.

@@ -62,6 +62,12 @@ class Thread {
   void DisableTagging() { tagging_disabled_++; }
   void EnableTagging() { tagging_disabled_--; }
 
+#ifdef OHOS_LLVM
+  void EnableTracingHeapAllocation() { trace_heap_allocation_ = true; }
+  void DisableTracingHeapAllocation() { trace_heap_allocation_ = false; }
+  bool AllowTracingHeapAllocation() { return trace_heap_allocation_; }
+#endif /* OHOS_LLVM */
+
   u32 unique_id() const { return unique_id_; }
 #ifndef OHOS_LLVM
   void Announce() {
@@ -109,6 +115,10 @@ class Thread {
   bool announced_;
 
   bool random_state_inited_;  // Whether InitRandomState() has been called.
+
+#ifdef OHOS_LLVM
+  bool trace_heap_allocation_;
+#endif /* OHOS_LLVM */
 
   friend struct ThreadListHead;
 };

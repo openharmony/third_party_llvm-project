@@ -382,14 +382,16 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
                 alloc_context_id, free_context_id,
                 static_cast<u32>(orig_size)});
 #else  /* OHOS_LLVM */
-    if (auto *ha = t->heap_allocations()) {
-      if ((flags()->heap_record_max == 0 ||
-           orig_size <= flags()->heap_record_max) &&
-          (flags()->heap_record_min == 0 ||
-           orig_size >= flags()->heap_record_min)) {
-        ha->push({reinterpret_cast<uptr>(tagged_ptr), alloc_thread_id,
-                  alloc_context_id, free_context_id,
-                  static_cast<u32>(orig_size)});
+    if (t->AllowTracingHeapAllocation()) {
+      if (auto *ha = t->heap_allocations()) {
+        if ((flags()->heap_record_max == 0 ||
+             orig_size <= flags()->heap_record_max) &&
+            (flags()->heap_record_min == 0 ||
+             orig_size >= flags()->heap_record_min)) {
+          ha->push({reinterpret_cast<uptr>(tagged_ptr), alloc_thread_id,
+                    alloc_context_id, free_context_id,
+                    static_cast<u32>(orig_size)});
+        }
       }
     }
 #endif /* OHOS_LLVM */
