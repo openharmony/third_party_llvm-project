@@ -1222,6 +1222,10 @@ TagMismatchReport::~TagMismatchReport() {
 
   if (registers_frame)
     ReportRegisters(registers_frame, pc);
+#ifdef OHOS_LLVM
+  if (registers_frame)
+    ReportMemoryNearRegisters(registers_frame, pc);
+#endif /* OHOS_LLVM */
 
   MaybePrintAndroidHelpUrl();
   ReportErrorSummary(bug_type, stack);
@@ -1242,6 +1246,52 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
   TagMismatchReport R(stack, tagged_addr, access_size, is_store, fatal,
                       registers_frame);
 }
+
+#ifdef OHOS_LLVM
+void PrintMemoryAroundAddress(__sanitizer::MemoryMappingLayout &proc_maps,
+                              int reg_num, uptr addr, uptr len, bool is_pc) {
+  const sptr kBufSize = 4095;
+  char filename[kBufSize];
+  MemoryMappedSegment segment(filename, kBufSize);
+  while (proc_maps.Next(&segment)) {
+    if (segment.start <= addr && addr < segment.end && segment.IsReadable()) {
+      if (!is_pc) {
+        if (reg_num < 31)
+          Printf("x%d(%s):\n", reg_num, segment.filename);
+        else
+          Printf("sp(%s):\n", segment.filename);
+      } else {
+        Printf("pc(%s):\n", segment.filename);
+      }
+      uptr beg = RoundDownTo(addr - (addr < len ? addr : len), 8);
+      if (segment.start > beg)
+        beg = segment.start;
+      uptr end = RoundUpTo(addr + len, 8);
+      if (segment.end < end)
+        end = segment.end;
+      for (uptr pos = beg; pos < end; pos += 8) {
+        if (pos <= addr && addr < pos + 8)
+          Printf("==>\t\t%p %016llx\n", pos, *(uptr *)(pos));
+        else
+          Printf("\t\t%p %016llx\n", pos, *(uptr *)(pos));
+      }
+      break;
+    }
+  }
+}
+
+void ReportMemoryNearRegisters(const uptr *frame, uptr pc) {
+  Printf("Memory near registers:\n");
+  MemoryMappingLayout proc_maps(/*cache_enabled*/ true);
+  for (int i = 0; i <= 31; ++i) {
+    PrintMemoryAroundAddress(proc_maps, i, UntagAddr(frame[i]),
+                             flags()->memory_around_register_size);
+    proc_maps.Reset();
+  }
+  PrintMemoryAroundAddress(proc_maps, -1, pc,
+                           flags()->memory_around_register_size, true);
+}
+#endif /* OHOS_LLVM */
 
 // See the frame breakdown defined in __hwasan_tag_mismatch (from
 // hwasan_tag_mismatch_{aarch64,riscv64}.S).

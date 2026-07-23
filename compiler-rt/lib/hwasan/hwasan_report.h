@@ -17,6 +17,9 @@
 
 #include "sanitizer_common/sanitizer_internal_defs.h"
 #include "sanitizer_common/sanitizer_stacktrace.h"
+#ifdef OHOS_LLVM
+#include "sanitizer_common/sanitizer_procmaps.h"
+#endif /* OHOS_LLVM */
 
 namespace __hwasan {
 
@@ -27,6 +30,12 @@ void ReportInvalidFree(StackTrace *stack, uptr addr);
 void ReportTailOverwritten(StackTrace *stack, uptr addr, uptr orig_size,
                            const u8 *expected);
 void ReportRegisters(const uptr *registers_frame, uptr pc);
+#ifdef OHOS_LLVM
+void ReportMemoryNearRegisters(const uptr *registers_frame, uptr pc);
+void PrintMemoryAroundAddress(__sanitizer::MemoryMappingLayout &proc_maps,
+                              int reg_num, uptr addr, uptr len,
+                              bool is_pc = false);
+#endif /* OHOS_LLVM */
 void ReportAtExitStatistics();
 
 
