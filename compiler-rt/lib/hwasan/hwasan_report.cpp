@@ -809,6 +809,14 @@ void BaseReport::PrintAddressDescription() const {
         heap.from_small_heap ? "small" : "large",
         heap.is_allocated ? "allocated" : "unallocated", heap.size,
         untagged_addr - heap.begin, d.Default());
+#ifdef OHOS_LLVM
+    if (heap.is_allocated && heap.stack_id) {
+      Printf("%s", d.Allocation());
+      Printf("Currently allocated here:\n");
+      Printf("%s", d.Default());
+      GetStackTraceFromId(heap.stack_id).Print();
+    }
+#endif
   }
 
   auto announce_by_id = [](u32 thread_id) {
