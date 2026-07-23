@@ -101,6 +101,18 @@ static void InitializeFlags() {
     cf.handle_sigill = kHandleSignalNo;
     cf.handle_sigfpe = kHandleSignalNo;
 #endif
+
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+    // Default minimum hwasan configuration
+    cf.handle_segv = kHandleSignalNo;
+    cf.handle_sigbus = kHandleSignalNo;
+    cf.handle_abort = kHandleSignalNo;
+    cf.allocator_may_return_null = true;
+    cf.log_exe_name = true;
+    cf.detect_leaks = false;
+    cf.print_module_map = 2;
+    cf.intercept_send = false;
+#endif
     OverrideCommonFlags(cf);
   }
 
