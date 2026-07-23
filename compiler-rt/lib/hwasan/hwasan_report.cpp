@@ -1285,7 +1285,7 @@ TagMismatchReport::~TagMismatchReport() {
   if (registers_frame)
     ReportRegisters(registers_frame, pc);
 #ifdef OHOS_LLVM
-  if (registers_frame)
+  if (registers_frame && flags()->memory_around_register_size)
     ReportMemoryNearRegisters(
         registers_frame, reinterpret_cast<uptr>(registers_frame) + 256, pc);
 #endif /* OHOS_LLVM */
@@ -1347,7 +1347,7 @@ void PrintMemoryAroundAddress(__sanitizer::MemoryMappingLayout &proc_maps,
 void ReportMemoryNearRegisters(const uptr *frame, uptr sp, uptr pc) {
   Printf("Memory near registers:\n");
   MemoryMappingLayout proc_maps(/*cache_enabled*/ true);
-  for (int i = 0; i <= 31; ++i) {
+  for (int i = 0; i <= 30; ++i) {
     PrintMemoryAroundAddress(proc_maps, i, UntagAddr(frame[i]),
                              flags()->memory_around_register_size);
   }
