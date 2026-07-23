@@ -462,7 +462,9 @@ static bool AsanInitInternal() {
   SetCheckUnwindCallback(CheckUnwind);
   SetPrintfAndReportCallback(AppendToErrorMessageBuffer);
 
+#if !defined(OHOS_LLVM) || !SANITIZER_OHOS
   __sanitizer_set_report_path(common_flags()->log_path);
+#endif
   __sanitizer::InitializePlatformEarly();
 
   // Setup internal allocator callback.

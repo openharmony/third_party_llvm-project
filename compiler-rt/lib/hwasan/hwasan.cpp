@@ -363,7 +363,9 @@ __attribute__((constructor(0))) void __hwasan_init() {
   // Install tool-specific callbacks in sanitizer_common.
   SetCheckUnwindCallback(CheckUnwind);
 
+#if !defined(OHOS_LLVM) || !SANITIZER_OHOS
   __sanitizer_set_report_path(common_flags()->log_path);
+#endif
 
   InitializePlatformEarly();
 
