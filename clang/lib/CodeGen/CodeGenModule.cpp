@@ -2998,8 +2998,17 @@ void CodeGenModule::setNonAliasAttributes(GlobalDecl GD,
 
     if (const auto *CSA = D->getAttr<CodeSegAttr>())
       GO->setSection(CSA->getName());
+#ifndef OHOS_LLVM
     else if (const auto *SA = D->getAttr<SectionAttr>())
       GO->setSection(SA->getName());
+#else /* OHOS_LLVM */
+    else if (const auto *SA = D->getAttr<SectionAttr>()) {
+      GO->setSection(SA->getName());
+      if ("_hilog_" == SA->getName())
+        cast<llvm::GlobalVariable>(GO)->setUnnamedAddr(
+            llvm::GlobalValue::UnnamedAddr::Global);
+    }
+#endif /* OHOS_LLVM */
   }
 
   getTargetCodeGenInfo().setTargetAttributes(D, GO, *this);
