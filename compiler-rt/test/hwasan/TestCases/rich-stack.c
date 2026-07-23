@@ -64,4 +64,5 @@ int main(int argc, char **argv) {
 // R321: in BAR
 // R321-NEXT: in FOO
 // R321-NEXT: in main
+// OHOS_LOCAL
 // R321: is located in stack of thread {{.*}}
