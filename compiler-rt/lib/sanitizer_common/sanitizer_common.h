@@ -238,6 +238,9 @@ bool ColorizeReports();
 void RemoveANSIEscapeSequencesFromString(char *buffer);
 void Printf(const char *format, ...) FORMAT(1, 2);
 void Report(const char *format, ...) FORMAT(1, 2);
+#ifdef OHOS_LLVM
+bool IsInPrintf();
+#endif /* OHOS_LLVM */
 void SetPrintfAndReportCallback(void (*callback)(const char *));
 #define VReport(level, ...)                     \
   do {                                          \

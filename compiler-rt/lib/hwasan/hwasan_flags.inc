@@ -75,6 +75,17 @@ HWASAN_FLAG(
     bool, print_uaf_stacks_with_same_tag, true,
     "Control the output content of use-after-free, deciding whether to print "
     "all stack traces of matched allocations with the same tag restriction.")
+// Set the quarantine area for freed heap, which is used to detect UAF-Write and
+// Overflow-Write. Provide the detection capability for dynamic libraries
+// compiled without hwasan option.
+HWASAN_FLAG(int, heap_quarantine_thread_max_count, 128,
+            "Set the maximum count for heap quarantine per thread.")
+HWASAN_FLAG(int, heap_quarantine_min, 0,
+            "The freed heap size should be larger than the minimum size before "
+            "it is placed into the heap quarantine.")
+HWASAN_FLAG(int, heap_quarantine_max, 0,
+            "The freed heap size should be smaller than the maximum size before "
+            "it is placed into the heap quarantine.")
 #endif // OHOS_LLVM
 HWASAN_FLAG(bool, export_memory_stats, true,
             "Export up-to-date memory stats through /proc")

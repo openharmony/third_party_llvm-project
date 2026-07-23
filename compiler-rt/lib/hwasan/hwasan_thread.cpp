@@ -60,6 +60,7 @@ void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
                                : flags()->heap_history_size)
     heap_allocations_ = HeapAllocationsRingBuffer::New(sz);
   trace_heap_allocation_ = true;
+  heap_quarantine_controller()->Init();
 #endif /* OHOS_LLVM */
 
 #if !SANITIZER_FUCHSIA
@@ -118,7 +119,12 @@ void Thread::ClearShadowForThreadStackAndTLS() {
 void Thread::Destroy() {
   if (flags()->verbose_threads)
     Print("Destroying: ");
+#ifndef OHOS_LLVM
   AllocatorThreadFinish(allocator_cache());
+#else  /* OHOS_LLVM */
+  heap_quarantine_controller()->ClearHeapQuarantine(allocator_cache());
+  AllocatorThreadFinish(allocator_cache());
+#endif /* OHOS_LLVM */
   ClearShadowForThreadStackAndTLS();
   if (heap_allocations_)
     heap_allocations_->Delete();
@@ -185,6 +191,14 @@ void EnsureMainThreadIDIsCorrect() {
   if (t && (t->IsMainThread()))
     t->set_os_id(GetTid());
 }
+
+#ifdef OHOS_LLVM
+bool Thread::TryPutInQuarantineWithDealloc(uptr ptr, size_t s, u32 aid,
+                                           u32 fid) {
+  return heap_quarantine_controller()->TryPutInQuarantineWithDealloc(
+      ptr, s, aid, fid, allocator_cache());
+}
+#endif /* OHOS_LLVM */
 
 } // namespace __hwasan
 

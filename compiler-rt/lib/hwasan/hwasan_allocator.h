@@ -135,6 +135,10 @@ typedef RingBuffer<HeapAllocationRecord> HeapAllocationsRingBuffer;
 
 void GetAllocatorStats(AllocatorStatCounters s);
 
+#ifdef OHOS_LLVM
+void SimpleThreadDeallocate(void *ptr, AllocatorCache *cache);
+#endif /* OHOS_LLVM */
+
 } // namespace __hwasan
 
 #endif // HWASAN_ALLOCATOR_H

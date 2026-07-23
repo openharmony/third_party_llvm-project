@@ -14,6 +14,9 @@
 #define HWASAN_THREAD_H
 
 #include "hwasan_allocator.h"
+#ifdef OHOS_LLVM
+#include "hwasan_quarantine.h"
+#endif /* OHOS_LLVM */
 #include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_ring_buffer.h"
 
@@ -95,6 +98,14 @@ class Thread {
 
   uptr &vfork_spill() { return vfork_spill_; }
 
+#ifdef OHOS_LLVM
+  HeapQuarantineController *heap_quarantine_controller() {
+    return &heap_quarantine_controller_;
+  }
+
+  bool TryPutInQuarantineWithDealloc(uptr ptr, size_t s, u32 aid, u32 fid);
+#endif /* OHOS_LLVM */
+
  private:
   // NOTE: There is no Thread constructor. It is allocated
   // via mmap() and *must* be valid in zero-initialized state.
@@ -129,6 +140,7 @@ class Thread {
   bool trace_heap_allocation_;
   u64 all_record_count_ = 0;           // Count record
   u64 all_record_count_overflow_ = 0;  // Whether all_record_count_ overflow.
+  HeapQuarantineController heap_quarantine_controller_;
 #endif /* OHOS_LLVM */
 
   friend struct ThreadListHead;

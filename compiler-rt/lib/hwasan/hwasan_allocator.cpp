@@ -133,6 +133,14 @@ void GetAllocatorStats(AllocatorStatCounters s) {
   allocator.GetStats(s);
 }
 
+#ifdef OHOS_LLVM
+void SimpleThreadDeallocate(void *ptr, AllocatorCache *cache) {
+  CHECK(ptr);
+  CHECK(cache);
+  allocator.Deallocate(cache, ptr);
+}
+#endif /* OHOS_LLVM */
+
 inline void Metadata::SetLsanTag(__lsan::ChunkTag tag) {
   lsan_tag = tag;
 }
@@ -375,13 +383,17 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
                      tag);
   }
   if (t) {
-    allocator.Deallocate(t->allocator_cache(), aligned_ptr);
 #ifndef OHOS_LLVM
+    allocator.Deallocate(t->allocator_cache(), aligned_ptr);
     if (auto *ha = t->heap_allocations())
       ha->push({reinterpret_cast<uptr>(tagged_ptr), alloc_thread_id,
                 alloc_context_id, free_context_id,
                 static_cast<u32>(orig_size)});
 #else  /* OHOS_LLVM */
+    if (!t->TryPutInQuarantineWithDealloc(
+            reinterpret_cast<uptr>(aligned_ptr), TaggedSize(orig_size),
+            alloc_context_id, free_context_id))
+      allocator.Deallocate(t->allocator_cache(), aligned_ptr);
     if (t->AllowTracingHeapAllocation()) {
       if (auto *ha = t->heap_allocations()) {
         if ((flags()->heap_record_max == 0 ||

@@ -64,6 +64,11 @@ set(HWASAN_RTL_HEADERS
   hwasan_thread_list.h
   )
 
+if(OHOS_LLVM)
+  list(APPEND HWASAN_RTL_SOURCES hwasan_quarantine.cpp)
+  list(APPEND HWASAN_RTL_HEADERS hwasan_quarantine.h)
+endif()
+
 set(HWASAN_DEFINITIONS)
 append_list_if(COMPILER_RT_HWASAN_WITH_INTERCEPTORS HWASAN_WITH_INTERCEPTORS=1 HWASAN_DEFINITIONS)
 
