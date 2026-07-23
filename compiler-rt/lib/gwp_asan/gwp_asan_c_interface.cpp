@@ -11,6 +11,7 @@
 #include "gwp_asan/guarded_pool_allocator.h"
 #include "gwp_asan/optional/printf.h"
 #include "gwp_asan/optional/segv_handler.h"
+#include "sanitizer_common/sanitizer_internal_defs.h"
 
 #include <signal.h>
 
@@ -70,6 +71,14 @@ size_t gwp_asan_get_size(void *mem) {
 }
 
 bool gwp_asan_should_sample() { return guarded_pool_allocator.shouldSample(); }
+
+SANITIZER_INTERFACE_ATTRIBUTE void gwp_asan_force_sample_by_funcattr() {
+  return guarded_pool_allocator.forceSampleByFuncAttr();
+}
+
+SANITIZER_INTERFACE_ATTRIBUTE void gwp_asan_unforce_sample_by_funcattr() {
+  return guarded_pool_allocator.unforceSampleByFuncAttr();
+}
 
 bool gwp_asan_pointer_is_mine(void *mem) {
   return guarded_pool_allocator.pointerIsMine(mem);

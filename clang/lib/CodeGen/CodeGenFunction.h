@@ -2532,6 +2532,12 @@ public:
   /// should not be instrumented with sanitizers.
   bool ShouldSkipSanitizerInstrumentation();
 
+#ifdef OHOS_LLVM
+  /// ShouldInstrumentFunctionWithGWPAsan - Return true if the current function
+  /// should be instrumented with GWP sanitizers.
+  bool ShouldInstrumentFunctionWithGWPAsan();
+#endif // OHOS_LLVM
+
   /// ShouldXRayInstrument - Return true if the current function should be
   /// instrumented with XRay nop sleds.
   bool ShouldXRayInstrumentFunction() const;

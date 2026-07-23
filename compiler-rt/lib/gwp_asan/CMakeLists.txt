@@ -102,6 +102,23 @@ foreach(arch ${GWP_ASAN_SUPPORTED_ARCH})
   )
 endforeach()
 
+# OHOS_LOCAL begin: also build SHARED clang_rt.gwp_asan for -fsanitize=gwp_asan
+if(OHOS_LLVM)
+  foreach(arch ${GWP_ASAN_SUPPORTED_ARCH})
+    add_compiler_rt_runtime(
+      clang_rt.gwp_asan
+      SHARED
+      ARCHS ${arch}
+      SOURCES ${GWP_ASAN_SOURCES}
+      ADDITIONAL_HEADERS ${GWP_ASAN_HEADERS}
+      CFLAGS ${GWP_ASAN_CFLAGS}
+      OBJECT_LIBS ${GWP_ASAN_OBJECT_LIBS}
+      PARENT_TARGET gwp_asan
+    )
+  endforeach()
+endif()
+# OHOS_LOCAL end
+
 add_compiler_rt_object_libraries(RTGwpAsan
     ARCHS ${GWP_ASAN_SUPPORTED_ARCH}
     SOURCES ${GWP_ASAN_SOURCES}

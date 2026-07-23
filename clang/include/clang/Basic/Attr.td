@@ -3927,6 +3927,16 @@ def NoSanitizeSpecific : InheritableAttr {
   let ASTNode = 0;
 }
 
+#ifdef OHOS_LLVM
+// Attributes to enable GWP sanitizer.
+def GWPSanitizeSpecific : InheritableAttr {
+  let Spellings = [Clang<"sanitize_with_gwp">];
+  let Subjects = SubjectList<[Function, ObjCMethod], ErrorDiag>;
+  let Documentation = [GWPSanitizeSpecificDocs];
+  let SimpleHandler = 1;
+}
+#endif // OHOS_LLVM
+
 def DisableSanitizerInstrumentation : InheritableAttr {
   let Spellings = [Clang<"disable_sanitizer_instrumentation">];
   let Subjects = SubjectList<[Function, ObjCMethod, GlobalVar]>;

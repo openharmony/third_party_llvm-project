@@ -131,6 +131,10 @@ def DereferenceableOrNull : IntAttr<"dereferenceable_or_null", IntersectMin,
 /// Do not instrument function with sanitizers.
 def DisableSanitizerInstrumentation: EnumAttr<"disable_sanitizer_instrumentation", IntersectPreserve, [FnAttr]>;
 
+#ifdef OHOS_LLVM
+def GWPSanitizeSpecific : EnumAttr<"sanitize_with_gwp", IntersectPreserve, [FnAttr]>;
+#endif /* OHOS_LLVM */
+
 /// Provide pointer element type to intrinsic.
 def ElementType : TypeAttr<"elementtype", IntersectPreserve, [ParamAttr]>;
 

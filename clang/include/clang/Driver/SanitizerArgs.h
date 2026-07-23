@@ -114,6 +114,11 @@ public:
   bool needsCfiCrossDsoDiagRt() const;
   bool needsStatsRt() const { return Stats; }
   bool needsScudoRt() const { return Sanitizers.has(SanitizerKind::Scudo); }
+#ifdef OHOS_LLVM
+  bool needsGWPAsanRt() const {
+    return Sanitizers.has(SanitizerKind::GWPAsan);
+  }
+#endif // OHOS_LLVM
   bool needsNsanRt() const {
     return Sanitizers.has(SanitizerKind::NumericalStability);
   }

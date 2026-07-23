@@ -2171,6 +2171,8 @@ static Attribute::AttrKind getAttrFromCode(uint64_t Code) {
     return Attribute::StackProtectRetReq;
   case bitc::ATTR_KIND_STACK_PROTECT_RET_STRONG:
     return Attribute::StackProtectRetStrong;
+  case bitc::ATTR_KIND_FUNCTION_INSTRUMENT_WITH_GWP_SANITIZER:
+    return Attribute::GWPSanitizeSpecific;
 #endif /* OHOS_LLVM */
   case bitc::ATTR_KIND_STACK_PROTECT_REQ:
     return Attribute::StackProtectReq;

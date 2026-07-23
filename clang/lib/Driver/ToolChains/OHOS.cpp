@@ -439,8 +439,10 @@ SanitizerMask OHOS::getSupportedSanitizers() const {
   Res |= SanitizerKind::Scudo;
 #ifdef OHOS_LLVM
   // OHOS_LOCAL
-  if (IsAArch64)
+  if (IsAArch64) {
     Res |= SanitizerKind::HWAddress;
+    Res |= SanitizerKind::GWPAsan;
+  }
   // OHOS_LOCAL: enable TSAN on LoongArch64 (with aarch64/x86_64).
   if (Arch == llvm::Triple::aarch64 || IsX86_64 ||
       Arch == llvm::Triple::loongarch64)

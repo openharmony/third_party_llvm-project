@@ -4,5 +4,6 @@
 // Keep OHOS-only attrs here instead of the global ordered list.
 // RUN: clang-tblgen -gen-clang-test-pragma-attribute-supported-attributes -DOHOS_LLVM -I%src_include_dir %src_include_dir/clang/Basic/Attr.td -o - | FileCheck %s
 
+// CHECK-DAG: GWPSanitizeSpecific (SubjectMatchRule_function, SubjectMatchRule_objc_method)
 // CHECK-DAG: Optimize (SubjectMatchRule_function)
 // OHOS_LOCAL end
