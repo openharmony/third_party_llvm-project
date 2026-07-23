@@ -805,7 +805,11 @@ lldb::addr_t ABISysV_arm64::FixAddress(addr_t pc, addr_t mask) {
     const llvm::Triple &triple = process_sp->GetTarget().GetArchitecture().GetTriple();
     if ((triple.getArch() == llvm::Triple::aarch64_32 ||
          triple.getArch() == llvm::Triple::aarch64) &&
-        mask == LLDB_INVALID_ADDRESS_MASK) {
+        mask == LLDB_INVALID_ADDRESS_MASK &&
+        llvm::errorToBool(process_sp->GetMemoryTagManager().takeError())) {
+      // AArch64 typically uses a 48-bit virtual address space; strip the
+      // upper 16 bits (PAC / TBI tag bits) to obtain a canonical address
+      // when no kernel-provided mask is available and MTE is not supported.
       return pc & 0x0000FFFFFFFFFFFFULL;
     }
   }
