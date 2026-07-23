@@ -297,8 +297,10 @@ void HandleDeadlySignal(void *siginfo, void *context, u32 tid,
   ScopedErrorReportLock rl;
   SignalContext sig(siginfo, context);
   ReportDeadlySignal(sig, tid, unwind, unwind_context);
+#if !defined(OHOS_LLVM)
   Report("ABORTING\n");
   Die();
+#endif
 }
 
 #endif  // !SANITIZER_FUCHSIA && !SANITIZER_GO
