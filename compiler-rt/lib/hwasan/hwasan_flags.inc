@@ -94,6 +94,8 @@ HWASAN_FLAG(int, heap_quarantine_min, 0,
 HWASAN_FLAG(int, heap_quarantine_max, 0,
             "The freed heap size should be smaller than the maximum size before "
             "it is placed into the heap quarantine.")
+HWASAN_FLAG(bool, enable_heap_quarantine_debug, false,
+            "Enable Hwasan Quarantine Debug Mode.")
 #endif // OHOS_LLVM
 HWASAN_FLAG(bool, export_memory_stats, true,
             "Export up-to-date memory stats through /proc")

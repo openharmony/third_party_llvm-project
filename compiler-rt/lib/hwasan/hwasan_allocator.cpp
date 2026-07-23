@@ -31,6 +31,9 @@ namespace __hwasan {
 static Allocator allocator;
 static AllocatorCache fallback_allocator_cache;
 static SpinMutex fallback_mutex;
+#ifdef OHOS_LLVM
+static SpinMutex count_mutex;
+#endif /* OHOS_LLVM */
 static atomic_uint8_t hwasan_allocator_tagging_enabled;
 
 static constexpr tag_t kFallbackAllocTag = 0xBB & kTagMask;
@@ -393,6 +396,11 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
                 alloc_context_id, free_context_id,
                 static_cast<u32>(orig_size)});
 #else  /* OHOS_LLVM */
+    if (__hwasan::ShouldPrintQuarantineDwellTime()) {
+      SpinMutexLock l(&count_mutex);
+      if (hwasanThreadList().AddCount() % PRINT_COUNTER == 0)
+        hwasanThreadList().PrintfAverageQuarantineTime();
+    }
     if (!t->TryPutInQuarantineWithDealloc(
             reinterpret_cast<uptr>(aligned_ptr), TaggedSize(orig_size),
             alloc_context_id, free_context_id))

@@ -137,6 +137,15 @@ void GetAllocatorStats(AllocatorStatCounters s);
 
 #ifdef OHOS_LLVM
 void SimpleThreadDeallocate(void *ptr, AllocatorCache *cache);
+
+// Temporarily 100000; may be adjusted later.
+#define PRINT_COUNTER 100000
+
+__attribute__((always_inline)) static bool ShouldPrintQuarantineDwellTime() {
+  return flags()->heap_quarantine_max > 0 &&
+         flags()->enable_heap_quarantine_debug &&
+         flags()->heap_quarantine_thread_max_count > 0;
+}
 #endif /* OHOS_LLVM */
 
 } // namespace __hwasan

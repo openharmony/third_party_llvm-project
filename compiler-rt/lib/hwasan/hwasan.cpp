@@ -70,6 +70,12 @@ static void RegisterHwasanFlags(FlagParser *parser, Flags *f) {
 #undef HWASAN_FLAG
 }
 
+#ifdef OHOS_LLVM
+#define APPEND_BOOL_FLAG_CONTENT(defaultFlags, flags, S, param) \
+  defaultFlags.Append(#S " is ");                               \
+  defaultFlags.Append(flags->S == param ? "true. " : "false. ");
+#endif /* OHOS_LLVM */
+
 static void InitializeFlags() {
   SetCommonFlagsDefaults();
   {
@@ -108,9 +114,9 @@ static void InitializeFlags() {
     cf.handle_sigbus = kHandleSignalNo;
     cf.handle_abort = kHandleSignalNo;
     cf.allocator_may_return_null = true;
+    cf.allow_user_segv_handler = true;
     cf.log_exe_name = true;
-    cf.detect_leaks = false;
-    cf.print_module_map = 2;
+    cf.print_module_map = 1;
     cf.intercept_send = false;
 #endif
     OverrideCommonFlags(cf);
@@ -161,6 +167,29 @@ static void InitializeFlags() {
 #endif
 
   InitializeCommonFlags();
+
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  if (common_flags()->verbose_format_important_flags) {
+    InternalScopedString defaultFlags;
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(),
+                             allocator_may_return_null, true);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(), handle_abort,
+                             kHandleSignalYes);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(), log_exe_name, true);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(), handle_segv,
+                             kHandleSignalYes);
+    defaultFlags.Append("print_module_map is ");
+    defaultFlags.AppendF("%d. ", common_flags()->print_module_map);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(), handle_sigbus,
+                             kHandleSignalYes);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(), intercept_send,
+                             true);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(),
+                             allow_user_segv_handler, true);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, flags(), halt_on_error, true);
+    Printf("The important option for hwasan is %s\n", defaultFlags.data());
+  }
+#endif
 
   if (Verbosity()) ReportUnrecognizedFlags();
 
@@ -223,7 +252,15 @@ void UpdateMemoryUsage() {}
 #endif
 
 void HwasanAtExit() {
+#ifdef OHOS_LLVM
+  if (__hwasan::ShouldPrintQuarantineDwellTime())
+    hwasanThreadList().PrintfAverageQuarantineTime();
+#endif /* OHOS_LLVM */
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  if (common_flags()->print_module_map > 1)
+#else
   if (common_flags()->print_module_map)
+#endif
     DumpProcessMap();
   if (flags()->print_stats && (flags()->atexit || hwasan_report_count > 0))
     ReportStats();

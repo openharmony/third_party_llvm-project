@@ -200,6 +200,10 @@ class SANITIZER_MUTEX HwasanThreadList {
 #ifdef OHOS_LLVM
     // Must run before Destroy(); ring buffer is unavailable after.
     AddFreedRingBuffer(t);
+    // Harvest stay-time before Destroy clears quarantine / reuses storage.
+    if (__hwasan::ShouldPrintQuarantineDwellTime())
+      t->GetQuarantineStayTimeAndCount(quarantine_stay_time_,
+                                       quarantine_stay_count_);
 #endif /* OHOS_LLVM */
     t->Destroy();
     DontNeedThread(t);
@@ -287,6 +291,20 @@ class SANITIZER_MUTEX HwasanThreadList {
   void EnableTracingHeapAllocation() { trace_heap_allocation_ = true; }
   void DisableTracingHeapAllocation() { trace_heap_allocation_ = false; }
   bool AllowTracingHeapAllocation() { return trace_heap_allocation_; }
+
+  size_t AddCount() { return ++deallocate_count_; }
+  void PrintfAverageQuarantineTime() {
+    if (!SafeToCallPrintf())
+      return;
+    VisitAllLiveThreads([&](Thread *t) {
+      t->GetQuarantineStayTimeAndCount(quarantine_stay_time_,
+                                       quarantine_stay_count_);
+    });
+    if (!quarantine_stay_count_)
+      return;
+    Printf("[hwasan]: AvgDuration %zu us\n",
+           quarantine_stay_time_ / quarantine_stay_count_);
+  }
 #endif /* OHOS_LLVM */
 
   void Lock() SANITIZER_ACQUIRE(live_list_mutex_) { live_list_mutex_.Lock(); }
@@ -329,6 +347,9 @@ class SANITIZER_MUTEX HwasanThreadList {
   u64 freed_rb_count_;
   u64 freed_rb_count_overflow_;
   bool trace_heap_allocation_;
+  size_t deallocate_count_{0};
+  size_t quarantine_stay_count_{0};
+  size_t quarantine_stay_time_{0};
 #endif /* OHOS_LLVM */
 
   SpinMutex stats_mutex_;
