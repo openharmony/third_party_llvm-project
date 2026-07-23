@@ -1040,7 +1040,9 @@ static bool ShouldLogAfterPrintf() {
 extern "C" SANITIZER_WEAK_ATTRIBUTE int musl_log(const char *fmt, ...);
 extern "C" SANITIZER_WEAK_ATTRIBUTE int ohos_dfx_log(const char *str,
                                                       const char *path);
-static thread_local bool safe_to_call_ohos_dfx_log = true;
+static thread_local bool safe_to_call_printf = true;
+
+bool SafeToCallPrintf() { return safe_to_call_printf; }
 
 void WriteOneLineToSyslog(const char *s) {
   if (&musl_log)
@@ -1064,10 +1066,12 @@ void LogMessageOnPrintf(const char *str) {
 #if defined(OHOS_LLVM) && SANITIZER_OHOS
   // Preserve newlines for the OHOS report aggregator before syslog splits
   // the message into individual lines.
-  if (&ohos_dfx_log && safe_to_call_ohos_dfx_log) {
-    safe_to_call_ohos_dfx_log = false;
+  // ohos_dfx_log is exclusively for LLVM Sanitizers to flush logs to disk; it
+  // may allocate and potentially re-enter the sanitizer (e.g. quarantine).
+  if (&ohos_dfx_log && safe_to_call_printf) {
+    safe_to_call_printf = false;
     ohos_dfx_log(str, common_flags()->log_path);
-    safe_to_call_ohos_dfx_log = true;
+    safe_to_call_printf = true;
   }
 #endif
   if (common_flags()->log_to_syslog && ShouldLogAfterPrintf())

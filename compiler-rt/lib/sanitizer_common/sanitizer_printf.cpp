@@ -310,22 +310,10 @@ static void NOINLINE SharedPrintfCode(bool append_pid, const char *format,
                            format, args);
 }
 
-#ifdef OHOS_LLVM
-static thread_local bool is_in_printf;
-
-bool IsInPrintf() { return is_in_printf; }
-#endif /* OHOS_LLVM */
-
 void Printf(const char *format, ...) {
   va_list args;
   va_start(args, format);
-#ifdef OHOS_LLVM
-  is_in_printf = true;
-#endif /* OHOS_LLVM */
   SharedPrintfCode(false, format, args);
-#ifdef OHOS_LLVM
-  is_in_printf = false;
-#endif /* OHOS_LLVM */
   va_end(args);
 }
 

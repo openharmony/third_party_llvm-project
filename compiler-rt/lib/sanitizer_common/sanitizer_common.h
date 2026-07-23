@@ -238,9 +238,6 @@ bool ColorizeReports();
 void RemoveANSIEscapeSequencesFromString(char *buffer);
 void Printf(const char *format, ...) FORMAT(1, 2);
 void Report(const char *format, ...) FORMAT(1, 2);
-#ifdef OHOS_LLVM
-bool IsInPrintf();
-#endif /* OHOS_LLVM */
 void SetPrintfAndReportCallback(void (*callback)(const char *));
 #define VReport(level, ...)                     \
   do {                                          \
@@ -952,6 +949,14 @@ void LogMessageOnPrintf(const char *str);
 inline void WriteOneLineToSyslog(const char *s) {}
 inline void LogMessageOnPrintf(const char *str) {}
 #endif
+
+#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
+bool SafeToCallPrintf();
+#else
+inline bool SafeToCallPrintf() { return true; }
+#endif
+#endif /* OHOS_LLVM */
 
 #if SANITIZER_LINUX || SANITIZER_WIN_TRACE
 // Initialize Android logging. Any writes before this are silently lost.
