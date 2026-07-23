@@ -299,3 +299,7 @@ COMMON_FLAG(bool, enable_symbolizer_markup, SANITIZER_FUCHSIA,
 
 COMMON_FLAG(bool, detect_invalid_join, true,
             "If set, check invalid joins of threads.")
+#ifdef OHOS_LLVM
+COMMON_FLAG(bool, run_on_tw, false,
+            "If true, no abort.")
+#endif /* OHOS_LLVM */
