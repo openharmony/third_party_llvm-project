@@ -137,9 +137,14 @@ void Thread::Print(const char *Prefix) {
          (void *)this, stack_bottom(), stack_top(),
          stack_top() - stack_bottom(), tls_begin(), tls_end());
 #else  /* OHOS_LLVM */
-  Printf("%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p) tid: %d\n", Prefix,
-         unique_id_, (void *)this, stack_bottom(), stack_top(),
-         stack_top() - stack_bottom(), tls_begin(), tls_end(), tid());
+  Printf("%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p) rb:(%zd/%u) "
+         "records(%llu/o:%llu) tid: %d\n",
+         Prefix, unique_id_, (void *)this, stack_bottom(), stack_top(),
+         stack_top() - stack_bottom(), tls_begin(), tls_end(),
+         heap_allocations() ? heap_allocations()->realsize() : 0,
+         IsMainThread() ? flags()->heap_history_size_main_thread
+                        : flags()->heap_history_size,
+         all_record_count_, all_record_count_overflow_, tid());
 #endif /* OHOS_LLVM */
 }
 

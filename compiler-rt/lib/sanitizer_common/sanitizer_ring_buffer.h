@@ -27,6 +27,9 @@ class RingBuffer {
     RingBuffer *RB = reinterpret_cast<RingBuffer*>(Ptr);
     uptr End = reinterpret_cast<uptr>(Ptr) + SizeInBytes(Size);
     RB->last_ = RB->next_ = reinterpret_cast<T*>(End - sizeof(T));
+#ifdef OHOS_LLVM
+    RB->full_ = false;
+#endif
     return RB;
   }
   void Delete() {
@@ -106,6 +109,7 @@ class RingBuffer {
   // L: last_, always points to the last data element.
   // N: next_, initially equals to last_, is decremented on every push,
   //    wraps around if it's less or equal than its own address.
+  // full_ starts false; New() also sets full_ = false explicitly.
   bool full_;
 #endif
   T *last_;
