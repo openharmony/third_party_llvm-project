@@ -571,6 +571,7 @@ void ReportDestroyLocked(ThreadState *thr, uptr pc, uptr addr,
   ThreadRegistryLock l0(&ctx->thread_registry);
   Lock slots_lock(&ctx->slot_mtx);
 #if defined(OHOS_LLVM) && SANITIZER_OHOS
+  bool thr_slocked_status = thr->slot_locked;
   thr->slot_locked = true;
 #endif
   ScopedReport rep(ReportTypeMutexDestroyLocked);
@@ -582,15 +583,24 @@ void ReportDestroyLocked(ThreadState *thr, uptr pc, uptr addr,
   Tid tid;
   DynamicMutexSet mset;
   uptr tag;
+#if !defined(OHOS_LLVM) || !SANITIZER_OHOS
   if (!RestoreStack(EventType::kLock, last_lock.sid(), last_lock.epoch(), addr,
                     0, kAccessWrite, &tid, &trace, mset, &tag))
     return;
   rep.AddStack(trace, true);
   rep.AddLocation(addr, 1);
   OutputReport(thr, rep);
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
-  thr->slot_locked = false;
-#endif
+#else /* defined(OHOS_LLVM) && SANITIZER_OHOS */
+  if (!RestoreStack(EventType::kLock, last_lock.sid(), last_lock.epoch(), addr,
+                    0, kAccessWrite, &tid, &trace, mset, &tag)) {
+    thr->slot_locked = thr_slocked_status;
+    return;
+  }
+  rep.AddStack(trace, true);
+  rep.AddLocation(addr, 1);
+  OutputReport(thr, rep);
+  thr->slot_locked = thr_slocked_status;
+#endif /* !defined(OHOS_LLVM) || !SANITIZER_OHOS */
 }
 
 }  // namespace __tsan

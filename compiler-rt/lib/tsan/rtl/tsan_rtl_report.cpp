@@ -785,6 +785,7 @@ void ReportRace(ThreadState *thr, RawShadow *shadow_mem, Shadow cur, Shadow old,
   Lock slot_lock(&ctx->slots[static_cast<uptr>(s[1].sid())].mtx);
   ThreadRegistryLock l0(&ctx->thread_registry);
   Lock slots_lock(&ctx->slot_mtx);
+#if !defined(OHOS_LLVM) || !SANITIZER_OHOS
   if (SpuriousRace(old))
     return;
   if (!RestoreStack(EventType::kAccessExt, s[1].sid(), s[1].epoch(), addr1,
@@ -798,6 +799,30 @@ void ReportRace(ThreadState *thr, RawShadow *shadow_mem, Shadow cur, Shadow old,
 
   if (HandleRacyStacks(thr, traces))
     return;
+#else /* defined(OHOS_LLVM) && SANITIZER_OHOS */
+  bool thr_slocked_status = thr->slot_locked;
+  thr->slot_locked = true;
+  if (SpuriousRace(old)) {
+    thr->slot_locked = thr_slocked_status;
+    return;
+  }
+  if (!RestoreStack(EventType::kAccessExt, s[1].sid(), s[1].epoch(), addr1,
+                    size1, typ1, &tids[1], &traces[1], mset[1], &tags[1])) {
+    StoreShadow(&ctx->last_spurious_race, old.raw());
+    thr->slot_locked = thr_slocked_status;
+    return;
+  }
+
+  if (IsFiredSuppression(ctx, rep_typ, traces[1])) {
+    thr->slot_locked = thr_slocked_status;
+    return;
+  }
+
+  if (HandleRacyStacks(thr, traces)) {
+    thr->slot_locked = thr_slocked_status;
+    return;
+  }
+#endif /* !defined(OHOS_LLVM) || !SANITIZER_OHOS */
 
   // If any of the accesses has a tag, treat this as an "external" race.
   uptr tag = kExternalTagNone;
@@ -839,6 +864,9 @@ void ReportRace(ThreadState *thr, RawShadow *shadow_mem, Shadow cur, Shadow old,
     rep.AddSleep(thr->last_sleep_stack_id);
 #endif
   OutputReport(thr, rep);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  thr->slot_locked = thr_slocked_status;
+#endif
 }
 
 void PrintCurrentStack(ThreadState *thr, uptr pc) {
