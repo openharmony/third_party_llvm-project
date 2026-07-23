@@ -302,4 +302,6 @@ COMMON_FLAG(bool, detect_invalid_join, true,
 #ifdef OHOS_LLVM
 COMMON_FLAG(bool, run_on_tw, false,
             "If true, no abort.")
+COMMON_FLAG(bool, verbose_format_important_flags, false,
+            "Prints the important options of hwasan.")
 #endif /* OHOS_LLVM */
