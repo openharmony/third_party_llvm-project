@@ -74,12 +74,12 @@ cp -rf ${clang_linux_x86_64}/include/libcxx-ohos ${clang_darwin_arm64}/include
 cp -rf ${clang_linux_x86_64}/lib/arm-linux-ohos ${clang_darwin_arm64}/lib
 cp -rf ${clang_linux_x86_64}/lib/loongarch64-linux-ohos ${clang_darwin_arm64}/lib
 cp -rf ${clang_linux_x86_64}/lib/x86_64-linux-ohos ${clang_darwin_arm64}/lib
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/bin ${clang_darwin_arm64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/profile ${clang_darwin_arm64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/fuzzer ${clang_darwin_arm64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/share ${clang_darwin_arm64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/sanitizer ${clang_darwin_arm64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/lib/ ${clang_darwin_arm64}/lib/clang/15.0.4
+cp -rf ${clang_linux_x86_64}/lib/clang/21/bin ${clang_darwin_arm64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/profile ${clang_darwin_arm64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/fuzzer ${clang_darwin_arm64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/share ${clang_darwin_arm64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/sanitizer ${clang_darwin_arm64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/lib/ ${clang_darwin_arm64}/lib/clang/21
 
 #clang-dev-darwin-x86_64
 cp -rf ${clang_linux_x86_64}/lib/aarch64-linux-ohos ${clang_darwin_x86_64}/lib
@@ -87,12 +87,12 @@ cp -rf ${clang_linux_x86_64}/lib/arm-liteos-ohos ${clang_darwin_x86_64}/lib
 cp -rf ${clang_linux_x86_64}/lib/arm-linux-ohos ${clang_darwin_x86_64}/lib
 cp -rf ${clang_linux_x86_64}/lib/x86_64-linux-ohos ${clang_darwin_x86_64}/lib
 cp -rf ${clang_linux_x86_64}/lib/loongarch64-linux-ohos ${clang_darwin_x86_64}/lib
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/bin ${clang_darwin_x86_64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/share ${clang_darwin_x86_64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/lib ${clang_darwin_x86_64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/profile ${clang_darwin_x86_64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/fuzzer ${clang_darwin_x86_64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/sanitizer ${clang_darwin_x86_64}/lib/clang/15.0.4/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/bin ${clang_darwin_x86_64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/share ${clang_darwin_x86_64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/lib ${clang_darwin_x86_64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/profile ${clang_darwin_x86_64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/fuzzer ${clang_darwin_x86_64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/sanitizer ${clang_darwin_x86_64}/lib/clang/21/include
 cp -rf ${clang_linux_x86_64}/include/libcxx-ohos ${clang_darwin_x86_64}/include
 
 #clang-dev-windows-x86_64
@@ -102,23 +102,23 @@ cp -rf ${clang_linux_x86_64}/lib/arm-liteos-ohos ${clang_windows_x86_64}/lib
 cp -rf ${clang_linux_x86_64}/lib/arm-linux-ohos ${clang_windows_x86_64}/lib
 cp -rf ${clang_linux_x86_64}/lib/x86_64-linux-ohos ${clang_windows_x86_64}/lib
 cp -rf ${clang_linux_x86_64}/lib/loongarch64-linux-ohos ${clang_windows_x86_64}/lib
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/bin ${clang_windows_x86_64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/share ${clang_windows_x86_64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/lib ${clang_windows_x86_64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/profile ${clang_windows_x86_64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/fuzzer ${clang_windows_x86_64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/sanitizer ${clang_windows_x86_64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/omp* ${clang_windows_x86_64}/lib/clang/15.0.4/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/bin ${clang_windows_x86_64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/share ${clang_windows_x86_64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/lib ${clang_windows_x86_64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/profile ${clang_windows_x86_64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/fuzzer ${clang_windows_x86_64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/sanitizer ${clang_windows_x86_64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/omp* ${clang_windows_x86_64}/lib/clang/21/include
 
 #clang-dev-ohos-aarch64
 cp -rf ${clang_linux_x86_64}/include/libcxx-ohos ${clang_ohos_arm64}/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/bin ${clang_ohos_arm64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/share ${clang_ohos_arm64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/lib ${clang_ohos_arm64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/profile ${clang_ohos_arm64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/fuzzer ${clang_ohos_arm64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/sanitizer ${clang_ohos_arm64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/omp* ${clang_ohos_arm64}/lib/clang/15.0.4/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/bin ${clang_ohos_arm64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/share ${clang_ohos_arm64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/lib ${clang_ohos_arm64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/profile ${clang_ohos_arm64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/fuzzer ${clang_ohos_arm64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/sanitizer ${clang_ohos_arm64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/omp* ${clang_ohos_arm64}/lib/clang/21/include
 
 #clang-dev-linux-aarch64
 cp -rf ${clang_linux_x86_64}/include/libcxx-ohos ${clang_linux_aarch64}/include
@@ -127,13 +127,13 @@ cp -rf ${clang_linux_x86_64}/lib/arm-liteos-ohos ${clang_linux_aarch64}/lib
 cp -rf ${clang_linux_x86_64}/lib/arm-linux-ohos ${clang_linux_aarch64}/lib
 cp -rf ${clang_linux_x86_64}/lib/x86_64-linux-ohos ${clang_linux_aarch64}/lib
 cp -rf ${clang_linux_x86_64}/lib/loongarch64-linux-ohos ${clang_linux_aarch64}/lib
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/bin ${clang_linux_aarch64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/share ${clang_linux_aarch64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/lib ${clang_linux_aarch64}/lib/clang/15.0.4
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/profile ${clang_linux_aarch64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/fuzzer ${clang_linux_aarch64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/sanitizer ${clang_linux_aarch64}/lib/clang/15.0.4/include
-cp -rf ${clang_linux_x86_64}/lib/clang/15.0.4/include/omp* ${clang_linux_aarch64}/lib/clang/15.0.4/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/bin ${clang_linux_aarch64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/share ${clang_linux_aarch64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/lib ${clang_linux_aarch64}/lib/clang/21
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/profile ${clang_linux_aarch64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/fuzzer ${clang_linux_aarch64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/sanitizer ${clang_linux_aarch64}/lib/clang/21/include
+cp -rf ${clang_linux_x86_64}/lib/clang/21/include/omp* ${clang_linux_aarch64}/lib/clang/21/include
 
 #archive
 mkdir target_location

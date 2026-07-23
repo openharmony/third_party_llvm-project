@@ -173,8 +173,11 @@ endif()
 
 pythonize_bool(ANDROID)
 if (OHOS_LLVM)
-pythonize_bool(OHOS_FAMILY)
+  pythonize_bool(OHOS_FAMILY)
+else()
+  set(OHOS_FAMILY_PYBOOL False)
 endif()
+
 if (OHOS_LLVM AND OHOS)
   pythonize_bool(OHOS_HOST)
 else()
