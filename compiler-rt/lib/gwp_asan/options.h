@@ -35,6 +35,9 @@ typedef size_t (*Backtrace_t)(uintptr_t *TraceBuffer, size_t Size);
 
 struct Options {
   Backtrace_t Backtrace = nullptr;
+#ifdef OHOS_LLVM
+  const char *WhiteListPath = "";
+#endif /* OHOS_LLVM */
 
   // Read the options from the included definitions file.
 #define GWP_ASAN_OPTION(Type, Name, DefaultValue, Description)                 \
@@ -49,6 +52,9 @@ struct Options {
 #undef GWP_ASAN_OPTION
 
     Backtrace = nullptr;
+#ifdef OHOS_LLVM
+    WhiteListPath = "";
+#endif /* OHOS_LLVM */
   }
 };
 } // namespace options

@@ -31,6 +31,8 @@ typedef struct gwp_asan_option {
   gwp_asan::Printf_t gwp_asan_printf;
   gwp_asan::backtrace::PrintBacktrace_t printf_backtrace;
   gwp_asan::backtrace::SegvBacktrace_t segv_backtrace;
+  int min_sample_size;
+  const char *white_list_path;
 } gwp_asan_option;
 
 void init_gwp_asan(void *init_options) {
@@ -47,6 +49,8 @@ void init_gwp_asan(void *init_options) {
   opts.InstallSignalHandlers = input_opts->install_signal_handlers;
   opts.InstallForkHandlers = input_opts->install_fork_handlers;
   opts.Backtrace = input_opts->backtrace;
+  opts.MinSampleSize = input_opts->min_sample_size;
+  opts.WhiteListPath = input_opts->white_list_path;
   guarded_pool_allocator.init(opts);
   if (input_opts->install_signal_handlers) {
     gwp_asan::segv_handler::installSignalHandlersOhos(
