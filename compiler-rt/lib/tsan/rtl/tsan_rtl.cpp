@@ -824,6 +824,9 @@ int Finalize(ThreadState *thr) {
 
   ThreadFinalize(thr);
 
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  thr->ignore_interceptors++;
+#endif
   if (ctx->nreported) {
     failed = true;
 #if !SANITIZER_GO
@@ -839,6 +842,7 @@ int Finalize(ThreadState *thr) {
   failed = OnFinalize(failed);
 #if defined(OHOS_LLVM) && SANITIZER_OHOS
   Report("End Tsan report (Finalize)\n");
+  thr->ignore_interceptors--;
 #endif
 
   return failed ? common_flags()->exitcode : 0;

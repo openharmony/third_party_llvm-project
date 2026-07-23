@@ -657,14 +657,23 @@ bool OutputReport(ThreadState *thr, const ScopedReport &srep) {
               supp->templ, pc_or_addr);
 #endif
   }
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  thr->ignore_interceptors++;
+#endif
   {
     bool suppressed = OnReport(rep, pc_or_addr != 0);
     if (suppressed) {
       thr->current_report = nullptr;
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+      thr->ignore_interceptors--;
+#endif
       return false;
     }
   }
   PrintReport(rep);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  thr->ignore_interceptors--;
+#endif
   __tsan_on_report(rep);
   ctx->nreported++;
   if (flags()->halt_on_error)

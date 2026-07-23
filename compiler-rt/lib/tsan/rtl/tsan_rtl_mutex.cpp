@@ -464,7 +464,11 @@ void Release(ThreadState *thr, uptr pc, uptr addr) {
   DPrintf("#%d: Release %zx\n", thr->tid, addr);
   if (thr->ignore_sync)
     return;
+#ifndef OHOS_LLVM
   SlotLocker locker(thr);
+#else
+  SlotLocker locker(thr, thr->ignore_interceptors > 0);
+#endif
   {
     auto s = ctx->metamap.GetSyncOrCreate(thr, pc, addr, false);
     Lock lock(&s->mtx);
@@ -477,7 +481,11 @@ void ReleaseStore(ThreadState *thr, uptr pc, uptr addr) {
   DPrintf("#%d: ReleaseStore %zx\n", thr->tid, addr);
   if (thr->ignore_sync)
     return;
+#ifndef OHOS_LLVM
   SlotLocker locker(thr);
+#else
+  SlotLocker locker(thr, thr->ignore_interceptors > 0);
+#endif
   {
     auto s = ctx->metamap.GetSyncOrCreate(thr, pc, addr, false);
     Lock lock(&s->mtx);
@@ -490,7 +498,11 @@ void ReleaseStoreAcquire(ThreadState *thr, uptr pc, uptr addr) {
   DPrintf("#%d: ReleaseStoreAcquire %zx\n", thr->tid, addr);
   if (thr->ignore_sync)
     return;
+#ifndef OHOS_LLVM
   SlotLocker locker(thr);
+#else
+  SlotLocker locker(thr, thr->ignore_interceptors > 0);
+#endif
   {
     auto s = ctx->metamap.GetSyncOrCreate(thr, pc, addr, false);
     Lock lock(&s->mtx);
@@ -558,6 +570,9 @@ void ReportDestroyLocked(ThreadState *thr, uptr pc, uptr addr,
   Lock slot_lock(&ctx->slots[static_cast<uptr>(last_lock.sid())].mtx);
   ThreadRegistryLock l0(&ctx->thread_registry);
   Lock slots_lock(&ctx->slot_mtx);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  thr->slot_locked = true;
+#endif
   ScopedReport rep(ReportTypeMutexDestroyLocked);
   rep.AddMutex(addr, creation_stack_id);
   VarSizeStackTrace trace;
@@ -573,6 +588,9 @@ void ReportDestroyLocked(ThreadState *thr, uptr pc, uptr addr,
   rep.AddStack(trace, true);
   rep.AddLocation(addr, 1);
   OutputReport(thr, rep);
+#if defined(OHOS_LLVM) && SANITIZER_OHOS
+  thr->slot_locked = false;
+#endif
 }
 
 }  // namespace __tsan
