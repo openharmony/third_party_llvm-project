@@ -406,6 +406,7 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
           ha->push({reinterpret_cast<uptr>(tagged_ptr), alloc_thread_id,
                     alloc_context_id, free_context_id,
                     static_cast<u32>(orig_size)});
+          t->inc_record();
         }
       }
     }
