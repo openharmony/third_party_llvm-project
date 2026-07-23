@@ -216,6 +216,9 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
   case Expr::SourceLocExprClass:
   case Expr::ConceptSpecializationExprClass:
   case Expr::RequiresExprClass:
+#ifdef OHOS_LLVM
+  case Expr::HMTypeSigExprClass:
+#endif /* OHOS_LLVM */
     return Cl::CL_PRValue;
 
   case Expr::EmbedExprClass:

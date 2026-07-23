@@ -1280,6 +1280,15 @@ void ASTStmtWriter::VisitSourceLocExpr(SourceLocExpr *E) {
   Code = serialization::EXPR_SOURCE_LOC;
 }
 
+#ifdef OHOS_LLVM
+void ASTStmtWriter::VisitHMTypeSigExpr(HMTypeSigExpr *E) {
+  VisitExpr(E);
+  Record.AddSourceLocation(E->getOperatorLoc());
+  Record.AddSourceLocation(E->getRParenLoc());
+  Code = serialization::EXPR_HM_TYPE_SIG;
+}
+#endif /* OHOS_LLVM */
+
 void ASTStmtWriter::VisitEmbedExpr(EmbedExpr *E) {
   VisitExpr(E);
   Record.AddSourceLocation(E->getBeginLoc());

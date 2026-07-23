@@ -2924,6 +2924,12 @@ void StmtPrinter::VisitRecoveryExpr(RecoveryExpr *Node) {
   OS << ')';
 }
 
+#ifdef OHOS_LLVM
+void StmtPrinter::VisitHMTypeSigExpr(HMTypeSigExpr *Node) {
+  OS << Node->getBuiltinStr() << "()";
+}
+#endif /* OHOS_LLVM */
+
 void StmtPrinter::VisitAsTypeExpr(AsTypeExpr *Node) {
   OS << "__builtin_astype(";
   PrintExpr(Node->getSrcExpr());

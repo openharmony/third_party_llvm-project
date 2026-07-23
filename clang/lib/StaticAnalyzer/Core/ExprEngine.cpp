@@ -1969,6 +1969,9 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
     case Stmt::OMPArrayShapingExprClass:
     case Stmt::OMPIteratorExprClass:
     case Stmt::SYCLUniqueStableNameExprClass:
+#ifdef OHOS_LLVM
+    case Stmt::HMTypeSigExprClass:
+#endif /* OHOS_LLVM */
     case Stmt::OpenACCAsteriskSizeExprClass:
     case Stmt::TypeTraitExprClass: {
       Bldr.takeNodes(Pred);

@@ -2322,6 +2322,14 @@ void ASTStmtReader::VisitRecoveryExpr(RecoveryExpr *E) {
     Child = Record.readSubStmt();
 }
 
+#ifdef OHOS_LLVM
+void ASTStmtReader::VisitHMTypeSigExpr(HMTypeSigExpr *E) {
+  VisitExpr(E);
+  E->setOperatorLoc(readSourceLocation());
+  E->setRParenLoc(readSourceLocation());
+}
+#endif /* OHOS_LLVM */
+
 //===----------------------------------------------------------------------===//
 // Microsoft Expressions and Statements
 //===----------------------------------------------------------------------===//
@@ -4493,6 +4501,11 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
                                numRequirement);
       break;
     }
+#ifdef OHOS_LLVM
+    case EXPR_HM_TYPE_SIG:
+      S = new (Context) HMTypeSigExpr(Empty);
+      break;
+#endif /* OHOS_LLVM */
     case EXPR_HLSL_OUT_ARG:
       S = HLSLOutArgExpr::CreateEmpty(Context);
       break;

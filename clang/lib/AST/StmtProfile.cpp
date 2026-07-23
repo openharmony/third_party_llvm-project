@@ -2375,6 +2375,12 @@ void StmtProfiler::VisitEmbedExpr(const EmbedExpr *E) { VisitExpr(E); }
 
 void StmtProfiler::VisitRecoveryExpr(const RecoveryExpr *E) { VisitExpr(E); }
 
+#ifdef OHOS_LLVM
+void StmtProfiler::VisitHMTypeSigExpr(const HMTypeSigExpr *E) {
+  VisitExpr(E);
+}
+#endif /* OHOS_LLVM */
+
 void StmtProfiler::VisitObjCStringLiteral(const ObjCStringLiteral *S) {
   VisitExpr(S);
 }
