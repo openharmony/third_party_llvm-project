@@ -1,9 +1,9 @@
-// RUN: %libomp-tool -DFIRST_TOOL -o %t.first.tool.so %s && \
-// RUN: %libomp-tool -DSECOND_TOOL -o %t.second.tool.so %s && \
+// RUN: %libomp-tool -DFIRST_TOOL -o %T/first.tool.so %s %send-first && \
+// RUN: %libomp-tool -DSECOND_TOOL -o %T/second.tool.so %s %send-second && \
 // RUN: %libomp-compile && \
-// RUN: env OMP_TOOL_LIBRARIES=%t.first.tool.so \
-// RUN: CUSTOM_DATA_STORAGE_TOOL_LIBRARIES=%t.second.tool.so \
-// RUN: %libomp-run | %sort-threads | FileCheck %s
+// RUN: env OMP_TOOL_LIBRARIES=%tool-path/first.tool.so \
+// RUN: CUSTOM_DATA_STORAGE_TOOL_LIBRARIES=%tool-path/second.tool.so \
+// RUN: %libomp-run | %sort-threads | FileCheck %s -DNULL_ENCODING=%null-encoding
 
 // For GCC we don't get an event for master,
 // see runtime/test/ompt/sycnchronization/master.c
