@@ -24,12 +24,22 @@
 #include "llvm/IR/PseudoProbe.h"
 #include "llvm/IR/TypeFinder.h"
 #include "llvm/Object/ModuleSymbolTable.h"
+#ifdef OHOS_LLVM
+#include "llvm/Support/CommandLine.h"
+#endif /* OHOS_LLVM */
 #include "llvm/Support/Error.h"
 #include "llvm/TargetParser/Triple.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 #include <optional>
 #include <utility>
 using namespace llvm;
+
+#ifdef OHOS_LLVM
+static cl::opt<bool> ReplaceImportedSymverAsDeclare(
+    "replace-imported-symver-as-declare",
+    cl::desc("Replace imported symver as declare"), cl::init(true),
+    cl::Hidden);
+#endif /* OHOS_LLVM */
 
 /// Most of the errors produced by this module are inconvertible StringErrors.
 /// This convenience function lets us return one of those more easily.
@@ -1547,7 +1557,20 @@ Error IRLinker::run() {
         SmallString<256> S(".symver ");
         S += Name;
         S += ", ";
+#ifndef OHOS_LLVM
         S += Alias;
+#else /* OHOS_LLVM */
+        auto Pos = Alias.find("@@");
+        if (ReplaceImportedSymverAsDeclare &&
+            (Pos != StringRef::npos &&
+             (Pos + 2 >= Alias.size() || Alias[Pos + 2] != '@'))) {
+          S += Alias.substr(0, Pos);
+          S += '@';
+          S += Alias.substr(Pos + 2);
+        } else {
+          S += Alias;
+        }
+#endif /* OHOS_LLVM */
         DstM.appendModuleInlineAsm(S);
       }
     });

@@ -5,6 +5,8 @@ module asm ".symver bar, bar@BAR_1.2.3"
 
 declare dso_local i32 @bar()
 
+module asm ".symver foo, foo@@FOO_1.2.3"
+
 define dso_local i32 @foo() {
 entry:
   %call = tail call i32 @bar()
