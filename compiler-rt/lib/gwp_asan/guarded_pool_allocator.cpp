@@ -13,6 +13,7 @@
 #include "gwp_asan/utilities.h"
 #if defined(OHOS_LLVM) && defined(__OHOS__)
 #include "sanitizer_common/sanitizer_common.h"
+#include "sanitizer_common/sanitizer_symbolizer.h"
 #endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
 #include <assert.h>
@@ -129,6 +130,12 @@ void GuardedPoolAllocator::init(const options::Options &Opts) {
 
   if (Opts.InstallForkHandlers)
     installAtFork();
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  Symbolizer = __sanitizer::Symbolizer::GetOrInit();
+  Symbolizer->RefreshModules();
+  parseWhiteList();
+  findmodule();
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 }
 
 void GuardedPoolAllocator::disable() {
@@ -547,6 +554,98 @@ void GuardedPoolAllocator::accumulatePersistInterval(
   }
   PersistInterval += (curTime - PreTime) * reservedSlotsLength;
   PreTime = curTime;
+}
+
+// Detect a WhiteList library on the stack and return true immediately if found,
+// skipping subsequent probabilistic sampling.
+bool GuardedPoolAllocator::checkLib() {
+  if (LibraryPathLength == 0 && ModuleLength == 0)
+    return false;
+
+  static constexpr unsigned kMaximumStackFramesForCrashTrace = 512;
+  uintptr_t Trace[kMaximumStackFramesForCrashTrace];
+  size_t TraceLength = Backtrace(Trace, kMaximumStackFramesForCrashTrace);
+
+  uintptr_t pc;
+  for (size_t i = 0; i < TraceLength; ++i) {
+    pc = Trace[i];
+
+    for (uint8_t j = 0; j < ModuleLength; ++j) {
+      if (Modules[j]->containsAddress(pc))
+        return true;
+    }
+
+    if (LibraryPathLength == 0)
+      continue;
+    // Check if there are any dlopen libraries.
+    if (Symbolizer->GetModulesFresh())
+      continue;
+
+    {
+      ScopedLock L(FindModMutex);
+      Symbolizer->RefreshModules();
+      findmodule();
+    }
+
+    for (uint8_t j = 0; j < ModuleLength; ++j) {
+      if (Modules[j]->containsAddress(pc))
+        return true;
+    }
+  }
+  return false;
+}
+
+// Parse WhiteListPath (colon-separated) into LibraryPath array.
+void GuardedPoolAllocator::parseWhiteList() {
+  if (!WhiteListPath || __sanitizer::internal_strlen(WhiteListPath) == 0)
+    return;
+
+  int NumColons = 1;
+  for (const char *p = WhiteListPath; *p != '\0'; ++p) {
+    if (*p == ':')
+      ++NumColons;
+  }
+
+  // Initialize LibraryPath and Modules according to the number of libraries
+  // that need to be checked.
+  size_t BytesRequired =
+      roundUpTo(NumColons * sizeof(*LibraryPath), State.PageSize);
+  LibraryPath = reinterpret_cast<char **>(
+      map(BytesRequired, "GWP-ASan Checked LibraryPath"));
+
+  BytesRequired = roundUpTo(NumColons * sizeof(*Modules), State.PageSize);
+  Modules = reinterpret_cast<const __sanitizer::LoadedModule **>(
+      map(BytesRequired, "GWP-ASan Checked Module"));
+
+  const char *Start = WhiteListPath;
+  for (int i = 0; i < NumColons; ++i) {
+    const char *End = Start;
+    while (*End != ':' && *End != '\0')
+      ++End;
+
+    int Len = End - Start;
+    BytesRequired = roundUpTo((Len + 1) * sizeof(char), State.PageSize);
+    LibraryPath[i] = reinterpret_cast<char *>(
+        map(BytesRequired, "GWP-ASan Checked Library"));
+    __sanitizer::internal_strncpy(LibraryPath[i], Start, Len);
+    LibraryPath[i][Len] = '\0';
+    Start = End + 1;
+  }
+  LibraryPathLength = NumColons;
+}
+
+void GuardedPoolAllocator::findmodule() {
+  int Index = 0;
+  while (Index < LibraryPathLength) {
+    if (auto *Module = Symbolizer->FindLibraryByName(LibraryPath[Index])) {
+      Modules[ModuleLength++] = Module;
+      // Upon locating the target module, replace the resolved entry with the
+      // last unresolved path and shrink LibraryPathLength.
+      LibraryPath[Index] = LibraryPath[--LibraryPathLength];
+    } else {
+      Index++;
+    }
+  }
 }
 #endif // defined(OHOS_LLVM) && defined(__OHOS__)
 } // namespace gwp_asan

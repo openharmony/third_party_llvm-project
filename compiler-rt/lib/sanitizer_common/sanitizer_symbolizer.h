@@ -172,6 +172,11 @@ class Symbolizer final {
   void RefreshModules();
   const LoadedModule *FindModuleForAddress(uptr address);
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  const LoadedModule *FindLibraryByName(const char *name);
+  bool GetModulesFresh() const { return modules_fresh_; }
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
+
   void InvalidateModuleList();
 
   const ListOfModules &GetRefreshedListOfModules();

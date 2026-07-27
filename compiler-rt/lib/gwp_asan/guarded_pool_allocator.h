@@ -17,6 +17,13 @@
 #include "gwp_asan/platform_specific/guarded_pool_allocator_posix.h" // IWYU pragma: keep
 #include "gwp_asan/platform_specific/guarded_pool_allocator_tls.h"
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+namespace __sanitizer {
+class LoadedModule;
+class Symbolizer;
+} // namespace __sanitizer
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
+
 #include <stddef.h>
 #include <stdint.h>
 // IWYU pragma: no_include <__stddef_max_align_t.h>
@@ -97,15 +104,18 @@ public:
 #if defined(OHOS_LLVM) && defined(__OHOS__)
     Nmalloc++;
     if (Nmalloc % PRINT_COUNTER == 0) {
+      unsigned AvgDurationUs =
+          ReserveCounter ? PersistInterval / ReserveCounter : 0;
       MUSL_LOG("[gwp_asan]: AvgDuration %{public}u us, FreeSlotsLength "
                "%{public}d\n",
-               PersistInterval / ReserveCounter, FreeSlotsLength);
+               AvgDurationUs, FreeSlotsLength);
       Nmalloc = 0;
     }
     // If the RandomState is calculated from getRandomUnsigned32, the value
     // of RandomState will never be 1, so we use RandomState == 1 to force
-    // GWP_ASAN sample.
-    if (GWP_ASAN_UNLIKELY(getThreadLocals()->RandomState == 1))
+    // GWP_ASAN sample. checkLib() forces sample when PC is in a WhiteList
+    // library.
+    if (GWP_ASAN_UNLIKELY(checkLib() || getThreadLocals()->RandomState == 1))
       return true;
 #endif // defined(OHOS_LLVM) && defined(__OHOS__)
     // NextSampleCounter == 0 means we "should regenerate the counter".
@@ -249,6 +259,9 @@ private:
 
 #if defined(OHOS_LLVM) && defined(__OHOS__)
   void accumulatePersistInterval(size_t reservedSlotsLength);
+  bool checkLib();
+  void findmodule();
+  void parseWhiteList();
 #endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
   gwp_asan::AllocatorState State;
@@ -260,6 +273,10 @@ private:
 
   // A mutex to protect the guarded slot and metadata pool for this class.
   Mutex PoolMutex;
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  // A mutex to protect the find library.
+  Mutex FindModMutex;
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
   // Some unwinders can grab the libdl lock. In order to provide atfork
   // protection, we need to ensure that we allow an unwinding thread to release
   // the libdl lock before forking.
@@ -297,6 +314,13 @@ private:
   size_t PersistInterval{0};
   size_t PreTime{0};
   size_t ReserveCounter{0};
+  __sanitizer::Symbolizer *Symbolizer = nullptr;
+  // Pointer to an array of modules.
+  const __sanitizer::LoadedModule **Modules = nullptr;
+  uint8_t ModuleLength{0};
+  // Pointer to an array of LibraryPath.
+  char **LibraryPath = nullptr;
+  uint8_t LibraryPathLength{0};
 #endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
   // Additional platform specific data structure for the guarded pool mapping.

@@ -75,7 +75,8 @@ if(OHOS_LLVM AND OHOS)
   set(GWP_ASAN_OBJECT_LIBS
     RTGwpAsanSegvHandler
     RTSanitizerCommon
-    RTSanitizerCommonLibc)
+    RTSanitizerCommonLibc
+    RTSanitizerCommonSymbolizer)
 else()
   set(GWP_ASAN_BACKTRACE_SOURCES
     optional/backtrace_linux_libc.cpp)
