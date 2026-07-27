@@ -1404,6 +1404,9 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
       args.hasFlag(OPT_fat_lto_objects, OPT_no_fat_lto_objects, false);
   ctx.arg.androidMemtagMode = getMemtagMode(ctx, args);
   ctx.arg.auxiliaryList = args::getStrings(args, OPT_auxiliary);
+#ifdef OHOS_LLVM
+  ctx.arg.weakLibrary = args::getStrings(args, OPT_weak_library);
+#endif /* OHOS_LLVM */
   ctx.arg.armBe8 = args.hasArg(OPT_be8);
   if (opt::Arg *arg = args.getLastArg(
           OPT_Bno_symbolic, OPT_Bsymbolic_non_weak_functions,

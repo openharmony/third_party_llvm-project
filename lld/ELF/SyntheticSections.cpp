@@ -1456,9 +1456,24 @@ DynamicSection<ELFT>::computeContents() {
     addInt(ctx.arg.enableNewDtags ? DT_RUNPATH : DT_RPATH,
            part.dynStrTab->addString(ctx.arg.rpath));
 
+#ifndef OHOS_LLVM
   for (SharedFile *file : ctx.sharedFiles)
     if (file->isNeeded)
       addInt(DT_NEEDED, part.dynStrTab->addString(file->soName));
+#else /* OHOS_LLVM */
+  for (SharedFile *file : ctx.sharedFiles) {
+    if (file->isNeeded) {
+      StringRef fileSoName = file->soName;
+      // If this dylib is set as weak-library, we don't place it in DT_NEEDED
+      // rather in DT_OHOS_WEAK_LIBRARY.
+      if (llvm::any_of(ctx.arg.weakLibrary,
+                       [&](StringRef s) { return fileSoName == s; }))
+        addInt(DT_OHOS_WEAK_LIBRARY, part.dynStrTab->addString(fileSoName));
+      else
+        addInt(DT_NEEDED, part.dynStrTab->addString(fileSoName));
+    }
+  }
+#endif /* OHOS_LLVM */
 
   if (isMain) {
     if (!ctx.arg.soName.empty())

@@ -442,6 +442,10 @@ defm xosegment: BB<"xosegment",
 
 defm rpath: Eq<"rpath", "Add a DT_RUNPATH to the output">;
 
+#ifdef OHOS_LLVM
+defm weak_library: Eq<"ohos-weak-library", "Mark library and its references as weak imports">;
+#endif /* OHOS_LLVM */
+
 def relocatable: F<"relocatable">, HelpText<"Create relocatable object file">;
 
 defm retain_symbols_file:

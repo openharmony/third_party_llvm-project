@@ -270,6 +270,9 @@ struct Config {
   std::string rpath;
   llvm::SmallVector<VersionDefinition, 0> versionDefinitions;
   llvm::SmallVector<llvm::StringRef, 0> auxiliaryList;
+#ifdef OHOS_LLVM
+  llvm::SmallVector<llvm::StringRef, 0> weakLibrary;
+#endif /* OHOS_LLVM */
   llvm::SmallVector<llvm::StringRef, 0> filterList;
   llvm::SmallVector<llvm::StringRef, 0> passPlugins;
   llvm::SmallVector<llvm::StringRef, 0> searchPaths;
