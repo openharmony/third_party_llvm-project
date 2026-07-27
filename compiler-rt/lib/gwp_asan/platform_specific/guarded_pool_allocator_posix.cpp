@@ -42,6 +42,9 @@ namespace gwp_asan {
 void GuardedPoolAllocator::initPRNG() {
   getThreadLocals()->RandomState =
       static_cast<uint32_t>(time(nullptr) + getThreadID());
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  getThreadLocals()->is_configured = true;
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 }
 
 void *GuardedPoolAllocator::map(size_t Size, const char *Name) const {

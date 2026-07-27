@@ -111,6 +111,12 @@ public:
                AvgDurationUs, FreeSlotsLength);
       Nmalloc = 0;
     }
+
+    // Make sure the current thread's RandomState is configured before use.
+    if (getThreadLocals()->is_configured == false) {
+      return false;
+    }
+
     // If the RandomState is calculated from getRandomUnsigned32, the value
     // of RandomState will never be 1, so we use RandomState == 1 to force
     // GWP_ASAN sample. checkLib() forces sample when PC is in a WhiteList
