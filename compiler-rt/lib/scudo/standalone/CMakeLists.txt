@@ -179,7 +179,8 @@ if (COMPILER_RT_HAS_GWP_ASAN)
        RTGwpAsanOptionsParser)
   if(OHOS_LLVM)
     list(APPEND SCUDO_OBJECT_LIBS
-         RTSanitizerCommon RTSanitizerCommonLibc)
+         RTSanitizerCommon RTSanitizerCommonLibc
+         RTSanitizerCommonSymbolizer)
   endif()
 
   append_list_if(COMPILER_RT_HAS_OMIT_FRAME_POINTER_FLAG -fno-omit-frame-pointer
