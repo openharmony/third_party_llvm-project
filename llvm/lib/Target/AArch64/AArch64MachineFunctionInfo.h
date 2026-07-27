@@ -250,6 +250,10 @@ class AArch64FunctionInfo final : public MachineFunctionInfo {
   // Holds the SME function attributes (streaming mode, ZA/ZT0 state).
   SMEAttrs SMEFnAttrs;
 
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+  SmallVector<ArkArgInfo, 4> ArkArgInfos;
+#endif
+
 public:
   AArch64FunctionInfo(const Function &F, const AArch64Subtarget *STI);
 
@@ -587,6 +591,13 @@ public:
   bool hasStackProbing() const { return StackProbeSize != 0; }
 
   int64_t getStackProbeSize() const { return StackProbeSize; }
+
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+  void addArkArgInfo(int64_t MemOffset, Register Reg, int32_t OriginIndex) {
+    ArkArgInfos.emplace_back(MemOffset, Reg, OriginIndex);
+  }
+  ArrayRef<ArkArgInfo> getArkArgInfos() const { return ArkArgInfos; }
+#endif
 
 private:
   // Hold the lists of LOHs.

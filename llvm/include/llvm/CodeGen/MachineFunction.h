@@ -102,6 +102,16 @@ enum class MachineFunctionDataHotness {
 /// of type are accessed/created with MF::getInfo and destroyed when the
 /// MachineFunction is destroyed.
 struct LLVM_ABI MachineFunctionInfo {
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+  struct ArkArgInfo {
+    int64_t MemOffset;
+    Register Reg;
+    int32_t OriginIndex;
+    ArkArgInfo(int64_t MemOffset, Register Reg, int32_t OriginIndex)
+        : MemOffset(MemOffset), Reg(Reg), OriginIndex(OriginIndex) {}
+  };
+#endif
+
   virtual ~MachineFunctionInfo();
 
   /// Factory function: default behavior is to call new using the

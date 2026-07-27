@@ -17,16 +17,17 @@
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineOptimizationRemarkEmitter.h"
 #ifdef OHOS_LLVM
-#include "llvm/CodeGen/StackProtectorRetLowering.h" // OHOS_LOCAL
+#include "llvm/CodeGen/StackProtectorRetLowering.h"
 #endif
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/TypeSize.h"
 #ifdef OHOS_LLVM
-#include "llvm/IR/CallingConv.h" // OHOS_LOCAL
+#include "llvm/IR/CallingConv.h"
 #endif
 #include <vector>
 #if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 #include "llvm/TargetParser/Triple.h"
+#include <string>
 #endif
 
 namespace llvm {
@@ -332,6 +333,15 @@ public:
   virtual int getArkFrameAdaptationOffset(const MachineFunction &MF) const {
     return 0;
   }
+
+#if defined(ARK_GC_SUPPORT)
+  virtual void adjustForArkFrame(MachineFunction &MF,
+                                 MachineBasicBlock &PrologueMBB) const {}
+  static const std::string TypeKey;
+  static const std::string JSFuncIdxKey;
+  static const std::string TypeOffsetKey;
+  static const std::string JSFuncIdxOffsetKey;
+#endif
 #endif /* OHOS_LLVM */
 
   /// restoreCalleeSavedRegisters - Issues instruction(s) to restore all callee

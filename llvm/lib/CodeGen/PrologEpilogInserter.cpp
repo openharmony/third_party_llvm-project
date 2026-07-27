@@ -709,9 +709,8 @@ static void insertCSRRestores(MachineBasicBlock &RestoreBlock,
 #if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
 void PEIImpl::RecordCalleeSaveRegisterAndOffset(
     MachineFunction &MF, const std::vector<CalleeSavedInfo> &CSI) {
-  MachineModuleInfo &MMI = MF.getMMI();
   MachineFrameInfo &MFI = MF.getFrameInfo();
-  const MCRegisterInfo *MRI = MMI.getContext().getRegisterInfo();
+  const TargetRegisterInfo *MRI = MF.getSubtarget().getRegisterInfo();
   Function &func = const_cast<Function &>(MF.getFunction());
   const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
   Triple::ArchType archType = TFI->GetArkSupportTarget();
@@ -1181,7 +1180,7 @@ void PEIImpl::calculateFrameObjectOffsets(MachineFunction &MF) {
   // Make sure that the stack protector comes before the local variables on the
   // stack.
 #ifdef OHOS_LLVM
-  Function &F = MF.getFunction(); // OHOS_LOCAL
+  Function &F = MF.getFunction();
 #endif /* OHOS_LLVM */
   SmallSet<int, 16> ProtectedObjs;
   if (MFI.hasStackProtectorIndex()) {
@@ -1449,6 +1448,15 @@ void PEIImpl::insertPrologEpilogCode(MachineFunction &MF) {
     for (MachineBasicBlock *SaveBlock : SaveBlocks)
       TFI.adjustForSegmentedStacks(MF, *SaveBlock);
   }
+
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+  // Insert the prologue to save ark-frame-type
+  if (MF.getFunction().hasFnAttribute(TargetFrameLowering::TypeKey) ||
+      MF.getFunction().hasFnAttribute(TargetFrameLowering::JSFuncIdxKey)) {
+    for (MachineBasicBlock *SaveBlock : SaveBlocks)
+      TFI.adjustForArkFrame(MF, *SaveBlock);
+  }
+#endif
 
   // Emit additional code that is required to explicitly handle the stack in
   // HiPE native code (if needed) when loaded in the Erlang/OTP runtime. The
@@ -1726,7 +1734,7 @@ bool PEIImpl::replaceFrameIndexDebugInstr(MachineFunction &MF, MachineInstr &MI,
            "Frame offsets with a scalable component are not supported");
     Offset.setImm(Offset.getImm() + refOffset.getFixed() + SPAdj);
 #else /* OHOS_LLVM */
-    MachineFrameInfo &MFI = MF.getFrameInfo(); // OHOS_LOCAL
+    MachineFrameInfo &MFI = MF.getFrameInfo();
     int FI = MI.getOperand(OpIdx).getIndex();
     if (!MFI.isArkSpillSlotObjectIndex(FI) || !TFI->supportsArkSpills()) {
       StackOffset refOffset = TFI->getFrameIndexReferencePreferSP(

@@ -32,6 +32,13 @@ llvm_canonicalize_cmake_booleans(
   LLVM_EXPERIMENTAL_KEY_INSTRUCTIONS
   )
 
+# OHOS_LOCAL begin: ark_gc_support lit feature (option lives under OHOS_LLVM).
+if(NOT DEFINED BUILD_ARK_GC_SUPPORT)
+  set(BUILD_ARK_GC_SUPPORT OFF)
+endif()
+llvm_canonicalize_cmake_booleans(BUILD_ARK_GC_SUPPORT)
+# OHOS_LOCAL end
+
 configure_lit_site_cfg(
   ${CMAKE_CURRENT_SOURCE_DIR}/lit.site.cfg.py.in
   ${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg.py
