@@ -131,10 +131,12 @@ void GuardedPoolAllocator::init(const options::Options &Opts) {
   if (Opts.InstallForkHandlers)
     installAtFork();
 #if defined(OHOS_LLVM) && defined(__OHOS__)
-  Symbolizer = __sanitizer::Symbolizer::GetOrInit();
-  Symbolizer->RefreshModules();
-  parseWhiteList();
-  findmodule();
+  if (WhiteListPath && __sanitizer::internal_strlen(WhiteListPath) != 0) {
+    Symbolizer = __sanitizer::Symbolizer::GetOrInit();
+    Symbolizer->RefreshModules();
+    parseWhiteList();
+    findmodule();
+  }
 #endif // defined(OHOS_LLVM) && defined(__OHOS__)
 }
 
@@ -597,9 +599,6 @@ bool GuardedPoolAllocator::checkLib() {
 
 // Parse WhiteListPath (colon-separated) into LibraryPath array.
 void GuardedPoolAllocator::parseWhiteList() {
-  if (!WhiteListPath || __sanitizer::internal_strlen(WhiteListPath) == 0)
-    return;
-
   int NumColons = 1;
   for (const char *p = WhiteListPath; *p != '\0'; ++p) {
     if (*p == ':')
