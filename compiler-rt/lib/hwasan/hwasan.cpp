@@ -73,7 +73,7 @@ static void RegisterHwasanFlags(FlagParser *parser, Flags *f) {
 #if SANITIZER_OHOS
 #define APPEND_BOOL_FLAG_CONTENT(defaultFlags, flags, S, param) \
   defaultFlags.Append(#S " is ");                               \
-  defaultFlags.Append(flags->S == param ? "true. " : "false. ");
+  defaultFlags.Append(flags->S == param ? "true. " : "false. ")
 #endif /* SANITIZER_OHOS */
 
 static void InitializeFlags() {
