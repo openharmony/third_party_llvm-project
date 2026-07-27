@@ -1,8 +1,8 @@
-// RUN: %libomp-tool -DFIRST_TOOL -o %t.first.tool.so %s && \
-// RUN: %libomp-tool -DSECOND_TOOL -o %t.second.tool.so %s && \
+// RUN: %libomp-tool -DFIRST_TOOL -o %T/print.first.tool.so %s %send-print-first && \
+// RUN: %libomp-tool -DSECOND_TOOL -o %T/print.second.tool.so %s %send-print-second && \
 // RUN: %libomp-compile && \
-// RUN: env OMP_TOOL_LIBRARIES=%t.first.tool.so \
-// RUN: PRINT_TOOL_LIBRARIES=%t.second.tool.so \
+// RUN: env OMP_TOOL_LIBRARIES=%tool-path/print.first.tool.so \
+// RUN: PRINT_TOOL_LIBRARIES=%tool-path/print.second.tool.so \
 // RUN: %libomp-run | %sort-threads | FileCheck %s
 
 // For GCC we don't get an event for master,

@@ -3293,6 +3293,10 @@ DEF_TRAVERSE_STMT(OMPParallelGenericLoopDirective,
 DEF_TRAVERSE_STMT(OMPTargetParallelGenericLoopDirective,
                   { TRY_TO(TraverseOMPExecutableDirective(S)); })
 
+#ifdef OHOS_LLVM
+DEF_TRAVERSE_STMT(HMTypeSigExpr, {})
+#endif /* OHOS_LLVM */
+
 DEF_TRAVERSE_STMT(OMPAssumeDirective,
                   { TRY_TO(TraverseOMPExecutableDirective(S)); })
 

@@ -5140,6 +5140,42 @@ static void handleOptimizeNoneAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
     D->addAttr(Optnone);
 }
 
+#ifdef OHOS_LLVM
+// 'optimize' attribute only accept string argument, just warning if invalid type
+static void handleOptimizeAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
+  if (!AL.checkAtLeastNumArgs(S, 1))
+    return;
+
+  SmallVector<OptimizeAttr::OptAttrKind, 8> OptAttrs;
+  for (unsigned ArgIndex = 0; ArgIndex < AL.getNumArgs(); ++ArgIndex) {
+    if (AL.isArgIdent(ArgIndex)) {
+      S.Diag(AL.getLoc(), diag::warn_invalid_optimize_attr_type) << AL;
+      return;
+    }
+
+    Expr *ArgExpr = AL.getArgAsExpr(ArgIndex);
+    SourceLocation Loc = ArgExpr->getBeginLoc();
+    const auto *Literal = dyn_cast<StringLiteral>(ArgExpr->IgnoreParenCasts());
+    if (!Literal) {
+      S.Diag(Loc, diag::warn_invalid_optimize_attr_type) << AL;
+      return;
+    }
+
+    StringRef OptAttrStr = Literal->getString();
+    OptimizeAttr::OptAttrKind OptAttr;
+    if (!OptimizeAttr::ConvertStrToOptAttrKind(OptAttrStr, OptAttr)) {
+      S.Diag(Loc, diag::warn_invalid_optimize_attr_argument) << AL << OptAttrStr;
+      return;
+    }
+
+    OptAttrs.push_back(OptAttr);
+  }
+
+  D->addAttr(::new (S.Context)
+                 OptimizeAttr(S.Context, AL, OptAttrs.data(), OptAttrs.size()));
+}
+#endif /* OHOS_LLVM */
+
 static void handleConstantAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
   const auto *VD = cast<VarDecl>(D);
   if (VD->hasLocalStorage()) {
@@ -7264,6 +7300,11 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
   case ParsedAttr::AT_OptimizeNone:
     handleOptimizeNoneAttr(S, D, AL);
     break;
+#ifdef OHOS_LLVM
+  case ParsedAttr::AT_Optimize:
+    handleOptimizeAttr(S, D, AL);
+    break;
+#endif /* OHOS_LLVM */
   case ParsedAttr::AT_EnumExtensibility:
     handleEnumExtensibilityAttr(S, D, AL);
     break;

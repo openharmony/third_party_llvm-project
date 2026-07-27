@@ -7546,6 +7546,12 @@ public:
 
   bool CheckCaseExpression(Expr *E);
 
+#ifdef OHOS_LLVM
+  // __builtin_hm_type_signature(type) / __builtin_hm_type_summary(type)
+  ExprResult ActOnHMTypeSig(SourceLocation OpLoc, UnaryExprOrTypeTrait ExprKind,
+                            ParsedType ParsedTy, SourceRange ArgRange);
+#endif /* OHOS_LLVM */
+
   //===------------------------- "Block" Extension ------------------------===//
 
   /// ActOnBlockStart - This callback is invoked when a block literal is

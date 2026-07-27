@@ -1889,6 +1889,31 @@ static void AddAttributesFromOMPAssumes(llvm::AttrBuilder &FuncAttrs,
                            llvm::join(Attrs.begin(), Attrs.end(), ","));
 }
 
+#ifdef OHOS_LLVM
+static void AddAttributesFromOptimize(llvm::AttrBuilder &FuncAttrs,
+                                        const Decl *Callee) {
+  if (!Callee)
+    return;
+
+  const OptimizeAttr *OptAttrObj = Callee->getAttr<OptimizeAttr>();
+  if (!OptAttrObj)
+    return;
+
+  for (const auto &OA : OptAttrObj->optAttrs()) {
+    switch (OA) {
+    case OptimizeAttr::OmitFramePointer:
+      FuncAttrs.addAttribute("OPT-omit-frame-pointer");
+      break;
+    case OptimizeAttr::NoOmitFramePointer:
+      FuncAttrs.addAttribute("OPT-no-omit-frame-pointer");
+      break;
+    default:
+      llvm_unreachable("invalid enum");
+    }
+  }
+}
+#endif /* OHOS_LLVM */
+
 bool CodeGenModule::MayDropFunctionReturn(const ASTContext &Context,
                                           QualType ReturnType) const {
   // We can't just discard the return value for a record type with a
@@ -1984,6 +2009,14 @@ static void getTrivialDefaultFunctionAttributes(
     if (!CodeGenOpts.TrapFuncName.empty())
       FuncAttrs.addAttribute("trap-func-name", CodeGenOpts.TrapFuncName);
   } else {
+#ifdef OHOS_LLVM
+    // optimize attr's priority is higher than command line args
+    if (FuncAttrs.contains("OPT-omit-frame-pointer"))
+      FuncAttrs.addAttribute("frame-pointer", "none");
+    else if (FuncAttrs.contains("OPT-no-omit-frame-pointer"))
+      FuncAttrs.addAttribute("frame-pointer", "all");
+    else
+#endif /* OHOS_LLVM */
     switch (CodeGenOpts.getFramePointer()) {
     case CodeGenOptions::FramePointerKind::None:
       // This is the default behavior.
@@ -2432,6 +2465,9 @@ void CodeGenModule::ConstructAttributeList(StringRef Name,
   // Attach assumption attributes to the declaration. If this is a call
   // site, attach assumptions from the caller to the call as well.
   AddAttributesFromOMPAssumes(FuncAttrs, TargetDecl);
+#ifdef OHOS_LLVM
+  AddAttributesFromOptimize(FuncAttrs, TargetDecl);
+#endif /* OHOS_LLVM */
 
   bool HasOptnone = false;
   // The NoBuiltinAttr attached to the target FunctionDecl.

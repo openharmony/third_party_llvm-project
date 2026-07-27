@@ -5045,7 +5045,12 @@ recurse:
   case Expr::AtomicExprClass:
   case Expr::SourceLocExprClass:
   case Expr::EmbedExprClass:
+#ifndef OHOS_LLVM
   case Expr::BuiltinBitCastExprClass: {
+#else /* OHOS_LLVM */
+  case Expr::BuiltinBitCastExprClass:
+  case Expr::HMTypeSigExprClass: {
+#endif /* OHOS_LLVM */
     NotPrimaryExpr();
     if (!NullOut) {
       // As bad as this diagnostic is, it's better than crashing.
@@ -5469,6 +5474,11 @@ recurse:
       Diags.Report(E->getExprLoc(), DiagID) << getTraitSpelling(SAE->getKind());
       return;
     }
+#ifdef OHOS_LLVM
+    case UETT_HMTypeSummary:
+    case UETT_HMTypeSignature:
+      return;
+#endif /* OHOS_LLVM */
     }
     break;
   }

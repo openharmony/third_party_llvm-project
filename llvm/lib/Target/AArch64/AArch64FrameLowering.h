@@ -15,7 +15,7 @@
 
 #include "llvm/CodeGen/MachineOptimizationRemarkEmitter.h"
 #ifdef OHOS_LLVM
-#include "AArch64StackProtectorRetLowering.h" // OHOS_LOCAL
+#include "AArch64StackProtectorRetLowering.h"
 #endif /* OHOS_LLVM */
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/Support/TypeSize.h"
@@ -28,7 +28,7 @@ namespace llvm {
 class AArch64FrameLowering : public TargetFrameLowering {
 public:
 #ifdef OHOS_LLVM
-  const AArch64StackProtectorRetLowering SPRL; // OHOS_LOCAL
+  const AArch64StackProtectorRetLowering SPRL;
 #endif /* OHOS_LLVM */
 
 #ifndef OHOS_LLVM
@@ -38,7 +38,7 @@ public:
 #else /* OHOS_LLVM */
   explicit AArch64FrameLowering()
       : TargetFrameLowering(StackGrowsDown, Align(16), 0, Align(16),
-                            true /*StackRealignable*/), SPRL() {} // OHOS_LOCAL
+                            true /*StackRealignable*/), SPRL() {}
 #endif /* OHOS_LLVM */
 
   void resetCFIToInitialState(MachineBasicBlock &MBB) const override;
@@ -69,7 +69,7 @@ public:
   bool enableFullCFIFixup(const MachineFunction &MF) const override;
 
 #ifdef OHOS_LLVM
-  const StackProtectorRetLowering *getStackProtectorRet() const override; // OHOS_LOCAL
+  const StackProtectorRetLowering *getStackProtectorRet() const override;
 #endif /* OHOS_LLVM */
 
   bool canUseAsPrologue(const MachineBasicBlock &MBB) const override;
@@ -105,6 +105,11 @@ public:
   }
 
   int getArkFrameAdaptationOffset(const MachineFunction &MF) const override;
+
+#if defined(ARK_GC_SUPPORT)
+  void adjustForArkFrame(MachineFunction &MF,
+                         MachineBasicBlock &PrologueMBB) const override;
+#endif
 #endif /* OHOS_LLVM */
 
   bool hasReservedCallFrame(const MachineFunction &MF) const override;

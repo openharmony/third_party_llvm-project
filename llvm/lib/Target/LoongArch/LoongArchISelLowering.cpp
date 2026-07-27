@@ -3048,8 +3048,14 @@ LoongArchTargetLowering::lowerGlobalTLSAddress(SDValue Op,
   GlobalAddressSDNode *N = cast<GlobalAddressSDNode>(Op);
   assert(N->getOffset() == 0 && "unexpected offset in global node");
 
+#ifndef OHOS_LLVM
   if (DAG.getTarget().useEmulatedTLS())
     reportFatalUsageError("the emulated TLS is prohibited");
+#else  /* OHOS_LLVM */
+  // OHOS defaults to emulated TLS via Triple::hasDefaultEmulatedTLS().
+  if (DAG.getTarget().useEmulatedTLS())
+    return LowerToTLSEmulatedModel(N, DAG);
+#endif /* OHOS_LLVM */
 
   bool IsDesc = DAG.getTarget().useTLSDESC();
 

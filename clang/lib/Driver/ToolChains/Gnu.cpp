@@ -2384,7 +2384,12 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
 
   static const char *const LoongArch64LibDirs[] = {"/lib64", "/lib"};
   static const char *const LoongArch64Triples[] = {
+#ifndef OHOS_LLVM
       "loongarch64-linux-gnu", "loongarch64-unknown-linux-gnu"};
+#else /* OHOS_LLVM */
+      "loongarch64-linux-gnu", "loongarch64-unknown-linux-gnu",
+      "loongarch64-linux-ohos"};
+#endif /* OHOS_LLVM */
 
   static const char *const M68kLibDirs[] = {"/lib"};
   static const char *const M68kTriples[] = {"m68k-unknown-linux-gnu",

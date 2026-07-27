@@ -170,6 +170,10 @@ class X86MachineFunctionInfo : public MachineFunctionInfo {
   SmallVector<size_t, 0> PreallocatedStackSizes;
   SmallVector<SmallVector<size_t, 4>, 0> PreallocatedArgOffsets;
 
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+  SmallVector<ArkArgInfo, 4> ArkArgInfos;
+#endif
+
   // True if a function clobbers FP/BP according to its calling convention.
   bool FPClobberedByCall = false;
   bool BPClobberedByCall = false;
@@ -346,6 +350,13 @@ public:
 
   bool getBPClobberedByInvoke() const { return BPClobberedByInvoke; }
   void setBPClobberedByInvoke(bool C) { BPClobberedByInvoke = C; }
+
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+  void addArkArgInfo(int64_t MemOffset, Register Reg, int32_t OriginIndex) {
+    ArkArgInfos.emplace_back(MemOffset, Reg, OriginIndex);
+  }
+  ArrayRef<ArkArgInfo> getArkArgInfos() const { return ArkArgInfos; }
+#endif
 };
 
 } // End llvm namespace

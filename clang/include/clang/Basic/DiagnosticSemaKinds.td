@@ -3315,6 +3315,14 @@ def err_attribute_too_many_arguments : Error<
   "%0 attribute takes no more than %1 argument%s1">;
 def err_attribute_too_few_arguments : Error<
   "%0 attribute takes at least %1 argument%s1">;
+#ifdef OHOS_LLVM
+def warn_invalid_optimize_attr_argument  : Warning <
+  "bad option '%1' to attribute %0; "
+  "attribute ignored">, InGroup<IgnoredAttributes>;
+def warn_invalid_optimize_attr_type : Warning <
+  "%0 attribute only support string argument; "
+  "attribute ignored">, InGroup<IgnoredAttributes>;
+#endif // OHOS_LLVM
 def err_attribute_invalid_vector_type : Error<"invalid vector element type %0">;
 def err_attribute_invalid_bitint_vector_type : Error<
   "'_BitInt' %select{vector|matrix}0 element width must be a power of 2">;

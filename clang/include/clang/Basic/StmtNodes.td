@@ -205,6 +205,9 @@ def OpaqueValueExpr : StmtNode<Expr>;
 def RecoveryExpr : StmtNode<Expr>;
 def BuiltinBitCastExpr : StmtNode<ExplicitCastExpr>;
 def EmbedExpr : StmtNode<Expr>;
+#ifdef OHOS_LLVM
+def HMTypeSigExpr : StmtNode<Expr>;
+#endif
 
 // Microsoft Extensions.
 def MSPropertyRefExpr : StmtNode<Expr>;

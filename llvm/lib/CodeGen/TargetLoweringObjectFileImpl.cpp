@@ -460,6 +460,11 @@ static SectionKind getELFKindForNamedSection(StringRef Name, SectionKind K) {
   //
   //   .section   .eh_frame,"a",@progbits
 
+#ifdef OHOS_LLVM
+  if (Name == "_hilog_")
+    return SectionKind::getMergeable1ByteCString();
+#endif /* OHOS_LLVM */
+
   if (Name == getInstrProfSectionName(IPSK_covmap, Triple::ELF,
                                       /*AddSegmentInfo=*/false) ||
       Name == getInstrProfSectionName(IPSK_covfun, Triple::ELF,

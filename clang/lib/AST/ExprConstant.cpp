@@ -2155,6 +2155,10 @@ static bool IsGlobalLValue(APValue::LValueBase B) {
     // constructor can produce a constant expression. We must assume that such
     // an expression might be a global lvalue.
     return true;
+#ifdef OHOS_LLVM
+  case Expr::HMTypeSigExprClass:
+    return true;
+#endif /* OHOS_LLVM */
   }
 }
 
@@ -9612,6 +9616,16 @@ public:
     return true;
   }
 
+#ifdef OHOS_LLVM
+  bool VisitHMTypeSigExpr(const HMTypeSigExpr *E) {
+    if (E->getKind() != UETT_HMTypeSignature)
+      return false;
+    APValue LValResult = E->EvaluateTypeSig(Info.Ctx);
+    Result.setFrom(Info.Ctx, LValResult);
+    return true;
+  }
+#endif /* OHOS_LLVM */
+
   // FIXME: Missing: @protocol, @selector
 };
 } // end anonymous namespace
@@ -12134,6 +12148,9 @@ public:
 
   bool VisitCastExpr(const CastExpr* E);
   bool VisitUnaryExprOrTypeTraitExpr(const UnaryExprOrTypeTraitExpr *E);
+#ifdef OHOS_LLVM
+  bool VisitHMTypeSigExpr(const HMTypeSigExpr *E);
+#endif /* OHOS_LLVM */
 
   bool VisitCXXBoolLiteralExpr(const CXXBoolLiteralExpr *E) {
     return Success(E->getValue(), E);
@@ -14997,10 +15014,25 @@ bool IntExprEvaluator::VisitUnaryExprOrTypeTraitExpr(
     Info.FFDiag(E->getBeginLoc());
     return false;
   }
+#ifdef OHOS_LLVM
+  case UETT_HMTypeSummary:
+  case UETT_HMTypeSignature:
+    return false;
+#endif /* OHOS_LLVM */
   }
 
   llvm_unreachable("unknown expr/type trait");
 }
+
+#ifdef OHOS_LLVM
+bool IntExprEvaluator::VisitHMTypeSigExpr(const HMTypeSigExpr *E) {
+  if (E->getKind() != UETT_HMTypeSummary) {
+    return false;
+  }
+  APValue LValResult = E->EvaluateTypeSig(Info.Ctx);
+  return Success(LValResult, E);
+}
+#endif /* OHOS_LLVM */
 
 bool IntExprEvaluator::VisitOffsetOfExpr(const OffsetOfExpr *OOE) {
   CharUnits Result;
@@ -17418,6 +17450,9 @@ static ICEDiag CheckICE(const Expr* E, const ASTContext &Ctx) {
   case Expr::ArrayTypeTraitExprClass:
   case Expr::ExpressionTraitExprClass:
   case Expr::CXXNoexceptExprClass:
+#ifdef OHOS_LLVM
+  case Expr::HMTypeSigExprClass:
+#endif /* OHOS_LLVM */
     return NoDiag();
   case Expr::CallExprClass:
   case Expr::CXXOperatorCallExprClass: {

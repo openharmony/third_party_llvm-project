@@ -6914,6 +6914,10 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
 
   Args.AddLastArg(CmdArgs, options::OPT_ftrap_function_EQ);
 
+#ifdef OHOS_LLVM
+  Args.AddLastArg(CmdArgs, options::OPT_fcfi_trap_function_EQ);
+#endif /* OHOS_LLVM */
+
   // Handle -f[no-]wrapv and -f[no-]strict-overflow, which are used by both
   // clang and flang.
   renderCommonIntegerOverflowOptions(Args, CmdArgs);

@@ -1200,8 +1200,15 @@ Parser::ParseCastExpression(CastParseKind ParseKind, bool isAddressOfOperand,
   case tok::kw___datasizeof:
   case tok::kw_vec_step:   // unary-expression: OpenCL 'vec_step' expression
   // unary-expression: '__builtin_omp_required_simd_align' '(' type-name ')'
+#ifndef OHOS_LLVM
   case tok::kw___builtin_omp_required_simd_align:
   case tok::kw___builtin_vectorelements:
+#else /* OHOS_LLVM */
+  case tok::kw___builtin_omp_required_simd_align:
+  case tok::kw___builtin_hm_type_summary:
+  case tok::kw___builtin_hm_type_signature:
+  case tok::kw___builtin_vectorelements:
+#endif /* OHOS_LLVM */
   case tok::kw__Countof:
     if (NotPrimaryExpression)
       *NotPrimaryExpression = true;
@@ -2050,12 +2057,23 @@ Parser::ParseExprAfterUnaryExprOrTypeTrait(const Token &OpTok,
                                            ParsedType &CastTy,
                                            SourceRange &CastRange) {
 
+#ifndef OHOS_LLVM
   assert(OpTok.isOneOf(tok::kw_typeof, tok::kw_typeof_unqual, tok::kw_sizeof,
                        tok::kw___datasizeof, tok::kw___alignof, tok::kw_alignof,
                        tok::kw__Alignof, tok::kw_vec_step,
                        tok::kw___builtin_omp_required_simd_align,
                        tok::kw___builtin_vectorelements, tok::kw__Countof) &&
          "Not a typeof/sizeof/alignof/vec_step expression!");
+#else /* OHOS_LLVM */
+  assert(OpTok.isOneOf(tok::kw_typeof, tok::kw_typeof_unqual, tok::kw_sizeof,
+                       tok::kw___datasizeof, tok::kw___alignof, tok::kw_alignof,
+                       tok::kw__Alignof, tok::kw_vec_step,
+                       tok::kw___builtin_omp_required_simd_align,
+                       tok::kw___builtin_hm_type_summary,
+                       tok::kw___builtin_hm_type_signature,
+                       tok::kw___builtin_vectorelements, tok::kw__Countof) &&
+         "Not a typeof/sizeof/alignof/vec_step expression!");
+#endif /* OHOS_LLVM */
 
   ExprResult Operand;
 
@@ -2063,8 +2081,15 @@ Parser::ParseExprAfterUnaryExprOrTypeTrait(const Token &OpTok,
   if (Tok.isNot(tok::l_paren)) {
     // If construct allows a form without parenthesis, user may forget to put
     // pathenthesis around type name.
+#ifndef OHOS_LLVM
     if (OpTok.isOneOf(tok::kw_sizeof, tok::kw___datasizeof, tok::kw___alignof,
                       tok::kw_alignof, tok::kw__Alignof)) {
+#else /* OHOS_LLVM */
+    if (OpTok.isOneOf(tok::kw_sizeof, tok::kw___datasizeof, tok::kw___alignof,
+                      tok::kw_alignof, tok::kw__Alignof,
+                      tok::kw___builtin_hm_type_summary,
+                      tok::kw___builtin_hm_type_signature)) {
+#endif /* OHOS_LLVM */
       if (isTypeIdUnambiguously()) {
         DeclSpec DS(AttrFactory);
         ParseSpecifierQualifierList(DS);
@@ -2186,11 +2211,21 @@ ExprResult Parser::ParseSYCLUniqueStableNameExpression() {
 }
 
 ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
+#ifndef OHOS_LLVM
   assert(Tok.isOneOf(tok::kw_sizeof, tok::kw___datasizeof, tok::kw___alignof,
                      tok::kw_alignof, tok::kw__Alignof, tok::kw_vec_step,
                      tok::kw___builtin_omp_required_simd_align,
                      tok::kw___builtin_vectorelements, tok::kw__Countof) &&
          "Not a sizeof/alignof/vec_step expression!");
+#else /* OHOS_LLVM */
+  assert(Tok.isOneOf(tok::kw_sizeof, tok::kw___datasizeof, tok::kw___alignof,
+                     tok::kw_alignof, tok::kw__Alignof, tok::kw_vec_step,
+                     tok::kw___builtin_omp_required_simd_align,
+                     tok::kw___builtin_hm_type_summary,
+                     tok::kw___builtin_hm_type_signature,
+                     tok::kw___builtin_vectorelements, tok::kw__Countof) &&
+         "Not a sizeof/alignof/vec_step expression!");
+#endif /* OHOS_LLVM */
   Token OpTok = Tok;
   ConsumeToken();
 
@@ -2288,10 +2323,25 @@ ExprResult Parser::ParseUnaryExprOrTypeTraitExpression() {
     if (!getLangOpts().C2y)
       Diag(OpTok, diag::ext_c2y_feature) << OpTok.getName();
     break;
+#ifdef OHOS_LLVM
+  case tok::kw___builtin_hm_type_summary:
+    ExprKind = UETT_HMTypeSummary;
+    break;
+  case tok::kw___builtin_hm_type_signature:
+    ExprKind = UETT_HMTypeSignature;
+    break;
+#endif /* OHOS_LLVM */
   default:
     break;
   }
 
+#ifdef OHOS_LLVM
+  if (isCastExpr && (OpTok.is(tok::kw___builtin_hm_type_summary) ||
+                     OpTok.is(tok::kw___builtin_hm_type_signature))) {
+    return Actions.ActOnHMTypeSig(OpTok.getLocation(), ExprKind, CastTy,
+                                  CastRange);
+  }
+#endif /* OHOS_LLVM */
   if (isCastExpr)
     return Actions.ActOnUnaryExprOrTypeTraitExpr(OpTok.getLocation(),
                                                  ExprKind,

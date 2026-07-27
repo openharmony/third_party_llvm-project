@@ -236,4 +236,10 @@ int TargetFrameLowering::GetFrameReserveSize(MachineFunction &MF) const
       .getAsInteger(10, marker);
     return marker;
 }
+
+const std::string TargetFrameLowering::TypeKey = "ark-frame-type";
+const std::string TargetFrameLowering::JSFuncIdxKey = "ark-jsfunc-arg-idx";
+const std::string TargetFrameLowering::TypeOffsetKey = TypeKey + "-offset";
+const std::string TargetFrameLowering::JSFuncIdxOffsetKey =
+    JSFuncIdxKey + "-offset";
 #endif

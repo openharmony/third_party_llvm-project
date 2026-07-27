@@ -703,6 +703,15 @@ public:
                                              SLE->getType());
   }
 
+#ifdef OHOS_LLVM
+  Value *VisitHMTypeSigExpr(HMTypeSigExpr *SLE) {
+    auto &Ctx = CGF.getContext();
+    APValue Evaluated = SLE->EvaluateTypeSig(Ctx);
+    return ConstantEmitter(CGF).emitAbstract(SLE->getBeginLoc(), Evaluated,
+                                             SLE->getType());
+  }
+#endif /* OHOS_LLVM */
+
   Value *VisitCXXDefaultArgExpr(CXXDefaultArgExpr *DAE) {
     CodeGenFunction::CXXDefaultArgExprScope Scope(CGF, DAE);
     return Visit(DAE->getExpr());

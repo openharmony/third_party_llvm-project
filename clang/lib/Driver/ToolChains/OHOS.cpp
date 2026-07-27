@@ -441,7 +441,9 @@ SanitizerMask OHOS::getSupportedSanitizers() const {
   // OHOS_LOCAL
   if (IsAArch64)
     Res |= SanitizerKind::HWAddress;
-  if (Arch == llvm::Triple::aarch64 || IsX86_64)
+  // OHOS_LOCAL: enable TSAN on LoongArch64 (with aarch64/x86_64).
+  if (Arch == llvm::Triple::aarch64 || IsX86_64 ||
+      Arch == llvm::Triple::loongarch64)
     Res |= SanitizerKind::Thread;
 #else /* OHOS_LLVM */
   // TODO: kASAN for liteos ??

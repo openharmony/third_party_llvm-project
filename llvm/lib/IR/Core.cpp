@@ -4319,7 +4319,7 @@ LLVMValueRef LLVMBuildCall3(LLVMBuilderRef B, LLVMTypeRef Ty, LLVMValueRef Fn,
   OperandBundleDefT<Value *> deoptBundle("deopt", vals);
 
   return wrap(unwrap(B)->CreateCall(FTy, unwrap(Fn),
-                                    makeArrayRef(unwrap(Args), NumArgs), // Args
+                                    ArrayRef(unwrap(Args), NumArgs), // Args
                                     {deoptBundle}, // ArrayRef<OperandBundleDef>
                                     Name));
 }

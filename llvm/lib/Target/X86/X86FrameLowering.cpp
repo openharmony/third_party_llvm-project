@@ -4420,6 +4420,72 @@ int X86FrameLowering::getOffsetOfLocalArea(CallingConv::ID CC) const {
   return CC == CallingConv::ArkInt ? 0
                                    : TargetFrameLowering::getOffsetOfLocalArea();
 }
+
+#if defined(ARK_GC_SUPPORT)
+namespace {
+int64_t getStringAttrToInt(const Function &F, const StringRef Key) {
+  int64_t Value = 0;
+  bool Res = F.getFnAttribute(Key).getValueAsString().getAsInteger(10, Value);
+  assert(!Res && "Can get attribute to int");
+  return Value;
+}
+} // namespace
+
+void X86FrameLowering::adjustForArkFrame(MachineFunction &MF,
+                                         MachineBasicBlock &PrologueMBB) const {
+  const auto &F = MF.getFunction();
+  const X86MachineFunctionInfo *FuncInfo = MF.getInfo<X86MachineFunctionInfo>();
+  assert(Uses64BitFramePtr && "only support 64Bit Frame Pointer");
+  const int64_t FPSlot = hasFP(MF) ? 8 : 0;
+  auto InsertPos = PrologueMBB.begin();
+  auto DL = InsertPos->getDebugLoc();
+  if (F.hasFnAttribute(TypeKey)) {
+    assert(F.hasFnAttribute(TypeOffsetKey) && "missing ark-frame-type-offset");
+    const int64_t ArkFrameType = getStringAttrToInt(F, TypeKey);
+    const int64_t FrameTypeOffset = getStringAttrToInt(F, TypeOffsetKey);
+    // movq  $ArkFrameType, (-FPSlot - FrameTypeOffset)(%rsp)
+    addRegOffset(BuildMI(PrologueMBB, InsertPos, InsertPos->getDebugLoc(),
+                         TII.get(X86::MOV64mi32)),
+                 StackPtr, false, -FPSlot - FrameTypeOffset)
+        .addImm(ArkFrameType);
+  }
+  if (F.hasFnAttribute(JSFuncIdxKey)) {
+    assert(F.hasFnAttribute(JSFuncIdxOffsetKey) &&
+           "missing ark-jsfunc-arg-idx-offset");
+
+    const int64_t JSFuncIdx = getStringAttrToInt(F, JSFuncIdxKey);
+    const int64_t JSFuncOffset = getStringAttrToInt(F, JSFuncIdxOffsetKey);
+
+    using ArkArgInfo = MachineFunctionInfo::ArkArgInfo;
+    ArrayRef<ArkArgInfo> Args = FuncInfo->getArkArgInfos();
+    auto JSFuncArgIt =
+        llvm::find_if(Args, [JSFuncIdx](const ArkArgInfo &Arg) {
+          return Arg.OriginIndex == JSFuncIdx;
+        });
+    assert(JSFuncArgIt != Args.end() && "missing jsfunc arg info");
+    const ArkArgInfo &JSFuncArg = *JSFuncArgIt;
+
+    Register ScratchJSFuncReg;
+    unsigned Flags = 0;
+    if (JSFuncArg.Reg != MCRegister::NoRegister) {
+      // ScratchJSFuncReg is the JSFuncIdx arg register.
+      ScratchJSFuncReg = JSFuncArg.Reg;
+    } else {
+      // mov (retaddrsize + JSFuncArg.MemOffset)(%rsp),%ScratchJSFuncReg
+      constexpr int Retaddrsize = 8;
+      ScratchJSFuncReg = GetScratchRegister(Is64Bit, IsLP64, MF, true);
+      addRegOffset(BuildMI(PrologueMBB, InsertPos, DL, TII.get(X86::MOV64rm),
+                           ScratchJSFuncReg),
+                   StackPtr, false, Retaddrsize + JSFuncArg.MemOffset);
+      Flags = RegState::Kill;
+    }
+    // mov  %ScratchJSFuncReg,(-FPSlot - JSFuncOffset)(%rsp)
+    addRegOffset(BuildMI(PrologueMBB, InsertPos, DL, TII.get(X86::MOV64mr)),
+                 StackPtr, false, -FPSlot - JSFuncOffset)
+        .addReg(ScratchJSFuncReg, Flags);
+  }
+}
+#endif /* ARK_GC_SUPPORT */
 #endif /* OHOS_LLVM */
 
 // Compute the alignment gap between current SP after spilling FP/BP and the

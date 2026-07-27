@@ -2864,6 +2864,22 @@ bool CodeGenModule::GetCPUAndFeaturesAttributes(GlobalDecl GD,
     llvm::StringMap<bool> FeatureMap;
     getContext().getFunctionFeatureMap(FeatureMap, GD);
 
+#ifdef OHOS_LLVM
+    auto TargetArch = getContext().getTargetInfo().getTriple().getArch();
+    // Enable aarch64 target attribute: general-regs-only
+    if (TargetArch == llvm::Triple::aarch64 ||
+        TargetArch == llvm::Triple::aarch64_be) {
+      auto EntryIt = FeatureMap.find("general-regs-only");
+      if (EntryIt != FeatureMap.end() && EntryIt->getValue()) {
+        FeatureMap["neon"] = false;
+        FeatureMap["crypto"] = false;
+        FeatureMap["fp-armv8"] = false;
+        FeatureMap["sve"] = false;
+        FeatureMap.erase("general-regs-only");
+      }
+    }
+#endif /* OHOS_LLVM */
+
     // Produce the canonical string for this set of features.
     for (const llvm::StringMap<bool>::value_type &Entry : FeatureMap)
       Features.push_back((Entry.getValue() ? "+" : "-") + Entry.getKey().str());
@@ -2982,8 +2998,17 @@ void CodeGenModule::setNonAliasAttributes(GlobalDecl GD,
 
     if (const auto *CSA = D->getAttr<CodeSegAttr>())
       GO->setSection(CSA->getName());
+#ifndef OHOS_LLVM
     else if (const auto *SA = D->getAttr<SectionAttr>())
       GO->setSection(SA->getName());
+#else /* OHOS_LLVM */
+    else if (const auto *SA = D->getAttr<SectionAttr>()) {
+      GO->setSection(SA->getName());
+      if ("_hilog_" == SA->getName())
+        cast<llvm::GlobalVariable>(GO)->setUnnamedAddr(
+            llvm::GlobalValue::UnnamedAddr::Global);
+    }
+#endif /* OHOS_LLVM */
   }
 
   getTargetCodeGenInfo().setTargetAttributes(D, GO, *this);

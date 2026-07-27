@@ -1404,6 +1404,9 @@ CanThrowResult Sema::canThrow(const Stmt *S) {
   case Expr::EmbedExprClass:
   case Expr::ConceptSpecializationExprClass:
   case Expr::RequiresExprClass:
+#ifdef OHOS_LLVM
+  case Expr::HMTypeSigExprClass:
+#endif /* OHOS_LLVM */
   case Expr::HLSLOutArgExprClass:
   case Stmt::OpenACCEnterDataConstructClass:
   case Stmt::OpenACCExitDataConstructClass:

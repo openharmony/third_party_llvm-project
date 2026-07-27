@@ -14137,6 +14137,13 @@ ExprResult TreeTransform<Derived>::TransformSourceLocExpr(SourceLocExpr *E) {
                                            getSema().CurContext);
 }
 
+#ifdef OHOS_LLVM
+template <typename Derived>
+ExprResult TreeTransform<Derived>::TransformHMTypeSigExpr(HMTypeSigExpr *E) {
+  return E;
+}
+#endif /* OHOS_LLVM */
+
 template <typename Derived>
 ExprResult TreeTransform<Derived>::TransformEmbedExpr(EmbedExpr *E) {
   return E;

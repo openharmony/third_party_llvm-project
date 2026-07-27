@@ -117,6 +117,11 @@ public:
   }
 
   int getArkFrameAdaptationOffset(const MachineFunction &MF) const override;
+
+#if defined(ARK_GC_SUPPORT)
+  void adjustForArkFrame(MachineFunction &MF,
+                         MachineBasicBlock &PrologueMBB) const override;
+#endif
 #endif /* OHOS_LLVM */
 
   bool hasReservedCallFrame(const MachineFunction &MF) const override;
