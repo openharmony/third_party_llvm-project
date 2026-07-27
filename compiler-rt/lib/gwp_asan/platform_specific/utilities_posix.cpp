@@ -14,6 +14,7 @@
 
 #if defined(OHOS_LLVM) && defined(__OHOS__)
 #include "gwp_asan/optional/printf.h"
+#include "gwp_asan/guarded_pool_allocator.h" // MUSL_LOG
 #endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
 #ifdef __BIONIC__
@@ -56,8 +57,10 @@ void dieWithErrorCode(const char *Message, int64_t ErrorCode) {
 #else  // __BIONIC__
 #if defined(OHOS_LLVM) && defined(__OHOS__)
   // Symmetric with die(): FaultLogger via Printf before trap.
+  MUSL_LOG("[gwp_asan] ErrMsg: %{public}s, Errno: %{public}d\n", Message,
+    static_cast<int>(ErrorCode));
   Printf("GWP-ASan has a check error\n");
-  Printf("%s (Error Code: %" PRId64 ")\n", Message, ErrorCode);
+  Printf("ErrMsg: %s, Errno: %d\n", Message, static_cast<int>(ErrorCode));
   Printf("*** End GWP-ASan report ***\n");
 #endif // defined(OHOS_LLVM) && defined(__OHOS__)
   fprintf(stderr, "%s (Error Code: %" PRId64 ")", Message, ErrorCode);
