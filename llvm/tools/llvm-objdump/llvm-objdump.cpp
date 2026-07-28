@@ -16,6 +16,12 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm-objdump.h"
+#ifdef OHOS_LLVM
+#include "AArch64BackwardSlicer.h"
+#include "AArch64CrashSnapshot.h"
+#include "DWARFLocator.h"
+#include "ValueEvaluator.h"
+#endif // OHOS_LLVM
 #include "COFFDump.h"
 #include "ELFDump.h"
 #include "MachODump.h"
@@ -31,6 +37,9 @@
 #include "llvm/BinaryFormat/Wasm.h"
 #include "llvm/DebugInfo/BTF/BTFParser.h"
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
+#ifdef OHOS_LLVM
+#include "llvm/DebugInfo/DWARF/DWARFCompileUnit.h"
+#endif // OHOS_LLVM
 #include "llvm/DebugInfo/Symbolize/Symbolize.h"
 #include "llvm/Debuginfod/BuildIDFetcher.h"
 #include "llvm/Debuginfod/Debuginfod.h"
@@ -357,6 +366,12 @@ StringSet<> objdump::FoundSectionSet;
 static StringRef ToolName;
 
 std::unique_ptr<BuildIDFetcher> BIDFetcher;
+
+#ifdef OHOS_LLVM
+// HWASAN crash snapshot analysis (--crash-snapshot=)
+static std::string CrashSnapshotPath;
+static std::unique_ptr<crash_analyzer::CrashSnapshotManager> CrashManager;
+#endif // OHOS_LLVM
 
 Dumper::Dumper(const object::ObjectFile &O) : O(O), OS(outs()) {
   WarningHandler = [this](const Twine &Msg) {
@@ -1705,6 +1720,133 @@ fetchBinaryByBuildID(const ObjectFile &Obj) {
   return std::move(*DebugBinary);
 }
 
+#ifdef OHOS_LLVM
+// Hex Build ID matching HWASan log format (lowercase).
+static std::string extractBuildIDHex(const ObjectFile &Obj) {
+  object::BuildIDRef BuildID = getBuildID(&Obj);
+  if (BuildID.empty())
+    return "";
+  return toHex(BuildID, /*LowerCase=*/true);
+}
+
+// Disassemble the function containing TargetPC and evaluate DWARF variables.
+static bool fastDisassembleCrashTarget(
+    ObjectFile &Obj, MCDisassembler *PrimaryDisAsm, MCInstPrinter *IP,
+    const MCSubtargetInfo *PrimarySTI, const MCRegisterInfo *MRI,
+    const MCInstrInfo *MII, std::string RunningPC, uint64_t TargetPC,
+    bool IsCrashPC) {
+
+  StringRef ObjName = sys::path::filename(Obj.getFileName());
+  outs() << "Targeting PC: 0x" << Twine::utohexstr(TargetPC) << " in "
+         << ObjName << " ==========\n";
+
+  std::unique_ptr<DWARFContext> DICtx = DWARFContext::create(Obj);
+  DWARFCompileUnit *CU = DICtx->getCompileUnitForCodeAddress(TargetPC);
+
+  if (!CU) {
+    outs() << "Failed to locate Compile Unit. Debug info might missed.\n";
+    return false;
+  }
+
+  DWARFDie FuncDIE = CU->getSubroutineForAddress(TargetPC);
+  uint64_t LowPC, HighPC, SectionIndex;
+
+  if (!FuncDIE.isValid() ||
+      !FuncDIE.getLowAndHighPC(LowPC, HighPC, SectionIndex)) {
+    outs() << "Failed to retrieve function boundaries.\n";
+    return false;
+  }
+
+  outs() << "Target function bounds locked: 0x" << Twine::utohexstr(LowPC)
+         << " - 0x" << Twine::utohexstr(HighPC) << "\n";
+
+  for (const SectionRef &Section : Obj.sections()) {
+    uint64_t SecAddr = Section.getAddress();
+    uint64_t SecSize = Section.getSize();
+
+    if (SecAddr <= LowPC && HighPC <= SecAddr + SecSize) {
+      Expected<StringRef> ExpectedBytes = Section.getContents();
+      if (!ExpectedBytes)
+        continue;
+
+      StringRef BytesStr = *ExpectedBytes;
+      ArrayRef<uint8_t> SecBytes(
+          reinterpret_cast<const uint8_t *>(BytesStr.data()), BytesStr.size());
+      ArrayRef<uint8_t> FuncBytes =
+          SecBytes.slice(LowPC - SecAddr, HighPC - LowPC);
+
+      std::vector<crash_analyzer::evaluator::SimplifiedInst>
+          CurrentFunctionInsts;
+
+      uint64_t CurrentPC = LowPC;
+      uint64_t Index = 0;
+
+      while (Index < FuncBytes.size()) {
+        MCInst Inst;
+        uint64_t InstSize;
+
+        if (PrimaryDisAsm->getInstruction(Inst, InstSize,
+                                          FuncBytes.slice(Index), CurrentPC,
+                                          nulls())) {
+
+          crash_analyzer::evaluator::SimplifiedInst SI;
+          SI.Address = CurrentPC;
+          SI.Inst = Inst;
+
+          CurrentFunctionInsts.push_back(SI);
+
+          outs() << format_hex(CurrentPC, 10) << ":\t";
+          IP->printInst(&Inst, CurrentPC, "", *PrimarySTI, outs());
+          outs() << "\n";
+
+          if (CurrentPC == TargetPC) {
+            outs() << "<result> \n";
+            if (IsCrashPC) {
+              outs() << "<--- [CRASH ROOT CAUSE HERE]\n";
+              outs() << "<--- RUNNING PC: 0x" << RunningPC << "\n";
+              outs() << "DWARF Active Variables:\n";
+            } else {
+              outs() << "<--- [HISTORICAL CALL SITE]\n";
+              outs() << "<--- RUNNING PC: 0x" << RunningPC << "\n";
+              outs() << "DWARF Active Variables (Historical):\n";
+            }
+
+            if (CrashManager) {
+              auto ThreadCtx = CrashManager->getCrashedThreadContext();
+
+              crash_analyzer::evaluator::AArch64BackwardSlicer ArchSlicer(MRI,
+                                                                          MII);
+
+              crash_analyzer::DWARFVariableLocator::locateVariablesAtCrashPC(
+                  *DICtx, CurrentPC, CurrentFunctionInsts, ThreadCtx, IsCrashPC,
+                  &ArchSlicer);
+
+              if (IsCrashPC) {
+                outs() << "Register Snapshot:\n";
+                if (auto Sp = ThreadCtx->getCleanSP())
+                  outs() << "\t\t    SP = 0x" << Twine::utohexstr(*Sp) << "\n";
+                if (auto Fp = ThreadCtx->getRegister(29))
+                  outs() << "\t\t    FP = 0x" << Twine::utohexstr(*Fp) << "\n";
+              }
+            }
+            outs() << "</result> \n";
+          }
+
+          CurrentPC += InstSize;
+          Index += InstSize;
+        } else {
+          outs() << format_hex(CurrentPC, 10) << ":\t<unknown>\n";
+          Index += 4;
+          CurrentPC += 4;
+        }
+      }
+      return true;
+    }
+  }
+  return false;
+}
+#endif // OHOS_LLVM
+
 static void
 disassembleObject(ObjectFile &Obj, const ObjectFile &DbgObj,
                   DisassemblerTarget &PrimaryTarget,
@@ -1737,6 +1879,82 @@ disassembleObject(ObjectFile &Obj, const ObjectFile &DbgObj,
       }
     }
   }
+
+#ifdef OHOS_LLVM
+  if (CrashManager) {
+    Triple::ArchType Arch = Obj.getArch();
+    if (Arch != Triple::aarch64 && Arch != Triple::aarch64_be &&
+        Arch != Triple::aarch64_32) {
+      errs() << "Error: Crash analysis currently only supports AArch64 "
+                "architecture.\n";
+      return;
+    }
+
+    const MCRegisterInfo *MRI = PrimaryTarget.Context->getRegisterInfo();
+    std::unique_ptr<MCInstrInfo> MII(PrimaryTarget.TheTarget->createMCInstrInfo());
+    MCDisassembler *PrimaryDisAsm = PrimaryTarget.DisAsm.get();
+    MCInstPrinter *IP = PrimaryTarget.InstPrinter.get();
+    const MCSubtargetInfo *PrimarySTI = PrimaryTarget.SubtargetInfo.get();
+
+    StringRef CurrentObjName = sys::path::filename(Obj.getFileName());
+    outs() << "\t\t CurrentObjName is: " << CurrentObjName << "\n";
+    auto ThreadCtx = CrashManager->getCrashedThreadContext();
+
+    std::string CurrentObjBuildID = extractBuildIDHex(Obj);
+    if (!CurrentObjBuildID.empty()) {
+      outs() << "\t\t CurrentObjBuildID is: " << CurrentObjBuildID << "\n";
+    }
+
+    if (ThreadCtx) {
+      auto &Frames = ThreadCtx->getFrames();
+      if (!Frames.empty()) {
+        bool GetCrashPC = false;
+        for (auto &Frame : Frames) {
+          StringRef FrameModuleName =
+              sys::path::filename(Frame.getModuleName());
+          std::string CurrentRunningPC = utohexstr(Frame.getRuntimePC());
+          outs() << "\t\t FrameModuleName is: " << FrameModuleName << "\n";
+          outs() << "\t\t Current Running PC is: " << CurrentRunningPC << "\n";
+          bool IsModuleMatch = false;
+          std::string FrameBuildID = Frame.getBuildID();
+
+          if (FrameBuildID.empty() || CurrentObjBuildID.empty()) {
+            errs() << "warning: buildid does not exist, please ensure "
+                      "the module input is correct.\n";
+
+            if (FrameModuleName == CurrentObjName) {
+              IsModuleMatch = true;
+            } else if (FrameModuleName.contains(CurrentObjName) ||
+                       CurrentObjName.contains(FrameModuleName)) {
+              IsModuleMatch = true;
+            }
+          } else if (FrameBuildID == CurrentObjBuildID) {
+            IsModuleMatch = true;
+          }
+
+          if (IsModuleMatch) {
+            if (Frame.getFrameIndex() == 0) {
+              uint64_t TargetCrashPC = Frame.getStaticPC();
+              if (fastDisassembleCrashTarget(
+                      Obj, PrimaryDisAsm, IP, PrimarySTI, MRI, MII.get(),
+                      CurrentRunningPC, TargetCrashPC, true)) {
+                GetCrashPC = true;
+              }
+            } else {
+              if (fastDisassembleCrashTarget(
+                      Obj, PrimaryDisAsm, IP, PrimarySTI, MRI, MII.get(),
+                      CurrentRunningPC, Frame.getStaticPC() - 4, false)) {
+                GetCrashPC = true;
+              }
+            }
+          }
+        }
+        if (GetCrashPC)
+          return;
+      }
+    }
+  }
+#endif // OHOS_LLVM
 
   std::map<SectionRef, std::vector<RelocationRef>> RelocMap;
   if (InlineRelocs || Obj.isXCOFF())
@@ -3694,6 +3912,22 @@ static void parseObjdumpOptions(const llvm::opt::InputArgList &InputArgs) {
     }
     InputFilenames.push_back(std::move(*Path));
   }
+
+#ifdef OHOS_LLVM
+  // The --crash-snapshot option is disabled by default
+  if (InputArgs.hasArg(OBJDUMP_crash_snapshot_EQ)) {
+    CrashSnapshotPath =
+        InputArgs.getLastArgValue(OBJDUMP_crash_snapshot_EQ).str();
+    if (CrashSnapshotPath.empty()) {
+      errs() << "error: --crash-snapshot requires non-empty path\n";
+    } else {
+      CrashManager = std::make_unique<crash_analyzer::CrashSnapshotManager>();
+      if (!CrashManager->loadFromLogAndDump(CrashSnapshotPath)) {
+        CrashManager.reset();
+      }
+    }
+  }
+#endif // OHOS_LLVM
 
   // objdump defaults to a.out if no filenames specified.
   if (InputFilenames.empty())
