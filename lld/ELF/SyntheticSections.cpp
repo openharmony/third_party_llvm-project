@@ -392,6 +392,20 @@ void BuildIdSection::writeBuildId(ArrayRef<uint8_t> buf) {
   memcpy(hashBuf, buf.data(), hashSize);
 }
 
+#ifdef OHOS_LLVM
+CodeSignSection::CodeSignSection(Ctx &ctx)
+    : SyntheticSection(ctx, ".codesign", SHT_PROGBITS, 0, 4096) {}
+
+void CodeSignSection::writeTo(uint8_t *buf) {
+  memset(buf, 0x0, getSize());
+  hashBuf = buf;
+}
+
+void CodeSignSection::writeCodeSignSection(uint8_t *buf, size_t size) {
+  memcpy(hashBuf, buf, size);
+}
+#endif /* OHOS_LLVM */
+
 BssSection::BssSection(Ctx &ctx, StringRef name, uint64_t size,
                        uint32_t alignment)
     : SyntheticSection(ctx, name, SHT_NOBITS, SHF_ALLOC | SHF_WRITE,
@@ -5085,6 +5099,13 @@ template <class ELFT> void elf::createSyntheticSections(Ctx &ctx) {
     add(*ctx.in.shStrTab);
   if (ctx.in.strTab)
     add(*ctx.in.strTab);
+
+#ifdef OHOS_LLVM
+  if (ctx.arg.codeSign) {
+    ctx.in.codesign = std::make_unique<CodeSignSection>(ctx);
+    add(*ctx.in.codesign);
+  }
+#endif /* OHOS_LLVM */
 }
 
 template void elf::splitSections<ELF32LE>(Ctx &);

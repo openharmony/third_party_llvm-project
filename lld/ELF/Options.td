@@ -67,6 +67,12 @@ defm check_sections: B<"check-sections",
     "Check section addresses for overlaps (default)",
     "Do not check section addresses for overlaps">;
 
+#ifdef OHOS_LLVM
+defm code_sign: B<"code-sign",
+    "Code self sign when enable",
+    "Do not code self sign (default)">;
+#endif /* OHOS_LLVM */
+
 defm compress_debug_sections:
   Eq<"compress-debug-sections", "Compress DWARF debug sections">,
   MetaVarName<"[none,zlib,zstd]">;
