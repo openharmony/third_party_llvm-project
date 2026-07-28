@@ -148,7 +148,8 @@ void CodeSign::generateHashData(ArrayRef<uint8_t> inputBuffer,
     // Generate the buffer portion of upper-level hash data from lower-level
     // hash or original data.
     auto generateHashBuffer =
-        outputBuffer.slice(offsetArrays[i], offsetArrays[i + 1]);
+        outputBuffer.slice(offsetArrays[i],
+                           offsetArrays[i + 1] - offsetArrays[i]);
 
     // Determine the input for this level:
     // - For the bottom level (i == lastIndex), use the original input data
@@ -156,7 +157,8 @@ void CodeSign::generateHashData(ArrayRef<uint8_t> inputBuffer,
     ArrayRef<uint8_t> originalHashBuffer =
         (i == lastIndex)
             ? inputBuffer
-            : outputBuffer.slice(offsetArrays[i + 1], offsetArrays[i + 2]);
+            : outputBuffer.slice(offsetArrays[i + 1],
+                                 offsetArrays[i + 2] - offsetArrays[i + 1]);
 
     size_t size = originalHashBuffer.size();
 
