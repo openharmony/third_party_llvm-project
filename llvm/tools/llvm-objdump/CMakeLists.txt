@@ -66,8 +66,10 @@ if(OHOS_LLVM)
     )
 
   set(CRASH_CONFIG_FILE "${CMAKE_CURRENT_SOURCE_DIR}/crash_log_config.json")
+  # Install next to clang resources under share/clang; runtime also
+  # falls back to the POST_BUILD copy beside the llvm-objdump binary.
   install(FILES ${CRASH_CONFIG_FILE}
-          DESTINATION "${CMAKE_INSTALL_BINDIR}"
+          DESTINATION share/clang
           PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
           COMPONENT llvm-objdump)
   add_custom_command(TARGET llvm-objdump POST_BUILD
