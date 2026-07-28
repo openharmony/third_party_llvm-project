@@ -36,6 +36,10 @@ private:
   /// insertIndirectBranch.
   int BranchRelaxationSpillFrameIndex = -1;
 
+#ifdef OHOS_LLVM
+  int FPOffsetAdjustment = 0;
+#endif /* OHOS_LLVM */
+
   /// Registers that have been sign extended from i32.
   SmallVector<Register, 8> SExt32Registers;
 
@@ -69,6 +73,11 @@ public:
   void setBranchRelaxationSpillFrameIndex(int Index) {
     BranchRelaxationSpillFrameIndex = Index;
   }
+
+#ifdef OHOS_LLVM
+  int getFPOffsetAdjustment() const { return FPOffsetAdjustment; }
+  void setFPOffsetAdjustment(int Adj) { FPOffsetAdjustment = Adj; }
+#endif /* OHOS_LLVM */
 
   void addSExt32Register(Register Reg) { SExt32Registers.push_back(Reg); }
 

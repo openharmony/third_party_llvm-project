@@ -43,6 +43,7 @@ protected:
     State.GuardedPagePoolEnd = 0xc000;
     InternalFaultAddr = State.GuardedPagePoolEnd - 0x10;
     State.MaxSimultaneousAllocations = 4; // 0x3000, 0x5000, 0x7000, 0x9000.
+    // OHOS_LOCAL: FIXME: loongarch is 16k.
     State.PageSize = 0x1000;
   }
 

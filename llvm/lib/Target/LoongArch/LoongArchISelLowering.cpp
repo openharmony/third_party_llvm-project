@@ -6634,6 +6634,12 @@ const char *LoongArchTargetLowering::getTargetNodeName(unsigned Opcode) const {
 //                     Calling Convention Implementation
 //===----------------------------------------------------------------------===//
 
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+// TableGen provides definitions of the calling convention analysis entry
+// points.
+#include "LoongArchGenCallingConv.inc"
+#endif
+
 // Eight general-purpose registers a0-a7 used for passing integer arguments,
 // with a0-a1 reused to return values. Generally, the GPRs are used to pass
 // fixed-point arguments, and floating-point arguments when no FPR is available
@@ -7046,12 +7052,21 @@ static bool CC_LoongArch_GHC(unsigned ValNo, MVT ValVT, MVT LocVT,
                              CCValAssign::LocInfo LocInfo,
                              ISD::ArgFlagsTy ArgFlags, CCState &State) {
   if (LocVT == MVT::i32 || LocVT == MVT::i64) {
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+    // Pass in STG registers: Base, Sp, Hp, R1, R2, R3, R4, R5, SpLim
+    //                        s0    fp  s1  s2  s3  s4  s5  s6  s7  s8
+    static const MCPhysReg GPRList[] = {
+        LoongArch::R23, LoongArch::R22, LoongArch::R24, LoongArch::R25,
+        LoongArch::R26, LoongArch::R27, LoongArch::R28, LoongArch::R29,
+        LoongArch::R30, LoongArch::R31};
+#else
     // Pass in STG registers: Base, Sp, Hp, R1, R2, R3, R4, R5, SpLim
     //                        s0    s1  s2  s3  s4  s5  s6  s7  s8
     static const MCPhysReg GPRList[] = {
         LoongArch::R23, LoongArch::R24, LoongArch::R25,
         LoongArch::R26, LoongArch::R27, LoongArch::R28,
         LoongArch::R29, LoongArch::R30, LoongArch::R31};
+#endif
     if (MCRegister Reg = State.AllocateReg(GPRList)) {
       State.addLoc(CCValAssign::getReg(ValNo, ValVT, Reg, LocVT, LocInfo));
       return false;
@@ -7103,6 +7118,15 @@ SDValue LoongArchTargetLowering::LowerFormalArguments(
         !MF.getSubtarget().hasFeature(LoongArch::FeatureBasicD))
       report_fatal_error(
           "GHC calling convention requires the F and D extensions");
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+    break;
+  case CallingConv::WebKit_JS:
+    if (!MF.getSubtarget().hasFeature(LoongArch::FeatureBasicF) ||
+        !MF.getSubtarget().hasFeature(LoongArch::FeatureBasicD))
+      report_fatal_error(
+          "WebKit_JS calling convention requires the F and D extensions");
+    break;
+#endif
   }
 
   EVT PtrVT = getPointerTy(DAG.getDataLayout());
@@ -7115,10 +7139,21 @@ SDValue LoongArchTargetLowering::LowerFormalArguments(
   SmallVector<CCValAssign> ArgLocs;
   CCState CCInfo(CallConv, IsVarArg, MF, ArgLocs, *DAG.getContext());
 
+#ifndef OHOS_LLVM
   if (CallConv == CallingConv::GHC)
     CCInfo.AnalyzeFormalArguments(Ins, CC_LoongArch_GHC);
   else
     analyzeInputArgs(MF, CCInfo, Ins, /*IsRet=*/false, CC_LoongArch);
+#else /* OHOS_LLVM */
+  if (CallConv == CallingConv::GHC)
+    CCInfo.AnalyzeFormalArguments(Ins, CC_LoongArch_GHC);
+#if defined(ARK_GC_SUPPORT)
+  else if (CallConv == CallingConv::WebKit_JS)
+    CCInfo.AnalyzeFormalArguments(Ins, CC_LoongArch_WebKit_JS);
+#endif /* ARK_GC_SUPPORT */
+  else
+    analyzeInputArgs(MF, CCInfo, Ins, /*IsRet=*/false, CC_LoongArch);
+#endif /* OHOS_LLVM */
 
   for (unsigned i = 0, e = ArgLocs.size(), InsIdx = 0; i != e; ++i, ++InsIdx) {
     CCValAssign &VA = ArgLocs[i];
@@ -7329,10 +7364,21 @@ LoongArchTargetLowering::LowerCall(CallLoweringInfo &CLI,
   SmallVector<CCValAssign> ArgLocs;
   CCState ArgCCInfo(CallConv, IsVarArg, MF, ArgLocs, *DAG.getContext());
 
+#ifndef OHOS_LLVM
   if (CallConv == CallingConv::GHC)
     ArgCCInfo.AnalyzeCallOperands(Outs, CC_LoongArch_GHC);
   else
     analyzeOutputArgs(MF, ArgCCInfo, Outs, /*IsRet=*/false, &CLI, CC_LoongArch);
+#else /* OHOS_LLVM */
+  if (CallConv == CallingConv::GHC)
+    ArgCCInfo.AnalyzeCallOperands(Outs, CC_LoongArch_GHC);
+#if defined(ARK_GC_SUPPORT)
+  else if (CallConv == CallingConv::WebKit_JS)
+    ArgCCInfo.AnalyzeCallOperands(Outs, CC_LoongArch_WebKit_JS);
+#endif /* ARK_GC_SUPPORT */
+  else
+    analyzeOutputArgs(MF, ArgCCInfo, Outs, /*IsRet=*/false, &CLI, CC_LoongArch);
+#endif /* OHOS_LLVM */
 
   // Check if it's really possible to do a tail call.
   if (IsTailCall)
@@ -7578,7 +7624,16 @@ LoongArchTargetLowering::LowerCall(CallLoweringInfo &CLI,
   // Assign locations to each value returned by this call.
   SmallVector<CCValAssign> RVLocs;
   CCState RetCCInfo(CallConv, IsVarArg, MF, RVLocs, *DAG.getContext());
+#ifndef OHOS_LLVM
   analyzeInputArgs(MF, RetCCInfo, Ins, /*IsRet=*/true, CC_LoongArch);
+#else /* OHOS_LLVM */
+#if defined(ARK_GC_SUPPORT)
+  if (CallConv == CallingConv::WebKit_JS)
+    RetCCInfo.AnalyzeCallResult(Ins, RetCC_LoongArch_WebKit_JS);
+  else
+#endif /* ARK_GC_SUPPORT */
+    analyzeInputArgs(MF, RetCCInfo, Ins, /*IsRet=*/true, CC_LoongArch);
+#endif /* OHOS_LLVM */
 
   // Copy all of the result registers out of their specified physreg.
   for (unsigned i = 0, e = RVLocs.size(); i != e; ++i) {
@@ -7614,6 +7669,11 @@ bool LoongArchTargetLowering::CanLowerReturn(
   SmallVector<CCValAssign> RVLocs;
   CCState CCInfo(CallConv, IsVarArg, MF, RVLocs, Context);
 
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+  if (CallConv == CallingConv::WebKit_JS)
+    return CCInfo.CheckReturn(Outs, RetCC_LoongArch_WebKit_JS);
+#endif
+
   for (unsigned i = 0, e = Outs.size(); i != e; ++i) {
     LoongArchABI::ABI ABI =
         MF.getSubtarget<LoongArchSubtarget>().getTargetABI();
@@ -7637,10 +7697,22 @@ SDValue LoongArchTargetLowering::LowerReturn(
   CCState CCInfo(CallConv, IsVarArg, DAG.getMachineFunction(), RVLocs,
                  *DAG.getContext());
 
+#ifndef OHOS_LLVM
   analyzeOutputArgs(DAG.getMachineFunction(), CCInfo, Outs, /*IsRet=*/true,
                     nullptr, CC_LoongArch);
   if (CallConv == CallingConv::GHC && !RVLocs.empty())
     report_fatal_error("GHC functions return void only");
+#else /* OHOS_LLVM */
+  if (CallConv == CallingConv::GHC && !RVLocs.empty())
+    report_fatal_error("GHC functions return void only");
+#if defined(ARK_GC_SUPPORT)
+  else if (CallConv == CallingConv::WebKit_JS)
+    CCInfo.AnalyzeReturn(Outs, RetCC_LoongArch_WebKit_JS);
+#endif /* ARK_GC_SUPPORT */
+  else
+    analyzeOutputArgs(DAG.getMachineFunction(), CCInfo, Outs, /*IsRet=*/true,
+                      nullptr, CC_LoongArch);
+#endif /* OHOS_LLVM */
   SDValue Glue;
   SmallVector<SDValue, 4> RetOps(1, Chain);
 

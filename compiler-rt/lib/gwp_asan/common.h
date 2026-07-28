@@ -187,6 +187,11 @@ static_assert(sizeof(AllocatorState) == 32, "");
 static_assert(offsetof(AllocatorState, FailureAddress) == 28, "");
 static_assert(sizeof(AllocationMetadata) == 560, "");
 static_assert(offsetof(AllocationMetadata, IsDeallocated) == 552, "");
+#elif defined(OHOS_LLVM) && defined(__loongarch__)
+static_assert(sizeof(AllocatorState) == 56, "");
+static_assert(offsetof(AllocatorState, FailureAddress) == 48, "");
+static_assert(sizeof(AllocationMetadata) == 568, "");
+static_assert(offsetof(AllocationMetadata, IsDeallocated) == 560, "");
 #endif // defined($ARCHITECTURE)
 
 } // namespace gwp_asan
