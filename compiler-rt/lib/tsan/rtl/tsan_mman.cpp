@@ -283,7 +283,7 @@ void OnUserFree(ThreadState *thr, uptr pc, uptr p, bool write) {
     DPrintf("#%d: free(0x%zx, %zu) (no slot)\n", thr->tid, p, sz);
     return;
   }
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
   SlotLocker locker(thr);
 #else
   SlotLocker locker(thr, thr->ignore_interceptors > 0);

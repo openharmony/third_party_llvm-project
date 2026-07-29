@@ -220,7 +220,7 @@ class ScopedInErrorReport {
       Report("ABORTING\n");
       Die();
     }
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
     Report("End Asan report\n");
 #endif
   }

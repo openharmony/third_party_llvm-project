@@ -31,12 +31,11 @@ struct StackDepotHandle {
   void inc_use_count_unsafe();
 };
 
-#ifndef OHOS_LLVM
+#if SANITIZER_OHOS
+const int kStackDepotMaxUseCount = 1U << 16;
+#else
 const int kStackDepotMaxUseCount = 1U << (SANITIZER_ANDROID ? 16 : 20);
-#else /* OHOS_LLVM */
-const int kStackDepotMaxUseCount =
-    1U << ((SANITIZER_ANDROID || SANITIZER_OHOS) ? 16 : 20);
-#endif /* OHOS_LLVM */
+#endif
 
 StackDepotStats StackDepotGetStats();
 u32 StackDepotPut(StackTrace stack);

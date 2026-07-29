@@ -28,7 +28,7 @@ void LibIgnore::AddIgnoredLibrary(const char *name_templ) {
            kMaxLibs);
     Die();
   }
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   VPrintf(2, "[Ignore] Add ignored library %s.\n", name_templ);
 #endif
   Lib *lib = &libs_[count_++];
@@ -83,7 +83,7 @@ void LibIgnore::OnLibraryLoaded(const char *name) {
         const uptr idx =
             atomic_load(&ignored_ranges_count_, memory_order_relaxed);
         CHECK_LT(idx, ARRAY_SIZE(ignored_code_ranges_));
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
         VReport(1, "[Ignore] Adding ignored range %p-%p from library '%s'\n",
                 (void *)range.beg, (void *)range.end, mod.full_name());
 #endif
@@ -111,7 +111,7 @@ void LibIgnore::OnLibraryLoaded(const char *name) {
       for (const auto &range : mod.ranges()) {
         if (!range.executable)
           continue;
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
         if (!mod.instrumented()) {
           UnloadOverlappingInstrumentedRanges(range.beg, range.end,
                                                mod.full_name());
@@ -138,7 +138,7 @@ void LibIgnore::OnLibraryLoaded(const char *name) {
   }
 }
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 bool LibIgnore::IsInstrumentedRangeLoaded(uptr beg, uptr end) const {
   const uptr count =
       atomic_load(&instrumented_ranges_count_, memory_order_acquire);

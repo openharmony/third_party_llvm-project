@@ -89,7 +89,7 @@ ASM_INTERCEPTOR_TRAMPOLINE(sigsetjmp)
 #if SANITIZER_ANDROID
 ASM_TRAMPOLINE_ALIAS(sigsetjmp, sigsetjmp)
 ASM_TRAMPOLINE_ALIAS(setjmp, setjmp_bionic)
-#elif defined(OHOS_LLVM) && SANITIZER_OHOS
+#elif SANITIZER_OHOS
 // musl's setjmp, _setjmp, and __setjmp are the same; sigsetjmp and
 // __sigsetjmp are the same as well.
 ASM_TRAMPOLINE_ALIAS(sigsetjmp, sigsetjmp)

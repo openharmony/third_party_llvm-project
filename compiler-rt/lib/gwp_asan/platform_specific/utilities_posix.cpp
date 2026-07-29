@@ -12,9 +12,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifdef OHOS_LLVM
+#if defined(OHOS_LLVM) && defined(__OHOS__)
 #include "gwp_asan/optional/printf.h"
-#endif /* OHOS_LLVM */
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
 #ifdef __BIONIC__
 #include "gwp_asan/definitions.h"
@@ -31,12 +31,12 @@ void die(const char *Message) {
     android_set_abort_message(Message);
   abort();
 #else  // __BIONIC__
-#if defined(OHOS_LLVM)
+#if defined(OHOS_LLVM) && defined(__OHOS__)
   // Report check failure via allocator Printf (FaultLogger) before trap.
   Printf("GWP-ASan has a check error\n");
   Printf("%s\n", Message);
   Printf("*** End GWP-ASan report ***\n");
-#endif /* OHOS_LLVM */
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
   fprintf(stderr, "%s", Message);
   __builtin_trap();
 #endif // __BIONIC__
@@ -54,12 +54,12 @@ void dieWithErrorCode(const char *Message, int64_t ErrorCode) {
   android_set_abort_message(buffer);
   abort();
 #else  // __BIONIC__
-#if defined(OHOS_LLVM)
+#if defined(OHOS_LLVM) && defined(__OHOS__)
   // Symmetric with die(): FaultLogger via Printf before trap.
   Printf("GWP-ASan has a check error\n");
   Printf("%s (Error Code: %" PRId64 ")\n", Message, ErrorCode);
   Printf("*** End GWP-ASan report ***\n");
-#endif /* OHOS_LLVM */
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
   fprintf(stderr, "%s (Error Code: %" PRId64 ")", Message, ErrorCode);
   __builtin_trap();
 #endif // __BIONIC__

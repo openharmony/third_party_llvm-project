@@ -56,7 +56,7 @@
 #  endif
 
 #  if SANITIZER_ANDROID || SANITIZER_FREEBSD || SANITIZER_SOLARIS || \
-      (defined(OHOS_LLVM) && SANITIZER_OHOS)
+      SANITIZER_OHOS
 #    include <ucontext.h>
 #  elif SANITIZER_NETBSD
 #    include <link_elf.h>
@@ -153,7 +153,7 @@ void TryReExecWithoutASLR() {
 #    endif
 }
 
-#  if SANITIZER_ANDROID || (defined(OHOS_LLVM) && SANITIZER_OHOS)
+#  if SANITIZER_ANDROID || SANITIZER_OHOS
 // FIXME: should we do anything for Android?
 void AsanCheckDynamicRTPrereqs() {}
 void AsanCheckIncompatibleRT() {}

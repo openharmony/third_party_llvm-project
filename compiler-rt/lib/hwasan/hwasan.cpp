@@ -70,11 +70,11 @@ static void RegisterHwasanFlags(FlagParser *parser, Flags *f) {
 #undef HWASAN_FLAG
 }
 
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
 #define APPEND_BOOL_FLAG_CONTENT(defaultFlags, flags, S, param) \
   defaultFlags.Append(#S " is ");                               \
   defaultFlags.Append(flags->S == param ? "true. " : "false. ");
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
 
 static void InitializeFlags() {
   SetCommonFlagsDefaults();
@@ -108,7 +108,7 @@ static void InitializeFlags() {
     cf.handle_sigfpe = kHandleSignalNo;
 #endif
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
     // Default minimum hwasan configuration
     cf.handle_segv = kHandleSignalNo;
     cf.handle_sigbus = kHandleSignalNo;
@@ -168,7 +168,7 @@ static void InitializeFlags() {
 
   InitializeCommonFlags();
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   if (common_flags()->verbose_format_important_flags) {
     InternalScopedString defaultFlags;
     APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(),
@@ -252,11 +252,9 @@ void UpdateMemoryUsage() {}
 #endif
 
 void HwasanAtExit() {
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
   if (__hwasan::ShouldPrintQuarantineDwellTime())
     hwasanThreadList().PrintfAverageQuarantineTime();
-#endif /* OHOS_LLVM */
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
   if (common_flags()->print_module_map > 1)
 #else
   if (common_flags()->print_module_map)
@@ -412,7 +410,7 @@ __attribute__((constructor(0))) void __hwasan_init() {
   // Install tool-specific callbacks in sanitizer_common.
   SetCheckUnwindCallback(CheckUnwind);
 
-#if !defined(OHOS_LLVM) || !SANITIZER_OHOS
+#if !SANITIZER_OHOS
   __sanitizer_set_report_path(common_flags()->log_path);
 #endif
 
@@ -432,7 +430,7 @@ __attribute__((constructor(0))) void __hwasan_init() {
   SetPrintfAndReportCallback(AppendToErrorMessageBuffer);
   // This may call libc -> needs initialized shadow.
   AndroidLogInit();
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   OhosLogInit();
 #endif
 

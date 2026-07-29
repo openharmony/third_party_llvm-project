@@ -1,4 +1,5 @@
 #include "sanitizer_common/sanitizer_asm.h"
+#include "sanitizer_common/sanitizer_platform.h"
 #include "builtins/assembly.h"
 
 // The content of this file is AArch64-only:
@@ -19,11 +20,11 @@
 // in every __hwasan_check_* function, therefore reducing binary size. This is
 // particularly important as hwasan_check_* instances are duplicated in every
 // translation unit where HWASan is enabled.
-#if defined(OHOS_LLVM)
+#if SANITIZER_OHOS
 // This function calls HwasanTagMismatch to step back into the C++ code that
-// completes the stack unwinding and error printing. Under OHOS_LLVM, when the
-// report is non-fatal (halt_on_error=0 and recoverable access), registers are
-// restored and control returns to the __hwasan_check_* caller.
+// completes the stack unwinding and error printing. Under SANITIZER_OHOS, when
+// the report is non-fatal (halt_on_error=0 and recoverable access), registers
+// are restored and control returns to the __hwasan_check_* caller.
 #else
 // This function calls HwasanTagMismatch to step back into the C++ code that
 // completes the stack unwinding and error printing. This function is is not
@@ -154,7 +155,7 @@ mismatch:
   mov x2, sp
 
   bl __hwasan_tag_mismatch4
-#if defined(OHOS_LLVM)
+#if SANITIZER_OHOS
   // Restore the shared __hwasan_check_* frame and return to the caller when
   // HwasanTagMismatch does not abort (recoverable non-fatal report).
   ldp     x2,  x3,  [sp, #16]
@@ -174,7 +175,7 @@ mismatch:
   ldp     x29, x30, [sp, #232]
   ldp     x0, x1, [sp], #256
   ret
-#endif // defined(OHOS_LLVM)
+#endif // SANITIZER_OHOS
   CFI_ENDPROC
 
 .Lfunc_end0:

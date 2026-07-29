@@ -100,7 +100,7 @@ const unsigned struct_kernel_stat64_sz = 104;
 #    elif defined(__mips__)
 const unsigned struct_kernel_stat_sz = SANITIZER_ANDROID
                                            ? FIRST_32_SECOND_64(104, 128)
-#      if defined(OHOS_LLVM) && SANITIZER_OHOS
+#      if SANITIZER_OHOS
                                            : FIRST_32_SECOND_64(160, 216);
 #      elif defined(_ABIN32) && _MIPS_SIM == _ABIN32
                                            : FIRST_32_SECOND_64(176, 216);
@@ -895,7 +895,7 @@ struct __sanitizer_wordexp_t {
 };
 
 #  if SANITIZER_LINUX && !SANITIZER_ANDROID && \
-      (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
+      !SANITIZER_OHOS
 struct __sanitizer_FILE {
   int _flags;
   char *_IO_read_ptr;
@@ -920,7 +920,7 @@ typedef void __sanitizer_FILE;
 #  endif
 
 #  if SANITIZER_LINUX && !SANITIZER_ANDROID && \
-      (!defined(OHOS_LLVM) || !SANITIZER_OHOS) &&            \
+      !SANITIZER_OHOS &&            \
       (defined(__i386) || defined(__x86_64) || defined(__mips64) ||          \
        defined(__powerpc64__) || defined(__aarch64__) || defined(__arm__) || \
        defined(__s390__) || defined(__loongarch__) || SANITIZER_RISCV64 ||   \
@@ -1114,7 +1114,7 @@ extern unsigned struct_vt_mode_sz;
 #  endif  // SANITIZER_LINUX
 
 #  if SANITIZER_LINUX && !SANITIZER_ANDROID && \
-      (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
+      !SANITIZER_OHOS
 extern unsigned struct_ax25_parms_struct_sz;
 extern unsigned struct_input_keymap_entry_sz;
 extern unsigned struct_ipx_config_data_sz;
@@ -1141,7 +1141,7 @@ extern unsigned struct_ppp_stats_sz;
 #  endif  // (SANITIZER_LINUX || SANITIZER_FREEBSD) && !SANITIZER_ANDROID
 
 #  if !SANITIZER_ANDROID && !SANITIZER_APPLE && \
-      (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
+      !SANITIZER_OHOS
 extern unsigned struct_sioc_sg_req_sz;
 extern unsigned struct_sioc_vif_req_sz;
 #  endif
@@ -1201,7 +1201,7 @@ extern unsigned IOCTL_TIOCSCTTY;
 extern unsigned IOCTL_TIOCSPGRP;
 extern unsigned IOCTL_TIOCSWINSZ;
 #  if SANITIZER_LINUX && !SANITIZER_ANDROID && \
-      (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
+      !SANITIZER_OHOS
 extern unsigned IOCTL_SIOCGETSGCNT;
 extern unsigned IOCTL_SIOCGETVIFCNT;
 #  endif
@@ -1472,7 +1472,7 @@ extern unsigned IOCTL_VT_WAITACTIVE;
 #  endif  // SANITIZER_LINUX
 
 #  if SANITIZER_LINUX && !SANITIZER_ANDROID && \
-      (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
+      !SANITIZER_OHOS
 extern unsigned IOCTL_CYGETDEFTHRESH;
 extern unsigned IOCTL_CYGETDEFTIMEOUT;
 extern unsigned IOCTL_CYGETMON;

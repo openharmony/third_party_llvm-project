@@ -651,27 +651,27 @@ bool OutputReport(ThreadState *thr, const ScopedReport &srep) {
     Lock lock(&ctx->fired_suppressions_mtx);
     FiredSuppression s = {srep.GetReport()->typ, pc_or_addr, supp};
     ctx->fired_suppressions.push_back(s);
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
     if (supp)
       VPrintf(2, "[Suppression] hit type:%s file:%s pc:0x%zx.\n", supp->type,
               supp->templ, pc_or_addr);
 #endif
   }
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   thr->ignore_interceptors++;
 #endif
   {
     bool suppressed = OnReport(rep, pc_or_addr != 0);
     if (suppressed) {
       thr->current_report = nullptr;
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
       thr->ignore_interceptors--;
 #endif
       return false;
     }
   }
   PrintReport(rep);
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   thr->ignore_interceptors--;
 #endif
   __tsan_on_report(rep);
@@ -692,7 +692,7 @@ bool IsFiredSuppression(Context *ctx, ReportType type, StackTrace trace) {
       if (trace.trace[j] == s->pc_or_addr) {
         if (s->supp) {
           atomic_fetch_add(&s->supp->hit_count, 1, memory_order_relaxed);
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
           VPrintf(2, "[Suppression] fired type:%s file:%s pc:0x%zx.\n",
                   s->supp->type, s->supp->templ, s->pc_or_addr);
 #endif
@@ -785,7 +785,7 @@ void ReportRace(ThreadState *thr, RawShadow *shadow_mem, Shadow cur, Shadow old,
   Lock slot_lock(&ctx->slots[static_cast<uptr>(s[1].sid())].mtx);
   ThreadRegistryLock l0(&ctx->thread_registry);
   Lock slots_lock(&ctx->slot_mtx);
-#if !defined(OHOS_LLVM) || !SANITIZER_OHOS
+#if !SANITIZER_OHOS
   if (SpuriousRace(old))
     return;
   if (!RestoreStack(EventType::kAccessExt, s[1].sid(), s[1].epoch(), addr1,
@@ -799,7 +799,7 @@ void ReportRace(ThreadState *thr, RawShadow *shadow_mem, Shadow cur, Shadow old,
 
   if (HandleRacyStacks(thr, traces))
     return;
-#else /* defined(OHOS_LLVM) && SANITIZER_OHOS */
+#else /* SANITIZER_OHOS */
   bool thr_slocked_status = thr->slot_locked;
   thr->slot_locked = true;
   if (SpuriousRace(old)) {
@@ -822,7 +822,7 @@ void ReportRace(ThreadState *thr, RawShadow *shadow_mem, Shadow cur, Shadow old,
     thr->slot_locked = thr_slocked_status;
     return;
   }
-#endif /* !defined(OHOS_LLVM) || !SANITIZER_OHOS */
+#endif /* !SANITIZER_OHOS */
 
   // If any of the accesses has a tag, treat this as an "external" race.
   uptr tag = kExternalTagNone;
@@ -864,7 +864,7 @@ void ReportRace(ThreadState *thr, RawShadow *shadow_mem, Shadow cur, Shadow old,
     rep.AddSleep(thr->last_sleep_stack_id);
 #endif
   OutputReport(thr, rep);
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   thr->slot_locked = thr_slocked_status;
 #endif
 }

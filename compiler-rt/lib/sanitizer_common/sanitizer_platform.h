@@ -320,7 +320,7 @@
 #    define SANITIZER_CAN_USE_ALLOCATOR64 0
 #  elif defined(__mips64) || defined(__hexagon__)
 #    define SANITIZER_CAN_USE_ALLOCATOR64 0
-#  elif defined(OHOS_LLVM) && SANITIZER_OHOS && defined(__aarch64__)
+#  elif SANITIZER_OHOS && defined(__aarch64__)
 #    define SANITIZER_CAN_USE_ALLOCATOR64 1
 #  else
 #    define SANITIZER_CAN_USE_ALLOCATOR64 (SANITIZER_WORDSIZE == 64)
@@ -483,7 +483,7 @@
 // musl may not respect static ctor order; background thread can start before
 // flag parsing (OHOS shared runtime). Same workaround as thumb Linux CI.
 #if (defined(__thumb__) && defined(__linux__)) || \
-    (defined(OHOS_LLVM) && SANITIZER_OHOS)
+    SANITIZER_OHOS
 // Workaround for
 // https://lab.llvm.org/buildbot/#/builders/clang-thumbv7-full-2stage
 // or

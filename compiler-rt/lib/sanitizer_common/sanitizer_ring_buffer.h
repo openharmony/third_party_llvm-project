@@ -27,7 +27,7 @@ class RingBuffer {
     RingBuffer *RB = reinterpret_cast<RingBuffer*>(Ptr);
     uptr End = reinterpret_cast<uptr>(Ptr) + SizeInBytes(Size);
     RB->last_ = RB->next_ = reinterpret_cast<T*>(End - sizeof(T));
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
     RB->full_ = false;
 #endif
     return RB;
@@ -38,14 +38,14 @@ class RingBuffer {
   uptr size() const {
     return last_ + 1 -
            reinterpret_cast<T *>(reinterpret_cast<uptr>(this) +
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
                                  2 * sizeof(T *));
 #else
                                  sizeof(RingBuffer) - sizeof(T));
 #endif
   }
 
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
   // Number of valid elements. Before the buffer wraps (full_==false), this is
   // less than size(); after wrap, equals size().
   uptr realsize() const {
@@ -56,7 +56,7 @@ class RingBuffer {
 #endif
 
   static uptr SizeInBytes(uptr Size) {
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
     return Size * sizeof(T) + 2 * sizeof(T*);
 #else
     return Size * sizeof(T) + sizeof(RingBuffer) - sizeof(T);
@@ -71,7 +71,7 @@ class RingBuffer {
     static_assert((sizeof(T) % sizeof(T *)) == 0,
                   "The condition below works only if sizeof(T) is divisible by "
                   "sizeof(T*).");
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
     if (next_ <= reinterpret_cast<T*>(&next_))
       next_ = last_;
 #else
@@ -96,7 +96,7 @@ class RingBuffer {
   RingBuffer(const RingBuffer&) = delete;
 
   // Data layout:
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
   // LNDDDDDDDD
   // D: data elements.
   // L: last_, always points to the last data element.

@@ -134,7 +134,7 @@ void ReportErrorSummary(const char *error_type, const StackTrace *stack,
 
 void ReportMmapWriteExec(int prot, int flags) {
 #if SANITIZER_POSIX && (!SANITIZER_GO && !SANITIZER_ANDROID) && \
-    (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
+    !SANITIZER_OHOS
   int pflags = (PROT_WRITE | PROT_EXEC);
   if ((prot & pflags) != pflags)
     return;
@@ -297,12 +297,12 @@ void HandleDeadlySignal(void *siginfo, void *context, u32 tid,
   ScopedErrorReportLock rl;
   SignalContext sig(siginfo, context);
   ReportDeadlySignal(sig, tid, unwind, unwind_context);
-#if defined(OHOS_LLVM)
+#if SANITIZER_OHOS
   if (!common_flags()->run_on_tw) {
     Report("ABORTING\n");
     Die();
   }
-#else  /* !OHOS_LLVM */
+#else /* !SANITIZER_OHOS */
   Report("ABORTING\n");
   Die();
 #endif

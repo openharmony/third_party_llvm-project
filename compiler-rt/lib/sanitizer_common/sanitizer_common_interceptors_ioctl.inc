@@ -105,7 +105,7 @@ static void ioctl_table_fill() {
 #endif
 
 #if (SANITIZER_LINUX && !SANITIZER_ANDROID && \
-     (!defined(OHOS_LLVM) || !SANITIZER_OHOS))
+     !SANITIZER_OHOS)
   _(SIOCGETSGCNT, WRITE, struct_sioc_sg_req_sz);
   _(SIOCGETVIFCNT, WRITE, struct_sioc_vif_req_sz);
 #endif

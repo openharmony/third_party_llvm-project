@@ -56,7 +56,7 @@ HWASAN_FLAG(int, heap_history_size, 1023,
           "The number of heap (de)allocations remembered per thread. "
           "Affects the quality of heap-related reports, but not the ability "
           "to find bugs.")
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
 HWASAN_FLAG(
     int, heap_history_size_main_thread, 102300,
     "The number of heap (de)allocations remembered for the main thread. "
@@ -96,7 +96,7 @@ HWASAN_FLAG(int, heap_quarantine_max, 0,
             "it is placed into the heap quarantine.")
 HWASAN_FLAG(bool, enable_heap_quarantine_debug, false,
             "Enable Hwasan Quarantine Debug Mode.")
-#endif // OHOS_LLVM
+#endif // SANITIZER_OHOS
 HWASAN_FLAG(bool, export_memory_stats, true,
             "Export up-to-date memory stats through /proc")
 HWASAN_FLAG(int, stack_history_size, 1024,

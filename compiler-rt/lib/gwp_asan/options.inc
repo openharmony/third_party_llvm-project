@@ -32,11 +32,11 @@ GWP_ASAN_OPTION(int, SampleRate, 5000,
                 "selected for GWP-ASan sampling. Default is 5000. Sample rates "
                 "up to (2^30 - 1) are supported.")
 
-#ifdef OHOS_LLVM
+#if defined(OHOS_LLVM) && defined(__OHOS__)
 GWP_ASAN_OPTION(int, MinSampleSize, 0,
                 "Sampling is decided by whether the allocation size exceeds "
                 "the minimum threshold")
-#endif /* OHOS_LLVM */
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
 // Developer note - This option is not actually processed by GWP-ASan itself. It
 // is included here so that a user can specify whether they want signal handlers

@@ -64,10 +64,10 @@ void GuardedPoolAllocator::init(const options::Options &Opts) {
         "There's already a live GuardedPoolAllocator!");
   SingletonPtr = this;
   Backtrace = Opts.Backtrace;
-#ifdef OHOS_LLVM
+#if defined(OHOS_LLVM) && defined(__OHOS__)
   MinSampleSize = Opts.MinSampleSize;
   WhiteListPath = Opts.WhiteListPath;
-#endif /* OHOS_LLVM */
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
   State.VersionMagic = {{AllocatorVersionMagic::kAllocatorVersionMagic[0],
                          AllocatorVersionMagic::kAllocatorVersionMagic[1],
@@ -161,7 +161,7 @@ void GuardedPoolAllocator::iterate(void *Base, size_t Size, iterate_callback Cb,
   }
 }
 
-#ifdef OHOS_LLVM
+#if defined(OHOS_LLVM) && defined(__OHOS__)
 bool GuardedPoolAllocator::hasFreeMem() {
   if (NumSampledAllocations < State.MaxSimultaneousAllocations)
     return true;
@@ -171,7 +171,7 @@ bool GuardedPoolAllocator::hasFreeMem() {
 
   return false;
 }
-#endif /* OHOS_LLVM */
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
 void GuardedPoolAllocator::uninitTestOnly() {
   if (State.GuardedPagePool) {
@@ -248,7 +248,7 @@ void *GuardedPoolAllocator::allocate(size_t Size, size_t Alignment) {
   if (Alignment == 0)
     Alignment = alignof(max_align_t);
 
-#ifndef OHOS_LLVM
+#if !defined(OHOS_LLVM) || !defined(__OHOS__)
   if (!isPowerOfTwo(Alignment) || Alignment > State.maximumAllocationSize() ||
       Size > State.maximumAllocationSize())
     return nullptr;
@@ -256,7 +256,7 @@ void *GuardedPoolAllocator::allocate(size_t Size, size_t Alignment) {
   if (!isPowerOfTwo(Alignment) || Alignment > State.maximumAllocationSize() ||
       Size > State.maximumAllocationSize() || Size < MinSampleSize)
     return nullptr;
-#endif /* OHOS_LLVM */
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
   size_t BackingSize = getRequiredBackingSize(Size, Alignment, State.PageSize);
   if (BackingSize > State.maximumAllocationSize())

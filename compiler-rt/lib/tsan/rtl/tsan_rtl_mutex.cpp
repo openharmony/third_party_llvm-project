@@ -464,7 +464,7 @@ void Release(ThreadState *thr, uptr pc, uptr addr) {
   DPrintf("#%d: Release %zx\n", thr->tid, addr);
   if (thr->ignore_sync)
     return;
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
   SlotLocker locker(thr);
 #else
   SlotLocker locker(thr, thr->ignore_interceptors > 0);
@@ -481,7 +481,7 @@ void ReleaseStore(ThreadState *thr, uptr pc, uptr addr) {
   DPrintf("#%d: ReleaseStore %zx\n", thr->tid, addr);
   if (thr->ignore_sync)
     return;
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
   SlotLocker locker(thr);
 #else
   SlotLocker locker(thr, thr->ignore_interceptors > 0);
@@ -498,7 +498,7 @@ void ReleaseStoreAcquire(ThreadState *thr, uptr pc, uptr addr) {
   DPrintf("#%d: ReleaseStoreAcquire %zx\n", thr->tid, addr);
   if (thr->ignore_sync)
     return;
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
   SlotLocker locker(thr);
 #else
   SlotLocker locker(thr, thr->ignore_interceptors > 0);
@@ -570,7 +570,7 @@ void ReportDestroyLocked(ThreadState *thr, uptr pc, uptr addr,
   Lock slot_lock(&ctx->slots[static_cast<uptr>(last_lock.sid())].mtx);
   ThreadRegistryLock l0(&ctx->thread_registry);
   Lock slots_lock(&ctx->slot_mtx);
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   bool thr_slocked_status = thr->slot_locked;
   thr->slot_locked = true;
 #endif
@@ -583,14 +583,14 @@ void ReportDestroyLocked(ThreadState *thr, uptr pc, uptr addr,
   Tid tid;
   DynamicMutexSet mset;
   uptr tag;
-#if !defined(OHOS_LLVM) || !SANITIZER_OHOS
+#if !SANITIZER_OHOS
   if (!RestoreStack(EventType::kLock, last_lock.sid(), last_lock.epoch(), addr,
                     0, kAccessWrite, &tid, &trace, mset, &tag))
     return;
   rep.AddStack(trace, true);
   rep.AddLocation(addr, 1);
   OutputReport(thr, rep);
-#else /* defined(OHOS_LLVM) && SANITIZER_OHOS */
+#else /* SANITIZER_OHOS */
   if (!RestoreStack(EventType::kLock, last_lock.sid(), last_lock.epoch(), addr,
                     0, kAccessWrite, &tid, &trace, mset, &tag)) {
     thr->slot_locked = thr_slocked_status;
@@ -600,7 +600,7 @@ void ReportDestroyLocked(ThreadState *thr, uptr pc, uptr addr,
   rep.AddLocation(addr, 1);
   OutputReport(thr, rep);
   thr->slot_locked = thr_slocked_status;
-#endif /* !defined(OHOS_LLVM) || !SANITIZER_OHOS */
+#endif /* !SANITIZER_OHOS */
 }
 
 }  // namespace __tsan

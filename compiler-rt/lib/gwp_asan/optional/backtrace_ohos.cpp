@@ -1,4 +1,4 @@
-#ifdef OHOS_LLVM
+#if defined(OHOS_LLVM) && defined(__OHOS__)
 //===-- backtrace_ohos.cpp -----------------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -55,4 +55,4 @@ SegvBacktrace_t getSegvBacktraceFunction() {
 
 } // namespace backtrace
 } // namespace gwp_asan
-#endif /* OHOS_LLVM */
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)

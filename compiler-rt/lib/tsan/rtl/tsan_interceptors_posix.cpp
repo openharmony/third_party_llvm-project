@@ -32,7 +32,7 @@
 #include "tsan_fd.h"
 #include "tsan_interceptors.h"
 #include "tsan_interface.h"
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 #include "tsan_interface_ann.h"
 #endif
 #include "tsan_mman.h"
@@ -561,7 +561,7 @@ static void SetJmp(ThreadState *thr, uptr sp) {
   JmpBuf *buf = thr->jmp_bufs.PushBack();
   buf->sp = sp;
   buf->shadow_stack_pos = thr->shadow_stack_pos;
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   buf->ignore_reads_and_writes = thr->ignore_reads_and_writes;
 #endif
   ThreadSignalContext *sctx = SigCtx(thr);
@@ -590,7 +590,7 @@ static void LongJmp(ThreadState *thr, uptr *env) {
       }
       atomic_store(&thr->in_blocking_func, buf->in_blocking_func,
           memory_order_relaxed);
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
       thr->ignore_reads_and_writes = buf->ignore_reads_and_writes;
       if (buf->ignore_reads_and_writes)
         thr->fast_state.SetIgnoreBit();
@@ -1201,7 +1201,7 @@ TSAN_INTERCEPTOR(void, pthread_exit, void *retval) {
   REAL(pthread_exit)(retval);
 }
 
-#if SANITIZER_LINUX && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
+#if SANITIZER_LINUX && !SANITIZER_OHOS
 TSAN_INTERCEPTOR(int, pthread_tryjoin_np, void *th, void **ret) {
   SCOPED_INTERCEPTOR_RAW(pthread_tryjoin_np, th, ret);
   Tid tid = ThreadConsumeTid(thr, pc, (uptr)th);
@@ -2147,7 +2147,7 @@ TSAN_INTERCEPTOR(int, pthread_sigmask, int how, const __sanitizer_sigset_t *set,
   return REAL(pthread_sigmask)(how, set, oldset);
 }
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS && !TSAN_STATIC
+#if SANITIZER_OHOS && !TSAN_STATIC
 struct call_once_callback_args {
   void (*orig_func)(void *arg);
   void *orig_arg;
@@ -2624,7 +2624,7 @@ static void HandleRecvmsg(ThreadState *thr, uptr pc,
     ThreadIgnoreEnd(thr);                         \
     res;                                          \
   })
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 #  define COMMON_INTERCEPTOR_DLOPEN_IMPL(                              \
       filename, flag, dl_namespace, caller_addr, extinfo)             \
     ({                                                                 \
@@ -3107,7 +3107,7 @@ void InitializeInterceptors() {
   TSAN_INTERCEPT(pthread_join);
   TSAN_INTERCEPT(pthread_detach);
   TSAN_INTERCEPT(pthread_exit);
-#if SANITIZER_LINUX && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
+#if SANITIZER_LINUX && !SANITIZER_OHOS
   TSAN_INTERCEPT(pthread_tryjoin_np);
   TSAN_INTERCEPT(pthread_timedjoin_np);
 #endif
@@ -3222,7 +3222,7 @@ void InitializeInterceptors() {
   TSAN_INTERCEPT(__cxa_atexit);
   TSAN_INTERCEPT(_exit);
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS && !TSAN_STATIC
+#if SANITIZER_OHOS && !TSAN_STATIC
   TSAN_INTERCEPT(_ZNSt3__h11__call_onceERVmPvPFvS2_E);
   TSAN_INTERCEPT(_ZNSt4__n111__call_onceERVmPvPFvS2_E);
 #endif

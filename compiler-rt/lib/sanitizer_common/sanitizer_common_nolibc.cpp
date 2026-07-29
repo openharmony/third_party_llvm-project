@@ -23,7 +23,7 @@ namespace __sanitizer {
 #  if SANITIZER_LINUX
 void LogMessageOnPrintf(const char *str) {}
 void InitTlsSize() {}
-#    if defined(OHOS_LLVM) && SANITIZER_OHOS
+#    if SANITIZER_OHOS
 bool SafeToCallPrintf() { return true; }
 #    endif
 #  endif

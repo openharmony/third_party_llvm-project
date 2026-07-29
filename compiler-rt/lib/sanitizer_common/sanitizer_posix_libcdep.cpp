@@ -210,7 +210,7 @@ void UnsetAlternateSignalStack() {
   UnmapOrDie(oldstack.ss_sp, oldstack.ss_size);
 }
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 struct signal_chain_action {
   bool (*sca_sigaction)(int, siginfo_t *, void *);
   sigset_t sca_mask;
@@ -224,7 +224,7 @@ static void MaybeInstallSigaction(int signum,
                                   SignalHandlerType handler) {
   if (GetHandleSignalMode(signum) == kHandleSignalNo) return;
 
-#if !defined(OHOS_LLVM) || !SANITIZER_OHOS
+#if !SANITIZER_OHOS
   struct sigaction sigact;
   internal_memset(&sigact, 0, sizeof(sigact));
   sigact.sa_sigaction = (sa_sigaction_t)handler;

@@ -59,7 +59,7 @@ class ScopedReport {
     if (common_flags()->print_module_map >= 2 ||
         (fatal && common_flags()->print_module_map))
       DumpProcessMap();
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
     Report("End Hwasan report\n");
 #endif
     if (fatal)
@@ -129,11 +129,11 @@ class SavedStackAllocations {
     void *storage =
         MmapAlignedOrDieOnFatalError(size, size * 2, "saved stack allocations");
     new (&rb_) StackAllocationsRingBuffer(*rb, storage);
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
     thread_id_ = t->unique_id();
-#else  /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
     thread_id_ = static_cast<u32>(t->tid());
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   }
 
   ~SavedStackAllocations() {
@@ -516,12 +516,12 @@ class BaseReport {
     uptr num_matching_addrs = 0;
     uptr num_matching_addrs_4b = 0;
     u32 free_thread_id = 0;
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
     // History size of the freeing thread (main vs non-main) for rb_distance.
     uptr heap_history_size = 0;
     // True when matched from ThreadList freed-thread history (not a live tid).
     bool from_freed_thread = false;
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   };
 
   struct Allocations {
@@ -535,9 +535,9 @@ class BaseReport {
     u32 stack_id = 0;
     bool from_small_heap = false;
     bool is_allocated = false;
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
     u32 alloc_thread_id = 0;
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   };
 
   struct Shadow {
@@ -559,10 +559,10 @@ class BaseReport {
 
   SavedStackAllocations stack_allocations_storage[16];
   HeapAllocation heap_allocations_storage[256];
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
   uptr record_searched_ = 0;
   uptr record_matched_ = 0;
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
 
   const ScopedReport scoped_report;
   const StackTrace *stack = nullptr;
@@ -659,9 +659,9 @@ BaseReport::HeapChunk BaseReport::CopyHeapChunk() const {
     result.from_small_heap = chunk.FromSmallHeap();
     result.is_allocated = chunk.IsAllocated();
     result.stack_id = chunk.GetAllocStackId();
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
     result.alloc_thread_id = chunk.GetAllocThreadId();
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   }
   return result;
 }
@@ -677,7 +677,7 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
       stack_allocations_storage[stack_allocations_count++].CopyFrom(t);
     }
 
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
     if (heap_allocations_count < ARRAY_SIZE(heap_allocations_storage)) {
       // Scan all threads' ring buffers to find if it's a heap-use-after-free.
       HeapAllocationRecord har;
@@ -693,7 +693,7 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
         ha.free_thread_id = t->unique_id();
       }
     }
-#else  /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
     // Collect all matching UAF records (up to storage cap). Disable tracing
     // while scanning to avoid re-entrant ring pushes from report printing.
     auto *rb = t->heap_allocations();
@@ -727,10 +727,10 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
       ha.heap_history_size = history_size;
     }
     t->EnableTracingHeapAllocation();
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   });
 
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
   // Strategy A: collect matching HARs from freed-thread history into the same
   // storage so PrintAddressDescription can print them with live UAF path.
   hwasanThreadList().VisitAllFreedRingBuffer([&](HeapAllocationsRingBuffer *rb) {
@@ -763,7 +763,7 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
       ha.from_freed_thread = true;
     }
   });
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
 
   return {{stack_allocations_storage, stack_allocations_count},
           {heap_allocations_storage, heap_allocations_count}};
@@ -835,11 +835,11 @@ void BaseReport::PrintHeapOrGlobalCandidate() const {
            candidate.heap.end - candidate.heap.begin, candidate.heap.begin,
            candidate.heap.end);
     Printf("%s", d.Allocation());
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
     Printf("allocated by thread T%u here:\n", candidate.heap.thread_id);
-#else  /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
     Printf("allocated by thread %u here:\n", candidate.heap.thread_id);
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
     Printf("%s", d.Default());
     GetStackTraceFromId(candidate.heap.stack_id).Print();
     return;
@@ -888,9 +888,9 @@ void BaseReport::PrintHeapOrGlobalCandidate() const {
 void BaseReport::PrintAddressDescription() const {
   Decorator d;
   int num_descriptions_printed = 0;
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
   bool printed_close_overflow = false;
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
 
   if (MemIsShadow(untagged_addr)) {
     Printf("%s%p is HWAsan shadow memory.\n%s", d.Location(), untagged_addr,
@@ -900,7 +900,7 @@ void BaseReport::PrintAddressDescription() const {
 
   // Print some very basic information about the address, if it's a heap.
   if (heap.begin) {
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
     Printf(
         "%s[%p,%p) is a %s %s heap chunk; "
         "size: %zd offset: %zd\n%s",
@@ -908,7 +908,7 @@ void BaseReport::PrintAddressDescription() const {
         heap.from_small_heap ? "small" : "large",
         heap.is_allocated ? "allocated" : "unallocated", heap.size,
         untagged_addr - heap.begin, d.Default());
-#else  /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
     // Allocated By (OS tid) + Currently allocated here (alloc stack).
     Printf(
         "%s[%p,%p) is a %s %s heap chunk; "
@@ -923,16 +923,16 @@ void BaseReport::PrintAddressDescription() const {
       Printf("%s", d.Default());
       GetStackTraceFromId(heap.stack_id).Print();
     }
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   }
 
   auto announce_by_id = [](u32 thread_id) {
     hwasanThreadList().VisitAllLiveThreads([&](Thread *t) {
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
       if (thread_id == t->unique_id())
-#else  /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
       if (thread_id == static_cast<u32>(t->tid()))
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
         t->Announce();
     });
   };
@@ -943,13 +943,13 @@ void BaseReport::PrintAddressDescription() const {
     Printf("%s", d.Error());
     Printf("\nCause: stack tag-mismatch\n");
     Printf("%s", d.Location());
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
     Printf("Address %p is located in stack of thread T%zd\n", untagged_addr,
            sa.thread_id());
-#else  /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
     Printf("Address %p is located in stack of thread %d\n", untagged_addr,
            static_cast<int>(sa.thread_id()));
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
     Printf("%s", d.Default());
     announce_by_id(sa.thread_id());
     PrintStackAllocations(sa.get(), ptr_tag, untagged_addr);
@@ -960,17 +960,17 @@ void BaseReport::PrintAddressDescription() const {
       candidate.is_close) {
     PrintHeapOrGlobalCandidate();
     num_descriptions_printed++;
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
     // Mirror source clearing of close candidate so far overflow can still print
     // after UAF (see end of this function).
     printed_close_overflow = true;
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   }
 
   for (const auto &ha : allocations.heap) {
     const HeapAllocationRecord har = ha.har;
 
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
     Printf("%s", d.Error());
     Printf("\nCause: use-after-free\n");
     Printf("%s", d.Location());
@@ -995,7 +995,9 @@ void BaseReport::PrintAddressDescription() const {
     Printf("hwasan_dev_note_num_matching_addrs: %zd\n", ha.num_matching_addrs);
     Printf("hwasan_dev_note_num_matching_addrs_4b: %zd\n",
            ha.num_matching_addrs_4b);
-#else  /* OHOS_LLVM */
+
+    announce_by_id(ha.free_thread_id);
+#else /* SANITIZER_OHOS */
     Printf("%s", d.Error());
     Printf("\nPotential Cause: use-after-free\n");
     Printf("%s", d.Location());
@@ -1031,22 +1033,19 @@ void BaseReport::PrintAddressDescription() const {
     // in the thread's deallocation ring buffer.
     Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ha.ring_index + 1,
            ha.heap_history_size);
-#endif /* OHOS_LLVM */
-
-#ifdef OHOS_LLVM
     if (!ha.from_freed_thread)
-#endif /* OHOS_LLVM */
       announce_by_id(ha.free_thread_id);
+#endif /* SANITIZER_OHOS */
     // TODO: announce_by_id(har.alloc_thread_id);
     num_descriptions_printed++;
   }
 
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
   if (candidate.untagged_addr && num_descriptions_printed == 0) {
     PrintHeapOrGlobalCandidate();
     num_descriptions_printed++;
   }
-#else  /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
   Printf("Searched %lu records, find %lu with same addr %p\n\n",
          record_searched_, record_matched_, untagged_addr);
   // Far overflow candidate: print after UAF even when UAF matched (source 707).
@@ -1056,14 +1055,14 @@ void BaseReport::PrintAddressDescription() const {
     PrintHeapOrGlobalCandidate();
     num_descriptions_printed++;
   }
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
 
   // Print the remaining threads, as an extra information, 1 line per thread.
   if (flags()->print_live_threads_info) {
     Printf("\n");
     hwasanThreadList().VisitAllLiveThreads([&](Thread *t) { t->Announce(); });
   }
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
   hwasanThreadList().PrintFreedRingBufferSummary();
   if (flags()->verbose_freed_threads) {
     u32 freed_idx = 0;
@@ -1074,7 +1073,7 @@ void BaseReport::PrintAddressDescription() const {
           Printf("RB %u: (%zd/%zu)\n", freed_idx++, rb->realsize(), rb->size());
         });
   }
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
 
   if (!num_descriptions_printed)
     // We exhausted our possibilities. Bail out.
@@ -1111,13 +1110,13 @@ InvalidFreeReport::~InvalidFreeReport() {
   const char *bug_type = "invalid-free";
   const Thread *thread = GetCurrentThread();
   if (thread) {
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
     Report("ERROR: %s: %s on address %p at pc %p on thread T%zd\n",
            SanitizerToolName, bug_type, untagged_addr, pc, thread->unique_id());
-#else  /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
     Report("ERROR: %s: %s on address %p at pc %p on thread %d\n",
            SanitizerToolName, bug_type, untagged_addr, pc, thread->tid());
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   } else {
     Report("ERROR: %s: %s on address %p at pc %p on unknown thread\n",
            SanitizerToolName, bug_type, untagged_addr, pc);
@@ -1249,27 +1248,27 @@ TagMismatchReport::~TagMismatchReport() {
   if (mem_tag && mem_tag < kShadowAlignment) {
     tag_t short_tag =
         GetShortTagCopy(MemToShadow(untagged_addr + mismatch_offset));
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
     Printf(
         "%s of size %zu at %p tags: %02x/%02x(%02x) (ptr/mem) in thread T%zd\n",
         is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
         mem_tag, short_tag, t->unique_id());
-#else  /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
     Printf(
         "%s of size %zu at %p tags: %02x/%02x(%02x) (ptr/mem) in thread %d\n",
         is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
         mem_tag, short_tag, t->tid());
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   } else {
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
     Printf("%s of size %zu at %p tags: %02x/%02x (ptr/mem) in thread T%zd\n",
            is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
            mem_tag, t->unique_id());
-#else  /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
     Printf("%s of size %zu at %p tags: %02x/%02x (ptr/mem) in thread %d\n",
            is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
            mem_tag, t->tid());
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   }
   if (mismatch_offset)
     Printf("Invalid access starting at offset %zu\n", mismatch_offset);
@@ -1284,11 +1283,11 @@ TagMismatchReport::~TagMismatchReport() {
 
   if (registers_frame)
     ReportRegisters(registers_frame, pc);
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
   if (registers_frame && flags()->memory_around_register_size)
     ReportMemoryNearRegisters(
         registers_frame, reinterpret_cast<uptr>(registers_frame) + 256, pc);
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
 
   MaybePrintAndroidHelpUrl();
   ReportErrorSummary(bug_type, stack);
@@ -1310,7 +1309,7 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
                       registers_frame);
 }
 
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
 void PrintMemoryAroundAddress(__sanitizer::MemoryMappingLayout &proc_maps,
                               int reg_num, uptr addr, uptr len, bool is_sp,
                               bool is_pc) {
@@ -1356,7 +1355,7 @@ void ReportMemoryNearRegisters(const uptr *frame, uptr sp, uptr pc) {
   PrintMemoryAroundAddress(proc_maps, -1, pc,
                            flags()->memory_around_register_size, false, true);
 }
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
 
 // See the frame breakdown defined in __hwasan_tag_mismatch (from
 // hwasan_tag_mismatch_{aarch64,riscv64}.S).

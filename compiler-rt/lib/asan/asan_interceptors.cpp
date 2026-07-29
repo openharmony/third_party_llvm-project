@@ -137,7 +137,7 @@ DECLARE_REAL_AND_INTERCEPTOR(void, free, void *)
       CheckNoDeepBind(filename, flag);              \
       REAL(dlopen)(filename, flag);                 \
     })
-#  if defined(OHOS_LLVM) && SANITIZER_OHOS
+#  if SANITIZER_OHOS
 #    define COMMON_INTERCEPTOR_DLOPEN_IMPL(                              \
         filename, flag, dl_namespace, caller_addr, extinfo)             \
       ({                                                                 \

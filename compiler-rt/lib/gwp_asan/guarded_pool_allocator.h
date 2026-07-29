@@ -73,9 +73,9 @@ public:
   // options.
   void init(const options::Options &Opts);
   void uninitTestOnly();
-#ifdef OHOS_LLVM
+#if defined(OHOS_LLVM) && defined(__OHOS__)
   bool hasFreeMem();
-#endif /* OHOS_LLVM */
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
   // Functions exported for libmemunreachable's use on Android. disable()
   // installs a lock in the allocator that prevents any thread from being able
@@ -102,6 +102,11 @@ public:
                PersistInterval / ReserveCounter, FreeSlotsLength);
       Nmalloc = 0;
     }
+    // If the RandomState is calculated from getRandomUnsigned32, the value
+    // of RandomState will never be 1, so we use RandomState == 1 to force
+    // GWP_ASAN sample.
+    if (GWP_ASAN_UNLIKELY(getThreadLocals()->RandomState == 1))
+      return true;
 #endif // defined(OHOS_LLVM) && defined(__OHOS__)
     // NextSampleCounter == 0 means we "should regenerate the counter".
     //                   == 1 means we "should sample this allocation".
@@ -109,14 +114,6 @@ public:
     // class must be valid when zero-initialised, and we wish to sample as
     // infrequently as possible when this is the case, hence we underflow to
     // UINT32_MAX.
-#ifdef OHOS_LLVM
-    // If the RandomState is calculated from getRandomUnsigned32, the value
-    // of RandomState will never be 1, so we use RandomState == 1 to force
-    // GWP_ASAN sample.
-    if (GWP_ASAN_UNLIKELY(getThreadLocals()->RandomState == 1))
-      return true;
-#endif // OHOS_LLVM
-
     if (GWP_ASAN_UNLIKELY(getThreadLocals()->NextSampleCounter == 0))
       getThreadLocals()->NextSampleCounter =
           ((getRandomUnsigned32() % (AdjustedSampleRatePlusOne - 1)) + 1) &
@@ -125,7 +122,7 @@ public:
     return GWP_ASAN_UNLIKELY(--getThreadLocals()->NextSampleCounter == 0);
   }
 
-#ifdef OHOS_LLVM
+#if defined(OHOS_LLVM) && defined(__OHOS__)
   // Force the allocation to do sample according to the function attribute.
   void forceSampleByFuncAttr() { getThreadLocals()->RandomState = 1; }
 
@@ -138,7 +135,7 @@ public:
     // 0xfffffffe.
     getThreadLocals()->RandomState = 0xacd979ce;
   }
-#endif // OHOS_LLVM
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
   // Returns whether the provided pointer is a current sampled allocation that
   // is owned by this pool.
@@ -256,10 +253,10 @@ private:
 
   gwp_asan::AllocatorState State;
 
-#ifdef OHOS_LLVM
+#if defined(OHOS_LLVM) && defined(__OHOS__)
   uint32_t MinSampleSize{0};
   const char *WhiteListPath = "";
-#endif /* OHOS_LLVM */
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
   // A mutex to protect the guarded slot and metadata pool for this class.
   Mutex PoolMutex;
