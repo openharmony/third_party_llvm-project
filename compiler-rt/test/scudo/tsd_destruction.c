@@ -28,7 +28,13 @@ void *thread_func(void *arg) {
   if ((i & 1) == 0)
     free(malloc(16));
   // Calling strerror_l allows for strerror_thread_freeres to be called.
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  locale_t locale = duplocale(LC_GLOBAL_LOCALE);
+  strerror_l(0, locale);
+  freelocale(locale);
+#else
   strerror_l(0, LC_GLOBAL_LOCALE);
+#endif
   return 0;
 }
 

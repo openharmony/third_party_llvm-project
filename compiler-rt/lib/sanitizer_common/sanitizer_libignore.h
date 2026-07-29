@@ -74,7 +74,7 @@ class LibIgnore {
 
     void OnUnload() { atomic_store(&end, 0, memory_order_release); }
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
     bool IsLoadedRange(uptr b, uptr e) const {
       return begin == b && atomic_load(&end, memory_order_acquire) == e;
     }
@@ -104,7 +104,7 @@ class LibIgnore {
   Lib libs_[kMaxLibs];
   bool track_instrumented_libs_;
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   bool IsInstrumentedRangeLoaded(uptr beg, uptr end) const;
   void UnloadOverlappingInstrumentedRanges(uptr beg, uptr end,
                                            const char *module_name);

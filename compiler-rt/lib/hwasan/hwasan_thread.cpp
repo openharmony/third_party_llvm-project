@@ -44,11 +44,22 @@ void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
 
   static atomic_uint64_t unique_id;
   unique_id_ = atomic_fetch_add(&unique_id, 1, memory_order_relaxed);
+#if !SANITIZER_OHOS
   if (!IsMainThread())
     os_id_ = GetTid();
 
   if (auto sz = flags()->heap_history_size)
     heap_allocations_ = HeapAllocationsRingBuffer::New(sz);
+#else /* SANITIZER_OHOS */
+  // Source set tid_=GetTid() for all threads incl. main; reuse os_id_.
+  os_id_ = GetTid();
+
+  if (auto sz = IsMainThread() ? flags()->heap_history_size_main_thread
+                               : flags()->heap_history_size)
+    heap_allocations_ = HeapAllocationsRingBuffer::New(sz);
+  trace_heap_allocation_ = true;
+  heap_quarantine_controller()->Init();
+#endif /* SANITIZER_OHOS */
 
 #if !SANITIZER_FUCHSIA
   // Do not initialize the stack ring buffer just yet on Fuchsia. Threads will
@@ -106,7 +117,12 @@ void Thread::ClearShadowForThreadStackAndTLS() {
 void Thread::Destroy() {
   if (flags()->verbose_threads)
     Print("Destroying: ");
+#if !SANITIZER_OHOS
   AllocatorThreadFinish(allocator_cache());
+#else /* SANITIZER_OHOS */
+  heap_quarantine_controller()->ClearHeapQuarantine(allocator_cache());
+  AllocatorThreadFinish(allocator_cache());
+#endif /* SANITIZER_OHOS */
   ClearShadowForThreadStackAndTLS();
   if (heap_allocations_)
     heap_allocations_->Delete();
@@ -120,9 +136,20 @@ void Thread::Destroy() {
 }
 
 void Thread::Print(const char *Prefix) {
+#if !SANITIZER_OHOS
   Printf("%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p)\n", Prefix, unique_id_,
          (void *)this, stack_bottom(), stack_top(),
          stack_top() - stack_bottom(), tls_begin(), tls_end());
+#else /* SANITIZER_OHOS */
+  Printf("%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p) rb:(%zd/%u) "
+         "records(%llu/o:%llu) tid: %d\n",
+         Prefix, unique_id_, (void *)this, stack_bottom(), stack_top(),
+         stack_top() - stack_bottom(), tls_begin(), tls_end(),
+         heap_allocations() ? heap_allocations()->realsize() : 0,
+         IsMainThread() ? flags()->heap_history_size_main_thread
+                        : flags()->heap_history_size,
+         all_record_count_, all_record_count_overflow_, tid());
+#endif /* SANITIZER_OHOS */
 }
 
 static u32 xorshift(u32 state) {
@@ -162,6 +189,20 @@ void EnsureMainThreadIDIsCorrect() {
   if (t && (t->IsMainThread()))
     t->set_os_id(GetTid());
 }
+
+#if SANITIZER_OHOS
+bool Thread::TryPutInQuarantineWithDealloc(uptr ptr, size_t s, u32 aid,
+                                           u32 fid) {
+  return heap_quarantine_controller()->TryPutInQuarantineWithDealloc(
+      ptr, s, aid, fid, allocator_cache());
+}
+
+void Thread::GetQuarantineStayTimeAndCount(size_t &staytime,
+                                           size_t &staycount) {
+  heap_quarantine_controller()->consumeQuarantineStayTimeAndCount(staytime,
+                                                                  staycount);
+}
+#endif /* SANITIZER_OHOS */
 
 } // namespace __hwasan
 

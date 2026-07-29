@@ -67,6 +67,9 @@
 #include "llvm/Transforms/Instrumentation/BoundsChecking.h"
 #include "llvm/Transforms/Instrumentation/DataFlowSanitizer.h"
 #include "llvm/Transforms/Instrumentation/GCOVProfiler.h"
+#ifdef OHOS_LLVM
+#include "llvm/Transforms/Instrumentation/GWPAddressSanitizer.h"
+#endif // OHOS_LLVM
 #include "llvm/Transforms/Instrumentation/HWAddressSanitizer.h"
 #include "llvm/Transforms/Instrumentation/InstrProfiling.h"
 #include "llvm/Transforms/Instrumentation/KCFI.h"
@@ -743,6 +746,13 @@ static void addSanitizers(const Triple &TargetTriple,
       MPM.addPass(ModuleThreadSanitizerPass());
       MPM.addPass(createModuleToFunctionPassAdaptor(ThreadSanitizerPass()));
     }
+
+#ifdef OHOS_LLVM
+    if (LangOpts.Sanitize.has(SanitizerKind::GWPAsan)) {
+      MPM.addPass(ModuleGWPAddressSanitizerPass());
+      MPM.addPass(createModuleToFunctionPassAdaptor(GWPAddressSanitizerPass()));
+    }
+#endif // OHOS_LLVM
 
     if (LangOpts.Sanitize.has(SanitizerKind::Type))
       MPM.addPass(TypeSanitizerPass());

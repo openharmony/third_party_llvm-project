@@ -19,7 +19,7 @@
 namespace __ubsan {
 
 SymbolizedStack *getSymbolizedLocation(uptr PC);
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 bool getSymbolizedData(uptr Addr, DataInfo *Info);
 const char *demangle(const char *Name);
 #endif

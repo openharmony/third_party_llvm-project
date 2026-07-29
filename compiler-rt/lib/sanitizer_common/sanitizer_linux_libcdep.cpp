@@ -91,7 +91,7 @@ extern "C" int __sys_sigaction(int signum, const struct sigaction *act,
 #    include <sys/link_elf.h>
 #  endif
 
-#  if !SANITIZER_ANDROID && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
+#  if !SANITIZER_ANDROID && !SANITIZER_OHOS
 #    include <elf.h>
 #    include <unistd.h>
 #  endif
@@ -697,7 +697,7 @@ void GetThreadStackAndTls(bool main, uptr *stk_begin, uptr *stk_end,
   if (!main) {
     // If stack and tls intersect, make them non-intersecting.
     if (*tls_begin > *stk_begin && *tls_begin < *stk_end) {
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
       // Keep the original stack bounds when TLS extends past the stack end.
       // Shrinking the stack in that case breaks frame-pointer unwinding on
       // OHOS by making valid frame pointers appear out of bounds.
@@ -726,7 +726,7 @@ struct DlIteratePhdrData {
   bool first;
 };
 
-#  if defined(OHOS_LLVM) && SANITIZER_OHOS
+#  if SANITIZER_OHOS
 class DynamicSegment {
  public:
   DynamicSegment(ElfW(Addr) base_addr, ElfW(Addr) segment_addr)
@@ -839,7 +839,7 @@ static int AddModuleSegments(const char *module_name, dl_phdr_info *info,
   if (module_name[0] == '\0')
     return 0;
   LoadedModule cur_module;
-#  if defined(OHOS_LLVM) && SANITIZER_OHOS
+#  if SANITIZER_OHOS
   cur_module.set(module_name, info->dlpi_addr, IsModuleInstrumented(info));
 #  else
   cur_module.set(module_name, info->dlpi_addr);
@@ -1024,7 +1024,7 @@ void SetAbortMessage(const char *str) {
   if (&android_set_abort_message)
     android_set_abort_message(str);
 }
-#    elif defined(OHOS_LLVM) && SANITIZER_OHOS
+#    elif SANITIZER_OHOS
 void AndroidLogInit() {}
 
 static atomic_uint8_t ohos_log_initialized;
@@ -1040,7 +1040,9 @@ static bool ShouldLogAfterPrintf() {
 extern "C" SANITIZER_WEAK_ATTRIBUTE int musl_log(const char *fmt, ...);
 extern "C" SANITIZER_WEAK_ATTRIBUTE int ohos_dfx_log(const char *str,
                                                       const char *path);
-static thread_local bool safe_to_call_ohos_dfx_log = true;
+static thread_local bool safe_to_call_printf = true;
+
+bool SafeToCallPrintf() { return safe_to_call_printf; }
 
 void WriteOneLineToSyslog(const char *s) {
   if (&musl_log)
@@ -1061,13 +1063,15 @@ void SetAbortMessage(const char *str) {}
 #    endif  // SANITIZER_ANDROID
 
 void LogMessageOnPrintf(const char *str) {
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   // Preserve newlines for the OHOS report aggregator before syslog splits
   // the message into individual lines.
-  if (&ohos_dfx_log && safe_to_call_ohos_dfx_log) {
-    safe_to_call_ohos_dfx_log = false;
+  // ohos_dfx_log is exclusively for LLVM Sanitizers to flush logs to disk; it
+  // may allocate and potentially re-enter the sanitizer (e.g. quarantine).
+  if (&ohos_dfx_log && safe_to_call_printf) {
+    safe_to_call_printf = false;
     ohos_dfx_log(str, common_flags()->log_path);
-    safe_to_call_ohos_dfx_log = true;
+    safe_to_call_printf = true;
   }
 #endif
   if (common_flags()->log_to_syslog && ShouldLogAfterPrintf())

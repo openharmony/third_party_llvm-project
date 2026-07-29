@@ -21,6 +21,10 @@
 #include "sanitizer_file.h"
 #  include "sanitizer_interface_internal.h"
 
+#if SANITIZER_OHOS
+extern "C" SANITIZER_WEAK_ATTRIBUTE int musl_log(const char *fmt, ...);
+#endif
+
 namespace __sanitizer {
 
 void CatastrophicErrorWrite(const char *buffer, uptr length) {
@@ -71,7 +75,14 @@ void ReportFile::ReopenIfNecessary() {
     char errmsg[100];
     internal_snprintf(errmsg, sizeof(errmsg), " (reason: %d)\n", err);
     WriteToFile(kStderrFd, errmsg, internal_strlen(errmsg));
+#if SANITIZER_OHOS
+    if (&musl_log) {
+      musl_log("%s %s %s\n", ErrorMsgPrefix, full_path, errmsg);
+    }
+    internal__exit(common_flags()->exitcode);
+#else
     Die();
+#endif
   }
   fd_pid = pid;
 }
@@ -84,7 +95,12 @@ static void RecursiveCreateParentDirs(char *path) {
     if (!IsPathSeparator(path[i]))
       continue;
     path[i] = '\0';
+#if !SANITIZER_OHOS
     if (!DirExists(path) && !CreateDir(path)) {
+#else /* SANITIZER_OHOS */
+    if (common_flags()->check_log_path_on_init && !DirExists(path) &&
+        !CreateDir(path)) {
+#endif /* SANITIZER_OHOS */
       const char *ErrorMsgPrefix = "ERROR: Can't create directory: ";
       WriteToFile(kStderrFd, ErrorMsgPrefix, internal_strlen(ErrorMsgPrefix));
       WriteToFile(kStderrFd, path, internal_strlen(path));

@@ -56,6 +56,47 @@ HWASAN_FLAG(int, heap_history_size, 1023,
           "The number of heap (de)allocations remembered per thread. "
           "Affects the quality of heap-related reports, but not the ability "
           "to find bugs.")
+#if SANITIZER_OHOS
+HWASAN_FLAG(
+    int, heap_history_size_main_thread, 102300,
+    "The number of heap (de)allocations remembered for the main thread. "
+    "Affects the quality of heap-related reports, but not the ability "
+    "to find bugs.")
+// Limits the size of the heap memory allocated to be recorded in order to
+// reduce the data. As a result, information may be missing. By default, the
+// minimum/maximum threshold is not set.
+HWASAN_FLAG(int, heap_record_min, 0,
+            "Only recording the heap memory allocation information that is >= "
+            "heap_record_min.")
+HWASAN_FLAG(int, heap_record_max, 0,
+            "Only recording the heap memory allocation information that is <= "
+            "heap_record_max.")
+HWASAN_FLAG(int, memory_around_register_size, 128,
+            "When reporting, the memory content of the address in register "
+            "±memory_around_register_size is printed.")
+HWASAN_FLAG(
+    bool, print_uaf_stacks_with_same_tag, true,
+    "Control the output content of use-after-free, deciding whether to print "
+    "all stack traces of matched allocations with the same tag restriction.")
+// Heap allocation information for freed threads
+HWASAN_FLAG(uptr, freed_threads_history_size, 100,
+            "The number of freed threads can be recorded.")
+HWASAN_FLAG(bool, verbose_freed_threads, false,
+            "Print the heap allocation information of freed threads.")
+// Set the quarantine area for freed heap, which is used to detect UAF-Write and
+// Overflow-Write. Provide the detection capability for dynamic libraries
+// compiled without hwasan option.
+HWASAN_FLAG(int, heap_quarantine_thread_max_count, 128,
+            "Set the maximum count for heap quarantine per thread.")
+HWASAN_FLAG(int, heap_quarantine_min, 0,
+            "The freed heap size should be larger than the minimum size before "
+            "it is placed into the heap quarantine.")
+HWASAN_FLAG(int, heap_quarantine_max, 0,
+            "The freed heap size should be smaller than the maximum size before "
+            "it is placed into the heap quarantine.")
+HWASAN_FLAG(bool, enable_heap_quarantine_debug, false,
+            "Enable Hwasan Quarantine Debug Mode.")
+#endif // SANITIZER_OHOS
 HWASAN_FLAG(bool, export_memory_stats, true,
             "Export up-to-date memory stats through /proc")
 HWASAN_FLAG(int, stack_history_size, 1024,

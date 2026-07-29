@@ -1,4 +1,4 @@
-#ifdef OHOS_LLVM
+#if defined(OHOS_LLVM) && defined(__OHOS__)
 //===-- backtrace_ohos.cpp -----------------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -6,18 +6,53 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// OHOS_LOCAL: backtrace hooks are registered by OHOS musl with gwp_asan.
+// OHOS musl provides libc_gwp_asan_unwind_fast; PrintBacktrace is shared via
+// print_backtrace_linux_libc.inc.
 
+#include <assert.h>
+#include <stdlib.h>
+
+#include "gwp_asan/definitions.h"
 #include "gwp_asan/optional/backtrace.h"
+#include "gwp_asan/optional/printf.h"
+#include "gwp_asan/options.h"
+
+extern "C" char **backtrace_symbols(void *const *trace, size_t len);
+
+#include "print_backtrace_linux_libc.inc"
+
+// Consistent with musl
+extern "C" GWP_ASAN_WEAK size_t
+libc_gwp_asan_unwind_fast(size_t *frame_buf, size_t max_record_stack);
+
+extern "C" GWP_ASAN_WEAK size_t
+libc_gwp_asan_unwind_segv(size_t *frame_buf, size_t max_record_stack,
+                          void *signal_context);
 
 namespace gwp_asan {
 namespace backtrace {
 
-// These interfaces are implemented by OHOS musl which is registered with gwp_asan.
-options::Backtrace_t getBacktraceFunction() { return nullptr; }
-PrintBacktrace_t getPrintBacktraceFunction() { return nullptr; }
-SegvBacktrace_t getSegvBacktraceFunction() { return nullptr; }
+// These interfaces are implemented by OHOS musl which is registered with
+// gwp_asan. 21.x Backtrace_t/SegvBacktrace_t use uintptr_t*; musl still uses
+// size_t*, so wrap with thin lambdas.
+options::Backtrace_t getBacktraceFunction() {
+  assert(&libc_gwp_asan_unwind_fast &&
+         "libc_gwp_asan_unwind_fast wasn't provided from musl.");
+  return [](uintptr_t *frame_buf, size_t max_record_stack) {
+    return libc_gwp_asan_unwind_fast(reinterpret_cast<size_t *>(frame_buf),
+                                     max_record_stack);
+  };
+}
+PrintBacktrace_t getPrintBacktraceFunction() { return PrintBacktrace; }
+SegvBacktrace_t getSegvBacktraceFunction() {
+  assert(&libc_gwp_asan_unwind_segv &&
+         "libc_gwp_asan_unwind_segv wasn't provided from musl.");
+  return [](uintptr_t *frame_buf, size_t Size, void *SignalContext) {
+    return libc_gwp_asan_unwind_segv(reinterpret_cast<size_t *>(frame_buf),
+                                     Size, SignalContext);
+  };
+}
 
 } // namespace backtrace
 } // namespace gwp_asan
-#endif /* OHOS_LLVM */
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)

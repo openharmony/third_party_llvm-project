@@ -193,7 +193,7 @@ void FakeStack::ForEachFakeFrame(RangeIteratorCallback callback, void *arg) {
   }
 }
 
-#if (SANITIZER_LINUX && !SANITIZER_ANDROID && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)) || \
+#if (SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS) || \
     SANITIZER_FUCHSIA
 static THREADLOCAL FakeStack *fake_stack_tls;
 

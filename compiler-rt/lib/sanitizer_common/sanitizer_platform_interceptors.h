@@ -58,7 +58,7 @@
 #define SI_ANDROID 0
 #endif
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 #define SI_OHOS 1
 #else
 #define SI_OHOS 0

@@ -938,6 +938,9 @@ Function *CodeExtractor::constructFunctionDeclaration(
       case Attribute::AlwaysInline:
       case Attribute::Cold:
       case Attribute::DisableSanitizerInstrumentation:
+#ifdef OHOS_LLVM
+      case Attribute::GWPSanitizeSpecific:
+#endif /* OHOS_LLVM */
       case Attribute::FnRetThunkExtern:
       case Attribute::Hot:
       case Attribute::HybridPatchable:

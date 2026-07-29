@@ -40,11 +40,32 @@
 extern "C" {
 void malloc_enable(void);
 void malloc_disable(void);
+#ifndef OHOS_LLVM
 int malloc_iterate(uintptr_t base, size_t size,
                    void (*callback)(uintptr_t base, size_t size, void *arg),
                    void *arg);
+#endif
 void *valloc(size_t size);
 void *pvalloc(size_t size);
+
+#ifdef OHOS_LLVM
+} // leave extern "C" so MallocIterateBaseT can be a C++ alias
+
+using MallocIterateBaseT =
+#if defined(__OHOS__)
+    // OHOS has a different function signature
+    void *
+#else
+    uintptr_t
+#endif
+    ;
+
+extern "C" {
+int malloc_iterate(MallocIterateBaseT base, size_t size,
+                   void (*callback)(MallocIterateBaseT base, size_t size,
+                                    void *arg),
+                   void *arg);
+#endif /* OHOS_LLVM */
 
 #ifndef SCUDO_ENABLE_HOOKS_TESTS
 #define SCUDO_ENABLE_HOOKS_TESTS 0
@@ -495,6 +516,7 @@ TEST_F(ScudoWrappersCTest, MallInfo2) {
 static uintptr_t BoundaryP;
 static size_t Count;
 
+#ifndef OHOS_LLVM
 static void callback(uintptr_t Base, UNUSED size_t Size, UNUSED void *Arg) {
   if (scudo::archSupportsMemoryTagging()) {
     Base = scudo::untagPointer(Base);
@@ -503,6 +525,17 @@ static void callback(uintptr_t Base, UNUSED size_t Size, UNUSED void *Arg) {
   if (Base == BoundaryP)
     Count++;
 }
+#else /* OHOS_LLVM */
+static void callback(MallocIterateBaseT Base, UNUSED size_t Size,
+                     UNUSED void *Arg) {
+  if (scudo::archSupportsMemoryTagging()) {
+    Base = (MallocIterateBaseT)scudo::untagPointer((uintptr_t)Base);
+    BoundaryP = scudo::untagPointer(BoundaryP);
+  }
+  if ((uintptr_t)Base == BoundaryP)
+    Count++;
+}
+#endif /* OHOS_LLVM */
 
 // Verify that a block located on an iteration boundary is not mis-accounted.
 // To achieve this, we allocate a chunk for which the backing block will be
@@ -546,8 +579,14 @@ TEST_F(ScudoWrappersCTest, MallocIterateBoundary) {
 
   Count = 0U;
   malloc_disable();
+#ifndef OHOS_LLVM
   malloc_iterate(Block - PageSize, PageSize, callback, nullptr);
   malloc_iterate(Block, PageSize, callback, nullptr);
+#else /* OHOS_LLVM */
+  malloc_iterate((MallocIterateBaseT)(Block - PageSize), PageSize, callback,
+                 nullptr);
+  malloc_iterate((MallocIterateBaseT)Block, PageSize, callback, nullptr);
+#endif /* OHOS_LLVM */
   malloc_enable();
   EXPECT_EQ(Count, 1U);
 

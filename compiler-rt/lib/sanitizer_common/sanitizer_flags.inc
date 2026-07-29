@@ -55,6 +55,11 @@ COMMON_FLAG(
     const char *, log_path, nullptr,
     "Write logs to \"log_path.pid\". The special values are \"stdout\" and "
     "\"stderr\". If unspecified, defaults to \"stderr\".")
+#if SANITIZER_OHOS
+COMMON_FLAG(
+    bool, check_log_path_on_init, true,
+    "If set, log_path will be checked during initialization.")
+#endif /* SANITIZER_OHOS */
 COMMON_FLAG(
     bool, log_exe_name, false,
     "Mention name of executable when reporting error and "
@@ -62,11 +67,8 @@ COMMON_FLAG(
 COMMON_FLAG(const char *, log_suffix, nullptr,
             "String to append to log file name, e.g. \".txt\".")
 COMMON_FLAG(
-#ifndef OHOS_LLVM
-    bool, log_to_syslog, (bool)SANITIZER_ANDROID || (bool)SANITIZER_APPLE,
-#else /* OHOS_LLVM */
-    bool, log_to_syslog, (bool)SANITIZER_ANDROID || (bool)SANITIZER_OHOS || (bool)SANITIZER_APPLE,
-#endif /* OHOS_LLVM */
+    bool, log_to_syslog,
+    (bool)SANITIZER_ANDROID || (bool)SANITIZER_OHOS || (bool)SANITIZER_APPLE,
     "Write all sanitizer output to syslog in addition to other means of "
     "logging.")
 COMMON_FLAG(
@@ -246,21 +248,15 @@ COMMON_FLAG(bool, intercept_stat, true,
 COMMON_FLAG(bool, intercept_send, true,
             "If set, uses custom wrappers for send* functions "
             "to find more errors.")
-#ifndef OHOS_LLVM
-COMMON_FLAG(bool, decorate_proc_maps, (bool)SANITIZER_ANDROID,
-#else /* OHOS_LLVM */
-COMMON_FLAG(bool, decorate_proc_maps, (bool)SANITIZER_ANDROID || (bool)SANITIZER_OHOS,
-#endif /* OHOS_LLVM */
+COMMON_FLAG(bool, decorate_proc_maps,
+            (bool)SANITIZER_ANDROID || (bool)SANITIZER_OHOS,
             "If set, decorate sanitizer mappings in /proc/self/maps with "
             "user-readable names")
 COMMON_FLAG(int, exitcode, 1, "Override the program exit status if the tool "
                               "found an error")
 COMMON_FLAG(
-#ifndef OHOS_LLVM
-    bool, abort_on_error, (bool)SANITIZER_ANDROID || (bool)SANITIZER_APPLE,
-#else /* OHOS_LLVM */
-    bool, abort_on_error, (bool)SANITIZER_ANDROID || (bool)SANITIZER_OHOS || (bool)SANITIZER_APPLE,
-#endif /* OHOS_LLVM */
+    bool, abort_on_error,
+    (bool)SANITIZER_ANDROID || (bool)SANITIZER_OHOS || (bool)SANITIZER_APPLE,
     "If set, the tool calls abort() instead of _exit() after printing the "
     "error report.")
 COMMON_FLAG(bool, suppress_equal_pcs, true,
@@ -294,3 +290,9 @@ COMMON_FLAG(bool, enable_symbolizer_markup, SANITIZER_FUCHSIA,
 
 COMMON_FLAG(bool, detect_invalid_join, true,
             "If set, check invalid joins of threads.")
+#if SANITIZER_OHOS
+COMMON_FLAG(bool, run_on_tw, false,
+            "If true, no abort.")
+COMMON_FLAG(bool, verbose_format_important_flags, false,
+            "Prints the important options of hwasan.")
+#endif /* SANITIZER_OHOS */

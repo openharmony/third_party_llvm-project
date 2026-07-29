@@ -115,7 +115,7 @@ SymbolizedStack *__ubsan::getSymbolizedLocation(uptr PC) {
   return Symbolizer::GetOrInit()->SymbolizePC(PC);
 }
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 bool __ubsan::getSymbolizedData(uptr Addr, DataInfo *Info) {
   InitAsStandaloneIfNecessary();
   return Symbolizer::GetOrInit()->SymbolizeData(Addr, Info);
@@ -412,6 +412,13 @@ ScopedReport::~ScopedReport() {
 
   if (flags()->halt_on_error)
     Die();
+
+#if SANITIZER_OHOS
+  // A mark for DFX to identify ubsan log and synchronize the log file to
+  // Faultlog folder.
+  if (!Opts.FromUnrecoverableHandler)
+    Report("End Ubsan report\n");
+#endif
 }
 
 alignas(64) static char suppression_placeholder[sizeof(SuppressionContext)];

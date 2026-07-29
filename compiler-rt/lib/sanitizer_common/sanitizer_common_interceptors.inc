@@ -281,7 +281,7 @@ extern const short *_tolower_tab_;
   ({ CheckNoDeepBind(filename, flag); REAL(dlopen)(filename, flag); })
 #endif
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 #  ifndef COMMON_INTERCEPTOR_DLOPEN_IMPL
 #    define COMMON_INTERCEPTOR_DLOPEN_IMPL(                            \
         filename, flag, dl_namespace, caller_addr, extinfo)           \
@@ -1312,11 +1312,11 @@ INTERCEPTOR(int, prctl, int option, unsigned long arg2, unsigned long arg3,
   static const int PR_SET_SECCOMP = 22;
   static const int SECCOMP_MODE_FILTER = 2;
 #  endif
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
   if (option == PR_SET_VMA && arg2 == 0UL) {
-#else /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
   if (option == PR_SET_VMA && arg2 == 0UL && arg5) {
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
     char *name = (char *)arg5;
     COMMON_INTERCEPTOR_READ_RANGE(ctx, name, internal_strlen(name) + 1);
   }
@@ -1348,27 +1348,31 @@ INTERCEPTOR(int, prctl, int option, unsigned long arg2, unsigned long arg3,
 #endif  // SANITIZER_INTERCEPT_PRCTL
 
 #if SANITIZER_INTERCEPT_TIME
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
 INTERCEPTOR(unsigned long, time, unsigned long *t) {
-#else /* OHOS_LLVM */
-INTERCEPTOR(__sanitizer_time_t, time, __sanitizer_time_t *t) {
-#endif /* OHOS_LLVM */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, time, t);
-#ifndef OHOS_LLVM
   unsigned long local_t;
   unsigned long res = REAL(time)(&local_t);
   if (t && res != (unsigned long)-1) {
-#else /* OHOS_LLVM */
-  __sanitizer_time_t local_t;
-  __sanitizer_time_t res = REAL(time)(&local_t);
-  if (t && res != -1) {
-#endif /* OHOS_LLVM */
     COMMON_INTERCEPTOR_WRITE_RANGE(ctx, t, sizeof(*t));
     *t = local_t;
   }
   return res;
 }
+#else /* SANITIZER_OHOS */
+INTERCEPTOR(__sanitizer_time_t, time, __sanitizer_time_t *t) {
+  void *ctx;
+  COMMON_INTERCEPTOR_ENTER(ctx, time, t);
+  __sanitizer_time_t local_t;
+  __sanitizer_time_t res = REAL(time)(&local_t);
+  if (t && res != -1) {
+    COMMON_INTERCEPTOR_WRITE_RANGE(ctx, t, sizeof(*t));
+    *t = local_t;
+  }
+  return res;
+}
+#endif /* SANITIZER_OHOS */
 #define INIT_TIME COMMON_INTERCEPT_FUNCTION(time);
 #else
 #define INIT_TIME
@@ -1387,11 +1391,11 @@ static void unpoison_tm(void *ctx, __sanitizer_tm *tm) {
   }
 #endif
 }
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
 INTERCEPTOR(__sanitizer_tm *, localtime, unsigned long *timep) {
-#else /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
 INTERCEPTOR(__sanitizer_tm *, localtime, __sanitizer_time_t *timep) {
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, localtime, timep);
   __sanitizer_tm *res = REAL(localtime)(timep);
@@ -1401,11 +1405,11 @@ INTERCEPTOR(__sanitizer_tm *, localtime, __sanitizer_time_t *timep) {
   }
   return res;
 }
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
 INTERCEPTOR(__sanitizer_tm *, localtime_r, unsigned long *timep, void *result) {
-#else /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
 INTERCEPTOR(__sanitizer_tm *, localtime_r, __sanitizer_time_t *timep, void *result) {
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, localtime_r, timep, result);
   __sanitizer_tm *res = REAL(localtime_r)(timep, result);
@@ -1415,11 +1419,11 @@ INTERCEPTOR(__sanitizer_tm *, localtime_r, __sanitizer_time_t *timep, void *resu
   }
   return res;
 }
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
 INTERCEPTOR(__sanitizer_tm *, gmtime, unsigned long *timep) {
-#else /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
 INTERCEPTOR(__sanitizer_tm *, gmtime, __sanitizer_time_t *timep) {
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, gmtime, timep);
   __sanitizer_tm *res = REAL(gmtime)(timep);
@@ -1429,11 +1433,11 @@ INTERCEPTOR(__sanitizer_tm *, gmtime, __sanitizer_time_t *timep) {
   }
   return res;
 }
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
 INTERCEPTOR(__sanitizer_tm *, gmtime_r, unsigned long *timep, void *result) {
-#else /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
 INTERCEPTOR(__sanitizer_tm *, gmtime_r, __sanitizer_time_t *timep, void *result) {
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, gmtime_r, timep, result);
   __sanitizer_tm *res = REAL(gmtime_r)(timep, result);
@@ -1443,11 +1447,11 @@ INTERCEPTOR(__sanitizer_tm *, gmtime_r, __sanitizer_time_t *timep, void *result)
   }
   return res;
 }
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
 INTERCEPTOR(char *, ctime, unsigned long *timep) {
-#else /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
 INTERCEPTOR(char *, ctime, __sanitizer_time_t *timep) {
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, ctime, timep);
   // FIXME: under ASan the call below may write to freed memory and corrupt
@@ -1460,11 +1464,11 @@ INTERCEPTOR(char *, ctime, __sanitizer_time_t *timep) {
   }
   return res;
 }
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
 INTERCEPTOR(char *, ctime_r, unsigned long *timep, char *result) {
-#else /* OHOS_LLVM */
+#else /* SANITIZER_OHOS */
 INTERCEPTOR(char *, ctime_r, __sanitizer_time_t *timep, char *result) {
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, ctime_r, timep, result);
   // FIXME: under ASan the call below may write to freed memory and corrupt
@@ -1503,11 +1507,8 @@ INTERCEPTOR(char *, asctime_r, __sanitizer_tm *tm, char *result) {
   }
   return res;
 }
-#ifndef OHOS_LLVM
+#if !SANITIZER_OHOS
 INTERCEPTOR(long, mktime, __sanitizer_tm *tm) {
-#else /* OHOS_LLVM */
-INTERCEPTOR(__sanitizer_time_t, mktime, __sanitizer_tm *tm) {
-#endif /* OHOS_LLVM */
   void *ctx;
   COMMON_INTERCEPTOR_ENTER(ctx, mktime, tm);
   COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_sec, sizeof(tm->tm_sec));
@@ -1517,15 +1518,26 @@ INTERCEPTOR(__sanitizer_time_t, mktime, __sanitizer_tm *tm) {
   COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_mon, sizeof(tm->tm_mon));
   COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_year, sizeof(tm->tm_year));
   COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_isdst, sizeof(tm->tm_isdst));
-#ifndef OHOS_LLVM
   long res = REAL(mktime)(tm);
   if (res != -1) unpoison_tm(ctx, tm);
-#else /* OHOS_LLVM */
-  __sanitizer_time_t res = REAL(mktime)(tm);
-  if (res != (__sanitizer_time_t)-1) unpoison_tm(ctx, tm);
-#endif /* OHOS_LLVM */
   return res;
 }
+#else /* SANITIZER_OHOS */
+INTERCEPTOR(__sanitizer_time_t, mktime, __sanitizer_tm *tm) {
+  void *ctx;
+  COMMON_INTERCEPTOR_ENTER(ctx, mktime, tm);
+  COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_sec, sizeof(tm->tm_sec));
+  COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_min, sizeof(tm->tm_min));
+  COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_hour, sizeof(tm->tm_hour));
+  COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_mday, sizeof(tm->tm_mday));
+  COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_mon, sizeof(tm->tm_mon));
+  COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_year, sizeof(tm->tm_year));
+  COMMON_INTERCEPTOR_READ_RANGE(ctx, &tm->tm_isdst, sizeof(tm->tm_isdst));
+  __sanitizer_time_t res = REAL(mktime)(tm);
+  if (res != (__sanitizer_time_t)-1) unpoison_tm(ctx, tm);
+  return res;
+}
+#endif /* SANITIZER_OHOS */
 #define INIT_LOCALTIME_AND_FRIENDS        \
   COMMON_INTERCEPT_FUNCTION(localtime);   \
   COMMON_INTERCEPT_FUNCTION(localtime_r); \
@@ -2329,7 +2341,7 @@ INTERCEPTOR(int, clock_gettime, u32 clk_id, void *tp) {
 #if SANITIZER_GLIBC
 namespace __sanitizer {
 extern "C" {
-#if !defined(OHOS_LLVM) || !SANITIZER_OHOS
+#if !SANITIZER_OHOS
 int real_clock_gettime(u32 clk_id, void *tp) {
   if (COMMON_INTERCEPTOR_NOTHING_IS_INITIALIZED)
     return internal_clock_gettime(clk_id, tp);
@@ -3401,7 +3413,7 @@ static void read_msghdr_control(void *ctx, void *control, uptr controllen) {
     __sanitizer_cmsghdr *cmsg = (__sanitizer_cmsghdr *)p;
     COMMON_INTERCEPTOR_READ_RANGE(ctx, &cmsg->cmsg_len, sizeof(cmsg->cmsg_len));
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
     if (control_end - p < RoundUpTo(cmsg->cmsg_len, sizeof(uptr)))
       break;
 #else
@@ -4159,7 +4171,7 @@ INTERCEPTOR(char *, strerror, int errnum) {
 //    static storage.
 #if ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE) || \
     SANITIZER_APPLE || SANITIZER_ANDROID || SANITIZER_NETBSD ||                 \
-    SANITIZER_FREEBSD || (defined(OHOS_LLVM) && SANITIZER_OHOS)
+    SANITIZER_FREEBSD || SANITIZER_OHOS
 // POSIX version. Spec is not clear on whether buf is NULL-terminated.
 // At least on OSX, buf contents are valid even when the call fails.
 INTERCEPTOR(int, strerror_r, int errnum, char *buf, SIZE_T buflen) {
@@ -6544,7 +6556,7 @@ INTERCEPTOR(int, fclose, __sanitizer_FILE *fp) {
 #endif
 
 #if SANITIZER_INTERCEPT_DLOPEN_DLCLOSE
-#  if defined(OHOS_LLVM) && SANITIZER_OHOS
+#  if SANITIZER_OHOS
 INTERCEPTOR(void *, dlopen_impl, const char *filename, int flag,
             const char *dl_namespace, const void *caller_addr,
             const void *extinfo) {
@@ -6608,7 +6620,7 @@ INTERCEPTOR(int, dlclose, void *handle) {
   COMMON_INTERCEPTOR_LIBRARY_UNLOADED();
   return res;
 }
-#  if defined(OHOS_LLVM) && SANITIZER_OHOS
+#  if SANITIZER_OHOS
 #    define INIT_DLOPEN_INTERCEPTOR COMMON_INTERCEPT_FUNCTION(dlopen_impl);
 #  else
 #    define INIT_DLOPEN_INTERCEPTOR COMMON_INTERCEPT_FUNCTION(dlopen);

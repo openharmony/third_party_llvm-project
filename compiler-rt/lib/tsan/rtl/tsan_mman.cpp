@@ -283,7 +283,11 @@ void OnUserFree(ThreadState *thr, uptr pc, uptr p, bool write) {
     DPrintf("#%d: free(0x%zx, %zu) (no slot)\n", thr->tid, p, sz);
     return;
   }
+#if !SANITIZER_OHOS
   SlotLocker locker(thr);
+#else
+  SlotLocker locker(thr, thr->ignore_interceptors > 0);
+#endif
   uptr sz = ctx->metamap.FreeBlock(thr->proc(), p, true);
   DPrintf("#%d: free(0x%zx, %zu)\n", thr->tid, p, sz);
   if (write && thr->ignore_reads_and_writes == 0)

@@ -4,8 +4,7 @@ import os
 import subprocess
 import sys
 
-import hdc_constants
-from ohos_common import get_output_from_args
+from ohos_common import *
 
 here = os.path.abspath(os.path.dirname(sys.argv[0]))
 host_run = os.path.join(here, "ohos_host_run.py")
@@ -16,8 +15,8 @@ if output is None:
     sys.exit(1)
 
 append_args = []
-if hdc_constants.DYN_LINKER:
-    append_args.append("-Wl,--dynamic-linker=" + hdc_constants.DYN_LINKER)
+if DYN_LINKER:
+    append_args.append("-Wl,--dynamic-linker=" + DYN_LINKER)
 
 sanitizer_include = os.path.abspath(os.path.join(here, "../../../include/"))
 append_args.append("-I" + sanitizer_include)

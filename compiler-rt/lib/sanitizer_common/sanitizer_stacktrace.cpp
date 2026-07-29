@@ -149,12 +149,12 @@ void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
 #endif  // !defined(__sparc__)
 
 void BufferedStackTrace::PopStackFrames(uptr count) {
-#ifdef OHOS_LLVM
+#if SANITIZER_OHOS
   // Don't attempt to pop if stack unwinding failed; this may happen at the
   // early stage of ASAN initialization (e.g. malloc called from __dl_vseterr).
   if (count == 0)
     return;
-#endif /* OHOS_LLVM */
+#endif /* SANITIZER_OHOS */
   CHECK_LT(count, size);
   size -= count;
   for (uptr i = 0; i < size; ++i) {

@@ -27,6 +27,9 @@ class RingBuffer {
     RingBuffer *RB = reinterpret_cast<RingBuffer*>(Ptr);
     uptr End = reinterpret_cast<uptr>(Ptr) + SizeInBytes(Size);
     RB->last_ = RB->next_ = reinterpret_cast<T*>(End - sizeof(T));
+#if SANITIZER_OHOS
+    RB->full_ = false;
+#endif
     return RB;
   }
   void Delete() {
@@ -35,11 +38,29 @@ class RingBuffer {
   uptr size() const {
     return last_ + 1 -
            reinterpret_cast<T *>(reinterpret_cast<uptr>(this) +
+#if !SANITIZER_OHOS
                                  2 * sizeof(T *));
+#else
+                                 sizeof(RingBuffer) - sizeof(T));
+#endif
   }
 
+#if SANITIZER_OHOS
+  // Number of valid elements. Before the buffer wraps (full_==false), this is
+  // less than size(); after wrap, equals size().
+  uptr realsize() const {
+    if (full_)
+      return size();
+    return ((uptr)last_ - (uptr)next_) / sizeof(T);
+  }
+#endif
+
   static uptr SizeInBytes(uptr Size) {
+#if !SANITIZER_OHOS
     return Size * sizeof(T) + 2 * sizeof(T*);
+#else
+    return Size * sizeof(T) + sizeof(RingBuffer) - sizeof(T);
+#endif
   }
 
   uptr SizeInBytes() { return SizeInBytes(size()); }
@@ -50,8 +71,15 @@ class RingBuffer {
     static_assert((sizeof(T) % sizeof(T *)) == 0,
                   "The condition below works only if sizeof(T) is divisible by "
                   "sizeof(T*).");
+#if !SANITIZER_OHOS
     if (next_ <= reinterpret_cast<T*>(&next_))
       next_ = last_;
+#else
+    if (next_ <= reinterpret_cast<T *>(&next_)) {
+      next_ = last_;
+      full_ = true;
+    }
+#endif
   }
 
   T operator[](uptr Idx) const {
@@ -68,11 +96,22 @@ class RingBuffer {
   RingBuffer(const RingBuffer&) = delete;
 
   // Data layout:
+#if !SANITIZER_OHOS
   // LNDDDDDDDD
   // D: data elements.
   // L: last_, always points to the last data element.
   // N: next_, initially equals to last_, is decremented on every push,
   //    wraps around if it's less or equal than its own address.
+#else
+  // FLNDDDDDDDD
+  // F: indicates whether the ring buffer is full.
+  // D: data elements.
+  // L: last_, always points to the last data element.
+  // N: next_, initially equals to last_, is decremented on every push,
+  //    wraps around if it's less or equal than its own address.
+  // full_ starts false; New() also sets full_ = false explicitly.
+  bool full_;
+#endif
   T *last_;
   T *next_;
   T data_[1];  // flexible array.

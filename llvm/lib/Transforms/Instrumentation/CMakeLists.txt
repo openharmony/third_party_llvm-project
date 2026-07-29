@@ -1,3 +1,12 @@
+# OHOS_LOCAL begin
+set(OHOS_INSTRUMENTATION_SOURCES)
+if(OHOS_LLVM)
+  list(APPEND OHOS_INSTRUMENTATION_SOURCES GWPAddressSanitizer.cpp)
+else()
+  set(LLVM_OPTIONAL_SOURCES GWPAddressSanitizer.cpp)
+endif()
+# OHOS_LOCAL end
+
 add_llvm_component_library(LLVMInstrumentation
   AddressSanitizer.cpp
   BoundsChecking.cpp
@@ -26,6 +35,7 @@ add_llvm_component_library(LLVMInstrumentation
   TypeSanitizer.cpp
   HWAddressSanitizer.cpp
   RealtimeSanitizer.cpp
+  ${OHOS_INSTRUMENTATION_SOURCES}
 
   ADDITIONAL_HEADER_DIRS
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Transforms

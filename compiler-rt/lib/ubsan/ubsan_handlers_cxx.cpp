@@ -94,7 +94,7 @@ void __ubsan::__ubsan_handle_dynamic_type_cache_miss_abort(
     Die();
 }
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 static bool StartsWith(const char *Str, const char *Pattern, uptr PatternLen) {
   return internal_strncmp(Str, Pattern, PatternLen) == 0;
 }
@@ -164,7 +164,7 @@ void __ubsan_handle_cfi_bad_type(CFICheckFailData *Data, ValueHandle Vtable,
        "%1 (vtable address %2)")
       << Data->Type << CheckKindStr << (void *)Vtable;
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   // If possible, say what type it actually points to or symbolize its address.
   DataInfo VtableDataInfo;
   if (DTI.isValid()) {

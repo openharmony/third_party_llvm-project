@@ -51,8 +51,14 @@ int main(void) {
   void * volatile res2 = malloc(1000000);
   pthread_create(&t, 0, ThreadFn, 0);
   pthread_join(t, 0);
+#ifndef OHOS_LLVM
   int ret_val = (int)(size_t)res;
   free(res);
   free(res2);
   return ret_val;
+#else /* OHOS_LLVM */
+  free(res);
+  free(res2);
+  return 0;
+#endif /* OHOS_LLVM */
 }

@@ -70,6 +70,12 @@ static void RegisterHwasanFlags(FlagParser *parser, Flags *f) {
 #undef HWASAN_FLAG
 }
 
+#if SANITIZER_OHOS
+#define APPEND_BOOL_FLAG_CONTENT(defaultFlags, flags, S, param) \
+  defaultFlags.Append(#S " is ");                               \
+  defaultFlags.Append(flags->S == param ? "true. " : "false. ");
+#endif /* SANITIZER_OHOS */
+
 static void InitializeFlags() {
   SetCommonFlagsDefaults();
   {
@@ -100,6 +106,18 @@ static void InitializeFlags() {
     cf.handle_abort = kHandleSignalNo;
     cf.handle_sigill = kHandleSignalNo;
     cf.handle_sigfpe = kHandleSignalNo;
+#endif
+
+#if SANITIZER_OHOS
+    // Default minimum hwasan configuration
+    cf.handle_segv = kHandleSignalNo;
+    cf.handle_sigbus = kHandleSignalNo;
+    cf.handle_abort = kHandleSignalNo;
+    cf.allocator_may_return_null = true;
+    cf.allow_user_segv_handler = true;
+    cf.log_exe_name = true;
+    cf.print_module_map = 1;
+    cf.intercept_send = false;
 #endif
     OverrideCommonFlags(cf);
   }
@@ -149,6 +167,29 @@ static void InitializeFlags() {
 #endif
 
   InitializeCommonFlags();
+
+#if SANITIZER_OHOS
+  if (common_flags()->verbose_format_important_flags) {
+    InternalScopedString defaultFlags;
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(),
+                             allocator_may_return_null, true);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(), handle_abort,
+                             kHandleSignalYes);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(), log_exe_name, true);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(), handle_segv,
+                             kHandleSignalYes);
+    defaultFlags.Append("print_module_map is ");
+    defaultFlags.AppendF("%d. ", common_flags()->print_module_map);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(), handle_sigbus,
+                             kHandleSignalYes);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(), intercept_send,
+                             true);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, common_flags(),
+                             allow_user_segv_handler, true);
+    APPEND_BOOL_FLAG_CONTENT(defaultFlags, flags(), halt_on_error, true);
+    Printf("The important option for hwasan is %s\n", defaultFlags.data());
+  }
+#endif
 
   if (Verbosity()) ReportUnrecognizedFlags();
 
@@ -211,7 +252,13 @@ void UpdateMemoryUsage() {}
 #endif
 
 void HwasanAtExit() {
+#if SANITIZER_OHOS
+  if (__hwasan::ShouldPrintQuarantineDwellTime())
+    hwasanThreadList().PrintfAverageQuarantineTime();
+  if (common_flags()->print_module_map > 1)
+#else
   if (common_flags()->print_module_map)
+#endif
     DumpProcessMap();
   if (flags()->print_stats && (flags()->atexit || hwasan_report_count > 0))
     ReportStats();
@@ -363,7 +410,9 @@ __attribute__((constructor(0))) void __hwasan_init() {
   // Install tool-specific callbacks in sanitizer_common.
   SetCheckUnwindCallback(CheckUnwind);
 
+#if !SANITIZER_OHOS
   __sanitizer_set_report_path(common_flags()->log_path);
+#endif
 
   InitializePlatformEarly();
 
@@ -381,7 +430,7 @@ __attribute__((constructor(0))) void __hwasan_init() {
   SetPrintfAndReportCallback(AppendToErrorMessageBuffer);
   // This may call libc -> needs initialized shadow.
   AndroidLogInit();
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   OhosLogInit();
 #endif
 

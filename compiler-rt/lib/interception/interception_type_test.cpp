@@ -40,7 +40,7 @@ COMPILER_CHECK(sizeof(::OFF64_T) == sizeof(off64_t));
 // The following are the cases when pread (and friends) is used instead of
 // pread64. In those cases we need OFF_T to match off_t. We don't care about the
 // rest (they depend on _FILE_OFFSET_BITS setting when building an application).
-#if !SANITIZER_WINDOWS && (SANITIZER_ANDROID || (defined(OHOS_LLVM) && SANITIZER_OHOS) || \
+#if !SANITIZER_WINDOWS && (SANITIZER_ANDROID || SANITIZER_OHOS || \
                            !defined _FILE_OFFSET_BITS || \
                            _FILE_OFFSET_BITS != 64)
 COMPILER_CHECK(sizeof(::OFF_T) == sizeof(off_t));

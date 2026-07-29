@@ -708,7 +708,136 @@ else:
     for vers in min_macos_deployment_target_substitutions:
         config.substitutions.append(("%%min_macos_deployment_target=%s.%s" % vers, ""))
 
-if config.android:
+# OHOS_LOCAL begin: remote_interface dispatch (hdc/adb) when configured.
+_remote_interface = getattr(config, "remote_interface", "") or ""
+if _remote_interface:
+    remote_cmd = None
+
+    if _remote_interface == "hdc":
+        for var in (
+            "HDC",
+            "HDC_SERVER_IP_PORT",
+            "HDC_UTID",
+        ):
+            if os.environ.get(var):
+                config.environment[var] = os.environ[var]
+
+        import remote_interfaces.hdc as remote_interface
+
+        config.substitutions.append(
+            ("%push_to_device", remote_interface.config_push_str)
+        )
+        config.substitutions.append(
+            ("%adb_shell ", remote_interface.config_shell_str)
+        )
+        config.substitutions.append(
+            ("%device_rm", remote_interface.config_remove_str)
+        )
+        remote_cmd = remote_interface.hdc_output
+        push_cmd = remote_interface.push
+        connect = remote_interface.connect
+    elif _remote_interface == "adb":
+        os.environ["ANDROID_SERIAL"] = config.android_serial
+        config.environment["ANDROID_SERIAL"] = config.android_serial
+        import remote_interfaces.adb as remote_interface
+
+        config.substitutions.append(
+            ("%push_to_device", remote_interface.config_push_str)
+        )
+        config.substitutions.append(
+            ("%adb_shell ", remote_interface.config_shell_str)
+        )
+        config.substitutions.append(
+            ("%device_rm", remote_interface.config_remove_str)
+        )
+        remote_cmd = remote_interface.adb_output
+        push_cmd = remote_interface.push
+        connect = remote_interface.connect
+
+    if config.android:
+        env = os.environ
+        import android_commands.android_common as android_common
+
+        # These are needed for tests to upload/download temp files, such as
+        # suppression-files, to device.
+        config.substitutions.append(
+            ("%device_rundir/", android_common.ANDROID_TMPDIR.rstrip("/") + "/")
+        )
+        try:
+            android_api_level_str = remote_cmd(
+                ["shell", "getprop", "ro.build.version.sdk"], env=env
+            ).rstrip()
+            android_api_codename = (
+                remote_cmd(
+                    ["shell", "getprop", "ro.build.version.codename"], env=env
+                )
+                .rstrip()
+                .decode("utf-8")
+            )
+        except (subprocess.CalledProcessError, OSError):
+            lit_config.fatal(
+                "Failed to read ro.build.version.sdk (using '%s' as adb)"
+                % remote_interface.command
+            )
+        try:
+            android_api_level = int(android_api_level_str)
+        except ValueError:
+            lit_config.fatal(
+                "Failed to read ro.build.version.sdk (using '%s' as adb): got '%s'"
+                % (remote_interface.command, android_api_level_str)
+            )
+        android_api_level = min(android_api_level, int(config.android_api_level))
+        for required in [26, 28, 29, 30]:
+            if android_api_level >= required:
+                config.available_features.add("android-%s" % required)
+        # FIXME: Replace with appropriate version when availible.
+        if android_api_level > 30 or (
+            android_api_level == 30 and android_api_codename == "S"
+        ):
+            config.available_features.add("android-thread-properties-api")
+
+        if "OHOS_REMOTE_DYN_LINKER" in os.environ:
+            config.environment["OHOS_REMOTE_DYN_LINKER"] = os.environ[
+                "OHOS_REMOTE_DYN_LINKER"
+            ]
+
+        # Prepare the device.
+        remote_cmd(
+            ["shell", "mkdir", "-p", android_common.ANDROID_TMPDIR], env=env
+        )
+        for file in config.android_files_to_push:
+            push_cmd(file, android_common.ANDROID_TMPDIR, env=env)
+
+    elif config.host_os == "OHOS":
+        for var in [
+            "OHOS_REMOTE_TMP_DIR",
+            "OHOS_REMOTE_DYN_LINKER",
+        ]:
+            if os.environ.get(var):
+                config.environment[var] = os.environ[var]
+
+        import ohos_common
+
+        env = os.environ
+        if config.ohos_host:
+            config.substitutions.append(("%device_rundir/", "./"))
+            config.substitutions.append(("%push_to_device", "echo "))
+            config.substitutions.append(("%adb_shell ", ""))
+            config.substitutions.append(("%device_rm", "rm "))
+        else:
+            config.substitutions.append(
+                ("%device_rundir/", ohos_common.TMPDIR.rstrip("/") + "/")
+            )
+            connect()
+            remote_cmd(
+                ["shell", "mkdir", "-p", ohos_common.TMPDIR], env=env
+            )
+    else:
+        config.substitutions.append(("%device_rundir/", ""))
+        config.substitutions.append(("%push_to_device", "echo "))
+        config.substitutions.append(("%adb_shell", "echo "))
+# OHOS_LOCAL end
+elif config.android:
     env = os.environ.copy()
     if config.android_serial:
         env["ANDROID_SERIAL"] = config.android_serial
@@ -766,46 +895,6 @@ if config.android:
     subprocess.check_call([adb, "shell", "mkdir", "-p", android_tmpdir], env=env)
     for file in config.android_files_to_push:
         subprocess.check_call([adb, "push", file, android_tmpdir], env=env)
-elif config.host_os == "OHOS":
-    if config.ohos_host:
-        config.substitutions.append(("%device_rundir/", ""))
-        config.substitutions.append(("%push_to_device", "echo "))
-        config.substitutions.append(("%adb_shell ", ""))
-        config.substitutions.append(("%device_rm", "rm "))
-    else:
-        for var in [
-            "HDC",
-            "HDC_SERVER_IP_PORT",
-            "HDC_UTID",
-            "OHOS_REMOTE_TMP_DIR",
-            "OHOS_REMOTE_DYN_LINKER",
-        ]:
-            if var in os.environ:
-                config.environment[var] = os.environ[var]
-
-        hdc_impl = os.path.join(
-            os.path.dirname(__file__), "sanitizer_common", "ohos_family_commands"
-        )
-        sys.path.append(hdc_impl)
-        import hdc_constants
-
-        env = os.environ.copy()
-        config.substitutions.append(
-            ("%device_rundir/", hdc_constants.TMPDIR.rstrip("/") + "/")
-        )
-        prefix = hdc_constants.get_hdc_cmd_prefix()
-        prefix_str = " ".join(prefix)
-        config.substitutions.append(
-            ("%push_to_device", "%s file send " % prefix_str)
-        )
-        config.substitutions.append(("%adb_shell ", "%s shell " % prefix_str))
-        config.substitutions.append(
-            ("%device_rm", "%s shell 'rm ' " % prefix_str)
-        )
-        subprocess.check_call(prefix + ["tconn"], env=env)
-        subprocess.check_call(
-            prefix + ["shell", "mkdir", "-p", hdc_constants.TMPDIR], env=env
-        )
 else:
     config.substitutions.append(("%device_rundir/", ""))
     config.substitutions.append(("%push_to_device", "echo "))
@@ -912,7 +1001,7 @@ def is_windows_lto_supported():
 if config.host_os == "Darwin" and is_darwin_lto_supported():
     config.lto_supported = True
     config.lto_flags = ["-Wl,-lto_library," + liblto_path()]
-elif config.host_os in ["Linux", "FreeBSD", "NetBSD"]:
+elif config.host_os in ["Linux", "FreeBSD", "NetBSD", "OHOS"]:  # OHOS_LOCAL
     config.lto_supported = False
     if config.use_lld and is_lld_lto_supported():
         config.lto_supported = True

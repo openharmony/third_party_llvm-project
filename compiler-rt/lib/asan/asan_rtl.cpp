@@ -63,7 +63,7 @@ static void AsanDie() {
         UnmapOrDie((void*)kLowShadowBeg, kHighShadowEnd - kLowShadowBeg);
     }
   }
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   Report("End Asan report (AsanDie)\n");
 #endif
 }
@@ -462,7 +462,9 @@ static bool AsanInitInternal() {
   SetCheckUnwindCallback(CheckUnwind);
   SetPrintfAndReportCallback(AppendToErrorMessageBuffer);
 
+#if !SANITIZER_OHOS
   __sanitizer_set_report_path(common_flags()->log_path);
+#endif
   __sanitizer::InitializePlatformEarly();
 
   // Setup internal allocator callback.
@@ -476,7 +478,7 @@ static bool AsanInitInternal() {
   // Doing this before interceptors are initialized crashes in:
   // AsanInitInternal -> android_log_write -> __interceptor_strcmp
   AndroidLogInit();
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   OhosLogInit();
 #endif
 

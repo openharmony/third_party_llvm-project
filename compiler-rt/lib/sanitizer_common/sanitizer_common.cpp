@@ -161,7 +161,7 @@ void LoadedModule::set(const char *module_name, uptr base_address) {
   base_address_ = base_address;
 }
 
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 void LoadedModule::set(const char *module_name, uptr base_address,
                        bool instrumented) {
   set(module_name, base_address);

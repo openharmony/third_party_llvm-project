@@ -29,5 +29,9 @@ namespace gwp_asan {
 // library's printf(). Notably, it returns 'void' rather than 'int'.
 typedef void (*Printf_t)(const char *Format, ...);
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+// Global Printf for GPA check/die path (FaultLogger via allocator).
+inline Printf_t Printf = nullptr;
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 } // namespace gwp_asan
 #endif // GWP_ASAN_OPTIONAL_PRINTF_H_

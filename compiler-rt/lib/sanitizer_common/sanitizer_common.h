@@ -840,7 +840,7 @@ class LoadedModule {
     ranges_.clear();
   }
   void set(const char *module_name, uptr base_address);
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   void set(const char *module_name, uptr base_address, bool instrumented);
 #endif
   void set(const char *module_name, uptr base_address, ModuleArch arch,
@@ -950,10 +950,16 @@ inline void WriteOneLineToSyslog(const char *s) {}
 inline void LogMessageOnPrintf(const char *str) {}
 #endif
 
+#if SANITIZER_OHOS
+bool SafeToCallPrintf();
+#else
+inline bool SafeToCallPrintf() { return true; }
+#endif
+
 #if SANITIZER_LINUX || SANITIZER_WIN_TRACE
 // Initialize Android logging. Any writes before this are silently lost.
 void AndroidLogInit();
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 // Initialize OHOS logging. Any writes before this are silently lost.
 void OhosLogInit();
 #endif

@@ -39,6 +39,14 @@ if(APPLE)
   darwin_filter_host_archs(UBSAN_SUPPORTED_ARCH UBSAN_TEST_ARCH)
 endif()
 
+# OHOS_LOCAL begin
+if(OHOS_LLVM AND OHOS_FAMILY)
+  set(SUPPORT_MULTI_SAN FALSE)
+else()
+  set(SUPPORT_MULTI_SAN TRUE)
+endif()
+# OHOS_LOCAL end
+
 foreach(arch ${UBSAN_TEST_ARCH})
   set(UBSAN_TEST_TARGET_ARCH ${arch})
   if (APPLE)
@@ -48,7 +56,9 @@ foreach(arch ${UBSAN_TEST_ARCH})
   get_test_cc_for_arch(${arch} UBSAN_TEST_TARGET_CC UBSAN_TEST_TARGET_CFLAGS)
   add_ubsan_testsuites("Standalone" ubsan ${arch})
 
-  if(COMPILER_RT_HAS_ASAN AND ";${ASAN_SUPPORTED_ARCH};" MATCHES ";${arch};")
+  # OHOS_LOCAL begin
+  if(SUPPORT_MULTI_SAN AND COMPILER_RT_HAS_ASAN AND ";${ASAN_SUPPORTED_ARCH};" MATCHES ";${arch};")
+  # OHOS_LOCAL end
     # Disable ubsan with AddressSanitizer tests for 64-bit Solaris/x86 and
     # 64-bit SPARC.
     if((NOT (OS_NAME MATCHES "SunOS" AND ${arch} MATCHES x86_64)) AND
@@ -56,10 +66,14 @@ foreach(arch ${UBSAN_TEST_ARCH})
       add_ubsan_testsuites("AddressSanitizer" asan ${arch})
     endif()
   endif()
-  if(COMPILER_RT_HAS_MSAN AND ";${MSAN_SUPPORTED_ARCH};" MATCHES ";${arch};")
+  # OHOS_LOCAL begin
+  if(SUPPORT_MULTI_SAN AND COMPILER_RT_HAS_MSAN AND ";${MSAN_SUPPORTED_ARCH};" MATCHES ";${arch};")
+  # OHOS_LOCAL end
     add_ubsan_testsuites("MemorySanitizer" msan ${arch})
   endif()
-  if(COMPILER_RT_HAS_TSAN AND ";${TSAN_SUPPORTED_ARCH};" MATCHES ";${arch};" AND NOT ANDROID)
+  # OHOS_LOCAL begin
+  if(SUPPORT_MULTI_SAN AND COMPILER_RT_HAS_TSAN AND ";${TSAN_SUPPORTED_ARCH};" MATCHES ";${arch};" AND NOT ANDROID)
+  # OHOS_LOCAL end
     add_ubsan_testsuites("ThreadSanitizer" tsan ${arch})
   endif()
 endforeach()

@@ -873,6 +873,8 @@ static uint64_t getAttrKindEncoding(Attribute::AttrKind Kind) {
     return bitc::ATTR_KIND_STACK_PROTECT_RET_REQ;
   case Attribute::StackProtectRetStrong:
     return bitc::ATTR_KIND_STACK_PROTECT_RET_STRONG;
+  case Attribute::GWPSanitizeSpecific:
+    return bitc::ATTR_KIND_FUNCTION_INSTRUMENT_WITH_GWP_SANITIZER;
 #endif /* OHOS_LLVM */
   case Attribute::StackProtectReq:
     return bitc::ATTR_KIND_STACK_PROTECT_REQ;

@@ -62,7 +62,8 @@ static_assert(sizeof(ThreadLocalPackedVariables) == sizeof(uint64_t),
 #else
 #if defined(OHOS_LLVM) && defined(__OHOS__)
 // OHOS musl stores the GWP-ASan TLS state in its pthread structure.
-extern "C" void *get_platform_gwp_asan_tls_slot();
+// Weak so linking succeeds when musl has not yet provided the symbol.
+extern "C" GWP_ASAN_WEAK void *get_platform_gwp_asan_tls_slot();
 namespace gwp_asan {
 inline ThreadLocalPackedVariables *getThreadLocals() {
   return reinterpret_cast<ThreadLocalPackedVariables *>(

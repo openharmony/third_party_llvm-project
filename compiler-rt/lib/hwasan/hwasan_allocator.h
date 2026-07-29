@@ -109,6 +109,9 @@ class HwasanChunkView {
   u32 GetAllocThreadId() const;
   bool FromSmallHeap() const;
   bool AddrIsInside(uptr addr) const;
+#if SANITIZER_OHOS
+  int AllocatedByThread() const;
+#endif /* SANITIZER_OHOS */
 
  private:
   friend class __lsan::LsanMetadata;
@@ -131,6 +134,19 @@ struct HeapAllocationRecord {
 typedef RingBuffer<HeapAllocationRecord> HeapAllocationsRingBuffer;
 
 void GetAllocatorStats(AllocatorStatCounters s);
+
+#if SANITIZER_OHOS
+void SimpleThreadDeallocate(void *ptr, AllocatorCache *cache);
+
+// Temporarily 100000; may be adjusted later.
+#define PRINT_COUNTER 100000
+
+__attribute__((always_inline)) static bool ShouldPrintQuarantineDwellTime() {
+  return flags()->heap_quarantine_max > 0 &&
+         flags()->enable_heap_quarantine_debug &&
+         flags()->heap_quarantine_thread_max_count > 0;
+}
+#endif /* SANITIZER_OHOS */
 
 } // namespace __hwasan
 

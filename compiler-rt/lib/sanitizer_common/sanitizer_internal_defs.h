@@ -108,7 +108,7 @@
 //
 // FIXME: do we have anything like this on Mac?
 #ifndef SANITIZER_CAN_USE_PREINIT_ARRAY
-#if ((SANITIZER_LINUX && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)) || SANITIZER_FUCHSIA || SANITIZER_NETBSD) && !defined(PIC)
+#if ((SANITIZER_LINUX && !SANITIZER_OHOS) || SANITIZER_FUCHSIA || SANITIZER_NETBSD) && !defined(PIC)
 #define SANITIZER_CAN_USE_PREINIT_ARRAY 1
 // Before Solaris 11.4, .preinit_array is fully supported only with GNU ld.
 // FIXME: Check for those conditions.
@@ -188,10 +188,10 @@ typedef int pid_t;
 #endif
 
 #if SANITIZER_FREEBSD || SANITIZER_NETBSD || SANITIZER_APPLE ||           \
-    (defined(OHOS_LLVM) && SANITIZER_OHOS) ||                             \
+    SANITIZER_OHOS ||                             \
     (SANITIZER_SOLARIS && (defined(_LP64) || _FILE_OFFSET_BITS == 64)) || \
     (SANITIZER_LINUX && !SANITIZER_GLIBC && !SANITIZER_ANDROID &&        \
-     (!defined(OHOS_LLVM) || !SANITIZER_OHOS)) ||                        \
+     !SANITIZER_OHOS) ||                        \
     (SANITIZER_LINUX && (defined(__x86_64__) || defined(__hexagon__)))
 typedef u64 OFF_T;
 #else

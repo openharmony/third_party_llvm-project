@@ -210,10 +210,21 @@ void UnsetAlternateSignalStack() {
   UnmapOrDie(oldstack.ss_sp, oldstack.ss_size);
 }
 
+#if SANITIZER_OHOS
+struct signal_chain_action {
+  bool (*sca_sigaction)(int, siginfo_t *, void *);
+  sigset_t sca_mask;
+  int sca_flags;
+};
+extern "C" SANITIZER_WEAK_ATTRIBUTE void add_special_signal_handler(
+    int signo, struct signal_chain_action *sa);
+#endif
+
 static void MaybeInstallSigaction(int signum,
                                   SignalHandlerType handler) {
   if (GetHandleSignalMode(signum) == kHandleSignalNo) return;
 
+#if !SANITIZER_OHOS
   struct sigaction sigact;
   internal_memset(&sigact, 0, sizeof(sigact));
   sigact.sa_sigaction = (sa_sigaction_t)handler;
@@ -223,6 +234,32 @@ static void MaybeInstallSigaction(int signum,
   if (common_flags()->use_sigaltstack) sigact.sa_flags |= SA_ONSTACK;
   CHECK_EQ(0, internal_sigaction(signum, &sigact, nullptr));
   VReport(1, "Installed the sigaction for signal %d\n", signum);
+#else
+  HandleSignalMode mode = GetHandleSignalMode(signum);
+  if (mode == kHandleSignalYes || !(&add_special_signal_handler)) {
+    struct sigaction sigact;
+    internal_memset(&sigact, 0, sizeof(sigact));
+    sigact.sa_sigaction = (sa_sigaction_t)handler;
+    // Do not block the signal from being received in that signal's handler.
+    // Clients are responsible for handling this correctly.
+    sigact.sa_flags = SA_SIGINFO | SA_NODEFER;
+    if (common_flags()->use_sigaltstack) sigact.sa_flags |= SA_ONSTACK;
+    CHECK_EQ(0, internal_sigaction(signum, &sigact, nullptr));
+    VReport(1, "Installed the sigaction for signal %d\n", signum);
+  } else {
+    typedef bool (*sc)(int, siginfo_t *, void *);
+    sc h = (sc)handler;
+    struct signal_chain_action sigchain = {
+        .sca_sigaction = h,
+        .sca_mask = {},
+        .sca_flags = SA_SIGINFO | SA_NODEFER,
+    };
+    // This is a void function for OHOS. When there are too many registered
+    // functions, an internal error is reported. CHECK is not required.
+    add_special_signal_handler(signum, &sigchain);
+    VReport(1, "Installed the sigaction for signal %d\n", signum);
+  }
+#endif
 }
 
 void InstallDeadlySignalHandlers(SignalHandlerType handler) {

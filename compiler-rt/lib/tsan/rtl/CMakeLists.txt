@@ -24,6 +24,13 @@ if(OHOS_LLVM AND OHOS AND COMPILER_RT_HAS_Z_GLOBAL)
   list(APPEND TSAN_DYNAMIC_LINK_FLAGS -Wl,-z,global)
 endif()
 
+# -DTSAN_STATIC disables the OHOS libc++ __call_once interceptor in the static
+# TSan runtime (dynamic builds leave TSAN_STATIC undefined).
+set(TSAN_STATIC_FLAGS "")
+if(OHOS_LLVM AND OHOS)
+  list(APPEND TSAN_STATIC_FLAGS "-DTSAN_STATIC")
+endif()
+
 append_list_if(COMPILER_RT_HAS_LIBDL dl TSAN_DYNAMIC_LINK_LIBS)
 append_list_if(COMPILER_RT_HAS_LIBM m TSAN_DYNAMIC_LINK_LIBS)
 append_list_if(COMPILER_RT_HAS_LIBPTHREAD pthread TSAN_DYNAMIC_LINK_LIBS)
@@ -260,14 +267,14 @@ else()
               $<TARGET_OBJECTS:RTSanitizerCommonSymbolizerInternal.${arch}>
               $<TARGET_OBJECTS:RTUbsan.${arch}>
       ADDITIONAL_HEADERS ${TSAN_HEADERS}
-      CFLAGS ${TSAN_RTL_CFLAGS}
+      CFLAGS ${TSAN_RTL_CFLAGS} ${TSAN_STATIC_FLAGS}
       PARENT_TARGET tsan)
     add_compiler_rt_runtime(clang_rt.tsan_cxx
       STATIC
       ARCHS ${arch}
       SOURCES ${TSAN_CXX_SOURCES}
       ADDITIONAL_HEADERS ${TSAN_HEADERS}
-      CFLAGS ${TSAN_RTL_CFLAGS}
+      CFLAGS ${TSAN_RTL_CFLAGS} ${TSAN_STATIC_FLAGS}
       PARENT_TARGET tsan)
     list(APPEND TSAN_RUNTIME_LIBRARIES clang_rt.tsan-${arch}
                                        clang_rt.tsan_cxx-${arch})

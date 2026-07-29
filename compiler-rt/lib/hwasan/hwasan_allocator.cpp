@@ -21,6 +21,9 @@
 #include "hwasan_malloc_bisect.h"
 #include "hwasan_thread.h"
 #include "hwasan_report.h"
+#if SANITIZER_OHOS
+#include "hwasan_thread_list.h"
+#endif /* SANITIZER_OHOS */
 #include "lsan/lsan_common.h"
 
 namespace __hwasan {
@@ -28,6 +31,9 @@ namespace __hwasan {
 static Allocator allocator;
 static AllocatorCache fallback_allocator_cache;
 static SpinMutex fallback_mutex;
+#if SANITIZER_OHOS
+static SpinMutex count_mutex;
+#endif /* SANITIZER_OHOS */
 static atomic_uint8_t hwasan_allocator_tagging_enabled;
 
 static constexpr tag_t kFallbackAllocTag = 0xBB & kTagMask;
@@ -68,6 +74,14 @@ u32 HwasanChunkView::GetAllocThreadId() const {
   return metadata_->GetAllocThreadId();
 }
 
+#if SANITIZER_OHOS
+int HwasanChunkView::AllocatedByThread() const {
+  if (metadata_)
+    return static_cast<int>(metadata_->GetAllocThreadId());
+  return -1;
+}
+#endif /* SANITIZER_OHOS */
+
 uptr HwasanChunkView::ActualSize() const {
   return allocator.GetActuallyAllocatedSize(reinterpret_cast<void *>(block_));
 }
@@ -82,7 +96,12 @@ bool HwasanChunkView::AddrIsInside(uptr addr) const {
 
 inline void Metadata::SetAllocated(u32 stack, u64 size) {
   Thread *t = GetCurrentThread();
+#if !SANITIZER_OHOS
   u64 context = t ? t->unique_id() : kMainTid;
+#else /* SANITIZER_OHOS */
+  // Keep sizeof(Metadata)==16: pack OS tid (not unique_id) into high 32 bits.
+  u64 context = t ? static_cast<u32>(t->tid()) : static_cast<u32>(-1);
+#endif /* SANITIZER_OHOS */
   context <<= 32;
   context += stack;
   requested_size_low = size & ((1ul << 32) - 1);
@@ -119,6 +138,14 @@ inline u32 Metadata::GetAllocThreadId() const {
 void GetAllocatorStats(AllocatorStatCounters s) {
   allocator.GetStats(s);
 }
+
+#if SANITIZER_OHOS
+void SimpleThreadDeallocate(void *ptr, AllocatorCache *cache) {
+  CHECK(ptr);
+  CHECK(cache);
+  allocator.Deallocate(cache, ptr);
+}
+#endif /* SANITIZER_OHOS */
 
 inline void Metadata::SetLsanTag(__lsan::ChunkTag tag) {
   lsan_tag = tag;
@@ -362,14 +389,52 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
                      tag);
   }
   if (t) {
+#if !SANITIZER_OHOS
     allocator.Deallocate(t->allocator_cache(), aligned_ptr);
     if (auto *ha = t->heap_allocations())
       ha->push({reinterpret_cast<uptr>(tagged_ptr), alloc_thread_id,
                 alloc_context_id, free_context_id,
                 static_cast<u32>(orig_size)});
+#else /* SANITIZER_OHOS */
+    if (__hwasan::ShouldPrintQuarantineDwellTime()) {
+      SpinMutexLock l(&count_mutex);
+      if (hwasanThreadList().AddCount() % PRINT_COUNTER == 0)
+        hwasanThreadList().PrintfAverageQuarantineTime();
+    }
+    if (!t->TryPutInQuarantineWithDealloc(
+            reinterpret_cast<uptr>(aligned_ptr), TaggedSize(orig_size),
+            alloc_context_id, free_context_id))
+      allocator.Deallocate(t->allocator_cache(), aligned_ptr);
+    if (t->AllowTracingHeapAllocation()) {
+      if (auto *ha = t->heap_allocations()) {
+        if ((flags()->heap_record_max == 0 ||
+             orig_size <= flags()->heap_record_max) &&
+            (flags()->heap_record_min == 0 ||
+             orig_size >= flags()->heap_record_min)) {
+          ha->push({reinterpret_cast<uptr>(tagged_ptr), alloc_thread_id,
+                    alloc_context_id, free_context_id,
+                    static_cast<u32>(orig_size)});
+          t->inc_record();
+        }
+      }
+    }
+#endif /* SANITIZER_OHOS */
   } else {
     SpinMutexLock l(&fallback_mutex);
     AllocatorCache *cache = &fallback_allocator_cache;
+#if SANITIZER_OHOS
+    if (hwasanThreadList().AllowTracingHeapAllocation()) {
+      if ((flags()->heap_record_max == 0 ||
+           orig_size <= flags()->heap_record_max) &&
+          (flags()->heap_record_min == 0 ||
+           orig_size >= flags()->heap_record_min)) {
+        hwasanThreadList().RecordFallBack(
+            {reinterpret_cast<uptr>(tagged_ptr), alloc_thread_id,
+             alloc_context_id, free_context_id,
+             static_cast<u32>(orig_size)});
+      }
+    }
+#endif /* SANITIZER_OHOS */
     allocator.Deallocate(cache, aligned_ptr);
   }
 }

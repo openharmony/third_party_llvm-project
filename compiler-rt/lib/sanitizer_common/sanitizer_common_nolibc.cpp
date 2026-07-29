@@ -23,6 +23,9 @@ namespace __sanitizer {
 #  if SANITIZER_LINUX
 void LogMessageOnPrintf(const char *str) {}
 void InitTlsSize() {}
+#    if SANITIZER_OHOS
+bool SafeToCallPrintf() { return true; }
+#    endif
 #  endif
 void WriteToSyslog(const char *buffer) {}
 void Abort() { internal__exit(1); }

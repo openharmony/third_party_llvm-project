@@ -14,6 +14,9 @@
 #define HWASAN_THREAD_H
 
 #include "hwasan_allocator.h"
+#if SANITIZER_OHOS
+#include "hwasan_quarantine.h"
+#endif /* SANITIZER_OHOS */
 #include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_ring_buffer.h"
 
@@ -49,6 +52,15 @@ class Thread {
   DTLS *dtls() { return dtls_; }
   bool IsMainThread() { return unique_id_ == 0; }
 
+#if SANITIZER_OHOS
+  void inc_record(void) {
+    all_record_count_++;
+    if (all_record_count_ == 0) {
+      all_record_count_overflow_++;
+    }
+  }
+#endif /* SANITIZER_OHOS */
+
   bool AddrIsInStack(uptr addr) {
     return addr >= stack_bottom_ && addr < stack_top_;
   }
@@ -62,17 +74,39 @@ class Thread {
   void DisableTagging() { tagging_disabled_++; }
   void EnableTagging() { tagging_disabled_--; }
 
+#if SANITIZER_OHOS
+  void EnableTracingHeapAllocation() { trace_heap_allocation_ = true; }
+  void DisableTracingHeapAllocation() { trace_heap_allocation_ = false; }
+  bool AllowTracingHeapAllocation() { return trace_heap_allocation_; }
+#endif /* SANITIZER_OHOS */
+
   u32 unique_id() const { return unique_id_; }
+#if !SANITIZER_OHOS
   void Announce() {
     if (announced_) return;
     announced_ = true;
     Print("Thread: ");
   }
+#else /* SANITIZER_OHOS */
+  // Report uses OS tid; alias to existing os_id_ (no separate tid_ member).
+  int tid() const { return static_cast<int>(os_id_); }
+  void Announce() { Print("Thread: "); }
+#endif /* SANITIZER_OHOS */
 
   tid_t os_id() const { return os_id_; }
   void set_os_id(tid_t os_id) { os_id_ = os_id; }
 
   uptr &vfork_spill() { return vfork_spill_; }
+
+#if SANITIZER_OHOS
+  HeapQuarantineController *heap_quarantine_controller() {
+    return &heap_quarantine_controller_;
+  }
+
+  bool TryPutInQuarantineWithDealloc(uptr ptr, size_t s, u32 aid, u32 fid);
+
+  void GetQuarantineStayTimeAndCount(size_t &staytime, size_t &staycount);
+#endif /* SANITIZER_OHOS */
 
  private:
   // NOTE: There is no Thread constructor. It is allocated
@@ -103,6 +137,13 @@ class Thread {
   bool announced_;
 
   bool random_state_inited_;  // Whether InitRandomState() has been called.
+
+#if SANITIZER_OHOS
+  bool trace_heap_allocation_;
+  u64 all_record_count_ = 0;           // Count record
+  u64 all_record_count_overflow_ = 0;  // Whether all_record_count_ overflow.
+  HeapQuarantineController heap_quarantine_controller_;
+#endif /* SANITIZER_OHOS */
 
   friend struct ThreadListHead;
 };

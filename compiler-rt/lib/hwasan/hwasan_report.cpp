@@ -59,7 +59,7 @@ class ScopedReport {
     if (common_flags()->print_module_map >= 2 ||
         (fatal && common_flags()->print_module_map))
       DumpProcessMap();
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
     Report("End Hwasan report\n");
 #endif
     if (fatal)
@@ -129,7 +129,11 @@ class SavedStackAllocations {
     void *storage =
         MmapAlignedOrDieOnFatalError(size, size * 2, "saved stack allocations");
     new (&rb_) StackAllocationsRingBuffer(*rb, storage);
+#if !SANITIZER_OHOS
     thread_id_ = t->unique_id();
+#else /* SANITIZER_OHOS */
+    thread_id_ = static_cast<u32>(t->tid());
+#endif /* SANITIZER_OHOS */
   }
 
   ~SavedStackAllocations() {
@@ -512,6 +516,12 @@ class BaseReport {
     uptr num_matching_addrs = 0;
     uptr num_matching_addrs_4b = 0;
     u32 free_thread_id = 0;
+#if SANITIZER_OHOS
+    // History size of the freeing thread (main vs non-main) for rb_distance.
+    uptr heap_history_size = 0;
+    // True when matched from ThreadList freed-thread history (not a live tid).
+    bool from_freed_thread = false;
+#endif /* SANITIZER_OHOS */
   };
 
   struct Allocations {
@@ -525,6 +535,9 @@ class BaseReport {
     u32 stack_id = 0;
     bool from_small_heap = false;
     bool is_allocated = false;
+#if SANITIZER_OHOS
+    u32 alloc_thread_id = 0;
+#endif /* SANITIZER_OHOS */
   };
 
   struct Shadow {
@@ -546,6 +559,10 @@ class BaseReport {
 
   SavedStackAllocations stack_allocations_storage[16];
   HeapAllocation heap_allocations_storage[256];
+#if SANITIZER_OHOS
+  uptr record_searched_ = 0;
+  uptr record_matched_ = 0;
+#endif /* SANITIZER_OHOS */
 
   const ScopedReport scoped_report;
   const StackTrace *stack = nullptr;
@@ -642,6 +659,9 @@ BaseReport::HeapChunk BaseReport::CopyHeapChunk() const {
     result.from_small_heap = chunk.FromSmallHeap();
     result.is_allocated = chunk.IsAllocated();
     result.stack_id = chunk.GetAllocStackId();
+#if SANITIZER_OHOS
+    result.alloc_thread_id = chunk.GetAllocThreadId();
+#endif /* SANITIZER_OHOS */
   }
   return result;
 }
@@ -657,6 +677,7 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
       stack_allocations_storage[stack_allocations_count++].CopyFrom(t);
     }
 
+#if !SANITIZER_OHOS
     if (heap_allocations_count < ARRAY_SIZE(heap_allocations_storage)) {
       // Scan all threads' ring buffers to find if it's a heap-use-after-free.
       HeapAllocationRecord har;
@@ -672,7 +693,77 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
         ha.free_thread_id = t->unique_id();
       }
     }
+#else /* SANITIZER_OHOS */
+    // Collect all matching UAF records (up to storage cap). Disable tracing
+    // while scanning to avoid re-entrant ring pushes from report printing.
+    auto *rb = t->heap_allocations();
+    if (!rb)
+      return;
+    t->DisableTracingHeapAllocation();
+    const uptr history_size =
+        t->IsMainThread() ? flags()->heap_history_size_main_thread
+                          : flags()->heap_history_size;
+    for (uptr i = 0, size = rb->realsize(); i < size; i++) {
+      if (heap_allocations_count >= ARRAY_SIZE(heap_allocations_storage))
+        break;
+      auto h = (*rb)[i];
+      record_searched_++;
+      bool matched = false;
+      if (flags()->print_uaf_stacks_with_same_tag) {
+        matched = h.tagged_addr <= tagged_addr &&
+                  h.tagged_addr + h.requested_size > tagged_addr;
+      } else {
+        uptr ha_untagged_addr = UntagAddr(h.tagged_addr);
+        matched = ha_untagged_addr <= untagged_addr &&
+                  ha_untagged_addr + h.requested_size > untagged_addr;
+      }
+      if (!matched)
+        continue;
+      record_matched_++;
+      auto &ha = heap_allocations_storage[heap_allocations_count++];
+      ha.har = h;
+      ha.ring_index = i;
+      ha.free_thread_id = static_cast<u32>(t->tid());
+      ha.heap_history_size = history_size;
+    }
+    t->EnableTracingHeapAllocation();
+#endif /* SANITIZER_OHOS */
   });
+
+#if SANITIZER_OHOS
+  // Strategy A: collect matching HARs from freed-thread history into the same
+  // storage so PrintAddressDescription can print them with live UAF path.
+  hwasanThreadList().VisitAllFreedRingBuffer([&](HeapAllocationsRingBuffer *rb) {
+    if (!rb)
+      return;
+    const uptr history_size = rb->size();
+    for (uptr i = 0, size = rb->realsize(); i < size; i++) {
+      if (heap_allocations_count >= ARRAY_SIZE(heap_allocations_storage))
+        break;
+      auto h = (*rb)[i];
+      record_searched_++;
+      bool matched = false;
+      if (flags()->print_uaf_stacks_with_same_tag) {
+        matched = h.tagged_addr <= tagged_addr &&
+                  h.tagged_addr + h.requested_size > tagged_addr;
+      } else {
+        uptr ha_untagged_addr = UntagAddr(h.tagged_addr);
+        matched = ha_untagged_addr <= untagged_addr &&
+                  ha_untagged_addr + h.requested_size > untagged_addr;
+      }
+      if (!matched)
+        continue;
+      record_matched_++;
+      auto &ha = heap_allocations_storage[heap_allocations_count++];
+      ha.har = h;
+      ha.ring_index = i;
+      // HAR has no free-tid field; Thread is already gone on this path.
+      ha.free_thread_id = 0;
+      ha.heap_history_size = history_size;
+      ha.from_freed_thread = true;
+    }
+  });
+#endif /* SANITIZER_OHOS */
 
   return {{stack_allocations_storage, stack_allocations_count},
           {heap_allocations_storage, heap_allocations_count}};
@@ -744,7 +835,11 @@ void BaseReport::PrintHeapOrGlobalCandidate() const {
            candidate.heap.end - candidate.heap.begin, candidate.heap.begin,
            candidate.heap.end);
     Printf("%s", d.Allocation());
+#if !SANITIZER_OHOS
     Printf("allocated by thread T%u here:\n", candidate.heap.thread_id);
+#else /* SANITIZER_OHOS */
+    Printf("allocated by thread %u here:\n", candidate.heap.thread_id);
+#endif /* SANITIZER_OHOS */
     Printf("%s", d.Default());
     GetStackTraceFromId(candidate.heap.stack_id).Print();
     return;
@@ -793,6 +888,9 @@ void BaseReport::PrintHeapOrGlobalCandidate() const {
 void BaseReport::PrintAddressDescription() const {
   Decorator d;
   int num_descriptions_printed = 0;
+#if SANITIZER_OHOS
+  bool printed_close_overflow = false;
+#endif /* SANITIZER_OHOS */
 
   if (MemIsShadow(untagged_addr)) {
     Printf("%s%p is HWAsan shadow memory.\n%s", d.Location(), untagged_addr,
@@ -802,6 +900,7 @@ void BaseReport::PrintAddressDescription() const {
 
   // Print some very basic information about the address, if it's a heap.
   if (heap.begin) {
+#if !SANITIZER_OHOS
     Printf(
         "%s[%p,%p) is a %s %s heap chunk; "
         "size: %zd offset: %zd\n%s",
@@ -809,11 +908,31 @@ void BaseReport::PrintAddressDescription() const {
         heap.from_small_heap ? "small" : "large",
         heap.is_allocated ? "allocated" : "unallocated", heap.size,
         untagged_addr - heap.begin, d.Default());
+#else /* SANITIZER_OHOS */
+    // Allocated By (OS tid) + Currently allocated here (alloc stack).
+    Printf(
+        "%s[%p,%p) is a %s %s heap chunk; "
+        "size: %zd offset: %zd, Allocated By %u\n%s",
+        d.Location(), heap.begin, heap.begin + heap.size,
+        heap.from_small_heap ? "small" : "large",
+        heap.is_allocated ? "allocated" : "unallocated", heap.size,
+        untagged_addr - heap.begin, heap.alloc_thread_id, d.Default());
+    if (heap.is_allocated && heap.stack_id) {
+      Printf("%s", d.Allocation());
+      Printf("Currently allocated here:\n");
+      Printf("%s", d.Default());
+      GetStackTraceFromId(heap.stack_id).Print();
+    }
+#endif /* SANITIZER_OHOS */
   }
 
   auto announce_by_id = [](u32 thread_id) {
     hwasanThreadList().VisitAllLiveThreads([&](Thread *t) {
+#if !SANITIZER_OHOS
       if (thread_id == t->unique_id())
+#else /* SANITIZER_OHOS */
+      if (thread_id == static_cast<u32>(t->tid()))
+#endif /* SANITIZER_OHOS */
         t->Announce();
     });
   };
@@ -824,8 +943,13 @@ void BaseReport::PrintAddressDescription() const {
     Printf("%s", d.Error());
     Printf("\nCause: stack tag-mismatch\n");
     Printf("%s", d.Location());
+#if !SANITIZER_OHOS
     Printf("Address %p is located in stack of thread T%zd\n", untagged_addr,
            sa.thread_id());
+#else /* SANITIZER_OHOS */
+    Printf("Address %p is located in stack of thread %d\n", untagged_addr,
+           static_cast<int>(sa.thread_id()));
+#endif /* SANITIZER_OHOS */
     Printf("%s", d.Default());
     announce_by_id(sa.thread_id());
     PrintStackAllocations(sa.get(), ptr_tag, untagged_addr);
@@ -836,11 +960,17 @@ void BaseReport::PrintAddressDescription() const {
       candidate.is_close) {
     PrintHeapOrGlobalCandidate();
     num_descriptions_printed++;
+#if SANITIZER_OHOS
+    // Mirror source clearing of close candidate so far overflow can still print
+    // after UAF (see end of this function).
+    printed_close_overflow = true;
+#endif /* SANITIZER_OHOS */
   }
 
   for (const auto &ha : allocations.heap) {
     const HeapAllocationRecord har = ha.har;
 
+#if !SANITIZER_OHOS
     Printf("%s", d.Error());
     Printf("\nCause: use-after-free\n");
     Printf("%s", d.Location());
@@ -867,20 +997,83 @@ void BaseReport::PrintAddressDescription() const {
            ha.num_matching_addrs_4b);
 
     announce_by_id(ha.free_thread_id);
+#else /* SANITIZER_OHOS */
+    Printf("%s", d.Error());
+    Printf("\nPotential Cause: use-after-free\n");
+    Printf("%s", d.Location());
+    if (ha.from_freed_thread) {
+      uptr ha_untagged_addr = UntagAddr(har.tagged_addr);
+      Printf(
+          "%p (Previously freed thread ptr tags: %02x) is located %zd "
+          "bytes inside of %zd-byte region [%p,%p)\n",
+          untagged_addr, GetTagFromPointer(har.tagged_addr),
+          untagged_addr - ha_untagged_addr, har.requested_size, ha_untagged_addr,
+          ha_untagged_addr + har.requested_size);
+    } else {
+      Printf(
+          "%p (rb[%zd] tags:%02x) is located %zd bytes inside of %zd-byte "
+          "region [%p,%p)\n",
+          untagged_addr, ha.ring_index, GetTagFromPointer(har.tagged_addr),
+          untagged_addr - UntagAddr(har.tagged_addr), har.requested_size,
+          UntagAddr(har.tagged_addr),
+          UntagAddr(har.tagged_addr) + har.requested_size);
+    }
+    Printf("%s", d.Allocation());
+    Printf("freed by thread %d here:\n", static_cast<int>(ha.free_thread_id));
+    Printf("%s", d.Default());
+    GetStackTraceFromId(har.free_context_id).Print();
+
+    Printf("%s", d.Allocation());
+    Printf("previously allocated by thread %d here:\n",
+           static_cast<int>(har.alloc_thread_id));
+    Printf("%s", d.Default());
+    GetStackTraceFromId(har.alloc_context_id).Print();
+
+    // Print a developer note: the index of this heap object
+    // in the thread's deallocation ring buffer.
+    Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ha.ring_index + 1,
+           ha.heap_history_size);
+    if (!ha.from_freed_thread)
+      announce_by_id(ha.free_thread_id);
+#endif /* SANITIZER_OHOS */
     // TODO: announce_by_id(har.alloc_thread_id);
     num_descriptions_printed++;
   }
 
+#if !SANITIZER_OHOS
   if (candidate.untagged_addr && num_descriptions_printed == 0) {
     PrintHeapOrGlobalCandidate();
     num_descriptions_printed++;
   }
+#else /* SANITIZER_OHOS */
+  Printf("Searched %lu records, find %lu with same addr %p\n\n",
+         record_searched_, record_matched_, untagged_addr);
+  // Far overflow candidate: print after UAF even when UAF matched (source 707).
+  // Close candidate already printed above is skipped via printed_close_overflow.
+  if (allocations.stack.empty() && candidate.untagged_addr &&
+      !printed_close_overflow) {
+    PrintHeapOrGlobalCandidate();
+    num_descriptions_printed++;
+  }
+#endif /* SANITIZER_OHOS */
 
   // Print the remaining threads, as an extra information, 1 line per thread.
   if (flags()->print_live_threads_info) {
     Printf("\n");
     hwasanThreadList().VisitAllLiveThreads([&](Thread *t) { t->Announce(); });
   }
+#if SANITIZER_OHOS
+  hwasanThreadList().PrintFreedRingBufferSummary();
+  if (flags()->verbose_freed_threads) {
+    u32 freed_idx = 0;
+    hwasanThreadList().VisitAllFreedRingBuffer(
+        [&](HeapAllocationsRingBuffer *rb) {
+          if (!rb)
+            return;
+          Printf("RB %u: (%zd/%zu)\n", freed_idx++, rb->realsize(), rb->size());
+        });
+  }
+#endif /* SANITIZER_OHOS */
 
   if (!num_descriptions_printed)
     // We exhausted our possibilities. Bail out.
@@ -917,8 +1110,13 @@ InvalidFreeReport::~InvalidFreeReport() {
   const char *bug_type = "invalid-free";
   const Thread *thread = GetCurrentThread();
   if (thread) {
+#if !SANITIZER_OHOS
     Report("ERROR: %s: %s on address %p at pc %p on thread T%zd\n",
            SanitizerToolName, bug_type, untagged_addr, pc, thread->unique_id());
+#else /* SANITIZER_OHOS */
+    Report("ERROR: %s: %s on address %p at pc %p on thread %d\n",
+           SanitizerToolName, bug_type, untagged_addr, pc, thread->tid());
+#endif /* SANITIZER_OHOS */
   } else {
     Report("ERROR: %s: %s on address %p at pc %p on unknown thread\n",
            SanitizerToolName, bug_type, untagged_addr, pc);
@@ -1050,14 +1248,27 @@ TagMismatchReport::~TagMismatchReport() {
   if (mem_tag && mem_tag < kShadowAlignment) {
     tag_t short_tag =
         GetShortTagCopy(MemToShadow(untagged_addr + mismatch_offset));
+#if !SANITIZER_OHOS
     Printf(
         "%s of size %zu at %p tags: %02x/%02x(%02x) (ptr/mem) in thread T%zd\n",
         is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
         mem_tag, short_tag, t->unique_id());
+#else /* SANITIZER_OHOS */
+    Printf(
+        "%s of size %zu at %p tags: %02x/%02x(%02x) (ptr/mem) in thread %d\n",
+        is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
+        mem_tag, short_tag, t->tid());
+#endif /* SANITIZER_OHOS */
   } else {
+#if !SANITIZER_OHOS
     Printf("%s of size %zu at %p tags: %02x/%02x (ptr/mem) in thread T%zd\n",
            is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
            mem_tag, t->unique_id());
+#else /* SANITIZER_OHOS */
+    Printf("%s of size %zu at %p tags: %02x/%02x (ptr/mem) in thread %d\n",
+           is_store ? "WRITE" : "READ", access_size, untagged_addr, ptr_tag,
+           mem_tag, t->tid());
+#endif /* SANITIZER_OHOS */
   }
   if (mismatch_offset)
     Printf("Invalid access starting at offset %zu\n", mismatch_offset);
@@ -1072,6 +1283,11 @@ TagMismatchReport::~TagMismatchReport() {
 
   if (registers_frame)
     ReportRegisters(registers_frame, pc);
+#if SANITIZER_OHOS
+  if (registers_frame && flags()->memory_around_register_size)
+    ReportMemoryNearRegisters(
+        registers_frame, reinterpret_cast<uptr>(registers_frame) + 256, pc);
+#endif /* SANITIZER_OHOS */
 
   MaybePrintAndroidHelpUrl();
   ReportErrorSummary(bug_type, stack);
@@ -1092,6 +1308,54 @@ void ReportTagMismatch(StackTrace *stack, uptr tagged_addr, uptr access_size,
   TagMismatchReport R(stack, tagged_addr, access_size, is_store, fatal,
                       registers_frame);
 }
+
+#if SANITIZER_OHOS
+void PrintMemoryAroundAddress(__sanitizer::MemoryMappingLayout &proc_maps,
+                              int reg_num, uptr addr, uptr len, bool is_sp,
+                              bool is_pc) {
+  const sptr kBufSize = 4095;
+  char filename[kBufSize];
+  MemoryMappedSegment segment(filename, kBufSize);
+  while (proc_maps.Next(&segment)) {
+    if (segment.start <= addr && addr < segment.end && segment.IsReadable()) {
+      if (is_sp) {
+        Printf("sp(%s):\n", segment.filename);
+      } else if (is_pc) {
+        Printf("pc(%s):\n", segment.filename);
+      } else {
+        Printf("x%d(%s):\n", reg_num, segment.filename);
+      }
+      uptr beg = RoundDownTo(addr - (addr < len ? addr : len), 8);
+      if (segment.start > beg)
+        beg = segment.start;
+      uptr end = RoundUpTo(addr + len, 8);
+      if (segment.end < end)
+        end = segment.end;
+      for (uptr pos = beg; pos < end; pos += 8) {
+        if (pos <= addr && addr < pos + 8)
+          Printf("==>\t\t%p %016llx\n", pos, *(uptr *)(pos));
+        else
+          Printf("\t\t%p %016llx\n", pos, *(uptr *)(pos));
+      }
+      break;
+    }
+  }
+  proc_maps.Reset();
+}
+
+void ReportMemoryNearRegisters(const uptr *frame, uptr sp, uptr pc) {
+  Printf("Memory near registers:\n");
+  MemoryMappingLayout proc_maps(/*cache_enabled*/ true);
+  for (int i = 0; i <= 30; ++i) {
+    PrintMemoryAroundAddress(proc_maps, i, UntagAddr(frame[i]),
+                             flags()->memory_around_register_size);
+  }
+  PrintMemoryAroundAddress(proc_maps, -1, sp,
+                           flags()->memory_around_register_size, true);
+  PrintMemoryAroundAddress(proc_maps, -1, pc,
+                           flags()->memory_around_register_size, false, true);
+}
+#endif /* SANITIZER_OHOS */
 
 // See the frame breakdown defined in __hwasan_tag_mismatch (from
 // hwasan_tag_mismatch_{aarch64,riscv64}.S).

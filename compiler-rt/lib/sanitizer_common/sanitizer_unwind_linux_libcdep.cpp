@@ -16,7 +16,7 @@
 #include "sanitizer_common.h"
 #include "sanitizer_stacktrace.h"
 
-#if SANITIZER_ANDROID || (defined(OHOS_LLVM) && SANITIZER_OHOS)
+#if SANITIZER_ANDROID || SANITIZER_OHOS
 #include <dlfcn.h>  // for dlopen()
 #endif
 

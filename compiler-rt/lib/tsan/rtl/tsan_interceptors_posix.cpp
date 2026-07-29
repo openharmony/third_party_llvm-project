@@ -32,6 +32,9 @@
 #include "tsan_fd.h"
 #include "tsan_interceptors.h"
 #include "tsan_interface.h"
+#if SANITIZER_OHOS
+#include "tsan_interface_ann.h"
+#endif
 #include "tsan_mman.h"
 #include "tsan_platform.h"
 #include "tsan_rtl.h"
@@ -558,7 +561,7 @@ static void SetJmp(ThreadState *thr, uptr sp) {
   JmpBuf *buf = thr->jmp_bufs.PushBack();
   buf->sp = sp;
   buf->shadow_stack_pos = thr->shadow_stack_pos;
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
   buf->ignore_reads_and_writes = thr->ignore_reads_and_writes;
 #endif
   ThreadSignalContext *sctx = SigCtx(thr);
@@ -587,7 +590,7 @@ static void LongJmp(ThreadState *thr, uptr *env) {
       }
       atomic_store(&thr->in_blocking_func, buf->in_blocking_func,
           memory_order_relaxed);
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
       thr->ignore_reads_and_writes = buf->ignore_reads_and_writes;
       if (buf->ignore_reads_and_writes)
         thr->fast_state.SetIgnoreBit();
@@ -1198,7 +1201,7 @@ TSAN_INTERCEPTOR(void, pthread_exit, void *retval) {
   REAL(pthread_exit)(retval);
 }
 
-#if SANITIZER_LINUX && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
+#if SANITIZER_LINUX && !SANITIZER_OHOS
 TSAN_INTERCEPTOR(int, pthread_tryjoin_np, void *th, void **ret) {
   SCOPED_INTERCEPTOR_RAW(pthread_tryjoin_np, th, ret);
   Tid tid = ThreadConsumeTid(thr, pc, (uptr)th);
@@ -2144,6 +2147,69 @@ TSAN_INTERCEPTOR(int, pthread_sigmask, int how, const __sanitizer_sigset_t *set,
   return REAL(pthread_sigmask)(how, set, oldset);
 }
 
+#if SANITIZER_OHOS && !TSAN_STATIC
+struct call_once_callback_args {
+  void (*orig_func)(void *arg);
+  void *orig_arg;
+  void *flag;
+};
+
+void call_once_callback_wrapper(void *arg) {
+  call_once_callback_args *new_args = (call_once_callback_args *)arg;
+  new_args->orig_func(new_args->orig_arg);
+  __tsan_release(new_args->flag);
+}
+
+// We need a special way to intercept call_once.
+#define INTERCEPTOR_CALL_ONCE(ret_type, func, ...)                             \
+  DECLARE_WRAPPER(ret_type, func, __VA_ARGS__)                                 \
+  extern "C" INTERCEPTOR_ATTRIBUTE ret_type WRAP(func)(__VA_ARGS__)
+
+DEFINE_REAL(void, _ZNSt3__h11__call_onceERVmPvPFvS2_E, void *flag, void *arg,
+            void (*func)(void *arg))
+
+DEFINE_REAL(void, _ZNSt4__n111__call_onceERVmPvPFvS2_E, void *flag, void *arg,
+            void (*func)(void *arg))
+
+// This adds a libc++ interceptor for:
+//     void __call_once(volatile unsigned long&, void*, void(*)(void*));
+// Tsan can't see the atomic operation in this interface. To avoid false
+// positives, we intercept it and do an explicit Release after the user code.
+INTERCEPTOR_CALL_ONCE(void, _ZNSt3__h11__call_onceERVmPvPFvS2_E, void *flag,
+                      void *arg, void (*func)(void *arg)) {
+  call_once_callback_args new_args = {func, arg, flag};
+  if (REAL(_ZNSt3__h11__call_onceERVmPvPFvS2_E)) {
+    REAL(_ZNSt3__h11__call_onceERVmPvPFvS2_E)(flag, &new_args,
+                                              call_once_callback_wrapper);
+  } else if (REAL(_ZNSt4__n111__call_onceERVmPvPFvS2_E)) {
+    REAL(_ZNSt4__n111__call_onceERVmPvPFvS2_E)(flag, &new_args,
+                                               call_once_callback_wrapper);
+  } else {
+    Report("ThreadSanitizer: can't find call_once.\n");
+    Die();
+  }
+};
+
+// For __call_once in libc++_shared.so.
+// We can't intercept this symbol in libc++_shared.so, because libc++_shared.so
+// may not be loaded when we do the intercept, so we call the symbol in
+// libc++.so instead.
+INTERCEPTOR_CALL_ONCE(void, _ZNSt4__n111__call_onceERVmPvPFvS2_E, void *flag,
+                      void *arg, void (*func)(void *arg)) {
+  call_once_callback_args new_args = {func, arg, flag};
+  if (REAL(_ZNSt4__n111__call_onceERVmPvPFvS2_E)) {
+    REAL(_ZNSt4__n111__call_onceERVmPvPFvS2_E)(flag, &new_args,
+                                               call_once_callback_wrapper);
+  } else if (REAL(_ZNSt3__h11__call_onceERVmPvPFvS2_E)) {
+    REAL(_ZNSt3__h11__call_onceERVmPvPFvS2_E)(flag, &new_args,
+                                              call_once_callback_wrapper);
+  } else {
+    Report("ThreadSanitizer: can't find call_once.\n");
+    Die();
+  }
+};
+#endif
+
 namespace __tsan {
 
 static void ReportErrnoSpoiling(ThreadState *thr, uptr pc, int sig) {
@@ -2558,7 +2624,7 @@ static void HandleRecvmsg(ThreadState *thr, uptr pc,
     ThreadIgnoreEnd(thr);                         \
     res;                                          \
   })
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 #  define COMMON_INTERCEPTOR_DLOPEN_IMPL(                              \
       filename, flag, dl_namespace, caller_addr, extinfo)             \
     ({                                                                 \
@@ -3041,7 +3107,7 @@ void InitializeInterceptors() {
   TSAN_INTERCEPT(pthread_join);
   TSAN_INTERCEPT(pthread_detach);
   TSAN_INTERCEPT(pthread_exit);
-#if SANITIZER_LINUX && (!defined(OHOS_LLVM) || !SANITIZER_OHOS)
+#if SANITIZER_LINUX && !SANITIZER_OHOS
   TSAN_INTERCEPT(pthread_tryjoin_np);
   TSAN_INTERCEPT(pthread_timedjoin_np);
 #endif
@@ -3155,6 +3221,11 @@ void InitializeInterceptors() {
   TSAN_MAYBE_INTERCEPT_ON_EXIT;
   TSAN_INTERCEPT(__cxa_atexit);
   TSAN_INTERCEPT(_exit);
+
+#if SANITIZER_OHOS && !TSAN_STATIC
+  TSAN_INTERCEPT(_ZNSt3__h11__call_onceERVmPvPFvS2_E);
+  TSAN_INTERCEPT(_ZNSt4__n111__call_onceERVmPvPFvS2_E);
+#endif
 
   TSAN_MAYBE_INTERCEPT__LWP_EXIT;
   TSAN_MAYBE_INTERCEPT_THR_EXIT;

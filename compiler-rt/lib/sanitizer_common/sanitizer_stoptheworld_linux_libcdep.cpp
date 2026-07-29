@@ -34,7 +34,7 @@
 #if (defined(__aarch64__) || defined(__powerpc64__) || \
      SANITIZER_RISCV64 || SANITIZER_LOONGARCH64) &&    \
      !SANITIZER_ANDROID
-#if defined(OHOS_LLVM) && SANITIZER_OHOS
+#if SANITIZER_OHOS
 // Do not include asm/sigcontext.h on behalf of asm/ptrace.h
 // to avoid multiple definiton errors.
 #define __ASM_SIGCONTEXT_H 1
