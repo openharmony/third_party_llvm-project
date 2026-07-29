@@ -83,7 +83,7 @@ class SignalDuringBreakpointStepTestCase(TestBase):
     def check_iteration(self):
         cur_iter = self.thread.GetSelectedFrame().EvaluateExpression('g_cur_iter').GetValueAsSigned()
         skipped = cur_iter > self.cur_iter
-        self.assertEquals(self.cur_iter, cur_iter,
+        self.assertEqual(self.cur_iter, cur_iter,
             'Expected action iteration %d to %s (was a breakpoint %s?) %s' %
                 (cur_iter, 'continue' if skipped else 'end',
                     'skipped' if skipped else 'hit twice', self.get_thread_stopped_at()))
@@ -91,7 +91,7 @@ class SignalDuringBreakpointStepTestCase(TestBase):
     def check_stopped_at_breakpoint(self, bp, msg):
         self.check_iteration()
         thread1 = lldbutil.get_one_thread_stopped_at_breakpoint(self.process, bp)
-        self.assertEquals(self.thread, thread1,
+        self.assertEqual(self.thread, thread1,
             "%s %s." % (msg, self.get_thread_stopped_at()))
 
     def check_stopped_at_line(self, line):
@@ -99,7 +99,7 @@ class SignalDuringBreakpointStepTestCase(TestBase):
         desc = self.get_thread_stopped_at()
         expect = "%s:%d" % (self.main_source, line)
         self.assertTrue(expect in desc, "Expected to stop at %s %s" % (expect, desc))
-        self.assertEquals(self.thread.GetStopReason(), lldb.eStopReasonPlanComplete,
+        self.assertEqual(self.thread.GetStopReason(), lldb.eStopReasonPlanComplete,
             "Expected stop reason to be step into/over/out %s." % desc)
 
     def check_stopped_at_action_breakpoint(self, action):
