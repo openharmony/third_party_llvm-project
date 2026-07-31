@@ -1328,6 +1328,10 @@ HANDLE_DWARF_SECTION(DebugCUIndex, ".debug_cu_index", "debug-cu-index",
                      BoolOption)
 HANDLE_DWARF_SECTION(DebugTUIndex, ".debug_tu_index", "debug-tu-index",
                      BoolOption)
+#ifdef OHOS_LLVM
+// Customize dwarf section for memory tracing.
+HANDLE_DWARF_SECTION(MemTracer, ".mem_tracer", "mem_tracer", BoolOption)
+#endif /* OHOS_LLVM */
 // Vendor extensions.
 HANDLE_DWARF_SECTION(AppleNames, ".apple_names", "apple-names", BoolOption)
 HANDLE_DWARF_SECTION(AppleTypes, ".apple_types", "apple-types", BoolOption)

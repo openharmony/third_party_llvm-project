@@ -20,6 +20,9 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/Twine.h"
+#ifdef OHOS_LLVM
+#include "llvm/BinaryFormat/ELF.h"
+#endif /* OHOS_LLVM */
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/DIE.h"
 #include "llvm/CodeGen/LexicalScopes.h"
@@ -41,6 +44,9 @@
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCSection.h"
+#ifdef OHOS_LLVM
+#include "llvm/MC/MCSectionELF.h"
+#endif /* OHOS_LLVM */
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/MC/MCTargetOptions.h"
@@ -1475,6 +1481,12 @@ void DwarfDebug::endModule() {
 
   emitDebugStr();
 
+#ifdef OHOS_LLVM
+  // Emit .mem_tracer section for memory tracking.
+  if (MMI->getModule()->getModuleFlag("ReferenceTracking"))
+    emitMemTracerSection();
+#endif /* OHOS_LLVM */
+
   if (useSplitDwarf()) {
     emitDebugStrDWO();
     emitDebugInfoDWO();
@@ -1987,6 +1999,40 @@ void DwarfDebug::collectEntityInfo(DwarfCompileUnit &TheCU,
     MCSymbol *Sym = getLabelBeforeInsn(MI);
     createConcreteEntity(TheCU, *Scope, Label, IL.second, Sym);
   }
+
+#ifdef OHOS_LLVM
+  // Collect memtracer entities from MemTracerMIs.
+  // Each entry contains: instruction address, variable name, type name.
+  if (MMI->getModule()->getModuleFlag("ReferenceTracking")) {
+    DwarfFile &Holder = useSplitDwarf() ? SkeletonHolder : InfoHolder;
+    for (const auto &Entry : MemTracerMIs) {
+      const MachineInstr *MI = Entry.first;
+      const MDNode *MT = Entry.second;
+      if (!MT || MT->getNumOperands() < 2)
+        continue;
+      auto *VarMD = dyn_cast_or_null<MDString>(MT->getOperand(0));
+      auto *TypeMD = dyn_cast_or_null<MDString>(MT->getOperand(1));
+      MCSymbol *SymbolLabel = getLabelBeforeInsn(MI);
+      if (!VarMD || !TypeMD || !SymbolLabel)
+        continue;
+      MCSymbol *VarStrSym = nullptr;
+      MCSymbol *TypeStrSym = nullptr;
+
+      if (!VarMD->getString().empty()) {
+        VarStrSym = Holder.getStringPool()
+                        .getEntry(*Asm, VarMD->getString())
+                        .getSymbol();
+      }
+
+      if (!TypeMD->getString().empty()) {
+        TypeStrSym = Holder.getStringPool()
+                         .getEntry(*Asm, TypeMD->getString())
+                         .getSymbol();
+      }
+      MemTracerEntities.emplace_back(SymbolLabel, VarStrSym, TypeStrSym);
+    }
+  }
+#endif /* OHOS_LLVM */
 
   // Collect info for retained nodes.
   for (const DINode *DN : SP->getRetainedNodes()) {
@@ -3396,6 +3442,73 @@ void DwarfDebug::emitDebugLoc() {
           ? Asm->getObjFileLowering().getDwarfLoclistsSection()
           : Asm->getObjFileLowering().getDwarfLocSection());
 }
+
+#ifdef OHOS_LLVM
+// Emit the .mem_tracer section for memory tracking.
+void DwarfDebug::emitMemTracerSection() {
+  if (MemTracerEntities.empty() ||
+      !Asm->TM.getTargetTriple().isOSBinFormatELF())
+    return;
+
+  MCContext &Ctx = Asm->OutContext;
+  // Each text section may have its own .mem_tracer section.
+  // Use a map to ensure only one .mem_tracer section per text section.
+  llvm::DenseMap<const MCSectionELF *, MCSectionELF *> SectionMap;
+  unsigned PtrSize = Asm->MAI->getCodePointerSize();
+
+  auto emitStrOff = [&](MCSymbol *S) {
+    if (S)
+      Asm->OutStreamer->emitSymbolValue(S, 4);
+    else
+      Asm->OutStreamer->emitIntValue(0, 4);
+  };
+
+  for (const MemTracerEntity &E : MemTracerEntities) {
+    MCSymbol *SymbolLabel = E.getSymbolLabel();
+    if (!SymbolLabel || !SymbolLabel->isInSection())
+      continue;
+
+    const MCSectionELF &TextSec = cast<MCSectionELF>(SymbolLabel->getSection());
+    MCSectionELF *&MemSec = SectionMap[&TextSec];
+
+    // Create a new .mem_tracer section for this text section if needed.
+    // The section is configured with:
+    // - SHF_LINK_ORDER: Links to the text section via sh_link
+    // - SHF_GROUP: If text section is in a COMDAT group, include .mem_tracer
+    //   in same group
+    // - LinkedToSym: Symbol used as the link target.
+    if (!MemSec) {
+      unsigned Flags = ELF::SHF_LINK_ORDER;
+      StringRef GroupName;
+      if (const MCSymbol *Group = TextSec.getGroup()) {
+        GroupName = Group->getName();
+        Flags |= ELF::SHF_GROUP;
+      }
+      const MCSymbolELF *LinkedToSym =
+          cast<MCSymbolELF>(TextSec.getBeginSymbol());
+      if (!LinkedToSym)
+        LinkedToSym =
+            cast<MCSymbolELF>(Ctx.getOrCreateSymbol(TextSec.getName()));
+
+      MemSec = cast<MCSectionELF>(Ctx.getELFSection(
+          ".mem_tracer", ELF::SHT_PROGBITS, Flags, 0, GroupName, true,
+          TextSec.getUniqueID(), LinkedToSym));
+      SectionMap[&TextSec] = MemSec;
+    }
+
+    // Emit the .mem_tracer entry:
+    // - Instruction address
+    // - Variable name string offset
+    // - Type name string offset
+    Asm->OutStreamer->switchSection(MemSec);
+    Asm->OutStreamer->emitSymbolValue(SymbolLabel, PtrSize);
+    emitStrOff(E.getVarStrSym());
+    emitStrOff(E.getTypeStrSym());
+  }
+
+  MemTracerEntities.clear();
+}
+#endif /* OHOS_LLVM */
 
 // Emit locations into the .debug_loc.dwo/.debug_loclists.dwo section.
 void DwarfDebug::emitDebugLocDWO() {

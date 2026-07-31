@@ -762,16 +762,29 @@ struct AAMDNodes {
   explicit AAMDNodes(MDNode *T, MDNode *TS, MDNode *S, MDNode *N)
       : TBAA(T), TBAAStruct(TS), Scope(S), NoAlias(N) {}
 
+#ifndef OHOS_LLVM
   bool operator==(const AAMDNodes &A) const {
     return TBAA == A.TBAA && TBAAStruct == A.TBAAStruct && Scope == A.Scope &&
            NoAlias == A.NoAlias;
   }
+#else /* OHOS_LLVM */
+  bool operator==(const AAMDNodes &A) const {
+    return TBAA == A.TBAA && TBAAStruct == A.TBAAStruct && Scope == A.Scope &&
+           NoAlias == A.NoAlias && MemTracer == A.MemTracer;
+  }
+#endif /* OHOS_LLVM */
 
   bool operator!=(const AAMDNodes &A) const { return !(*this == A); }
 
+#ifndef OHOS_LLVM
   explicit operator bool() const {
     return TBAA || TBAAStruct || Scope || NoAlias;
   }
+#else /* OHOS_LLVM */
+  explicit operator bool() const {
+    return TBAA || TBAAStruct || Scope || NoAlias || MemTracer;
+  }
+#endif /* OHOS_LLVM */
 
   /// The tag for type-based alias analysis.
   MDNode *TBAA = nullptr;
@@ -784,6 +797,15 @@ struct AAMDNodes {
 
   /// The tag specifying the noalias scope.
   MDNode *NoAlias = nullptr;
+
+#ifdef OHOS_LLVM
+  /// The tag specifying store ptr/ptr and malloc/new metadata.
+  /// Used for tracking memory allocations and access.
+  MDNode *MemTracer = nullptr;
+
+  /// Set the Memtracer metadata.
+  void setMemTracer(MDNode *M) { MemTracer = M; }
+#endif /* OHOS_LLVM */
 
   // Shift tbaa Metadata node to start off bytes later
   LLVM_ABI static MDNode *shiftTBAA(MDNode *M, size_t off);
@@ -800,6 +822,7 @@ struct AAMDNodes {
   /// nodes whose allowable aliasing conclusions are a subset of those
   /// allowable by both of the inputs). However, for efficiency
   /// reasons, do not create any new MDNodes.
+#ifndef OHOS_LLVM
   AAMDNodes intersect(const AAMDNodes &Other) const {
     AAMDNodes Result;
     Result.TBAA = Other.TBAA == TBAA ? TBAA : nullptr;
@@ -808,9 +831,21 @@ struct AAMDNodes {
     Result.NoAlias = Other.NoAlias == NoAlias ? NoAlias : nullptr;
     return Result;
   }
+#else /* OHOS_LLVM */
+  AAMDNodes intersect(const AAMDNodes &Other) const {
+    AAMDNodes Result;
+    Result.TBAA = Other.TBAA == TBAA ? TBAA : nullptr;
+    Result.TBAAStruct = Other.TBAAStruct == TBAAStruct ? TBAAStruct : nullptr;
+    Result.Scope = Other.Scope == Scope ? Scope : nullptr;
+    Result.NoAlias = Other.NoAlias == NoAlias ? NoAlias : nullptr;
+    Result.MemTracer = Other.MemTracer == MemTracer ? MemTracer : nullptr;
+    return Result;
+  }
+#endif /* OHOS_LLVM */
 
   /// Create a new AAMDNode that describes this AAMDNode after applying a
   /// constant offset to the start of the pointer.
+#ifndef OHOS_LLVM
   AAMDNodes shift(size_t Offset) const {
     AAMDNodes Result;
     Result.TBAA = TBAA ? shiftTBAA(TBAA, Offset) : nullptr;
@@ -820,10 +855,23 @@ struct AAMDNodes {
     Result.NoAlias = NoAlias;
     return Result;
   }
+#else /* OHOS_LLVM */
+  AAMDNodes shift(size_t Offset) const {
+    AAMDNodes Result;
+    Result.TBAA = TBAA ? shiftTBAA(TBAA, Offset) : nullptr;
+    Result.TBAAStruct =
+        TBAAStruct ? shiftTBAAStruct(TBAAStruct, Offset) : nullptr;
+    Result.Scope = Scope;
+    Result.NoAlias = NoAlias;
+    Result.MemTracer = MemTracer;
+    return Result;
+  }
+#endif /* OHOS_LLVM */
 
   /// Create a new AAMDNode that describes this AAMDNode after extending it to
   /// apply to a series of bytes of length Len. A size of -1 denotes an unknown
   /// size.
+#ifndef OHOS_LLVM
   AAMDNodes extendTo(ssize_t Len) const {
     AAMDNodes Result;
     Result.TBAA = TBAA ? extendToTBAA(TBAA, Len) : nullptr;
@@ -835,6 +883,20 @@ struct AAMDNodes {
     Result.NoAlias = NoAlias;
     return Result;
   }
+#else /* OHOS_LLVM */
+  AAMDNodes extendTo(ssize_t Len) const {
+    AAMDNodes Result;
+    Result.TBAA = TBAA ? extendToTBAA(TBAA, Len) : nullptr;
+    // tbaa.struct contains (offset, size, type) triples. Extending the length
+    // of the tbaa.struct doesn't require changing this (though more information
+    // could be provided by adding more triples at subsequent lengths).
+    Result.TBAAStruct = TBAAStruct;
+    Result.Scope = Scope;
+    Result.NoAlias = NoAlias;
+    Result.MemTracer = MemTracer;
+    return Result;
+  }
+#endif /* OHOS_LLVM */
 
   /// Given two sets of AAMDNodes applying to potentially different locations,
   /// determine the best AAMDNodes that apply to both.
@@ -869,12 +931,22 @@ struct DenseMapInfo<AAMDNodes> {
                      nullptr, nullptr, nullptr);
   }
 
+#ifndef OHOS_LLVM
   static unsigned getHashValue(const AAMDNodes &Val) {
     return DenseMapInfo<MDNode *>::getHashValue(Val.TBAA) ^
            DenseMapInfo<MDNode *>::getHashValue(Val.TBAAStruct) ^
            DenseMapInfo<MDNode *>::getHashValue(Val.Scope) ^
            DenseMapInfo<MDNode *>::getHashValue(Val.NoAlias);
   }
+#else /* OHOS_LLVM */
+  static unsigned getHashValue(const AAMDNodes &Val) {
+    return DenseMapInfo<MDNode *>::getHashValue(Val.TBAA) ^
+           DenseMapInfo<MDNode *>::getHashValue(Val.TBAAStruct) ^
+           DenseMapInfo<MDNode *>::getHashValue(Val.Scope) ^
+           DenseMapInfo<MDNode *>::getHashValue(Val.NoAlias) ^
+           DenseMapInfo<MDNode *>::getHashValue(Val.MemTracer);
+  }
+#endif /* OHOS_LLVM */
 
   static bool isEqual(const AAMDNodes &LHS, const AAMDNodes &RHS) {
     return LHS == RHS;

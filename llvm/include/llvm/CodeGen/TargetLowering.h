@@ -4926,6 +4926,13 @@ public:
   /// outgoing token chain. It calls LowerCall to do the actual lowering.
   std::pair<SDValue, SDValue> LowerCallTo(CallLoweringInfo &CLI) const;
 
+#ifdef OHOS_LLVM
+  /// Returns true if the target-specific opcode (e.g., AArch64ISD::CALL)
+  /// is a call site that MemTracer needs to annotate with metadata.
+  /// This is a feature-specific hook and returns false by default.
+  virtual bool isMemTracerCallOpcode(unsigned Opcode) const { return false; }
+#endif /* OHOS_LLVM */
+
   /// This hook must be implemented to lower calls into the specified
   /// DAG. The outgoing arguments to the call are described by the Outs array,
   /// and the values to be returned by the call are described by the Ins

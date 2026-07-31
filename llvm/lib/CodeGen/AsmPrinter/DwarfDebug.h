@@ -312,6 +312,26 @@ public:
   }
 };
 
+#ifdef OHOS_LLVM
+/// A single entry in the .mem_tracer section.
+class MemTracerEntity {
+private:
+  MCSymbol *SymbolLabel; // Address of the store/call instruction
+  MCSymbol *VarStrSym;   // String symbol for variable name
+  MCSymbol *TypeStrSym;  // String symbol for type name
+
+public:
+  MemTracerEntity(MCSymbol *SymbolLabel, MCSymbol *VarStrSym,
+                  MCSymbol *TypeStrSym)
+      : SymbolLabel(SymbolLabel), VarStrSym(VarStrSym), TypeStrSym(TypeStrSym) {
+  }
+
+  MCSymbol *getSymbolLabel() const { return SymbolLabel; }
+  MCSymbol *getVarStrSym() const { return VarStrSym; }
+  MCSymbol *getTypeStrSym() const { return TypeStrSym; }
+};
+#endif /* OHOS_LLVM */
+
 /// Used for tracking debug info about call site parameters.
 class DbgCallSiteParam {
 private:
@@ -448,6 +468,11 @@ class DwarfDebug : public DebugHandlerBase {
 
   /// Avoid using DW_OP_convert due to consumer incompatibilities.
   bool EnableOpConvert;
+
+#ifdef OHOS_LLVM
+  /// Collection of memory tracking entities.
+  SmallVector<MemTracerEntity, 64> MemTracerEntities;
+#endif /* OHOS_LLVM */
 
 public:
   enum class MinimizeAddrInV5 {
@@ -668,6 +693,11 @@ private:
 
   /// Emit DWO addresses.
   void emitDebugAddr();
+
+#ifdef OHOS_LLVM
+  /// Emit mem tracer section.
+  void emitMemTracerSection();
+#endif /* OHOS_LLVM */
 
   /// Flags to let the linker know we have emitted new style pubnames. Only
   /// emit it here if we don't have a skeleton CU for split dwarf.

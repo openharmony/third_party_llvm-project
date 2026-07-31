@@ -2674,8 +2674,28 @@ bool IRTranslator::translateInlineAsm(const CallBase &CB,
     return false;
   }
 
+#ifndef OHOS_LLVM
   return ALI->lowerInlineAsm(
       MIRBuilder, CB, [&](const Value &Val) { return getOrCreateVRegs(Val); });
+#else
+  bool Success = ALI->lowerInlineAsm(
+      MIRBuilder, CB, [&](const Value &Val) { return getOrCreateVRegs(Val); });
+  // Locate the generated INLINEASM instruction and attach memtracer metadata.
+  if (Success)
+    if (CB.getFunction()->hasFnAttribute("reference-tracking")) {
+      if (MDNode *MD = CB.getMetadata(LLVMContext::MD_memtracer)) {
+        auto I = MIRBuilder.getMBB().rbegin();
+        auto E = MIRBuilder.getMBB().rend();
+        for (; I != E; ++I) {
+          if (I->isInlineAsm()) {
+            I->setHeapAllocMarker(*MF, MD);
+            break;
+          }
+        }
+      }
+    }
+  return Success;
+#endif /* OHOS_LLVM */
 }
 
 bool IRTranslator::translateCallBase(const CallBase &CB,
@@ -2745,6 +2765,20 @@ bool IRTranslator::translateCallBase(const CallBase &CB,
 
   // Check if we just inserted a tail call.
   if (Success) {
+#ifdef OHOS_LLVM
+    // Find the generated call instruction and attach memtracer metadata.
+    if (CB.getFunction()->hasFnAttribute("reference-tracking"))
+      if (MDNode *MD = CB.getMetadata(LLVMContext::MD_memtracer)) {
+        auto I = MIRBuilder.getMBB().rbegin();
+        auto E = MIRBuilder.getMBB().rend();
+        for (; I != E; ++I) {
+          if (I->isCall()) {
+            I->setHeapAllocMarker(*MF, MD);
+            break;
+          }
+        }
+      }
+#endif /* OHOS_LLVM */
     assert(!HasTailCall && "Can't tail call return twice from block?");
     const TargetInstrInfo *TII = MF->getSubtarget().getInstrInfo();
     HasTailCall = TII->isTailCall(*std::prev(MIRBuilder.getInsertPt()));
@@ -2796,6 +2830,13 @@ bool IRTranslator::translateCall(const User &U, MachineIRBuilder &MIRBuilder) {
   // Ignore the callsite attributes. Backend code is most likely not expecting
   // an intrinsic to sometimes have side effects and sometimes not.
   MachineInstrBuilder MIB = MIRBuilder.buildIntrinsic(ID, ResultRegs);
+#ifdef OHOS_LLVM
+  // Attach memtracer metadata to the call instruction.
+  if (CI.getFunction()->hasFnAttribute("reference-tracking"))
+    if (MDNode *MD = CI.getMetadata(LLVMContext::MD_memtracer)) {
+      MIB->setHeapAllocMarker(*MF, MD);
+    }
+#endif /* OHOS_LLVM */
   if (isa<FPMathOperator>(CI))
     MIB->copyIRFlags(CI);
 

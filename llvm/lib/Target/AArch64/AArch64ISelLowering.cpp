@@ -16674,6 +16674,19 @@ bool AArch64TargetLowering::isZExtFree(SDValue Val, EVT VT2) const {
           VT1.getSizeInBits() <= 32);
 }
 
+#ifdef OHOS_LLVM
+bool AArch64TargetLowering::isMemTracerCallOpcode(unsigned Opcode) const {
+  // Include 21.x call variants used by LowerCall.
+  return Opcode == AArch64ISD::CALL || Opcode == AArch64ISD::TC_RETURN ||
+         Opcode == AArch64ISD::CALL_BTI || Opcode == AArch64ISD::CALL_RVMARKER ||
+         Opcode == AArch64ISD::CALL_ARM64EC_TO_X64 ||
+         Opcode == AArch64ISD::AUTH_CALL ||
+         Opcode == AArch64ISD::AUTH_CALL_RVMARKER ||
+         Opcode == AArch64ISD::AUTH_TC_RETURN;
+}
+#endif /* OHOS_LLVM */
+
+
 bool AArch64TargetLowering::isExtFreeImpl(const Instruction *Ext) const {
   if (isa<FPExtInst>(Ext))
     return false;
@@ -22698,9 +22711,23 @@ static SDValue splitStoreSplat(SelectionDAG &DAG, StoreSDNode &St,
   uint64_t BaseOffset = 0;
 
   const MachinePointerInfo &PtrInfo = St.getPointerInfo();
+#ifdef OHOS_LLVM
+  AAMDNodes AAInfo = AAMDNodes();
+  // Propagate memtracer metadata
+  if (DAG.getMachineFunction().getFunction().hasFnAttribute(
+          "reference-tracking")) {
+    if (MDNode *MemTracer = St.getAAInfo().MemTracer) {
+      AAInfo.setMemTracer(MemTracer);
+    }
+  }
+  SDValue NewST1 =
+      DAG.getStore(St.getChain(), DL, SplatVal, BasePtr, PtrInfo, OrigAlignment,
+                   St.getMemOperand()->getFlags(), AAInfo);
+#else
   SDValue NewST1 =
       DAG.getStore(St.getChain(), DL, SplatVal, BasePtr, PtrInfo,
                    OrigAlignment, St.getMemOperand()->getFlags());
+#endif /* OHOS_LLVM */
 
   // As this in ISel, we will not merge this add which may degrade results.
   if (BasePtr->getOpcode() == ISD::ADD &&
@@ -22715,9 +22742,15 @@ static SDValue splitStoreSplat(SelectionDAG &DAG, StoreSDNode &St,
     SDValue OffsetPtr =
         DAG.getNode(ISD::ADD, DL, MVT::i64, BasePtr,
                     DAG.getConstant(BaseOffset + Offset, DL, MVT::i64));
+#ifdef OHOS_LLVM
+    NewST1 = DAG.getStore(NewST1.getValue(0), DL, SplatVal, OffsetPtr,
+                          PtrInfo.getWithOffset(Offset), Alignment,
+                          St.getMemOperand()->getFlags(), AAInfo);
+#else
     NewST1 = DAG.getStore(NewST1.getValue(0), DL, SplatVal, OffsetPtr,
                           PtrInfo.getWithOffset(Offset), Alignment,
                           St.getMemOperand()->getFlags());
+#endif /* OHOS_LLVM */
     Offset += EltOffset;
   }
   return NewST1;
@@ -23056,6 +23089,16 @@ static SDValue splitStores(SDNode *N, TargetLowering::DAGCombinerInfo &DCI,
     return ReplacedSplat;
 
   SDLoc DL(S);
+#ifdef OHOS_LLVM
+  AAMDNodes AAInfo = AAMDNodes();
+  // Propagate memtracer metadata.
+  if (DAG.getMachineFunction().getFunction().hasFnAttribute(
+          "reference-tracking")) {
+    if (MDNode *MemTracer = S->getAAInfo().MemTracer) {
+      AAInfo.setMemTracer(MemTracer);
+    }
+  }
+#endif /* OHOS_LLVM */
 
   // Split VT into two.
   EVT HalfVT = VT.getHalfNumVectorElementsVT(*DAG.getContext());
@@ -23065,6 +23108,16 @@ static SDValue splitStores(SDNode *N, TargetLowering::DAGCombinerInfo &DCI,
   SDValue SubVector1 = DAG.getNode(ISD::EXTRACT_SUBVECTOR, DL, HalfVT, StVal,
                                    DAG.getConstant(NumElts, DL, MVT::i64));
   SDValue BasePtr = S->getBasePtr();
+#ifdef OHOS_LLVM
+  SDValue NewST1 =
+      DAG.getStore(S->getChain(), DL, SubVector0, BasePtr, S->getPointerInfo(),
+                   S->getAlign(), S->getMemOperand()->getFlags(), AAInfo);
+  SDValue OffsetPtr = DAG.getNode(ISD::ADD, DL, MVT::i64, BasePtr,
+                                  DAG.getConstant(8, DL, MVT::i64));
+  return DAG.getStore(NewST1.getValue(0), DL, SubVector1, OffsetPtr,
+                      S->getPointerInfo(), S->getAlign(),
+                      S->getMemOperand()->getFlags(), AAInfo);
+#else
   SDValue NewST1 =
       DAG.getStore(S->getChain(), DL, SubVector0, BasePtr, S->getPointerInfo(),
                    S->getAlign(), S->getMemOperand()->getFlags());
@@ -23073,6 +23126,7 @@ static SDValue splitStores(SDNode *N, TargetLowering::DAGCombinerInfo &DCI,
   return DAG.getStore(NewST1.getValue(0), DL, SubVector1, OffsetPtr,
                       S->getPointerInfo(), S->getAlign(),
                       S->getMemOperand()->getFlags());
+#endif /* OHOS_LLVM */
 }
 
 static SDValue performSpliceCombine(SDNode *N, SelectionDAG &DAG) {
