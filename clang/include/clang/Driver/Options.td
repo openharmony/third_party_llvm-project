@@ -1935,6 +1935,14 @@ defm addrsig : BoolFOption<"addrsig",
   NegFlag<SetFalse, [], [ClangOption], "Don't emit">,
   BothFlags<[], [ClangOption, CLOption],
           " an address-significance table">>;
+#ifdef OHOS_LLVM
+defm reference_tracking : BoolFOption<"reference-tracking",
+  CodeGenOpts<"ReferenceTracking">, DefaultFalse,
+  PosFlag<SetTrue, [], [ClangOption, CC1Option], "Enable">,
+  NegFlag<SetFalse, [], [ClangOption], "Disable">,
+  BothFlags<[], [ClangOption],
+          " reference tracking (attach memtracer metadata to stores)">>;
+#endif /* OHOS_LLVM */
 defm blocks : OptInCC1FFlag<"blocks", "Enable the 'blocks' language feature",
                             "", "", [ClangOption, CLOption]>;
 def fbootclasspath_EQ : Joined<["-"], "fbootclasspath=">, Group<f_Group>;

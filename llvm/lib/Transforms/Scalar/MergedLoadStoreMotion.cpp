@@ -85,6 +85,9 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/Local.h"
+#ifdef OHOS_LLVM
+#include "llvm/Transforms/Utils/AddReferenceTrackingInfo.h"
+#endif // OHOS_LLVM
 
 using namespace llvm;
 
@@ -252,6 +255,12 @@ void MergedLoadStoreMotion::sinkStoresAndGEPs(BasicBlock *BB, StoreInst *S0,
   LLVM_DEBUG(dbgs() << "Sink Instruction into BB \n"; BB->dump();
              dbgs() << "Instruction Left\n"; S0->dump(); dbgs() << "\n";
              dbgs() << "Instruction Right\n"; S1->dump(); dbgs() << "\n");
+#ifdef OHOS_LLVM
+  // Preserve memtracer metadata before combineMetadataForCSE may drop it.
+  std::string MemtracerName, MemtracerTypeName;
+  if (!getReferenceInfo(S0, MemtracerName, MemtracerTypeName))
+    getReferenceInfo(S1, MemtracerName, MemtracerTypeName);
+#endif // OHOS_LLVM
   // Hoist the instruction.
   BasicBlock::iterator InsertPt = BB->getFirstInsertionPt();
   // Intersect optional metadata.
@@ -274,6 +283,11 @@ void MergedLoadStoreMotion::sinkStoresAndGEPs(BasicBlock *BB, StoreInst *S0,
   // New PHI operand? Use it.
   if (PHINode *NewPN = getPHIOperand(BB, S0, S1))
     SNew->setOperand(0, NewPN);
+#ifdef OHOS_LLVM
+  // Restore memtracer metadata on the sunk store.
+  if (!MemtracerName.empty() || !MemtracerTypeName.empty())
+    setReferenceInfo(SNew, MemtracerName, MemtracerTypeName);
+#endif // OHOS_LLVM
   S0->eraseFromParent();
   S1->eraseFromParent();
 

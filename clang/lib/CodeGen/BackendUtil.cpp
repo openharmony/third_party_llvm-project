@@ -90,6 +90,9 @@
 #include "llvm/Transforms/Scalar/JumpThreading.h"
 #include "llvm/Transforms/Utils/Debugify.h"
 #include "llvm/Transforms/Utils/ModuleUtils.h"
+#ifdef OHOS_LLVM
+#include "llvm/Transforms/Utils/AddReferenceTrackingInfo.h"
+#endif // OHOS_LLVM
 #include <limits>
 #include <memory>
 #include <optional>
@@ -934,6 +937,15 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
       CodeGenOpts.VerifyEach, PrintPassOpts);
   SI.registerCallbacks(PIC, &MAM);
   PassBuilder PB(TM.get(), PTO, PGOOpt, &PIC);
+
+#ifdef OHOS_LLVM
+  if (CodeGenOpts.ReferenceTracking)
+    PB.registerPipelineStartEPCallback(
+        [&](ModulePassManager &MPM, OptimizationLevel Level) {
+          MPM.addPass(createModuleToFunctionPassAdaptor(
+              AddReferenceTrackingInfoPass()));
+        });
+#endif // OHOS_LLVM
 
   // Handle the assignment tracking feature options.
   switch (CodeGenOpts.getAssignmentTrackingMode()) {

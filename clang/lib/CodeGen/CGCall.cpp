@@ -2606,6 +2606,11 @@ void CodeGenModule::ConstructAttributeList(StringRef Name,
   // * FunctionDecl attributes: __attribute__((no_builtin(...)))
   addNoBuiltinAttributes(FuncAttrs, getLangOpts(), NBA);
 
+#ifdef OHOS_LLVM
+  if (CodeGenOpts.ReferenceTracking)
+    FuncAttrs.addAttribute("reference-tracking", "true");
+#endif /* OHOS_LLVM */
+
   // Collect function IR attributes based on global settiings.
   getDefaultFunctionAttributes(Name, HasOptnone, AttrOnCallSite, FuncAttrs);
 

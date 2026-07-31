@@ -1660,6 +1660,10 @@ void Instruction::dropUnknownNonDebugMetadata(ArrayRef<unsigned> KnownIDs) {
 
   // A DIAssignID attachment is debug metadata, don't drop it.
   KnownSet.insert(LLVMContext::MD_DIAssignID);
+#ifdef OHOS_LLVM
+  // Preserve memtracer metadata for reference-tracking / memgraph.
+  KnownSet.insert(LLVMContext::MD_memtracer);
+#endif /* OHOS_LLVM */
 
   Value::eraseMetadataIf([&KnownSet](unsigned MDKind, MDNode *Node) {
     return !KnownSet.count(MDKind);
