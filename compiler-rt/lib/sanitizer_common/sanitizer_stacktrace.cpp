@@ -57,6 +57,61 @@ uptr StackTrace::GetCurrentPc() {
   return GET_CALLER_PC();
 }
 
+#if SANITIZER_OHOS
+bool StackTrace::StartsWith(const char *str, const char *prefix) {
+  if (str == nullptr || prefix == nullptr)
+    return false;
+  const char *p = prefix;
+  const char *s = str;
+
+  while (*p != '\0') {
+    if (*s == '\0' || *s != *p) {
+      return false;
+    }
+    p++;
+    s++;
+  }
+  return true;
+}
+
+bool StackTrace::EndsWith(const char *str, const char *suffix) {
+  if (str == nullptr || suffix == nullptr) {
+    return false;
+  }
+  const char *s = str;
+  const char *suf = suffix;
+
+  while (*s != '\0')
+    s++;
+  while (*suf != '\0')
+    suf++;
+
+  if ((suf - suffix) > (s - str)) {
+    return false;
+  }
+
+  while (suf > suffix) {
+    suf--;
+    s--;
+    if (s < str || *s != *suf) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool StackTrace::IsArktsExecutable(const char *filename) {
+  // Inheriting from the judgment of DfxMap::IsArkExecutable, when the filename
+  // has a prefix of "[anon:ArkTS Code","/dev/zero" or a suffix of "stub.an",
+  // it can be determined that the current filename belongs to the ArkTs stack.
+  if ((!StartsWith(filename, "[anon:ArkTS Code")) &&
+      (!StartsWith(filename, "/dev/zero")) && (!EndsWith(filename, "stub.an"))) {
+    return false;
+  }
+  return true;
+}
+#endif
+
 void BufferedStackTrace::Init(const uptr *pcs, uptr cnt, uptr extra_top_pc) {
   size = cnt + !!extra_top_pc;
   CHECK_LE(size, kStackTraceMax);
@@ -96,10 +151,16 @@ static inline uhwptr *GetCanonicFrame(uptr bp,
 
 void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
                                     uptr stack_bottom, u32 max_depth) {
+#if SANITIZER_OHOS
+  is_fast = true;
+#endif
   // TODO(yln): add arg sanity check for stack_top/stack_bottom
   CHECK_GE(max_depth, 2);
   const uptr kPageSize = GetPageSizeCached();
   trace_buffer[0] = pc;
+#if SANITIZER_OHOS
+  frame_buffer[0] = bp;
+#endif
   size = 1;
   if (stack_top < 4096) return;  // Sanity check for stack top.
   uhwptr *frame = GetCanonicFrame(bp, stack_top, stack_bottom);
@@ -133,6 +194,9 @@ void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
     if (pc1 < kPageSize)
       break;
     if (pc1 != pc) {
+#if SANITIZER_OHOS
+      frame_buffer[size] = (uptr)frame[0];
+#endif
       trace_buffer[size++] = (uptr) pc1;
     }
     bottom = (uptr)frame;

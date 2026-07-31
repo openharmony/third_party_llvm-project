@@ -1094,6 +1094,18 @@ void BaseReport::PrintTags(uptr addr) const {
   }
 }
 
+#if SANITIZER_OHOS
+static void TraceEnhance(StackTrace *stack) {
+  BufferedStackTrace *bstack = static_cast<BufferedStackTrace *>(stack);
+  if (!bstack->is_fast || !flags()->enable_unwind_arkts)
+    return;
+  uptr current_maxdepth = bstack->buffer_maxdepth;
+  uptr current_fp = bstack->frame_buffer[bstack->size - 1];
+  uptr current_pc = bstack->trace[bstack->size - 1];
+  bstack->UnwindIfArkts(current_maxdepth, current_pc, current_fp, current_fp);
+}
+#endif
+
 class InvalidFreeReport : public BaseReport {
  public:
   InvalidFreeReport(StackTrace *stack, uptr tagged_addr)
@@ -1128,6 +1140,9 @@ InvalidFreeReport::~InvalidFreeReport() {
   }
   Printf("%s", d.Default());
 
+#if SANITIZER_OHOS
+  TraceEnhance(stack);
+#endif
   stack->Print();
 
   PrintAddressDescription();
@@ -1176,6 +1191,9 @@ TailOverwrittenReport::~TailOverwrittenReport() {
   Printf("%s", d.Allocation());
   Printf("deallocated here:\n");
   Printf("%s", d.Default());
+#if SANITIZER_OHOS
+  TraceEnhance(stack);
+#endif
   stack->Print();
   if (heap.begin) {
     Printf("%s", d.Allocation());
@@ -1274,6 +1292,9 @@ TagMismatchReport::~TagMismatchReport() {
     Printf("Invalid access starting at offset %zu\n", mismatch_offset);
   Printf("%s", d.Default());
 
+#if SANITIZER_OHOS
+  TraceEnhance(stack);
+#endif
   stack->Print();
 
   PrintAddressDescription();
