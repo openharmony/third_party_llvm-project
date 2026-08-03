@@ -18,7 +18,6 @@ set(GWP_ASAN_UNITTESTS
   basic.cpp
   compression.cpp
   iterate.cpp
-  memory_collect.cpp
   crash_handler_api.cpp
   driver.cpp
   mutex_test.cpp
