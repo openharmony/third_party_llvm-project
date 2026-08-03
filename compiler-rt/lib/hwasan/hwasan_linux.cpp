@@ -490,8 +490,12 @@ static bool HwasanOnSIGTRAP(int signo, siginfo_t *info, ucontext_t *uc) {
 
 static void OnStackUnwind(const SignalContext &sig, const void *,
                           BufferedStackTrace *stack) {
+  bool whether_unwind_fast = common_flags()->fast_unwind_on_fatal;
+#if SANITIZER_OHOS
+  whether_unwind_fast = whether_unwind_fast || flags()->enable_unwind_arkts;
+#endif
   stack->Unwind(StackTrace::GetNextInstructionPc(sig.pc), sig.bp, sig.context,
-                common_flags()->fast_unwind_on_fatal);
+                whether_unwind_fast);
 }
 
 void HwasanOnDeadlySignal(int signo, void *info, void *context) {
