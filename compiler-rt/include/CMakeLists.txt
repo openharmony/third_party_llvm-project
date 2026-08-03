@@ -16,6 +16,9 @@ if (COMPILER_RT_BUILD_SANITIZERS)
     sanitizer/tsan_interface_atomic.h
     sanitizer/ubsan_interface.h
     )
+  if(OHOS_LLVM AND OHOS)
+    list(APPEND SANITIZER_HEADERS sanitizer/memgraph_interface.h)
+  endif()
   set(FUZZER_HEADERS
     fuzzer/FuzzedDataProvider.h
     )
