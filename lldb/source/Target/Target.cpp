@@ -202,6 +202,11 @@ Target::Target(Debugger &debugger, const ArchSpec &target_arch,
   }
 
   UpdateLaunchInfoFromProperties();
+
+#ifdef OHOS_LLVM
+  // Init modules searching paths by property "target.modules-search-paths".
+  m_image_search_paths.Append(GetModulesSearchPaths(), false);
+#endif /* OHOS_LLVM */
 }
 
 Target::~Target() {
@@ -2132,6 +2137,53 @@ size_t Target::ReadMemory(const Address &addr, void *dst, size_t dst_len,
   }
   return 0;
 }
+
+#ifdef OHOS_LLVM
+size_t Target::ShowMemory(const Address &addr, void *dst, size_t dst_len,
+                          Status &error, lldb::addr_t *load_addr_ptr) {
+  error.Clear();
+
+  Address fixed_addr = addr;
+  if (ProcessIsValid())
+    if (const ABISP &abi = m_process_sp->GetABI())
+      fixed_addr.SetLoadAddress(abi->FixAnyAddress(addr.GetLoadAddress(this)),
+                                this);
+
+  // if we end up reading this from process memory, we will fill this with the
+  // actual load address
+  if (load_addr_ptr)
+    *load_addr_ptr = LLDB_INVALID_ADDRESS;
+
+  size_t bytes_read = 0;
+
+  addr_t load_addr = fixed_addr.GetLoadAddress(this);
+  if (ProcessIsValid()) {
+    if (load_addr == LLDB_INVALID_ADDRESS) {
+      error = Status::FromErrorStringWithFormat("load_addr is invalid");
+    } else {
+      bytes_read = m_process_sp->ShowMemory(load_addr, dst, dst_len, error);
+      if (bytes_read != dst_len) {
+        if (error.Success()) {
+          if (bytes_read == 0)
+            error = Status::FromErrorStringWithFormat(
+                "show memory from 0x%" PRIx64 " failed", load_addr);
+          else
+            error = Status::FromErrorStringWithFormat(
+                "only %" PRIu64 " of %" PRIu64
+                " bytes were read from memory at 0x%" PRIx64,
+                (uint64_t)bytes_read, (uint64_t)dst_len, load_addr);
+        }
+      }
+      if (bytes_read) {
+        if (load_addr_ptr)
+          *load_addr_ptr = load_addr;
+        return bytes_read;
+      }
+    }
+  }
+  return 0;
+}
+#endif /* OHOS_LLVM */
 
 size_t Target::ReadCStringFromMemory(const Address &addr, std::string &out_str,
                                      Status &error, bool force_live_memory) {
@@ -4753,6 +4805,16 @@ FileSpecList TargetProperties::GetDebugFileSearchPaths() {
   const uint32_t idx = ePropertyDebugFileSearchPaths;
   return GetPropertyAtIndexAs<FileSpecList>(idx, {});
 }
+
+#ifdef OHOS_LLVM
+PathMappingList &TargetProperties::GetModulesSearchPaths() const {
+  const uint32_t idx = ePropertyModulesSearchPaths;
+  OptionValuePathMappings *option_value =
+      m_collection_sp->GetPropertyAtIndexAsOptionValuePathMappings(idx);
+  assert(option_value);
+  return option_value->GetCurrentValue();
+}
+#endif /* OHOS_LLVM */
 
 FileSpecList TargetProperties::GetClangModuleSearchPaths() {
   const uint32_t idx = ePropertyClangModuleSearchPaths;

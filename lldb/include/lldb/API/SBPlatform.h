@@ -141,6 +141,11 @@ public:
 
   uint32_t GetOSUpdateVersion();
 
+#ifdef OHOS_LLVM
+  bool GetUseExecSearchPathModuleCache();
+  bool SetUseExecSearchPathModuleCache(bool use_exec_search_path_module_cache);
+#endif /* OHOS_LLVM */
+
   void SetSDKRoot(const char *sysroot);
 
   SBError Put(SBFileSpec &src, SBFileSpec &dst);

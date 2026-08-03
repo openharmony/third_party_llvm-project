@@ -126,6 +126,10 @@ class Materializer;
 class MemoryHistory;
 class MemoryRegionInfo;
 class MemoryRegionInfos;
+#ifdef OHOS_LLVM
+class MixedArkTSDebugger;
+class MixedDebugger;
+#endif /* OHOS_LLVM */
 class Module;
 class ModuleList;
 class ModuleSpec;

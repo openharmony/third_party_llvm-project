@@ -289,9 +289,15 @@ ValueObjectSP ForwardListFrontEnd::GetChildAtIndex(uint32_t idx) {
                                    m_backend.GetExecutionContextRef(),
                                    m_element_type);
 #else /* OHOS_LLVM */
+  ExecutionContext exe_ctx(
+      m_backend.GetExecutionContextRef().Lock(false));
+  lldb::addr_t value_addr = current_sp->GetLoadAddress();
+  if (value_addr == LLDB_INVALID_ADDRESS)
+    return nullptr;
   StreamString name;
   name.Printf("[%" PRIu64 "]", (uint64_t)idx);
-  return current_sp->Clone(ConstString(name.GetString()));
+  return CreateValueObjectFromAddress(ConstString(name.GetString()),
+                                       value_addr, exe_ctx, m_element_type);
 #endif /* OHOS_LLVM */
 }
 
@@ -418,10 +424,15 @@ lldb::ValueObjectSP ListFrontEnd::GetChildAtIndex(uint32_t idx) {
                                    m_backend.GetExecutionContextRef(),
                                    m_element_type);
 #else /* OHOS_LLVM */
+  ExecutionContext exe_ctx(
+      m_backend.GetExecutionContextRef().Lock(false));
+  lldb::addr_t value_addr = current_sp->GetLoadAddress();
+  if (value_addr == LLDB_INVALID_ADDRESS)
+    return lldb::ValueObjectSP();
   StreamString name;
   name.Printf("[%" PRIu64 "]", (uint64_t)idx);
-  // OHOS_LOCAL
-  return current_sp->Clone(ConstString(name.GetString()));
+  return CreateValueObjectFromAddress(ConstString(name.GetString()),
+                                       value_addr, exe_ctx, m_element_type);
 #endif /* OHOS_LLVM */
 }
 

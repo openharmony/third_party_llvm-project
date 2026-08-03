@@ -21,6 +21,11 @@
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#ifdef OHOS_LLVM
+#ifdef __OHOS_FAMILY__
+#include <dirent.h>
+#endif /* __OHOS_FAMILY__ */
+#endif /* OHOS_LLVM */
 
 #include <csignal>
 #include <sstream>
@@ -179,7 +184,21 @@ struct ForkLaunchInfo {
 
         // Don't close first three entries since they are stdin, stdout and
         // stderr.
+#ifdef OHOS_LLVM
+#ifdef __OHOS_FAMILY__
+        // Also do not close the directory itself since it would be
+        // closed after iteration.
+        // Here iter.get_handler() would return an intptr_t type,
+        // while dirfd() accepts DIR* type to return the fd, so we use
+        // reinterpret_cast to cast iter.get_handler() to DIR*.
+        int dir_fd = dirfd(reinterpret_cast<DIR*>(iter.get_handler()));
+        if (fd > 2 && !info.has_action(fd) && fd != error_fd && dir_fd != fd)
+#else
         if (fd > 2 && !info.has_action(fd) && fd != error_fd)
+#endif /* __OHOS_FAMILY__ */
+#else
+        if (fd > 2 && !info.has_action(fd) && fd != error_fd)
+#endif /* OHOS_LLVM */
           files_to_close.push_back(fd);
       }
       for (int file_to_close : files_to_close)

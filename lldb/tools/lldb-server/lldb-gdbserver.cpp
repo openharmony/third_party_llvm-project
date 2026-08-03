@@ -19,7 +19,12 @@
 
 #ifdef OHOS_LLVM
 #ifdef __OHOS_FAMILY__
-#include <sys/syscall.h>
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
+#include <sched.h>
+#include <stdio.h>
+#include <string.h>
 #endif /* __OHOS_FAMILY__ */
 #endif /* OHOS_LLVM */
 
@@ -95,7 +100,137 @@ public:
   }
 };
 #endif
+} // namespace
+
+#ifdef OHOS_LLVM
+#if defined(__OHOS_FAMILY__)
+// bind fast cpu
+namespace {
+int read_uint(const char *filename, unsigned int *data) {
+  FILE *fp = NULL;
+
+  if ((fp = fopen(filename, "r")) == NULL)
+    return -1;
+
+  if (fscanf(fp, "%u", data) != 1) {
+    fclose(fp);
+    errno = EINVAL;
+    return -1;
+  }
+
+  fclose(fp);
+  return 0;
 }
+
+int read_cpuset(const char *filename, cpu_set_t *cpuset) {
+  FILE *fp = NULL;
+  int cpu;
+
+  if ((fp = fopen(filename, "r")) == NULL)
+    return -1;
+
+  CPU_ZERO(cpuset);
+  while (fscanf(fp, "%d", &cpu) == 1)
+    CPU_SET(cpu, cpuset);
+
+  if (CPU_COUNT(cpuset) == 0) {
+    fclose(fp);
+    errno = ENOENT;
+    return -1;
+  }
+
+  fclose(fp);
+  return 0;
+}
+
+int get_fast_cpus(cpu_set_t *fast_cpus) {
+  const char base_path[] = "/sys/devices/system/cpu/cpufreq";
+  DIR *dp = NULL;
+  struct dirent *dirp = NULL;
+#define MAX_FN_LEN 70
+  char filename[MAX_FN_LEN];
+  unsigned int lowest_max_freq = UINT_MAX;
+  cpu_set_t slow_cpus, all_cpus;
+
+  CPU_ZERO(&slow_cpus);
+  CPU_ZERO(&all_cpus);
+  errno = EACCES;
+
+  if ((dp = opendir(base_path)) == NULL)
+    return -1;
+
+  while ((dirp = readdir(dp)) != NULL) {
+    unsigned int max_freq;
+    cpu_set_t cpus;
+
+    if (strcmp(dirp->d_name, ".") == 0 || strcmp(dirp->d_name, "..") == 0)
+      continue;
+
+    if (snprintf(filename, MAX_FN_LEN, "%s/%s/cpuinfo_max_freq", base_path,
+                 dirp->d_name) < 0) {
+      closedir(dp);
+      errno = ERANGE;
+      return -1;
+    }
+    if (read_uint(filename, &max_freq) < 0) {
+      closedir(dp);
+      return -1;
+    }
+
+    if (snprintf(filename, MAX_FN_LEN, "%s/%s/related_cpus", base_path,
+                 dirp->d_name) < 0) {
+      closedir(dp);
+      errno = ERANGE;
+      return -1;
+    }
+    if (read_cpuset(filename, &cpus) < 0) {
+      closedir(dp);
+      return -1;
+    }
+
+    CPU_OR(&all_cpus, &all_cpus, &cpus);
+    if (max_freq < lowest_max_freq) {
+      lowest_max_freq = max_freq;
+      slow_cpus = cpus;
+    }
+  }
+
+  closedir(dp);
+
+  if (CPU_COUNT(&all_cpus) == 0) {
+    if (!errno)
+      errno = ENOENT;
+    return -1;
+  }
+
+  CPU_XOR(fast_cpus, &all_cpus, &slow_cpus);
+  if (CPU_COUNT(fast_cpus) == 0)
+    *fast_cpus = all_cpus;
+
+  errno = 0;
+  return 0;
+}
+
+void bind_fast_cpus(void) {
+  Log *log = GetLog(LLDBLog::Process);
+  cpu_set_t fast_cpus;
+
+  if (get_fast_cpus(&fast_cpus) < 0) {
+    LLDB_LOGF(log, "lldb-server:%s Error detecting cpu topology: %s",
+              __FUNCTION__, strerror(errno));
+    return;
+  }
+
+  if (sched_setaffinity(0, sizeof(fast_cpus), &fast_cpus) < 0) {
+    LLDB_LOGF(log, "lldb-server:%s Error setaffinity: %s", __FUNCTION__,
+              strerror(errno));
+    return;
+  }
+  LLDB_LOGF(log, "lldb-server:%s bind cpu succeeded.", __FUNCTION__);
+}
+} // namespace
+#endif /* __OHOS_FAMILY__ */
+#endif /* OHOS_LLVM */
 
 #ifndef _WIN32
 // Watch for signals
@@ -347,51 +482,16 @@ DESCRIPTION
 
 #ifdef OHOS_LLVM
 #ifdef __OHOS_FAMILY__
-#ifndef SCHED_FLAG_UTIL_CLAMP_MIN
-#define SCHED_FLAG_UTIL_CLAMP_MIN 0x20
-#endif
-struct sched_attr {
-  uint32_t size;
-  uint32_t sched_policy;
-  uint64_t sched_flags;
-  int32_t sched_nice;
-  uint32_t sched_priority;
-  uint64_t sched_runtime;
-  uint64_t sched_deadline;
-  uint64_t sched_period;
-  uint32_t sched_util_min;
-  uint32_t sched_util_max;
-};
-
-static int sched_setattr(lldb::pid_t pid, const struct sched_attr *attr,
-                         unsigned int flags) {
-  return syscall(__NR_sched_setattr, pid, attr, flags);
-}
-
-static int sched_getattr(lldb::pid_t pid, struct sched_attr *attr,
-                         unsigned int size, unsigned int flags) {
-  return syscall(__NR_sched_getattr, pid, attr, size, flags);
-}
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
+#include <sched.h>
+#include <stdio.h>
+#include <string.h>
 #endif /* __OHOS_FAMILY__ */
 #endif /* OHOS_LLVM */
 
 int main_gdbserver(int argc, char *argv[]) {
-#ifdef OHOS_LLVM
-#ifdef __OHOS_FAMILY__
-  struct sched_attr attr;
-  int schret = sched_getattr(0, &attr, sizeof(sched_attr), 0);
-  if (schret != 0) {
-    llvm::errs() << llvm::format("lldb-server get sched failed: %d\n", errno);
-  } else {
-    attr.sched_flags = SCHED_FLAG_UTIL_CLAMP_MIN;
-    attr.sched_util_min = 512; // [0, 1024]. The higher, the more cpu supply.
-    schret = sched_setattr(0, &attr, 0);
-    if (schret != 0) {
-      llvm::errs() << llvm::format("lldb-server set sched failed: %d\n", errno);
-    }
-  }
-#endif /* __OHOS_FAMILY__ */
-#endif /* OHOS_LLVM */
   Status error;
   MainLoop mainloop;
 #ifndef _WIN32
@@ -489,6 +589,12 @@ int main_gdbserver(int argc, char *argv[]) {
           LLDB_LOG_OPTION_PREPEND_TIMESTAMP |
               LLDB_LOG_OPTION_PREPEND_FILE_FUNCTION))
     return -1;
+
+#ifdef OHOS_LLVM
+#if defined(__OHOS_FAMILY__)
+  bind_fast_cpus();
+#endif /* __OHOS_FAMILY__ */
+#endif /* OHOS_LLVM */
 
   std::vector<llvm::StringRef> Inputs;
   for (opt::Arg *Arg : Args.filtered(OPT_INPUT))

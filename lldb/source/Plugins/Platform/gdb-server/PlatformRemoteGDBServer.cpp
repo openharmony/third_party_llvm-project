@@ -807,9 +807,14 @@ std::string PlatformRemoteGDBServer::MakeUrl(const char *scheme,
                                              uint16_t port, const char *path) {
   StreamString result;
   result.Printf("%s://", scheme);
+#ifndef OHOS_LLVM
   if (strlen(hostname) > 0)
     result.Printf("[%s]", hostname);
-
+#else /* OHOS_LLVM */
+  // unix-abstract-connect scheme must not wrap the hostname in brackets.
+  if (strlen(hostname) > 0 && strcmp(scheme, "unix-abstract-connect"))
+    result.Printf("[%s]", hostname);
+#endif /* OHOS_LLVM */
   if (port != 0)
     result.Printf(":%u", port);
   if (path)

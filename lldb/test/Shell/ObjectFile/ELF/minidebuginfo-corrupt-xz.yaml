@@ -1,4 +1,4 @@
-# REQUIRES: lzma
+# REQUIRES: lzma && !lzma-7zip
 
 # This test checks that an error occurs when a corrupted
 # .gnu_debugdata section is trying to be xz uncompressed.

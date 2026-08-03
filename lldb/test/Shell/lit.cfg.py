@@ -142,6 +142,9 @@ if config.lldb_enable_lua:
 if config.lldb_enable_lzma:
     config.available_features.add("lzma")
 
+if config.lldb_enable_lzma_7zip:
+    config.available_features.add("lzma-7zip")
+
 if shutil.which("xz") is not None:
     config.available_features.add("xz")
 

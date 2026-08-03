@@ -215,8 +215,7 @@ lldb::ValueObjectSP lldb_private::formatters::
   return CreateValueObjectFromData(stream.GetString(), data, exe_ctx,
                                    m_element_type);
 #else /* OHOS_LLVM */
-  // OHOS_LOCAL
-  return m_elements_cache.back().first->Clone(ConstString(stream.GetString()));
+  return val_hash.first->Clone(ConstString(stream.GetString()));
 #endif /* OHOS_LLVM */
 }
 

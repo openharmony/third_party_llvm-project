@@ -22,6 +22,12 @@ else()
   set(DARWIN_EXTRAS "")
 endif()
 
+if(OHOS_LLVM)
+  set(OHOS_LLVM_EXTRAS "-DOHOS_LLVM")
+else()
+  set(OHOS_LLVM_EXTRAS "")
+endif()
+
 set(SWIG_COMMON_FLAGS
   -c++
   # Ignored warnings:
@@ -34,6 +40,7 @@ set(SWIG_COMMON_FLAGS
   -I${LLDB_BINARY_DIR}/include
   -I${CMAKE_CURRENT_SOURCE_DIR}
   ${DARWIN_EXTRAS}
+  ${OHOS_LLVM_EXTRAS}
 )
 
 function(create_relative_symlink swig_target dest_file output_dir output_name)

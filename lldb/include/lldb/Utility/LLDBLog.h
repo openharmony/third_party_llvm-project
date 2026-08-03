@@ -54,7 +54,8 @@ enum class LLDBLog : Log::MaskType {
   LLVM_MARK_AS_BITMASK_ENUM(Disassembler),
 #else /* OHOS_LLVM */
   Performance = Log::ChannelFlag<34>,
-  LLVM_MARK_AS_BITMASK_ENUM(Performance),
+  MixedDebugger = Log::ChannelFlag<35>,
+  LLVM_MARK_AS_BITMASK_ENUM(MixedDebugger),
 #endif /* OHOS_LLVM */
 };
 

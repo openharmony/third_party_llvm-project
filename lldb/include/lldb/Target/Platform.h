@@ -54,6 +54,11 @@ public:
   bool GetUseModuleCache() const;
   bool SetUseModuleCache(bool use_module_cache);
 
+#ifdef OHOS_LLVM
+  bool GetUseExecSearchPathModuleCache() const;
+  bool SetUseExecSearchPathModuleCache(bool use_exec_search_path_module_cache);
+#endif /* OHOS_LLVM */
+
   FileSpec GetModuleCacheDirectory() const;
   bool SetModuleCacheDirectory(const FileSpec &dir_spec);
 
