@@ -154,6 +154,10 @@ void BufferedStackTrace::Unwind(u32 max_depth, uptr pc, uptr bp, void *context,
   // Ensures all call sites get what they requested.
   CHECK_EQ(request_fast_unwind, WillUseFastUnwind(request_fast_unwind));
   top_frame_bp = (max_depth > 0) ? bp : 0;
+#if SANITIZER_OHOS
+  bs_stack_top = stack_top;
+  bs_stack_bottom = stack_bottom;
+#endif
   // Avoid doing any work for small max_depth.
   if (max_depth == 0) {
     size = 0;

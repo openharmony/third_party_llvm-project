@@ -1094,15 +1094,48 @@ void BaseReport::PrintTags(uptr addr) const {
   }
 }
 
-#if SANITIZER_OHOS
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+uptr GetArktsExecutableRanges(uptr *arkts_ranges, uptr max_ranges) {
+  if (arkts_ranges == nullptr || max_ranges == 0)
+    return 0;
+
+  MemoryMappingLayout proc_maps(/*cache_enabled*/ true);
+  const sptr kBufSize = 4095;
+  char *filename = (char *)MmapOrDie(kBufSize, __func__);
+  MemoryMappedSegment segment(filename, kBufSize);
+  uptr count = 0;
+
+  while (proc_maps.Next(&segment) && (count * 2 + 1) < max_ranges) {
+    if (StackTrace::StartsWith(segment.filename, "[anon:ArkTS Code") ||
+        StackTrace::StartsWith(segment.filename, "/dev/zero") ||
+        StackTrace::EndsWith(segment.filename, "stub.an")) {
+      arkts_ranges[count * 2] = segment.start;
+      arkts_ranges[count * 2 + 1] = segment.end;
+      count++;
+    }
+  }
+  UnmapOrDie(filename, kBufSize);
+  return count;
+}
+
 static void TraceEnhance(StackTrace *stack) {
   BufferedStackTrace *bstack = static_cast<BufferedStackTrace *>(stack);
   if (!bstack->is_fast || !flags()->enable_unwind_arkts)
     return;
+
+  static const uptr maxRanges = 256;
+  static uptr arkts_ranges[maxRanges * 2];
+  static uptr range_count = 0;
+
+  if (range_count == 0) {
+    range_count = GetArktsExecutableRanges(arkts_ranges, maxRanges * 2);
+  }
+
   uptr current_maxdepth = bstack->buffer_maxdepth;
   uptr current_fp = bstack->frame_buffer[bstack->size - 1];
   uptr current_pc = bstack->trace[bstack->size - 1];
-  bstack->UnwindIfArkts(current_maxdepth, current_pc, current_fp, current_fp);
+  bstack->UnwindIfArkts(current_maxdepth, current_pc, current_fp, current_fp,
+                        arkts_ranges, range_count);
 }
 #endif
 

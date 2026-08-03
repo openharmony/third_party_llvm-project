@@ -231,6 +231,11 @@ void __hwasan_print_memory_usage();
 SANITIZER_INTERFACE_ATTRIBUTE
 void __hwasan_add_frame_record(u64 frame_record_info);
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+SANITIZER_INTERFACE_ATTRIBUTE
+void __hwasan_set_arkts_stub_range(uptr start, uptr end);
+#endif
+
 SANITIZER_INTERFACE_ATTRIBUTE
 void *__hwasan_memcpy(void *dst, const void *src, uptr size);
 SANITIZER_INTERFACE_ATTRIBUTE

@@ -100,15 +100,17 @@ bool StackTrace::EndsWith(const char *str, const char *suffix) {
   return true;
 }
 
-bool StackTrace::IsArktsExecutable(const char *filename) {
-  // Inheriting from the judgment of DfxMap::IsArkExecutable, when the filename
-  // has a prefix of "[anon:ArkTS Code","/dev/zero" or a suffix of "stub.an",
-  // it can be determined that the current filename belongs to the ArkTs stack.
-  if ((!StartsWith(filename, "[anon:ArkTS Code")) &&
-      (!StartsWith(filename, "/dev/zero")) && (!EndsWith(filename, "stub.an"))) {
+bool StackTrace::IsArktsExecutable(uptr pc, const uptr *arkts_ranges,
+                                   uptr range_count) {
+  if (arkts_ranges == nullptr || range_count == 0)
     return false;
+
+  for (uptr i = 0; i < range_count; i++) {
+    if (pc >= arkts_ranges[i * 2] && pc < arkts_ranges[i * 2 + 1]) {
+      return true;
+    }
   }
-  return true;
+  return false;
 }
 #endif
 

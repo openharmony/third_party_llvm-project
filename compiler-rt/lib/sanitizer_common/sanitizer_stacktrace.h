@@ -84,7 +84,8 @@ struct StackTrace {
 #if SANITIZER_OHOS
   static bool StartsWith(const char *str, const char *prefix);
   static bool EndsWith(const char *str, const char *suffix);
-  static bool IsArktsExecutable(const char *filename);
+  static bool IsArktsExecutable(uptr pc, const uptr *arkts_ranges,
+                                uptr range_count);
   const char *GetFilename(uptr addr);
 #endif
 };
@@ -121,6 +122,8 @@ struct BufferedStackTrace : public StackTrace {
 #if SANITIZER_OHOS
   uptr frame_buffer[kStackTraceMax]{};
   u32 buffer_maxdepth = 0;
+  uptr bs_stack_top = 0;
+  uptr bs_stack_bottom = 0;
 #endif
 
   BufferedStackTrace() : StackTrace(trace_buffer, 0), top_frame_bp(0) {}
@@ -155,7 +158,8 @@ struct BufferedStackTrace : public StackTrace {
   }
 
 #if SANITIZER_OHOS
-  void UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp);
+  void UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp,
+                     const uptr *arkts_ranges, uptr range_count);
 #endif
 
  private:

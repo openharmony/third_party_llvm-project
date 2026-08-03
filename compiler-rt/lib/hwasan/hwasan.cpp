@@ -57,6 +57,37 @@ uptr kLowShadowEnd;
 uptr kHighShadowStart;
 uptr kHighShadowEnd;
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+static uptr hwasan_arkts_stub_start = UINTPTR_MAX;
+static uptr hwasan_arkts_stub_end = UINTPTR_MAX;
+
+static bool IsArkTSStubAddress(uptr addr) {
+  return (hwasan_arkts_stub_start != UINTPTR_MAX &&
+          hwasan_arkts_stub_end != UINTPTR_MAX &&
+          addr >= hwasan_arkts_stub_start && addr < hwasan_arkts_stub_end);
+}
+
+void MaybeUnwindArkTS(BufferedStackTrace *stack, bool is_fast, bool if_arkts) {
+  if (!is_fast || !if_arkts || stack->size == 0)
+    return;
+
+  uptr idx = stack->size - 1;
+  uptr current_pc = stack->trace_buffer[idx];
+
+  if (!IsArkTSStubAddress(current_pc))
+    return;
+
+  uptr arkts_ranges[2] = {Hwasan_get_arkts_stub_start(),
+                          Hwasan_get_arkts_stub_end()};
+  const uptr range_count = 1;
+  uptr current_maxdepth = stack->buffer_maxdepth;
+  uptr current_fp = stack->frame_buffer[idx];
+
+  stack->UnwindIfArkts(current_maxdepth, current_pc, current_fp, current_fp,
+                       arkts_ranges, range_count);
+}
+#endif
+
 void Flags::SetDefaults() {
 #define HWASAN_FLAG(Type, Name, DefaultValue, Description) Name = DefaultValue;
 #include "hwasan_flags.inc"
@@ -796,6 +827,20 @@ void __hwasan_add_frame_record(u64 frame_record_info) {
 extern "C" {
 SANITIZER_INTERFACE_ATTRIBUTE SANITIZER_WEAK_ATTRIBUTE
 const char* __hwasan_default_options() { return ""; }
+}  // extern "C"
+#endif
+
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+extern "C" {
+SANITIZER_INTERFACE_ATTRIBUTE
+void __hwasan_set_arkts_stub_range(uptr start, uptr end) {
+  hwasan_arkts_stub_start = start;
+  hwasan_arkts_stub_end = end;
+}
+
+uptr Hwasan_get_arkts_stub_start() { return hwasan_arkts_stub_start; }
+
+uptr Hwasan_get_arkts_stub_end() { return hwasan_arkts_stub_end; }
 }  // extern "C"
 #endif
 
