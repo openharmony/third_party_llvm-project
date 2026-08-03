@@ -308,6 +308,13 @@ public:
   ///     or zero on failure.
   LLVM_ABI int64_t getSigned(uint64_t *offset_ptr, uint32_t size) const;
 
+#ifdef OHOS_LLVM
+  /// Extract a signed integer of the given size from the location given by
+  /// the cursor. In case of an extraction error, or if the cursor is already
+  /// in an error state, zero is returned.
+  int64_t getSigned(Cursor &C, uint32_t Size) const;
+#endif /* OHOS_LLVM */
+
   //------------------------------------------------------------------
   /// Extract an pointer from \a *offset_ptr.
   ///

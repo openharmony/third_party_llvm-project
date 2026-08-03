@@ -37,7 +37,7 @@
 // SSP-RET-COOKIE-STRONG: "-stack-protector" "4"
 // SSP-RET-COOKIE-STRONG: "-stack-protector-ret-cookie-size" "10"
 
-// RUN: %clang -target aarch64-linux-ohos -fstack-protector-ret-all --param ssp-ret-cookie-size=-1 -### %s 2>&1 | FileCheck %s -check-prefix=SSP-RET-COOKIE-ALL
+// RUN: not %clang -target aarch64-linux-ohos -fstack-protector-ret-all --param ssp-ret-cookie-size=-1 -### %s 2>&1 | FileCheck %s -check-prefix=SSP-RET-COOKIE-ALL
 // SSP-RET-COOKIE-ALL: invalid integral value
 // SSP-RET-COOKIE-ALL: "-stack-protector" "5"
 // OHOS_LOCAL end

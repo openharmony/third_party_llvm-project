@@ -153,6 +153,22 @@ DataExtractor::getSigned(uint64_t *offset_ptr, uint32_t byte_size) const {
   llvm_unreachable("getSigned unhandled case!");
 }
 
+#ifdef OHOS_LLVM
+int64_t DataExtractor::getSigned(Cursor &C, uint32_t byte_size) const {
+  switch (byte_size) {
+  case 1:
+    return getS8(C);
+  case 2:
+    return getS16(C);
+  case 4:
+    return getS32(C);
+  case 8:
+    return getS64(C);
+  }
+  llvm_unreachable("getSigned unhandled case!");
+}
+#endif /* OHOS_LLVM */
+
 StringRef DataExtractor::getCStrRef(uint64_t *OffsetPtr, Error *Err) const {
   ErrorAsOutParameter ErrAsOut(Err);
   if (isError(Err))

@@ -28331,21 +28331,18 @@ Register X86TargetLowering::getRegisterByName(const char* RegName, LLT VT,
 #endif
   }
 
-#ifndef OHOS_LLVM
-  return Reg;
-#else /* OHOS_LLVM */
-  if (Reg)
-    return Reg;
-
-  Reg = MatchRegisterName(RegName);
-  if (Reg) {
-    Register RReg = getX86SubSuperRegister(Reg, 64);
-    if (Subtarget.getRRegReservation().contains(RReg))
-      return Reg;
+#ifdef OHOS_LLVM
+  if (!Reg) {
+    Register MatchedReg = MatchRegisterName(RegName);
+    if (MatchedReg) {
+      Register RReg = getX86SubSuperRegister(MatchedReg, 64);
+      if (Subtarget.getRRegReservation().contains(RReg))
+        Reg = MatchedReg;
+    }
   }
-
-  report_fatal_error("Invalid register name global variable");
 #endif /* OHOS_LLVM */
+
+  return Reg;
 }
 
 SDValue X86TargetLowering::LowerFRAME_TO_ARGS_OFFSET(SDValue Op,
