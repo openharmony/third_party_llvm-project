@@ -12,6 +12,7 @@
 #include "gwp_asan/optional/segv_handler.h"
 #include "gwp_asan/options.h"
 #if defined(OHOS_LLVM) && defined(__OHOS__)
+#include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_flags.h"
 #include "sanitizer_common/sanitizer_stacktrace_printer.h"
 #include "sanitizer_common/sanitizer_symbolizer.h"
@@ -262,6 +263,7 @@ static bool sigSegvHandlerOhos(int sig, siginfo_t *info, void *ucontext) {
     uintptr_t FaultAddrUPtr = reinterpret_cast<uintptr_t>(FaultAddr);
 
     if (__gwp_asan_error_is_mine(State, FaultAddrUPtr)) {
+      __sanitizer::ScopedErrorReportLock gwp_report_lock;
       GPAForSignalHandler->preCrashReport(FaultAddr);
       dumpReport(FaultAddrUPtr, State,
                  GPAForSignalHandler->getMetadataRegion(),
