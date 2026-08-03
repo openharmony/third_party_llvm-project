@@ -263,12 +263,20 @@ static bool sigSegvHandlerOhos(int sig, siginfo_t *info, void *ucontext) {
     uintptr_t FaultAddrUPtr = reinterpret_cast<uintptr_t>(FaultAddr);
 
     if (__gwp_asan_error_is_mine(State, FaultAddrUPtr)) {
+      if (FaultAddrUPtr == 0)
+        return false;
+
       __sanitizer::ScopedErrorReportLock gwp_report_lock;
       GPAForSignalHandler->preCrashReport(FaultAddr);
       dumpReport(FaultAddrUPtr, State,
                  GPAForSignalHandler->getMetadataRegion(),
                  BacktraceForSignalHandler, PrintfForSignalHandler,
                  PrintBacktraceForSignalHandler, ucontext);
+
+      if (RecoverableSignal) {
+        GPAForSignalHandler->postCrashReportRecoverableOnly(FaultAddr);
+        return true;
+      }
     }
   }
   return false;
@@ -321,7 +329,7 @@ namespace segv_handler {
 #if defined(OHOS_LLVM) && defined(__OHOS__)
 void installSignalHandlersOhos(gwp_asan::GuardedPoolAllocator *GPA,
                               Printf_t Printf, PrintBacktrace_t PrintBacktrace,
-                              SegvBacktrace_t SegvBacktrace) {
+                              SegvBacktrace_t SegvBacktrace, bool Recoverable) {
   assert(GPA && "GPA wasn't provided to installSignalHandlers.");
   assert(Printf && "Printf wasn't provided to installSignalHandlers.");
   assert(PrintBacktrace &&
@@ -332,7 +340,7 @@ void installSignalHandlersOhos(gwp_asan::GuardedPoolAllocator *GPA,
   PrintfForSignalHandler = Printf;
   PrintBacktraceForSignalHandler = PrintBacktrace;
   BacktraceForSignalHandler = SegvBacktrace;
-  RecoverableSignal = false;
+  RecoverableSignal = Recoverable;
 
   struct signal_chain_action Action = {
       .sca_sigaction = sigSegvHandlerOhos,
