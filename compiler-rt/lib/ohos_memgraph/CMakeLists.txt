@@ -35,6 +35,10 @@ set(OHOS_MEMGRAPH_CFLAGS ${SANITIZER_COMMON_CFLAGS})
 append_list_if(COMPILER_RT_HAS_FPIC_FLAG -fPIC OHOS_MEMGRAPH_CFLAGS)
 append_list_if(COMPILER_RT_HAS_WNO_FORMAT -Wno-format OHOS_MEMGRAPH_CFLAGS)
 
+set(OHOS_MEMGRAPH_DYNAMIC_LINK_FLAGS ${SANITIZER_COMMON_LINK_FLAGS})
+set(OHOS_MEMGRAPH_DYNAMIC_LIBS ${SANITIZER_COMMON_LINK_LIBS})
+append_list_if(COMPILER_RT_HAS_LIBDL dl OHOS_MEMGRAPH_DYNAMIC_LIBS)
+
 if(OHOS_LLVM AND OHOS)
   list(APPEND OHOS_MEMGRAPH_CFLAGS -fno-emulated-tls)
 endif()
@@ -65,8 +69,13 @@ function(add_memgraph_runtime runtime_name arch)
     OBJECT_LIBS RTSanitizerCommon
                 RTSanitizerCommonLibc
                 RTInterception
+    LINK_FLAGS ${OHOS_MEMGRAPH_DYNAMIC_LINK_FLAGS}
+    LINK_LIBS ${OHOS_MEMGRAPH_DYNAMIC_LIBS}
     PARENT_TARGET memgraph
   )
+
+  set_target_properties(${runtime_name}-dynamic-${arch}
+    PROPERTIES LINKER_LANGUAGE C)
 endfunction()
 
 if(COMPILER_RT_HAS_OHOS_MEMGRAPH)
