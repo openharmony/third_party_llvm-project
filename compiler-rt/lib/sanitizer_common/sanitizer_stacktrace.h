@@ -81,13 +81,6 @@ struct StackTrace {
   static uptr GetCurrentPc();
   static inline uptr GetPreviousInstructionPc(uptr pc);
   static uptr GetNextInstructionPc(uptr pc);
-#if SANITIZER_OHOS
-  static bool StartsWith(const char *str, const char *prefix);
-  static bool EndsWith(const char *str, const char *suffix);
-  static bool IsArktsExecutable(uptr pc, const uptr *arkts_ranges,
-                                uptr range_count);
-  const char *GetFilename(uptr addr);
-#endif
 };
 
 // Performance-critical, must be in the header.
@@ -121,9 +114,8 @@ struct BufferedStackTrace : public StackTrace {
   uptr top_frame_bp;  // Optional bp of a top frame.
 #if SANITIZER_OHOS
   uptr frame_buffer[kStackTraceMax]{};
-  u32 buffer_maxdepth = 0;
-  uptr bs_stack_top = 0;
-  uptr bs_stack_bottom = 0;
+  uptr arkts_stub_start = UINTPTR_MAX;
+  uptr arkts_stub_end = UINTPTR_MAX;
 #endif
 
   BufferedStackTrace() : StackTrace(trace_buffer, 0), top_frame_bp(0) {}
@@ -136,9 +128,6 @@ struct BufferedStackTrace : public StackTrace {
   void Unwind(uptr pc, uptr bp, void *context, bool request_fast,
               u32 max_depth = kStackTraceMax) {
     top_frame_bp = (max_depth > 0) ? bp : 0;
-#if SANITIZER_OHOS
-    buffer_maxdepth = max_depth;
-#endif
     // Small max_depth optimization
     if (max_depth <= 1) {
       if (max_depth == 1)
@@ -158,8 +147,7 @@ struct BufferedStackTrace : public StackTrace {
   }
 
 #if SANITIZER_OHOS
-  void UnwindIfArkts(u32 max_depth, uptr pc, uptr fp, uptr sp,
-                     const uptr *arkts_ranges, uptr range_count);
+  void UnwindIfArkts(u32 max_depth, uptr stack_top, uptr stack_bottom);
 #endif
 
  private:

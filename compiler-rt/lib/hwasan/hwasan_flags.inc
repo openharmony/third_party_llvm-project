@@ -102,8 +102,6 @@ HWASAN_FLAG(int, heap_quarantine_max, 0,
             "it is placed into the heap quarantine.")
 HWASAN_FLAG(bool, enable_heap_quarantine_debug, false,
             "Enable Hwasan Quarantine Debug Mode.")
-HWASAN_FLAG(bool, enable_unwind_arkts, true,
-            "Enable Hwasan Unwind ArkTs function.")
 #endif // SANITIZER_OHOS
 HWASAN_FLAG(bool, export_memory_stats, true,
             "Export up-to-date memory stats through /proc")

@@ -296,7 +296,7 @@ COMMON_FLAG(bool, run_on_tw, false,
 COMMON_FLAG(bool, verbose_format_important_flags, false,
             "Prints the important options of hwasan.")
 #if defined(OHOS_LLVM) && defined(__OHOS__)
-COMMON_FLAG(bool, unwind_arkts_on_malloc, true,
-            "Enable Hwasan Unwind ArkTs function on malloc.")
+COMMON_FLAG(bool, enable_unwind_arkts, true,
+            "Enable Unwind ArkTs stack.")
 #endif
 #endif /* SANITIZER_OHOS */

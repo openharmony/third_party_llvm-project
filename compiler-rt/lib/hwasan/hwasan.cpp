@@ -60,32 +60,6 @@ uptr kHighShadowEnd;
 #if defined(OHOS_LLVM) && defined(__OHOS__)
 static uptr hwasan_arkts_stub_start = UINTPTR_MAX;
 static uptr hwasan_arkts_stub_end = UINTPTR_MAX;
-
-static bool IsArkTSStubAddress(uptr addr) {
-  return (hwasan_arkts_stub_start != UINTPTR_MAX &&
-          hwasan_arkts_stub_end != UINTPTR_MAX &&
-          addr >= hwasan_arkts_stub_start && addr < hwasan_arkts_stub_end);
-}
-
-void MaybeUnwindArkTS(BufferedStackTrace *stack, bool is_fast, bool if_arkts) {
-  if (!is_fast || !if_arkts || stack->size == 0)
-    return;
-
-  uptr idx = stack->size - 1;
-  uptr current_pc = stack->trace_buffer[idx];
-
-  if (!IsArkTSStubAddress(current_pc))
-    return;
-
-  uptr arkts_ranges[2] = {Hwasan_get_arkts_stub_start(),
-                          Hwasan_get_arkts_stub_end()};
-  const uptr range_count = 1;
-  uptr current_maxdepth = stack->buffer_maxdepth;
-  uptr current_fp = stack->frame_buffer[idx];
-
-  stack->UnwindIfArkts(current_maxdepth, current_pc, current_fp, current_fp,
-                       arkts_ranges, range_count);
-}
 #endif
 
 void Flags::SetDefaults() {
@@ -306,7 +280,8 @@ void HandleTagMismatch(AccessInfo ai, uptr pc, uptr frame, void *uc,
   BufferedStackTrace *stack = stack_buffer.data();
   bool whether_unwind_fast = common_flags()->fast_unwind_on_fatal;
 #if SANITIZER_OHOS
-  whether_unwind_fast = whether_unwind_fast || flags()->enable_unwind_arkts;
+  whether_unwind_fast =
+      whether_unwind_fast || common_flags()->enable_unwind_arkts;
 #endif
   stack->Reset();
   stack->Unwind(pc, frame, uc, whether_unwind_fast);
@@ -361,6 +336,10 @@ void __sanitizer::BufferedStackTrace::UnwindImpl(
     size = 0;
     return;
   }
+#if SANITIZER_OHOS
+  arkts_stub_start = Hwasan_get_arkts_stub_start();
+  arkts_stub_end = Hwasan_get_arkts_stub_end();
+#endif
   Unwind(max_depth, pc, bp, context, t->stack_top(), t->stack_bottom(),
          request_fast);
 }

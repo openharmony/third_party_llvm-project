@@ -57,63 +57,6 @@ uptr StackTrace::GetCurrentPc() {
   return GET_CALLER_PC();
 }
 
-#if SANITIZER_OHOS
-bool StackTrace::StartsWith(const char *str, const char *prefix) {
-  if (str == nullptr || prefix == nullptr)
-    return false;
-  const char *p = prefix;
-  const char *s = str;
-
-  while (*p != '\0') {
-    if (*s == '\0' || *s != *p) {
-      return false;
-    }
-    p++;
-    s++;
-  }
-  return true;
-}
-
-bool StackTrace::EndsWith(const char *str, const char *suffix) {
-  if (str == nullptr || suffix == nullptr) {
-    return false;
-  }
-  const char *s = str;
-  const char *suf = suffix;
-
-  while (*s != '\0')
-    s++;
-  while (*suf != '\0')
-    suf++;
-
-  if ((suf - suffix) > (s - str)) {
-    return false;
-  }
-
-  while (suf > suffix) {
-    suf--;
-    s--;
-    if (s < str || *s != *suf) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool StackTrace::IsArktsExecutable(uptr pc, const uptr *arkts_ranges,
-                                   uptr range_count) {
-  if (arkts_ranges == nullptr || range_count == 0)
-    return false;
-
-  for (uptr i = 0; i < range_count; i++) {
-    if (pc >= arkts_ranges[i * 2] && pc < arkts_ranges[i * 2 + 1]) {
-      return true;
-    }
-  }
-  return false;
-}
-#endif
-
 void BufferedStackTrace::Init(const uptr *pcs, uptr cnt, uptr extra_top_pc) {
   size = cnt + !!extra_top_pc;
   CHECK_LE(size, kStackTraceMax);
@@ -212,6 +155,16 @@ void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
       frame_buffer[size] = (uptr)frame[0];
 #endif
       trace_buffer[size++] = (uptr) pc1;
+#if SANITIZER_OHOS
+      if (common_flags()->enable_unwind_arkts && pc1 != pc &&
+          arkts_stub_start != UINTPTR_MAX &&
+          arkts_stub_end != UINTPTR_MAX &&
+          pc1 >= arkts_stub_start && pc1 < arkts_stub_end &&
+          IsValidFrame(*(uptr *)frame_buffer[size - 1], stack_top, bottom)) {
+        UnwindIfArkts(max_depth, stack_top, bottom);
+        break;
+      }
+#endif
     }
     bottom = (uptr)frame;
 #if defined(__loongarch__) || defined(__riscv)
