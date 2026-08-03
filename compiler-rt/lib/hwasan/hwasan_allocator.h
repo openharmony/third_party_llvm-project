@@ -129,6 +129,9 @@ struct HeapAllocationRecord {
   u32 alloc_context_id;
   u32 free_context_id;
   u32 requested_size;
+#if SANITIZER_OHOS
+  int chunk_was_allocated_before;
+#endif
 };
 
 #if !SANITIZER_OHOS

@@ -57,6 +57,8 @@ HWASAN_FLAG(int, heap_history_size, 1023,
           "Affects the quality of heap-related reports, but not the ability "
           "to find bugs.")
 #if SANITIZER_OHOS
+HWASAN_FLAG(bool, record_malloc_info, false,
+            "If true, push malloc info to the heap allocation ring buffers.")
 HWASAN_FLAG(
     int, heap_history_size_main_thread, 102300,
     "The number of heap (de)allocations remembered for the main thread. "

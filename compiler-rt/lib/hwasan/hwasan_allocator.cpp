@@ -286,7 +286,46 @@ static void *HwasanAllocate(StackTrace *stack, uptr orig_size, uptr alignment,
   meta->SetLsanTag(__lsan::DisabledInThisThread() ? __lsan::kIgnored
                                                   : __lsan::kDirectlyLeaked);
 #endif
-  meta->SetAllocated(StackDepotPut(*stack), orig_size);
+#if SANITIZER_OHOS
+  bool chunk_was_allocated_before = false;
+  if (flags()->record_malloc_info)
+    chunk_was_allocated_before = meta->GetAllocStackId() != 0;
+#endif /* SANITIZER_OHOS */
+  u32 alloc_context_id = StackDepotPut(*stack);
+  meta->SetAllocated(alloc_context_id, orig_size);
+#if SANITIZER_OHOS
+  if (flags()->record_malloc_info) {
+    if (t) {
+      if (t->AllowTracingHeapAllocation()) {
+        if (auto *ha = t->heap_allocations()) {
+          if ((flags()->heap_record_max == 0 ||
+               orig_size <= flags()->heap_record_max) &&
+              (flags()->heap_record_min == 0 ||
+               orig_size >= flags()->heap_record_min)) {
+            ha->push({reinterpret_cast<uptr>(user_ptr),
+                      static_cast<u32>(t->tid()), alloc_context_id, 0,
+                      static_cast<u32>(orig_size),
+                      static_cast<int>(chunk_was_allocated_before)});
+            t->inc_record();
+          }
+        }
+      }
+    } else {
+      SpinMutexLock l(&fallback_mutex);
+      if (hwasanThreadList().AllowTracingHeapAllocation()) {
+        if ((flags()->heap_record_max == 0 ||
+             orig_size <= flags()->heap_record_max) &&
+            (flags()->heap_record_min == 0 ||
+             orig_size >= flags()->heap_record_min)) {
+          hwasanThreadList().RecordFallBack(
+              {reinterpret_cast<uptr>(user_ptr), 0, alloc_context_id, 0,
+               static_cast<u32>(orig_size),
+               static_cast<int>(chunk_was_allocated_before)});
+        }
+      }
+    }
+  }
+#endif /* SANITIZER_OHOS */
   RunMallocHooks(user_ptr, orig_size);
   return user_ptr;
 }
@@ -413,7 +452,7 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
              orig_size >= flags()->heap_record_min)) {
           ha->push({reinterpret_cast<uptr>(tagged_ptr), alloc_thread_id,
                     alloc_context_id, free_context_id,
-                    static_cast<u32>(orig_size)});
+                    static_cast<u32>(orig_size), 0});
           t->inc_record();
         }
       }
@@ -431,7 +470,7 @@ static void HwasanDeallocate(StackTrace *stack, void *tagged_ptr) {
         hwasanThreadList().RecordFallBack(
             {reinterpret_cast<uptr>(tagged_ptr), alloc_thread_id,
              alloc_context_id, free_context_id,
-             static_cast<u32>(orig_size)});
+             static_cast<u32>(orig_size), 0});
       }
     }
 #endif /* SANITIZER_OHOS */
