@@ -10,6 +10,10 @@
 #include "gwp_asan/stack_trace_compressor.h"
 
 #include <assert.h>
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+#include "sanitizer_common/sanitizer_common.h"
+#include <time.h>
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
 using AllocationMetadata = gwp_asan::AllocationMetadata;
 using Error = gwp_asan::Error;
@@ -34,11 +38,22 @@ const char *ErrorToString(const Error &E) {
   __builtin_trap();
 }
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+uint64_t getCoarseTimeMs() {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
+  return static_cast<uint64_t>(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+}
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
+
 constexpr size_t AllocationMetadata::kStackFrameStorageBytes;
 constexpr size_t AllocationMetadata::kMaxTraceLengthToCollect;
 
 void AllocationMetadata::RecordAllocation(uintptr_t AllocAddr,
                                           size_t AllocSize) {
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  AllocationTime = getCoarseTimeMs();
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
   Addr = AllocAddr;
   RequestedSize = AllocSize;
   IsDeallocated = false;

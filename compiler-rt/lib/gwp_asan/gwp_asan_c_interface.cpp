@@ -96,6 +96,14 @@ void gwp_asan_iterate(void *base, size_t size,
   guarded_pool_allocator.iterate(base, size, cb, arg);
 }
 
+size_t gwp_asan_collect_allocations_by_time_range(uint64_t timespan,
+                                                  uintptr_t *buffer,
+                                                  size_t max_count,
+                                                  size_t depth) {
+  return guarded_pool_allocator.collectAllocationsByTimeRange(
+      timespan, buffer, max_count, depth);
+}
+
 #ifdef __cplusplus
 }
 #endif

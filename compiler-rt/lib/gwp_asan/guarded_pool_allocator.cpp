@@ -12,8 +12,10 @@
 #include "gwp_asan/options.h"
 #include "gwp_asan/utilities.h"
 #if defined(OHOS_LLVM) && defined(__OHOS__)
+#include "gwp_asan/stack_trace_compressor.h"
 #include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_symbolizer.h"
+#include <time.h>
 #endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
 #include <assert.h>
@@ -556,6 +558,138 @@ void GuardedPoolAllocator::accumulatePersistInterval(
   }
   PersistInterval += (curTime - PreTime) * reservedSlotsLength;
   PreTime = curTime;
+}
+
+struct BufferHeader {
+  size_t max_slots;
+  size_t sample_rate;
+};
+
+struct MetadataSnapshot {
+  uintptr_t addr;
+  size_t size;
+  uint64_t allocation_time;
+  uint8_t compressed_trace[AllocationMetadata::kStackFrameStorageBytes];
+  size_t trace_size;
+};
+
+static uint64_t getEndTimeMs() {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return static_cast<uint64_t>(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+}
+
+static size_t collectMetadataSnapshots(AllocationMetadata *Metadata,
+                                       size_t MaxSimultaneousAllocations,
+                                       MetadataSnapshot *Snapshots,
+                                       size_t MaxCount, uint64_t StartTime) {
+  size_t Count = 0;
+
+  for (size_t i = 0; i < MaxSimultaneousAllocations && Count < MaxCount; ++i) {
+    const AllocationMetadata &Meta = Metadata[i];
+    if (Meta.Addr && !Meta.IsDeallocated && Meta.AllocationTime < StartTime) {
+      MetadataSnapshot &Snapshot = Snapshots[Count];
+      Snapshot.addr = Meta.Addr;
+      Snapshot.size = Meta.RequestedSize;
+      Snapshot.allocation_time = Meta.AllocationTime;
+      Snapshot.trace_size = Meta.AllocationTrace.TraceSize;
+      __sanitizer::internal_memcpy(Snapshot.compressed_trace,
+                                   Meta.AllocationTrace.CompressedTrace,
+                                   Meta.AllocationTrace.TraceSize);
+      ++Count;
+    }
+  }
+
+  return Count;
+}
+
+static void writeAllocationToBuffer(const MetadataSnapshot &Snapshot,
+                                    char *EntryBaseBytes, size_t EntrySize,
+                                    size_t Depth, uint64_t CurrentTime) {
+  *reinterpret_cast<uintptr_t *>(EntryBaseBytes) = Snapshot.addr;
+  *reinterpret_cast<size_t *>(EntryBaseBytes + sizeof(uintptr_t)) =
+      Snapshot.size;
+
+  uint64_t Lifetime = CurrentTime - Snapshot.allocation_time;
+  *reinterpret_cast<uint64_t *>(
+      EntryBaseBytes + sizeof(uintptr_t) + sizeof(size_t)) = Lifetime;
+
+  uintptr_t *StackArray = reinterpret_cast<uintptr_t *>(
+      EntryBaseBytes + sizeof(uintptr_t) + sizeof(size_t) + sizeof(uint64_t));
+
+  for (size_t j = 0; j < Depth; ++j)
+    StackArray[j] = 0;
+
+  if (Snapshot.trace_size > 0) {
+    uintptr_t UnpackedBuffer[AllocationMetadata::kMaxTraceLengthToCollect];
+    __sanitizer::internal_memset(UnpackedBuffer, 0, sizeof(UnpackedBuffer));
+
+    size_t UnpackedLength = compression::unpack(
+        Snapshot.compressed_trace, Snapshot.trace_size, UnpackedBuffer,
+        AllocationMetadata::kMaxTraceLengthToCollect);
+
+    constexpr uintptr_t kInvalidPC1 = static_cast<uintptr_t>(-1);
+    constexpr uintptr_t kInvalidPC2 = static_cast<uintptr_t>(-2);
+
+    if (UnpackedLength > 0) {
+      size_t FramesToCopy =
+          (UnpackedLength < Depth) ? UnpackedLength : Depth;
+      for (size_t j = 0; j < FramesToCopy; ++j) {
+        if (UnpackedBuffer[j] != 0 && UnpackedBuffer[j] != kInvalidPC1 &&
+            UnpackedBuffer[j] != kInvalidPC2)
+          StackArray[j] = UnpackedBuffer[j];
+      }
+    }
+  }
+  (void)EntrySize;
+}
+
+size_t GuardedPoolAllocator::collectAllocationsByTimeRange(
+    uint64_t Timespan, uintptr_t *Buffer, size_t MaxCount, size_t Depth) {
+  if (!Buffer || MaxCount == 0)
+    return 0;
+
+  uint64_t EndTime = getEndTimeMs();
+  if (Depth == 0)
+    Depth = 1;
+
+  size_t HeaderSize = sizeof(BufferHeader);
+  size_t EntrySize = sizeof(uintptr_t) + sizeof(size_t) + sizeof(uint64_t) +
+                     Depth * sizeof(uintptr_t);
+
+  BufferHeader *Header = reinterpret_cast<BufferHeader *>(Buffer);
+  Header->max_slots = State.MaxSimultaneousAllocations;
+  if (AdjustedSampleRatePlusOne == 0) {
+    Header->sample_rate = 0;
+  } else if (AdjustedSampleRatePlusOne == 2) {
+    Header->sample_rate = 1;
+  } else {
+    Header->sample_rate = (AdjustedSampleRatePlusOne - 1) / 2;
+  }
+
+  uint64_t TimespanMilliseconds = Timespan * 1000;
+  uint64_t StartTime =
+      (EndTime > TimespanMilliseconds) ? (EndTime - TimespanMilliseconds) : 0;
+
+  size_t SnapshotsSize = MaxCount * sizeof(MetadataSnapshot);
+  MetadataSnapshot *Snapshots = static_cast<MetadataSnapshot *>(
+      __sanitizer::MmapOrDie(SnapshotsSize, "MetadataSnapshot"));
+  if (!Snapshots)
+    return 0;
+
+  size_t Count = collectMetadataSnapshots(
+      Metadata, State.MaxSimultaneousAllocations, Snapshots, MaxCount,
+      StartTime);
+
+  char *DataBase = reinterpret_cast<char *>(Buffer) + HeaderSize;
+  for (size_t i = 0; i < Count; ++i) {
+    char *EntryBaseBytes = DataBase + (i * EntrySize);
+    writeAllocationToBuffer(Snapshots[i], EntryBaseBytes, EntrySize, Depth,
+                            EndTime);
+  }
+
+  __sanitizer::UnmapOrDie(Snapshots, SnapshotsSize);
+  return Count;
 }
 
 // Detect a WhiteList library on the stack and return true immediately if found,
