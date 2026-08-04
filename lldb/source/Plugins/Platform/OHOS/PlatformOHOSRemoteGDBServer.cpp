@@ -191,7 +191,7 @@ Status PlatformOHOSRemoteGDBServer::ConnectRemote(Args &args) {
 
   std::string connect_url;
   auto error =
-      MakeConnectURL(g_remote_platform_pid, uri->port ? (*uri->port) : 0,
+      MakeConnectURL(g_remote_platform_pid, uri->port.value_or(0),
                      uri->path, connect_url);
 
   if (error.Fail())
@@ -300,7 +300,7 @@ lldb::ProcessSP PlatformOHOSRemoteGDBServer::ConnectProcess(
   // that all of the needed ports are open
   std::string new_connect_url;
   error = MakeConnectURL(s_remote_gdbserver_fake_pid--,
-                         (*uri->port) ? (*uri->port) : 0, uri->path,
+                         uri->port.value_or(0), uri->path,
                          new_connect_url);
   if (error.Fail())
     return nullptr;
