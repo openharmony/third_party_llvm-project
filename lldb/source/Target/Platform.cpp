@@ -106,20 +106,6 @@ bool PlatformProperties::SetUseModuleCache(bool use_module_cache) {
   return SetPropertyAtIndex(ePropertyUseModuleCache, use_module_cache);
 }
 
-#ifdef OHOS_LLVM
-bool PlatformProperties::GetUseExecSearchPathModuleCache() const {
-  const auto idx = ePropertyUseExecSearchPathModuleCache;
-  return GetPropertyAtIndexAs<bool>(
-      idx, g_platform_properties[idx].default_uint_value != 0);
-}
-
-bool PlatformProperties::SetUseExecSearchPathModuleCache(
-    bool use_exec_search_path_module_cache) {
-  return SetPropertyAtIndex(ePropertyUseExecSearchPathModuleCache,
-                            use_exec_search_path_module_cache);
-}
-#endif /* OHOS_LLVM */
-
 FileSpec PlatformProperties::GetModuleCacheDirectory() const {
   return GetPropertyAtIndexAs<FileSpec>(ePropertyModuleCacheDirectory, {});
 }

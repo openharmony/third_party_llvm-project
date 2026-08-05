@@ -488,23 +488,6 @@ uint32_t SBPlatform::GetOSUpdateVersion() {
   return version.getSubminor().value_or(UINT32_MAX);
 }
 
-#ifdef OHOS_LLVM
-bool SBPlatform::GetUseExecSearchPathModuleCache() {
-  LLDB_INSTRUMENT_VA(this);
-
-  return Platform::GetGlobalPlatformProperties()
-      .GetUseExecSearchPathModuleCache();
-}
-
-bool SBPlatform::SetUseExecSearchPathModuleCache(
-    bool use_exec_search_path_module_cache) {
-  LLDB_INSTRUMENT_VA(this, use_exec_search_path_module_cache);
-
-  return Platform::GetGlobalPlatformProperties()
-      .SetUseExecSearchPathModuleCache(use_exec_search_path_module_cache);
-}
-#endif /* OHOS_LLVM */
-
 void SBPlatform::SetSDKRoot(const char *sysroot) {
   LLDB_INSTRUMENT_VA(this, sysroot);
   if (PlatformSP platform_sp = GetSP())
