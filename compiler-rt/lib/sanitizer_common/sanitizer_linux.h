@@ -171,6 +171,13 @@ inline void ReleaseMemoryPagesToOSAndZeroFill(uptr beg, uptr end) {
               : "=r"(__v));              \
           __v;                           \
         })
+#    elif defined(__loongarch__)
+#      define __get_tls()                   \
+        ({                                  \
+          void **__v;                       \
+          __asm__("move %0, $tp" : "=r"(__v)); \
+          __v;                              \
+        })
 #    elif defined(__riscv)
 #      define __get_tls()                   \
         ({                                  \
