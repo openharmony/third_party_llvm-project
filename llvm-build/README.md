@@ -224,7 +224,7 @@ When build successfully completed, artifacts will be available in `out/linux-aar
 
 ### Functionality
 
-The LLVM toolchain is built based on LLVM 15.0.4. It is used to provide capability of building ohos image. For detailed information about LLVM 15.0.4, please refer to [LLVM 15.0.4](https://discourse.llvm.org/t/llvm-15-0-4-released/66337).
+The LLVM toolchain is built based on LLVM 21.1.8. It is used to provide capability of building ohos image. For detailed information about LLVM 21.1.8, please refer to [LLVM 21.1.8](https://discourse.llvm.org/t/llvm-21-1-8-released/89144).
 </br>
 
 ### Specifically Included Triplets
@@ -238,7 +238,7 @@ Despite all the components provided by LLVM community, we included several tripl
 | arm-linux-ohos         | ARM 32bits   | Linux         | Standard system |
 | aarch64-linux-ohos     | ARM 64bits   | Linux         | Standard system |
 
-For detailed definition of Small System and Standard System, please refer to [System Types](https://gitee.com/openharmony/docs/blob/master/en/device-dev/Readme-EN.md).
+For detailed definition of Small System and Standard System, please refer to [System Types](https://gitcode.com/openharmony/docs/blob/master/en/device-dev/Readme-EN.md).
 
 ### Testing musl libc
 
@@ -253,4 +253,4 @@ python3 ./toolchain/llvm-project/llvm-build/build-libc-test.py
 
 When build successfully completed, artifacts will be available in `out/llvm_build/musl` directory, including test libraries, libc tests and musl_unittest.
 Scripts to execute libc tests could be found in `third_party/musl/scripts` directory.
-For detailed information about musl, please refer to [third_party_musl](https://gitee.com/openharmony/third_party_musl).
+For detailed information about musl, please refer to [third_party_musl](https://gitcode.com/openharmony/third_party_musl).

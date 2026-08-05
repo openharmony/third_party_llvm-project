@@ -4,7 +4,7 @@ This readme briefly describes the functionality of our LLVM toolchain and what w
 
 ## Functionality
 
-The LLVM toolchain is built based on LLVM 15.0.4. It is used to provide capability of building ohos image. For detailed information about LLVM 15.0.4, please refer to [LLVM 15.0.4](https://discourse.llvm.org/t/llvm-15-0-4-released/66337).
+The LLVM toolchain is built based on LLVM 21.1.8. It is used to provide capability of building ohos image. For detailed information about LLVM 21.1.8, please refer to [LLVM 21.1.8](https://discourse.llvm.org/t/llvm-21-1-8-released/89144).
 </br>
 
 
@@ -19,7 +19,7 @@ Despite all the components provided by LLVM community, we included several tripl
 | arm-linux-ohos         | ARM 32bits   | Linux         | Standard system |
 | aarch64-linux-ohos     | ARM 64bits   | Linux         | Standard system |
 
-For detailed definition of Small System and Standard System, please refer to [System Types](https://gitee.com/openharmony/docs/blob/master/en/device-dev/Readme-EN.md).
+For detailed definition of Small System and Standard System, please refer to [System Types](https://gitcode.com/openharmony/docs/blob/master/en/device-dev/Readme-EN.md).
 
 ### Specify the triplet
 
