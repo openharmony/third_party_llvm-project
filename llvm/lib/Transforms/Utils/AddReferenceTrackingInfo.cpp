@@ -364,8 +364,8 @@ static void propagateLoad(DenseMap<Value *, ReferenceDbgInfo> &PtrToDbgVar,
   if (getReferenceDbgInfoFromMap(PtrToDbgVar, PtrOp, BaseInfo)) {
     if (BaseInfo.PtrDepth > 0) {
       BaseInfo.PtrDepth--;
-      PtrToDbgVar.try_emplace(LI, BaseInfo);
     }
+    PtrToDbgVar.try_emplace(LI, BaseInfo);
     return;
   }
 
@@ -393,8 +393,7 @@ tryAttachReferenceInfo(StoreInst *SI,
     return true;
   }
 
-  // keep to add test for the case where this pass can not deal with
-  // TODO: DELETE ME AFTER TESTING, using string directly
+  // keep to add 0_UNKNOWN_ for the case where this pass can not deal with
   setReferenceInfo(SI, "0_UNKNOWN_", "0_UNKNOWN_");
   return false;
 }
