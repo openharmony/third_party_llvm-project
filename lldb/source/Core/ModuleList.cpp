@@ -77,8 +77,8 @@ enum {
 #define LLDB_PROPERTIES_modulelist
 #include "CorePropertiesEnum.inc"
 };
-#ifdef OHOS_LLVM
 
+#ifdef OHOS_LLVM
 static FileSpec GetExecSearchPathModuleCacheRoot() {
   // Keep this cache path opt-in so the legacy exec-search-path behavior
   // remains unchanged unless explicitly enabled.
@@ -365,7 +365,6 @@ void PruneExecSearchPathCachedModule(const ModuleSP &module_sp) {
   LLDB_LOG(log, "exec-search-path cache uuid dir pruned: dir={0}",
            uuid_dir_path);
 }
-
 #endif /* OHOS_LLVM */
 } // namespace
 
@@ -1196,63 +1195,12 @@ ModuleList::GetSharedModule(const ModuleSpec &module_spec, ModuleSP &module_sp,
     module_sp.reset();
   }
 
-#ifdef OHOS_LLVM
   if (module_search_paths_ptr) {
-    // Resolve by filename through target.exec-search-paths. If enabled and
-    // possible, materialize a cache-backed module; otherwise keep the resolved
-    // path module as-is.
     const auto num_directories = module_search_paths_ptr->GetSize();
     for (size_t idx = 0; idx < num_directories; ++idx) {
       auto search_path_spec = module_search_paths_ptr->GetFileSpecAtIndex(idx);
       FileSystem::Instance().Resolve(search_path_spec);
       namespace fs = llvm::sys::fs;
-      if (!FileSystem::Instance().IsDirectory(search_path_spec))
-        continue;
-      search_path_spec.AppendPathComponent(
-          module_spec.GetFileSpec().GetFilename().GetStringRef());
-      if (!FileSystem::Instance().Exists(search_path_spec))
-        continue;
-
-      auto resolved_module_spec(module_spec);
-      resolved_module_spec.GetFileSpec() = search_path_spec;
-      ModuleSP resolved_module_sp = std::make_shared<Module>(resolved_module_spec);
-      if (resolved_module_sp->GetObjectFile()) {
-        // If we get in here we got the correct arch, now we just need to
-        // verify the UUID if one was given
-        if (uuid_ptr && *uuid_ptr != resolved_module_sp->GetUUID()) {
-          resolved_module_sp.reset();
-        } else {
-          if (resolved_module_sp->GetObjectFile()->GetType() ==
-              ObjectFile::eTypeStubLibrary) {
-            resolved_module_sp.reset();
-          } else {
-            ModuleSP cached_module_sp = CreateCachedModuleFromExecSearchPath(
-                resolved_module_sp, resolved_module_spec, uuid_ptr);
-            module_sp =
-                cached_module_sp ? std::move(cached_module_sp)
-                                 : std::move(resolved_module_sp);
-            LLDB_LOG(GetLog(LLDBLog::Modules),
-                     "exec-search-path module selected: path={0}, from_cache={1}",
-                     module_sp ? module_sp->GetFileSpec().GetPath() : "<null>",
-                     cached_module_sp ? "yes" : "no");
-            if (did_create_ptr)
-              *did_create_ptr = true;
-
-            shared_module_list.ReplaceEquivalent(module_sp, old_modules);
-            return Status();
-          }
-        }
-      } else {
-        resolved_module_sp.reset();
-      }
-    }
-  }
-#else /* OHOS_LLVM */
-  if (module_search_paths_ptr) {
-    const auto num_directories = module_search_paths_ptr->GetSize();
-    for (size_t idx = 0; idx < num_directories; ++idx) {
-      auto search_path_spec = module_search_paths_ptr->GetFileSpecAtIndex(idx);
-      FileSystem::Instance().Resolve(search_path_spec);
       if (!FileSystem::Instance().IsDirectory(search_path_spec))
         continue;
       search_path_spec.AppendPathComponent(
@@ -1273,6 +1221,23 @@ ModuleList::GetSharedModule(const ModuleSpec &module_spec, ModuleSP &module_sp,
               ObjectFile::eTypeStubLibrary) {
             module_sp.reset();
           } else {
+#ifdef OHOS_LLVM
+            // Resolve by filename through target.exec-search-paths. If enabled and
+            // possible, materialize a cache-backed module; otherwise keep the resolved
+            // path module as-is.
+            // If enabled and possible, materialize a cache-backed module.
+            if (auto cached_sp = CreateCachedModuleFromExecSearchPath(
+                    module_sp, resolved_module_spec, uuid_ptr)) {
+              LLDB_LOG(GetLog(LLDBLog::Modules),
+                       "exec-search-path module selected: path={0}, from_cache={1}",
+                       cached_sp->GetFileSpec().GetPath(), "yes");
+              module_sp = std::move(cached_sp);
+            } else {
+              LLDB_LOG(GetLog(LLDBLog::Modules),
+                       "exec-search-path module selected: path={0}, from_cache={1}",
+                       module_sp->GetFileSpec().GetPath(), "no");
+            }
+#endif /* OHOS_LLVM */
             if (did_create_ptr)
               *did_create_ptr = true;
 
@@ -1285,7 +1250,6 @@ ModuleList::GetSharedModule(const ModuleSpec &module_spec, ModuleSP &module_sp,
       }
     }
   }
-#endif /* OHOS_LLVM */
 
   // Either the file didn't exist where at the path, or no path was given, so
   // we now have to use more extreme measures to try and find the appropriate
