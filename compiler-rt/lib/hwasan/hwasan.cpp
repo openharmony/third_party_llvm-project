@@ -100,7 +100,8 @@ static void InitializeFlags() {
     // For now only tested on Linux and Fuchsia. Other plantforms can be turned
     // on as they become ready.
     constexpr bool can_detect_leaks =
-        (SANITIZER_LINUX && !SANITIZER_ANDROID) || SANITIZER_FUCHSIA;
+        (SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS) ||
+        SANITIZER_FUCHSIA;
     cf.detect_leaks = cf.detect_leaks && can_detect_leaks;
 
 #if SANITIZER_ANDROID

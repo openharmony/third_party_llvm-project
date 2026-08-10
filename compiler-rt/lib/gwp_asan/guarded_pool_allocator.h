@@ -109,8 +109,10 @@ public:
 #if defined(OHOS_LLVM) && defined(__OHOS__)
     Nmalloc++;
     if (Nmalloc % PRINT_COUNTER == 0) {
-      unsigned AvgDurationUs =
-          ReserveCounter ? PersistInterval / ReserveCounter : 0;
+      // PersistInterval/ReserveCounter are size_t; explicit cast for
+      // -Werror,-Wshorten-64-to-32 on 64-bit OHOS.
+      unsigned AvgDurationUs = static_cast<unsigned>(
+          ReserveCounter ? PersistInterval / ReserveCounter : 0);
       MUSL_LOG("[gwp_asan]: AvgDuration %{public}u us, FreeSlotsLength "
                "%{public}d\n",
                AvgDurationUs, FreeSlotsLength);
