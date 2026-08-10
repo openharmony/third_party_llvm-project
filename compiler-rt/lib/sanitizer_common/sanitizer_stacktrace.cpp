@@ -151,9 +151,13 @@ static inline uhwptr *GetCanonicFrame(uptr bp,
 #endif
 }
 
+#if !SANITIZER_OHOS
 void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
                                     uptr stack_bottom, u32 max_depth) {
-#if SANITIZER_OHOS
+#else
+void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
+                                    uptr stack_bottom, u32 max_depth,
+                                    bool allow_ffrt_resolve) {
   is_fast = true;
 #endif
   // TODO(yln): add arg sanity check for stack_top/stack_bottom
@@ -165,6 +169,14 @@ void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
 #endif
   size = 1;
   if (stack_top < 4096) return;  // Sanity check for stack top.
+#if SANITIZER_OHOS
+  const bool bp_in_thread_stack =
+      bp != 0 && stack_bottom < stack_top && bp >= stack_bottom &&
+      bp < stack_top;
+  if (!bp_in_thread_stack)
+    MaybeGetFfrtCoroutineStackBounds(bp, &stack_bottom, &stack_top,
+                                     allow_ffrt_resolve);
+#endif
   uhwptr *frame = GetCanonicFrame(bp, stack_top, stack_bottom);
   // Lowest possible address that makes sense as the next frame pointer.
   // Goes up as we walk the stack.

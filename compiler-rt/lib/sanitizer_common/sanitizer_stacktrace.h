@@ -168,8 +168,15 @@ struct BufferedStackTrace : public StackTrace {
                   u32 max_depth);
 
   // UnwindFast/Slow have platform-specific implementations
+#if SANITIZER_OHOS
+  // allow_ffrt_resolve should be false when unwinding with a non-null async
+  // context (e.g. ucontext) to avoid loader work in the signal path.
+  void UnwindFast(uptr pc, uptr bp, uptr stack_top, uptr stack_bottom,
+                  u32 max_depth, bool allow_ffrt_resolve = true);
+#else
   void UnwindFast(uptr pc, uptr bp, uptr stack_top, uptr stack_bottom,
                   u32 max_depth);
+#endif
   void UnwindSlow(uptr pc, u32 max_depth);
   void UnwindSlow(uptr pc, void *context, u32 max_depth);
 
@@ -194,6 +201,11 @@ static const uptr kFrameSize = 2 * sizeof(uhwptr);
 static inline bool IsValidFrame(uptr frame, uptr stack_top, uptr stack_bottom) {
   return frame > stack_bottom && frame < stack_top - kFrameSize;
 }
+
+#if SANITIZER_OHOS
+bool MaybeGetFfrtCoroutineStackBounds(uptr current_fp, uptr *stack_bottom,
+                                      uptr *stack_top, bool allow_resolve);
+#endif
 
 }  // namespace __sanitizer
 

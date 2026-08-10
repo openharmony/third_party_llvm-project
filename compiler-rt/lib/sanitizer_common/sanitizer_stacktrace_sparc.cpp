@@ -25,8 +25,14 @@
 
 namespace __sanitizer {
 
+#if !SANITIZER_OHOS
 void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
                                     uptr stack_bottom, u32 max_depth) {
+#else
+void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
+                                    uptr stack_bottom, u32 max_depth,
+                                    bool /*allow_ffrt_resolve*/) {
+#endif
   // TODO(yln): add arg sanity check for stack_top/stack_bottom
   CHECK_GE(max_depth, 2);
   const uptr kPageSize = GetPageSizeCached();
