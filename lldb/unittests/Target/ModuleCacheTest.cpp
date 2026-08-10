@@ -156,3 +156,4 @@ TEST_F(ModuleCacheTest, GetAndPutStrangeHostname) {
   TryGetAndPut(test_cache_dir, "tab\tcolon:asterisk*", expect_download);
   VerifyDiskState(test_cache_dir, "tab_colon_asterisk_");
 }
+

@@ -20,6 +20,12 @@ config.suffixes = [".py"]
 # test_source_root: The root path where tests are located.
 config.test_source_root = os.path.dirname(__file__)
 
+# The tests below test/API/ohos exercise functionality compiled only when
+# OHOS_LLVM is enabled.
+config.excludes = []
+if not config.ohos_llvm:
+    config.excludes.append("ohos")
+
 # test_exec_root: The root path where tests should be run.
 config.test_exec_root = os.path.join(config.lldb_obj_root, "test", "API")
 

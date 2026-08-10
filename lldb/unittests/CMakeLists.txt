@@ -85,3 +85,7 @@ endif()
 if(LLDB_CAN_USE_DEBUGSERVER AND LLDB_TOOL_DEBUGSERVER_BUILD AND NOT LLDB_USE_SYSTEM_DEBUGSERVER)
   add_subdirectory(debugserver)
 endif()
+
+if(OHOS_LLVM)
+  add_subdirectory(OHOS)
+endif()
