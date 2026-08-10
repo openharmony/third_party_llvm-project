@@ -131,7 +131,11 @@ struct HeapAllocationRecord {
   u32 requested_size;
 };
 
+#if !SANITIZER_OHOS
 typedef RingBuffer<HeapAllocationRecord> HeapAllocationsRingBuffer;
+#else
+typedef RingBufferLink<HeapAllocationRecord> HeapAllocationsRingBuffer;
+#endif
 
 void GetAllocatorStats(AllocatorStatCounters s);
 

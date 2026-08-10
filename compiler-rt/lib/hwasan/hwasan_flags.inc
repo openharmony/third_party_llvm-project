@@ -62,6 +62,10 @@ HWASAN_FLAG(
     "The number of heap (de)allocations remembered for the main thread. "
     "Affects the quality of heap-related reports, but not the ability "
     "to find bugs.")
+HWASAN_FLAG(int, heap_history_block_max_num, 1,
+            "Maximum number of heap history cache blocks.")
+HWASAN_FLAG(int, heap_history_block_max_num_main_thread, 1,
+            "Maximum number of heap history cache blocks for the main thread.")
 // Limits the size of the heap memory allocated to be recorded in order to
 // reduce the data. As a result, information may be missing. By default, the
 // minimum/maximum threshold is not set.
