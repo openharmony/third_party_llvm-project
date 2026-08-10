@@ -339,6 +339,11 @@ void HwasanTSDThreadInit() {}
 
 #  if SANITIZER_ANDROID
 uptr *GetCurrentThreadLongPtr() { return (uptr *)get_android_tls_ptr(); }
+#  elif SANITIZER_OHOS
+uptr *GetCurrentThreadLongPtr() { return &__hwasan_tls; }
+uptr *GetCurrentThreadLongPtrWithoutTls() {
+  return (uptr *)get_ohos_tls_ptr();
+}
 #  else
 uptr *GetCurrentThreadLongPtr() { return &__hwasan_tls; }
 #  endif

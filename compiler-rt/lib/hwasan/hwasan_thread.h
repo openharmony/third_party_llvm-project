@@ -150,6 +150,9 @@ class Thread {
 
 Thread *GetCurrentThread();
 uptr *GetCurrentThreadLongPtr();
+#if SANITIZER_OHOS
+uptr *GetCurrentThreadLongPtrWithoutTls();
+#endif
 
 // Used to handle fork().
 void EnsureMainThreadIDIsCorrect();

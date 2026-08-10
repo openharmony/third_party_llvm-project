@@ -355,15 +355,25 @@ int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
 
 static int OHVersion;
 static int DistOsVersion;
+static int OHMajorVersion;
+static int OHMinorVersion;
+static int OHPatchVersion;
 
 extern __attribute__((weak)) int OH_GetSdkApiVersion(void);
 extern __attribute__((weak)) int OH_GetDistributionOSApiVersion(void);
+extern __attribute__((weak)) int GetSdkApiVersion(void);
+extern __attribute__((weak)) int GetSdkMinorApiVersion(void);
+extern __attribute__((weak)) int GetSdkPatchApiVersion(void);
 
 static void readOHOSVersion(void) {
-  if (OH_GetSdkApiVersion)
-    OHVersion = OH_GetSdkApiVersion();
-  if (OH_GetDistributionOSApiVersion)
-    DistOsVersion = OH_GetDistributionOSApiVersion();
+  OHVersion = OH_GetSdkApiVersion();
+  DistOsVersion = OH_GetDistributionOSApiVersion();
+}
+
+static void readOHOSPointVersion(void) {
+  OHMajorVersion = GetSdkApiVersion();
+  OHMinorVersion = GetSdkMinorApiVersion();
+  OHPatchVersion = GetSdkPatchApiVersion();
 }
 
 int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
@@ -375,9 +385,26 @@ int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
 
   // Just readOHOSVersion once When first call `__isOSVersionAtLeast`
   static pthread_once_t once = PTHREAD_ONCE_INIT;
-  pthread_once(&once, readOHOSVersion);
 
-  return OHVersion > Major || (OHVersion == Major && DistOsVersion >= Subminor);
+  // Start from API26, the version number of OHOS has been changed to new
+  // pointer version.
+  if (Major < 26) {
+    pthread_once(&once, readOHOSVersion);
+
+    return OHVersion > Major || (OHVersion == Major && DistOsVersion >= Subminor);
+  }
+
+  pthread_once(&once, readOHOSPointVersion);
+
+  if (Major < OHMajorVersion)
+    return 1;
+  if (Major > OHMajorVersion)
+    return 0;
+  if (Minor < OHMinorVersion)
+    return 1;
+  if (Minor > OHMinorVersion)
+    return 0;
+  return Subminor <= OHPatchVersion;
 }
 
 #else

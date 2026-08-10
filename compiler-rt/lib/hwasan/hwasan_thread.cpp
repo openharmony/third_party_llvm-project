@@ -89,6 +89,17 @@ void Thread::InitStackRingBuffer(uptr stack_buffer_start,
   // The following implicitly sets (this) as the current thread.
   stack_allocations_ = new (ThreadLong)
       StackAllocationsRingBuffer((void *)stack_buffer_start, stack_buffer_size);
+#if SANITIZER_OHOS
+  // For compatibility reason, we keep the tls variable hwasan_tls.
+  // but the problem is both of the thread variable store the stack
+  // records to the same address but this two action will not synchronize
+  // with each other. So if there are A.so use hwasan_tls and B.so use
+  // tp - 144, the stack records will overlap. Currently the stack
+  // records record by tp - 144 share the same ring as __hwasan_tls: the slot
+  // stores a pointer to &__hwasan_tls, not a separate stack-allocation ring.
+  uptr *ThreadLongWithoutTls = GetCurrentThreadLongPtrWithoutTls();
+  *ThreadLongWithoutTls = (uptr)GetCurrentThreadLongPtr();
+#endif
   // Check that it worked.
   CHECK_EQ(GetCurrentThread(), this);
 
@@ -133,6 +144,9 @@ void Thread::Destroy() {
   // TSD destructors are done.
   CHECK_EQ(GetCurrentThread(), this);
   *GetCurrentThreadLongPtr() = 0;
+#if SANITIZER_OHOS
+  *GetCurrentThreadLongPtrWithoutTls() = 0;
+#endif
 }
 
 void Thread::Print(const char *Prefix) {
