@@ -97,9 +97,22 @@ void printHeader(Error E, uintptr_t AccessPtr,
         "has already been overwritten and is likely bogus)";
   }
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  if (E == Error::UNKNOWN) {
+    Printf("This may occur due to a wild memory access into the GWP-ASan pool, "
+           "or an overflow/underflow that is > 2048B in length."
+           "Wild memory access at 0x%zx by thread %s here:\n",
+           AccessPtr, ThreadBuffer);
+  } else {
+    Printf("%s%s at 0x%zx %sby thread %s here:\n", gwp_asan::ErrorToString(E),
+           OutOfBoundsAndUseAfterFreeWarning, AccessPtr, DescriptionBuffer,
+           ThreadBuffer);
+  }
+#else
   Printf("%s%s at 0x%zx %sby thread %s here:\n", gwp_asan::ErrorToString(E),
          OutOfBoundsAndUseAfterFreeWarning, AccessPtr, DescriptionBuffer,
          ThreadBuffer);
+#endif
 }
 
 static bool HasReportedBadPoolAccess = false;
@@ -149,10 +162,12 @@ void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
   ScopedEndOfReportDecorator Decorator(Printf);
 
   Error E = __gwp_asan_diagnose_error(State, Metadata, ErrorPtr);
+#if !defined(OHOS_LLVM) || !defined(__OHOS__)
   if (E == Error::UNKNOWN) {
     Printf(kUnknownCrashText);
     return;
   }
+#endif
 
   // Print the error header.
   printHeader(E, ErrorPtr, AllocMeta, Printf);
