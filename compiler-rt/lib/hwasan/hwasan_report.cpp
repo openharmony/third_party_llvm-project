@@ -519,6 +519,8 @@ class BaseReport {
 #if SANITIZER_OHOS
     // History size of the freeing thread (main vs non-main) for rb_distance.
     uptr heap_history_size = 0;
+    // 1-based distance from newest ring entry (RingBufferLink indexing).
+    uptr rb_distance = 0;
     // True when matched from ThreadList freed-thread history (not a live tid).
     bool from_freed_thread = false;
 #endif /* SANITIZER_OHOS */
@@ -725,6 +727,7 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
       ha.ring_index = i;
       ha.free_thread_id = static_cast<u32>(t->tid());
       ha.heap_history_size = history_size;
+      ha.rb_distance = rb->DistanceFromNewest(i);
     }
     t->EnableTracingHeapAllocation();
 #endif /* SANITIZER_OHOS */
@@ -760,6 +763,7 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
       // HAR has no free-tid field; Thread is already gone on this path.
       ha.free_thread_id = 0;
       ha.heap_history_size = history_size;
+      ha.rb_distance = rb->DistanceFromNewest(i);
       ha.from_freed_thread = true;
     }
   });
@@ -1025,7 +1029,7 @@ void BaseReport::PrintAddressDescription() const {
              static_cast<int>(har.alloc_thread_id));
       Printf("%s", d.Default());
       GetStackTraceFromId(har.alloc_context_id).Print();
-      Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ha.ring_index + 1,
+      Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ha.rb_distance,
              ha.heap_history_size);
       if (!ha.from_freed_thread)
         announce_by_id(ha.free_thread_id);
@@ -1060,7 +1064,7 @@ void BaseReport::PrintAddressDescription() const {
       Printf("%s", d.Default());
       GetStackTraceFromId(har.alloc_context_id).Print();
 
-      Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ha.ring_index + 1,
+      Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ha.rb_distance,
              ha.heap_history_size);
       if (!ha.from_freed_thread)
         announce_by_id(ha.free_thread_id);

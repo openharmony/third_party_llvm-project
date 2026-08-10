@@ -260,6 +260,15 @@ class RingBufferLink {
     return top_;
   }
 
+  // 1-based distance from the newest entry. operator[] uses Idx 0 for the
+  // oldest slot (when not full) or the slot at top_ (when full).
+  uptr DistanceFromNewest(uptr Idx) const {
+    CHECK_LT(Idx, realsize());
+    if (full_)
+      return size() - Idx;
+    return top_ - Idx;
+  }
+
   uptr HeadSizeInBytes() {
     return sizeof(RingBufferLink) + sizeof(T *) * (max_num - 1);
   }
