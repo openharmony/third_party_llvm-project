@@ -182,6 +182,14 @@ void LoongArchFrameLowering::processFunctionBeforeFrameFinalized(
   }
 }
 
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+Triple::ArchType LoongArchFrameLowering::GetArkSupportTarget() const {
+  return Triple::loongarch64;
+}
+
+int LoongArchFrameLowering::GetFixedFpPosition() const { return -1; }
+#endif
+
 void LoongArchFrameLowering::emitPrologue(MachineFunction &MF,
                                           MachineBasicBlock &MBB) const {
   MachineFrameInfo &MFI = MF.getFrameInfo();
@@ -199,8 +207,12 @@ void LoongArchFrameLowering::emitPrologue(MachineFunction &MF,
   DebugLoc DL;
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+#if !defined(OHOS_LLVM) || !defined(ARK_GC_SUPPORT)
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+#else
+  // asm-int GHC call webkit function, we need push regs to stack.
+#endif
   // Determine the correct frame layout
   determineFrameLayout(MF);
 
@@ -236,10 +248,43 @@ void LoongArchFrameLowering::emitPrologue(MachineFunction &MF,
 
   // Iterate over list of callee-saved registers and emit .cfi_offset
   // directives.
+#ifdef OHOS_LLVM
+  // Frame layout without ARK_GC_SUPPORT
+  // +--------------+ <-- caller SP (CFA)
+  // | var args     |
+  // +--------------+ <-- FP
+  // | ra           |
+  // | fp           |
+  // | callee saved |
+  // +--------------+
+  // | ...          |
+  // +--------------+ <-- SP
+  //
+  // Frame layout with ARK_GC_SUPPORT
+  // +--------------+ <-- caller SP (CFA)
+  // | var args     |
+  // +--------------+
+  // | callee saved |
+  // | ra           |
+  // | fp           |
+  // +--------------+ <-- FP
+  // | frame type   |
+  // +--------------+
+  // | ...          |
+  // +--------------+ <-- SP
+  int64_t FPOffset = StackSize - LoongArchFI->getVarArgsSaveSize();
+  int64_t CFIFPOffset = LoongArchFI->getVarArgsSaveSize();
+#endif /* OHOS_LLVM */
   for (const auto &Entry : CSI) {
     int64_t Offset = MFI.getObjectOffset(Entry.getFrameIdx());
     unsigned CFIIndex = MF.addFrameInst(MCCFIInstruction::createOffset(
         nullptr, RI->getDwarfRegNum(Entry.getReg(), true), Offset));
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+    if (Entry.getReg() == FPReg) {
+      FPOffset = StackSize - -Offset;
+      CFIFPOffset = -Offset;
+    }
+#endif
     BuildMI(MBB, MBBI, DL, TII->get(TargetOpcode::CFI_INSTRUCTION))
         .addCFIIndex(CFIIndex)
         .setMIFlag(MachineInstr::FrameSetup);
@@ -247,6 +292,7 @@ void LoongArchFrameLowering::emitPrologue(MachineFunction &MF,
 
   // Generate new FP.
   if (hasFP(MF)) {
+#ifndef OHOS_LLVM
     adjustReg(MBB, MBBI, DL, FPReg, SPReg,
               StackSize - LoongArchFI->getVarArgsSaveSize(),
               MachineInstr::FrameSetup);
@@ -255,6 +301,14 @@ void LoongArchFrameLowering::emitPrologue(MachineFunction &MF,
     unsigned CFIIndex = MF.addFrameInst(
         MCCFIInstruction::cfiDefCfa(nullptr, RI->getDwarfRegNum(FPReg, true),
                                     LoongArchFI->getVarArgsSaveSize()));
+#else  /* OHOS_LLVM */
+    LoongArchFI->setFPOffsetAdjustment(CFIFPOffset);
+    adjustReg(MBB, MBBI, DL, FPReg, SPReg, FPOffset, MachineInstr::FrameSetup);
+
+    // Emit ".cfi_def_cfa $fp, CFIFPOffset)"
+    unsigned CFIIndex = MF.addFrameInst(MCCFIInstruction::cfiDefCfa(
+        nullptr, RI->getDwarfRegNum(FPReg, true), CFIFPOffset));
+#endif /* OHOS_LLVM */
     BuildMI(MBB, MBBI, DL, TII->get(TargetOpcode::CFI_INSTRUCTION))
         .addCFIIndex(CFIIndex)
         .setMIFlag(MachineInstr::FrameSetup);
@@ -316,8 +370,12 @@ void LoongArchFrameLowering::emitEpilogue(MachineFunction &MF,
   Register SPReg = LoongArch::R3;
   // All calls are tail calls in GHC calling conv, and functions have no
   // prologue/epilogue.
+#if !defined(OHOS_LLVM) || !defined(ARK_GC_SUPPORT)
   if (MF.getFunction().getCallingConv() == CallingConv::GHC)
     return;
+#else
+  // asm-int GHC call webkit function, we need push regs to stack.
+#endif
   MachineBasicBlock::iterator MBBI = MBB.getFirstTerminator();
   DebugLoc DL = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
 
@@ -333,9 +391,15 @@ void LoongArchFrameLowering::emitEpilogue(MachineFunction &MF,
   // Restore the stack pointer.
   if (RI->hasStackRealignment(MF) || MFI.hasVarSizedObjects()) {
     assert(hasFP(MF) && "frame pointer should not have been eliminated");
+#ifndef OHOS_LLVM
     adjustReg(MBB, LastFrameDestroy, DL, SPReg, LoongArch::R22,
               -StackSize + LoongArchFI->getVarArgsSaveSize(),
               MachineInstr::FrameDestroy);
+#else  /* OHOS_LLVM */
+    adjustReg(MBB, LastFrameDestroy, DL, SPReg, LoongArch::R22,
+              -StackSize + LoongArchFI->getFPOffsetAdjustment(),
+              MachineInstr::FrameDestroy);
+#endif /* OHOS_LLVM */
   }
 
   uint64_t FirstSPAdjustAmount = getFirstSPAdjustAmount(MF);
@@ -494,7 +558,11 @@ StackOffset LoongArchFrameLowering::getFrameIndexReference(
   } else {
     FrameReg = RI->getFrameRegister(MF);
     if (hasFP(MF))
+#ifndef OHOS_LLVM
       Offset += StackOffset::getFixed(LoongArchFI->getVarArgsSaveSize());
+#else  /* OHOS_LLVM */
+      Offset += StackOffset::getFixed(LoongArchFI->getFPOffsetAdjustment());
+#endif /* OHOS_LLVM */
     else
       Offset += StackOffset::getFixed(StackSize);
   }

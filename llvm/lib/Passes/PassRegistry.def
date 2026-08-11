@@ -398,6 +398,9 @@ FUNCTION_ALIAS_ANALYSIS("tbaa", TypeBasedAA())
 FUNCTION_PASS("aa-eval", AAEvaluator())
 FUNCTION_PASS("adce", ADCEPass())
 FUNCTION_PASS("add-discriminators", AddDiscriminatorsPass())
+#ifdef OHOS_LLVM
+FUNCTION_PASS("reference-tracking", AddReferenceTrackingInfoPass())
+#endif // OHOS_LLVM
 FUNCTION_PASS("aggressive-instcombine", AggressiveInstCombinePass())
 FUNCTION_PASS("alignment-from-assumptions", AlignmentFromAssumptionsPass())
 FUNCTION_PASS("annotation-remarks", AnnotationRemarksPass())

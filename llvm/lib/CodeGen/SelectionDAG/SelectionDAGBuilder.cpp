@@ -3441,6 +3441,11 @@ void SelectionDAGBuilder::visitInvoke(const InvokeInst &I) {
     LowerCallTo(I, getValue(Callee), false, false, EHPadBB);
   }
 
+#ifdef OHOS_LLVM
+  // Propagate memtracer metadata.
+  annotateMemTracer(I, DAG.getRoot());
+#endif /* OHOS_LLVM */
+
   // If the value of the invoke is used outside of its defining block, make it
   // available as a virtual register.
   // We already took care of the exported value for the statepoint instruction
@@ -5288,9 +5293,20 @@ void SelectionDAGBuilder::visitAtomicStore(const StoreInst &I) {
   auto Flags = TLI.getStoreMemOperandFlags(I, DAG.getDataLayout());
 
   MachineFunction &MF = DAG.getMachineFunction();
+#ifdef OHOS_LLVM
+  // Propagate memtracer metadata.
+  AAMDNodes AAInfo = AAMDNodes();
+  if (MF.getFunction().hasFnAttribute("reference-tracking"))
+    if (MDNode *MD = I.getMetadata(LLVMContext::MD_memtracer))
+      AAInfo.setMemTracer(MD);
+  MachineMemOperand *MMO = MF.getMachineMemOperand(
+      MachinePointerInfo(I.getPointerOperand()), Flags, MemVT.getStoreSize(),
+      I.getAlign(), AAInfo, nullptr, SSID, Ordering);
+#else
   MachineMemOperand *MMO = MF.getMachineMemOperand(
       MachinePointerInfo(I.getPointerOperand()), Flags, MemVT.getStoreSize(),
       I.getAlign(), AAMDNodes(), nullptr, SSID, Ordering);
+#endif /* OHOS_LLVM */
 
   SDValue Val = getValue(I.getValueOperand());
   if (Val.getValueType() != MemVT)
@@ -9054,6 +9070,43 @@ void SelectionDAGBuilder::processIntegerCallValue(const Instruction &I,
   setValue(&I, Value);
 }
 
+#ifdef OHOS_LLVM
+/// Annotate call instructions with memtracer metadata for heap allocation
+/// tracking. Walks the DAG to find the actual call node and associates the
+/// metadata.
+void SelectionDAGBuilder::annotateMemTracer(const Instruction &I,
+                                            SDValue Root) {
+  if (!DAG.getMachineFunction().getFunction().hasFnAttribute(
+          "reference-tracking"))
+    return;
+  MDNode *MD = I.getMetadata(LLVMContext::MD_memtracer);
+  SDNode *N = Root.getNode();
+  if (!MD || !N)
+    return;
+  const TargetLowering &TLI = DAG.getTargetLoweringInfo();
+  SmallPtrSet<SDNode *, 4> Visited;
+
+  while (N && Visited.insert(N).second) {
+    unsigned Opc = N->getOpcode();
+    // Check if this is a target-defined call SDNode.
+    if (Opc == ISD::INLINEASM || Opc == ISD::INLINEASM_BR ||
+        TLI.isMemTracerCallOpcode(Opc)) {
+      DAG.addHeapAllocSite(N, MD);
+      return;
+    }
+    // Follow the chain to find the call.
+    if (SDNode *Glued = N->getGluedNode()) {
+      N = Glued;
+    } else if (N->getNumOperands() > 0 &&
+               N->getOperand(0).getValueType() == MVT::Other) {
+      N = N->getOperand(0).getNode();
+    } else {
+      break;
+    }
+  }
+}
+#endif /* OHOS_LLVM */
+
 /// See if we can lower a memcmp/bcmp call into an optimized form. If so, return
 /// true and lower it. Otherwise return false, and it will be lowered like a
 /// normal call.
@@ -9342,6 +9395,10 @@ void SelectionDAGBuilder::visitCall(const CallInst &I) {
   // Handle inline assembly differently.
   if (I.isInlineAsm()) {
     visitInlineAsm(I);
+#ifdef OHOS_LLVM
+    // Propagate memtracer metadata.
+    annotateMemTracer(I, DAG.getRoot());
+#endif /* OHOS_LLVM */
     return;
   }
 
@@ -9352,6 +9409,10 @@ void SelectionDAGBuilder::visitCall(const CallInst &I) {
       // Is this an LLVM intrinsic?
       if (unsigned IID = F->getIntrinsicID()) {
         visitIntrinsicCall(I, IID);
+#ifdef OHOS_LLVM
+        // Propagate memtracer metadata.
+        annotateMemTracer(I, DAG.getRoot());
+#endif /* OHOS_LLVM */
         return;
       }
     }
@@ -9601,6 +9662,10 @@ void SelectionDAGBuilder::visitCall(const CallInst &I) {
     // is be done within LowerCallTo, after more information about the call is
     // known.
     LowerCallTo(I, Callee, I.isTailCall(), I.isMustTailCall());
+#ifdef OHOS_LLVM
+  // Propagate memtracer metadata.
+  annotateMemTracer(I, DAG.getRoot());
+#endif /* OHOS_LLVM */
 }
 
 void SelectionDAGBuilder::LowerCallSiteWithPtrAuthBundle(

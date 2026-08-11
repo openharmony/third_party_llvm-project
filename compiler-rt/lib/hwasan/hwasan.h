@@ -136,6 +136,14 @@ int hwasan_posix_memalign(void **memptr, uptr alignment, uptr size,
                         StackTrace *stack);
 void hwasan_free(void *ptr, StackTrace *stack);
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+extern "C" {
+SANITIZER_INTERFACE_ATTRIBUTE
+uptr Hwasan_get_arkts_stub_start();
+uptr Hwasan_get_arkts_stub_end();
+}
+#endif
+
 void InstallAtExitHandler();
 
 #define GET_MALLOC_STACK_TRACE                                            \

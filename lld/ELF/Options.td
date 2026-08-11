@@ -67,6 +67,12 @@ defm check_sections: B<"check-sections",
     "Check section addresses for overlaps (default)",
     "Do not check section addresses for overlaps">;
 
+#ifdef OHOS_LLVM
+defm code_sign: B<"code-sign",
+    "Code self sign when enable",
+    "Do not code self sign (default)">;
+#endif /* OHOS_LLVM */
+
 defm compress_debug_sections:
   Eq<"compress-debug-sections", "Compress DWARF debug sections">,
   MetaVarName<"[none,zlib,zstd]">;
@@ -441,6 +447,10 @@ defm xosegment: BB<"xosegment",
   "Do not put execute-only sections in their own segment (default)">;
 
 defm rpath: Eq<"rpath", "Add a DT_RUNPATH to the output">;
+
+#ifdef OHOS_LLVM
+defm weak_library: Eq<"ohos-weak-library", "Mark library and its references as weak imports">;
+#endif /* OHOS_LLVM */
 
 def relocatable: F<"relocatable">, HelpText<"Create relocatable object file">;
 

@@ -1126,11 +1126,24 @@ void AArch64FastISel::addLoadStoreOperands(Address &Addr,
   // Frame base works a bit differently. Handle it separately.
   if (Addr.isFIBase()) {
     int FI = Addr.getFI();
+#ifdef OHOS_LLVM
+    AAMDNodes AAInfo;
+    // Preserve memtracer info for reference tracking.
+    if (MMO && FuncInfo.MF->getFunction().hasFnAttribute("reference-tracking"))
+      if (MDNode *MemTracer = MMO->getAAInfo().MemTracer)
+        AAInfo.setMemTracer(MemTracer);
+    // FIXME: We shouldn't be using getObjectSize/getObjectAlignment.  The size
+    // and alignment should be based on the VT.
+    MMO = FuncInfo.MF->getMachineMemOperand(
+        MachinePointerInfo::getFixedStack(*FuncInfo.MF, FI, Offset), Flags,
+        MFI.getObjectSize(FI), MFI.getObjectAlign(FI), AAInfo);
+#else
     // FIXME: We shouldn't be using getObjectSize/getObjectAlignment.  The size
     // and alignment should be based on the VT.
     MMO = FuncInfo.MF->getMachineMemOperand(
         MachinePointerInfo::getFixedStack(*FuncInfo.MF, FI, Offset), Flags,
         MFI.getObjectSize(FI), MFI.getObjectAlign(FI));
+#endif /* OHOS_LLVM */
     // Now add the rest of the operands.
     MIB.addFrameIndex(FI).addImm(Offset);
   } else {
@@ -3280,6 +3293,14 @@ bool AArch64FastISel::fastLowerCall(CallLoweringInfo &CLI) {
   MIB.addRegMask(TRI.getCallPreservedMask(*FuncInfo.MF, CC));
 
   CLI.Call = MIB;
+#ifdef OHOS_LLVM
+  // Propagate memtracer metadata.
+  if (FuncInfo.Fn->hasFnAttribute("reference-tracking")) {
+    if (CLI.CB)
+      if (MDNode *MD = CLI.CB->getMetadata(LLVMContext::MD_memtracer))
+        MIB->setHeapAllocMarker(*FuncInfo.MF, MD);
+  }
+#endif /* OHOS_LLVM */
 
   // Finish off the call including any return values.
   return finishCall(CLI, NumBytes);

@@ -708,6 +708,10 @@ private:
                        MCSymbol *&BeginLabel);
   SDValue lowerEndEH(SDValue Chain, const InvokeInst *II,
                      const BasicBlock *EHPadBB, MCSymbol *BeginLabel);
+#ifdef OHOS_LLVM
+  /// Propagate memtracer metadata.
+  void annotateMemTracer(const Instruction &I, SDValue Root);
+#endif /* OHOS_LLVM */
 };
 
 /// This struct represents the registers (physical or virtual)

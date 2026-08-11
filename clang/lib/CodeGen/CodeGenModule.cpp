@@ -1111,6 +1111,11 @@ void CodeGenModule::Release() {
   if (CodeGenOpts.Dwarf64)
     getModule().addModuleFlag(llvm::Module::Max, "DWARF64", 1);
 
+#ifdef OHOS_LLVM
+  if (CodeGenOpts.ReferenceTracking)
+    getModule().addModuleFlag(llvm::Module::Max, "ReferenceTracking", 1);
+#endif /* OHOS_LLVM */
+
   if (Context.getLangOpts().SemanticInterposition)
     // Require various optimization to respect semantic interposition.
     getModule().setSemanticInterposition(true);

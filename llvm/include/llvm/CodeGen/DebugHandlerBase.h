@@ -87,6 +87,12 @@ protected:
   /// Mapping of inlined labels and DBG_LABEL machine instruction.
   DbgLabelInstrMap DbgLabels;
 
+#ifdef OHOS_LLVM
+  /// Mapping of store instructions and memtracer metadata.
+  /// Used to emit .mem_tracer section.
+  SmallVector<std::pair<const MachineInstr *, const MDNode *>, 64> MemTracerMIs;
+#endif /* OHOS_LLVM */
+
   /// Maps instruction with label emitted before instruction.
   /// FIXME: Make this private from DwarfDebug, we have the necessary accessors
   /// for it.

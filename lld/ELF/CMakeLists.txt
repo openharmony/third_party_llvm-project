@@ -24,6 +24,8 @@ if(LLVM_ENABLE_ZSTD)
   list(APPEND imported_libs ${zstd_target})
 endif()
 
+set(OHOS_ELF_SOURCES CodeSign.cpp)
+
 add_lld_library(lldELF
   AArch64ErrataFix.cpp
   Arch/AArch64.cpp
@@ -45,6 +47,7 @@ add_lld_library(lldELF
   ARMErrataFix.cpp
   BPSectionOrderer.cpp
   CallGraphSort.cpp
+  ${OHOS_ELF_SOURCES}
   DWARF.cpp
   Driver.cpp
   DriverUtils.cpp

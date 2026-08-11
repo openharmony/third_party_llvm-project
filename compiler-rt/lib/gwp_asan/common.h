@@ -55,6 +55,9 @@ static constexpr uint64_t kInvalidThreadID = UINT64_MAX;
 // Get the current thread ID, or kInvalidThreadID if failure. Note: This
 // implementation is platform-specific.
 uint64_t getThreadID();
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+uint64_t getCoarseTimeMs();
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 
 // This struct contains all the metadata recorded about a single allocation made
 // by GWP-ASan. If `AllocationMetadata.Addr` is zero, the metadata is non-valid.
@@ -104,6 +107,10 @@ struct AllocationMetadata {
   // permanently occupy a slot, and won't ever have another crash reported from
   // it.
   bool HasCrashed = false;
+
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  uint64_t AllocationTime = 0;
+#endif // defined(OHOS_LLVM) && defined(__OHOS__)
 };
 
 // This holds the state that's shared between the GWP-ASan allocator and the
@@ -170,23 +177,44 @@ static_assert(sizeof(AllocatorVersionMagic) == 8, "");
 #if defined(__x86_64__)
 static_assert(sizeof(AllocatorState) == 56, "");
 static_assert(offsetof(AllocatorState, FailureAddress) == 48, "");
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+static_assert(sizeof(AllocationMetadata) == 576, "");
+#else
 static_assert(sizeof(AllocationMetadata) == 568, "");
+#endif
 static_assert(offsetof(AllocationMetadata, IsDeallocated) == 560, "");
 #elif defined(__aarch64__)
 static_assert(sizeof(AllocatorState) == 56, "");
 static_assert(offsetof(AllocatorState, FailureAddress) == 48, "");
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+static_assert(sizeof(AllocationMetadata) == 576, "");
+#else
 static_assert(sizeof(AllocationMetadata) == 568, "");
+#endif
 static_assert(offsetof(AllocationMetadata, IsDeallocated) == 560, "");
 #elif defined(__i386__)
 static_assert(sizeof(AllocatorState) == 32, "");
 static_assert(offsetof(AllocatorState, FailureAddress) == 28, "");
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+static_assert(sizeof(AllocationMetadata) == 556, "");
+#else
 static_assert(sizeof(AllocationMetadata) == 548, "");
+#endif
 static_assert(offsetof(AllocationMetadata, IsDeallocated) == 544, "");
 #elif defined(__arm__)
 static_assert(sizeof(AllocatorState) == 32, "");
 static_assert(offsetof(AllocatorState, FailureAddress) == 28, "");
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+static_assert(sizeof(AllocationMetadata) == 568, "");
+#else
 static_assert(sizeof(AllocationMetadata) == 560, "");
+#endif
 static_assert(offsetof(AllocationMetadata, IsDeallocated) == 552, "");
+#elif defined(OHOS_LLVM) && defined(__loongarch__)
+static_assert(sizeof(AllocatorState) == 56, "");
+static_assert(offsetof(AllocatorState, FailureAddress) == 48, "");
+static_assert(sizeof(AllocationMetadata) == 576, "");
+static_assert(offsetof(AllocationMetadata, IsDeallocated) == 560, "");
 #endif // defined($ARCHITECTURE)
 
 } // namespace gwp_asan

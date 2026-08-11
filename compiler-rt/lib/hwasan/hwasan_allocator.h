@@ -74,7 +74,7 @@ struct AP64 {
 #if defined(HWASAN_ALIASING_MODE)
   static const uptr kSpaceSize = 1ULL << kAddressTagShift;
   typedef __sanitizer::DefaultSizeClassMap SizeClassMap;
-#elif SANITIZER_LINUX && !SANITIZER_ANDROID
+#elif SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS
   static const uptr kSpaceSize = 0x40000000000ULL;  // 4T.
   typedef __sanitizer::DefaultSizeClassMap SizeClassMap;
 #else
@@ -129,9 +129,16 @@ struct HeapAllocationRecord {
   u32 alloc_context_id;
   u32 free_context_id;
   u32 requested_size;
+#if SANITIZER_OHOS
+  int chunk_was_allocated_before;
+#endif
 };
 
+#if !SANITIZER_OHOS
 typedef RingBuffer<HeapAllocationRecord> HeapAllocationsRingBuffer;
+#else
+typedef RingBufferLink<HeapAllocationRecord> HeapAllocationsRingBuffer;
+#endif
 
 void GetAllocatorStats(AllocatorStatCounters s);
 

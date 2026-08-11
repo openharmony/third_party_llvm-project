@@ -109,6 +109,12 @@ static cl::opt<bool> ClInstrumentWithCalls(
     cl::desc("instrument reads and writes with callbacks"), cl::Hidden,
     cl::init(false));
 
+#ifdef OHOS_LLVM
+static cl::opt<bool> ClInstrumentWithoutTLS(
+    "hwasan-instrument-without-TLS",
+    cl::desc("instrument without hwasan_tls"), cl::Hidden, cl::init(false));
+#endif
+
 static cl::opt<bool> ClInstrumentReads("hwasan-instrument-reads",
                                        cl::desc("instrument read instructions"),
                                        cl::Hidden, cl::init(true));
@@ -692,7 +698,12 @@ void HWAddressSanitizer::initializeModule() {
       instrumentPersonalityFunctions();
   }
 
-  if (!TargetTriple.isAndroid()) {
+  bool UseThreadPtrGlobal = !TargetTriple.isAndroid();
+#ifdef OHOS_LLVM
+  if (TargetTriple.isOHOSFamily() && ClInstrumentWithoutTLS)
+    UseThreadPtrGlobal = false;
+#endif
+  if (UseThreadPtrGlobal) {
     ThreadPtrGlobal = M.getOrInsertGlobal("__hwasan_tls", IntptrTy, [&] {
       auto *GV = new GlobalVariable(M, IntptrTy, /*isConstant=*/false,
                                     GlobalValue::ExternalLinkage, nullptr,
@@ -1319,6 +1330,17 @@ Value *HWAddressSanitizer::getHwasanThreadSlotPtr(IRBuilder<> &IRB) {
   // Android provides a fixed TLS slot for sanitizers. See TLS_SLOT_SANITIZER
   // in Bionic's libc/platform/bionic/tls_defines.h.
   constexpr int SanitizerSlot = 6;
+#ifdef OHOS_LLVM
+  if (TargetTriple.isAArch64() && TargetTriple.isOHOSFamily() &&
+      ClInstrumentWithoutTLS) {
+    Module *M = IRB.GetInsertBlock()->getParent()->getParent();
+    Function *ThreadPointerFunc = Intrinsic::getOrInsertDeclaration(
+        M, Intrinsic::thread_pointer,
+        IRB.getPtrTy(M->getDataLayout().getDefaultGlobalsAddressSpace()));
+    return IRB.CreateConstGEP1_32(IRB.getInt8Ty(),
+                                  IRB.CreateCall(ThreadPointerFunc), -0x90);
+  }
+#endif
   if (TargetTriple.isAArch64() && TargetTriple.isAndroid())
     return memtag::getAndroidSlotPtr(IRB, SanitizerSlot);
   return ThreadPtrGlobal;
@@ -1359,13 +1381,28 @@ void HWAddressSanitizer::emitPrologue(IRBuilder<> &IRB, bool WithFrameRecord) {
 
   Value *SlotPtr = nullptr;
   Value *ThreadLong = nullptr;
+  Value *ThreadLongStorePtr = nullptr;
   Value *ThreadLongMaybeUntagged = nullptr;
 
   auto getThreadLongMaybeUntagged = [&]() {
     if (!SlotPtr)
       SlotPtr = getHwasanThreadSlotPtr(IRB);
-    if (!ThreadLong)
-      ThreadLong = IRB.CreateLoad(IntptrTy, SlotPtr);
+    if (!ThreadLong) {
+#ifdef OHOS_LLVM
+      if (TargetTriple.isAArch64() && TargetTriple.isOHOSFamily() &&
+          ClInstrumentWithoutTLS) {
+        // Pthread slot stores (uptr)&__hwasan_tls (seq1102). Load slot, then
+        // load *__hwasan_tls — same two-step dereference as 15.x 1102.
+        Value *TlsAddrAsInt = IRB.CreateLoad(IntptrTy, SlotPtr);
+        ThreadLongStorePtr =
+            IRB.CreateIntToPtr(TlsAddrAsInt, IntptrTy->getPointerTo(0));
+        ThreadLong = IRB.CreateLoad(IntptrTy, ThreadLongStorePtr);
+      } else
+#endif
+        ThreadLong = IRB.CreateLoad(IntptrTy, SlotPtr);
+    }
+    if (!ThreadLongStorePtr)
+      ThreadLongStorePtr = SlotPtr;
     // Extract the address field from ThreadLong. Unnecessary on AArch64 with
     // TBI.
     return TargetTriple.isAArch64() ? ThreadLong
@@ -1392,7 +1429,8 @@ void HWAddressSanitizer::emitPrologue(IRBuilder<> &IRB, bool WithFrameRecord) {
           IRB.CreateIntToPtr(ThreadLongMaybeUntagged, IRB.getPtrTy(0));
       IRB.CreateStore(FrameRecordInfo, RecordPtr);
 
-      IRB.CreateStore(memtag::incrementThreadLong(IRB, ThreadLong, 8), SlotPtr);
+      IRB.CreateStore(memtag::incrementThreadLong(IRB, ThreadLong, 8),
+                      ThreadLongStorePtr);
       break;
     }
     case none: {

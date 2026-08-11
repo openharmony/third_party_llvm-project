@@ -171,6 +171,13 @@ inline void ReleaseMemoryPagesToOSAndZeroFill(uptr beg, uptr end) {
               : "=r"(__v));              \
           __v;                           \
         })
+#    elif defined(__loongarch__)
+#      define __get_tls()                   \
+        ({                                  \
+          void **__v;                       \
+          __asm__("move %0, $tp" : "=r"(__v)); \
+          __v;                              \
+        })
 #    elif defined(__riscv)
 #      define __get_tls()                   \
         ({                                  \
@@ -199,11 +206,19 @@ inline void ReleaseMemoryPagesToOSAndZeroFill(uptr beg, uptr end) {
 // The Android Bionic team has allocated a TLS slot for sanitizers starting
 // with Q, given that Android currently doesn't support ELF TLS. It is used to
 // store sanitizer thread specific data.
+#    if SANITIZER_ANDROID
 static const int TLS_SLOT_SANITIZER = 6;
 
 ALWAYS_INLINE uptr *get_android_tls_ptr() {
   return reinterpret_cast<uptr *>(&__get_tls()[TLS_SLOT_SANITIZER]);
 }
+#    elif SANITIZER_OHOS
+static const int TLS_SLOT_SANITIZER = 18;
+
+ALWAYS_INLINE uptr *get_ohos_tls_ptr() {
+  return reinterpret_cast<uptr *>(__get_tls() - TLS_SLOT_SANITIZER);
+}
+#    endif
 
 #  endif  // SANITIZER_ANDROID || SANITIZER_OHOS
 

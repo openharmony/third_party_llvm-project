@@ -56,7 +56,11 @@ GWP_ASAN_OPTION(
     "we terminate the process after dumping the error report.")
 
 GWP_ASAN_OPTION(
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+    bool, Recoverable, true,
+#else
     bool, Recoverable, false,
+#endif
     "Install GWP-ASan's signal handler in recoverable mode. This means that "
     "upon GWP-ASan detecting an error, it'll print the error report, but *not* "
     "crash. Only one crash per sampled allocation will ever be recorded, and "

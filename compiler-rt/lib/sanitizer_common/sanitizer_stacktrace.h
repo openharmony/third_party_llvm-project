@@ -43,6 +43,9 @@ struct StackTrace {
   const uptr *trace;
   u32 size;
   u32 tag;
+#if SANITIZER_OHOS
+  bool is_fast = false;
+#endif
 
   static const int TAG_UNKNOWN = 0;
   static const int TAG_ALLOC = 1;
@@ -109,6 +112,11 @@ uptr StackTrace::GetPreviousInstructionPc(uptr pc) {
 struct BufferedStackTrace : public StackTrace {
   uptr trace_buffer[kStackTraceMax];
   uptr top_frame_bp;  // Optional bp of a top frame.
+#if SANITIZER_OHOS
+  uptr frame_buffer[kStackTraceMax]{};
+  uptr arkts_stub_start = UINTPTR_MAX;
+  uptr arkts_stub_end = UINTPTR_MAX;
+#endif
 
   BufferedStackTrace() : StackTrace(trace_buffer, 0), top_frame_bp(0) {}
 
@@ -138,14 +146,25 @@ struct BufferedStackTrace : public StackTrace {
     top_frame_bp = 0;
   }
 
+#if SANITIZER_OHOS
+  void UnwindIfArkts(u32 max_depth, uptr stack_top, uptr stack_bottom);
+#endif
+
  private:
   // Every runtime defines its own implementation of this method
   void UnwindImpl(uptr pc, uptr bp, void *context, bool request_fast,
                   u32 max_depth);
 
   // UnwindFast/Slow have platform-specific implementations
+#if SANITIZER_OHOS
+  // allow_ffrt_resolve should be false when unwinding with a non-null async
+  // context (e.g. ucontext) to avoid loader work in the signal path.
+  void UnwindFast(uptr pc, uptr bp, uptr stack_top, uptr stack_bottom,
+                  u32 max_depth, bool allow_ffrt_resolve = true);
+#else
   void UnwindFast(uptr pc, uptr bp, uptr stack_top, uptr stack_bottom,
                   u32 max_depth);
+#endif
   void UnwindSlow(uptr pc, u32 max_depth);
   void UnwindSlow(uptr pc, void *context, u32 max_depth);
 
@@ -170,6 +189,11 @@ static const uptr kFrameSize = 2 * sizeof(uhwptr);
 static inline bool IsValidFrame(uptr frame, uptr stack_top, uptr stack_bottom) {
   return frame > stack_bottom && frame < stack_top - kFrameSize;
 }
+
+#if SANITIZER_OHOS
+bool MaybeGetFfrtCoroutineStackBounds(uptr current_fp, uptr *stack_bottom,
+                                      uptr *stack_top, bool allow_resolve);
+#endif
 
 }  // namespace __sanitizer
 

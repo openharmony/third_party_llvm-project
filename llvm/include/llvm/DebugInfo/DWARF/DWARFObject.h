@@ -82,6 +82,9 @@ public:
   virtual StringRef getCUIndexSection() const { return ""; }
   virtual StringRef getGdbIndexSection() const { return ""; }
   virtual StringRef getTUIndexSection() const { return ""; }
+#ifdef OHOS_LLVM
+  virtual const DWARFSection &getMemTracerSection() const { return Dummy; }
+#endif /* OHOS_LLVM */
   virtual std::optional<RelocAddrEntry> find(const DWARFSection &Sec,
                                              uint64_t Pos) const = 0;
 };

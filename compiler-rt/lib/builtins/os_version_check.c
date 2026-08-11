@@ -346,6 +346,67 @@ int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
   return SdkVersion >= Major || IsPreRelease;
 }
 
+#elif defined(OHOS_LLVM) && defined(__OHOS__)
+
+#include <pthread.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+static int OHVersion;
+static int DistOsVersion;
+static int OHMajorVersion;
+static int OHMinorVersion;
+static int OHPatchVersion;
+
+extern __attribute__((weak)) int OH_GetSdkApiVersion(void);
+extern __attribute__((weak)) int OH_GetDistributionOSApiVersion(void);
+extern __attribute__((weak)) int GetSdkApiVersion(void);
+extern __attribute__((weak)) int GetSdkMinorApiVersion(void);
+extern __attribute__((weak)) int GetSdkPatchApiVersion(void);
+
+static void readOHOSVersion(void) {
+  OHVersion = OH_GetSdkApiVersion();
+  DistOsVersion = OH_GetDistributionOSApiVersion();
+}
+
+static void readOHOSPointVersion(void) {
+  OHMajorVersion = GetSdkApiVersion();
+  OHMinorVersion = GetSdkMinorApiVersion();
+  OHPatchVersion = GetSdkPatchApiVersion();
+}
+
+int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
+  // `OH_GetSdkApiVersion()` and `OH_GetDistributionOSApiVersion()` are begining
+  // from API10. There are no longer any devices below API12 now. If there really
+  // is an API10 device (theoretically), we set the default value to 1 here.
+  if (Major < 10)
+    return 1;
+
+  // Just readOHOSVersion once When first call `__isOSVersionAtLeast`
+  static pthread_once_t once = PTHREAD_ONCE_INIT;
+
+  // Start from API26, the version number of OHOS has been changed to new
+  // pointer version.
+  if (Major < 26) {
+    pthread_once(&once, readOHOSVersion);
+
+    return OHVersion > Major || (OHVersion == Major && DistOsVersion >= Subminor);
+  }
+
+  pthread_once(&once, readOHOSPointVersion);
+
+  if (Major < OHMajorVersion)
+    return 1;
+  if (Major > OHMajorVersion)
+    return 0;
+  if (Minor < OHMinorVersion)
+    return 1;
+  if (Minor > OHMinorVersion)
+    return 0;
+  return Subminor <= OHPatchVersion;
+}
+
 #else
 
 // Silence an empty translation unit warning.

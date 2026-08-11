@@ -99,6 +99,17 @@ LoongArchRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   if (TFI->hasBP(MF))
     markSuperRegs(Reserved, LoongArchABI::getBPReg()); // bp
 
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+  if (MF.getFunction().getCallingConv() == CallingConv::GHC) {
+    markSuperRegs(Reserved, LoongArch::R22);
+    markSuperRegs(Reserved, LoongArch::R1);
+  }
+  if ((MF.getFunction().getCallingConv() == CallingConv::WebKit_JS) ||
+      (MF.getFunction().getCallingConv() == CallingConv::C)) {
+    markSuperRegs(Reserved, LoongArch::R1);
+  }
+#endif
+
   assert(checkAllSuperRegsMarked(Reserved));
   return Reserved;
 }

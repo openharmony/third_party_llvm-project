@@ -136,6 +136,127 @@ void BufferedStackTrace::UnwindSlow(uptr pc, void *context, u32 max_depth) {
     trace_buffer[size++] = frames[i].absolute_pc + 2;
 }
 
+#if SANITIZER_OHOS
+enum class StepFrameType : uint8_t {
+  NATIVE_FRAME = 0,
+  JS_FRAME = 1,
+  STATIC_JS_FRAME = 2,
+};
+
+typedef struct {
+  uptr *fp;
+  uptr *sp;
+  uptr *pc;
+  bool *isJsFrame;
+  StepFrameType *frameType;
+  uint64_t frameIndex;
+} ArkStepParam;
+
+typedef bool (*ReadMemFunc)(void *ctx, uptr addr, uptr *result);
+typedef int (*step_ark_func)(void *ctx, ReadMemFunc readMem,
+                             ArkStepParam *arkStepParam);
+step_ark_func step_ark;
+
+void SanitizerInitializeArkTsUnwinder() {
+  void *p = dlopen("/system/lib64/platformsdk/libark_jsruntime.so", RTLD_LAZY);
+  if (!p) {
+    VReport(1,
+            "Failed to open libark_jsruntime.so. You may see broken stack "
+            "traces in SEGV reports.");
+    return;
+  }
+  step_ark = (step_ark_func)(uptr)dlsym(p, "step_ark");
+  if (!step_ark) {
+    VReport(1,
+            "Failed to find one of the required symbols in "
+            "libark_jsruntime.so You may see broken stack traces in SEGV "
+            "reports.");
+    step_ark = 0;
+  }
+}
+
+void BufferedStackTrace::UnwindIfArkts(u32 max_depth, uptr stack_top,
+                                       uptr stack_bottom) {
+  if (!step_ark)
+    SanitizerInitializeArkTsUnwinder();
+  if (!step_ark || size >= max_depth || size == 0)
+    return;
+
+  ReadMemFunc readMem = [](void *ctx, uptr addr, uptr *result) -> bool {
+    (void)ctx;
+    *result = *reinterpret_cast<uptr *>(addr);
+    return true;
+  };
+
+  uptr current_pc = trace_buffer[size - 1];
+  uptr current_fp = *(uptr *)frame_buffer[size - 1];
+  uptr current_sp = current_fp;
+  const uptr kPageSize = GetPageSizeCached();
+  StepFrameType current_frameType = StepFrameType::NATIVE_FRAME;
+
+  while (size < max_depth) {
+    bool current_isJsFrame = false;
+    uint64_t current_frameIndex = 0;
+
+    ArkStepParam param = {
+        .fp = &current_fp,
+        .sp = &current_sp,
+        .pc = &current_pc,
+        .isJsFrame = &current_isJsFrame,
+        .frameType = &current_frameType,
+        .frameIndex = current_frameIndex,
+    };
+
+    int res = step_ark(nullptr, readMem, &param);
+    if (!res)
+      break;
+
+    if (current_pc <= kPageSize)
+      break;
+
+    if (current_fp <= frame_buffer[size - 1])
+      break;
+
+    frame_buffer[size] = current_fp;
+    trace_buffer[size] = current_pc;
+    ++size;
+
+    if ((current_pc >= arkts_stub_start && current_pc < arkts_stub_end) ||
+        current_frameType == StepFrameType::JS_FRAME) {
+      continue;
+    }
+
+    if (current_frameType == StepFrameType::NATIVE_FRAME) {
+      BufferedStackTrace tmp;
+      tmp.UnwindFast(current_pc, current_fp, stack_top, stack_bottom, max_depth,
+                     true);
+      if (tmp.size <= 1)
+        break;
+      for (u32 i = 1; i < tmp.size && size < max_depth; ++i) {
+        if (size > 0 && tmp.frame_buffer[i] <= frame_buffer[size - 1])
+          continue;
+
+        frame_buffer[size] = tmp.frame_buffer[i];
+        trace_buffer[size] = tmp.trace_buffer[i];
+        ++size;
+      }
+      if (size >= max_depth)
+        break;
+
+      current_pc = trace_buffer[size - 1];
+      current_fp = frame_buffer[size - 1];
+
+      if (current_pc >= arkts_stub_start && current_pc < arkts_stub_end) {
+        current_frameType = StepFrameType::NATIVE_FRAME;
+        continue;
+      }
+      break;
+    }
+    break;
+  }
+}
+#endif
+
 }  // namespace __sanitizer
 
 #endif  // SANITIZER_FREEBSD || SANITIZER_LINUX || SANITIZER_NETBSD ||

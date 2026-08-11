@@ -20,6 +20,20 @@
 
 #include "sanitizer_common/sanitizer_common.h"
 
+#if SANITIZER_OHOS
+#include <stdint.h>
+extern "C" __attribute__((weak)) void DFX_SetCrashObj(uint8_t type,
+                                                      uintptr_t addr);
+static void trap_with_message(const char *msg) {
+  if (&DFX_SetCrashObj)
+    DFX_SetCrashObj(0, reinterpret_cast<uintptr_t>(msg));
+  // a mark for DFX to identify ubsan log and synchronize the log file to
+  // faultlog folder
+  __sanitizer::Report("End Ubsan report\n");
+  __builtin_trap();
+}
+#endif
+
 using namespace __sanitizer;
 using namespace __ubsan;
 
@@ -145,7 +159,11 @@ void __ubsan::__ubsan_handle_type_mismatch_v1_abort(TypeMismatchData *Data,
                                                     ValueHandle Pointer) {
   GET_REPORT_OPTIONS(true);
   handleTypeMismatchImpl(Data, Pointer, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: type-mismatch");
+#else
   Die();
+#endif
 }
 
 static void handleAlignmentAssumptionImpl(AlignmentAssumptionData *Data,
@@ -201,7 +219,11 @@ void __ubsan::__ubsan_handle_alignment_assumption_abort(
     ValueHandle Offset) {
   GET_REPORT_OPTIONS(true);
   handleAlignmentAssumptionImpl(Data, Pointer, Alignment, Offset, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: alignment-assumption");
+#else
   Die();
+#endif
 }
 
 /// \brief Common diagnostic emission for various forms of integer overflow.
@@ -230,6 +252,16 @@ static void handleIntegerOverflowImpl(OverflowData *Data, ValueHandle LHS,
       << Operator << RHS << Data->Type;
 }
 
+#if SANITIZER_OHOS
+#define UBSAN_OVERFLOW_HANDLER(handler_name, op, unrecoverable)                \
+  void __ubsan::handler_name(OverflowData *Data, ValueHandle LHS,              \
+                             ValueHandle RHS) {                                \
+    GET_REPORT_OPTIONS(unrecoverable);                                         \
+    handleIntegerOverflowImpl(Data, LHS, op, Value(Data->Type, RHS), Opts);    \
+    if (unrecoverable)                                                         \
+      trap_with_message("ubsan: integer-overflow");                            \
+  }
+#else
 #define UBSAN_OVERFLOW_HANDLER(handler_name, op, unrecoverable)                \
   void __ubsan::handler_name(OverflowData *Data, ValueHandle LHS,              \
                              ValueHandle RHS) {                                \
@@ -238,6 +270,7 @@ static void handleIntegerOverflowImpl(OverflowData *Data, ValueHandle LHS,
     if (unrecoverable)                                                         \
       Die();                                                                   \
   }
+#endif
 
 UBSAN_OVERFLOW_HANDLER(__ubsan_handle_add_overflow, "+", false)
 UBSAN_OVERFLOW_HANDLER(__ubsan_handle_add_overflow_abort, "+", true)
@@ -280,7 +313,11 @@ void __ubsan::__ubsan_handle_negate_overflow_abort(OverflowData *Data,
                                                     ValueHandle OldVal) {
   GET_REPORT_OPTIONS(true);
   handleNegateOverflowImpl(Data, OldVal, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: negate-overflow");
+#else
   Die();
+#endif
 }
 
 static void handleDivremOverflowImpl(OverflowData *Data, ValueHandle LHS,
@@ -324,7 +361,11 @@ void __ubsan::__ubsan_handle_divrem_overflow_abort(OverflowData *Data,
                                                     ValueHandle RHS) {
   GET_REPORT_OPTIONS(true);
   handleDivremOverflowImpl(Data, LHS, RHS, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: divrem-overflow");
+#else
   Die();
+#endif
 }
 
 static void handleShiftOutOfBoundsImpl(ShiftOutOfBoundsData *Data,
@@ -375,7 +416,11 @@ void __ubsan::__ubsan_handle_shift_out_of_bounds_abort(
                                                      ValueHandle RHS) {
   GET_REPORT_OPTIONS(true);
   handleShiftOutOfBoundsImpl(Data, LHS, RHS, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: shift-out-of-bounds");
+#else
   Die();
+#endif
 }
 
 static void handleOutOfBoundsImpl(OutOfBoundsData *Data, ValueHandle Index,
@@ -402,7 +447,11 @@ void __ubsan::__ubsan_handle_out_of_bounds_abort(OutOfBoundsData *Data,
                                                  ValueHandle Index) {
   GET_REPORT_OPTIONS(true);
   handleOutOfBoundsImpl(Data, Index, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: out-of-bounds");
+#else
   Die();
+#endif
 }
 
 static void handleLocalOutOfBoundsImpl(ReportOptions Opts) {
@@ -438,7 +487,11 @@ static void handleBuiltinUnreachableImpl(UnreachableData *Data,
 void __ubsan::__ubsan_handle_builtin_unreachable(UnreachableData *Data) {
   GET_REPORT_OPTIONS(true);
   handleBuiltinUnreachableImpl(Data, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: builtin-unreachable");
+#else
   Die();
+#endif
 }
 
 static void handleMissingReturnImpl(UnreachableData *Data, ReportOptions Opts) {
@@ -452,7 +505,11 @@ static void handleMissingReturnImpl(UnreachableData *Data, ReportOptions Opts) {
 void __ubsan::__ubsan_handle_missing_return(UnreachableData *Data) {
   GET_REPORT_OPTIONS(true);
   handleMissingReturnImpl(Data, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: missing-return");
+#else
   Die();
+#endif
 }
 
 static void handleVLABoundNotPositive(VLABoundData *Data, ValueHandle Bound,
@@ -479,7 +536,11 @@ void __ubsan::__ubsan_handle_vla_bound_not_positive_abort(VLABoundData *Data,
                                                           ValueHandle Bound) {
   GET_REPORT_OPTIONS(true);
   handleVLABoundNotPositive(Data, Bound, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: vla-bound-not-positive");
+#else
   Die();
+#endif
 }
 
 static bool looksLikeFloatCastOverflowDataV1(void *Data) {
@@ -538,7 +599,11 @@ void __ubsan::__ubsan_handle_float_cast_overflow_abort(void *Data,
                                                        ValueHandle From) {
   GET_REPORT_OPTIONS(true);
   handleFloatCastOverflow(Data, From, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: float-cast-overflow");
+#else
   Die();
+#endif
 }
 
 static void handleLoadInvalidValue(InvalidValueData *Data, ValueHandle Val,
@@ -570,7 +635,11 @@ void __ubsan::__ubsan_handle_load_invalid_value_abort(InvalidValueData *Data,
                                                       ValueHandle Val) {
   GET_REPORT_OPTIONS(true);
   handleLoadInvalidValue(Data, Val, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: load-invalid-value");
+#else
   Die();
+#endif
 }
 
 static void handleImplicitConversion(ImplicitConversionData *Data,
@@ -643,7 +712,11 @@ void __ubsan::__ubsan_handle_implicit_conversion_abort(
     ImplicitConversionData *Data, ValueHandle Src, ValueHandle Dst) {
   GET_REPORT_OPTIONS(true);
   handleImplicitConversion(Data, Opts, Src, Dst);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: implicit-conversion");
+#else
   Die();
+#endif
 }
 
 static void handleInvalidBuiltin(InvalidBuiltinData *Data, ReportOptions Opts) {
@@ -670,7 +743,11 @@ void __ubsan::__ubsan_handle_invalid_builtin(InvalidBuiltinData *Data) {
 void __ubsan::__ubsan_handle_invalid_builtin_abort(InvalidBuiltinData *Data) {
   GET_REPORT_OPTIONS(true);
   handleInvalidBuiltin(Data, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: invalid-builtin");
+#else
   Die();
+#endif
 }
 
 static void handleInvalidObjCCast(InvalidObjCCast *Data, ValueHandle Pointer,
@@ -700,7 +777,11 @@ void __ubsan::__ubsan_handle_invalid_objc_cast_abort(InvalidObjCCast *Data,
                                                      ValueHandle Pointer) {
   GET_REPORT_OPTIONS(true);
   handleInvalidObjCCast(Data, Pointer, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: invalid-objc-cast");
+#else
   Die();
+#endif
 }
 
 static void handleNonNullReturn(NonNullReturnData *Data, SourceLocation *LocPtr,
@@ -735,7 +816,11 @@ void __ubsan::__ubsan_handle_nonnull_return_v1_abort(NonNullReturnData *Data,
                                                      SourceLocation *LocPtr) {
   GET_REPORT_OPTIONS(true);
   handleNonNullReturn(Data, LocPtr, Opts, true);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: nonnull-return");
+#else
   Die();
+#endif
 }
 
 void __ubsan::__ubsan_handle_nullability_return_v1(NonNullReturnData *Data,
@@ -748,7 +833,11 @@ void __ubsan::__ubsan_handle_nullability_return_v1_abort(
     NonNullReturnData *Data, SourceLocation *LocPtr) {
   GET_REPORT_OPTIONS(true);
   handleNonNullReturn(Data, LocPtr, Opts, false);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: nullability-return");
+#else
   Die();
+#endif
 }
 
 static void handleNonNullArg(NonNullArgData *Data, ReportOptions Opts,
@@ -779,7 +868,11 @@ void __ubsan::__ubsan_handle_nonnull_arg(NonNullArgData *Data) {
 void __ubsan::__ubsan_handle_nonnull_arg_abort(NonNullArgData *Data) {
   GET_REPORT_OPTIONS(true);
   handleNonNullArg(Data, Opts, true);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: nonnull-arg");
+#else
   Die();
+#endif
 }
 
 void __ubsan::__ubsan_handle_nullability_arg(NonNullArgData *Data) {
@@ -790,7 +883,11 @@ void __ubsan::__ubsan_handle_nullability_arg(NonNullArgData *Data) {
 void __ubsan::__ubsan_handle_nullability_arg_abort(NonNullArgData *Data) {
   GET_REPORT_OPTIONS(true);
   handleNonNullArg(Data, Opts, false);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: nullability-arg");
+#else
   Die();
+#endif
 }
 
 static void handlePointerOverflowImpl(PointerOverflowData *Data,
@@ -852,13 +949,22 @@ void __ubsan::__ubsan_handle_pointer_overflow_abort(PointerOverflowData *Data,
                                                     ValueHandle Result) {
   GET_REPORT_OPTIONS(true);
   handlePointerOverflowImpl(Data, Base, Result, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: pointer-overflow");
+#else
   Die();
+#endif
 }
 
 static void handleCFIBadIcall(CFICheckFailData *Data, ValueHandle Function,
                               ReportOptions Opts) {
-  if (Data->CheckKind != CFITCK_ICall && Data->CheckKind != CFITCK_NVMFCall)
+  if (Data->CheckKind != CFITCK_ICall && Data->CheckKind != CFITCK_NVMFCall) {
+#if SANITIZER_OHOS
+    trap_with_message("ubsan: runtime-error");
+#else
     Die();
+#endif
+  }
 
   SourceLocation Loc = Data->Loc.acquire();
   ErrorType ET = ErrorType::CFIBadType;
@@ -914,7 +1020,11 @@ void __ubsan_handle_cfi_bad_type(CFICheckFailData *Data, ValueHandle Vtable,
 SANITIZER_WEAK_ATTRIBUTE
 void __ubsan_handle_cfi_bad_type(CFICheckFailData *Data, ValueHandle Vtable,
                                  bool ValidVtable, ReportOptions Opts) {
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: cfi-check-fail");
+#else
   Die();
+#endif
 }
 #endif
 
@@ -938,7 +1048,11 @@ void __ubsan::__ubsan_handle_cfi_check_fail_abort(CFICheckFailData *Data,
     handleCFIBadIcall(Data, Value, Opts);
   else
     __ubsan_handle_cfi_bad_type(Data, Value, ValidVtable, Opts);
+#if SANITIZER_OHOS
+  trap_with_message("ubsan: cfi-check-fail");
+#else
   Die();
+#endif
 }
 
 static bool handleFunctionTypeMismatch(FunctionTypeMismatchData *Data,

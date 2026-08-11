@@ -918,6 +918,43 @@ static void dumpAddrSection(raw_ostream &OS, DWARFDataExtractor &AddrData,
   }
 }
 
+#ifdef OHOS_LLVM
+// Dump the .mem_tracer section
+static void dumpMemTracerSection(raw_ostream &OS, DWARFDataExtractor &MemData,
+                                 StringRef DebugStr, DIDumpOptions DumpOpts) {
+  uint64_t Offset = 0;
+  uint64_t Index = 0;
+  uint8_t PtrSize = MemData.getAddressSize();
+  uint32_t EntrySize = PtrSize + 4 + 4;
+
+  auto GetStringByOff = [&](uint32_t StrOff) -> StringRef {
+    if (StrOff >= DebugStr.size())
+      return "<invalid offset>";
+    return StringRef(DebugStr.data() + StrOff);
+  };
+
+  while (MemData.isValidOffsetForDataOfSize(Offset, EntrySize)) {
+    uint64_t PcAddr = MemData.getAddress(&Offset);
+    uint32_t StrOff = MemData.getU32(&Offset);
+    uint32_t TypeOff = MemData.getU32(&Offset);
+
+    StringRef VarName = GetStringByOff(StrOff);
+    StringRef TypeName = GetStringByOff(TypeOff);
+    OS << format("  [%4" PRIu64 "] addr=0x%016" PRIx64
+                 " strOff=0x%08x typeOff=0x%08x ",
+                 Index, PcAddr, StrOff, TypeOff);
+
+    OS << "var=\"";
+    OS.write_escaped(VarName);
+    OS << "\" type=\"";
+    OS.write_escaped(TypeName);
+    OS << "\"\n";
+
+    ++Index;
+  }
+}
+#endif /* OHOS_LLVM */
+
 // Dump the .debug_rnglists or .debug_rnglists.dwo section (DWARF v5).
 static void dumpRnglistsSection(
     raw_ostream &OS, DWARFDataExtractor &rnglistData,
@@ -1236,6 +1273,15 @@ void DWARFContext::dump(
                                    isLittleEndian(), 0);
     dumpAddrSection(OS, AddrData, DumpOpts, getMaxVersion(), getCUAddrSize());
   }
+
+#ifdef OHOS_LLVM
+  if (shouldDump(Explicit, ".mem_tracer", DIDT_ID_MemTracer,
+                 DObj->getMemTracerSection().Data)) {
+    DWARFDataExtractor MemTracer(*DObj, DObj->getMemTracerSection(),
+                                 isLittleEndian(), DObj->getAddressSize());
+    dumpMemTracerSection(OS, MemTracer, DObj->getStrSection(), DumpOpts);
+  }
+#endif /* OHOS_LLVM */
 
   if (shouldDump(Explicit, ".debug_ranges", DIDT_ID_DebugRanges,
                  DObj->getRangesSection().Data)) {
@@ -2009,6 +2055,9 @@ class DWARFObjInMemory final : public DWARFObject {
   DWARFSectionMap RangesDWOSection;
   DWARFSectionMap RnglistsDWOSection;
   DWARFSectionMap AddrSection;
+#ifdef OHOS_LLVM
+  DWARFSectionMap MemTracerSection;
+#endif /* OHOS_LLVM */
   DWARFSectionMap AppleNamesSection;
   DWARFSectionMap AppleTypesSection;
   DWARFSectionMap AppleNamespacesSection;
@@ -2037,6 +2086,9 @@ class DWARFObjInMemory final : public DWARFObject {
         .Case("debug_rnglists.dwo", &RnglistsDWOSection)
         .Case("debug_str_offsets.dwo", &StrOffsetsDWOSection)
         .Case("debug_addr", &AddrSection)
+#ifdef OHOS_LLVM
+        .Case("mem_tracer", &MemTracerSection)
+#endif /* OHOS_LLVM */
         .Case("apple_names", &AppleNamesSection)
         .Case("debug_pubnames", &PubnamesSection)
         .Case("debug_pubtypes", &PubtypesSection)
@@ -2421,6 +2473,11 @@ public:
   const DWARFSection &getNamesSection() const override {
     return NamesSection;
   }
+#ifdef OHOS_LLVM
+  const DWARFSection &getMemTracerSection() const override {
+    return MemTracerSection;
+  }
+#endif /* OHOS_LLVM */
 
   StringRef getFileName() const override { return FileName; }
   uint8_t getAddressSize() const override { return AddressSize; }

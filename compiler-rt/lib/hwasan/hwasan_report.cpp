@@ -519,6 +519,8 @@ class BaseReport {
 #if SANITIZER_OHOS
     // History size of the freeing thread (main vs non-main) for rb_distance.
     uptr heap_history_size = 0;
+    // 1-based distance from newest ring entry (RingBufferLink indexing).
+    uptr rb_distance = 0;
     // True when matched from ThreadList freed-thread history (not a live tid).
     bool from_freed_thread = false;
 #endif /* SANITIZER_OHOS */
@@ -725,6 +727,7 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
       ha.ring_index = i;
       ha.free_thread_id = static_cast<u32>(t->tid());
       ha.heap_history_size = history_size;
+      ha.rb_distance = rb->DistanceFromNewest(i);
     }
     t->EnableTracingHeapAllocation();
 #endif /* SANITIZER_OHOS */
@@ -760,6 +763,7 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
       // HAR has no free-tid field; Thread is already gone on this path.
       ha.free_thread_id = 0;
       ha.heap_history_size = history_size;
+      ha.rb_distance = rb->DistanceFromNewest(i);
       ha.from_freed_thread = true;
     }
   });
@@ -998,43 +1002,73 @@ void BaseReport::PrintAddressDescription() const {
 
     announce_by_id(ha.free_thread_id);
 #else /* SANITIZER_OHOS */
-    Printf("%s", d.Error());
-    Printf("\nPotential Cause: use-after-free\n");
-    Printf("%s", d.Location());
-    if (ha.from_freed_thread) {
-      uptr ha_untagged_addr = UntagAddr(har.tagged_addr);
-      Printf(
-          "%p (Previously freed thread ptr tags: %02x) is located %zd "
-          "bytes inside of %zd-byte region [%p,%p)\n",
-          untagged_addr, GetTagFromPointer(har.tagged_addr),
-          untagged_addr - ha_untagged_addr, har.requested_size, ha_untagged_addr,
-          ha_untagged_addr + har.requested_size);
+    uptr ha_untagged_addr = UntagAddr(har.tagged_addr);
+    if (flags()->record_malloc_info && har.free_context_id == 0) {
+      Printf("%s", d.Warning());
+      Printf("\nHeap malloc record: \n");
+      Printf("%s", d.Location());
+      if (ha.from_freed_thread) {
+        Printf(
+            "%p (Previously freed thread ptr tags: %02x) is located %zd "
+            "bytes inside of %zd-byte region [%p,%p)\n",
+            untagged_addr, GetTagFromPointer(har.tagged_addr),
+            untagged_addr - ha_untagged_addr, har.requested_size,
+            ha_untagged_addr, ha_untagged_addr + har.requested_size);
+      } else {
+        Printf(
+            "%p (rb[%zd] tags:%02x) is located %zd bytes inside of %zd-byte "
+            "region [%p,%p)\n",
+            untagged_addr, ha.ring_index, GetTagFromPointer(har.tagged_addr),
+            untagged_addr - ha_untagged_addr, har.requested_size,
+            ha_untagged_addr, ha_untagged_addr + har.requested_size);
+      }
+      Printf("%s", d.Allocation());
+      if (har.chunk_was_allocated_before != 0)
+        Printf("This chunk is allocated without free.\n");
+      Printf("Heap allocated by thread %d here:\n",
+             static_cast<int>(har.alloc_thread_id));
+      Printf("%s", d.Default());
+      GetStackTraceFromId(har.alloc_context_id).Print();
+      Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ha.rb_distance,
+             ha.heap_history_size);
+      if (!ha.from_freed_thread)
+        announce_by_id(ha.free_thread_id);
     } else {
-      Printf(
-          "%p (rb[%zd] tags:%02x) is located %zd bytes inside of %zd-byte "
-          "region [%p,%p)\n",
-          untagged_addr, ha.ring_index, GetTagFromPointer(har.tagged_addr),
-          untagged_addr - UntagAddr(har.tagged_addr), har.requested_size,
-          UntagAddr(har.tagged_addr),
-          UntagAddr(har.tagged_addr) + har.requested_size);
+      Printf("%s", d.Error());
+      Printf("\nPotential Cause: use-after-free\n");
+      Printf("%s", d.Location());
+      if (ha.from_freed_thread) {
+        Printf(
+            "%p (Previously freed thread ptr tags: %02x) is located %zd "
+            "bytes inside of %zd-byte region [%p,%p)\n",
+            untagged_addr, GetTagFromPointer(har.tagged_addr),
+            untagged_addr - ha_untagged_addr, har.requested_size,
+            ha_untagged_addr, ha_untagged_addr + har.requested_size);
+      } else {
+        Printf(
+            "%p (rb[%zd] tags:%02x) is located %zd bytes inside of %zd-byte "
+            "region [%p,%p)\n",
+            untagged_addr, ha.ring_index, GetTagFromPointer(har.tagged_addr),
+            untagged_addr - UntagAddr(har.tagged_addr), har.requested_size,
+            UntagAddr(har.tagged_addr),
+            UntagAddr(har.tagged_addr) + har.requested_size);
+      }
+      Printf("%s", d.Allocation());
+      Printf("freed by thread %d here:\n", static_cast<int>(ha.free_thread_id));
+      Printf("%s", d.Default());
+      GetStackTraceFromId(har.free_context_id).Print();
+
+      Printf("%s", d.Allocation());
+      Printf("previously allocated by thread %d here:\n",
+             static_cast<int>(har.alloc_thread_id));
+      Printf("%s", d.Default());
+      GetStackTraceFromId(har.alloc_context_id).Print();
+
+      Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ha.rb_distance,
+             ha.heap_history_size);
+      if (!ha.from_freed_thread)
+        announce_by_id(ha.free_thread_id);
     }
-    Printf("%s", d.Allocation());
-    Printf("freed by thread %d here:\n", static_cast<int>(ha.free_thread_id));
-    Printf("%s", d.Default());
-    GetStackTraceFromId(har.free_context_id).Print();
-
-    Printf("%s", d.Allocation());
-    Printf("previously allocated by thread %d here:\n",
-           static_cast<int>(har.alloc_thread_id));
-    Printf("%s", d.Default());
-    GetStackTraceFromId(har.alloc_context_id).Print();
-
-    // Print a developer note: the index of this heap object
-    // in the thread's deallocation ring buffer.
-    Printf("hwasan_dev_note_heap_rb_distance: %zd %zd\n", ha.ring_index + 1,
-           ha.heap_history_size);
-    if (!ha.from_freed_thread)
-      announce_by_id(ha.free_thread_id);
 #endif /* SANITIZER_OHOS */
     // TODO: announce_by_id(har.alloc_thread_id);
     num_descriptions_printed++;

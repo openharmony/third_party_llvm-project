@@ -100,6 +100,16 @@ static void abort_with_message(const char *kind, uintptr_t caller) {
     android_set_abort_message(msg_buf);
   abort();
 }
+#elif SANITIZER_OHOS
+extern "C" __attribute__((weak)) void DFX_SetCrashObj(uint8_t type,
+                                                      uintptr_t addr);
+static void abort_with_message(const char *kind, uintptr_t caller) {
+  char msg_buf[128];
+  format_msg(kind, caller, msg_buf, msg_buf + sizeof(msg_buf));
+  if (&DFX_SetCrashObj)
+    DFX_SetCrashObj(0, reinterpret_cast<uintptr_t>(msg_buf));
+  __builtin_trap();
+}
 #else
 static void abort_with_message(const char *kind, uintptr_t caller) { abort(); }
 #endif

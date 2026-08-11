@@ -204,6 +204,12 @@ public:
   bool isZExtFree(EVT VT1, EVT VT2) const override;
   bool isZExtFree(SDValue Val, EVT VT2) const override;
 
+#ifdef OHOS_LLVM
+  /// Returns true if the opcode is an AArch64-specific call or tail-call
+  /// that should be tracked by MemTracer for reference tracking.
+  bool isMemTracerCallOpcode(unsigned Opcode) const override;
+#endif /* OHOS_LLVM */
+
   bool optimizeExtendOrTruncateConversion(
       Instruction *I, Loop *L, const TargetTransformInfo &TTI) const override;
 

@@ -11,6 +11,12 @@
 #include "gwp_asan/guarded_pool_allocator.h"
 #include "gwp_asan/optional/segv_handler.h"
 #include "gwp_asan/options.h"
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+#include "sanitizer_common/sanitizer_common.h"
+#include "sanitizer_common/sanitizer_flags.h"
+#include "sanitizer_common/sanitizer_stacktrace_printer.h"
+#include "sanitizer_common/sanitizer_symbolizer.h"
+#endif
 
 // RHEL creates the PRIu64 format macro (for printing uint64_t's) only when this
 // macro is defined before including <inttypes.h>.
@@ -97,10 +103,46 @@ void printHeader(Error E, uintptr_t AccessPtr,
         "has already been overwritten and is likely bogus)";
   }
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  if (E == Error::UNKNOWN) {
+    Printf("This may occur due to a wild memory access into the GWP-ASan pool, "
+           "or an overflow/underflow that is > 2048B in length."
+           "Wild memory access at 0x%zx by thread %s here:\n",
+           AccessPtr, ThreadBuffer);
+  } else {
+    Printf("%s%s at 0x%zx %sby thread %s here:\n", gwp_asan::ErrorToString(E),
+           OutOfBoundsAndUseAfterFreeWarning, AccessPtr, DescriptionBuffer,
+           ThreadBuffer);
+  }
+#else
   Printf("%s%s at 0x%zx %sby thread %s here:\n", gwp_asan::ErrorToString(E),
          OutOfBoundsAndUseAfterFreeWarning, AccessPtr, DescriptionBuffer,
          ThreadBuffer);
+#endif
 }
+
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+using namespace __sanitizer;
+
+static void PrintStackTrace(Printf_t Printf, size_t TraceLength,
+                            const uintptr_t *Trace) {
+  InternalScopedString frame_desc;
+  for (size_t i = 0; i < TraceLength; i++) {
+    const uintptr_t pc = Trace[i];
+    SymbolizedStack *frame = Symbolizer::GetOrInit()->SymbolizePC(pc);
+    if (!frame)
+      continue;
+    StackTracePrinter::GetOrInit()->RenderFrame(
+        &frame_desc, " #%n %p %F %L", static_cast<int>(i), frame->info.address,
+        &frame->info, common_flags()->symbolize_vs_style,
+        common_flags()->strip_path_prefix);
+    frame->ClearAll();
+
+    Printf("%s\n", frame_desc.data());
+    frame_desc.clear();
+  }
+}
+#endif
 
 static bool HasReportedBadPoolAccess = false;
 static const char *kUnknownCrashText =
@@ -149,10 +191,12 @@ void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
   ScopedEndOfReportDecorator Decorator(Printf);
 
   Error E = __gwp_asan_diagnose_error(State, Metadata, ErrorPtr);
+#if !defined(OHOS_LLVM) || !defined(__OHOS__)
   if (E == Error::UNKNOWN) {
     Printf(kUnknownCrashText);
     return;
   }
+#endif
 
   // Print the error header.
   printHeader(E, ErrorPtr, AllocMeta, Printf);
@@ -163,7 +207,11 @@ void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
   size_t TraceLength =
       SegvBacktrace(Trace, kMaximumStackFramesForCrashTrace, Context);
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  PrintStackTrace(Printf, TraceLength, Trace);
+#else
   PrintBacktrace(Trace, TraceLength, Printf);
+#endif
 
   // Maybe print the deallocation trace.
   if (__gwp_asan_is_deallocated(AllocMeta)) {
@@ -174,7 +222,11 @@ void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
       Printf("0x%zx was deallocated by thread %zu here:\n", ErrorPtr, ThreadID);
     TraceLength = __gwp_asan_get_deallocation_trace(
         AllocMeta, Trace, kMaximumStackFramesForCrashTrace);
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+    PrintStackTrace(Printf, TraceLength, Trace);
+#else
     PrintBacktrace(Trace, TraceLength, Printf);
+#endif
   }
 
   // Print the allocation trace.
@@ -185,7 +237,11 @@ void dumpReport(uintptr_t ErrorPtr, const gwp_asan::AllocatorState *State,
     Printf("0x%zx was allocated by thread %zu here:\n", ErrorPtr, ThreadID);
   TraceLength = __gwp_asan_get_allocation_trace(
       AllocMeta, Trace, kMaximumStackFramesForCrashTrace);
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+  PrintStackTrace(Printf, TraceLength, Trace);
+#else
   PrintBacktrace(Trace, TraceLength, Printf);
+#endif
 }
 
 struct sigaction PreviousHandler;
@@ -207,11 +263,20 @@ static bool sigSegvHandlerOhos(int sig, siginfo_t *info, void *ucontext) {
     uintptr_t FaultAddrUPtr = reinterpret_cast<uintptr_t>(FaultAddr);
 
     if (__gwp_asan_error_is_mine(State, FaultAddrUPtr)) {
+      if (FaultAddrUPtr == 0)
+        return false;
+
+      __sanitizer::ScopedErrorReportLock gwp_report_lock;
       GPAForSignalHandler->preCrashReport(FaultAddr);
       dumpReport(FaultAddrUPtr, State,
                  GPAForSignalHandler->getMetadataRegion(),
                  BacktraceForSignalHandler, PrintfForSignalHandler,
                  PrintBacktraceForSignalHandler, ucontext);
+
+      if (RecoverableSignal) {
+        GPAForSignalHandler->postCrashReportRecoverableOnly(FaultAddr);
+        return true;
+      }
     }
   }
   return false;
@@ -264,7 +329,7 @@ namespace segv_handler {
 #if defined(OHOS_LLVM) && defined(__OHOS__)
 void installSignalHandlersOhos(gwp_asan::GuardedPoolAllocator *GPA,
                               Printf_t Printf, PrintBacktrace_t PrintBacktrace,
-                              SegvBacktrace_t SegvBacktrace) {
+                              SegvBacktrace_t SegvBacktrace, bool Recoverable) {
   assert(GPA && "GPA wasn't provided to installSignalHandlers.");
   assert(Printf && "Printf wasn't provided to installSignalHandlers.");
   assert(PrintBacktrace &&
@@ -275,7 +340,7 @@ void installSignalHandlersOhos(gwp_asan::GuardedPoolAllocator *GPA,
   PrintfForSignalHandler = Printf;
   PrintBacktraceForSignalHandler = PrintBacktrace;
   BacktraceForSignalHandler = SegvBacktrace;
-  RecoverableSignal = false;
+  RecoverableSignal = Recoverable;
 
   struct signal_chain_action Action = {
       .sca_sigaction = sigSegvHandlerOhos,

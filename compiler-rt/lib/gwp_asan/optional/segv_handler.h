@@ -24,12 +24,17 @@ namespace segv_handler {
 void installSignalHandlers(gwp_asan::GuardedPoolAllocator *GPA, Printf_t Printf,
                            gwp_asan::backtrace::PrintBacktrace_t PrintBacktrace,
                            gwp_asan::backtrace::SegvBacktrace_t SegvBacktrace,
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+                           bool Recoverable = true);
+#else
                            bool Recoverable = false);
+#endif
 #if defined(OHOS_LLVM) && defined(__OHOS__)
 void installSignalHandlersOhos(
     gwp_asan::GuardedPoolAllocator *GPA, Printf_t Printf,
     gwp_asan::backtrace::PrintBacktrace_t PrintBacktrace,
-    gwp_asan::backtrace::SegvBacktrace_t SegvBacktrace);
+    gwp_asan::backtrace::SegvBacktrace_t SegvBacktrace,
+    bool Recoverable = true);
 #endif
 
 // Uninistall the signal handlers, test-only.

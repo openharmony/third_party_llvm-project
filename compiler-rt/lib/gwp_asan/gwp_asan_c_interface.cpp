@@ -34,6 +34,7 @@ typedef struct gwp_asan_option {
   gwp_asan::backtrace::SegvBacktrace_t segv_backtrace;
   int min_sample_size;
   const char *white_list_path;
+  bool gwp_asan_recoverable;
 } gwp_asan_option;
 
 void init_gwp_asan(void *init_options) {
@@ -56,7 +57,8 @@ void init_gwp_asan(void *init_options) {
   if (input_opts->install_signal_handlers) {
     gwp_asan::segv_handler::installSignalHandlersOhos(
         &guarded_pool_allocator, input_opts->gwp_asan_printf,
-        input_opts->printf_backtrace, input_opts->segv_backtrace);
+        input_opts->printf_backtrace, input_opts->segv_backtrace,
+        input_opts->gwp_asan_recoverable);
   }
 }
 
@@ -94,6 +96,14 @@ void gwp_asan_iterate(void *base, size_t size,
                        gwp_asan::GuardedPoolAllocator::iterate_callback cb,
                        void *arg) {
   guarded_pool_allocator.iterate(base, size, cb, arg);
+}
+
+size_t gwp_asan_collect_allocations_by_time_range(uint64_t timespan,
+                                                  uintptr_t *buffer,
+                                                  size_t max_count,
+                                                  size_t depth) {
+  return guarded_pool_allocator.collectAllocationsByTimeRange(
+      timespan, buffer, max_count, depth);
 }
 
 #ifdef __cplusplus

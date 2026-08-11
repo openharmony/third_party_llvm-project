@@ -2,6 +2,7 @@
 // RUN: %clang_hwasan %s -o %t
 // RUN: not %run %t 10 2>&1 | FileCheck %s --check-prefix=D10
 // RUN: not %run %t 42 2>&1 | FileCheck %s --check-prefix=D42
+// REQUIRES: !ohos_family
 
 #include <stdlib.h>
 #include <stdio.h>

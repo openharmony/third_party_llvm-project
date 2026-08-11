@@ -1,5 +1,15 @@
+# OHOS_LOCAL begin
+set(OHOS_TRANSFORM_UTILS_SOURCES)
+if(OHOS_LLVM)
+  list(APPEND OHOS_TRANSFORM_UTILS_SOURCES AddReferenceTrackingInfo.cpp)
+else()
+  set(LLVM_OPTIONAL_SOURCES AddReferenceTrackingInfo.cpp)
+endif()
+# OHOS_LOCAL end
+
 add_llvm_component_library(LLVMTransformUtils
   AddDiscriminators.cpp
+  ${OHOS_TRANSFORM_UTILS_SOURCES}
   AMDGPUEmitPrintf.cpp
   ASanStackFrameLayout.cpp
   AssumeBundleBuilder.cpp

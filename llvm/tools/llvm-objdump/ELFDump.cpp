@@ -238,9 +238,16 @@ template <class ELFT> void ELFDumper<ELFT>::printDynamicSection() {
 
     const char *Fmt =
         ELFT::Is64Bits ? "0x%016" PRIx64 "\n" : "0x%08" PRIx64 "\n";
+#ifndef OHOS_LLVM
     if (Dyn.d_tag == ELF::DT_NEEDED || Dyn.d_tag == ELF::DT_RPATH ||
         Dyn.d_tag == ELF::DT_RUNPATH || Dyn.d_tag == ELF::DT_SONAME ||
         Dyn.d_tag == ELF::DT_AUXILIARY || Dyn.d_tag == ELF::DT_FILTER) {
+#else /* OHOS_LLVM */
+    if (Dyn.d_tag == ELF::DT_NEEDED || Dyn.d_tag == ELF::DT_RPATH ||
+        Dyn.d_tag == ELF::DT_RUNPATH || Dyn.d_tag == ELF::DT_SONAME ||
+        Dyn.d_tag == ELF::DT_AUXILIARY || Dyn.d_tag == ELF::DT_FILTER ||
+        Dyn.d_tag == ELF::DT_OHOS_WEAK_LIBRARY) {
+#endif /* OHOS_LLVM */
       Expected<StringRef> StrTabOrErr = getDynamicStrTab(Elf);
       if (StrTabOrErr) {
         const char *Data = StrTabOrErr->data();

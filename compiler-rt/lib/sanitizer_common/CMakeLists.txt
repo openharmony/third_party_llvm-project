@@ -236,6 +236,8 @@ set(SANITIZER_CFLAGS ${SANITIZER_COMMON_CFLAGS})
 
 if(OHOS_LLVM AND OHOS)
   list(APPEND SANITIZER_CFLAGS -fno-emulated-tls)
+  list(APPEND SANITIZER_SYMBOLIZER_SOURCES
+    sanitizer_ffrt_coroutine_stack_ohos.cpp)
 endif()
 
 # Too many existing bugs, needs cleanup.

@@ -57,6 +57,11 @@ uptr kLowShadowEnd;
 uptr kHighShadowStart;
 uptr kHighShadowEnd;
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+static uptr hwasan_arkts_stub_start = UINTPTR_MAX;
+static uptr hwasan_arkts_stub_end = UINTPTR_MAX;
+#endif
+
 void Flags::SetDefaults() {
 #define HWASAN_FLAG(Type, Name, DefaultValue, Description) Name = DefaultValue;
 #include "hwasan_flags.inc"
@@ -73,7 +78,7 @@ static void RegisterHwasanFlags(FlagParser *parser, Flags *f) {
 #if SANITIZER_OHOS
 #define APPEND_BOOL_FLAG_CONTENT(defaultFlags, flags, S, param) \
   defaultFlags.Append(#S " is ");                               \
-  defaultFlags.Append(flags->S == param ? "true. " : "false. ");
+  defaultFlags.Append(flags->S == param ? "true. " : "false. ")
 #endif /* SANITIZER_OHOS */
 
 static void InitializeFlags() {
@@ -95,7 +100,8 @@ static void InitializeFlags() {
     // For now only tested on Linux and Fuchsia. Other plantforms can be turned
     // on as they become ready.
     constexpr bool can_detect_leaks =
-        (SANITIZER_LINUX && !SANITIZER_ANDROID) || SANITIZER_FUCHSIA;
+        (SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_OHOS) ||
+        SANITIZER_FUCHSIA;
     cf.detect_leaks = cf.detect_leaks && can_detect_leaks;
 
 #if SANITIZER_ANDROID
@@ -273,8 +279,13 @@ void HandleTagMismatch(AccessInfo ai, uptr pc, uptr frame, void *uc,
                        uptr *registers_frame) {
   InternalMmapVector<BufferedStackTrace> stack_buffer(1);
   BufferedStackTrace *stack = stack_buffer.data();
+  bool whether_unwind_fast = common_flags()->fast_unwind_on_fatal;
+#if SANITIZER_OHOS
+  whether_unwind_fast =
+      whether_unwind_fast || common_flags()->enable_unwind_arkts;
+#endif
   stack->Reset();
-  stack->Unwind(pc, frame, uc, common_flags()->fast_unwind_on_fatal);
+  stack->Unwind(pc, frame, uc, whether_unwind_fast);
 
   // The second stack frame contains the failure __hwasan_check function, as
   // we have a stack frame for the registers saved in __hwasan_tag_mismatch that
@@ -326,6 +337,10 @@ void __sanitizer::BufferedStackTrace::UnwindImpl(
     size = 0;
     return;
   }
+#if SANITIZER_OHOS
+  arkts_stub_start = Hwasan_get_arkts_stub_start();
+  arkts_stub_end = Hwasan_get_arkts_stub_end();
+#endif
   Unwind(max_depth, pc, bp, context, t->stack_top(), t->stack_bottom(),
          request_fast);
 }
@@ -796,6 +811,20 @@ void __hwasan_add_frame_record(u64 frame_record_info) {
 extern "C" {
 SANITIZER_INTERFACE_ATTRIBUTE SANITIZER_WEAK_ATTRIBUTE
 const char* __hwasan_default_options() { return ""; }
+}  // extern "C"
+#endif
+
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+extern "C" {
+SANITIZER_INTERFACE_ATTRIBUTE
+void __hwasan_set_arkts_stub_range(uptr start, uptr end) {
+  hwasan_arkts_stub_start = start;
+  hwasan_arkts_stub_end = end;
+}
+
+uptr Hwasan_get_arkts_stub_start() { return hwasan_arkts_stub_start; }
+
+uptr Hwasan_get_arkts_stub_end() { return hwasan_arkts_stub_end; }
 }  // extern "C"
 #endif
 

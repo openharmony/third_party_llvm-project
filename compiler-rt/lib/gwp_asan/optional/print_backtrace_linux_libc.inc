@@ -1,4 +1,6 @@
 #if defined(OHOS_LLVM) && defined(__OHOS__)
+#ifndef PRINT_BACKTRACE_LINUX_LIBC
+#define PRINT_BACKTRACE_LINUX_LIBC
 //===-- print_backtrace_linux_libc.inc --------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -43,4 +45,5 @@ void PrintBacktrace(uintptr_t *Trace, size_t TraceLength,
     free(BacktraceSymbols);
 }
 } // anonymous namespace
+#endif // PRINT_BACKTRACE_LINUX_LIBC
 #endif // defined(OHOS_LLVM) && defined(__OHOS__)

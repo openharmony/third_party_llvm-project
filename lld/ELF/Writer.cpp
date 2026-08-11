@@ -11,6 +11,9 @@
 #include "ARMErrataFix.h"
 #include "BPSectionOrderer.h"
 #include "CallGraphSort.h"
+#ifdef OHOS_LLVM
+#include "CodeSign.h"
+#endif /* OHOS_LLVM */
 #include "Config.h"
 #include "InputFiles.h"
 #include "LinkerScript.h"
@@ -30,12 +33,21 @@
 #include "llvm/Support/BLAKE3.h"
 #include "llvm/Support/Parallel.h"
 #include "llvm/Support/RandomNumberGenerator.h"
+#ifdef OHOS_LLVM
+#include "llvm/Support/SHA256.h"
+#endif /* OHOS_LLVM */
 #include "llvm/Support/TimeProfiler.h"
 #include "llvm/Support/xxhash.h"
+#ifdef OHOS_LLVM
+#include <array>
+#endif /* OHOS_LLVM */
 #include <climits>
 
 #define DEBUG_TYPE "lld"
 
+#ifdef OHOS_LLVM
+using namespace FsVerityCodeSign;
+#endif /* OHOS_LLVM */
 using namespace llvm;
 using namespace llvm::ELF;
 using namespace llvm::object;
@@ -81,6 +93,9 @@ private:
   void writeSections();
   void writeSectionsBinary();
   void writeBuildId();
+#ifdef OHOS_LLVM
+  void writeSelfSign();
+#endif /* OHOS_LLVM */
 
   Ctx &ctx;
   std::unique_ptr<FileOutputBuffer> &buffer;
@@ -381,6 +396,11 @@ template <class ELFT> void Writer<ELFT>::run() {
     // Backfill .note.gnu.build-id section content. This is done at last
     // because the content is usually a hash value of the entire output file.
     writeBuildId();
+#ifdef OHOS_LLVM
+    // Backfill .codesign section content.
+    if (ctx.arg.codeSign)
+      writeSelfSign();
+#endif /* OHOS_LLVM */
     if (errCount(ctx))
       return;
 
@@ -3100,6 +3120,57 @@ template <class ELFT> void Writer<ELFT>::writeBuildId() {
   for (Partition &part : ctx.partitions)
     part.buildId->writeBuildId(output);
 }
+
+#ifdef OHOS_LLVM
+template <class ELFT> void Writer<ELFT>::writeSelfSign() {
+  std::unique_ptr<CodeSign> builder = std::make_unique<CodeSign>(CodeSign());
+
+  // Get the file offset of .codesign section in the ELF file.
+  // parent->offset is the starting position of the output section in the file.
+  // outSecOff is the offset of .codesign within its parent output section.
+  OutputSection *parent = ctx.in.codesign->getParent();
+  size_t offset = parent->offset + ctx.in.codesign->outSecOff;
+  llvm::ArrayRef<uint8_t> input{ctx.bufferStart, size_t(fileSize)};
+
+  // Initialize FsVerity descriptor structure.
+  FsVerity fsVerity{};
+  fsVerity.version = FsVerityConstants::VERSION;
+  fsVerity.hashAlgorithm = FsVerityConstants::SHA256_ALGORITHM;
+  fsVerity.log2BlockSize = FsVerityConstants::LOG_2_OF_FSVERITY_HASH_PAGE_SIZE;
+  fsVerity.fileSize = fileSize;
+
+  // Generate Merkle tree and obtain root hash.
+  // offset parameter is used to exclude .codesign section itself during
+  // calculation.
+  auto rootHash = builder->generateMerkleTreeRootHash(input, fileSize, offset);
+  memcpy(fsVerity.rawRootHash, rootHash.data(),
+         FsVerityConstants::ROOT_HASH_SIZE);
+
+  fsVerity.flag = FsVerityConstants::FLAG_SELF_SIGN;
+  fsVerity.csVersion = FsVerityConstants::ELF_CODE_SIGN_VERSION;
+
+  // Perform SHA256 hash on the FsVerity descriptor itself to generate
+  // signature.
+  std::array<uint8_t, FsVerityConstants::DESCRIPTOR_SIZE> fsVerityBuffer;
+  memcpy(fsVerityBuffer.data(), &fsVerity, sizeof(fsVerityBuffer));
+  ArrayRef<uint8_t> block(fsVerityBuffer.data(),
+                          FsVerityConstants::DESCRIPTOR_SIZE);
+  std::array<uint8_t, 32> hash = SHA256::hash(block);
+  fsVerity.signSize = hash.size();
+
+  // Build the final FsVerityWithSign structure.
+  FsVerityWithSign fsWithSign{};
+  fsWithSign.type = FsVerityConstants::FS_VERITY_DESCRIPTOR_TYPE;
+  fsWithSign.length = FsVerityConstants::DESCRIPTOR_SIZE + hash.size();
+  fsWithSign.fsVerity = fsVerity;
+  llvm::copy(hash, fsWithSign.signature);
+
+  // Write complete signature data to .codesign section.
+  std::array<uint8_t, sizeof(FsVerityWithSign)> buffer;
+  memcpy(buffer.data(), &fsWithSign, sizeof(fsWithSign));
+  ctx.in.codesign->writeCodeSignSection(buffer.data(), sizeof(fsWithSign));
+}
+#endif /* OHOS_LLVM */
 
 template void elf::writeResult<ELF32LE>(Ctx &);
 template void elf::writeResult<ELF32BE>(Ctx &);

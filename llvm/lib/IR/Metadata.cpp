@@ -1660,6 +1660,10 @@ void Instruction::dropUnknownNonDebugMetadata(ArrayRef<unsigned> KnownIDs) {
 
   // A DIAssignID attachment is debug metadata, don't drop it.
   KnownSet.insert(LLVMContext::MD_DIAssignID);
+#ifdef OHOS_LLVM
+  // Preserve memtracer metadata for reference-tracking / memgraph.
+  KnownSet.insert(LLVMContext::MD_memtracer);
+#endif /* OHOS_LLVM */
 
   Value::eraseMetadataIf([&KnownSet](unsigned MDKind, MDNode *Node) {
     return !KnownSet.count(MDKind);
@@ -1778,6 +1782,13 @@ AAMDNodes Instruction::getAAMetadata() const {
     Result.TBAAStruct = Info.lookup(LLVMContext::MD_tbaa_struct);
     Result.Scope = Info.lookup(LLVMContext::MD_alias_scope);
     Result.NoAlias = Info.lookup(LLVMContext::MD_noalias);
+#ifdef OHOS_LLVM
+    // Get memtracer metadata for reference-tracking / memgraph.
+    // getModule() requires a parent BB; skip for not-yet-inserted instructions.
+    if (getParent() && getModule() &&
+        getModule()->getModuleFlag("ReferenceTracking"))
+      Result.MemTracer = Info.lookup(LLVMContext::MD_memtracer);
+#endif /* OHOS_LLVM */
   }
   return Result;
 }
@@ -1787,6 +1798,14 @@ void Instruction::setAAMetadata(const AAMDNodes &N) {
   setMetadata(LLVMContext::MD_tbaa_struct, N.TBAAStruct);
   setMetadata(LLVMContext::MD_alias_scope, N.Scope);
   setMetadata(LLVMContext::MD_noalias, N.NoAlias);
+#ifdef OHOS_LLVM
+  // Set memtracer metadata for reference-tracking / memgraph.
+  // getModule() requires a parent BB; skip for not-yet-inserted instructions
+  // (e.g. BPFPreserveStaticOffset makeGEPAnd{Load,Store}).
+  if (getParent() && getModule() &&
+      getModule()->getModuleFlag("ReferenceTracking"))
+    setMetadata(LLVMContext::MD_memtracer, N.MemTracer);
+#endif /* OHOS_LLVM */
 }
 
 void Instruction::setNoSanitizeMetadata() {

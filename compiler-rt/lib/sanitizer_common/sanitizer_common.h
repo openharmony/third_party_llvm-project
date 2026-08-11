@@ -970,6 +970,10 @@ inline void AndroidLogInit() {}
 inline void SetAbortMessage(const char *) {}
 #endif
 
+#if SANITIZER_OHOS
+void SanitizerInitializeArkTsUnwinder();
+#endif
+
 inline uptr GetPthreadDestructorIterations() {
 #if SANITIZER_POSIX
   return 4;

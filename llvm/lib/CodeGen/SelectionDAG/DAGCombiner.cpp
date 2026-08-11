@@ -22148,6 +22148,21 @@ bool DAGCombiner::tryStoreMergeOfLoads(SmallVectorImpl<MemOpLink> &StoreNodes,
 
     StMMOFlags |= TLI.getTargetMMOFlags(*StoreNodes[0].MemNode);
 
+#ifdef OHOS_LLVM
+    AAMDNodes AAInfo = AAMDNodes();
+    // Propagate memtracer metadata during store merging.
+    // If multiple stores have memtracer metadata, pick the first one.
+    if (DAG.getMachineFunction().getFunction().hasFnAttribute(
+            "reference-tracking")) {
+      for (unsigned i = 0; i < NumElem; ++i) {
+        if (MDNode *MemTracer = StoreNodes[i].MemNode->getAAInfo().MemTracer) {
+          AAInfo.setMemTracer(MemTracer);
+          break;
+        }
+      }
+    }
+#endif /* OHOS_LLVM */
+
     SDValue NewLoad, NewStore;
     if (UseVectorTy || !DoIntegerTruncate) {
       NewLoad = DAG.getLoad(
@@ -22163,11 +22178,19 @@ bool DAGCombiner::tryStoreMergeOfLoads(SmallVectorImpl<MemOpLink> &StoreNodes,
         // Target can convert to the identical ROTR if it does not have ROTL.
         StoreOp = DAG.getNode(ISD::ROTL, LoadDL, JointMemOpVT, NewLoad, RotAmt);
       }
+#ifdef OHOS_LLVM
+      NewStore = DAG.getStore(
+          NewStoreChain, StoreDL, StoreOp, FirstInChain->getBasePtr(),
+          CanReusePtrInfo ? FirstInChain->getPointerInfo()
+                          : MachinePointerInfo(FirstStoreAS),
+          FirstStoreAlign, StMMOFlags, AAInfo);
+#else
       NewStore = DAG.getStore(
           NewStoreChain, StoreDL, StoreOp, FirstInChain->getBasePtr(),
           CanReusePtrInfo ? FirstInChain->getPointerInfo()
                           : MachinePointerInfo(FirstStoreAS),
           FirstStoreAlign, StMMOFlags);
+#endif /* OHOS_LLVM */
     } else { // This must be the truncstore/extload case
       EVT ExtendedTy =
           TLI.getTypeToTransformTo(*DAG.getContext(), JointMemOpVT);
@@ -22175,12 +22198,21 @@ bool DAGCombiner::tryStoreMergeOfLoads(SmallVectorImpl<MemOpLink> &StoreNodes,
                                FirstLoad->getChain(), FirstLoad->getBasePtr(),
                                FirstLoad->getPointerInfo(), JointMemOpVT,
                                FirstLoadAlign, LdMMOFlags);
+#ifdef OHOS_LLVM
+      NewStore = DAG.getTruncStore(
+          NewStoreChain, StoreDL, NewLoad, FirstInChain->getBasePtr(),
+          CanReusePtrInfo ? FirstInChain->getPointerInfo()
+                          : MachinePointerInfo(FirstStoreAS),
+          JointMemOpVT, FirstInChain->getAlign(),
+          FirstInChain->getMemOperand()->getFlags(), AAInfo);
+#else
       NewStore = DAG.getTruncStore(
           NewStoreChain, StoreDL, NewLoad, FirstInChain->getBasePtr(),
           CanReusePtrInfo ? FirstInChain->getPointerInfo()
                           : MachinePointerInfo(FirstStoreAS),
           JointMemOpVT, FirstInChain->getAlign(),
           FirstInChain->getMemOperand()->getFlags());
+#endif /* OHOS_LLVM */
     }
 
     // Transfer chain users from old loads to the new load.

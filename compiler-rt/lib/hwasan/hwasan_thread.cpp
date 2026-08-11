@@ -54,9 +54,16 @@ void Thread::Init(uptr stack_buffer_start, uptr stack_buffer_size,
   // Source set tid_=GetTid() for all threads incl. main; reuse os_id_.
   os_id_ = GetTid();
 
-  if (auto sz = IsMainThread() ? flags()->heap_history_size_main_thread
-                               : flags()->heap_history_size)
-    heap_allocations_ = HeapAllocationsRingBuffer::New(sz);
+  uptr block_size;
+  uptr block_num;
+  if (IsMainThread()) {
+    block_size = flags()->heap_history_size_main_thread;
+    block_num = flags()->heap_history_block_max_num_main_thread;
+  } else {
+    block_size = flags()->heap_history_size;
+    block_num = flags()->heap_history_block_max_num;
+  }
+  heap_allocations_ = HeapAllocationsRingBuffer::New(block_size, block_num);
   trace_heap_allocation_ = true;
   heap_quarantine_controller()->Init();
 #endif /* SANITIZER_OHOS */
@@ -89,6 +96,17 @@ void Thread::InitStackRingBuffer(uptr stack_buffer_start,
   // The following implicitly sets (this) as the current thread.
   stack_allocations_ = new (ThreadLong)
       StackAllocationsRingBuffer((void *)stack_buffer_start, stack_buffer_size);
+#if SANITIZER_OHOS
+  // For compatibility reason, we keep the tls variable hwasan_tls.
+  // but the problem is both of the thread variable store the stack
+  // records to the same address but this two action will not synchronize
+  // with each other. So if there are A.so use hwasan_tls and B.so use
+  // tp - 144, the stack records will overlap. Currently the stack
+  // records record by tp - 144 share the same ring as __hwasan_tls: the slot
+  // stores a pointer to &__hwasan_tls, not a separate stack-allocation ring.
+  uptr *ThreadLongWithoutTls = GetCurrentThreadLongPtrWithoutTls();
+  *ThreadLongWithoutTls = (uptr)GetCurrentThreadLongPtr();
+#endif
   // Check that it worked.
   CHECK_EQ(GetCurrentThread(), this);
 
@@ -133,6 +151,9 @@ void Thread::Destroy() {
   // TSD destructors are done.
   CHECK_EQ(GetCurrentThread(), this);
   *GetCurrentThreadLongPtr() = 0;
+#if SANITIZER_OHOS
+  *GetCurrentThreadLongPtrWithoutTls() = 0;
+#endif
 }
 
 void Thread::Print(const char *Prefix) {
@@ -141,14 +162,18 @@ void Thread::Print(const char *Prefix) {
          (void *)this, stack_bottom(), stack_top(),
          stack_top() - stack_bottom(), tls_begin(), tls_end());
 #else /* SANITIZER_OHOS */
-  Printf("%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p) rb:(%zd/%u) "
-         "records(%llu/o:%llu) tid: %d\n",
-         Prefix, unique_id_, (void *)this, stack_bottom(), stack_top(),
-         stack_top() - stack_bottom(), tls_begin(), tls_end(),
-         heap_allocations() ? heap_allocations()->realsize() : 0,
-         IsMainThread() ? flags()->heap_history_size_main_thread
-                        : flags()->heap_history_size,
-         all_record_count_, all_record_count_overflow_, tid());
+  Printf(
+      "%sT%zd %p stack: [%p,%p) sz: %zd tls: [%p,%p) rb:(%llu/%llu/%llu) "
+      "records(%llu/o:%llu) tid: %d\n",
+      Prefix, unique_id_, (void *)this, stack_bottom(), stack_top(),
+      stack_top() - stack_bottom(), tls_begin(), tls_end(),
+      heap_allocations() ? heap_allocations()->realsize() : 0,
+      heap_allocations() ? heap_allocations()->size() : 0,
+      IsMainThread() ? (uptr)flags()->heap_history_size_main_thread *
+                           flags()->heap_history_block_max_num_main_thread
+                     : (uptr)flags()->heap_history_size *
+                           flags()->heap_history_block_max_num,
+      all_record_count_, all_record_count_overflow_, tid());
 #endif /* SANITIZER_OHOS */
 }
 

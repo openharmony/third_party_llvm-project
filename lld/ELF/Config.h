@@ -56,6 +56,9 @@ struct Partition;
 struct PhdrEntry;
 
 class BssSection;
+#ifdef OHOS_LLVM
+class CodeSignSection;
+#endif /* OHOS_LLVM */
 class GdbIndexSection;
 class GotPltSection;
 class GotSection;
@@ -270,6 +273,9 @@ struct Config {
   std::string rpath;
   llvm::SmallVector<VersionDefinition, 0> versionDefinitions;
   llvm::SmallVector<llvm::StringRef, 0> auxiliaryList;
+#ifdef OHOS_LLVM
+  llvm::SmallVector<llvm::StringRef, 0> weakLibrary;
+#endif /* OHOS_LLVM */
   llvm::SmallVector<llvm::StringRef, 0> filterList;
   llvm::SmallVector<llvm::StringRef, 0> passPlugins;
   llvm::SmallVector<llvm::StringRef, 0> searchPaths;
@@ -450,6 +456,7 @@ struct Config {
 #ifdef OHOS_LLVM
   unsigned ltos = 0;
   bool mergeFunctions = false;
+  bool codeSign = false;
 #endif /* OHOS_LLVM */
   llvm::CodeGenOptLevel ltoCgo;
   unsigned optimize;
@@ -603,6 +610,9 @@ struct InStruct {
   std::unique_ptr<StringTableSection> strTab;
   std::unique_ptr<SymbolTableBaseSection> symTab;
   std::unique_ptr<SymtabShndxSection> symTabShndx;
+#ifdef OHOS_LLVM
+  std::unique_ptr<CodeSignSection> codesign;
+#endif /* OHOS_LLVM */
 };
 
 struct Ctx : CommonLinkerContext {

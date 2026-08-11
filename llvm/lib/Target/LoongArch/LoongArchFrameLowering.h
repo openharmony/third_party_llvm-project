@@ -14,6 +14,9 @@
 #define LLVM_LIB_TARGET_LOONGARCH_LOONGARCHFRAMELOWERING_H
 
 #include "llvm/CodeGen/TargetFrameLowering.h"
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+#include "llvm/TargetParser/Triple.h"
+#endif
 
 namespace llvm {
 class LoongArchSubtarget;
@@ -30,6 +33,10 @@ public:
 
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+#if defined(OHOS_LLVM) && defined(ARK_GC_SUPPORT)
+  Triple::ArchType GetArkSupportTarget() const override;
+  int GetFixedFpPosition() const override;
+#endif
 
   void determineCalleeSaves(MachineFunction &MF, BitVector &SavedRegs,
                             RegScavenger *RS) const override;

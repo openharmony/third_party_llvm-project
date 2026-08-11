@@ -392,6 +392,20 @@ void BuildIdSection::writeBuildId(ArrayRef<uint8_t> buf) {
   memcpy(hashBuf, buf.data(), hashSize);
 }
 
+#ifdef OHOS_LLVM
+CodeSignSection::CodeSignSection(Ctx &ctx)
+    : SyntheticSection(ctx, ".codesign", SHT_PROGBITS, 0, 4096) {}
+
+void CodeSignSection::writeTo(uint8_t *buf) {
+  memset(buf, 0x0, getSize());
+  hashBuf = buf;
+}
+
+void CodeSignSection::writeCodeSignSection(uint8_t *buf, size_t size) {
+  memcpy(hashBuf, buf, size);
+}
+#endif /* OHOS_LLVM */
+
 BssSection::BssSection(Ctx &ctx, StringRef name, uint64_t size,
                        uint32_t alignment)
     : SyntheticSection(ctx, name, SHT_NOBITS, SHF_ALLOC | SHF_WRITE,
@@ -1456,9 +1470,24 @@ DynamicSection<ELFT>::computeContents() {
     addInt(ctx.arg.enableNewDtags ? DT_RUNPATH : DT_RPATH,
            part.dynStrTab->addString(ctx.arg.rpath));
 
+#ifndef OHOS_LLVM
   for (SharedFile *file : ctx.sharedFiles)
     if (file->isNeeded)
       addInt(DT_NEEDED, part.dynStrTab->addString(file->soName));
+#else /* OHOS_LLVM */
+  for (SharedFile *file : ctx.sharedFiles) {
+    if (file->isNeeded) {
+      StringRef fileSoName = file->soName;
+      // If this dylib is set as weak-library, we don't place it in DT_NEEDED
+      // rather in DT_OHOS_WEAK_LIBRARY.
+      if (llvm::any_of(ctx.arg.weakLibrary,
+                       [&](StringRef s) { return fileSoName == s; }))
+        addInt(DT_OHOS_WEAK_LIBRARY, part.dynStrTab->addString(fileSoName));
+      else
+        addInt(DT_NEEDED, part.dynStrTab->addString(fileSoName));
+    }
+  }
+#endif /* OHOS_LLVM */
 
   if (isMain) {
     if (!ctx.arg.soName.empty())
@@ -5070,6 +5099,13 @@ template <class ELFT> void elf::createSyntheticSections(Ctx &ctx) {
     add(*ctx.in.shStrTab);
   if (ctx.in.strTab)
     add(*ctx.in.strTab);
+
+#ifdef OHOS_LLVM
+  if (ctx.arg.codeSign) {
+    ctx.in.codesign = std::make_unique<CodeSignSection>(ctx);
+    add(*ctx.in.codesign);
+  }
+#endif /* OHOS_LLVM */
 }
 
 template void elf::splitSections<ELF32LE>(Ctx &);

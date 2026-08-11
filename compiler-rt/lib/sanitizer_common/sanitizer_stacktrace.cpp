@@ -94,14 +94,32 @@ static inline uhwptr *GetCanonicFrame(uptr bp,
 #endif
 }
 
+#if !SANITIZER_OHOS
 void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
                                     uptr stack_bottom, u32 max_depth) {
+#else
+void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
+                                    uptr stack_bottom, u32 max_depth,
+                                    bool allow_ffrt_resolve) {
+  is_fast = true;
+#endif
   // TODO(yln): add arg sanity check for stack_top/stack_bottom
   CHECK_GE(max_depth, 2);
   const uptr kPageSize = GetPageSizeCached();
   trace_buffer[0] = pc;
+#if SANITIZER_OHOS
+  frame_buffer[0] = bp;
+#endif
   size = 1;
   if (stack_top < 4096) return;  // Sanity check for stack top.
+#if SANITIZER_OHOS
+  const bool bp_in_thread_stack =
+      bp != 0 && stack_bottom < stack_top && bp >= stack_bottom &&
+      bp < stack_top;
+  if (!bp_in_thread_stack)
+    MaybeGetFfrtCoroutineStackBounds(bp, &stack_bottom, &stack_top,
+                                     allow_ffrt_resolve);
+#endif
   uhwptr *frame = GetCanonicFrame(bp, stack_top, stack_bottom);
   // Lowest possible address that makes sense as the next frame pointer.
   // Goes up as we walk the stack.
@@ -133,7 +151,20 @@ void BufferedStackTrace::UnwindFast(uptr pc, uptr bp, uptr stack_top,
     if (pc1 < kPageSize)
       break;
     if (pc1 != pc) {
+#if SANITIZER_OHOS
+      frame_buffer[size] = (uptr)frame[0];
+#endif
       trace_buffer[size++] = (uptr) pc1;
+#if SANITIZER_OHOS
+      if (common_flags()->enable_unwind_arkts && pc1 != pc &&
+          arkts_stub_start != UINTPTR_MAX &&
+          arkts_stub_end != UINTPTR_MAX &&
+          pc1 >= arkts_stub_start && pc1 < arkts_stub_end &&
+          IsValidFrame(*(uptr *)frame_buffer[size - 1], stack_top, bottom)) {
+        UnwindIfArkts(max_depth, stack_top, bottom);
+        break;
+      }
+#endif
     }
     bottom = (uptr)frame;
 #if defined(__loongarch__) || defined(__riscv)

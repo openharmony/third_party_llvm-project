@@ -179,6 +179,21 @@ private:
   uint8_t *hashBuf;
 };
 
+#ifdef OHOS_LLVM
+// .codesign section.
+class CodeSignSection : public SyntheticSection {
+public:
+  CodeSignSection(Ctx &);
+  void writeTo(uint8_t *buf) override;
+  bool isNeeded() const override { return ctx.arg.codeSign; }
+  size_t getSize() const override { return 4096; }
+  void writeCodeSignSection(uint8_t *buf, size_t size);
+
+private:
+  uint8_t *hashBuf;
+};
+#endif /* OHOS_LLVM */
+
 // BssSection is used to reserve space for copy relocations and common symbols.
 // We create three instances of this class for .bss, .bss.rel.ro and "COMMON",
 // that are used for writable symbols, read-only symbols and common symbols,
