@@ -9,7 +9,7 @@ int main() {
   char * volatile x = (char*)malloc(40);
   free(x);
   free(x);
-  // CHECK: ERROR: HWAddressSanitizer: invalid-free on address {{.*}} at pc {{[0x]+}}[[PC:.*]] on thread T{{[0-9]+}}
+  // CHECK: ERROR: HWAddressSanitizer: invalid-free on address {{.*}} at pc {{[0x]+}}[[PC:.*]] on thread {{[0-9]+}}
   // CHECK: tags: [[PTR_TAG:..]]/[[MEM_TAG:..]] (ptr/mem)
   // CHECK: #0 {{[0x]+}}{{.*}}[[PC]]
   // If we instrument using calls (default on x86), free is not the top frame

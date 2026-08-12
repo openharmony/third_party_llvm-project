@@ -37,6 +37,56 @@ using namespace __sanitizer;
 
 namespace __hwasan {
 
+#if SANITIZER_OHOS
+// ohos_dfx_log flushes on "End Hwasan report" via dlopen/WriteSanitizerLog and
+// is explicitly not async-signal-safe. Defer Report("End...") + Die() until
+// after sigreturn. Inline recover brk (compiler-emitted) does not call
+// FinishDeferred; HwasanOnSIGTRAP arms __hwasan_after_sigtrap_trampoline so
+// deferred work runs in normal context, then control resumes at brk+4.
+// hwasan_checks.h SigTrap also calls FinishDeferred (no-op if trampoline ran).
+static thread_local int hwasan_sigtrap_depth;
+static thread_local bool hwasan_pending_end_report;
+static thread_local bool hwasan_pending_die;
+static thread_local uptr hwasan_sigtrap_continue_pc;
+
+extern "C" void __hwasan_after_sigtrap_trampoline();
+
+void EnterHwasanSigTrapHandler() { ++hwasan_sigtrap_depth; }
+
+void LeaveHwasanSigTrapHandler() {
+  if (hwasan_sigtrap_depth > 0)
+    --hwasan_sigtrap_depth;
+}
+
+bool HwasanHasDeferredReportAfterSigTrap() {
+  return hwasan_pending_end_report || hwasan_pending_die;
+}
+
+void HwasanArmSigTrapDeferredTrampoline(uptr *pc) {
+  hwasan_sigtrap_continue_pc = *pc;
+  *pc = (uptr)&__hwasan_after_sigtrap_trampoline;
+}
+
+void FinishDeferredHwasanReportAfterSigTrap() {
+  if (!hwasan_pending_end_report && !hwasan_pending_die)
+    return;
+  const bool need_end = hwasan_pending_end_report;
+  const bool need_die = hwasan_pending_die;
+  hwasan_pending_end_report = false;
+  hwasan_pending_die = false;
+  if (need_end)
+    Report("End Hwasan report\n");
+  if (need_die)
+    Die();
+}
+
+uptr ConsumeSigTrapContinuePC() {
+  uptr p = hwasan_sigtrap_continue_pc;
+  hwasan_sigtrap_continue_pc = 0;
+  return p;
+}
+#endif /* SANITIZER_OHOS */
+
 class ScopedReport {
  public:
   explicit ScopedReport(bool fatal) : fatal(fatal) {
@@ -60,10 +110,22 @@ class ScopedReport {
         (fatal && common_flags()->print_module_map))
       DumpProcessMap();
 #if SANITIZER_OHOS
-    Report("End Hwasan report\n");
-#endif
+    // DFX requires Report("End Hwasan report\n") so ohos_dfx_log flushes.
+    // Never call it from the SIGTRAP handler: write_to_dfx/dlopen can deadlock.
+    // Defer until FinishDeferredHwasanReportAfterSigTrap after brk returns.
+    if (hwasan_sigtrap_depth > 0) {
+      hwasan_pending_end_report = true;
+      if (fatal)
+        hwasan_pending_die = true;
+    } else {
+      Report("End Hwasan report\n");
+      if (fatal)
+        Die();
+    }
+#else
     if (fatal)
       Die();
+#endif
   }
 
   static void MaybeAppendToErrorMessage(const char *msg) {
@@ -170,6 +232,7 @@ class Decorator: public __sanitizer::SanitizerCommonDecorator {
 };
 }  // namespace
 
+#if !SANITIZER_OHOS
 static bool FindHeapAllocation(HeapAllocationsRingBuffer *rb, uptr tagged_addr,
                                HeapAllocationRecord *har, uptr *ring_index,
                                uptr *num_matching_addrs,
@@ -208,6 +271,7 @@ static bool FindHeapAllocation(HeapAllocationsRingBuffer *rb, uptr tagged_addr,
   }
   return false;
 }
+#endif /* !SANITIZER_OHOS */
 
 static void PrintStackAllocations(const StackAllocationsRingBuffer *sa,
                                   tag_t addr_tag, uptr untagged_addr) {
@@ -482,6 +546,7 @@ static uptr GetTopPc(const StackTrace *stack) {
 namespace {
 class BaseReport {
  public:
+#if !SANITIZER_OHOS
   BaseReport(StackTrace *stack, bool fatal, uptr tagged_addr, uptr access_size)
       : scoped_report(fatal),
         stack(stack),
@@ -494,6 +559,35 @@ class BaseReport {
         allocations(CopyAllocations()),
         candidate(FindBufferOverflowCandidate()),
         shadow(CopyShadow()) {}
+#else
+  // Keep large allocation histories off the stack (SIGTRAP/recover paths).
+  static constexpr uptr kMaxStackAllocationsStored = 16;
+  static constexpr uptr kMaxHeapAllocationsStored = 256;
+
+  BaseReport(StackTrace *stack, bool fatal, uptr tagged_addr, uptr access_size)
+      : stack_allocations_storage(AllocateStackStorage()),
+        heap_allocations_storage(AllocateHeapStorage()),
+        scoped_report(fatal),
+        stack(stack),
+        tagged_addr(tagged_addr),
+        access_size(access_size),
+        untagged_addr(UntagAddr(tagged_addr)),
+        ptr_tag(GetTagFromPointer(tagged_addr)),
+        mismatch_offset(FindMismatchOffset()),
+        heap(CopyHeapChunk()),
+        allocations(CopyAllocations()),
+        candidate(FindBufferOverflowCandidate()),
+        shadow(CopyShadow()) {}
+
+  ~BaseReport() {
+    for (uptr i = 0; i < kMaxStackAllocationsStored; ++i)
+      stack_allocations_storage[i].~SavedStackAllocations();
+    UnmapOrDie(stack_allocations_storage,
+               sizeof(SavedStackAllocations) * kMaxStackAllocationsStored);
+    UnmapOrDie(heap_allocations_storage,
+               sizeof(HeapAllocation) * kMaxHeapAllocationsStored);
+  }
+#endif /* SANITIZER_OHOS */
 
  protected:
   struct OverflowCandidate {
@@ -559,9 +653,27 @@ class BaseReport {
   void PrintHeapOrGlobalCandidate() const;
   void PrintTags(uptr addr) const;
 
+#if !SANITIZER_OHOS
   SavedStackAllocations stack_allocations_storage[16];
   HeapAllocation heap_allocations_storage[256];
-#if SANITIZER_OHOS
+#else
+  static SavedStackAllocations *AllocateStackStorage() {
+    auto *p = (SavedStackAllocations *)MmapOrDie(
+        sizeof(SavedStackAllocations) * kMaxStackAllocationsStored,
+        "hwasan.stack_allocations_storage");
+    for (uptr i = 0; i < kMaxStackAllocationsStored; ++i)
+      new (p + i) SavedStackAllocations();
+    return p;
+  }
+
+  static HeapAllocation *AllocateHeapStorage() {
+    return (HeapAllocation *)MmapOrDie(
+        sizeof(HeapAllocation) * kMaxHeapAllocationsStored,
+        "hwasan.heap_allocations_storage");
+  }
+
+  SavedStackAllocations *stack_allocations_storage;
+  HeapAllocation *heap_allocations_storage;
   uptr record_searched_ = 0;
   uptr record_matched_ = 0;
 #endif /* SANITIZER_OHOS */
@@ -674,12 +786,12 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
   uptr stack_allocations_count = 0;
   uptr heap_allocations_count = 0;
   hwasanThreadList().VisitAllLiveThreads([&](Thread *t) {
+#if !SANITIZER_OHOS
     if (stack_allocations_count < ARRAY_SIZE(stack_allocations_storage) &&
         t->AddrIsInStack(untagged_addr)) {
       stack_allocations_storage[stack_allocations_count++].CopyFrom(t);
     }
 
-#if !SANITIZER_OHOS
     if (heap_allocations_count < ARRAY_SIZE(heap_allocations_storage)) {
       // Scan all threads' ring buffers to find if it's a heap-use-after-free.
       HeapAllocationRecord har;
@@ -695,7 +807,11 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
         ha.free_thread_id = t->unique_id();
       }
     }
-#else /* SANITIZER_OHOS */
+#else
+    if (stack_allocations_count < kMaxStackAllocationsStored &&
+        t->AddrIsInStack(untagged_addr)) {
+      stack_allocations_storage[stack_allocations_count++].CopyFrom(t);
+    }
     // Collect all matching UAF records (up to storage cap). Disable tracing
     // while scanning to avoid re-entrant ring pushes from report printing.
     auto *rb = t->heap_allocations();
@@ -706,7 +822,7 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
         t->IsMainThread() ? flags()->heap_history_size_main_thread
                           : flags()->heap_history_size;
     for (uptr i = 0, size = rb->realsize(); i < size; i++) {
-      if (heap_allocations_count >= ARRAY_SIZE(heap_allocations_storage))
+      if (heap_allocations_count >= kMaxHeapAllocationsStored)
         break;
       auto h = (*rb)[i];
       record_searched_++;
@@ -741,7 +857,7 @@ BaseReport::Allocations BaseReport::CopyAllocations() {
       return;
     const uptr history_size = rb->size();
     for (uptr i = 0, size = rb->realsize(); i < size; i++) {
-      if (heap_allocations_count >= ARRAY_SIZE(heap_allocations_storage))
+      if (heap_allocations_count >= kMaxHeapAllocationsStored)
         break;
       auto h = (*rb)[i];
       record_searched_++;
@@ -1010,13 +1126,13 @@ void BaseReport::PrintAddressDescription() const {
       if (ha.from_freed_thread) {
         Printf(
             "%p (Previously freed thread ptr tags: %02x) is located %zd "
-            "bytes inside of %zd-byte region [%p,%p)\n",
+            "bytes inside a %zd-byte region [%p,%p)\n",
             untagged_addr, GetTagFromPointer(har.tagged_addr),
             untagged_addr - ha_untagged_addr, har.requested_size,
             ha_untagged_addr, ha_untagged_addr + har.requested_size);
       } else {
         Printf(
-            "%p (rb[%zd] tags:%02x) is located %zd bytes inside of %zd-byte "
+            "%p (rb[%zd] tags:%02x) is located %zd bytes inside a %zd-byte "
             "region [%p,%p)\n",
             untagged_addr, ha.ring_index, GetTagFromPointer(har.tagged_addr),
             untagged_addr - ha_untagged_addr, har.requested_size,
@@ -1040,13 +1156,13 @@ void BaseReport::PrintAddressDescription() const {
       if (ha.from_freed_thread) {
         Printf(
             "%p (Previously freed thread ptr tags: %02x) is located %zd "
-            "bytes inside of %zd-byte region [%p,%p)\n",
+            "bytes inside a %zd-byte region [%p,%p)\n",
             untagged_addr, GetTagFromPointer(har.tagged_addr),
             untagged_addr - ha_untagged_addr, har.requested_size,
             ha_untagged_addr, ha_untagged_addr + har.requested_size);
       } else {
         Printf(
-            "%p (rb[%zd] tags:%02x) is located %zd bytes inside of %zd-byte "
+            "%p (rb[%zd] tags:%02x) is located %zd bytes inside a %zd-byte "
             "region [%p,%p)\n",
             untagged_addr, ha.ring_index, GetTagFromPointer(har.tagged_addr),
             untagged_addr - UntagAddr(har.tagged_addr), har.requested_size,
@@ -1433,6 +1549,15 @@ void ReportRegisters(const uptr *frame, uptr pc) {
 }
 
 }  // namespace __hwasan
+
+#if SANITIZER_OHOS
+extern "C" void __hwasan_finish_deferred_after_sigtrap() {
+  __hwasan::FinishDeferredHwasanReportAfterSigTrap();
+}
+extern "C" uptr __hwasan_consume_sigtrap_continue_pc() {
+  return __hwasan::ConsumeSigTrapContinuePC();
+}
+#endif
 
 void __hwasan_set_error_report_callback(void (*callback)(const char *)) {
   __hwasan::ScopedReport::SetErrorReportCallback(callback);

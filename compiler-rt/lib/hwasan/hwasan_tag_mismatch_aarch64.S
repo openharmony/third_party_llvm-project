@@ -181,6 +181,55 @@ mismatch:
 .Lfunc_end0:
   .size __hwasan_tag_mismatch, .Lfunc_end0-__hwasan_tag_mismatch
 
+#if SANITIZER_OHOS
+// After SIGTRAP sigreturn: run deferred End/Die in normal context, then branch
+// to the instruction after the faulting brk (continue PC stored by C++).
+// Entered with user GPRs restored from ucontext; preserve them across the call.
+  .global __hwasan_after_sigtrap_trampoline
+  .type __hwasan_after_sigtrap_trampoline, %function
+__hwasan_after_sigtrap_trampoline:
+  stp x0, x1, [sp, #-256]!
+  stp x2, x3, [sp, #16]
+  stp x4, x5, [sp, #32]
+  stp x6, x7, [sp, #48]
+  stp x8, x9, [sp, #64]
+  stp x10, x11, [sp, #80]
+  stp x12, x13, [sp, #96]
+  stp x14, x15, [sp, #112]
+  stp x16, x17, [sp, #128]
+  stp x18, x19, [sp, #144]
+  stp x20, x21, [sp, #160]
+  stp x22, x23, [sp, #176]
+  stp x24, x25, [sp, #192]
+  stp x26, x27, [sp, #208]
+  stp x28, x29, [sp, #224]
+  str x30, [sp, #240]
+
+  bl __hwasan_finish_deferred_after_sigtrap
+  bl __hwasan_consume_sigtrap_continue_pc
+  str x0, [sp, #248]
+
+  ldr x30, [sp, #240]
+  ldp x28, x29, [sp, #224]
+  ldp x26, x27, [sp, #208]
+  ldp x24, x25, [sp, #192]
+  ldp x22, x23, [sp, #176]
+  ldp x20, x21, [sp, #160]
+  ldp x18, x19, [sp, #144]
+  ldp x16, x17, [sp, #128]
+  ldp x14, x15, [sp, #112]
+  ldp x12, x13, [sp, #96]
+  ldp x10, x11, [sp, #80]
+  ldp x8, x9, [sp, #64]
+  ldp x6, x7, [sp, #48]
+  ldp x4, x5, [sp, #32]
+  ldp x2, x3, [sp, #16]
+  ldr x16, [sp, #248]
+  ldp x0, x1, [sp], #256
+  br x16
+  .size __hwasan_after_sigtrap_trampoline, .-__hwasan_after_sigtrap_trampoline
+#endif // SANITIZER_OHOS
+
 #endif  // defined(__aarch64__)
 
 // We do not need executable stack.
