@@ -184,16 +184,15 @@ public:
     switch (Encoding & 0x0F) {
     case dwarf::DW_EH_PE_absptr:
     case dwarf::DW_EH_PE_signed:
+      // OHOS_LOCAL: handle DW_EH_PE_signed (sign-extended address-sized value)
+      // in addition to upstream's unsigned DW_EH_PE_absptr handling.
       switch (getAddressSize()) {
       case 2:
-        return (Encoding & 0x0F) == dwarf::DW_EH_PE_absptr ? getU16(C)
-                                                          : getS16(C);
       case 4:
-        return (Encoding & 0x0F) == dwarf::DW_EH_PE_absptr ? getU32(C)
-                                                          : getS32(C);
       case 8:
-        return (Encoding & 0x0F) == dwarf::DW_EH_PE_absptr ? getU64(C)
-                                                          : getS64(C);
+        return (Encoding & 0x0F) == dwarf::DW_EH_PE_absptr
+                   ? getUnsigned(C, getAddressSize())
+                   : getSigned(C, getAddressSize());
       default:
         return std::nullopt;
       }
@@ -208,11 +207,11 @@ public:
     case dwarf::DW_EH_PE_udata8:
       return getUnsigned(C, 8);
     case dwarf::DW_EH_PE_sdata2:
-      return getS16(C);
+      return getSigned(C, 2);
     case dwarf::DW_EH_PE_sdata4:
-      return getS32(C);
+      return SignExtend64<32>(getRelocatedValue(C, 4));
     case dwarf::DW_EH_PE_sdata8:
-      return getS64(C);
+      return getRelocatedValue(C, 8);
     default:
       return std::nullopt;
     }
@@ -269,6 +268,17 @@ public:
 class DWARFDataExtractorSimple
     : public DWARFDataExtractorBase<DWARFDataExtractorSimple> {
   using DWARFDataExtractorBase::DWARFDataExtractorBase;
+
+#ifdef OHOS_LLVM
+  // OHOS_LOCAL begin
+  // The CRTP base DWARFDataExtractorBase<DWARFDataExtractorSimple> accesses
+  // getRelocatedValueImpl() through static_cast<const Relocator*>(this), so it
+  // must be public (matching DWARFDataExtractor). Otherwise callers using the
+  // inherited getRelocatedValue()/getRawEncodedPointer() on a
+  // DWARFDataExtractorSimple instance fail to compile with an access error.
+public:
+  // OHOS_LOCAL end
+#endif /* OHOS_LLVM */
 
   LLVM_ABI uint64_t getRelocatedValueImpl(uint32_t Size, uint64_t *Off,
                                           uint64_t *SectionIndex = nullptr,

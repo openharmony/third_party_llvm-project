@@ -1,5 +1,4 @@
 ; OHOS_LOCAL
-; RUN: opt -inline %s -S | FileCheck %s
 ; RUN: opt -passes='cgscc(inline)' %s -S | FileCheck %s
 ; Ensure SSPRET attributes are propagated correctly when inlining.
 
