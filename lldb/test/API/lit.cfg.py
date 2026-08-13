@@ -328,6 +328,7 @@ if is_configured("dotest_lit_args_str"):
 
 # Load LLDB test format.
 sys.path.append(os.path.join(config.lldb_src_root, "test", "API"))
+sys.path.append(os.path.join(config.lldb_src_root, "test", "API", "ohos"))
 import lldbtest
 
 # testFormat: The test format to use to interpret tests.
