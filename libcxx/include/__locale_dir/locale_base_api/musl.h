@@ -12,8 +12,6 @@
 // This only works when the specified locale is "C" or "POSIX", but that's
 // about as good as we can do without implementing full xlocale support
 // in Musl.
-//
-// OHOS_LOCAL: Aligned with gitcode/master __support/musl/xlocale.h
 //===----------------------------------------------------------------------===//
 
 #ifndef _LIBCPP___LOCALE_DIR_LOCALE_BASE_API_MUSL_H
@@ -22,7 +20,6 @@
 #include <cstdlib>
 #include <cwchar>
 
-#ifndef OHOS_LLVM
 inline _LIBCPP_HIDE_FROM_ABI long long strtoll_l(const char* __nptr, char** __endptr, int __base, locale_t) {
   return ::strtoll(__nptr, __endptr, __base);
 }
@@ -30,37 +27,5 @@ inline _LIBCPP_HIDE_FROM_ABI long long strtoll_l(const char* __nptr, char** __en
 inline _LIBCPP_HIDE_FROM_ABI unsigned long long strtoull_l(const char* __nptr, char** __endptr, int __base, locale_t) {
   return ::strtoull(__nptr, __endptr, __base);
 }
-#else /* OHOS_LLVM */
-#  ifdef __cplusplus
-extern "C" {
-#  endif
-
-inline _LIBCPP_HIDE_FROM_ABI long long strtoll_l(const char* __nptr, char** __endptr, int __base, locale_t) {
-  return ::strtoll(__nptr, __endptr, __base);
-}
-
-inline _LIBCPP_HIDE_FROM_ABI unsigned long long strtoull_l(const char* __nptr, char** __endptr, int __base, locale_t) {
-  return ::strtoull(__nptr, __endptr, __base);
-}
-
-#  if _LIBCPP_HAS_WIDE_CHARACTERS
-inline _LIBCPP_HIDE_FROM_ABI long long wcstoll_l(const wchar_t* __nptr, wchar_t** __endptr, int __base, locale_t) {
-  return ::wcstoll(__nptr, __endptr, __base);
-}
-
-inline _LIBCPP_HIDE_FROM_ABI unsigned long long
-wcstoull_l(const wchar_t* __nptr, wchar_t** __endptr, int __base, locale_t) {
-  return ::wcstoull(__nptr, __endptr, __base);
-}
-
-inline _LIBCPP_HIDE_FROM_ABI long double wcstold_l(const wchar_t* __nptr, wchar_t** __endptr, locale_t) {
-  return ::wcstold(__nptr, __endptr);
-}
-#  endif
-
-#  ifdef __cplusplus
-}
-#  endif
-#endif /* OHOS_LLVM */
 
 #endif // _LIBCPP___LOCALE_DIR_LOCALE_BASE_API_MUSL_H
