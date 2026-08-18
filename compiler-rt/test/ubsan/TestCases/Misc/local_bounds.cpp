@@ -1,5 +1,5 @@
 // RUN: %clangxx -fsanitize=local-bounds %s -O3 -o %t && %run %t 1
-// RUN: %clangxx -fsanitize=local-bounds %s -O3 -o %t && not --crash %run %t 3
+// RUN: %clangxx -fsanitize=local-bounds %s -O3 -o %t && %if target={{.*ohos.*}} %{ not %} %else %{ not --crash %} %run %t 3
 // RUN: %clangxx -fsanitize=local-bounds -fno-sanitize-trap=local-bounds %s -O3 -o %t && not %run %t 3 2>&1 | FileCheck %s
 // RUN: %clangxx -fsanitize=local-bounds -fno-sanitize-trap=local-bounds -fsanitize-recover=local-bounds %s -O3 -o %t && %run %t 3 2>&1 | FileCheck %s
 // RUN: %clangxx -fsanitize=local-bounds -fno-sanitize-trap=local-bounds -fsanitize-recover=local-bounds -g %s -O3 -o %t && %run %t 3 2>&1 | FileCheck %s --check-prefixes=LINE

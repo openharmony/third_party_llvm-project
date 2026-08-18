@@ -7,6 +7,13 @@ import sys
 
 from ohos_common import build_host_env
 
+
+def _is_ubsan_suite_binary(host_path):
+    """True when %t lives under the ubsan / ubsan_minimal lit suites."""
+    parts = set(os.path.abspath(host_path).replace("\\", "/").split("/"))
+    return bool(parts & {"ubsan", "ubsan_minimal"})
+
+
 host_binary = os.path.abspath(sys.argv[0] + ".real")
 host_env = build_host_env(os.path.dirname(host_binary))
 
@@ -26,6 +33,9 @@ sys.stderr.write(result.stderr)
 sys.stdout.flush()
 sys.stderr.flush()
 
+# Match ohos_run.py: ubsan-suite SIGTRAP → exit(1); else host SIGABRT.
+if result.returncode == -signal.SIGTRAP and _is_ubsan_suite_binary(sys.argv[0]):
+    sys.exit(1)
 if result.returncode < 0:
     os.kill(os.getpid(), signal.SIGABRT)
 sys.exit(result.returncode)
