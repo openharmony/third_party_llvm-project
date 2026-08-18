@@ -1085,7 +1085,7 @@ for postfix in ["2", "1", ""]:
             )
         )
         config.substitutions.append(("%ld_flags_rpath_so" + postfix, ""))
-    elif config.host_os == "Linux":
+    elif config.host_os in ("Linux", "OHOS"):  # OHOS_LOCAL
         config.substitutions.append(
             (
                 "%ld_flags_rpath_exe" + postfix,
