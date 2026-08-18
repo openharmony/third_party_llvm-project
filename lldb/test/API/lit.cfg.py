@@ -20,6 +20,12 @@ config.suffixes = [".py"]
 # test_source_root: The root path where tests are located.
 config.test_source_root = os.path.dirname(__file__)
 
+# The tests below test/API/ohos exercise functionality compiled only when
+# OHOS_LLVM is enabled.
+config.excludes = []
+if not config.ohos_llvm:
+    config.excludes.append("ohos")
+
 # test_exec_root: The root path where tests should be run.
 config.test_exec_root = os.path.join(config.lldb_obj_root, "test", "API")
 
@@ -328,6 +334,7 @@ if is_configured("dotest_lit_args_str"):
 
 # Load LLDB test format.
 sys.path.append(os.path.join(config.lldb_src_root, "test", "API"))
+sys.path.append(os.path.join(config.lldb_src_root, "test", "API", "ohos"))
 import lldbtest
 
 # testFormat: The test format to use to interpret tests.

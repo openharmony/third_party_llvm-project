@@ -510,6 +510,10 @@ def setupSysPath():
     # Adding test/tools/intelpt to the path makes it easy
     # to "import intelpt_testcase" from the lldb-server tests
     sys.path.insert(0, intelpt)
+    # Adding test/API/ohos to the path makes it easy to
+    # "import lldb_time_test.TimeTestBase" from the OHOS time tests
+    ohosTestPath = os.path.join(lldbsuite.lldb_test_root, "ohos")
+    sys.path.insert(0, ohosTestPath)
 
     # This is the root of the lldb git/svn checkout
     # When this changes over to a package instead of a standalone script, this

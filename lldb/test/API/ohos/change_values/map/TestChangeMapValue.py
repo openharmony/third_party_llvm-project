@@ -1,5 +1,5 @@
 """
-Test change libc++ std::atomic values.
+Test change libc++ map values.
 """
 
 import lldb
@@ -15,9 +15,8 @@ class LibcxxChangeValueTestCase(TestBase):
 
     @add_test_categories(["libc++"])
     @expectedFailureAll(oslist=["windows"], bugnumber="llvm.org/pr24772")
-    @skipOnOpenHarmonyCI  # OHOS data formatter uses Clone, value change tracking differs
     def test(self):
-        """Test that we can change values of libc++ std::atomic."""
+        """Test that we can change values of libc++ map."""
         self.build()
         self.runCmd("file " + self.getBuildArtifact("a.out"), CURRENT_EXECUTABLE_SET)
 
@@ -41,11 +40,17 @@ class LibcxxChangeValueTestCase(TestBase):
         frame0 = thread.GetFrameAtIndex(0)
         self.assertTrue(frame0.IsValid(), "Got a valid frame.")
 
-        q_value = frame0.FindVariable("Q")
-        self.assertTrue(q_value.IsValid(), "Got the SBValue for val")
-        inner_val = q_value.GetChildAtIndex(0)
-        self.assertTrue(inner_val.IsValid(), "Got the SBValue for inner atomic val")
-        result = inner_val.SetValueFromCString("42")
+        val_value = frame0.FindVariable("M")
+        self.assertTrue(val_value.IsValid(), "Got the SBValue for val")
+        pair0 = val_value.GetChildMemberWithName("[0]")
+        self.assertTrue(pair0.IsValid(), "Got the SBValue for [0]")
+        self.assertEqual(pair0.GetNumChildren(), 2, "Got 2 children")
+        pair0_second = pair0.GetChildMemberWithName("second")
+        self.assertTrue(pair0_second.IsValid(), "Got the SBValue for [0].second")
+        result = pair0_second.SetValueFromCString("12345")
         self.assertTrue(result, "Setting val returned True.")
-        result = inner_val.GetValueAsUnsigned()
-        self.assertEqual(result, 42, "Got correct value (42)")
+        self.assertTrue(
+            pair0_second.GetValueDidChange(), "LLDB noticed that value changed"
+        )
+        result = pair0_second.GetValueAsUnsigned()
+        self.assertEqual(result, 12345, "Got correct value (12345)")

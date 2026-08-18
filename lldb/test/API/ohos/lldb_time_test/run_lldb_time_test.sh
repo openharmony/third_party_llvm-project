@@ -45,7 +45,7 @@ LLVM_BUILD_PREFIX="${LLVM_PROJECT_DIR}/out"
 LLVM_BUILD_LINUX_X86_PREFIX="${LLVM_BUILD_PREFIX}/llvm_make"
 LLVM_BUILD_LINUX_X86_BIN="${LLVM_BUILD_LINUX_X86_PREFIX}/bin"
 
-LLDB_TEST_PATH="${LLVM_PROJECT_DIR}/toolchain/llvm-project/lldb/test/API/lldb_time_test/"
+LLDB_TEST_PATH="${LLVM_PROJECT_DIR}/toolchain/llvm-project/lldb/test/API/ohos/lldb_time_test/"
 LLDB_API_DOTEST="${LLVM_PROJECT_DIR}/toolchain/llvm-project/lldb/test/API/dotest.py"
 LLDB_TEST_ROOT=${PWD}
 

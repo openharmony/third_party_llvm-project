@@ -20,7 +20,7 @@ from lldbsuite.test.lldbtest import *
 from lldbsuite.test import lldbutil
 
 
-class MixedArkTSDebuggerTest(TestBase):
+class MixedArkTSDebuggerNewTest(TestBase):
 
     def setUp(self):
         # Call super's setUp().

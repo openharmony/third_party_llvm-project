@@ -140,14 +140,19 @@ Status CreateHostSysRootModuleLink(const FileSpec &root_dir_spec,
                platform_module_spec.GetPath().c_str());
   if (FileSystem::Instance().Exists(sysroot_module_path_spec)) {
 #ifdef OHOS_LLVM
+    UUID sysroot_module_uuid =
+        (std::make_shared<Module>(ModuleSpec(sysroot_module_path_spec)))
+            ->GetUUID();
+    if (!sysroot_module_uuid.IsValid()) {
+      LLDB_LOGF(log, "Try CreateHostSysRootModuleLink but uuid is invalid %s",
+                sysroot_module_uuid.GetAsString().c_str());
+      return Status();
+    }
+
     if (FileSystem::Instance().Exists(local_module_spec)) {
-      UUID sysroot_module_sp_uuid =
-          (std::make_shared<Module>(ModuleSpec(sysroot_module_path_spec)))
-              ->GetUUID();
       UUID module_spec_uuid =
           (std::make_shared<Module>(ModuleSpec(local_module_spec)))->GetUUID();
-      if (sysroot_module_sp_uuid.IsValid() &&
-          (sysroot_module_sp_uuid == module_spec_uuid)) {
+      if (sysroot_module_uuid == module_spec_uuid) {
         delete_existing = false;
       }
       LLDB_LOGF(log, "CreateHostSysRootModuleLink delete_existing(%i)",
@@ -159,25 +164,6 @@ Status CreateHostSysRootModuleLink(const FileSpec &root_dir_spec,
 
     DecrementRefExistingModule(root_dir_spec, sysroot_module_path_spec);
   }
-
-#ifdef OHOS_LLVM
-  // sysroot_module_path_spec might still exist.
-  // It means that module UUID is not valid.
-  if (FileSystem::Instance().Exists(sysroot_module_path_spec)) {
-    auto module_sp =
-        std::make_shared<Module>(ModuleSpec(sysroot_module_path_spec));
-    UUID module_uuid = module_sp->GetUUID();
-
-    if (!module_uuid.IsValid()) {
-      LLDB_LOGF(log, "Try CreateHostSysRootModuleLink but uuid is invalid %s",
-                module_uuid.GetAsString().c_str());
-      return Status();
-    }
-
-    LLDB_LOGF(log, "CreateHostSysRootModuleLink with uuid %s",
-              module_uuid.GetAsString().c_str());
-  }
-#endif /* OHOS_LLVM */
 
   Status error = MakeDirectory(
       FileSpec(sysroot_module_path_spec.GetDirectory().AsCString()));

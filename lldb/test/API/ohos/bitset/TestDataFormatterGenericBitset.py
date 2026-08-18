@@ -67,12 +67,18 @@ class GenericBitsetDataFormatterTestCase(TestBase):
         self.check("large", 1000, VALUE)
 
     @add_test_categories(["libstdcxx"])
-    @skipOnOpenHarmonyCI  # OHOS bitset frontend uses Clone, display format differs
+    @expectedFailureAll(
+        "Bitset frontend changed to be able "
+        "to update values during debugging"
+    )
     def test_value_libstdcpp(self):
         self.do_test_value(USE_LIBSTDCPP)
 
     @add_test_categories(["libc++"])
-    @skipOnOpenHarmonyCI  # OHOS bitset frontend uses Clone, display format differs
+    @expectedFailureAll(
+        "Bitset frontend changed to be able "
+        "to update values during debugging"
+    )
     def test_value_libcpp(self):
         self.do_test_value(USE_LIBCPP)
 
@@ -98,11 +104,17 @@ class GenericBitsetDataFormatterTestCase(TestBase):
         self.check("ptr", 1000, POINTER)
 
     @add_test_categories(["libstdcxx"])
-    @skipOnOpenHarmonyCI  # OHOS bitset frontend uses Clone, display format differs
+    @expectedFailureAll(
+        "Bitset frontend changed to be able "
+        "to update values during debugging"
+    )
     def test_ptr_and_ref_libstdcpp(self):
         self.do_test_ptr_and_ref(USE_LIBSTDCPP)
 
     @add_test_categories(["libc++"])
-    @skipOnOpenHarmonyCI  # OHOS bitset frontend uses Clone, display format differs
+    @expectedFailureAll(
+        "Bitset frontend changed to be able "
+        "to update values during debugging"
+    )
     def test_ptr_and_ref_libcpp(self):
         self.do_test_ptr_and_ref(USE_LIBCPP)

@@ -15,7 +15,6 @@ class LibcxxChangeValueTestCase(TestBase):
 
     @add_test_categories(["libc++"])
     @expectedFailureAll(oslist=["windows"], bugnumber="llvm.org/pr24772")
-    @skipOnOpenHarmonyCI  # OHOS data formatter uses Clone, value change tracking differs
     def test(self):
         """Test that we can change values of libc++ std::atomic."""
         self.build()
@@ -47,5 +46,8 @@ class LibcxxChangeValueTestCase(TestBase):
         self.assertTrue(inner_val.IsValid(), "Got the SBValue for inner atomic val")
         result = inner_val.SetValueFromCString("42")
         self.assertTrue(result, "Setting val returned True.")
+        self.assertTrue(
+            inner_val.GetValueDidChange(), "LLDB noticed that value changed"
+        )
         result = inner_val.GetValueAsUnsigned()
         self.assertEqual(result, 42, "Got correct value (42)")
