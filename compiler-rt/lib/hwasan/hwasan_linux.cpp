@@ -459,9 +459,19 @@ static AccessInfo GetAccessInfo(siginfo_t *info, ucontext_t *uc) {
 }
 
 static bool HwasanOnSIGTRAP(int signo, siginfo_t *info, ucontext_t *uc) {
+#  if SANITIZER_OHOS
+  EnterHwasanSigTrapHandler();
+#  endif
   AccessInfo ai = GetAccessInfo(info, uc);
+#  if !SANITIZER_OHOS
   if (!ai.is_store && !ai.is_load)
     return false;
+#  else
+  if (!ai.is_store && !ai.is_load) {
+    LeaveHwasanSigTrapHandler();
+    return false;
+  }
+#  endif
 
   SignalContext sig{info, uc};
   HandleTagMismatch(ai, StackTrace::GetNextInstructionPc(sig.pc), sig.bp, uc);
@@ -484,6 +494,15 @@ static bool HwasanOnSIGTRAP(int signo, siginfo_t *info, ucontext_t *uc) {
   uc->uc_mcontext.__gregs[REG_PC] += isFaultShort ? 2 : 4;
 #  else
 #    error Unsupported architecture
+#  endif
+#  if SANITIZER_OHOS
+  LeaveHwasanSigTrapHandler();
+  // Compiler-inline recover brk has no FinishDeferred call after the insn.
+  // Arm a trampoline so End/Die run after sigreturn, then resume at brk+4.
+#    if defined(__aarch64__)
+  if (HwasanHasDeferredReportAfterSigTrap())
+    HwasanArmSigTrapDeferredTrampoline(&uc->uc_mcontext.pc);
+#    endif
 #  endif
   return true;
 }

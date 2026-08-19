@@ -20,6 +20,10 @@
 
 namespace __hwasan {
 
+#if SANITIZER_OHOS
+void FinishDeferredHwasanReportAfterSigTrap();
+#endif
+
 enum class ErrorAction { Abort, Recover };
 enum class AccessType { Load, Store };
 
@@ -81,6 +85,11 @@ __attribute__((always_inline)) static void SigTrap(uptr p) {
   // FIXME: not always sigill.
   __builtin_trap();
 #endif
+#if SANITIZER_OHOS
+  // Software/callback SigTrap path: flush deferred End/Die if the SIGTRAP
+  // trampoline did not already run (inline compiler brk uses the trampoline).
+  FinishDeferredHwasanReportAfterSigTrap();
+#endif
   // __builtin_unreachable();
 }
 
@@ -121,6 +130,9 @@ __attribute__((always_inline)) static void SigTrap(uptr p, uptr size) {
       "r"(x11), "I"(0x40 + SigTrapEncoding(EA, AT)));
 #else
   __builtin_trap();
+#endif
+#if SANITIZER_OHOS
+  FinishDeferredHwasanReportAfterSigTrap();
 #endif
   // __builtin_unreachable();
 }

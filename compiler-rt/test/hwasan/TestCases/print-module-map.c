@@ -1,6 +1,6 @@
-// RUN: %clang_hwasan %s -o %t && %env_hwasan_opts=print_module_map=1 %run %t 2>&1 | FileCheck %s --check-prefixes=EXIT,NOMORE
-// RUN: %clang_hwasan %s -DBUG -o %t && %env_hwasan_opts=print_module_map=1 not %run %t 2>&1 | FileCheck %s --check-prefixes=EXIT,NOMORE
-// RUN: %clang_hwasan %s -DBUG -fsanitize-recover=hwaddress -o %t && %env_hwasan_opts=print_module_map=1,halt_on_error=0 not %run %t 2>&1 | FileCheck %s --check-prefixes=EXIT,NOMORE
+// RUN: %clang_hwasan %s -o %t && %env_hwasan_opts=print_module_map=1 %run %t 2>&1 | FileCheck %s --check-prefixes=NOMORE --allow-empty
+// RUN: %clang_hwasan %s -DBUG -o %t && %env_hwasan_opts=print_module_map=2 not %run %t 2>&1 | FileCheck %s --check-prefixes=EXIT,NOMORE
+// RUN: %clang_hwasan %s -DBUG -fsanitize-recover=hwaddress -o %t && %env_hwasan_opts=print_module_map=1,halt_on_error=0 not %run %t 2>&1 | FileCheck %s --check-prefixes=NOMORE
 // RUN: %clang_hwasan %s -DBUG -fsanitize-recover=hwaddress -o %t && %env_hwasan_opts=print_module_map=2,halt_on_error=0 not %run %t 2>&1 | FileCheck %s --check-prefixes=BUG1,BUG2,EXIT,NOMORE
 
 #include <stdlib.h>

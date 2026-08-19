@@ -15,6 +15,8 @@ config.test_source_root = os.path.dirname(__file__)
 clang_cflags = [config.target_cflags] + config.debug_info_flags
 clang_cxxflags = config.cxx_mode_flags + clang_cflags
 clang_hwasan_common_cflags = clang_cflags + ["-fsanitize=hwaddress", "-fuse-ld=lld"]
+if config.host_os == "OHOS" or "ohos_family" in getattr(config, "available_features", []):
+    clang_hwasan_common_cflags += ["-fno-emulated-tls"]
 
 if config.target_arch == "x86_64" and config.enable_aliases != "0":
     clang_hwasan_common_cflags += ["-fsanitize-hwaddress-experimental-aliasing"]
@@ -66,10 +68,16 @@ config.substitutions.append(
 )
 config.substitutions.append(("%compiler_rt_libdir", config.compiler_rt_libdir))
 
-default_hwasan_opts_str = ":".join(
-    ["disable_allocator_tagging=1", "random_tags=0", "fail_without_syscall_abi=0"]
-    + config.default_sanitizer_opts
-)
+default_hwasan_opts = [
+    "disable_allocator_tagging=1",
+    "random_tags=0",
+    "fail_without_syscall_abi=0",
+]
+# ArkTS fast unwind breaks FileCheck on fault stacks for OHOS lit (memcpy/memset/
+# halt-on-error/register-dump-no-fp). Keep production default; disable in tests.
+if config.host_os == "OHOS" or getattr(config, "ohos_family", False):
+    default_hwasan_opts.append("enable_unwind_arkts=0")
+default_hwasan_opts_str = ":".join(default_hwasan_opts + config.default_sanitizer_opts)
 if default_hwasan_opts_str:
     config.environment["HWASAN_OPTIONS"] = default_hwasan_opts_str
     default_hwasan_opts_str += ":"

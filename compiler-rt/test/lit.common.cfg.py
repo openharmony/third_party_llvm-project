@@ -1085,7 +1085,7 @@ for postfix in ["2", "1", ""]:
             )
         )
         config.substitutions.append(("%ld_flags_rpath_so" + postfix, ""))
-    elif config.host_os == "Linux":
+    elif config.host_os in ("Linux", "OHOS"):  # OHOS_LOCAL
         config.substitutions.append(
             (
                 "%ld_flags_rpath_exe" + postfix,
@@ -1205,6 +1205,13 @@ append_target_cflags = lit_config.params.get("append_target_cflags", None)
 if append_target_cflags:
     lit_config.note('Appending to extra_cflags: "{}"'.format(append_target_cflags))
     extra_cflags += [append_target_cflags]
+
+# OHOS_LOCAL begin: expose OHOS_LLVM to test sources (#ifdef OHOS_LLVM).
+# Library builds get -DOHOS_LLVM via CMake add_definitions; lit test compiles
+# use COMPILER_RT_TEST_COMPILER_CFLAGS / this path and need it separately.
+if getattr(config, "ohos_family", False):
+    extra_cflags += ["-DOHOS_LLVM"]
+# OHOS_LOCAL end
 
 config.clang = (
     " " + " ".join(run_wrapper + [config.compile_wrapper, config.clang]) + " "

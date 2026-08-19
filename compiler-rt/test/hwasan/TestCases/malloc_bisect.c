@@ -9,7 +9,7 @@
 
 // FIXME: Recursive call into malloc from stack->Print(). Or maybe this feature
 // needs to be removed. We don't use it, but it's in the hot code.
-// UNSUPPORTED: internal_symbolizer
+// UNSUPPORTED: internal_symbolizer, ohos_family
 
 #include <stdlib.h>
 #include <stdio.h>

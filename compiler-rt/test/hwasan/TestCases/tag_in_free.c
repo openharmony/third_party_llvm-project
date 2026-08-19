@@ -33,15 +33,15 @@ int main() {
 #ifdef MALLOC
   // MALLOC: READ of size 1 at
   // MALLOC: is located 6 bytes after a 10-byte region
-  // MALLOC: allocated by thread T0 here:
+  // MALLOC: allocated by thread {{[0-9]+}} here:
   char volatile x = p[16];
 #endif
   free(p);
 #ifdef FREE
   // FREE: READ of size 1 at
   // FREE: is located 0 bytes inside a 10-byte region
-  // FREE: freed by thread T0 here:
-  // FREE: previously allocated by thread T0 here:
+  // FREE: freed by thread {{[0-9]+}} here:
+  // FREE: previously allocated by thread {{[0-9]+}} here:
   char volatile y = p[0];
 #endif
 

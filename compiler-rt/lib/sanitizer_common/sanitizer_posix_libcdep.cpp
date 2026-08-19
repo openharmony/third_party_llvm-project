@@ -218,6 +218,20 @@ struct signal_chain_action {
 };
 extern "C" SANITIZER_WEAK_ATTRIBUTE void add_special_signal_handler(
     int signo, struct signal_chain_action *sa);
+
+// OHOS sigchain requires bool (*)(int, siginfo_t*, void*): true means the
+// signal was consumed (stop the chain). SignalHandlerType is void-returning,
+// so exclusive installs must go through this wrapper instead of casting.
+static SignalHandlerType sigchain_deadly_handler;
+
+static bool SigchainDeadlySignalHandler(int signo, siginfo_t *info,
+                                        void *context) {
+  sigchain_deadly_handler(signo, info, context);
+  // Exclusive mode: the sanitizer owns this signal. Returning true prevents
+  // the default disposition from firing after recoverable HWASan SIGTRAP
+  // (brk), where the void handler has already advanced PC.
+  return true;
+}
 #endif
 
 static void MaybeInstallSigaction(int signum,
@@ -247,15 +261,14 @@ static void MaybeInstallSigaction(int signum,
     CHECK_EQ(0, internal_sigaction(signum, &sigact, nullptr));
     VReport(1, "Installed the sigaction for signal %d\n", signum);
   } else {
-    typedef bool (*sc)(int, siginfo_t *, void *);
-    sc h = (sc)handler;
+    sigchain_deadly_handler = handler;
     struct signal_chain_action sigchain = {
-        .sca_sigaction = h,
+        .sca_sigaction = SigchainDeadlySignalHandler,
         .sca_mask = {},
         .sca_flags = SA_SIGINFO | SA_NODEFER,
     };
-    // This is a void function for OHOS. When there are too many registered
-    // functions, an internal error is reported. CHECK is not required.
+    // When there are too many registered functions, an internal error is
+    // reported. CHECK is not required.
     add_special_signal_handler(signum, &sigchain);
     VReport(1, "Installed the sigaction for signal %d\n", signum);
   }

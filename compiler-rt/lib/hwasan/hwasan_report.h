@@ -35,6 +35,13 @@ void ReportMemoryNearRegisters(const uptr *registers_frame, uptr sp, uptr pc);
 void PrintMemoryAroundAddress(__sanitizer::MemoryMappingLayout &proc_maps,
                               int reg_num, uptr addr, uptr len,
                               bool is_sp = false, bool is_pc = false);
+// SIGTRAP handler nesting: ohos_dfx_log must not run inside the handler.
+void EnterHwasanSigTrapHandler();
+void LeaveHwasanSigTrapHandler();
+void FinishDeferredHwasanReportAfterSigTrap();
+bool HwasanHasDeferredReportAfterSigTrap();
+// Point *pc (already advanced past brk) at the after-sigreturn trampoline.
+void HwasanArmSigTrapDeferredTrampoline(uptr *pc);
 #endif /* SANITIZER_OHOS */
 void ReportAtExitStatistics();
 

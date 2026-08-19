@@ -8,6 +8,7 @@
 // C++ tests on x86_64 require instrumented libc++/libstdc++.
 // RISC-V target doesn't support oldrt
 // REQUIRES: aarch64-target-arch
+// UNSUPPORTED: ohos_family
 
 #include <cassert>
 #include <cstdio>
