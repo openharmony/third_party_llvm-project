@@ -63,9 +63,12 @@ if config.host_os == "OHOS":  # OHOS_LOCAL
     # The default value for GWP_ASAN_MaxSimultaneousAllocations is 16, which is
     # not sufficient for gwp-asan testing in OHOS, resulting in many test cases
     # being unable to trigger gwp-asan detection.
+    # OHOS GWP-ASan Recoverable defaults to true (print report, do not abort).
+    # Crash tests use %expect_crash / not --crash, so force Recoverable=0.
     default_gwp_asan_options = (
         "GWP_ASAN_Enabled=1:GWP_ASAN_SampleRate=1:"
-        "GWP_ASAN_MaxSimultaneousAllocations=500"
+        "GWP_ASAN_MaxSimultaneousAllocations=500:"
+        "GWP_ASAN_Recoverable=0"
     )
 else:
     default_gwp_asan_options = "GWP_ASAN_Enabled=1:GWP_ASAN_SampleRate=1"
