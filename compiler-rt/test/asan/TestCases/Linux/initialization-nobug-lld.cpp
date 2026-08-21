@@ -12,3 +12,5 @@
 // CHECK: DynInitPoison
 // CHECK: UnpoisonBeforeMain
 // CHECK: DynInitUnpoison
+
+// UNSUPPORTED: ohos_family

@@ -10,6 +10,8 @@
 
 // Do not test with optimization -- the error may be optimized away.
 
+// UNSUPPORTED: ohos_family
+
 #include <cstdio>
 
 // 'y' is a dynamically initialized global residing in a different TU.  This

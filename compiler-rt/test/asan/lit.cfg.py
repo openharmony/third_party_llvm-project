@@ -34,6 +34,14 @@ if (
 ):
     default_asan_opts += ["detect_leaks=1"]
 
+# OHOS_LOCAL begin
+if config.host_os == "OHOS":
+    # handle_segv=1 installs an exclusive sigaction that musl/DFX sigchain
+    # overwrites, so SEGV tests only see "Signal 11". handle_segv=2
+    # registers via add_special_signal_handler so ASan still reports.
+    default_asan_opts += ["handle_segv=2", "handle_sigbus=2"]
+# OHOS_LOCAL end
+
 default_asan_opts_str = ":".join(default_asan_opts)
 if default_asan_opts_str:
     config.environment["ASAN_OPTIONS"] = default_asan_opts_str

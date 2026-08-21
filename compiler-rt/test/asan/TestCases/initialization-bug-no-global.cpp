@@ -9,6 +9,8 @@
 // Fails on some Darwin bots, probably iOS.
 // XFAIL: ios
 
+// UNSUPPORTED: ohos_family
+
 #include <stdio.h>
 
 extern int y;
