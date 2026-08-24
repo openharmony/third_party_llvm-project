@@ -27,7 +27,18 @@ def host_to_device_path(path, device_tmpdir):
     return os.path.join(device_tmpdir, rel)
 
 
-def hdc_output(args, timeout=300, env=None):
+def hdc_timeout():
+    # 0 / negative: wait indefinitely (HDC_TIMEOUT=0).
+    raw = os.environ.get("HDC_TIMEOUT")
+    if raw is None or raw == "":
+        return 300
+    val = int(raw)
+    return None if val <= 0 else val
+
+
+def hdc_output(args, timeout=None, env=None):
+    if timeout is None:
+        timeout = hdc_timeout()
     command = get_hdc_cmd_prefix() + args
     if verbose():
         print("[CMD]:" + " ".join(command))
@@ -77,6 +88,10 @@ def pull_from_device(path):
 
 
 def _do_push(src, dst, env=None):
+    # Unlink first: overwriting a still-mapped ELF fails with ETXTBSY
+    # ("text file is busy") on OHOS. rm replaces the inode; a leftover
+    # process keeps the old file.
+    hdc(["shell", "rm", "-f", dst])
     hdc(
         ["file", "send", src, dst],
         attempts=5,

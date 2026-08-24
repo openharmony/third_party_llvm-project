@@ -4,6 +4,8 @@
 // https://github.com/google/sandboxed-api/blob/c95837a6c131fbdf820db352a97d54fcbcbde6c0/sandboxed_api/sandbox2/forkserver.cc#L249
 // which works only in single-threaded processes.
 
+// UNSUPPORTED: ohos_family
+
 #include "../test.h"
 #include <errno.h>
 #include <sched.h>

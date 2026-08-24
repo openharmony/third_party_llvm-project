@@ -503,6 +503,25 @@ void ForkChildAfter(ThreadState *thr, uptr pc, bool start_thread);
 void ReportRace(ThreadState *thr, RawShadow *shadow_mem, Shadow cur, Shadow old,
                 AccessType typ);
 bool OutputReport(ThreadState *thr, const ScopedReport &srep);
+#if SANITIZER_OHOS
+// DFX flush (dlopen libasan_logger) must not run while report_mtx / slot /
+// thread_registry are held. PrintReport only sets a pending flag; this RAII
+// object must be constructed before those locks so its destructor flushes after
+// they are released. halt_on_error Die() is also deferred to this destructor.
+void SetOhosTsanDfxEndPending();
+void FlushOhosTsanDfxEndIfPending();
+bool OhosTsanDfxEverFlushed();
+void SetOhosTsanHaltPending();
+bool OhosTsanHaltPending();
+class ScopedOhosTsanDfxEnd {
+ public:
+  ~ScopedOhosTsanDfxEnd() {
+    FlushOhosTsanDfxEndIfPending();
+    if (OhosTsanHaltPending())
+      Die();
+  }
+};
+#endif
 bool IsFiredSuppression(Context *ctx, ReportType type, StackTrace trace);
 bool IsExpectedReport(uptr addr, uptr size);
 

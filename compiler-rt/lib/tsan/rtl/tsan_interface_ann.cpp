@@ -437,6 +437,9 @@ void __tsan_mutex_post_divert(void *addr, unsigned flagz) {
 }
 
 static void ReportMutexHeldWrongContext(ThreadState *thr, uptr pc) {
+#if SANITIZER_OHOS
+  ScopedOhosTsanDfxEnd dfx_end;
+#endif
   ThreadRegistryLock l(&ctx->thread_registry);
   ScopedReport rep(ReportTypeMutexHeldWrongContext);
   for (uptr i = 0; i < thr->mset.Size(); ++i) {

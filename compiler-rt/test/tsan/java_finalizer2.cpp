@@ -3,6 +3,9 @@
 
 // pthread barriers are not available on OS X
 // UNSUPPORTED: darwin
+// OHOS_LOCAL
+// TSan Java interface aborts on OHOS.
+// UNSUPPORTED: ohos_family
 
 #include "java.h"
 #include <string.h>

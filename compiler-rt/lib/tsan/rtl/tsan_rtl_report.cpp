@@ -676,8 +676,17 @@ bool OutputReport(ThreadState *thr, const ScopedReport &srep) {
 #endif
   __tsan_on_report(rep);
   ctx->nreported++;
+#if !SANITIZER_OHOS
   if (flags()->halt_on_error)
     Die();
+#else
+  if (flags()->halt_on_error) {
+    // Die after ScopedOhosTsanDfxEnd runs (locks released, DFX flushed).
+    SetOhosTsanHaltPending();
+    thr->current_report = nullptr;
+    return true;
+  }
+#endif
   thr->current_report = nullptr;
   return true;
 }
@@ -780,6 +789,9 @@ void ReportRace(ThreadState *thr, RawShadow *shadow_mem, Shadow cur, Shadow old,
   DynamicMutexSet mset1;
   MutexSet *mset[kMop] = {&thr->mset, mset1};
 
+#if SANITIZER_OHOS
+  ScopedOhosTsanDfxEnd dfx_end;
+#endif
   // We need to lock the slot during RestoreStack because it protects
   // the slot journal.
   Lock slot_lock(&ctx->slots[static_cast<uptr>(s[1].sid())].mtx);

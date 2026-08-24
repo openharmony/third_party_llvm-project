@@ -2217,6 +2217,9 @@ static void ReportErrnoSpoiling(ThreadState *thr, uptr pc, int sig) {
   // StackTrace::GetNestInstructionPc(pc) is used because return address is
   // expected, OutputReport() will undo this.
   ObtainCurrentStack(thr, StackTrace::GetNextInstructionPc(pc), &stack);
+#if SANITIZER_OHOS
+  ScopedOhosTsanDfxEnd dfx_end;
+#endif
   ThreadRegistryLock l(&ctx->thread_registry);
   ScopedReport rep(ReportTypeErrnoInSignal);
   rep.SetSigNum(sig);

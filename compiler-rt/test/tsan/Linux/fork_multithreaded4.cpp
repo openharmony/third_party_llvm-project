@@ -3,6 +3,8 @@
 // The test tries to provoke internal allocator to be locked during fork
 // and then force the child process to use the internal allocator.
 
+// UNSUPPORTED: ohos_family
+
 #include "../test.h"
 #include <errno.h>
 #include <sys/types.h>

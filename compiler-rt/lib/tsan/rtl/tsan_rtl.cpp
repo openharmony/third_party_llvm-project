@@ -802,6 +802,35 @@ void MaybeSpawnBackgroundThread() {
 #endif
 }
 
+#if SANITIZER_OHOS
+static atomic_uint32_t ohos_tsan_dfx_end_pending;
+static atomic_uint32_t ohos_tsan_dfx_ever_flushed;
+static atomic_uint32_t ohos_tsan_halt_pending;
+
+void SetOhosTsanDfxEndPending() {
+  atomic_store(&ohos_tsan_dfx_end_pending, 1, memory_order_release);
+}
+
+void FlushOhosTsanDfxEndIfPending() {
+  if (!atomic_exchange(&ohos_tsan_dfx_end_pending, 0, memory_order_acq_rel))
+    return;
+  atomic_store(&ohos_tsan_dfx_ever_flushed, 1, memory_order_release);
+  Report("End Tsan report\n");
+}
+
+bool OhosTsanDfxEverFlushed() {
+  return atomic_load(&ohos_tsan_dfx_ever_flushed, memory_order_acquire) != 0;
+}
+
+void SetOhosTsanHaltPending() {
+  atomic_store(&ohos_tsan_halt_pending, 1, memory_order_release);
+}
+
+bool OhosTsanHaltPending() {
+  return atomic_load(&ohos_tsan_halt_pending, memory_order_acquire) != 0;
+}
+#endif
+
 int Finalize(ThreadState *thr) {
   bool failed = false;
 
@@ -841,7 +870,12 @@ int Finalize(ThreadState *thr) {
 
   failed = OnFinalize(failed);
 #if SANITIZER_OHOS
-  Report("End Tsan report (Finalize)\n");
+  // If a report already flushed End in normal context, a second End here
+  // (atexit, logger may be torn down) can SIGSEGV. Only End if nothing
+  // flushed yet (tests that never printed a report).
+  FlushOhosTsanDfxEndIfPending();
+  if (!OhosTsanDfxEverFlushed())
+    Report("End Tsan report (Finalize)\n");
   thr->ignore_interceptors--;
 #endif
 

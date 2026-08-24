@@ -3,6 +3,12 @@
 // Test that mmap does not return unexpected addresses
 // (the check is in the interceptor).
 
+// OHOS_LOCAL
+// Exhausts VA then _exit(0) to skip atexit allocations. TSan intercepts
+// _exit and still runs Finalize; InternalMmapVector mmap fails with ENOMEM
+// and Die() returns exitcode 66 (FileCheck already saw DONE).
+// UNSUPPORTED: ohos_family
+
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdio.h>

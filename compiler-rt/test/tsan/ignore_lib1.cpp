@@ -4,7 +4,9 @@
 // RUN: %clangxx_tsan -O1 -fno-builtin %s -DLIB -fPIC -fno-sanitize=thread -shared -o %t-dir/libignore_lib1.so
 // RUN: %clangxx_tsan -O1 %s %link_libcxx_tsan -o %t-dir/executable
 // RUN: echo running w/o suppressions:
-// RUN: %deflake %run %t-dir/executable | FileCheck %s --check-prefix=CHECK-NOSUPP
+// OHOS_LOCAL: lit defaults ignore_noninstrumented_modules=1 on OHOS, which
+// swallows this uninstrumented-DSO race. Force 0 (same as Darwin's lit default).
+// RUN: %env_tsan_opts=ignore_noninstrumented_modules=0 %deflake %run %t-dir/executable | FileCheck %s --check-prefix=CHECK-NOSUPP
 // RUN: echo running with suppressions:
 // RUN: %env_tsan_opts=suppressions='%s.supp' %run %t-dir/executable 2>&1 | FileCheck %s --check-prefix=CHECK-WITHSUPP
 
