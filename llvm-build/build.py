@@ -1581,9 +1581,6 @@ class LlvmLibs(BuildUtils):
             if self.build_config.target_debug:
                 defines['CMAKE_BUILD_TYPE'] = 'Debug'
             self.build_libs_defines(llvm_triple, defines, cc, cxx, ar, llvm_config, ldflags, cflags, extra_flags)
-            if arch == 'mipsel':
-                ldflags.append('-Wl,-z,notext')
-                ldflags.append('-Wl,--no-check-dynamic-relocations')
 
             llvm_path = self.merge_out_path('llvm_make')
             arch_list = [self.liteos_triple('arm'), self.open_ohos_triple('arm'),
@@ -1640,9 +1637,6 @@ class LlvmLibs(BuildUtils):
             if self.build_config.target_debug:
                 defines['CMAKE_BUILD_TYPE'] = 'Debug'
             self.build_libs_defines(llvm_triple, defines, cc, cxx, ar, llvm_config, ldflags, cflags, extra_flags)
-            if arch == 'mipsel':
-                ldflags.append('-Wl,-z,notext')
-                ldflags.append('-Wl,--no-check-dynamic-relocations')
             if self.build_config.build_libs_flags == 'OH':
                 extra_cflags = [extra_flags, '--target=%s' % llvm_triple]
                 cflags = get_ohos_cflags(out_path, extra_cflags)
