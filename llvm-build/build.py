@@ -2511,7 +2511,7 @@ class LlvmPackage(BuildUtils):
 
 
     def strip_lldb_server(self, host, install_dir):
-        clang_version_bin_dir = os.path.join(install_dir, 'lib', 'clang', self.build_config.CLANG_VERSION, 'bin')
+        clang_version_bin_dir = os.path.join(install_dir, 'lib', 'clang', self.build_config.VERSION, 'bin')
 
         if not host.startswith('linux') or not os.path.exists(clang_version_bin_dir) or not self.build_config.strip:
             return
@@ -2949,12 +2949,12 @@ class LlvmPackage(BuildUtils):
         # Generate manifest in install_dir
         manifest = os.path.join(install_dir, 'manifest.xml')
         repo_tool = os.path.join(self.build_config.REPOROOT_DIR, '.repo', 'repo', 'repo')
-#        if os.path.isfile(repo_tool):
-#            self.logger().info('Generating manifest.')
-#            subprocess.run(['python3', repo_tool, 'manifest', '-r', '-o', manifest], shell=False,
-#                           stdout=subprocess.PIPE, cwd=self.build_config.REPOROOT_DIR)
-#        else:
-#            self.logger().error('Cannot generate manifest, repo tool not found.')
+        if os.path.isfile(repo_tool):
+            self.logger().info('Generating manifest.')
+            subprocess.run([sys.executable, repo_tool, 'manifest', '-r', '-o', manifest], shell=False,
+                           stdout=subprocess.PIPE, cwd=self.build_config.REPOROOT_DIR)
+        else:
+            self.logger().error('Cannot generate manifest, repo tool not found.')
 
         # Remove unnecessary binaries.
         necessary_bin_files = []
