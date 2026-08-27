@@ -1,6 +1,9 @@
 // RUN: %clangxx_tsan -O1 %s -o %t
 // RUN: %run %t 2>&1 | FileCheck %s
 // RUN: %run %t arg 2>&1 | FileCheck %s
+// OHOS_LOCAL
+// TSan Java interface aborts on OHOS.
+// UNSUPPORTED: ohos_family
 #include "java.h"
 
 jptr varaddr1_old;

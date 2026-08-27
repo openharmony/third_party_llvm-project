@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import shlex
 import signal
 import sys
 
@@ -13,9 +14,25 @@ def _is_ubsan_suite_binary(host_path):
     return bool(parts & {"ubsan", "ubsan_minimal"})
 
 
+def _map_host_file_arg(arg):
+    """Push host files named in argv and rewrite them to the device path.
+
+    Tests such as dlopen-mixed-c-cxx.c pass %t.so without %run mapping, so the
+    device otherwise dlopens a host path that does not exist.
+    """
+    if not arg or arg.startswith("-") or not os.path.isfile(arg):
+        return arg
+    push_to_device(arg, TMPDIR)
+    return host_to_device_path(os.path.abspath(arg), TMPDIR)
+
+
 device_binary = host_to_device_path(sys.argv[0], TMPDIR)
 device_env = build_remote_env()
-device_args = " ".join(sys.argv[1:])
+# Quote argv for hdc shell: unquoted [fourth] is a glob character class and
+# expands against files in TMPDIR (print_cmdline.cpp CHECK-PRINT).
+device_args = " ".join(
+    shlex.quote(_map_host_file_arg(arg)) for arg in sys.argv[1:]
+)
 device_stdout = device_binary + ".stdout"
 device_stderr = device_binary + ".stderr"
 device_exitcode = device_binary + ".exitcode"

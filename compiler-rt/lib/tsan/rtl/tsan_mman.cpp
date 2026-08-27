@@ -182,6 +182,9 @@ static void SignalUnsafeCall(ThreadState *thr, uptr pc) {
   ObtainCurrentStack(thr, pc, &stack);
   if (IsFiredSuppression(ctx, ReportTypeSignalUnsafe, stack))
     return;
+#if SANITIZER_OHOS
+  ScopedOhosTsanDfxEnd dfx_end;
+#endif
   ThreadRegistryLock l(&ctx->thread_registry);
   ScopedReport rep(ReportTypeSignalUnsafe);
   rep.AddStack(stack, true);

@@ -8,7 +8,7 @@
 // RUN: %env_asan_opts=coverage=1:verbosity=1 %run %t.exe %dynamiclib1 %dynamiclib2 foo 2>&1    | FileCheck %s
 //
 // https://code.google.com/p/address-sanitizer/issues/detail?id=263
-// XFAIL: android
+// XFAIL: android && !ohos_family
 // UNSUPPORTED: ios
 
 #include <assert.h>

@@ -359,7 +359,10 @@ void PrintReport(const ReportDesc *rep) {
 
   Printf("==================\n");
 #if SANITIZER_OHOS
-  Report("End Tsan report\n");
+  // Do not Report("End Tsan report") here: PrintReport runs under report_mtx,
+  // slot and thread_registry locks. DFX flush dlopens a C++ logger and can
+  // deadlock. Flush after those locks are released (ScopedOhosTsanDfxEnd).
+  SetOhosTsanDfxEndPending();
 #endif
 }
 
@@ -454,9 +457,6 @@ void PrintReport(const ReportDesc *rep) {
     }
   }
   Printf("==================\n");
-#if SANITIZER_OHOS
-  Report("End Tsan report\n");
-#endif
 }
 
 #endif

@@ -28,8 +28,18 @@ def map_list(value, sep, regex, get_path_and_do_push):
     return sep.join(re.sub(regex, repl, opt) for opt in opts)
 
 
-def _add_default_abort_on_error(value):
-    if "abort_on_error=1" in value:
+def _any_env_abort_on_error(environment):
+    # ASan parses ASAN_OPTIONS, then LSAN_OPTIONS, then UBSAN_OPTIONS into the
+    # same CommonFlags. A later abort_on_error=0 would clobber a test that set
+    # abort_on_error=1 (e.g. handle_abort_on_error.cpp).
+    for key, value in environment.items():
+        if key.endswith("SAN_OPTIONS") and "abort_on_error=1" in (value or ""):
+            return True
+    return False
+
+
+def _add_default_abort_on_error(value, skip=False):
+    if skip or "abort_on_error=" in value:
         return value
     return ":".join(filter(None, [value, "abort_on_error=0"]))
 
@@ -63,12 +73,13 @@ def build_remote_env():
             )
         )
 
+    skip_default_abort_0 = _any_env_abort_on_error(environment)
     has_ld_library_path = False
     for key, value in environment.items():
         sanitizer_option = key.endswith("SAN_OPTIONS")
         # GWP_ASAN doesn't have abort_on_error option
         if sanitizer_option and key != "GWP_ASAN_OPTIONS":
-            value = _add_default_abort_on_error(value)
+            value = _add_default_abort_on_error(value, skip_default_abort_0)
         if (
             key in ["ASAN_ACTIVATION_OPTIONS", "SCUDO_OPTIONS"]
             or sanitizer_option
@@ -111,13 +122,16 @@ def build_host_env(runtime_dir):
         "GWP_ASAN",  # OHOS_LOCAL
     )
     symbolizer_path = environment.get("LLVM_SYMBOLIZER_PATH")
+    skip_default_abort_0 = _any_env_abort_on_error(environment)
     for sanitizer in sanitizers:
         options_name = "%s_OPTIONS" % sanitizer
         options_value = environment.get(options_name, "")
         san_opt = options_name.endswith("SAN_OPTIONS")
         if san_opt and options_name != "GWP_ASAN_OPTIONS":
             # GWP_ASAN doesn't have abort_on_error option
-            options_value = _add_default_abort_on_error(options_value)
+            options_value = _add_default_abort_on_error(
+                options_value, skip_default_abort_0
+            )
         environment[options_name] = options_value
         symbolizer_name = "%s_SYMBOLIZER_PATH" % sanitizer
         if symbolizer_path and symbolizer_name not in environment:

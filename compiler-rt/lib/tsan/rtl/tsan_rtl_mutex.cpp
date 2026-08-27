@@ -55,6 +55,9 @@ static void ReportMutexMisuse(ThreadState *thr, uptr pc, ReportType typ,
     return;
   if (!ShouldReport(thr, typ))
     return;
+#if SANITIZER_OHOS
+  ScopedOhosTsanDfxEnd dfx_end;
+#endif
   ThreadRegistryLock l(&ctx->thread_registry);
   ScopedReport rep(typ);
   rep.AddMutex(addr, creation_stack_id);
@@ -540,6 +543,9 @@ void AfterSleep(ThreadState *thr, uptr pc) {
 void ReportDeadlock(ThreadState *thr, uptr pc, DDReport *r) {
   if (r == 0 || !ShouldReport(thr, ReportTypeDeadlock))
     return;
+#if SANITIZER_OHOS
+  ScopedOhosTsanDfxEnd dfx_end;
+#endif
   ThreadRegistryLock l(&ctx->thread_registry);
   ScopedReport rep(ReportTypeDeadlock);
   for (int i = 0; i < r->n; i++) {
@@ -565,6 +571,9 @@ void ReportDeadlock(ThreadState *thr, uptr pc, DDReport *r) {
 
 void ReportDestroyLocked(ThreadState *thr, uptr pc, uptr addr,
                          FastState last_lock, StackID creation_stack_id) {
+#if SANITIZER_OHOS
+  ScopedOhosTsanDfxEnd dfx_end;
+#endif
   // We need to lock the slot during RestoreStack because it protects
   // the slot journal.
   Lock slot_lock(&ctx->slots[static_cast<uptr>(last_lock.sid())].mtx);

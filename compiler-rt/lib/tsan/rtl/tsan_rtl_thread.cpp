@@ -88,6 +88,9 @@ void ThreadFinalize(ThreadState *thr) {
 #if !SANITIZER_GO
   if (!ShouldReport(thr, ReportTypeThreadLeak))
     return;
+#if SANITIZER_OHOS
+  ScopedOhosTsanDfxEnd dfx_end;
+#endif
   ThreadRegistryLock l(&ctx->thread_registry);
   Vector<ThreadLeak> leaks;
   ctx->thread_registry.RunCallbackForEachThreadLocked(CollectThreadLeaks,
@@ -97,6 +100,10 @@ void ThreadFinalize(ThreadState *thr) {
     rep.AddThread(leaks[i].tctx, true);
     rep.SetCount(leaks[i].count);
     OutputReport(thr, rep);
+#if SANITIZER_OHOS
+    if (OhosTsanHaltPending())
+      break;
+#endif
   }
 #endif
 }
