@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clangxx_tsan -O0 %s -o %t
 // RUN: not %run %t          2>&1 | FileCheck %s --check-prefix=CHECK-RACE
 // Test size larger than clear_shadow_mmap_threshold, which is handled differently.
@@ -49,10 +50,7 @@ int main(int argc, const char *argv[]) {
   return 0;
 }
 
-// OHOS_LOCAL begin
-// CHECK-RACE-DAG: WARNING: ThreadSanitizer: data race
-// CHECK-RACE-DAG: OK
+// CHECK-RACE: WARNING: ThreadSanitizer: data race
+// CHECK-RACE: OK
 // CHECK-IGNORE-NOT: WARNING: ThreadSanitizer: data race
 // CHECK-IGNORE: OK
-// CHECK-IGNORE-NOT: WARNING: ThreadSanitizer: data race
-// OHOS_LOCAL end

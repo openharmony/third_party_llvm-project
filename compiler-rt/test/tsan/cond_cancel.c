@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clang_tsan -O1 %s -o %t && %run %t 2>&1 | FileCheck %s
 // CHECK-NOT: WARNING
 // CHECK: OK
@@ -9,9 +10,6 @@
 // however the same version GLIBC-2.17 will not make fail the test on 
 // powerpc64 BE (VMA=46)
 // UNSUPPORTED: target=powerpc64-unknown-linux-gnu{{.*}}
-// OHOS_LOCAL
-// pthread_cancel not available on OHOS musl
-// UNSUPPORTED: ohos_family
 
 #include "test.h"
 

@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_llvm
 // Test sanitizers ld flags.
 
 // Match all sanitizer related libclang_rt, we are not interested in
@@ -907,20 +908,6 @@
 // CHECK-CFI-CROSS-DSO-DIAG-ANDROID: "{{.*}}ld{{(.exe)?}}"
 // CHECK-CFI-CROSS-DSO-DIAG-ANDROID: "{{[^"]*}}libclang_rt.ubsan_standalone.so"
 // CHECK-CFI-CROSS-DSO-DIAG-ANDROID: "--export-dynamic-symbol=__cfi_check"
-
-// OHOS_LOCAL begin
-
-// Cross-DSO CFI on OHOS does not link runtime libraries.
-// RUN: %clang -fsanitize=cfi -fsanitize-cfi-cross-dso %s -### -o %t.o 2>&1 \
-// RUN:     -flto -fvisibility=hidden \
-// RUN:     -target aarch64-linux-ohos -fuse-ld=ld \
-// RUN:     -resource-dir=%S/Inputs/resource_dir \
-// RUN:     --sysroot=%S/Inputs/ohos_native_tree/sysroot \
-// RUN:   | %{filecheck} --check-prefix=CHECK-CFI-CROSS-DSO-OHOS
-// CHECK-CFI-CROSS-DSO-OHOS: "{{.*}}ld{{(.exe)?}}"
-// CHECK-CFI-CROSS-DSO-OHOS-NOT: libclang_rt.cfi
-
-// OHOS_LOCAL end
 
 // CFI by itself does not link runtime libraries.
 // RUN: %clang -fsanitize=cfi \

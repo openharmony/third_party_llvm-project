@@ -28,6 +28,10 @@ llvm_canonicalize_cmake_booleans(
   LLVM_INCLUDE_SPIRV_TOOLS_TESTS
   LLVM_EXPERIMENTAL_KEY_INSTRUCTIONS
   )
+if(NOT DEFINED OHOS_LLVM)
+  set(OHOS_LLVM OFF)
+endif()
+llvm_canonicalize_cmake_booleans(OHOS_LLVM)
 
 # Run tests requiring Z3 headers only if LLVM was built with Z3
 # and the headers are available while building Clang -- the latter may

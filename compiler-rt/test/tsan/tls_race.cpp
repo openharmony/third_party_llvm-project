@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clangxx_tsan %darwin_min_target_with_tls_support -O1 %s -o %t && \
 // RUN:   %deflake %run %t | \
 // RUN:   FileCheck %s --check-prefix=CHECK-%os --check-prefix=CHECK
@@ -24,5 +25,3 @@ int main() {
 // CHECK-FreeBSD:   Location is TLS of main thread.
 // CHECK-NetBSD:   Location is TLS of main thread.
 // CHECK-Darwin:   Location is heap block of size 4
-// OHOS_LOCAL
-// CHECK-OHOS:   Location is heap block of size

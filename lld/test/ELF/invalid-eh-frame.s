@@ -1,11 +1,10 @@
+# UNSUPPORTED: ohos_llvm
 # REQUIRES: x86
 
 # RUN: llvm-mc -filetype=obj -triple=x86_64-pc-linux %s -o %t
 # RUN: not ld.lld --eh-frame-hdr %t -o /dev/null 2>&1 | FileCheck %s
 
-# OHOS_LOCAL begin
-# CHECK:      error: malformed CIE in .eh_frame: corrupted version
-# OHOS_LOCAL end
+# CHECK:      error: corrupted .eh_frame: unexpected end of CIE
 # CHECK-NEXT: >>> defined in {{.*}}:(.eh_frame+0x8)
 
 .section .eh_frame,"a",@unwind

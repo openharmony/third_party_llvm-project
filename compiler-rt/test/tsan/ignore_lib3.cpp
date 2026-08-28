@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: rm -rf %t-dir
 // RUN: mkdir %t-dir
 
@@ -10,10 +11,6 @@
 
 // Some aarch64 kernels do not support non executable write pages
 // REQUIRES: stable-runtime
-
-// LLVM 21 handles library unloads, so this test's expected unload failure does
-// not apply on OHOS.
-// UNSUPPORTED: ohos_family
 
 #ifndef LIB
 

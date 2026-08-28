@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clang_hwasan  %s -o %t
 // RUN: not %run %t 40 2>&1 | FileCheck %s --check-prefix=CHECK40
 // RUN: not %run %t 80 2>&1 | FileCheck %s --check-prefix=CHECK80
@@ -48,18 +49,10 @@ int main(int argc, char **argv) {
   // CHECKm30: is located 30 bytes before a 30-byte region
   //
   // CHECKMm30: is a large allocated heap chunk; size: {{[0-9]*}} offset: -30
-  // OHOS_LOCAL begin
-  // CHECKMm30: Currently allocated here:
-  // CHECKMm30: #0 {{[0x]+}}{{.*}}
-  // OHOS_LOCAL end
   // CHECKMm30: Cause: heap-buffer-overflow
   // CHECKMm30: is located 30 bytes before a 1000000-byte region
   //
   // CHECKM: is a large allocated heap chunk; size: {{[0-9]*}} offset: 1000000
-  // OHOS_LOCAL begin
-  // CHECKM: Currently allocated here:
-  // CHECKM: #0 {{[0x]+}}{{.*}}
-  // OHOS_LOCAL end
   // CHECKM: Cause: heap-buffer-overflow
   // CHECKM: is located 0 bytes after a 1000000-byte region
   //

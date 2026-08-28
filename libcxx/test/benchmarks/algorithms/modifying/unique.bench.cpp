@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_llvm
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -17,7 +18,7 @@
 #include <vector>
 
 #include "benchmark/benchmark.h"
-#include "../../GenerateInput.h"
+#include "../../../GenerateInput.h"
 
 int main(int argc, char** argv) {
   auto std_unique      = [](auto first, auto last) { return std::unique(first, last); };
@@ -76,7 +77,7 @@ int main(int argc, char** argv) {
             }
           })
           ->Arg(32)
-          ->Arg(52) // non power-of-two
+          ->Arg(50) // non power-of-two
           ->Arg(1024)
           ->Arg(8192);
     };
@@ -143,7 +144,7 @@ int main(int argc, char** argv) {
             }
           })
           ->Arg(32)
-          ->Arg(52) // non power-of-two
+          ->Arg(50) // non power-of-two
           ->Arg(1024)
           ->Arg(8192);
     };

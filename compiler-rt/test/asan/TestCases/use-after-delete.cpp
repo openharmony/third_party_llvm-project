@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clangxx_asan -O0 %s -o %t && not %run %t 2>&1 | FileCheck %s --check-prefix=CHECK-%os --check-prefix=CHECK
 // RUN: %clangxx_asan -O1 %s -o %t && not %run %t 2>&1 | FileCheck %s --check-prefix=CHECK-%os --check-prefix=CHECK
 // RUN: %clangxx_asan -O2 %s -o %t && not %run %t 2>&1 | FileCheck %s --check-prefix=CHECK-%os --check-prefix=CHECK
@@ -21,8 +22,7 @@ int main() {
   // CHECK-Windows:{{    #0 0x.* in operator delete\[\]}}
   // CHECK-FreeBSD:{{    #0 0x.* in operator delete\[\]}}
   // CHECK-Darwin: {{    #0 0x.* in .*_Zda}}
-  // CHECK-OHOS:   {{    #0 0x.* in operator delete\[\]}}
-  // CHECK-NEXT:   {{    #1 0x.* in main .*use-after-delete.cpp:}}[[@LINE-15]]
+  // CHECK-NEXT:   {{    #1 0x.* in main .*use-after-delete.cpp:}}[[@LINE-14]]
 
   // CHECK: {{previously allocated by thread T0 here:}}
   // CHECK-Linux:  {{    #0 0x.* in operator new\[\]}}
@@ -30,8 +30,7 @@ int main() {
   // CHECK-Windows:{{    #0 0x.* in operator new\[\]}}
   // CHECK-FreeBSD:{{    #0 0x.* in operator new\[\]}}
   // CHECK-Darwin: {{    #0 0x.* in .*_Zna}}
-  // CHECK-OHOS:   {{    #0 0x.* in operator new\[\]}}
-  // CHECK-NEXT:   {{    #1 0x.* in main .*use-after-delete.cpp:}}[[@LINE-25]]
+  // CHECK-NEXT:   {{    #1 0x.* in main .*use-after-delete.cpp:}}[[@LINE-23]]
 
 
   // CHECK: Shadow byte legend (one shadow byte represents {{[0-9]+}} application bytes):

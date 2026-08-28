@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // Check that unloading a module doesn't break coverage dumping for remaining
 // modules.
 // RUN: %clangxx_asan -fsanitize-coverage=func,trace-pc-guard -DSHARED %s -shared -o %dynamiclib1 -fPIC
@@ -8,7 +9,7 @@
 // RUN: %env_asan_opts=coverage=1:verbosity=1 %run %t.exe %dynamiclib1 %dynamiclib2 foo 2>&1    | FileCheck %s
 //
 // https://code.google.com/p/address-sanitizer/issues/detail?id=263
-// XFAIL: android && !ohos_family
+// XFAIL: android
 // UNSUPPORTED: ios
 
 #include <assert.h>

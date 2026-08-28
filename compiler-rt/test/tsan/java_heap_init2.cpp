@@ -1,7 +1,5 @@
-// RUN: %clangxx_tsan -O1 %s -o %t && %run %t 2>&1 | FileCheck %s
-// OHOS_LOCAL
-// TSan Java interface aborts on OHOS.
 // UNSUPPORTED: ohos_family
+// RUN: %clangxx_tsan -O1 %s -o %t && %run %t 2>&1 | FileCheck %s
 
 #include "java.h"
 #include <errno.h>

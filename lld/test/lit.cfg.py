@@ -171,3 +171,10 @@ if tar_executable:
 # ELF tests expect the default target for ld.lld to be ELF.
 if config.ld_lld_default_mingw:
     config.excludes.append("ELF")
+
+# OHOS_LOCAL begin: ohos_llvm gates OHOS_LLVM/ tests and UNSUPPORTED: ohos_llvm.
+if getattr(config, "ohos_llvm", False):
+    config.available_features.add("ohos_llvm")
+else:
+    config.excludes.append("OHOS_LLVM")
+# OHOS_LOCAL end

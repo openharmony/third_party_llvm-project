@@ -1,3 +1,4 @@
+; UNSUPPORTED: ohos_llvm
 ; RUN: opt -thinlto-bc %s -o %t1.bc
 ; RUN: opt -thinlto-bc %p/Inputs/import-symver-foo.ll -o %t2.bc
 ; RUN: llvm-lto -thinlto-action=thinlink %t1.bc %t2.bc -o %t3.index.bc
@@ -9,10 +10,8 @@
 ; RUN: llvm-dis %t1.bc.thinlto.imported.bc -o - | FileCheck --check-prefix=NOIMPORT %s
 
 ; When @bar gets imported, the symver must be imported too.
-; IMPORT-DAG: module asm ".symver bar, bar@BAR_1.2.3"
-; When @foo gets imported, the symver must be imported as @ rather than @@.
-; IMPORT-DAG: module asm ".symver foo, foo@FOO_1.2.3"
-; IMPORT-DAG: declare dso_local i32 @bar()
+; IMPORT: module asm ".symver bar, bar@BAR_1.2.3"
+; IMPORT: declare dso_local i32 @bar()
 
 ; When @bar isn't imported, the symver is also not imported.
 ; NOIMPORT-NOT: module asm

@@ -9,6 +9,10 @@ llvm_canonicalize_cmake_booleans(
   LLVM_BYE_LINK_INTO_TOOLS
   LLVM_TOOL_LLVM_DRIVER_BUILD
   )
+if(NOT DEFINED OHOS_LLVM)
+  set(OHOS_LLVM OFF)
+endif()
+llvm_canonicalize_cmake_booleans(OHOS_LLVM)
 
 configure_lit_site_cfg(
   ${CMAKE_CURRENT_SOURCE_DIR}/lit.site.cfg.py.in

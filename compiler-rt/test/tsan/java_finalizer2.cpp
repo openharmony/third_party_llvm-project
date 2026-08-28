@@ -1,11 +1,9 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clangxx_tsan -O1 %s -o %t && %run %t 2>&1 | FileCheck %s
 // Regression test for https://github.com/golang/go/issues/39186
 
 // pthread barriers are not available on OS X
 // UNSUPPORTED: darwin
-// OHOS_LOCAL
-// TSan Java interface aborts on OHOS.
-// UNSUPPORTED: ohos_family
 
 #include "java.h"
 #include <string.h>
@@ -40,9 +38,9 @@ void *Thread3(void *p) {
   Heap* heap = (Heap*)p;
   pthread_barrier_wait(&heap->barrier_finalizer);
   while (__atomic_load_n(&heap->ready, __ATOMIC_ACQUIRE) != 1)
-    sched_yield(); // OHOS_LOCAL
+    pthread_yield();
   while (__atomic_load_n(&heap->finalized, __ATOMIC_RELAXED) != 1)
-    sched_yield(); // OHOS_LOCAL
+    pthread_yield();
   __atomic_fetch_add(&heap->wg, 1, __ATOMIC_RELEASE);
   return 0;
 }
@@ -73,7 +71,7 @@ int main() {
     pthread_join(ballast[i], 0);
   pthread_barrier_wait(&heap->barrier_finalizer);
   while (__atomic_load_n(&heap->wg, __ATOMIC_ACQUIRE) != 2)
-    sched_yield(); // OHOS_LOCAL
+    pthread_yield();
   if (heap->data != 1)
     exit(printf("no data\n"));
   for (int i = 0; i < 3; i++)

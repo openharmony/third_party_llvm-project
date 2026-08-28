@@ -37,6 +37,14 @@ pythonize_bool(OPENMP_STANDALONE_BUILD)
 pythonize_bool(OPENMP_TEST_COMPILER_HAS_OMIT_FRAME_POINTER_FLAGS)
 pythonize_bool(OPENMP_TEST_COMPILER_HAS_OMP_H)
 
+# OHOS_LOCAL begin
+if(NOT DEFINED OHOS_LLVM)
+  set(OHOS_LLVM OFF)
+endif()
+set(OHOS_LLVM_LIT ${OHOS_LLVM})
+pythonize_bool(OHOS_LLVM_LIT)
+# OHOS_LOCAL end
+
 add_library(ompt-print-callback INTERFACE)
 target_include_directories(ompt-print-callback INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/ompt)
 

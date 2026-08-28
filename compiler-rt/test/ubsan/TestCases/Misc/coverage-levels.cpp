@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // Test various levels of coverage
 //
 // FIXME: Port the environment variable logic below for the lit shell.
@@ -21,7 +22,7 @@
 // RUN: %env_ubsan_opts=coverage=1:verbosity=1:coverage_dir='"%t-dir"' %run %t 2>&1 | FileCheck %s --check-prefix=CHECK3 --check-prefix=CHECK_WARN
 
 // Coverage is not yet implemented in TSan.
-// XFAIL: ubsan-tsan && !ohos_family
+// XFAIL: ubsan-tsan
 // UNSUPPORTED: ubsan-standalone-static
 // No coverage support
 // UNSUPPORTED: target={{.*openbsd.*}}

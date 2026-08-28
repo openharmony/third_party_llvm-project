@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clang_hwasan -O0 %s -DMALLOC -DFREE -o %t.mf
 // RUN: %env_hwasan_opts=tag_in_malloc=0,tag_in_free=1 not %run %t.mf 2>&1 | FileCheck %s --check-prefixes=FREE
 // RUN: %env_hwasan_opts=tag_in_malloc=1,tag_in_free=1 not %run %t.mf 2>&1 | FileCheck %s --check-prefixes=MALLOC
@@ -33,15 +34,15 @@ int main() {
 #ifdef MALLOC
   // MALLOC: READ of size 1 at
   // MALLOC: is located 6 bytes after a 10-byte region
-  // MALLOC: allocated by thread {{[0-9]+}} here:
+  // MALLOC: allocated by thread T0 here:
   char volatile x = p[16];
 #endif
   free(p);
 #ifdef FREE
   // FREE: READ of size 1 at
   // FREE: is located 0 bytes inside a 10-byte region
-  // FREE: freed by thread {{[0-9]+}} here:
-  // FREE: previously allocated by thread {{[0-9]+}} here:
+  // FREE: freed by thread T0 here:
+  // FREE: previously allocated by thread T0 here:
   char volatile y = p[0];
 #endif
 

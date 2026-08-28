@@ -1,7 +1,5 @@
-// RUN: %clangxx_tsan -O1 %s -o %t && %run %t 2>&1 | FileCheck %s
-// OHOS_LOCAL
-// pthread_mutexattr_setrobust not available on OHOS musl
 // UNSUPPORTED: ohos_family
+// RUN: %clangxx_tsan -O1 %s -o %t && %run %t 2>&1 | FileCheck %s
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>

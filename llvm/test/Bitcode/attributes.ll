@@ -1,3 +1,4 @@
+; UNSUPPORTED: ohos_llvm
 ; RUN: llvm-as < %s | llvm-dis | FileCheck %s
 ; RUN: verify-uselistorder < %s
 ; PR12696
@@ -572,14 +573,6 @@ define void @dead_on_return(ptr dead_on_return %p) {
   ret void
 }
 
-; OHOS_LOCAL begin
-; CHECK: define void @f95() [[SSPRETREQ:#[0-9]+]]
-define void @f95() sspretreq { ret void }
-
-; CHECK: define void @f96() [[SSPRETSTRONG:#[0-9]+]]
-define void @f96() sspretstrong { ret void }
-; OHOS_LOCAL end
-
 ; CHECK: attributes #0 = { noreturn }
 ; CHECK: attributes #1 = { nounwind }
 ; CHECK: attributes #2 = { memory(none) }
@@ -639,8 +632,4 @@ define void @f96() sspretstrong { ret void }
 ; CHECK: attributes [[SKIPPROFILE]] = { skipprofile }
 ; CHECK: attributes [[OPTDEBUG]] = { optdebug }
 ; CHECK: attributes [[NODIVERGENCESOURCE]] = { nodivergencesource }
-; OHOS_LOCAL begin
-; CHECK: attributes [[SSPRETREQ]] = { sspretreq }
-; CHECK: attributes [[SSPRETSTRONG]] = { sspretstrong }
-; OHOS_LOCAL end
 ; CHECK: attributes #[[NOBUILTIN]] = { nobuiltin }

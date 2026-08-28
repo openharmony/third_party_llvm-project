@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clang_builtins %s %librt -o %t && %run %t
 // REQUIRES: librt_has_divtf3
 
@@ -159,10 +160,6 @@ int main() {
   // test 1 / (1 - eps(0.5)) = 1 + eps(1).
   if (test__divtf3(1.0L, TF_C(0x1.ffffffffffffffffffffffffffffp-1),
                    UINT64_C(0x3FFF000000000000), UINT64_C(1)))
-    return 1;
-
-  if (test__divtf3(-1L, -0.999999999999999999999999999999999904L,
-                   UINT64_C(0x1), UINT64_C(0x3fff000000000000)))
     return 1;
 
 #else

@@ -1,9 +1,8 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clangxx_tsan -O1 %s -o %t && %run %t 2>&1 | FileCheck %s
 
 // The test tries to provoke internal allocator to be locked during fork
 // and then force the child process to use the internal allocator.
-
-// UNSUPPORTED: ohos_family
 
 #include "../test.h"
 #include <errno.h>
