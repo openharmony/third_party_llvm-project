@@ -2186,6 +2186,13 @@ ModuleSP Target::GetOrCreateModule(const ModuleSpec &module_spec, bool notify,
       }
     }
 
+    // Platform plugins may resolve a host module without calling ModuleList.
+    // Cache those direct-path modules, but preserve remote platform modules'
+    // existing platform/module-cache ownership.
+    if (m_platform_sp && m_platform_sp->IsHost())
+      module_sp = ModuleList::GetOrCreateCachedModule(module_sp, module_spec,
+                                                      &old_modules);
+
     // We found a module that wasn't in our target list.  Let's make sure that
     // there wasn't an equivalent module in the list already, and if there was,
     // let's remove it.
@@ -3047,6 +3054,42 @@ bool Target::SetSectionUnloaded(const lldb::SectionSP &section_sp,
 
 void Target::ClearAllLoadedSections() { m_section_load_history.Clear(); }
 
+void Target::ReloadExecutableModuleIfChanged() {
+  if (!Platform::GetGlobalPlatformProperties()
+           .GetUseExecSearchPathModuleCache())
+    return;
+
+  ModuleSP old_executable_sp = GetExecutableModule();
+  if (!old_executable_sp)
+    return;
+
+  FileSpec source_file = old_executable_sp->GetPlatformFileSpec();
+  if (!source_file)
+    source_file = old_executable_sp->GetFileSpec();
+
+  ModuleSpec module_spec(source_file, old_executable_sp->GetArchitecture());
+  FileSpecList search_paths = GetExecutableSearchPaths();
+  ModuleSP reloaded_executable_sp;
+  Status error =
+      ModuleList::GetSharedModule(module_spec, reloaded_executable_sp,
+                                  &search_paths, nullptr, nullptr, false);
+  if (m_platform_sp && m_platform_sp->IsHost())
+    reloaded_executable_sp = ModuleList::GetOrCreateCachedModule(
+        reloaded_executable_sp, module_spec);
+  if (error.Fail() || !reloaded_executable_sp ||
+      reloaded_executable_sp == old_executable_sp)
+    return;
+
+  LLDB_LOG(GetLog(LLDBLog::Target | LLDBLog::Modules),
+           "reloading executable module: old={0}, old_uuid={1}, new={2}, "
+           "new_uuid={3}",
+           old_executable_sp->GetFileSpec().GetPath(),
+           old_executable_sp->GetUUID().GetAsString(),
+           reloaded_executable_sp->GetFileSpec().GetPath(),
+           reloaded_executable_sp->GetUUID().GetAsString());
+  SetExecutableModule(reloaded_executable_sp, eLoadDependentsYes);
+}
+
 Status Target::Launch(ProcessLaunchInfo &launch_info, Stream *stream) {
   m_stats.SetLaunchOrAttachTime();
   Status error;
@@ -3120,18 +3163,20 @@ Status Target::Launch(ProcessLaunchInfo &launch_info, Stream *stream) {
     launch_info.SetHijackListener(
         Listener::MakeListener("lldb.Target.Launch.hijack"));
 
+  // A new launch must not retain a process or debug information from the
+  // previous executable. Do this before resolving a replacement executable so
+  // an old cache-backed module can remain alive until its process is gone.
+  if (state != eStateConnected && !launch_info.IsScriptedProcess()) {
+    DeleteCurrentProcess();
+    ReloadExecutableModuleIfChanged();
+  }
+
   // If we're not already connected to the process, and if we have a platform
   // that can launch a process for debugging, go ahead and do that here.
   if (state != eStateConnected && platform_sp &&
       platform_sp->CanDebugProcess() && !launch_info.IsScriptedProcess()) {
     LLDB_LOGF(log, "Target::%s asking the platform to debug the process",
               __FUNCTION__);
-
-    // If there was a previous process, delete it before we make the new one.
-    // One subtle point, we delete the process before we release the reference
-    // to m_process_sp.  That way even if we are the last owner, the process
-    // will get Finalized before it gets destroyed.
-    DeleteCurrentProcess();
 
     m_process_sp =
         GetPlatform()->DebugProcess(launch_info, debugger, *this, error);

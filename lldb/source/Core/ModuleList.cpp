@@ -195,39 +195,69 @@ Status CopyModuleToExecSearchPathCache(const FileSpec &source_file_spec,
   return Status();
 }
 
-ModuleSP CreateCachedModuleFromExecSearchPath(
-    const ModuleSP &resolved_module_sp, const ModuleSpec &resolved_module_spec,
-    const UUID *requested_uuid_ptr) {
+Status PrepareExecSearchPathCachedFile(const ModuleSP &source_module_sp,
+                                       FileSpec &cached_file_spec) {
   Log *log = GetLog(LLDBLog::Modules);
-  if (!resolved_module_sp)
-    return {};
+  cached_file_spec = {};
+  if (!source_module_sp)
+    return Status("invalid source module");
 
-  const UUID &module_uuid = resolved_module_sp->GetUUID();
+  const UUID &module_uuid = source_module_sp->GetUUID();
   if (!module_uuid.IsValid()) {
-    LLDB_LOG(log,
-             "exec-search-path cache disabled for module with invalid build-id: "
-             "file={0}",
-             resolved_module_sp->GetFileSpec().GetPath());
-    return {};
+    LLDB_LOG(
+        log,
+        "exec-search-path cache disabled for module with invalid build-id: "
+        "file={0}",
+        source_module_sp->GetFileSpec().GetPath());
+    return Status("module build-id/UUID is invalid");
   }
 
-  FileSpec cached_file_spec;
-  // Prepare a deterministic cache copy first, then reopen the module from
-  // that path to decouple reads from the mutable exec-search-path location.
-  Status cache_error =
-      CopyModuleToExecSearchPathCache(resolved_module_sp->GetFileSpec(),
-                                      module_uuid, cached_file_spec);
+  Status cache_error = CopyModuleToExecSearchPathCache(
+      source_module_sp->GetFileSpec(), module_uuid, cached_file_spec);
   if (cache_error.Fail()) {
-    LLDB_LOG(log, "exec-search-path cache prepare failed: file={0}, uuid={1}, "
-                  "error={2}",
-             resolved_module_sp->GetFileSpec().GetPath(),
+    LLDB_LOG(log,
+             "exec-search-path cache prepare failed: file={0}, uuid={1}, "
+             "error={2}",
+             source_module_sp->GetFileSpec().GetPath(),
              module_uuid.GetAsString(), cache_error.AsCString());
-    return {};
   }
+  return cache_error;
+}
+
+bool IsModuleInExecSearchPathCache(const ModuleSP &module_sp,
+                                   const FileSpec &cache_root) {
+  if (!module_sp || !cache_root)
+    return false;
+
+  const FileSpec &module_file = module_sp->GetFileSpec();
+  const FileSpec &source_file = module_sp->GetPlatformFileSpec();
+  const UUID &module_uuid = module_sp->GetUUID();
+  if (!module_file || !source_file || source_file == module_file ||
+      !module_uuid.IsValid())
+    return false;
+
+  FileSpec expected_file = cache_root;
+  expected_file.AppendPathComponent(module_uuid.GetAsString().c_str());
+  expected_file.AppendPathComponent(source_file.GetFilename().GetStringRef());
+  return module_file == expected_file;
+}
+
+ModuleSP
+CreateCachedModuleFromExecSearchPath(const ModuleSP &resolved_module_sp,
+                                     const ModuleSpec &resolved_module_spec,
+                                     const UUID *requested_uuid_ptr) {
+  Log *log = GetLog(LLDBLog::Modules);
+  FileSpec cached_file_spec;
+  if (PrepareExecSearchPathCachedFile(resolved_module_sp, cached_file_spec)
+          .Fail())
+    return {};
+
   if (!cached_file_spec ||
       cached_file_spec == resolved_module_sp->GetFileSpec()) {
     return {};
   }
+
+  const UUID &module_uuid = resolved_module_sp->GetUUID();
 
   ModuleSpec cached_module_spec(resolved_module_spec);
   cached_module_spec.GetUUID() = module_uuid;
@@ -269,21 +299,40 @@ ModuleSP CreateCachedModuleFromExecSearchPath(
   return cached_module_sp;
 }
 
-bool HasUpdatedBuildIDInExecSearchPaths(
-    const ModuleSP &cached_module_sp, const ModuleSpec &module_spec,
-    const FileSpecList &module_search_paths) {
-  // This check is used before reusing a shared ModuleSP. It answers:
-  // "Does the currently discoverable file under exec-search-paths have a
-  // different build-id than the shared module we are about to reuse?"
+llvm::Optional<bool> HasUpdatedBuildIDAtPath(const ModuleSP &cached_module_sp,
+                                             const ModuleSpec &module_spec,
+                                             const FileSpec &candidate_file) {
   if (!cached_module_sp)
-    return false;
-
-  const ConstString module_filename = module_spec.GetFileSpec().GetFilename();
-  if (!module_filename)
-    return false;
+    return llvm::None;
 
   const UUID &cached_uuid = cached_module_sp->GetUUID();
   if (!cached_uuid.IsValid())
+    return llvm::None;
+
+  ModuleSpec candidate_spec(module_spec);
+  candidate_spec.GetFileSpec() = candidate_file;
+  ModuleSP candidate_module_sp = std::make_shared<Module>(candidate_spec);
+  if (!candidate_module_sp || !candidate_module_sp->GetObjectFile())
+    return llvm::None;
+
+  const UUID &candidate_uuid = candidate_module_sp->GetUUID();
+  if (!candidate_uuid.IsValid() || candidate_uuid == cached_uuid)
+    return false;
+
+  LLDB_LOG(GetLog(LLDBLog::Modules),
+           "module cache refresh required: cached_uuid={0}, "
+           "candidate_uuid={1}, candidate={2}",
+           cached_uuid.GetAsString(), candidate_uuid.GetAsString(),
+           candidate_file.GetPath());
+  return true;
+}
+
+bool HasUpdatedBuildIDInExecSearchPaths(
+    const ModuleSP &cached_module_sp, const ModuleSpec &module_spec,
+    const FileSpecList &module_search_paths) {
+  // Compare the first resolvable exec-search-path hit with the shared module.
+  const ConstString module_filename = module_spec.GetFileSpec().GetFilename();
+  if (!module_filename)
     return false;
 
   for (uint32_t idx = 0; idx < module_search_paths.GetSize(); ++idx) {
@@ -297,27 +346,31 @@ bool HasUpdatedBuildIDInExecSearchPaths(
     if (!FileSystem::Instance().Exists(candidate_file))
       continue;
 
-    ModuleSpec candidate_spec(module_spec);
-    candidate_spec.GetFileSpec() = candidate_file;
-    ModuleSP candidate_module_sp = std::make_shared<Module>(candidate_spec);
-    if (!candidate_module_sp || !candidate_module_sp->GetObjectFile())
+    llvm::Optional<bool> changed =
+        HasUpdatedBuildIDAtPath(cached_module_sp, module_spec, candidate_file);
+    if (!changed)
       continue;
-
-    const UUID &candidate_uuid = candidate_module_sp->GetUUID();
-    if (candidate_uuid.IsValid() && candidate_uuid != cached_uuid) {
-      LLDB_LOG(GetLog(LLDBLog::Modules),
-               "exec-search-path module refresh required: cached_uuid={0}, "
-               "candidate_uuid={1}, candidate={2}",
-               cached_uuid.GetAsString(), candidate_uuid.GetAsString(),
-               candidate_file.GetPath());
-      return true;
-    }
-
-    // We found the current real module file and its UUID matches.
-    return false;
+    return *changed;
   }
 
   return false;
+}
+
+bool HasUpdatedBuildIDAtCachedModuleSource(const ModuleSP &cached_module_sp,
+                                           const ModuleSpec &module_spec) {
+  // A cache-backed module retains its source path as the platform path.
+  if (!cached_module_sp)
+    return false;
+
+  const FileSpec &cached_file = cached_module_sp->GetFileSpec();
+  const FileSpec &source_file = cached_module_sp->GetPlatformFileSpec();
+  if (!source_file || source_file == cached_file ||
+      !FileSystem::Instance().Exists(source_file))
+    return false;
+
+  llvm::Optional<bool> changed =
+      HasUpdatedBuildIDAtPath(cached_module_sp, module_spec, source_file);
+  return changed.value_or(false);
 }
 
 void PruneExecSearchPathCachedModule(const ModuleSP &module_sp) {
@@ -1055,6 +1108,53 @@ bool ModuleList::ModuleIsInCache(const Module *module_ptr) {
   return false;
 }
 
+FileSpec
+ModuleList::GetOrCreateCachedModuleFile(const ModuleSpec &module_spec) {
+  if (!GetExecSearchPathModuleCacheRoot())
+    return {};
+
+  const UUID *uuid_ptr = module_spec.GetUUIDPtr();
+  ModuleSP source_module_sp = std::make_shared<Module>(module_spec);
+  if (!source_module_sp || !source_module_sp->GetObjectFile())
+    return {};
+  if ((uuid_ptr && *uuid_ptr != source_module_sp->GetUUID()) ||
+      source_module_sp->GetObjectFile()->GetType() ==
+          ObjectFile::eTypeStubLibrary)
+    return {};
+
+  FileSpec cached_file_spec;
+  Status error =
+      PrepareExecSearchPathCachedFile(source_module_sp, cached_file_spec);
+  if (error.Fail())
+    return {};
+  return cached_file_spec;
+}
+
+ModuleSP ModuleList::GetOrCreateCachedModule(
+    const ModuleSP &module_sp, const ModuleSpec &module_spec,
+    llvm::SmallVectorImpl<lldb::ModuleSP> *old_modules) {
+  FileSpec cache_root = GetExecSearchPathModuleCacheRoot();
+  if (!module_sp || !cache_root ||
+      IsModuleInExecSearchPathCache(module_sp, cache_root))
+    return module_sp;
+
+  ModuleSP cached_module_sp = CreateCachedModuleFromExecSearchPath(
+      module_sp, module_spec, module_spec.GetUUIDPtr());
+  if (!cached_module_sp)
+    return module_sp;
+
+  ModuleList &shared_module_list = GetSharedModuleList();
+  std::lock_guard<std::recursive_mutex> guard(
+      shared_module_list.m_modules_mutex);
+  if (shared_module_list.FindModule(module_sp.get())) {
+    if (old_modules)
+      old_modules->push_back(module_sp);
+    shared_module_list.Remove(module_sp);
+    shared_module_list.ReplaceEquivalent(cached_module_sp, old_modules);
+  }
+  return cached_module_sp;
+}
+
 void ModuleList::FindSharedModules(const ModuleSpec &module_spec,
                                    ModuleList &matching_module_list) {
   GetSharedModuleList().FindModules(module_spec, matching_module_list);
@@ -1076,6 +1176,11 @@ ModuleList::GetSharedModule(const ModuleSpec &module_spec, ModuleSP &module_sp,
   char path[PATH_MAX];
 
   Status error;
+
+  // Cache policy belongs to module loading, independent of how the source
+  // file was resolved (exact path, remapping, or exec-search-paths).
+  const bool use_cache_copy =
+      static_cast<bool>(GetExecSearchPathModuleCacheRoot());
 
   module_sp.reset();
 
@@ -1099,13 +1204,15 @@ ModuleList::GetSharedModule(const ModuleSpec &module_spec, ModuleSP &module_sp,
            ++module_idx) {
         module_sp = matching_module_list.GetModuleAtIndex(module_idx);
 
-        // When resolving through exec-search-paths, the shared module list can
-        // return a previously cached module before we touch the current on-disk
-        // module. Re-check build-id against the current search-path hit to
-        // ensure detach->rebuild->reattach picks up updated binaries.
-        if (!uuid_ptr && module_search_paths_ptr &&
-            HasUpdatedBuildIDInExecSearchPaths(module_sp, module_spec,
-                                               *module_search_paths_ptr)) {
+        // The shared module list can return a previously cached module before
+        // we touch the current on-disk module. Re-check its original source
+        // path to ensure detach->rebuild->reattach picks up updated binaries.
+        if (!uuid_ptr &&
+            ((module_search_paths_ptr &&
+              HasUpdatedBuildIDInExecSearchPaths(module_sp, module_spec,
+                                                 *module_search_paths_ptr)) ||
+             (use_cache_copy &&
+              HasUpdatedBuildIDAtCachedModuleSource(module_sp, module_spec)))) {
           if (old_modules)
             old_modules->push_back(module_sp);
           // The shared entry is stale. We are already under
@@ -1205,15 +1312,13 @@ ModuleList::GetSharedModule(const ModuleSpec &module_spec, ModuleSP &module_sp,
               ObjectFile::eTypeStubLibrary) {
             resolved_module_sp.reset();
           } else {
-            ModuleSP cached_module_sp = CreateCachedModuleFromExecSearchPath(
-                resolved_module_sp, resolved_module_spec, uuid_ptr);
-            module_sp =
-                cached_module_sp ? std::move(cached_module_sp)
-                                 : std::move(resolved_module_sp);
-            LLDB_LOG(GetLog(LLDBLog::Modules),
-                     "exec-search-path module selected: path={0}, from_cache={1}",
-                     module_sp ? module_sp->GetFileSpec().GetPath() : "<null>",
-                     cached_module_sp ? "yes" : "no");
+            module_sp = GetOrCreateCachedModule(resolved_module_sp,
+                                                resolved_module_spec);
+            LLDB_LOG(
+                GetLog(LLDBLog::Modules),
+                "exec-search-path module selected: path={0}, from_cache={1}",
+                module_sp ? module_sp->GetFileSpec().GetPath() : "<null>",
+                module_sp != resolved_module_sp ? "yes" : "no");
             if (did_create_ptr)
               *did_create_ptr = true;
 

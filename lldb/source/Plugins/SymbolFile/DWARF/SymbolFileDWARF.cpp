@@ -1700,6 +1700,35 @@ static uint64_t GetDWOId(DWARFCompileUnit &dwarf_cu,
   return dwo_id;
 }
 
+static ObjectFileSP GetSplitDwarfObjectFile(const ModuleSP &parent_module_sp,
+                                            const FileSpec &file_spec) {
+  ModuleSpec module_spec;
+  module_spec.GetFileSpec() = file_spec;
+  module_spec.GetArchitecture() = parent_module_sp->GetArchitecture();
+
+  FileSpec cached_file_spec =
+      ModuleList::GetOrCreateCachedModuleFile(module_spec);
+  const FileSpec &object_file_spec =
+      cached_file_spec ? cached_file_spec : file_spec;
+  DataBufferSP file_data_sp;
+  lldb::offset_t file_data_offset = 0;
+  ObjectFileSP object_file_sp = ObjectFile::FindPlugin(
+      parent_module_sp, &object_file_spec, 0,
+      FileSystem::Instance().GetByteSize(object_file_spec), file_data_sp,
+      file_data_offset);
+  if (object_file_sp || !cached_file_spec || cached_file_spec == file_spec)
+    return object_file_sp;
+
+  // GetOrCreateCachedModuleFile validates the source module but intentionally
+  // avoids opening a second temporary Module for the cache copy. If opening
+  // that copy fails, preserve the old behavior of trying the source file.
+  file_data_sp.reset();
+  file_data_offset = 0;
+  return ObjectFile::FindPlugin(parent_module_sp, &file_spec, 0,
+                                FileSystem::Instance().GetByteSize(file_spec),
+                                file_data_sp, file_data_offset);
+}
+
 llvm::Optional<uint64_t> SymbolFileDWARF::GetDWOId() {
   if (GetNumCompileUnits() == 1) {
     if (auto comp_unit = GetCompileUnitAtIndex(0))
@@ -1763,14 +1792,9 @@ SymbolFileDWARF::GetDwoSymbolFileForCompileUnit(
     return nullptr;
   }
 
-  const lldb::offset_t file_offset = 0;
-  DataBufferSP dwo_file_data_sp;
-  lldb::offset_t dwo_file_data_offset = 0;
-  ObjectFileSP dwo_obj_file = ObjectFile::FindPlugin(
-      GetObjectFile()->GetModule(), &dwo_file, file_offset,
-      FileSystem::Instance().GetByteSize(dwo_file), dwo_file_data_sp,
-      dwo_file_data_offset);
-  if (dwo_obj_file == nullptr)
+  ObjectFileSP dwo_obj_file =
+      GetSplitDwarfObjectFile(GetObjectFile()->GetModule(), dwo_file);
+  if (!dwo_obj_file)
     return nullptr;
 
   return std::make_shared<SymbolFileDWARFDwo>(*this, dwo_obj_file,
@@ -1843,6 +1867,7 @@ void SymbolFileDWARF::UpdateExternalModuleListIfNeeded() {
 
     Status error = ModuleList::GetSharedModule(dwo_module_spec, module_sp,
                                                nullptr, nullptr, nullptr);
+    module_sp = ModuleList::GetOrCreateCachedModule(module_sp, dwo_module_spec);
     if (!module_sp) {
       GetObjectFile()->GetModule()->ReportWarning(
           "0x%8.8x: unable to locate module needed for external types: "
@@ -4026,12 +4051,8 @@ const std::shared_ptr<SymbolFileDWARFDwo> &SymbolFileDWARF::GetDwpSymbolFile() {
     FileSpec dwp_filespec =
         Symbols::LocateExecutableSymbolFile(module_spec, search_paths);
     if (FileSystem::Instance().Exists(dwp_filespec)) {
-      DataBufferSP dwp_file_data_sp;
-      lldb::offset_t dwp_file_data_offset = 0;
-      ObjectFileSP dwp_obj_file = ObjectFile::FindPlugin(
-          GetObjectFile()->GetModule(), &dwp_filespec, 0,
-          FileSystem::Instance().GetByteSize(dwp_filespec), dwp_file_data_sp,
-          dwp_file_data_offset);
+      ObjectFileSP dwp_obj_file =
+          GetSplitDwarfObjectFile(GetObjectFile()->GetModule(), dwp_filespec);
       if (!dwp_obj_file)
         return;
       m_dwp_symfile =

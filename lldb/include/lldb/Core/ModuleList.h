@@ -446,6 +446,19 @@ public:
 
   static bool ModuleIsInCache(const Module *module_ptr);
 
+  /// Create a cache copy of an exact-path module if needed, and return its
+  /// path. The returned path can be opened with a caller-selected parent
+  /// module.
+  static FileSpec GetOrCreateCachedModuleFile(const ModuleSpec &module_spec);
+
+  /// Return a cache-backed copy of \p module_sp when the exec-search-path
+  /// module cache is enabled and usable; otherwise return \p module_sp.
+  static lldb::ModuleSP GetOrCreateCachedModule(
+      const lldb::ModuleSP &module_sp, const ModuleSpec &module_spec,
+      llvm::SmallVectorImpl<lldb::ModuleSP> *old_modules = nullptr);
+
+  /// Resolve a shared module. Modules selected through exec-search-paths are
+  /// materialized in the exec-search-path module cache when it is enabled.
   static Status
   GetSharedModule(const ModuleSpec &module_spec, lldb::ModuleSP &module_sp,
                   const FileSpecList *module_search_paths_ptr,

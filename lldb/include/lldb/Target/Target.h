@@ -1581,6 +1581,11 @@ private:
   // Helper function.
   bool ProcessIsValid();
 
+  /// Recreate the executable module from its source path when an
+  /// exec-search-path cache-backed executable has changed on disk. This must
+  /// only be called after the old process has been destroyed.
+  void ReloadExecutableModuleIfChanged();
+
   // Copy breakpoints, stop hooks and so forth from the dummy target:
   void PrimeFromDummyTarget(Target &target);
 
