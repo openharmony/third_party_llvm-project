@@ -331,9 +331,9 @@ static int OHPatchVersion;
 
 extern __attribute__((weak)) int OH_GetSdkApiVersion(void);
 extern __attribute__((weak)) int OH_GetDistributionOSApiVersion(void);
-extern __attribute__((weak)) int GetSdkApiVersion(void);
-extern __attribute__((weak)) int GetSdkMinorApiVersion(void);
-extern __attribute__((weak)) int GetSdkPatchApiVersion(void);
+extern __attribute__((weak)) int OH_GetSdkApiVersion(void);
+extern __attribute__((weak)) int OH_GetSdkMinorApiVersion(void);
+extern __attribute__((weak)) int OH_GetSdkPatchApiVersion(void);
 
 static void readOHOSVersion(void) {
   OHVersion = OH_GetSdkApiVersion();
@@ -341,9 +341,9 @@ static void readOHOSVersion(void) {
 }
 
 static void readOHOSPointVersion(void) {
-  OHMajorVersion = GetSdkApiVersion();
-  OHMinorVersion = GetSdkMinorApiVersion();
-  OHPatchVersion = GetSdkPatchApiVersion();
+  OHMajorVersion = OH_GetSdkApiVersion();
+  OHMinorVersion = OH_GetSdkMinorApiVersion();
+  OHPatchVersion = OH_GetSdkPatchApiVersion();
 }
 
 int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
