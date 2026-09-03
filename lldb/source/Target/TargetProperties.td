@@ -260,7 +260,8 @@ let Definition = "platform" in {
   def UseExecSearchPathModuleCache: Property<"use-exec-search-path-module-cache", "Boolean">,
     Global,
     DefaultFalse,
-    Desc<"Use module cache copies for modules discovered via target.exec-search-paths.">;
+    Desc<"Use cache copies for local modules resolved while loading target "
+         "executables, shared libraries, and split-DWARF companion files.">;
   def ModuleCacheDirectory: Property<"module-cache-directory", "FileSpec">,
     Global,
     DefaultStringValue<"">,

@@ -8,8 +8,16 @@
 
 # RUN: cd ../..
 
-# RUN: %lldb %t.o -o "target var x" -b 2>&1 | FileCheck %s
+# RUN: %lldb %t.o -o "settings set platform.use-exec-search-path-module-cache true" \
+# RUN:   -o "settings set platform.module-cache-directory %t.cache" \
+# RUN:   -o "log enable lldb modules" -o "target var x" \
+# RUN:   -o "script import os; os.remove(r'%T/dwo-relative-path.dwo')" \
+# RUN:   -o "script print('dwo removed:', not os.path.exists(r'%T/dwo-relative-path.dwo'))" \
+# RUN:   -o "target var x" -b 2>&1 | FileCheck %s
 
+# CHECK: exec-search-path cache copy done: {{.*}}dwo-relative-path.dwo
+# CHECK: x = 10
+# CHECK: dwo removed: True
 # CHECK: x = 10
 
 	.file	"dwo-relative-path.cpp"
