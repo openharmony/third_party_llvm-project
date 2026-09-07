@@ -221,12 +221,22 @@ public:
     Opt.Backtrace = gwp_asan::backtrace::getBacktraceFunction();
     GuardedAlloc.init(Opt);
 
+#if defined(OHOS_LLVM) && defined(__OHOS__)
+    // SIGSEGV is owned by musl sigchain; plain sigaction is ignored.
+    if (Opt.InstallSignalHandlers)
+      gwp_asan::segv_handler::installSignalHandlersOhos(
+          &GuardedAlloc, Printf,
+          gwp_asan::backtrace::getPrintBacktraceFunction(),
+          gwp_asan::backtrace::getSegvBacktraceFunction(),
+          Opt.Recoverable);
+#else
     if (Opt.InstallSignalHandlers)
       gwp_asan::segv_handler::installSignalHandlers(
           &GuardedAlloc, Printf,
           gwp_asan::backtrace::getPrintBacktraceFunction(),
           gwp_asan::backtrace::getSegvBacktraceFunction(),
           Opt.Recoverable);
+#endif
 
     GuardedAllocSlotSize =
         GuardedAlloc.getAllocatorState()->maximumAllocationSize();
