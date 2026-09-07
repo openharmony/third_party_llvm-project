@@ -323,27 +323,29 @@ int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
 #include <stdlib.h>
 #include <string.h>
 
-static int OHVersion;
-static int DistOsVersion;
-static int OHMajorVersion;
-static int OHMinorVersion;
-static int OHPatchVersion;
+static int OHVersion = 0;
+static int DistOsVersion = 0;
+static int OHMajorVersion = 0;
+static int OHMinorVersion = 0;
+static int OHPatchVersion = 0;
 
 extern __attribute__((weak)) int OH_GetSdkApiVersion(void);
 extern __attribute__((weak)) int OH_GetDistributionOSApiVersion(void);
-extern __attribute__((weak)) int OH_GetSdkApiVersion(void);
 extern __attribute__((weak)) int OH_GetSdkMinorApiVersion(void);
 extern __attribute__((weak)) int OH_GetSdkPatchApiVersion(void);
 
 static void readOHOSVersion(void) {
-  OHVersion = OH_GetSdkApiVersion();
-  DistOsVersion = OH_GetDistributionOSApiVersion();
+  OHVersion = (OH_GetSdkApiVersion != NULL) ? OH_GetSdkApiVersion() : 0;
+  DistOsVersion = (OH_GetDistributionOSApiVersion != NULL) ?
+                  OH_GetDistributionOSApiVersion() : 0;
 }
 
 static void readOHOSPointVersion(void) {
-  OHMajorVersion = OH_GetSdkApiVersion();
-  OHMinorVersion = OH_GetSdkMinorApiVersion();
-  OHPatchVersion = OH_GetSdkPatchApiVersion();
+  OHMajorVersion = (OH_GetSdkApiVersion != NULL) ? OH_GetSdkApiVersion() : 0;
+  OHMinorVersion = (OH_GetSdkMinorApiVersion != NULL) ?
+                   OH_GetSdkMinorApiVersion() : 0;
+  OHPatchVersion = (OH_GetSdkPatchApiVersion != NULL) ?
+                   OH_GetSdkPatchApiVersion() : 0;
 }
 
 int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
@@ -353,17 +355,18 @@ int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
   if (Major < 10)
     return 1;
 
-  // Just readOHOSVersion once When first call `__isOSVersionAtLeast`
-  static pthread_once_t once = PTHREAD_ONCE_INIT;
-
   // Start from API26, the version number of OHOS has been changed to new
   // pointer version.
   if (Major < 26) {
-    pthread_once(&once, readOHOSVersion);
+    // Just readOHOSVersion once When first call `__isOSVersionAtLeast`
+    static pthread_once_t once_legacy = PTHREAD_ONCE_INIT;
+    pthread_once(&once_legacy, readOHOSVersion);
 
     return OHVersion > Major || (OHVersion == Major && DistOsVersion >= Subminor);
   } else {
-    pthread_once(&once, readOHOSPointVersion);
+    // Just readOHOSPointVersion once When first call `__isOSVersionAtLeast`
+    static pthread_once_t once_point = PTHREAD_ONCE_INIT;
+    pthread_once(&once_point, readOHOSPointVersion);
 
     if (Major < OHMajorVersion)
       return 1;
@@ -376,7 +379,6 @@ int32_t __isOSVersionAtLeast(int32_t Major, int32_t Minor, int32_t Subminor) {
     return Subminor <= OHPatchVersion;
   }
 }
-
 #else
 
 // Silence an empty translation unit warning.
