@@ -952,6 +952,8 @@ inline void LogMessageOnPrintf(const char *str) {}
 
 #if SANITIZER_OHOS
 bool SafeToCallPrintf();
+// Stack-overflow finish path: keep Report()/RawWrite but skip ohos_dfx_log.
+void SetOhosDfxLogEnabled(bool enabled);
 #else
 inline bool SafeToCallPrintf() { return true; }
 #endif

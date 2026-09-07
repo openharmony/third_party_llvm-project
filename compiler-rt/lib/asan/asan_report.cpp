@@ -218,10 +218,17 @@ class ScopedInErrorReport {
 
     if (halt_on_error_) {
       Report("ABORTING\n");
+#if SANITIZER_OHOS
+      // Defer End+Die until after sigreturn so ohos_dfx_log is not called from
+      // the SIGSEGV/SIGBUS handler.
+      if (AsanOhosDeferFinishAfterSigreturn())
+        return;
+#endif
       Die();
     }
 #if SANITIZER_OHOS
-    Report("End Asan report\n");
+    if (!AsanOhosDeferFinishAfterSigreturn())
+      Report("End Asan report\n");
 #endif
   }
 
