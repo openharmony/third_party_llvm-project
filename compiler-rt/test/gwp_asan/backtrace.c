@@ -8,8 +8,9 @@
 // RUN: %clang_gwp_asan -fomit-frame-pointer -momit-leaf-frame-pointer %s -g -o %t
 // RUN: %expect_crash %t
 
-// Incomplete backtrace on Armv7
-// UNSUPPORTED: armhf-linux
+// Incomplete backtrace on Armv7. OHOS dumpReport uses sanitizer
+// Symbolizer in the SIGSEGV handler, which cannot resolve function names.
+// UNSUPPORTED: armhf-linux, ohos_family
 
 #include <stdlib.h>
 

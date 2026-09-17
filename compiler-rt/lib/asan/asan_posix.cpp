@@ -31,13 +31,87 @@
 #  include "sanitizer_common/sanitizer_libc.h"
 #  include "sanitizer_common/sanitizer_posix.h"
 #  include "sanitizer_common/sanitizer_procmaps.h"
+#if SANITIZER_OHOS
+#  include <ucontext.h>
+#endif
 
 namespace __asan {
 
+#if SANITIZER_OHOS
+static bool asan_ohos_in_deadly_signal;
+static bool asan_ohos_can_arm_trampoline;
+static bool asan_ohos_defer_finish;
+static bool asan_ohos_skip_dfx;
+
+bool AsanOhosInDeadlySignal() { return asan_ohos_in_deadly_signal; }
+
+bool AsanOhosDeferFinishAfterSigreturn() {
+  if (!asan_ohos_in_deadly_signal || !asan_ohos_can_arm_trampoline)
+    return false;
+  asan_ohos_defer_finish = true;
+  return true;
+}
+
+// Reserved stack for finishing the report after stack-overflow: the main
+// stack is exhausted, so Report→ohos_dfx_log would SEGV again if we resumed
+// there. Sized once; never freed.
+static uptr EnsureOhosEmergencyStackSp() {
+  static void *base;
+  static const uptr kSize = 64 * 1024;
+  if (!base) {
+    base = MmapOrDie(kSize, "AsanOhosEmergencyStack");
+    UnpoisonStack(reinterpret_cast<uptr>(base),
+                  reinterpret_cast<uptr>(base) + kSize, "ohos-emerge");
+  }
+  return ((reinterpret_cast<uptr>(base) + kSize) & ~15ULL) - 16;
+}
+
+// ohos_dfx_log (via Report) is not async-signal-safe. Run End-marker + Die
+// after sigreturn, in normal context.
+extern "C" NORETURN void __asan_ohos_finish_report_and_exit() {
+  if (asan_ohos_skip_dfx)
+    SetOhosDfxLogEnabled(false);
+  asan_ohos_defer_finish = false;
+  Die();
+}
+
+static void AsanOhosArmFinishAfterSigreturn(void *context, bool stack_overflow) {
+#  if defined(__aarch64__)
+  if (!context)
+    return;
+  auto *uc = static_cast<ucontext_t *>(context);
+  if (stack_overflow) {
+    uc->uc_mcontext.sp = EnsureOhosEmergencyStackSp();
+    asan_ohos_skip_dfx = true;
+  }
+  uc->uc_mcontext.pc =
+      reinterpret_cast<uptr>(&__asan_ohos_finish_report_and_exit);
+#  else
+  (void)context;
+  (void)stack_overflow;
+#  endif
+}
+#endif
+
 void AsanOnDeadlySignal(int signo, void *siginfo, void *context) {
+#if SANITIZER_OHOS
+  asan_ohos_in_deadly_signal = true;
+  asan_ohos_defer_finish = false;
+  asan_ohos_skip_dfx = false;
+#  if defined(__aarch64__)
+  asan_ohos_can_arm_trampoline = context != nullptr;
+#  else
+  asan_ohos_can_arm_trampoline = false;
+#  endif
+#endif
   StartReportDeadlySignal();
   SignalContext sig(siginfo, context);
   ReportDeadlySignal(sig);
+#if SANITIZER_OHOS
+  asan_ohos_in_deadly_signal = false;
+  if (asan_ohos_defer_finish)
+    AsanOhosArmFinishAfterSigreturn(context, sig.IsStackOverflow());
+#endif
 }
 
 bool PlatformUnpoisonStacks() {

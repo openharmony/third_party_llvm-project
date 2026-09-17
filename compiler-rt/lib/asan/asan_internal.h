@@ -106,6 +106,14 @@ typedef void (*globals_op_fptr)(__asan_global *, uptr);
 void AsanApplyToGlobals(globals_op_fptr op, const void *needle);
 
 void AsanOnDeadlySignal(int, void *siginfo, void *context);
+#if SANITIZER_OHOS
+// True while AsanOnDeadlySignal is on the stack. ScopedInErrorReport must not
+// Die()/Report("End...") here: ohos_dfx_log is not async-signal-safe.
+bool AsanOhosInDeadlySignal();
+// Remember that End+Die should run after sigreturn. Returns true when the
+// caller must skip Die()/End in the handler (aarch64 + valid ucontext).
+bool AsanOhosDeferFinishAfterSigreturn();
+#endif
 
 void SignContextStack(void *context);
 void ReadContextStack(void *context, uptr *stack, uptr *ssize);

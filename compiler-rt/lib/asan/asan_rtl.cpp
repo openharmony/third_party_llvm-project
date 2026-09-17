@@ -64,6 +64,8 @@ static void AsanDie() {
     }
   }
 #if SANITIZER_OHOS
+  // DFX flushes on this marker via ohos_dfx_log. Deadly-signal handlers must
+  // not reach Die() until after sigreturn (see asan_posix.cpp).
   Report("End Asan report (AsanDie)\n");
 #endif
 }
