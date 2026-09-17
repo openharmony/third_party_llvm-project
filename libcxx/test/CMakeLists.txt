@@ -94,6 +94,17 @@ serialize_lit_params_list(SERIALIZED_LIT_PARAMS LIBCXX_TEST_PARAMS)
 
 include(AddLLVM) # for configure_lit_site_cfg and add_lit_testsuite
 
+# OHOS_LOCAL begin
+if(NOT DEFINED OHOS_LLVM)
+  set(OHOS_LLVM OFF)
+endif()
+if(OHOS_LLVM)
+  set(LIBCXX_LIT_OHOS_LLVM True)
+else()
+  set(LIBCXX_LIT_OHOS_LLVM False)
+endif()
+# OHOS_LOCAL end
+
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/configs/cmake-bridge.cfg.in"
                 "${CMAKE_CURRENT_BINARY_DIR}/cmake-bridge.cfg"
                 @ONLY)

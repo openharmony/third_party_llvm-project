@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // Test to make sure basic initialization order errors are caught.
 // Check that on Linux initialization order bugs are caught
 // independently on order in which we list source files (if we specify
@@ -9,8 +10,6 @@
 // RUN: %env_asan_opts=strict_init_order=true not %run %t 2>&1 | FileCheck %s
 
 // Do not test with optimization -- the error may be optimized away.
-
-// UNSUPPORTED: ohos_family
 
 #include <cstdio>
 

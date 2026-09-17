@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // REQUIRES: android
 
 // Tests that ubsan can detect errors on Android if libc appears before the
@@ -9,9 +10,6 @@
 // Make sure that libc is first in DT_NEEDED.
 // RUN: %clangxx %s -lc -o %t %ld_flags_rpath_exe
 // RUN: %run %t 2>&1 | FileCheck %s
-
-// OHOS test commands fail at runtime with a missing symbol.
-// UNSUPPORTED: ohos_family
 
 #include <limits.h>
 

@@ -410,3 +410,10 @@ if "system-aix" in config.available_features:
 # possibly be present in system and user configuration files, so disable
 # default configs for the test runs.
 config.environment["CLANG_NO_DEFAULT_CONFIG"] = "1"
+
+# OHOS_LOCAL begin: ohos_llvm gates OHOS_LLVM/ tests and UNSUPPORTED: ohos_llvm.
+if getattr(config, "ohos_llvm", False):
+    config.available_features.add("ohos_llvm")
+else:
+    config.excludes.append("OHOS_LLVM")
+# OHOS_LOCAL end

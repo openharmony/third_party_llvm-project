@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_llvm
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -17,24 +18,11 @@ static void bm_list(benchmark::State& state) {
   char buffer[16384];
   std::pmr::monotonic_buffer_resource resource(buffer, sizeof(buffer));
   for (auto _ : state) {
-#ifndef __OHOS__
     std::pmr::list<int> l(&resource);
     for (int64_t i = 0; i != state.range(); ++i) {
       l.push_back(1);
       benchmark::DoNotOptimize(l);
     }
-#else
-    // Destroy the list before releasing its node storage from the resource.
-    // On AArch64, the use-after-free becomes visible at 2048 elements.
-    // On x86, the use-after-free becomes visible at 16384 elements.
-    {
-      std::pmr::list<int> l(&resource);
-      for (int64_t i = 0; i != state.range(); ++i) {
-        l.push_back(1);
-        benchmark::DoNotOptimize(l);
-      }
-    }
-#endif
     resource.release();
   }
 }

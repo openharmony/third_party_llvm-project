@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clang_scudo %s -o %t
 // RUN:                                     not %run %t malloc     2>&1 | FileCheck %s
 // RUN: %env_scudo_opts=QuarantineSizeKb=64 not %run %t quarantine 2>&1 | FileCheck %s
@@ -7,12 +8,6 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-
-// OHOS_LOCAL begin
-#ifdef __OHOS__
-#include <sys/types.h>
-#endif
-// OHOS_LOCAL end
 
 int main(int argc, char **argv) {
   ssize_t offset = sizeof(void *) == 8 ? 8 : 0;

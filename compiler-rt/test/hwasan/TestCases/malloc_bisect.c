@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clang_hwasan -O0 %s -o %t
 // RUN: %env_hwasan_opts=malloc_bisect_left=0,malloc_bisect_right=0          not %run %t 2>&1 | \
 // RUN:     FileCheck %s --check-prefix=CRASH
@@ -9,7 +10,7 @@
 
 // FIXME: Recursive call into malloc from stack->Print(). Or maybe this feature
 // needs to be removed. We don't use it, but it's in the hot code.
-// UNSUPPORTED: internal_symbolizer, ohos_family
+// UNSUPPORTED: internal_symbolizer
 
 #include <stdlib.h>
 #include <stdio.h>

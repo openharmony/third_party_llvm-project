@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // Test that we can properly report an ODR violation between an instrumented
 // global and a non-instrumented global if not using private aliases.
 
@@ -20,7 +21,7 @@ __attribute__((aligned(8))) int x;
 __attribute__((aligned(1))) char y;
 // The gold linker puts ZZZ at the start of bss (where it is aligned)
 // unless we have a large alternative like Displace:
-__attribute__((aligned(8))) char Displace[105];
+__attribute__((aligned(1))) char Displace[105];
 __attribute__((aligned(1))) char ZZZ[100];
 #elif defined(FILE2)
 int ZZZ = 1;

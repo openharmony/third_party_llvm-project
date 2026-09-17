@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clangxx_asan -O0 %s -o %t && not %run %t 2>&1 | FileCheck %s --check-prefix=CHECK-%os --check-prefix=CHECK
 // RUN: %clangxx_asan -O1 %s -o %t && not %run %t 2>&1 | FileCheck %s --check-prefix=CHECK-%os --check-prefix=CHECK
 // RUN: %clangxx_asan -O2 %s -o %t && not %run %t 2>&1 | FileCheck %s --check-prefix=CHECK-%os --check-prefix=CHECK
@@ -33,7 +34,6 @@ static void LargeFunction(int *x, int zero) {
   // CHECK-Windows:{{#[0-1] 0x.* in LargeFunction.*large_func_test.cpp:}}[[@LINE-5]]
   // CHECK-FreeBSD:{{#0 0x.* in LargeFunction.*large_func_test.cpp:}}[[@LINE-6]]
   // CHECK-Darwin: {{#0 0x.* in .*LargeFunction.*large_func_test.cpp}}:[[@LINE-7]]
-  // CHECK-OHOS:   {{#0 0x.* in LargeFunction.*large_func_test.cpp:}}[[@LINE-8]]
 
   x[10]++;
   x[11]++;
@@ -58,8 +58,7 @@ int main(int argc, char **argv) {
   // CHECK-Windows:{{    #0 0x.* in operator new}}
   // CHECK-FreeBSD:{{    #0 0x.* in operator new}}
   // CHECK-Darwin: {{    #0 0x.* in .*_Zna}}
-  // CHECK-OHOS:   {{    #0 0x.* in operator new}}
-  // CHECK-NEXT:   {{    #1 0x.* in main .*large_func_test.cpp:}}[[@LINE-11]]
+  // CHECK-NEXT:   {{    #1 0x.* in main .*large_func_test.cpp:}}[[@LINE-10]]
   int y = x[argc];
   delete[] x;
   return y;

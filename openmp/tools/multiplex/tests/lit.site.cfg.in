@@ -12,6 +12,9 @@ config.omp_header_dir = "@LIBOMP_INCLUDE_DIR@"
 config.ompt_print_callback_dir = "@OMPT_PRINT_CALLBACKS_DIR@"
 config.operating_system = "@CMAKE_SYSTEM_NAME@"
 config.target_triple = "@LLVM_TARGET_TRIPLE@"
+# OHOS_LOCAL begin
+config.ohos_llvm = @OHOS_LLVM_LIT@
+# OHOS_LOCAL end
 
 import lit.llvm
 lit.llvm.initialize(lit_config, config)

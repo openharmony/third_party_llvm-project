@@ -1,10 +1,10 @@
-// RUN: %clang %flags -shared -fPIC %s -o %T/first_tool.so %send-first_tool
-// RUN: %clang %flags -DTOOL -DSECOND_TOOL -shared -fPIC %s -o %T/second_tool.so %send-second_tool
-// RUN: %clang %flags -DTOOL -DTHIRD_TOOL -shared -fPIC %s -o %T/third_tool.so %send-third_tool
+// UNSUPPORTED: ohos_llvm
+// RUN: %clang %flags -shared -fPIC %s -o %T/first_tool.so
+// RUN: %clang %flags -DTOOL -DSECOND_TOOL -shared -fPIC %s -o %T/second_tool.so
+// RUN: %clang %flags -DTOOL -DTHIRD_TOOL -shared -fPIC %s -o %T/third_tool.so
 // RUN: %libomp-compile -DCODE
-// RUN: env OMP_TOOL_LIBRARIES=%tool-path/non_existing_file.so:%tool-path/first_tool.so:%tool-path/second_tool.so:%tool-path/third_tool.so \
-// RUN: OMP_TOOL_VERBOSE_INIT=stdout %libomp-run | FileCheck %s -DPARENTPATH=%tool-path \
-// RUN:                                            --check-prefix=CHECK-%os --check-prefix=CHECK
+// RUN: env OMP_TOOL_LIBRARIES=%T/non_existing_file.so:%T/first_tool.so:%T/second_tool.so:%T/third_tool.so \
+// RUN: OMP_TOOL_VERBOSE_INIT=stdout %libomp-run | FileCheck %s -DPARENTPATH=%T
 
 // REQUIRES: ompt
 // XFAIL: darwin
@@ -27,16 +27,12 @@
 // CHECK-SAME: [[PARENTPATH]]/second_tool.so
 // CHECK-SAME: [[PARENTPATH]]/third_tool.so
 // CHECK-NEXT: Opening [[PARENTPATH]]/non_existing_file.so... Failed:
-// CHECK-Linux-SAME: [[PARENTPATH]]/non_existing_file.so: cannot open shared object
-// CHECK-Linux-SAME: file: No such file or directory
-// CHECK-OHOS-SAME: Error loading shared library [[PARENTPATH]]/non_existing_file.so: No such file or directory
-// CHECK-Darwin-SAME: dlopen([[PARENTPATH]]/non_existing_file.so, 1): image not found
+// CHECK-SAME: [[PARENTPATH]]/non_existing_file.so: {{cannot open shared object file|open failed}}:
+// CHECK-SAME: No such file or directory
 // CHECK-NEXT: Opening [[PARENTPATH]]/first_tool.so... Success.
 // CHECK-NEXT: Searching for ompt_start_tool in
 // CHECK-SAME: [[PARENTPATH]]/first_tool.so... Failed:
-// CHECK-Linux-SAME: [[PARENTPATH]]/first_tool.so: undefined symbol: ompt_start_tool
-// CHECK-OHOS-SAME: do_dlsym failed: Symbol not found: ompt_start_tool, version: null so=[[PARENTPATH]]/first_tool.so
-// CHECK-Darwin-SAME: dlsym({{0x[0-9a-f]+}}, ompt_start_tool): symbol not found
+// CHECK-SAME: {{.*/first_tool.so: undefined symbol: ompt_start_tool|ld.so.1: .*: ompt_start_tool: can't find symbol}}
 // CHECK-NEXT: Opening [[PARENTPATH]]/second_tool.so... Success.
 // CHECK-NEXT: Searching for ompt_start_tool in
 // CHECK-SAME: [[PARENTPATH]]/second_tool.so... 0: Do not initialize tool

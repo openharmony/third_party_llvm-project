@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clangxx_asan %min_macos_deployment_target=10.11 -O0 %s %p/Helpers/initialization-bug-extra.cpp -o %t
 // RUN: %env_asan_opts=check_initialization_order=true:strict_init_order=true not %run %t 2>&1 | FileCheck %s
 
@@ -8,8 +9,6 @@
 
 // Fails on some Darwin bots, probably iOS.
 // XFAIL: ios
-
-// UNSUPPORTED: ohos_family
 
 #include <stdio.h>
 

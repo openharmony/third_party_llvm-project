@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clangxx_tsan -O1 %s -o %t && %run %t 2>&1 | FileCheck %s
 // UNSUPPORTED: darwin
 // Fails episodically on powerpc bots:
@@ -13,23 +14,13 @@
 
 const int kSignalCount = 500;
 
-#if defined(__OHOS__)
-pthread_t main_tid;
-int process_signals;
-#else
 __thread int process_signals;
-#endif
 int signals_handled;
 int done;
 int ready[kSignalCount];
 long long data[kSignalCount];
 
 static void handler(int sig) {
-#if defined(__OHOS__)
-  // avoid using possibly emulated TLS in signal handlers
-  if (pthread_self() == main_tid)
-    return;
-#endif
   if (!__atomic_load_n(&process_signals, __ATOMIC_RELAXED))
     return;
   int pos = signals_handled++;
@@ -49,10 +40,6 @@ static void* thr(void *p) {
 }
 
 int main() {
-#if defined(__OHOS__)
-  main_tid = pthread_self();
-#endif
-
   struct sigaction act = {};
   act.sa_handler = handler;
   if (sigaction(SIGPROF, &act, 0)) {

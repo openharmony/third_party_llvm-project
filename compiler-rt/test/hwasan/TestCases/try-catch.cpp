@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // This test is broken with shared libstdc++ / libc++ on Android.
 // RUN: %clangxx_hwasan -static-libstdc++ %s -o %t && %run %t 2>&1 | FileCheck %s --check-prefix=GOOD
 // RUN: %clangxx_hwasan -static-libstdc++ -DMALLOCEDSTACK %s -o %t && %run %t 2>&1 | FileCheck %s --check-prefix=GOOD
@@ -8,7 +9,6 @@
 // C++ tests on x86_64 require instrumented libc++/libstdc++.
 // RISC-V target doesn't support oldrt
 // REQUIRES: aarch64-target-arch
-// UNSUPPORTED: ohos_family
 
 #include <cassert>
 #include <cstdio>

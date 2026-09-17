@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // Tests use-after-return detection and reporting.
 // RUN: %clang_hwasan -O0 -g %s -o %t && not %run %t 2>&1 | FileCheck %s
 // RUN: %clang_hwasan -O3 -g %s -o %t && not %run %t 2>&1 | FileCheck %s
@@ -53,7 +54,6 @@ int main() {
   // CHECK: Potentially referenced stack objects:
   // CHECK: Cause: use-after-scope
   // CHECK-NEXT: 0x{{.*}} is located 0 bytes inside a 2048-byte local variable {{zzz|yyy}} [0x{{.*}},0x{{.*}}) in buggy {{.*}}stack-uar.c:
-  // OHOS_LOCAL
   // CHECK: Memory tags around the buggy address
 
   // NOSYM: Previously allocated frames:
@@ -61,7 +61,6 @@ int main() {
   // NOSYM-NEXT: record_addr:0x{{.*}} record:0x{{.*}} ({{.*}}/stack-uar.c.tmp+0x{{.*}}){{$}}
   // NOSYM-NEXT: record_addr:0x{{.*}} record:0x{{.*}} ({{.*}}/stack-uar.c.tmp+0x{{.*}}){{$}}
   // NOSYM-NEXT: record_addr:0x{{.*}} record:0x{{.*}} ({{.*}}/stack-uar.c.tmp+0x{{.*}}){{$}}
-  // OHOS_LOCAL
   // NOSYM: Memory tags around the buggy address
 
   // CHECK: SUMMARY: HWAddressSanitizer: tag-mismatch {{.*}} in main

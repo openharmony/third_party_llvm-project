@@ -26,6 +26,9 @@ config.ld_lld_default_mingw = @LLD_DEFAULT_LD_LLD_IS_MINGW@
 config.build_examples = @LLVM_BUILD_EXAMPLES@
 config.has_plugins = @LLVM_ENABLE_PLUGINS@
 config.linked_bye_extension = @LLVM_BYE_LINK_INTO_TOOLS@
+# OHOS_LOCAL begin
+config.ohos_llvm = @OHOS_LLVM@
+# OHOS_LOCAL end
 
 import lit.llvm
 lit.llvm.initialize(lit_config, config)

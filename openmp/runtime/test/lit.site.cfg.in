@@ -24,6 +24,9 @@ config.has_omit_frame_pointer_flag = @OPENMP_TEST_COMPILER_HAS_OMIT_FRAME_POINTE
 config.target_arch = "@LIBOMP_ARCH@"
 config.compiler_frontend_variant = "@CMAKE_C_COMPILER_FRONTEND_VARIANT@"
 config.compiler_simulate_id = "@CMAKE_C_SIMULATE_ID@"
+# OHOS_LOCAL begin
+config.ohos_llvm = @OHOS_LLVM_LIT@
+# OHOS_LOCAL end
 
 import lit.llvm
 lit.llvm.initialize(lit_config, config)

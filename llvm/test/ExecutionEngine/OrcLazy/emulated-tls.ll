@@ -1,8 +1,6 @@
-;; OHOS_LOCAL begin
-;; LoongArch upstream prohibits emulated TLS; OHOS enables it, so allow this
-;; test on loongarch when built with OHOS_LLVM.
-;; UNSUPPORTED: target=loongarch{{.*}}
-;; OHOS_LOCAL end
+; UNSUPPORTED: ohos_llvm
+; LoongArch does not support emulated tls.
+; UNSUPPORTED: target=loongarch{{.*}}
 
 ; RUN: not lli -no-process-syms -lljit-platform=Inactive -emulated-tls \
 ; RUN:   -jit-kind=orc-lazy %s 2>&1 | FileCheck %s

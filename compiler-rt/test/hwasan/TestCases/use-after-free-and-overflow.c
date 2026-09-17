@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // Checks that we do not print a faraway buffer overrun if we find a
 // use-after-free.
 // RUN: %clang_hwasan -O0 %s -o %t
@@ -57,5 +58,4 @@ int main(int argc, char **argv) {
 
 // CHECK-NOT: Cause: heap-buffer-overflow
 // CHECK: Cause: use-after-free
-// OHOS_LOCAL
-// CHECK: Cause: heap-buffer-overflow
+// CHECK-NOT: Cause: heap-buffer-overflow

@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clangxx %s -o %t && %run %t %p
 
 // UNSUPPORTED: android
@@ -69,12 +70,6 @@ int main() {
   if (res < 0) {
     assert(errno == EINVAL);
   }
-
-  res = prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, (uintptr_t)p, 128, NULL);
-  if (res < 0) {
-    assert(errno == EINVAL);
-  }
-
   munmap(p, 128);
 
   res = prctl(PR_SET_NAME, "tname");

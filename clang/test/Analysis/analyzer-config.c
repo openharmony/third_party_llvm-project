@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_llvm
 // RUN: %clang_analyze_cc1 -analyzer-checker=debug.ConfigDumper > %t 2>&1
 // RUN: FileCheck --input-file=%t %s --match-full-lines
 
@@ -104,10 +105,6 @@
 // CHECK-NEXT: notes-as-events = false
 // CHECK-NEXT: nullability:NoDiagnoseCallsToSystemHeaders = false
 // CHECK-NEXT: objc-inlining = true
-// OHOS_LOCAL begin
-// CHECK-NEXT: openharmony.PrintSensitiveInfo:Config = ""
-// CHECK-NEXT: openharmony.SignalHandler:Config = ""
-// OHOS_LOCAL end
 // CHECK-NEXT: optin.cplusplus.UninitializedObject:CheckPointeeInitialization = false
 // CHECK-NEXT: optin.cplusplus.UninitializedObject:IgnoreGuardedFields = false
 // CHECK-NEXT: optin.cplusplus.UninitializedObject:IgnoreRecordsWithField = ""

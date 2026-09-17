@@ -509,6 +509,13 @@ if config.have_llvm_driver:
 if config.ark_gc_support:
     config.available_features.add("ark_gc_support")
 
+# OHOS_LOCAL begin: ohos_llvm gates OHOS_LLVM/ tests and UNSUPPORTED: ohos_llvm.
+if getattr(config, "ohos_llvm", False):
+    config.available_features.add("ohos_llvm")
+else:
+    config.excludes.append("OHOS_LLVM")
+# OHOS_LOCAL end
+
 import subprocess
 
 

@@ -1,11 +1,8 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clang_tsan -O1 %s -o %t && %deflake %run %t | FileCheck %s
 
 // on_exit() is not available on Darwin.
 // UNSUPPORTED: darwin
-
-// OHOS_LOCAL
-// on_exit() is not available on musl.
-// UNSUPPORTED: ohos_family
 
 #include "test.h"
 

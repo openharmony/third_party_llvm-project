@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // This test requires operator new to be intercepted by the hwasan runtime,
 // so we need to avoid linking against libc++.
 // RUN: %clangxx_hwasan %s -nostdlib++ -lstdc++ -o %t || %clangxx_hwasan %s -o %t
@@ -22,10 +23,6 @@
 // Tests for various edge cases related to sizes, notably the maximum size the
 // allocator can allocate. Tests that an integer overflow in the parameters of
 // calloc is caught.
-
-// OHOS_LOCAL
-// we can't link with libstdc++
-// REQUIRES: !ohos_family
 
 #include <assert.h>
 #include <malloc.h>

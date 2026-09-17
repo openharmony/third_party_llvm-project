@@ -1,3 +1,4 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clangxx_scudo %s -lstdc++ -o %t
 // RUN: %run %t 2>&1
 
@@ -10,12 +11,6 @@
 #include <string.h>
 
 #include <vector>
-
-// OHOS_LOCAL begin
-#ifdef __OHOS__
-#include <sys/types.h>
-#endif
-// OHOS_LOCAL end
 
 int main(int argc, char **argv) {
   void *p;

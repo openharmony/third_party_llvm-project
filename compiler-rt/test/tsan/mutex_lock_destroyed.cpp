@@ -1,13 +1,10 @@
+// UNSUPPORTED: ohos_family
 // RUN: %clangxx_tsan %s -o %t
 // RUN: %deflake %run %t | FileCheck %s
 // RUN: %deflake %run %t 1 | FileCheck %s
 
 // The pthread_mutex_lock interceptor assumes incompatible internals w/ NetBSD
 // XFAIL: target={{.*netbsd.*}}
-
-// OHOS_LOCAL
-// OHOS musl does not report an error when locking a destroyed mutex.
-// UNSUPPORTED: ohos_family
 
 #include <pthread.h>
 #include <stdio.h>
