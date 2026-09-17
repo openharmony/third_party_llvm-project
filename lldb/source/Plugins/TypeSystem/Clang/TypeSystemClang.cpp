@@ -551,7 +551,9 @@ static void ParseLangArgs(LangOptions &Opts, InputKind IK, const char *triple) {
 }
 
 TypeSystemClang::TypeSystemClang(llvm::StringRef name,
-                                 llvm::Triple target_triple) {
+                                 llvm::Triple target_triple,
+                                 llvm::Optional<bool> char_is_signed)
+    : m_char_is_signed_override(char_is_signed) {
   m_display_name = name.str();
   if (!target_triple.str().empty())
     SetTargetTriple(target_triple.str());
@@ -604,9 +606,20 @@ lldb::TypeSystemSP TypeSystemClang::CreateInstance(lldb::LanguageType language,
   if (module) {
     std::string ast_name =
         "ASTContext for '" + module->GetFileSpec().GetPath() + "'";
+    // A Module can be shared by multiple targets, so its AST must not depend
+    // on a target-local setting. The debug information supplies the
+    // signedness of its plain-char types.
     return std::make_shared<TypeSystemClang>(ast_name, triple);
-  } else if (target && target->IsValid())
-    return std::make_shared<ScratchTypeSystemClang>(*target, triple);
+  } else if (target && target->IsValid()) {
+    llvm::Optional<bool> char_is_signed;
+    CharSignedness cs = target->GetCharSignedness();
+    if (cs == eCharSignednessSigned)
+      char_is_signed = true;
+    else if (cs == eCharSignednessUnsigned)
+      char_is_signed = false;
+    return std::make_shared<ScratchTypeSystemClang>(*target, triple,
+                                                    char_is_signed);
+  }
   return lldb::TypeSystemSP();
 }
 
@@ -717,6 +730,11 @@ void TypeSystemClang::CreateASTContext() {
   m_language_options_up = std::make_unique<LangOptions>();
   ParseLangArgs(*m_language_options_up, clang::Language::ObjCXX,
                 GetTargetTriple());
+
+  // Apply char signedness override before ASTContext construction and
+  // InitBuiltinTypes(), so that CharTy gets the correct BuiltinType::Kind.
+  if (m_char_is_signed_override.hasValue())
+    m_language_options_up->CharIsSigned = *m_char_is_signed_override;
 
   m_identifier_table_up =
       std::make_unique<IdentifierTable>(*m_language_options_up, nullptr);
@@ -9797,11 +9815,13 @@ class SpecializedScratchAST : public TypeSystemClang {
 public:
   /// \param name The display name of the TypeSystemClang instance.
   /// \param triple The triple used for the TypeSystemClang instance.
+  /// \param char_is_signed Override for char signedness (forwarded to base).
   /// \param ast_source The ClangASTSource that should be used to complete
   ///                   type information.
   SpecializedScratchAST(llvm::StringRef name, llvm::Triple triple,
+                        llvm::Optional<bool> char_is_signed,
                         std::unique_ptr<ClangASTSource> ast_source)
-      : TypeSystemClang(name, triple),
+      : TypeSystemClang(name, triple, char_is_signed),
         m_scratch_ast_source_up(std::move(ast_source)) {
     // Setup the ClangASTSource to complete this AST.
     m_scratch_ast_source_up->InstallASTContext(*this);
@@ -9818,9 +9838,12 @@ public:
 char ScratchTypeSystemClang::ID;
 const llvm::NoneType ScratchTypeSystemClang::DefaultAST = llvm::None;
 
-ScratchTypeSystemClang::ScratchTypeSystemClang(Target &target,
-                                               llvm::Triple triple)
-    : TypeSystemClang("scratch ASTContext", triple), m_triple(triple),
+ScratchTypeSystemClang::ScratchTypeSystemClang(
+    Target &target, llvm::Triple triple,
+    llvm::Optional<bool> char_is_signed)
+    : TypeSystemClang("scratch ASTContext", triple, char_is_signed),
+      m_triple(triple),
+      m_char_is_signed(char_is_signed),
       m_target_wp(target.shared_from_this()),
       m_persistent_variables(
           new ClangPersistentVariables(target.shared_from_this())) {
@@ -9965,7 +9988,8 @@ TypeSystemClang &ScratchTypeSystemClang::GetIsolatedAST(
   // Couldn't find the requested sub-AST, so create it now.
   std::unique_ptr<TypeSystemClang> new_ast;
   new_ast.reset(new SpecializedScratchAST(GetSpecializedASTName(feature),
-                                          m_triple, CreateASTSource()));
+                                          m_triple, m_char_is_signed,
+                                          CreateASTSource()));
   m_isolated_asts[feature] = std::move(new_ast);
   return *m_isolated_asts[feature];
 }

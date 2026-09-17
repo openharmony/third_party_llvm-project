@@ -3925,6 +3925,19 @@ static constexpr OptionEnumValueElement
          "Prefer using the GetRealizedClassList API."},
 };
 
+static constexpr OptionEnumValueElement g_char_signedness_values[] = {
+    {
+        eCharSignednessSigned,
+        "signed",
+        "Treat plain 'char' as signed char (equivalent to -fsigned-char).",
+    },
+    {
+        eCharSignednessUnsigned,
+        "unsigned",
+        "Treat plain 'char' as unsigned char (equivalent to -funsigned-char).",
+    },
+};
+
 static constexpr OptionEnumValueElement g_hex_immediate_style_values[] = {
     {
         Disassembler::eHexStyleC,
@@ -4437,6 +4450,12 @@ DynamicClassInfoHelper TargetProperties::GetDynamicClassInfoHelper() const {
   return (DynamicClassInfoHelper)
       m_collection_sp->GetPropertyAtIndexAsEnumeration(
           nullptr, idx, g_target_properties[idx].default_uint_value);
+}
+
+CharSignedness TargetProperties::GetCharSignedness() const {
+  const uint32_t idx = ePropertyCharSignedness;
+  return (CharSignedness)m_collection_sp->GetPropertyAtIndexAsEnumeration(
+      nullptr, idx, g_target_properties[idx].default_uint_value);
 }
 
 bool TargetProperties::GetEnableAutoApplyFixIts() const {

@@ -72,6 +72,12 @@ enum DynamicClassInfoHelper {
   eDynamicClassInfoHelperGetRealizedClassList,
 };
 
+enum CharSignedness {
+  eCharSignednessNone,
+  eCharSignednessSigned,
+  eCharSignednessUnsigned,
+};
+
 class TargetExperimentalProperties : public Properties {
 public:
   TargetExperimentalProperties();
@@ -156,6 +162,8 @@ public:
   ImportStdModule GetImportStdModule() const;
 
   DynamicClassInfoHelper GetDynamicClassInfoHelper() const;
+
+  CharSignedness GetCharSignedness() const;
 
   bool GetEnableAutoApplyFixIts() const;
 

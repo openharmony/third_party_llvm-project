@@ -182,6 +182,14 @@ let Definition = "target" in {
   def DebugUtilityExpression: Property<"debug-utility-expression", "Boolean">,
     DefaultFalse,
     Desc<"Enable debugging of LLDB-internal utility expressions.">;
+  def CharSignedness: Property<"char-signedness", "Enum">,
+    DefaultEnumValue<"eCharSignednessNone">,
+    EnumValues<"OptionEnumValues(g_char_signedness_values)">,
+    Desc<"Overrides the signedness of plain 'char' in expression and scratch "
+         "ASTs. Leave unset to preserve existing behavior. Set to 'signed' "
+         "to treat char as signed char (as if -fsigned-char was passed to the "
+         "compiler), or 'unsigned' to treat char as unsigned char (as if "
+         "-funsigned-char was passed to the compiler).">;
 }
 
 let Definition = "process_experimental" in {

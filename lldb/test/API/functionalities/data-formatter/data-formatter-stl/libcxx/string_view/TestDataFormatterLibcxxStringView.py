@@ -36,6 +36,8 @@ class LibcxxStringViewDataFormatterTestCase(TestBase):
             self, "main.cpp", self.line2, num_expected_locations=-1)
 
         self.runCmd("run", RUN_SUCCEEDED)
+        self.assertIsNone(self.frame().FindVariable('schar').GetSummary())
+        self.runCmd('settings set target.char-signedness signed')
 
         # The stop reason of the thread should be breakpoint.
         self.expect("thread list", STOPPED_DUE_TO_BREAKPOINT,
@@ -100,6 +102,12 @@ class LibcxxStringViewDataFormatterTestCase(TestBase):
                              summary='"aaaaaaaaaa"')
         self.expect_var_path('uchar',
                              type='std::basic_string_view<unsigned char, std::char_traits<unsigned char> >',
+                             summary='"aaaaa"')
+        self.expect_var_path('schar_source',
+                             type='std::basic_string<signed char, std::char_traits<signed char>, std::allocator<signed char> >',
+                             summary='"aaaaaaaaaa"')
+        self.expect_var_path('schar',
+                             type='std::basic_string_view<signed char, std::char_traits<signed char> >',
                              summary='"aaaaa"')
         self.expect_var_path('oops',
                              type='std::string_view',
@@ -176,6 +184,12 @@ class LibcxxStringViewDataFormatterTestCase(TestBase):
                              summary='"aaaaaaaaaa"')
         self.expect_var_path('uchar',
                              type='std::basic_string_view<unsigned char, std::char_traits<unsigned char> >',
+                             summary='"aaaaa"')
+        self.expect_var_path('schar_source',
+                             type='std::basic_string<signed char, std::char_traits<signed char>, std::allocator<signed char> >',
+                             summary='"aaaaaaaaaa"')
+        self.expect_var_path('schar',
+                             type='std::basic_string_view<signed char, std::char_traits<signed char> >',
                              summary='"aaaaa"')
  
         self.runCmd('cont')

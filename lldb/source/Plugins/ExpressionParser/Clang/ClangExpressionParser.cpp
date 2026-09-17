@@ -586,6 +586,15 @@ ClangExpressionParser::ClangExpressionParser(
 
   lang_opts.CharIsSigned = ArchSpec(m_compiler->getTargetOpts().Triple.c_str())
                                .CharIsSignedByDefault();
+  // Override char signedness based on the user-specified target setting.
+  // Reuse the target_sp obtained earlier in this constructor.
+  if (target_sp) {
+    CharSignedness char_signedness = target_sp->GetCharSignedness();
+    if (char_signedness == eCharSignednessSigned)
+      lang_opts.CharIsSigned = true;
+    else if (char_signedness == eCharSignednessUnsigned)
+      lang_opts.CharIsSigned = false;
+  }
 
   // Spell checking is a nice feature, but it ends up completing a lot of types
   // that we didn't strictly speaking need to complete. As a result, we spend a

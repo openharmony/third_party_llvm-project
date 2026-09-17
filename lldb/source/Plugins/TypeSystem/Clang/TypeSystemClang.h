@@ -122,7 +122,15 @@ public:
   ///               certain characteristics of the ASTContext and its types
   ///               (e.g., whether certain primitive types exist or what their
   ///               signedness is).
-  explicit TypeSystemClang(llvm::StringRef name, llvm::Triple triple);
+  /// \param char_is_signed If set, overrides the default char signedness
+  ///                       derived from the triple. true = signed char
+  ///                       (-fsigned-char), false = unsigned char
+  ///                       (-funsigned-char). Applied before
+  ///                       InitBuiltinTypes() so that CharTy gets the
+  ///                       correct BuiltinType::Kind.
+  explicit TypeSystemClang(
+      llvm::StringRef name, llvm::Triple triple,
+      llvm::Optional<bool> char_is_signed = llvm::None);
 
   /// Constructs a TypeSystemClang that uses an existing ASTContext internally.
   /// Useful when having an existing ASTContext created by Clang.
@@ -1056,6 +1064,10 @@ private:
   std::string m_target_triple;
   std::unique_ptr<clang::ASTContext> m_ast_up;
   std::unique_ptr<clang::LangOptions> m_language_options_up;
+
+  /// If set, overrides the char signedness in LangOptions before
+  /// InitBuiltinTypes(), ensuring CharTy gets the correct BuiltinType::Kind.
+  llvm::Optional<bool> m_char_is_signed_override;
   std::unique_ptr<clang::FileManager> m_file_manager_up;
   std::unique_ptr<clang::SourceManager> m_source_manager_up;
   std::unique_ptr<clang::DiagnosticsEngine> m_diagnostics_engine_up;
@@ -1111,7 +1123,8 @@ class ScratchTypeSystemClang : public TypeSystemClang {
   static char ID;
 
 public:
-  ScratchTypeSystemClang(Target &target, llvm::Triple triple);
+  ScratchTypeSystemClang(Target &target, llvm::Triple triple,
+                         llvm::Optional<bool> char_is_signed = llvm::None);
 
   ~ScratchTypeSystemClang() override = default;
 
@@ -1212,6 +1225,8 @@ private:
   /// This was potentially adjusted and might not be identical to the triple
   /// of `m_target_wp`.
   llvm::Triple m_triple;
+  /// The char signedness override, forwarded to isolated sub-ASTs.
+  llvm::Optional<bool> m_char_is_signed;
   lldb::TargetWP m_target_wp;
   /// The persistent variables associated with this process for the expression
   /// parser.
